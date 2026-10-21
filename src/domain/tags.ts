@@ -8,7 +8,11 @@ export const MAX_TAG_LENGTH = 40;
 
 /** Trimmed, single-spaced, NFC, without a leading "#", at most MAX_TAG_LENGTH code points. */
 export function cleanTag(raw: string): string {
-  const s = raw.normalize('NFC').replace(/\s+/g, ' ').trim().replace(/^#+\s*/, '');
+  const s = raw
+    .normalize('NFC')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/^#+\s*/, '');
   return [...s].slice(0, MAX_TAG_LENGTH).join('').trim();
 }
 

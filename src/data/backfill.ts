@@ -14,7 +14,10 @@ const SYNC_CURSOR_KEY = 'sync_cursor';
  * Inside a Dexie upgrade: remember `tables` for a one-time re-pull, but only when this device
  * has pulled before (cursor > 0); a fresh pull from 0 brings every row anyway.
  */
-export async function addPullBackfill(meta: Table<MetaRow, string>, tables: string[]): Promise<void> {
+export async function addPullBackfill(
+  meta: Table<MetaRow, string>,
+  tables: string[],
+): Promise<void> {
   const cursor = (await meta.get(SYNC_CURSOR_KEY))?.value;
   if (typeof cursor !== 'number' || cursor <= 0) return;
   const cur = (await meta.get(PULL_BACKFILL_KEY))?.value;

@@ -28,20 +28,28 @@ export async function getThemeSource(opts: { includeTagged?: boolean } = {}): Pr
     const picked = notes.slice(0, MAX_THEME_RUN_WORDS);
     const ids = new Set(picked.map((n) => n.id));
     const first = new Map<Id, Sense>();
-    await db.senses.where('note_id').anyOf([...ids]).each((s) => {
-      if (s.deleted_at !== null) return;
-      const cur = first.get(s.note_id);
-      if (!cur || s.sense_no < cur.sense_no) first.set(s.note_id, s);
-    });
+    await db.senses
+      .where('note_id')
+      .anyOf([...ids])
+      .each((s) => {
+        if (s.deleted_at !== null) return;
+        const cur = first.get(s.note_id);
+        if (!cur || s.sense_no < cur.sense_no) first.set(s.note_id, s);
+      });
     const lexIds = [...first.values()]
       .filter((s) => !s.gloss_en && s.lexicon_sense_id)
       .map((s) => s.lexicon_sense_id!);
-    const lex = new Map((await db.lexicon_cache.bulkGet(lexIds)).filter((x) => !!x).map((x) => [x!.id, x!]));
+    const lex = new Map(
+      (await db.lexicon_cache.bulkGet(lexIds)).filter((x) => !!x).map((x) => [x!.id, x!]),
+    );
     return {
       total: notes.length,
       notes: picked.map((n) => {
         const s = first.get(n.id);
-        const gloss = s?.gloss_en || (s?.lexicon_sense_id ? lex.get(s.lexicon_sense_id)?.gloss_en : null) || null;
+        const gloss =
+          s?.gloss_en ||
+          (s?.lexicon_sense_id ? lex.get(s.lexicon_sense_id)?.gloss_en : null) ||
+          null;
         return { id: n.id, term: n.term, gloss_en: gloss };
       }),
     };
@@ -88,7 +96,8 @@ export async function applyThemePreview(now: Millis = Date.now()): Promise<Apply
     if (!preview) return res;
     const groups = acceptedGroups(preview.groups);
     const touched = new Map<Id, string[]>();
-    for (const g of groups) for (const id of g.noteIds) touched.set(id, [...(touched.get(id) ?? []), g.name]);
+    for (const g of groups)
+      for (const id of g.noteIds) touched.set(id, [...(touched.get(id) ?? []), g.name]);
     const notes = await db.notes.bulkGet([...touched.keys()]);
     const used = new Set<string>();
     for (const note of notes) {

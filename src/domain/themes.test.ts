@@ -1,8 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { acceptedGroups, buildThemeBatches, keptNotes, mergeThemeAnswers, type ThemeSourceNote } from './themes';
+import {
+  acceptedGroups,
+  buildThemeBatches,
+  keptNotes,
+  mergeThemeAnswers,
+  type ThemeSourceNote,
+} from './themes';
 
 const notes = (n: number): ThemeSourceNote[] =>
-  Array.from({ length: n }, (_, i) => ({ id: `n${i}`, term: `word${i}`, gloss_en: i % 2 ? `gloss ${i}` : null }));
+  Array.from({ length: n }, (_, i) => ({
+    id: `n${i}`,
+    term: `word${i}`,
+    gloss_en: i % 2 ? `gloss ${i}` : null,
+  }));
 
 describe('theme batches', () => {
   it('splits into batches with refs w1..wN and nothing but term and gloss', () => {
@@ -25,18 +35,40 @@ describe('mergeThemeAnswers', () => {
   it('maps refs back, joins same-named groups across batches, drops tiny groups', () => {
     const batches = buildThemeBatches(notes(6), 3);
     const groups = mergeThemeAnswers(batches, [
-      { groups: [{ name_tr: 'Yemek', refs: ['w1', 'w2'] }, { name_tr: 'Spor', refs: ['w3', 'w9'] }] },
-      { groups: [{ name_tr: 'yemek', refs: ['w1', 'w1'] }, { name_tr: ' ', refs: ['w2', 'w3'] }] },
+      {
+        groups: [
+          { name_tr: 'Yemek', refs: ['w1', 'w2'] },
+          { name_tr: 'Spor', refs: ['w3', 'w9'] },
+        ],
+      },
+      {
+        groups: [
+          { name_tr: 'yemek', refs: ['w1', 'w1'] },
+          { name_tr: ' ', refs: ['w2', 'w3'] },
+        ],
+      },
     ]);
     expect(groups).toEqual([
-      { key: 'yemek', suggested: 'Yemek', name: 'Yemek', note_ids: ['n0', 'n1', 'n3'], removed: [], rejected: false },
+      {
+        key: 'yemek',
+        suggested: 'Yemek',
+        name: 'Yemek',
+        note_ids: ['n0', 'n1', 'n3'],
+        removed: [],
+        rejected: false,
+      },
     ]);
   });
 
   it('puts a note in at most one group', () => {
     const batches = buildThemeBatches(notes(4));
     const groups = mergeThemeAnswers(batches, [
-      { groups: [{ name_tr: 'A', refs: ['w1', 'w2'] }, { name_tr: 'B', refs: ['w2', 'w3', 'w4'] }] },
+      {
+        groups: [
+          { name_tr: 'A', refs: ['w1', 'w2'] },
+          { name_tr: 'B', refs: ['w2', 'w3', 'w4'] },
+        ],
+      },
     ]);
     expect(groups.map((g) => [g.name, g.note_ids])).toEqual([
       ['A', ['n0', 'n1']],
@@ -60,7 +92,12 @@ describe('accepted groups', () => {
     expect(keptNotes(g({ removed: ['b'] }))).toEqual(['a', 'c']);
     expect(
       acceptedGroups(
-        [g({ name: ' #Mutfak ' }), g({ rejected: true }), g({ removed: ['a', 'b', 'c'] }), g({ name: '  ' })],
+        [
+          g({ name: ' #Mutfak ' }),
+          g({ rejected: true }),
+          g({ removed: ['a', 'b', 'c'] }),
+          g({ name: '  ' }),
+        ],
         new Set(['a', 'b']),
       ),
     ).toEqual([{ name: 'Mutfak', noteIds: ['a', 'b'] }]);

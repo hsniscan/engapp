@@ -47,7 +47,9 @@ function oneLine(s: string): string {
 }
 
 export function buildThemesUserPrompt(words: ThemeWordLine[]): string {
-  const lines = words.map((w) => `${w.ref} | ${oneLine(w.lemma)} | ${w.gloss_en ? oneLine(w.gloss_en) : '(none)'}`);
+  const lines = words.map(
+    (w) => `${w.ref} | ${oneLine(w.lemma)} | ${w.gloss_en ? oneLine(w.gloss_en) : '(none)'}`,
+  );
   return `WORDS:\n${lines.join('\n')}`;
 }
 
@@ -81,7 +83,10 @@ const themesModelGroup = z.object({ name_tr: z.string(), refs: z.array(z.unknown
  */
 export function cleanThemeName(raw: string): string | null {
   let s = raw.normalize('NFC').replace(/\s+/g, ' ').trim();
-  s = s.replace(/^[\s"'“”‘’«»#*\-–•\d.)]+/u, '').replace(/[\s"'“”‘’«».:;,!]+$/u, '').trim();
+  s = s
+    .replace(/^[\s"'“”‘’«»#*\-–•\d.)]+/u, '')
+    .replace(/[\s"'“”‘’«».:;,!]+$/u, '')
+    .trim();
   if (!s || [...s].length > MAX_THEME_NAME || s.split(' ').length > 4) return null;
   if (!isCleanLexiconText(s, 'tr') || /[()/:;]/.test(s)) return null;
   return s.charAt(0).toLocaleUpperCase('tr') + s.slice(1);

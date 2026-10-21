@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { LIMITS } from './limits';
-import { cleanTag, hasTag, MAX_TAG_LENGTH, renamedTags, sameTag, tagCounts, withoutTags, withTags } from './tags';
+import {
+  cleanTag,
+  hasTag,
+  MAX_TAG_LENGTH,
+  renamedTags,
+  sameTag,
+  tagCounts,
+  withoutTags,
+  withTags,
+} from './tags';
 
 describe('tags', () => {
   it('cleans spacing, a leading # and over-long input', () => {

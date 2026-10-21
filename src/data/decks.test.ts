@@ -48,16 +48,27 @@ describe('decks', () => {
   it('create, rename, re-filter and delete go through the outbox', async () => {
     const a = await createDeck({ name: '  İş   kelimeleri ', filter: { v: 1, tags: ['iş'] } }, T);
     const b = await createDeck({ name: 'Yeni', filter: { v: 1, states: ['new'] } }, T + 1);
-    expect(a).toMatchObject({ name: 'İş kelimeleri', sort: 1, filter: { v: 1, tags: ['iş'] }, deleted_at: null });
+    expect(a).toMatchObject({
+      name: 'İş kelimeleri',
+      sort: 1,
+      filter: { v: 1, tags: ['iş'] },
+      deleted_at: null,
+    });
     expect(b.sort).toBe(2);
-    await updateDeck(a.id, { name: 'Ofis', filter: { v: 1, tags: ['iş', 'ofis'], tagMode: 'all' } }, T + 2);
+    await updateDeck(
+      a.id,
+      { name: 'Ofis', filter: { v: 1, tags: ['iş', 'ofis'], tagMode: 'all' } },
+      T + 2,
+    );
     await deleteDeck(b.id, T + 3);
     expect((await listDecks()).map((d) => [d.name, d.filter])).toEqual([
       ['Ofis', { v: 1, tags: ['iş', 'ofis'], tagMode: 'all' }],
     ]);
     expect((await db.decks.get(b.id))?.deleted_at).toBe(T + 3);
     expect(await outboxFor('decks')).toBe(4);
-    await expect(createDeck({ name: '  ', filter: { v: 1 } }, T)).rejects.toBeInstanceOf(ActionError);
+    await expect(createDeck({ name: '  ', filter: { v: 1 } }, T)).rejects.toBeInstanceOf(
+      ActionError,
+    );
     await expect(updateDeck(b.id, { name: 'x' }, T)).rejects.toMatchObject({ code: 'not_found' });
   });
 
@@ -73,9 +84,14 @@ describe('decks', () => {
 
   it('moves decks up and down, renumbering 1..n', async () => {
     const ids = [];
-    for (const name of ['A', 'B', 'C']) ids.push((await createDeck({ name, filter: { v: 1 } }, T)).id);
+    for (const name of ['A', 'B', 'C'])
+      ids.push((await createDeck({ name, filter: { v: 1 } }, T)).id);
     await moveDeck(ids[2]!, -1, T + 1);
-    expect((await listDecks()).map((d) => [d.name, d.sort])).toEqual([['A', 1], ['C', 2], ['B', 3]]);
+    expect((await listDecks()).map((d) => [d.name, d.sort])).toEqual([
+      ['A', 1],
+      ['C', 2],
+      ['B', 3],
+    ]);
     await moveDeck(ids[0]!, -1, T + 2); // already first: nothing
     expect((await listDecks()).map((d) => d.name)).toEqual(['A', 'C', 'B']);
   });
@@ -112,7 +128,10 @@ describe('bulk tags', () => {
     expect(await setNoteTags(ids, { add: ['YENİ'] }, T + 1)).toEqual({ changed: 0, full: 0 });
     expect(await outboxFor('notes')).toBe(3);
     expect(await setNoteTags(ids, { remove: ['İŞ'] }, T + 2)).toEqual({ changed: 3, full: 0 });
-    expect((await listTags()).map((x) => [x.tag, x.count])).toEqual([['yeni', 3], ['spor', 1]]);
+    expect((await listTags()).map((x) => [x.tag, x.count])).toEqual([
+      ['yeni', 3],
+      ['spor', 1],
+    ]);
   });
 
   it('leaves notes that would exceed the tag limit unchanged and reports them', async () => {
@@ -154,11 +173,17 @@ describe('practice from a deck', () => {
     await createDeck({ name: 'Boş', filter: { v: 1, tags: ['yok'] } }, T);
     const counts = await getPracticeSourceCounts(T);
     expect(counts.decks).toEqual([{ id: deck.id, name: 'İş', count: 2 }]);
-    const cards = await getPracticeCards({ source: 'deck', deckId: deck.id }, { size: 20, seed: 's' }, T);
+    const cards = await getPracticeCards(
+      { source: 'deck', deckId: deck.id },
+      { size: 20, seed: 's' },
+      T,
+    );
     expect(cards.length).toBeGreaterThan(0);
     const notes = new Set((await db.cards.bulkGet(cards)).map((c) => c!.note_id));
     expect([...notes].sort()).toEqual([ids[0], ids[1]].sort());
-    expect(await getPracticeCards({ source: 'deck', deckId: 'gone' }, { size: 20, seed: 's' }, T)).toEqual([]);
+    expect(
+      await getPracticeCards({ source: 'deck', deckId: 'gone' }, { size: 20, seed: 's' }, T),
+    ).toEqual([]);
   });
 });
 
@@ -202,7 +227,12 @@ describe('backups (format 4)', () => {
 
     // A version 3 file (no decks) restored over this device: decks are not soft-deleted.
     const { decks: _drop, ...v3tables } = file.tables;
-    const v3 = { ...file, schema_version: 3, tables: v3tables, checksum: await backupChecksum(v3tables) };
+    const v3 = {
+      ...file,
+      schema_version: 3,
+      tables: v3tables,
+      checksum: await backupChecksum(v3tables),
+    };
     await restoreBackup(JSON.stringify(v3), 'overwrite', T + 3);
     expect((await listDecks()).map((x) => x.name)).toEqual(['İş']);
   });

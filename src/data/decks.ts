@@ -12,7 +12,15 @@ import {
 } from '../domain/deckFilter';
 import { HARD_WINDOW_MS } from '../domain/practice';
 import { effectiveLogs } from '../domain/recompute';
-import { cleanTag, hasTag, renamedTags, sameTag, tagCounts, withoutTags, withTags } from '../domain/tags';
+import {
+  cleanTag,
+  hasTag,
+  renamedTags,
+  sameTag,
+  tagCounts,
+  withoutTags,
+  withTags,
+} from '../domain/tags';
 import { type Card, type Deck, type Id, type Millis, type Note, Rating } from '../domain/types';
 import { db } from './db';
 import { ActionError } from './errors';
@@ -93,7 +101,11 @@ export interface DeckSummary {
 
 /** Live decks in order, with their filters and note counts. */
 export async function getDeckSummaries(now: Millis = Date.now()): Promise<DeckSummary[]> {
-  const [decks, facts, ctx] = await Promise.all([listDecks(), loadDeckFacts(now), deckContext(now)]);
+  const [decks, facts, ctx] = await Promise.all([
+    listDecks(),
+    loadDeckFacts(now),
+    deckContext(now),
+  ]);
   return decks.map((deck) => {
     const parsed = parseDeckFilter(deck.filter);
     const ids = deckNoteIds(deck.filter, facts, ctx);
@@ -102,14 +114,20 @@ export async function getDeckSummaries(now: Millis = Date.now()): Promise<DeckSu
 }
 
 /** Note ids of a deck, or null when it is missing, deleted or not evaluable here. */
-export async function getDeckNoteIds(deckId: Id, now: Millis = Date.now()): Promise<Set<Id> | null> {
+export async function getDeckNoteIds(
+  deckId: Id,
+  now: Millis = Date.now(),
+): Promise<Set<Id> | null> {
   const deck = await db.decks.get(deckId);
   if (!deck || deck.deleted_at !== null) return null;
   return deckNoteIds(deck.filter, await loadDeckFacts(now), await deckContext(now));
 }
 
 /** How many notes a filter being edited would match (live preview in the editor). */
-export async function countDeckFilter(filter: DeckFilter, now: Millis = Date.now()): Promise<number | null> {
+export async function countDeckFilter(
+  filter: DeckFilter,
+  now: Millis = Date.now(),
+): Promise<number | null> {
   const ids = deckNoteIds(filter, await loadDeckFacts(now), await deckContext(now));
   return ids ? ids.size : null;
 }
@@ -175,7 +193,8 @@ export async function moveDeck(id: Id, dir: -1 | 1, now: Millis = Date.now()): P
     const j = i + dir;
     if (i < 0 || j < 0 || j >= list.length) return;
     [list[i], list[j]] = [list[j]!, list[i]!];
-    for (const [k, d] of list.entries()) if (d.sort !== k + 1) await w.put('decks', { ...d, sort: k + 1 });
+    for (const [k, d] of list.entries())
+      if (d.sort !== k + 1) await w.put('decks', { ...d, sort: k + 1 });
   });
 }
 
@@ -204,7 +223,10 @@ export async function setNoteTags(
   now: Millis = Date.now(),
 ): Promise<BulkTagResult> {
   const add = (change.add ?? []).map(cleanTag).filter(Boolean);
-  const remove = (change.remove ?? []).map(cleanTag).filter(Boolean).filter((t) => !add.some((a) => sameTag(a, t)));
+  const remove = (change.remove ?? [])
+    .map(cleanTag)
+    .filter(Boolean)
+    .filter((t) => !add.some((a) => sameTag(a, t)));
   if (add.length === 0 && remove.length === 0) return { changed: 0, full: 0 };
   const ids = [...new Set(noteIds)];
   return writeTx([db.notes], now, async (w) => {
@@ -229,13 +251,19 @@ export async function setNoteTags(
  * Rename a tag on every live note (merging with `to` where a note has both) and in the
  * decks that use it. Returns the number of notes changed.
  */
-export async function renameTag(from: string, to: string, now: Millis = Date.now()): Promise<number> {
+export async function renameTag(
+  from: string,
+  to: string,
+  now: Millis = Date.now(),
+): Promise<number> {
   const target = cleanTag(to);
   if (!target) throw new ActionError('invalid_input', 'Empty tag');
   return writeTx([db.notes, db.decks], now, async (w) => {
     let n = 0;
     // Not the *tags index: it is case-sensitive and the tag may be spelled differently.
-    const notes = await db.notes.filter((x) => x.deleted_at === null && hasTag(x.tags, from)).toArray();
+    const notes = await db.notes
+      .filter((x) => x.deleted_at === null && hasTag(x.tags, from))
+      .toArray();
     for (const note of notes) {
       const next = renamedTags(note.tags, from, target);
       if (next.join('\u0000') !== note.tags.join('\u0000')) {
@@ -248,7 +276,10 @@ export async function renameTag(from: string, to: string, now: Millis = Date.now
       const parsed = parseDeckFilter(deck.filter);
       if (!parsed.ok || !parsed.filter.tags || !hasTag(parsed.filter.tags, from)) continue;
       const tags = renamedTags(parsed.filter.tags, from, target);
-      await w.put('decks', { ...deck, filter: { ...normalizeDeckFilter({ ...parsed.filter, tags }) } });
+      await w.put('decks', {
+        ...deck,
+        filter: { ...normalizeDeckFilter({ ...parsed.filter, tags }) },
+      });
     }
     return n;
   });
@@ -256,6 +287,8 @@ export async function renameTag(from: string, to: string, now: Millis = Date.now
 
 /** Remove a tag from every live note. Decks keep it (they then match no note with it). */
 export async function deleteTag(tag: string, now: Millis = Date.now()): Promise<number> {
-  const ids = (await db.notes.filter((x) => x.deleted_at === null && hasTag(x.tags, tag)).primaryKeys()) as Id[];
+  const ids = (await db.notes
+    .filter((x) => x.deleted_at === null && hasTag(x.tags, tag))
+    .primaryKeys()) as Id[];
   return (await setNoteTags(ids, { remove: [tag] }, now)).changed;
 }

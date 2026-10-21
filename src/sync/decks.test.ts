@@ -46,12 +46,19 @@ describe('decks sync', () => {
     let a = await newDevice('dev-a');
     let deckId = '';
     a = await onDevice(a, async () => {
-      deckId = (await createDeck({ name: 'İş', filter: { v: 1, tags: ['iş'], states: ['struggling'] } }, T)).id;
+      deckId = (
+        await createDeck({ name: 'İş', filter: { v: 1, tags: ['iş'], states: ['struggling'] } }, T)
+      ).id;
       await sync(server, T + MIN);
       expect(await db.outbox.count()).toBe(0);
     });
     expect(server.rowsOf('decks')).toEqual([
-      expect.objectContaining({ id: deckId, user_id: USER, name: 'İş', filter: { v: 1, tags: ['iş'], states: ['struggling'] } }),
+      expect.objectContaining({
+        id: deckId,
+        user_id: USER,
+        name: 'İş',
+        filter: { v: 1, tags: ['iş'], states: ['struggling'] },
+      }),
     ]);
 
     let b = await newDevice('dev-b');

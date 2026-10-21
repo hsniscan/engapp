@@ -59,7 +59,10 @@ export const deckFilterSchema = z.object({
   states: z.array(z.enum(DECK_STATES)).max(DECK_STATES.length).optional(),
   tags: z.array(z.string().min(1).max(100)).max(MAX_DECK_TAGS).optional(),
   tagMode: z.enum(['any', 'all']).optional(),
-  levels: z.array(z.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2'])).max(6).optional(),
+  levels: z
+    .array(z.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']))
+    .max(6)
+    .optional(),
   topics: z.array(z.string().min(1).max(64)).max(MAX_DECK_TOPICS).optional(),
   addedWithinDays: z.number().int().min(1).max(MAX_ADDED_WITHIN_DAYS).optional(),
 });
@@ -74,10 +77,13 @@ export function parseDeckFilter(raw: unknown): ParsedDeckFilter {
   if (raw === null || typeof raw !== 'object' || Array.isArray(raw))
     return { ok: false, reason: 'invalid' };
   const obj = raw as Record<string, unknown>;
-  if (typeof obj.v === 'number' && obj.v > DECK_FILTER_VERSION) return { ok: false, reason: 'newer' };
+  if (typeof obj.v === 'number' && obj.v > DECK_FILTER_VERSION)
+    return { ok: false, reason: 'newer' };
   if (Object.keys(obj).some((k) => !KNOWN_KEYS.includes(k))) return { ok: false, reason: 'newer' };
   const p = deckFilterSchema.safeParse(obj);
-  return p.success ? { ok: true, filter: normalizeDeckFilter(p.data) } : { ok: false, reason: 'invalid' };
+  return p.success
+    ? { ok: true, filter: normalizeDeckFilter(p.data) }
+    : { ok: false, reason: 'invalid' };
 }
 
 function uniqueBy<T>(items: readonly T[], key: (x: T) => string): T[] {
@@ -156,7 +162,10 @@ export interface DeckContext {
 }
 
 /** Keys the filter uses that this context cannot evaluate (empty = evaluable). */
-export function unsupportedKeys(f: DeckFilter, ctx: Pick<DeckContext, 'levelOf' | 'topicsOf'>): DeckFilterKey[] {
+export function unsupportedKeys(
+  f: DeckFilter,
+  ctx: Pick<DeckContext, 'levelOf' | 'topicsOf'>,
+): DeckFilterKey[] {
   const out: DeckFilterKey[] = [];
   if (f.levels?.length && !ctx.levelOf) out.push('levels');
   if (f.topics?.length && !ctx.topicsOf) out.push('topics');
@@ -171,7 +180,8 @@ export function noteStatus(facts: Pick<DeckNoteFacts, 'cards'>): NoteStatus | nu
   if (live.length === 0) return null;
   if (live.every((c) => c.suspended)) return 'suspended';
   const main =
-    live.find((c) => c.card_type === 'recognition' && !c.suspended) ?? live.find((c) => !c.suspended)!;
+    live.find((c) => c.card_type === 'recognition' && !c.suspended) ??
+    live.find((c) => !c.suspended)!;
   switch (main.state) {
     case CardState.New:
       return 'new';
@@ -216,7 +226,9 @@ export function matchesDeck(f: DeckFilter, facts: DeckNoteFacts, ctx: DeckContex
   if (f.tags?.length) {
     const tags = facts.note.tags;
     const ok =
-      f.tagMode === 'all' ? f.tags.every((t) => hasTag(tags, t)) : f.tags.some((t) => hasTag(tags, t));
+      f.tagMode === 'all'
+        ? f.tags.every((t) => hasTag(tags, t))
+        : f.tags.some((t) => hasTag(tags, t));
     if (!ok) return false;
   }
   if (f.levels?.length) {

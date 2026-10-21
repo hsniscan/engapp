@@ -18,7 +18,10 @@ const T = Date.UTC(2026, 9, 21, 9);
 
 beforeEach(resetDb);
 
-async function word(term: string, opts: { tags?: string[]; gloss?: string; lex?: string; at?: number } = {}) {
+async function word(
+  term: string,
+  opts: { tags?: string[]; gloss?: string; lex?: string; at?: number } = {},
+) {
   const r = await addNoteWithSenses(
     {
       term,
@@ -94,14 +97,33 @@ describe('theme source', () => {
 
 describe('theme preview', () => {
   it('approving turns kept groups into tags in one go and clears the preview', async () => {
-    const [a, b, c, d] = [await word('apple'), await word('bread'), await word('car', { tags: ['Yemek'] }), await word('bus')];
+    const [a, b, c, d] = [
+      await word('apple'),
+      await word('bread'),
+      await word('car', { tags: ['Yemek'] }),
+      await word('bus'),
+    ];
     await saveThemePreview({
       created_at: T,
       model: 'm',
       sent: 4,
       groups: [
-        { key: 'yemek', suggested: 'Yemek', name: 'Yemek', note_ids: [a, b, c], removed: [], rejected: false },
-        { key: 'ulaşım', suggested: 'Ulaşım', name: 'Ulaşım', note_ids: [c, d], removed: [], rejected: false },
+        {
+          key: 'yemek',
+          suggested: 'Yemek',
+          name: 'Yemek',
+          note_ids: [a, b, c],
+          removed: [],
+          rejected: false,
+        },
+        {
+          key: 'ulaşım',
+          suggested: 'Ulaşım',
+          name: 'Ulaşım',
+          note_ids: [c, d],
+          removed: [],
+          rejected: false,
+        },
         { key: 'x', suggested: 'X', name: 'X', note_ids: [a, d], removed: [], rejected: false },
       ],
     });
@@ -109,7 +131,11 @@ describe('theme preview', () => {
     await updateThemePreview((p) => ({
       ...p,
       groups: p.groups.map((g) =>
-        g.key === 'yemek' ? { ...g, name: 'Mutfak' } : g.key === 'ulaşım' ? { ...g, removed: [c] } : { ...g, rejected: true },
+        g.key === 'yemek'
+          ? { ...g, name: 'Mutfak' }
+          : g.key === 'ulaşım'
+            ? { ...g, removed: [c] }
+            : { ...g, rejected: true },
       ),
     }));
     await softDeleteNote(b, T + 1);
@@ -135,7 +161,9 @@ describe('theme preview', () => {
       created_at: T,
       model: 'm',
       sent: 2,
-      groups: [{ key: 'k', suggested: 'K', name: 'K', note_ids: [a, b], removed: [], rejected: false }],
+      groups: [
+        { key: 'k', suggested: 'K', name: 'K', note_ids: [a, b], removed: [], rejected: false },
+      ],
     });
     await db.outbox.clear();
     await discardThemePreview();
@@ -146,7 +174,9 @@ describe('theme preview', () => {
       created_at: T,
       model: 'm',
       sent: 2,
-      groups: [{ key: 'k', suggested: 'K', name: 'K', note_ids: [a, b], removed: [], rejected: false }],
+      groups: [
+        { key: 'k', suggested: 'K', name: 'K', note_ids: [a, b], removed: [], rejected: false },
+      ],
     });
     expect(await applyThemePreview(T)).toEqual({ tags: ['K'], notes: 1, full: 1 });
   });
