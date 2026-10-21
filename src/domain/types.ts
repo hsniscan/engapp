@@ -180,12 +180,15 @@ export interface OutboxRow {
   next_attempt_at: Millis;
 }
 
+/** Local, derived cache (rebuildable from review_logs). Undone logs never count. */
 export interface DailyActivity {
   date: string; // local YYYY-MM-DD (day starts at day_start_hour)
-  reviews: number;
-  new_cards: number;
+  reviews: number; // all answers
+  new_cards: number; // answers given to a card in state New (first introduction)
   time_ms: number;
-  completed: boolean; // all due cards of that day were finished
+  review_answers: number; // answers given while the card was in state Review (retention base)
+  review_passed: number; // of those, answers other than Again
+  completed: boolean; // no due card was left over at the end of that day
 }
 
 export interface ErrorLogRow {

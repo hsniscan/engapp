@@ -40,9 +40,12 @@ export class EngDb extends Dexie {
 
   constructor(name = 'engapp') {
     super(name);
+    // term_norm and [note_id+lexicon_sense_id] are deliberately NOT unique indexes: an
+    // account merge or a sync pull may bring a second note with the same term (it is kept
+    // and flagged possible_duplicate). Uniqueness among live rows is enforced in actions.ts.
     this.version(1).stores({
-      notes: 'id, &term_norm, lexicon_term_id, updated_at, deleted_at, *tags',
-      senses: 'id, note_id, &[note_id+lexicon_sense_id], lexicon_sense_id, deleted_at',
+      notes: 'id, term_norm, lexicon_term_id, updated_at, deleted_at, *tags',
+      senses: 'id, note_id, [note_id+lexicon_sense_id], lexicon_sense_id, deleted_at',
       cards: 'id, note_id, sense_id, [state+due], due, card_type, deleted_at',
       review_logs: 'id, card_id, reviewed_at, undo_of',
       sources: 'id, created_at',

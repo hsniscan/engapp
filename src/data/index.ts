@@ -1,0 +1,24 @@
+// Public data API for the UI. Screens import from '@/data' only.
+export { db } from './db';
+export * from './actions';
+export * from './queries';
+export {
+  recomputeAllCards,
+  applyRemoteRows,
+  exportBackup,
+  exportCsv,
+  restoreBackup,
+  runIntegrityCheck,
+  repairIntegrity,
+  adoptGuestData,
+  type RemoteBatch,
+  type ApplyRemoteResult,
+  type RestoreMode,
+  type RestoreResult,
+  type RepairResult,
+} from './maintenance';
+export { getSettings, ensureSettings, updateSettings, defaultSettings, DEFAULT_SETTINGS, type SettingsPatch } from './settings';
+export { rebuildDailyActivity, listDailyActivity } from './dailyActivity';
+export { getDeviceId, getCurrentUserId, getMeta, setMeta, META } from './meta';
+export { logError, listErrors, clearErrors, ERROR_LOG_LIMIT } from './errorLog';
+export { ActionError, type ActionErrorCode } from './errors';
