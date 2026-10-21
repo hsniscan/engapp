@@ -2,19 +2,24 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   addNoteWithSenses,
   answerCard,
+  createSource,
   db,
   ensureSettings,
   getCurrentUserId,
+  getStreakSummary,
+  META,
+  setMeta,
   updateSettings,
 } from '@/data';
 import { SyncEngine } from '@/sync/engine';
-import { FakeServer, loadDevice, onDevice, saveDevice } from '@/sync/testing/fakeServer';
-import { Rating } from '@/domain/types';
+import { FakeServer, loadDevice, saveDevice } from '@/sync/testing/fakeServer';
+import { CardState, Rating } from '@/domain/types';
 import { resetDb } from '@/test/db';
 import { configureLink, getLinkState, linkAccount, resetLinkForTesting, resolveLink } from './link';
 
 const T = Date.UTC(2026, 9, 21, 9);
 const USER = 'user-1';
+const OTHER = 'user-other';
 let server: FakeServer;
 
 function engine() {
@@ -47,6 +52,67 @@ async function guestDevice() {
   await ensureSettings(T);
   await addNoteWithSenses({ term: 'cope', senses: [{ meaning_tr: 'üstesinden gelmek' }] }, T + 1);
   await addNoteWithSenses({ term: 'thrive', senses: [{ meaning_tr: 'gelişmek' }] }, T + 2);
+}
+
+/**
+ * A device used by ANOTHER account: its own settings, notes, a source, studied cards,
+ * an import job and a chunk cache row. Returns the ids of its rows.
+ */
+async function otherAccountDevice() {
+  await resetDb();
+  await db.transaction('rw', db.meta, () => setMeta(META.userId, OTHER));
+  await updateSettings({ daily_new_limit: 3, level: 'C1' }, T);
+  const src = await createSource({ kind: 'text', title: 'Article' }, T);
+  const cope = await addNoteWithSenses(
+    {
+      term: 'cope',
+      tags: ['work'],
+      senses: [
+        { meaning_tr: 'başa çıkmak' }, // the account has this meaning too
+        {
+          meaning_tr: 'üstesinden gelmek',
+          meaning_tr_override: 'idare etmek',
+          source_sentence: 'I can cope with it.',
+          source_sentence_tr: 'Bununla başa çıkabilirim.',
+          span: [6, 10],
+          source_id: src.id,
+        },
+      ],
+    },
+    T + 1,
+  );
+  const thrive = await addNoteWithSenses(
+    { term: 'thrive', tags: ['bio'], senses: [{ meaning_tr: 'gelişmek' }] },
+    T + 2,
+  );
+  // Study everything, so that the other account has history, Review cards and unlocked siblings.
+  for (let day = 0; day < 3; day++) {
+    for (const c of await db.cards.toArray()) {
+      if (c.unlocked)
+        await answerCard(
+          { card_id: c.id, rating: Rating.Easy, duration_ms: 3000 },
+          T + 10 + day * 86_400_000,
+        );
+    }
+  }
+  await db.import_jobs.put({
+    id: 'job-1',
+    source_id: src.id,
+    status: 'done',
+    chunk_total: 1,
+    chunk_done: 1,
+    cache_hits: 0,
+    error: null,
+    created_at: T,
+    updated_at: T,
+  });
+  await db.chunk_cache.put({ chunk_hash: 'h1', result: { terms: [] }, created_at: T });
+  return {
+    noteIds: [cope.note.id, thrive.note.id],
+    senseIds: (await db.senses.toArray()).map((s) => s.id),
+    cardIds: (await db.cards.toArray()).map((c) => c.id),
+    sourceId: src.id,
+  };
 }
 
 beforeEach(async () => {
@@ -137,20 +203,150 @@ describe('account linking', () => {
     await loadDevice(local);
   });
 
-  it('a device used by another account asks too and re-stamps the rows on merge', async () => {
+  it('"birleştir" with guest data keeps the guest review history (same person)', async () => {
+    await accountWithData();
     await guestDevice();
-    const img = await onDevice(await saveDevice(), async () => {
-      await db.transaction('rw', db.meta, () =>
-        db.meta.put({ key: 'user_id', value: 'someone-else' }),
-      );
-    });
+    const thrive = (await db.cards.toArray()).find((c) => c.card_type === 'recognition')!;
+    await answerCard({ card_id: thrive.id, rating: Rating.Good, duration_ms: 1000 }, T + 3);
+    configureLink({ transport: server, engine: engine() });
+    await linkAccount(USER);
+    expect(getLinkState()).toMatchObject({ phase: 'choose', otherAccount: false });
+    await resolveLink('merge');
+    expect(getLinkState()).toMatchObject({ phase: 'done' });
+    expect(await db.review_logs.count()).toBe(2);
+    expect(server.rowsOf('review_logs')).toHaveLength(2);
+    expect((await db.cards.get(thrive.id))!.reps).toBe(1);
+  });
+
+  it("another account's data: only copying the cards or starting with the account is allowed", async () => {
+    const other = await otherAccountDevice();
+    const img = await saveDevice();
     await accountWithData();
     await loadDevice(img);
     configureLink({ transport: server, engine: engine() });
     await linkAccount(USER);
     expect(getLinkState()).toMatchObject({ phase: 'choose', otherAccount: true });
-    await resolveLink('merge');
-    expect((await db.notes.toArray()).every((n) => n.user_id === USER)).toBe(true);
+    for (const choice of ['merge', 'discard_account'] as const) {
+      await resolveLink(choice);
+      expect(getLinkState()).toMatchObject({ phase: 'error' });
+    }
+    // Nothing happened: the device still holds the other account's rows, the server is untouched.
+    expect(await getCurrentUserId()).toBe(OTHER);
+    expect((await db.notes.toArray()).map((n) => n.id).sort()).toEqual([...other.noteIds].sort());
+    expect(server.rowsOf('notes')).toHaveLength(1);
+    expect(server.rowsOf('review_logs')).toHaveLength(1);
+  });
+
+  it('"kartları kopyala" copies notes and senses as new cards without any study history', async () => {
+    const other = await otherAccountDevice();
+    const otherLogs = await db.review_logs.count();
+    expect(otherLogs).toBeGreaterThan(3);
+    const img = await saveDevice();
+    await accountWithData();
+    const accountNote = server.rowsOf('notes')[0]!;
+    const accountLog = server.rowsOf('review_logs')[0]!;
+    await loadDevice(img);
+    configureLink({ transport: server, engine: engine() });
+    await linkAccount(USER);
+    expect(getLinkState()).toMatchObject({ phase: 'choose', otherAccount: true });
+    await resolveLink('copy_cards');
+    expect(getLinkState()).toMatchObject({ phase: 'done', duplicates: 0, copied: 2 });
+    expect(await getCurrentUserId()).toBe(USER);
+
+    // No review log of the other account, here or on the server: only the account's own.
+    expect((await db.review_logs.toArray()).map((l) => l.id)).toEqual([accountLog.id]);
+    expect(server.rowsOf('review_logs').map((l) => l.id)).toEqual([accountLog.id]);
+
+    // The account's settings, not the other account's.
+    const settings = (await db.settings.get('settings'))!;
+    expect(settings.daily_new_limit).toBe(25);
+    expect(settings.level).not.toBe('C1');
+
+    // All rows belong to this account and none reuses an id of the other account.
+    const notes = (await db.notes.toArray()).filter((n) => n.deleted_at === null);
+    const senses = (await db.senses.toArray()).filter((s) => s.deleted_at === null);
+    const cards = (await db.cards.toArray()).filter((c) => c.deleted_at === null);
+    for (const r of [...notes, ...senses, ...cards]) expect(r.user_id).toBe(USER);
+    const oldIds = new Set([...other.noteIds, ...other.senseIds, ...other.cardIds, other.sourceId]);
+    for (const r of [...notes, ...senses, ...cards, ...(await db.sources.toArray())]) {
+      expect(oldIds.has(r.id)).toBe(false);
+    }
+
+    // "cope" already existed: the account's note keeps its history and gets the missing
+    // meaning; the shared meaning is not added twice. "thrive" is a new note.
+    expect(notes.map((n) => n.term).sort()).toEqual(['cope', 'thrive']);
+    const cope = notes.find((n) => n.term === 'cope')!;
+    expect(cope.id).toBe(accountNote.id);
+    expect(cope.tags).toEqual(['work']);
+    expect(cope.possible_duplicate).toBe(false);
+    const copeSenses = senses
+      .filter((s) => s.note_id === cope.id)
+      .sort((a, b) => a.sense_no - b.sense_no);
+    expect(copeSenses.map((s) => s.meaning_tr)).toEqual(['başa çıkmak', 'üstesinden gelmek']);
+    const copied = copeSenses[1]!;
+    expect(copied).toMatchObject({
+      meaning_tr_override: 'idare etmek',
+      source_sentence: 'I can cope with it.',
+      source_sentence_tr: 'Bununla başa çıkabilirim.',
+      span: [6, 10],
+    });
+    const source = (await db.sources.toArray())[0]!;
+    expect(copied.source_id).toBe(source.id);
+    expect(source).toMatchObject({ title: 'Article', user_id: USER });
+
+    // Copied cards are New; production/cloze stay locked until recognition reaches Review.
+    const copiedCards = cards.filter((c) => c.note_id !== cope.id || c.sense_id === copied.id);
+    expect(copiedCards.map((c) => c.card_type).sort()).toEqual([
+      'cloze',
+      'production',
+      'production',
+      'recognition',
+    ]);
+    for (const c of copiedCards) {
+      expect(c).toMatchObject({ state: CardState.New, reps: 0, lapses: 0 });
+      expect(c.unlocked).toBe(c.card_type === 'recognition');
+    }
+    // The account's own recognition card keeps its review.
+    const accountRec = cards.find((c) => c.note_id === cope.id && c.card_type === 'recognition')!;
+    expect(accountRec.reps).toBe(1);
+
+    // Stats show only the account's own day; import jobs are gone, the chunk cache stays.
+    expect((await db.daily_activity.toArray()).map((d) => d.reviews)).toEqual([1]);
+    expect((await getStreakSummary(T + 60_000)).totalActiveDays).toBe(1);
+    expect(await db.import_jobs.count()).toBe(0);
+    expect(await db.chunk_cache.count()).toBe(1);
+
+    // Pushed: the server has the copies under this account.
+    expect(await db.outbox.count()).toBe(0);
+    expect(server.rowsOf('notes')).toHaveLength(2);
+    expect(server.rowsOf('senses')).toHaveLength(3);
+    expect(server.rowsOf('cards').filter((c) => c.deleted_at == null)).toHaveLength(cards.length);
+  });
+
+  it('"bu hesabın verisiyle başla" keeps only the account on this device', async () => {
+    await otherAccountDevice();
+    const img = await saveDevice();
+    await accountWithData();
+    await loadDevice(img);
+    configureLink({ transport: server, engine: engine() });
+    await linkAccount(USER);
+    await resolveLink('discard_local');
+    expect(getLinkState()).toMatchObject({ phase: 'done' });
+    expect((await db.notes.toArray()).map((n) => n.term)).toEqual(['cope']);
+    expect(await db.review_logs.count()).toBe(1);
+    expect((await db.settings.get('settings'))!.daily_new_limit).toBe(25);
+    expect(server.rowsOf('notes')).toHaveLength(1);
+  });
+
+  it("another account's leftover settings are not carried into an account", async () => {
+    await resetDb();
+    await db.transaction('rw', db.meta, () => setMeta(META.userId, OTHER));
+    await updateSettings({ daily_new_limit: 3 }, T);
+    configureLink({ transport: server, engine: engine() });
+    await linkAccount(USER); // nothing local but settings: no question
+    expect(getLinkState()).toMatchObject({ phase: 'done' });
+    expect(await getCurrentUserId()).toBe(USER);
+    expect((await db.settings.get('settings'))!.daily_new_limit).toBe(10);
   });
 
   it("another account's data is never copied silently into an empty account", async () => {

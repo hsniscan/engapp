@@ -2,9 +2,13 @@
 //   - same account as before → just sync
 //   - nothing local, or nothing on the server → take over the local data and push
 //   - both have data (second device) → ask: merge (default) / discard local / discard account
+//   - the local data belongs to ANOTHER account → ask: copy its cards without study history
+//     (default) / start with this account's data. Review history, stats and settings never
+//     move between accounts, and this account's server data is never discarded for them.
 import { useSyncExternalStore } from 'react';
 import {
   claimLocalData,
+  copyCardsFromOtherAccount,
   countPossibleDuplicates,
   discardAccountData,
   discardLocalData,
@@ -18,7 +22,12 @@ import { signOut as supabaseSignOut } from '@/lib/supabase';
 import { MAX_PULL_PAGE } from '@/sync/api';
 import type { SyncEngine, SyncTransport } from '@/sync/engine';
 
-export type LinkChoice = 'merge' | 'discard_local' | 'discard_account';
+export type LinkChoice = 'merge' | 'discard_local' | 'discard_account' | 'copy_cards';
+
+/** Choices offered when the local data is the same person's guest data. */
+export const GUEST_CHOICES: readonly LinkChoice[] = ['merge', 'discard_local', 'discard_account'];
+/** Choices offered when the local data belongs to another account. */
+export const OTHER_ACCOUNT_CHOICES: readonly LinkChoice[] = ['copy_cards', 'discard_local'];
 
 export type LinkState =
   | { phase: 'idle' }
@@ -26,7 +35,7 @@ export type LinkState =
   | { phase: 'choose'; userId: string; otherAccount: boolean }
   | { phase: 'applying'; userId: string; choice: LinkChoice; otherAccount: boolean }
   | { phase: 'error'; userId: string; message: string }
-  | { phase: 'done'; userId: string; duplicates: number };
+  | { phase: 'done'; userId: string; duplicates: number; copied?: number };
 
 let state: LinkState = { phase: 'idle' };
 const listeners = new Set<() => void>();
@@ -62,11 +71,16 @@ async function serverHasData(t: SyncTransport): Promise<boolean> {
   return page.rows.length > 0 || page.invalid.length > 0;
 }
 
-async function finish(userId: string): Promise<void> {
+async function finish(userId: string, copied?: number): Promise<void> {
   const { engine } = need();
   await engine.isActive();
   await engine.sync({ force: true });
-  set({ phase: 'done', userId, duplicates: await countPossibleDuplicates() });
+  const duplicates = await countPossibleDuplicates();
+  set(
+    copied === undefined
+      ? { phase: 'done', userId, duplicates }
+      : { phase: 'done', userId, duplicates, copied },
+  );
 }
 
 /** Run after every sign-in (and on start with a restored session). */
@@ -87,8 +101,13 @@ export async function linkAccount(userId: string): Promise<void> {
       set({ phase: 'choose', userId, otherAccount: linked !== null });
       return;
     }
-    if (remote) await dropLocalSettings(); // nothing local worth keeping: take the account's settings
-    await claimLocalData(userId);
+    if (linked !== null) {
+      // Only another account's leftovers (settings): never carried over.
+      await discardLocalData(userId);
+    } else {
+      if (remote) await dropLocalSettings(); // nothing local worth keeping: take the account's settings
+      await claimLocalData(userId);
+    }
     await finish(userId);
   } catch (e) {
     void logError(e, 'auth.link');
@@ -96,7 +115,7 @@ export async function linkAccount(userId: string): Promise<void> {
   }
 }
 
-/** Pull every row of the account (for "hesaptakini at"). */
+/** Pull every row of the account (for "hesaptakini at" and "kartları kopyala"). */
 async function snapshotAccount(t: SyncTransport): Promise<RemoteSnapshot> {
   const rows: RemoteSnapshot['rows'] = [];
   let cursor = 0;
@@ -118,7 +137,18 @@ export async function resolveLink(choice: LinkChoice): Promise<void> {
   const { transport } = need();
   set({ phase: 'applying', userId, choice, otherAccount: s.phase === 'choose' && s.otherAccount });
   try {
-    if (choice === 'merge') {
+    // Decided from the device, not from the dialog state: the choices for another
+    // account's data are enforced even after an error or a stale dialog.
+    const linked = await getLinkedUserId();
+    const otherAccount = linked !== null && linked !== userId;
+    if (!(otherAccount ? OTHER_ACCOUNT_CHOICES : GUEST_CHOICES).includes(choice)) {
+      throw new Error(`Link choice ${choice} is not allowed here`);
+    }
+    let copied: number | undefined;
+    if (choice === 'copy_cards') {
+      // New rows without history; the other account's data stays on the server.
+      copied = await copyCardsFromOtherAccount(userId, await snapshotAccount(transport));
+    } else if (choice === 'merge') {
       await dropLocalSettings(); // the account's settings win; notes and history are merged
       await claimLocalData(userId);
     } else if (choice === 'discard_local') {
@@ -126,7 +156,7 @@ export async function resolveLink(choice: LinkChoice): Promise<void> {
     } else {
       await discardAccountData(userId, await snapshotAccount(transport));
     }
-    await finish(userId);
+    await finish(userId, copied);
   } catch (e) {
     void logError(e, 'auth.resolveLink');
     set({ phase: 'error', userId, message: e instanceof Error ? e.message : String(e) });

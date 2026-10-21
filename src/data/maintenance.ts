@@ -4,7 +4,7 @@ import { type BackupFile, type BackupTables, buildBackup, buildNotesCsv, type Cs
 import { fsrsEqual, pickFsrs } from '../domain/fsrs';
 import { compareHlc } from '../domain/hlc';
 import { checkIntegrity, type IntegrityReport } from '../domain/integrity';
-import { deriveUnlocked, replayCard } from '../domain/recompute';
+import { deriveUnlocked, effectiveLogs, replayCard } from '../domain/recompute';
 import { cardSchema, noteSchema, reviewLogSchema, senseSchema, settingsSchema, sourceSchema } from '../domain/schemas';
 import { type Card, type CardStateValue, type Id, type Millis, type Note, type ReviewLog } from '../domain/types';
 import { emptyFsrs } from '../domain/fsrs';
@@ -70,6 +70,78 @@ async function recomputeCardsIn(w: SyncWriter, cardIds: Iterable<Id> | 'all'): P
 /** Rebuild every card's FSRS state and unlock flag from the review logs. */
 export async function recomputeAllCards(now: Millis = Date.now()): Promise<number> {
   return writeTx([db.cards, db.review_logs, db.settings], now, (w) => recomputeCardsIn(w, 'all'));
+}
+
+// ------------------------------------------------------------------ reset study history
+
+/** Notes per transaction in resetStudyHistory (their cards and logs go together). */
+export const RESET_CHUNK_NOTES = 200;
+
+export interface ResetHistoryResult {
+  /** Answers cancelled (one undo row each). */
+  undoneLogs: number;
+  /** Cards whose state changed (back to New, re-locked). */
+  resetCards: number;
+}
+
+/** One undo row per answer that still counts; the logs themselves are never changed. */
+async function undoLogsIn(w: SyncWriter, logs: ReviewLog[]): Promise<number> {
+  const undo: ReviewLog[] = [];
+  for (const list of groupLogs(logs).values()) {
+    for (const log of effectiveLogs(list)) {
+      undo.push({
+        id: w.newId(),
+        user_id: w.userId,
+        card_id: log.card_id,
+        rating: log.rating,
+        reviewed_at: Math.max(w.now, log.reviewed_at),
+        duration_ms: 0,
+        device_id: w.deviceId,
+        undo_of: log.id,
+        shown_sense_id: null,
+        created_at: w.now,
+        hlc: w.nextHlc(),
+      });
+    }
+  }
+  await w.insertLogs(undo);
+  return undo.length;
+}
+
+/**
+ * "Çalışma geçmişini sıfırla": every card goes back to New and the review history stops
+ * counting, so stats, streak and the heatmap start empty. Logs are immutable, so each
+ * answer that still counts gets an undo row (the same rows undoAnswer writes); the server
+ * accepts them as ordinary log inserts and other devices recompute their cards from them
+ * when they pull. Cards are then recomputed (New, production/cloze re-locked) and queued.
+ * Notes, senses, cards and suspensions are kept.
+ *
+ * Runs in transactions of `chunkNotes` notes; an interrupted reset is finished by
+ * running it again (answers already undone no longer count).
+ */
+export async function resetStudyHistory(now: Millis = Date.now(), chunkNotes = RESET_CHUNK_NOTES): Promise<ResetHistoryResult> {
+  const res: ResetHistoryResult = { undoneLogs: 0, resetCards: 0 };
+  const cardNote = new Map<Id, Id>();
+  await db.cards.each((c) => cardNote.set(c.id, c.note_id));
+  const noteIds = [...new Set(cardNote.values())];
+  for (let i = 0; i < noteIds.length; i += chunkNotes) {
+    const chunk = noteIds.slice(i, i + chunkNotes);
+    await writeTx([db.cards, db.review_logs, db.settings], now, async (w) => {
+      const cardIds = (await db.cards.where('note_id').anyOf(chunk).primaryKeys()) as Id[];
+      res.undoneLogs += await undoLogsIn(w, await db.review_logs.where('card_id').anyOf(cardIds).toArray());
+      res.resetCards += await recomputeCardsIn(w, cardIds);
+    });
+  }
+  // Logs whose card is not on this device (it may still arrive by sync) are history too.
+  const orphanCardIds = ((await db.review_logs.orderBy('card_id').uniqueKeys()) as Id[]).filter((id) => !cardNote.has(id));
+  for (let i = 0; i < orphanCardIds.length; i += chunkNotes) {
+    const chunk = orphanCardIds.slice(i, i + chunkNotes);
+    await writeTx([db.review_logs], now, async (w) => {
+      res.undoneLogs += await undoLogsIn(w, await db.review_logs.where('card_id').anyOf(chunk).toArray());
+    });
+  }
+  await rebuildDailyActivity(now);
+  return res;
 }
 
 // ------------------------------------------------------------------ sync hook
