@@ -34,4 +34,6 @@ test-results
 playwright-report
 blob-report
 .claude/worktrees/
+# Downloaded inputs of scripts/build-morphology (large, not redistributed from here)
+.cache/
 docs/screenshots/q-*.png

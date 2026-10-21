@@ -119,6 +119,7 @@ export default defineConfig({
       'src/**/*.test.{ts,tsx}',
       'supabase/functions/_shared/**/*.test.ts',
       'supabase/tests/**/*.test.ts',
+      'scripts/**/*.test.ts',
     ],
   },
 });
