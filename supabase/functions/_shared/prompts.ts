@@ -1,11 +1,12 @@
 // Versioned prompts and response schemas. Any change to a prompt or schema MUST bump
-// its version (the chunk cache is keyed by EXTRACT_PROMPT_VERSION) and be mirrored in
-// docs/ai-pipeline.md.
+// its version (the chunk cache is keyed by EXTRACT_PROMPT_VERSION, defined in contracts.ts
+// so the web client can key its own cache without bundling the prompts) and be mirrored
+// in docs/ai-pipeline.md.
 
 import { z } from 'zod';
-import { MAX_CANDIDATES } from './contracts.ts';
+import { EXTRACT_PROMPT_VERSION, MAX_CANDIDATES, MAX_PROSE_CANDIDATES } from './contracts.ts';
 
-export const EXTRACT_PROMPT_VERSION = 'extract-v2';
+export { EXTRACT_PROMPT_VERSION };
 export const ENRICH_PROMPT_VERSION = 'enrich-v1';
 
 /** Max existing senses offered to the model per extract request (prompt size bound). */
@@ -23,7 +24,10 @@ const FIELD_RULES = `- pos: one of: ${POS_LIST}.
 export const EXTRACT_SYSTEM_PROMPT = `You are an expert lexicographer who builds English-to-Turkish vocabulary flashcards for a Turkish-speaking learner of English.
 
 TASK
-Read TEXT and select the words and multi-word expressions that are most worth learning for a learner at CEFR level LEVEL. Return them in "candidates" as defined by the response schema: at most ${MAX_CANDIDATES}, the most useful first. Return fewer, or none, when TEXT has few useful items.
+Read TEXT and select the words and multi-word expressions that are most worth learning for a learner at CEFR level LEVEL. Return them in "candidates" as defined by the response schema: at most ${MAX_PROSE_CANDIDATES}, the most useful first. Return fewer, or none, when TEXT has few useful items.
+
+VOCABULARY LISTS
+If TEXT is a vocabulary list or glossary (numbered or bulleted entries, each usually a term followed by an example sentence, e.g. "12 bad Be careful of bad people."), the learner chose these words: return EVERY entry, in the order of the list, including easy entries and entries below LEVEL, at most ${MAX_CANDIDATES}. The selection rules below do not apply to a list, except that proper nouns are skipped. Use the entry's own example sentence as source_sentence; if an entry has no example sentence, use the entry's text as it stands in TEXT. Skip headings, page numbers and other lines that are not entries.
 
 WHAT TO SELECT
 - Words at or above LEVEL that are useful in general English. Skip words below LEVEL (for B1 skip e.g. "house", "go", "because", "very", "big"; select e.g. "reluctant", "cope", "subsidy").

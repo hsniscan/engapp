@@ -87,11 +87,35 @@ describe('import jobs', () => {
     expect(await db.chunk_cache.get('h1')).toBeUndefined(); // came from it, not stored again
   });
 
-  it('chunk cache lookups respect the level', async () => {
+  it('chunk cache lookups respect the level and the prompt version', async () => {
     const h = await hashChunk('Some text.');
     await db.chunk_cache.put({ chunk_hash: h, result: result([]), created_at: T });
     expect(await getCachedChunk(h, 'B1')).not.toBeNull();
     expect(await getCachedChunk(h, 'C1')).toBeNull();
+    expect(await getCachedChunk(h, 'B1', 'extract-v1')).not.toBeNull();
+    expect(await getCachedChunk(h, 'B1', 'extract-v2')).toBeNull();
+  });
+
+  it('a re-imported list entry with the same example sentence counts as existing', async () => {
+    // Added from the list before; a newer prompt words the sense differently (new lexicon id).
+    const sentence = 'We saw the bad weather today.';
+    await addNoteWithSenses({ term: 'bad', senses: [{ meaning_tr: 'kötü', lexicon_sense_id: 'L-old', source_sentence: sentence }] }, T);
+    const job = await createImportJob({ kind: 'text', title: 'T', chunks: ['a'], level: 'B1' }, T);
+    await recordChunkResult(
+      job.id,
+      0,
+      'h0',
+      result([
+        { term: 'bad', lexId: 'L-new', meaning: 'fena', sentence },
+        { term: 'bad', lexId: 'L-other', meaning: 'bozuk', sentence: 'The milk went bad today.' },
+      ]),
+      { fromLocalCache: true },
+      T,
+    );
+    expect((await listImportCandidates(job.id)).map((c) => [c.user_status, c.selected])).toEqual([
+      ['exists', false],
+      ['add_sense', true],
+    ]);
   });
 });
 

@@ -9,7 +9,7 @@ only from `@/data` (`src/data/index.ts`).
 | Table | Synced | Key / indexes | Notes |
 | --- | --- | --- | --- |
 | notes | yes | `id`, `term_norm`, `lexicon_term_id`, `updated_at`, `deleted_at`, `*tags` | One live note per `term_norm` (enforced in actions, not by a unique index, so account merges can keep duplicates flagged `possible_duplicate`). |
-| senses | yes | `id`, `note_id`, `[note_id+lexicon_sense_id]`, `lexicon_sense_id`, `deleted_at` | `sense_no` is the display order. `meaning_tr_override` beats `meaning_tr`. `span` is `[start, end)` in `source_sentence`. |
+| senses | yes | `id`, `note_id`, `[note_id+lexicon_sense_id]`, `lexicon_sense_id`, `deleted_at` | `sense_no` is the display order. `meaning_tr_override` beats `meaning_tr`. `span` is `[start, end)` in `source_sentence`. `source_sentence_tr` is the user's Turkish translation of that sentence (AI or typed; null when none, dropped with its sentence; never in the shared lexicon; Dexie v2 filled null on old rows). |
 | cards | yes | `id`, `note_id`, `sense_id`, `[state+due]`, `due`, `card_type`, `deleted_at` | FSRS fields in UTC ms. `unlocked`, `suspended`. |
 | review_logs | yes, insert-only | `id`, `card_id`, `reviewed_at`, `undo_of` | Never updated or deleted. An undo is a new row with `undo_of`. |
 | sources | metadata | `id`, `created_at` | |
@@ -93,7 +93,7 @@ All actions take an optional trailing `now` (ms) for tests. They throw `ActionEr
 | `getHomeSummary()` / `getStreakSummary()` / `getHeatmap()` | Feed the home line, the stats metrics and the 26-week heatmap. |
 | `getNoteDetail`, `findNoteByTerm`, `listNotes`, `listSources`, `pendingChangesCount` | Read helpers. |
 | `getSettings` / `ensureSettings` / `updateSettings(patch)` | Settings. `updateSettings` validates with zod and with ts-fsrs. Call `ensureSettings()` at startup. |
-| `exportBackup()` → `BackupFile` | Builds the backup and records `last_backup_at`. |
+| `exportBackup()` → `BackupFile` | Builds the backup (`schema_version` 2; version 1 files without `source_sentence_tr` still restore) and records `last_backup_at`. |
 | `restoreBackup(fileOrJson, 'merge' \| 'overwrite')` | Verifies the zod schema and checksum, restores, then recomputes all cards and `daily_activity`. |
 | `exportCsv(headers)` | CSV export. |
 | `runIntegrityCheck()` / `repairIntegrity()` | Startup check and the "Veri onarımı" repair. |

@@ -1,7 +1,14 @@
 // Text preparation for AI extraction: sentence split, ~6000-char chunks that never split a
-// sentence, PDF text cleanup, and chunk hashing for chunk_cache.
+// sentence (~3000 for a vocabulary list), PDF text cleanup, and chunk hashing for chunk_cache.
 
 export const DEFAULT_CHUNK_SIZE = 6000;
+/**
+ * Chunk size for a vocabulary list. The model returns every entry of a list (not ~30
+ * picks), ~120 output tokens each: 3000 chars of a numbered list ("12 bad Be careful of
+ * bad people.", ~55 chars per entry) is ~50 entries, ~6k tokens, so one call stays well
+ * inside the server's per-attempt timeout.
+ */
+export const LIST_CHUNK_SIZE = 3000;
 /**
  * Longest chunk ai-extract accepts (MAX_CHUNK_CHARS in supabase/functions/_shared/
  * contracts.ts; a test keeps them equal). A "sentence" longer than this (a PDF table,
@@ -18,15 +25,51 @@ export function splitSentences(text: string): string[] {
   return out;
 }
 
+// An entry number ("12 bad …", "12. bad", "12) bad") at the start of the text or of a line,
+// or after the end of the previous entry's sentence; or a bullet at the start of a line.
+const ENTRY_START = /(?:^|\n|[.!?…]["”’)]?[ \t]+)[ \t]*(?:\d{1,4}[.):]?[ \t]+|[-•*–·▪][ \t]+)(?=\p{L})/gu;
+// Where to cut a list so that every entry starts a unit (the text itself is not changed).
+const ENTRY_CUT = /(?<=[.!?…]["”’)]?[ \t]+|\n)(?=[ \t]*(?:\d{1,4}[.):]?|[-•*–·▪])[ \t]+\p{L})/u;
+
 /**
- * Group sentences into chunks of at most `size` characters (a single longer sentence
- * becomes its own chunk; one over MAX_CHUNK_HARD is cut at spaces). Chunks are trimmed; every sentence appears verbatim in exactly
- * one chunk, so "source sentence must occur in the chunk" checks hold.
+ * Does the text look like a vocabulary list or glossary: numbered or bulleted entries,
+ * about as many as it has sentences ("12 bad Be careful of bad people. 13 big …")? At
+ * least 10 entries are needed, so prose with a few numbered steps is not a list.
  */
-export function chunkText(text: string, size = DEFAULT_CHUNK_SIZE): string[] {
+export function looksLikeVocabularyList(text: string): boolean {
+  const entries = text.match(ENTRY_START)?.length ?? 0;
+  const sentences = text.match(/[.!?…]+["”’)]?(?=\s|$)/g)?.length ?? 0;
+  return entries >= 10 && entries >= sentences * 0.5;
+}
+
+/**
+ * List entries as units: sentence segments cut again before each entry number. The
+ * sentence segmenter does not break "people. 13 good This…" (a lower-case word follows),
+ * so a page of a list would otherwise be one long "sentence".
+ */
+function splitEntries(text: string): string[] {
+  return splitSentences(text)
+    .flatMap((s) => s.split(ENTRY_CUT))
+    .filter((s) => s !== '');
+}
+
+/**
+ * Group sentences into chunks of at most `size` characters (default: DEFAULT_CHUNK_SIZE, or
+ * LIST_CHUNK_SIZE with one entry per unit when the text looks like a vocabulary list). A
+ * single longer sentence becomes its own chunk; one over MAX_CHUNK_HARD is cut at spaces.
+ * Chunks are trimmed; every sentence appears verbatim in exactly one chunk, so "source
+ * sentence must occur in the chunk" checks hold.
+ */
+export function chunkText(text: string, size?: number): string[] {
+  const list = looksLikeVocabularyList(text);
+  const target = size ?? (list ? LIST_CHUNK_SIZE : DEFAULT_CHUNK_SIZE);
+  return groupUnits(list ? splitEntries(text) : splitSentences(text), target);
+}
+
+function groupUnits(units: string[], size: number): string[] {
   const chunks: string[] = [];
   let current = '';
-  for (const sentence of splitSentences(text).flatMap((x) => splitLong(x, Math.min(size, MAX_CHUNK_HARD)))) {
+  for (const sentence of units.flatMap((x) => splitLong(x, Math.min(size, MAX_CHUNK_HARD)))) {
     if (current !== '' && current.length + sentence.length > size) {
       chunks.push(current.trim());
       current = '';

@@ -5,6 +5,7 @@ import {
   classifyHttpError,
   createAiProvider,
   createGeminiProvider,
+  salvageTruncatedJson,
 } from './ai-provider.ts';
 import {
   BAD_REQUEST_BODY,
@@ -134,6 +135,33 @@ describe('gemini provider', () => {
       { status: 200, body: envelope(GOOD_EXTRACT) },
     ]);
     expect((await p.generateJson(req)).attempts).toBe(2);
+  });
+
+  it('keeps the complete items of a long answer cut off by MAX_TOKENS (no retry)', async () => {
+    const full = JSON.stringify(GOOD_EXTRACT);
+    const cut = full.slice(0, full.indexOf('"turn down"') + 5); // inside the third item
+    const truncated = envelope(GOOD_EXTRACT);
+    truncated.candidates[0]!.content.parts[1]!.text = cut;
+    truncated.candidates[0]!.finishReason = 'MAX_TOKENS';
+    const { p, calls } = provider([{ status: 200, body: truncated }]);
+    const r = await p.generateJson(req);
+    expect(calls).toHaveLength(1);
+    expect(r.truncated).toBe(true);
+    expect(r.data).toEqual({ candidates: GOOD_EXTRACT.candidates.slice(0, 2) });
+  });
+
+  it('salvageTruncatedJson handles strings with brackets and escapes', () => {
+    expect(salvageTruncatedJson('{"a": [{"t": "x]}\\"{"}, {"t": "y"}, {"t": "z')).toEqual({
+      a: [{ t: 'x]}"{' }, { t: 'y' }],
+    });
+    expect(salvageTruncatedJson('{"a": [{"t": "x')).toBeNull();
+    expect(salvageTruncatedJson('[1, 2')).toBeNull();
+  });
+
+  it('passes a per-request timeout and output budget', async () => {
+    const { p, calls } = provider([{ status: 200, body: envelope(GOOD_EXTRACT) }]);
+    await p.generateJson({ ...req, maxOutputTokens: 32_768, timeoutMs: 60_000 });
+    expect(calls[0]!.body).toMatchObject({ generationConfig: { maxOutputTokens: 32_768 } });
   });
 
   it('does not retry a 400 (bad request)', async () => {

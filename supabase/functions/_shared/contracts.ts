@@ -10,7 +10,18 @@ export const termType = z.enum(['word', 'phrase', 'pattern']);
 
 /** Max characters of one chunk. The client aims for ~6000 and never splits a sentence. */
 export const MAX_CHUNK_CHARS = 8000;
-export const MAX_CANDIDATES = 30;
+/**
+ * Candidates per chunk. A vocabulary list returns every entry (a 6000-char chunk of a
+ * numbered word list holds ~100); ordinary prose is asked for at most MAX_PROSE_CANDIDATES.
+ */
+export const MAX_CANDIDATES = 150;
+export const MAX_PROSE_CANDIDATES = 30;
+
+/**
+ * Version of the extract prompt and response schema; it keys the server chunk cache and
+ * the client's local chunk cache. Bump it with every prompt or schema change (prompts.ts).
+ */
+export const EXTRACT_PROMPT_VERSION = 'extract-v2';
 
 export const ERROR_CODES = [
   'unauthorized', // no/invalid/expired session, or an anonymous session

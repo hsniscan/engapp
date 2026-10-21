@@ -74,6 +74,14 @@ const PLACEHOLDERS = new Set([
 ]);
 
 export const MAX_SENTENCE_CHARS = 1000;
+/**
+ * Output budget of one extract call: a full vocabulary-list chunk (MAX_CANDIDATES items
+ * of ~120 tokens) fits; prose answers are far shorter. A cut-off answer keeps its
+ * complete items (ai-provider salvageTruncatedJson).
+ */
+export const EXTRACT_MAX_OUTPUT_TOKENS = 32_768;
+/** Per-attempt timeout: a long list answer takes longer than the 30 s default. */
+export const EXTRACT_TIMEOUT_MS = 60_000;
 /** Turkish runs longer than English; well under the 2000 of senses.source_sentence_tr. */
 export const MAX_SENTENCE_TR_CHARS = 1500;
 
@@ -230,8 +238,9 @@ export function validateExtractOutput(
       drop('bad_term');
       continue;
     }
-    // Dictionary forms are lower-case; a capitalised one is a name, brand or acronym.
-    if (/^\p{Lu}/u.test(term)) {
+    // Dictionary forms are lower-case; a capitalised one is a name, brand or acronym
+    // (the pronoun "I" excepted: word lists have it).
+    if (/^\p{Lu}/u.test(term) && term !== 'I') {
       drop('proper_noun');
       continue;
     }
@@ -557,6 +566,8 @@ export async function runExtract(body: unknown, deps: PipelineDeps): Promise<Ext
       schema: EXTRACT_RESPONSE_SCHEMA as unknown as Record<string, unknown>,
       validate: (d) =>
         extractModelOutput.safeParse(d).success ? null : 'expected {candidates: [...]}',
+      maxOutputTokens: EXTRACT_MAX_OUTPUT_TOKENS,
+      timeoutMs: EXTRACT_TIMEOUT_MS,
     });
   } catch (e) {
     if (e instanceof AiError) throw new ApiError(e.code, e.message, e.retryAfterS);
@@ -566,6 +577,7 @@ export async function runExtract(body: unknown, deps: PipelineDeps): Promise<Ext
     model: result.model,
     attempts: result.attempts,
     usage: result.usage,
+    truncated: result.truncated ?? false,
   });
 
   // 5. Validation.
@@ -599,6 +611,8 @@ export async function runExtract(body: unknown, deps: PipelineDeps): Promise<Ext
   });
 
   const dropped: Record<string, number> = { ...v.dropped } as Record<string, number>;
+  // The answer was cut off by the token limit: items after the cut are missing.
+  if (result.truncated) dropped.truncated = 1;
   const cachedCandidates: CachedCandidate[] = [];
   const seenSense = new Set<string>();
   v.candidates.forEach((c, i) => {
