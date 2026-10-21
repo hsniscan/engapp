@@ -75,6 +75,13 @@ const children: RouteObject[] = [
       Component: (await import('@/features/settings/SourcesPage')).SourcesPage,
     }),
   },
+  {
+    path: 'settings/profile',
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/profile/ProfilePage')).ProfilePage,
+    }),
+  },
   { path: 'auth', element: <AuthPage /> },
 ];
 

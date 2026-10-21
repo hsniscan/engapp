@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Page, cn } from '@/ui';
 import { AboutSection } from './AboutSection';
+import { ProfileSettingsSection } from '@/features/profile/ProfileSettingsSection';
 import { AdvancedSection } from './AdvancedSection';
 import { AppSection } from './AppSection';
 import { DataSection } from './DataSection';
@@ -75,6 +76,7 @@ export function SettingsPage() {
           </SettingsSection>
           <StudySection />
           <ExamplesSettingsSection />
+          <ProfileSettingsSection />
           <AppearanceSection />
           <VoiceSection />
           <DataSection />

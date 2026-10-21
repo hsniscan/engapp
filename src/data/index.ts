@@ -49,3 +49,14 @@ export {
   setPairNoteFeedback,
   type UserWordSets,
 } from './family';
+export {
+  dismissInterestPrompt,
+  getOrderedContexts,
+  getTopicProfile,
+  loadFeedbackSignals,
+  saveInterests,
+  setInterest,
+  setSourceTopics,
+  setTopicMuted,
+  type TopicProfile,
+} from './profile';

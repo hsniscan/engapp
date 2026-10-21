@@ -70,6 +70,8 @@ export const settingsPatchSchema = z
       .min(MIN_SELECTED_CONTEXTS)
       .max(MAX_EXAMPLE_CONTEXTS)
       .refine((a) => new Set(a).size === a.length, 'Duplicate context'),
+    interests: z.array(z.string().min(1).max(40)).max(40),
+    muted_topics: z.array(z.string().min(1).max(40)).max(40),
   })
   .partial();
 

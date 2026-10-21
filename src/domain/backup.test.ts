@@ -157,7 +157,7 @@ describe('backup file', () => {
       text: 'We need to cope with the change.', translations: null, span: [11, 15] as [number, number], selected: null,
     };
     const b = await buildBackup({ ...t, content_feedback: [feedback], user_content: [edit] }, { exported_at: 1, device_id: null });
-    expect(b.schema_version).toBe(5);
+    expect(b.schema_version).toBe(BACKUP_SCHEMA_VERSION);
     const v5 = await verifyBackup(JSON.stringify(b));
     expect(v5.ok && v5.backup.tables.content_feedback).toEqual([feedback]);
     expect(v5.ok && v5.backup.tables.user_content).toEqual([edit]);

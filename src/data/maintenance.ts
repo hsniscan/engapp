@@ -11,6 +11,7 @@ import {
 import { fsrsEqual, pickFsrs } from '../domain/fsrs';
 import { compareHlc } from '../domain/hlc';
 import { checkIntegrity, type IntegrityReport } from '../domain/integrity';
+import { keepProfileFields } from '../domain/profile';
 import { deriveUnlocked, effectiveLogs, replayCard } from '../domain/recompute';
 import {
   cardSchema,
@@ -270,7 +271,7 @@ export async function applyRemoteRows(
           result.skipped++;
           continue;
         }
-        await db.table(table).put(row);
+        await db.table(table).put(keepProfileFields(table, row, local));
         result.applied++;
         if (table === 'cards') touchedCards.add(row.id);
         if (table === 'notes') touchedTerms.add((row as Note).term_norm);

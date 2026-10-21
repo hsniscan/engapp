@@ -33,7 +33,9 @@ export const BACKUP_FORMAT = 'engapp-backup';
 // 4: notes.level_override. Older files have none (restored as null: the computed level).
 // 5 (v0.2 İP5): content_feedback and user_content (likes/rejections of example sentences,
 //    the user's own edits). Older files have neither (restored as none).
-export const BACKUP_SCHEMA_VERSION = 5;
+// 6 (v0.2 İP7): settings.interests, settings.muted_topics, sources.topics (optional and not
+//    defaulted, so older files restore and keep their checksum).
+export const BACKUP_SCHEMA_VERSION = 6;
 
 export interface BackupTables {
   notes: Note[];

@@ -13,8 +13,8 @@ only from `@/data` (`src/data/index.ts`).
 | cards | yes | `id`, `note_id`, `sense_id`, `[state+due]`, `due`, `card_type`, `deleted_at` | FSRS fields in UTC ms. `unlocked`, `suspended`. |
 | review_logs | yes, insert-only | `id`, `card_id`, `reviewed_at`, `undo_of` | Never updated or deleted. An undo is a new row with `undo_of`. |
 | practice_logs | yes, insert-only | `id`, `card_id`, `practiced_at`, `session_id` | One row per answer in a practice round: `result` (`known`/`unknown`), `mode` (the source: `hard`, `recent`, `tag`; free text, 1–32 chars), `session_id`, `duration_ms` (≤ 60 s), `device_id`. Never read by scheduling, `daily_activity` or the streak (Dexie v3, decision 0010). |
-| sources | metadata | `id`, `created_at` | |
-| settings | yes | `id = 'settings'` | Defaults: `daily_new_limit 10`, `request_retention 0.9`, `timezone` from the device, `day_start_hour 4`, `theme 'system'`, `voice 'en-US'`, `level 'B1'`. |
+| sources | metadata | `id`, `created_at`, `*topics` | `topics`: topic keys of the text (`domain/topics.ts`, from the extract call; absent/null = unknown, `[]` = none; Dexie v7, decision 0015). |
+| settings | yes | `id = 'settings'` | Defaults: `daily_new_limit 10`, `request_retention 0.9`, `timezone` from the device, `day_start_hour 4`, `theme 'system'`, `voice 'en-US'`, `level 'B1'`. `interests` (picked topic keys; absent/null = never asked, `[]` = asked) and `muted_topics` (weight 0). Topic weights are computed on the device (`domain/profile.ts`), never stored (decision 0015). |
 | outbox | no | `++seq`, `[table+row_id]`, `next_attempt_at` | Rows waiting to be pushed. |
 | daily_activity | no (derived) | `date` (local `YYYY-MM-DD`) | `reviews`, `new_cards`, `time_ms`, `review_answers`, `review_passed`, `completed`. |
 | meta | no | `key` | `device_id`, `user_id`, `hlc`, `sync_cursor`, `lexicon_cursor`, `server_practice_logs` (the server answered with `sync_pull_v3`), `extra_new:<YYYY-MM-DD>` (extra new cards allowed that day, this device only), `family_dismissed_morphemes` (root/affix card suggestions the user closed). |
@@ -126,7 +126,7 @@ All actions take an optional trailing `now` (ms) for tests. They throw `ActionEr
 | `getHomeSummary()` / `getStreakSummary()` / `getHeatmap()` | Feed the home line, the stats metrics and the 26-week heatmap. |
 | `getNoteDetail`, `findNoteByTerm`, `listNotes`, `listSources`, `pendingChangesCount` | Read helpers. |
 | `getSettings` / `ensureSettings` / `updateSettings(patch)` | Settings. `updateSettings` validates with zod and with ts-fsrs. Call `ensureSettings()` at startup. |
-| `exportBackup()` → `BackupFile` | Builds the backup (`schema_version` 4: `practice_logs` since 3, `notes.level_override` since 4; version 1–3 files still restore, the override as null) and records `last_backup_at`. |
+| `exportBackup()` → `BackupFile` | Builds the backup (`schema_version` BACKUPVER: `practice_logs` since 3, `notes.level_override` since 4, `content_feedback`/`user_content` since 5, profile fields since 6; older files still restore, missing fields as null/none) and records `last_backup_at`. |
 | `restoreBackup(fileOrJson, 'merge' \| 'overwrite')` | Verifies the zod schema and checksum, restores, then recomputes all cards and `daily_activity`. |
 | `exportCsv(headers)` | CSV export. |
 | `runIntegrityCheck()` / `repairIntegrity()` | Startup check and the "Veri onarımı" repair. |

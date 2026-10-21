@@ -130,6 +130,10 @@ export class EngDb extends Dexie {
           .count();
         if (skippedNote > 0) await tx.table('meta').put({ key: 'sync_cursor', value: 0 });
       });
+    // v7 (v0.2 İP7): sources.topics (multi-entry index, for "texts about this topic") and
+    // settings.interests / settings.muted_topics (not indexed). All optional: an absent list
+    // means "unknown", so existing rows need no upgrade.
+    this.version(7).stores({ sources: 'id, created_at, *topics' });
   }
 }
 

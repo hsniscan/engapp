@@ -3,6 +3,7 @@ export const SECTION_IDS = [
   'senkron',
   'calisma',
   'ornekler',
+  'profil',
   'gorunum',
   'ses',
   'veri',

@@ -121,6 +121,11 @@ export interface Source extends SyncedRow {
   title: string;
   file_name: string | null;
   page_count: number | null;
+  /**
+   * Topic keys of the text (domain/topics.ts), from the extract call (İP7). Absent or null =
+   * unknown (older rows and clients); [] = no topic. Keys this version does not know are kept.
+   */
+  topics?: string[] | null;
 }
 
 export type ThemePref = 'system' | 'light' | 'dark';
@@ -147,6 +152,13 @@ export interface Settings extends SyncedRow {
   example_tr_visible?: boolean | null;
   /** Example contexts prepared in the background, in order (null/absent = defaults). */
   example_contexts?: string[] | null;
+  /**
+   * Topics the user picked (İP7, domain/topics.ts keys). Absent or null = never asked (the
+   * home screen offers the choice once); [] = asked, picked none.
+   */
+  interests?: string[] | null;
+  /** Topics the user turned off: they weigh 0 in the profile. */
+  muted_topics?: string[] | null;
 }
 
 /** Shared dictionary entries, read-only on the client (pulled from server). */
