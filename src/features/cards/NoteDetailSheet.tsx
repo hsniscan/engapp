@@ -9,6 +9,7 @@ import {
   editNote,
   editSense,
   getNoteDetail,
+  listTags,
   logError,
   setSuspended,
   softDeleteNote,
@@ -133,6 +134,7 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
     null,
   );
   const [deleting, setDeleting] = useState(false);
+  const knownTags = useLiveQuery(() => listTags(), []);
 
   // Senses deleted or added elsewhere (sync, another tab): keep the draft in step.
   const [seenSenses, setSeenSenses] = useState(senses);
@@ -325,6 +327,7 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
         label={t('cards.tags.label')}
         value={draft.tags}
         onChange={(tags) => setDraft((d) => ({ ...d, tags }))}
+        suggestions={knownTags?.map((x) => x.tag)}
       />
 
       <section aria-labelledby={`${id}-senses`} className="flex flex-col gap-3">

@@ -30,10 +30,12 @@ contract; this record lists what was built and where it differs.
    - Filter version 1 (`domain/deckFilter.ts`): `states`, `tags` + `tagMode`,
      `addedWithinDays`, and the reserved `levels` (İP2) and `topics` (İP7). Different keys
      AND, values of one key OR.
-   - **Status names and meaning differ from the plan.** The plan's "review" is shown as
-     `learned` ("Öğrenildi"); "struggling" ("Zorlanılan") is not a card state but an
-     overlay that uses exactly the practice "hard" rule, so the deck and the "Zorlandıkların"
-     practice round agree; `suspended` means every live card of the word is suspended, and
+   - **Status names and meaning differ from the plan.** The plan's "review" is stored as
+     `learned` (a word-level status, not FSRS's card state; Relearning counts as
+     `learning`) but labelled "Tekrarda", the word the card badges already use;
+     "struggling" ("Zorlandıklarım") is not a card state but an overlay that uses exactly
+     the practice "hard" rule, so the deck and the "Zorlandıklarım" practice round agree;
+     `suspended` means every live card of the word is suspended, and
      such a word has no other status (it would otherwise appear in "Yeni" and never be
      studied).
    - **Reserved keys use resolvers.** `levels` / `topics` are evaluated only when

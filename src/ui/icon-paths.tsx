@@ -170,6 +170,19 @@ export const paths = {
       <path d="M14.75 8.25 18.5 12l-3.75 3.75M18.5 12H9.5" />
     </>
   ),
+  tag: (
+    <>
+      <path d="M4.75 5.9v5.1c0 .46.18.9.5 1.22l7.53 7.53a1.75 1.75 0 0 0 2.47 0l4.33-4.33a1.75 1.75 0 0 0 0-2.47L12.05 5.42a1.72 1.72 0 0 0-1.22-.5H5.9c-.64 0-1.15.52-1.15 1.15z" />
+      <circle cx="8.6" cy="8.75" r="1.15" fill="currentColor" stroke="none" />
+    </>
+  ),
+  layers: (
+    <>
+      <path d="m12 4.5 7.5 3.75L12 12 4.5 8.25z" />
+      <path d="m4.5 12 7.5 3.75L19.5 12" />
+      <path d="m4.5 15.75 7.5 3.75 7.5-3.75" />
+    </>
+  ),
 } satisfies Record<string, ReactNode>;
 
 export type IconName = keyof typeof paths | 'google';
