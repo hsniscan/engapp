@@ -150,6 +150,21 @@ describe('runExtract', () => {
     expect(provider.generateJson).toHaveBeenCalledTimes(2);
   });
 
+  it('extract-v4: the model gets the level and the target level (one above, C2 stays C2)', async () => {
+    const store = new MemoryAiStore();
+    const { provider, requests } = scripted(GOOD_EXTRACT, GOOD_EXTRACT, GOOD_EXTRACT);
+    await runExtract(await body(CHUNK, 'B1'), deps(store, provider));
+    await runExtract(await body(CHUNK, 'C2'), deps(store, provider));
+    await runExtract(await body(CHUNK, 'A1'), deps(store, provider));
+    expect(requests.map((r) => /^LEVEL: (\w\w)\nTARGET_LEVEL: (\w\w)\n/.exec(r.user)?.slice(1))).toEqual([
+      ['B1', 'B2'],
+      ['C2', 'C2'],
+      ['A1', 'A2'],
+    ]);
+    expect(requests[0]!.system).toContain('Never select items above TARGET_LEVEL');
+    expect(EXTRACT_PROMPT_VERSION).toBe('extract-v4');
+  });
+
   it('offers existing senses to the model and does not regenerate them', async () => {
     const store = new MemoryAiStore();
     const river = store.seed(

@@ -94,6 +94,23 @@ export class EngDb extends Dexie {
           });
         await tx.table('meta').put({ key: 'lexicon_cursor', value: 0 });
       });
+    // v10 (v0.2 İP4; versions 5–9 belong to the other v0.2 packages): smart-extraction fields
+    // on the local import_candidates rows (not indexed). Rows of jobs from before keep their
+    // selection: "zaten var" rows go to "Biliyorsun", the others to "Senin için", level
+    // unknown. Settings rows need nothing: a missing show_easy_candidates means false.
+    this.version(10)
+      .stores({})
+      .upgrade(async (tx) => {
+        await tx
+          .table('import_candidates')
+          .toCollection()
+          .modify((row: Partial<ImportCandidate>) => {
+            row.cefr ??= null;
+            row.cefr_source ??= null;
+            row.bucket ??= row.user_status === 'exists' ? 'known' : 'for_you';
+            row.from_list ??= false;
+          });
+      });
   }
 }
 

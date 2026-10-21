@@ -113,4 +113,6 @@ export const settingsSchema: z.ZodType<Settings> = z.object({
   level: z.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']),
   fsrs_params: z.array(z.number()).nullable(),
   last_backup_at: millis.nullable(),
+  // v0.2 İP4; absent in older rows and backups (= false).
+  show_easy_candidates: z.boolean().nullish(),
 });

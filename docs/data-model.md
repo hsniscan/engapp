@@ -14,13 +14,13 @@ only from `@/data` (`src/data/index.ts`).
 | review_logs | yes, insert-only | `id`, `card_id`, `reviewed_at`, `undo_of` | Never updated or deleted. An undo is a new row with `undo_of`. |
 | practice_logs | yes, insert-only | `id`, `card_id`, `practiced_at`, `session_id` | One row per answer in a practice round: `result` (`known`/`unknown`), `mode` (the source: `hard`, `recent`, `tag`; free text, 1–32 chars), `session_id`, `duration_ms` (≤ 60 s), `device_id`. Never read by scheduling, `daily_activity` or the streak (Dexie v3, decision 0010). |
 | sources | metadata | `id`, `created_at` | |
-| settings | yes | `id = 'settings'` | Defaults: `daily_new_limit 10`, `request_retention 0.9`, `timezone` from the device, `day_start_hour 4`, `theme 'system'`, `voice 'en-US'`, `level 'B1'`. |
+| settings | yes | `id = 'settings'` | Defaults: `daily_new_limit 10`, `request_retention 0.9`, `timezone` from the device, `day_start_hour 4`, `theme 'system'`, `voice 'en-US'`, `level 'B1'`, `show_easy_candidates false` (v0.2 İP4: open the import preview's "Kolay" section; absent or null = false, so older rows and backups need no change). |
 | outbox | no | `++seq`, `[table+row_id]`, `next_attempt_at` | Rows waiting to be pushed. |
 | daily_activity | no (derived) | `date` (local `YYYY-MM-DD`) | `reviews`, `new_cards`, `time_ms`, `review_answers`, `review_passed`, `completed`. |
 | meta | no | `key` | `device_id`, `user_id`, `hlc`, `sync_cursor`, `lexicon_cursor`, `server_practice_logs` (the server answered with `sync_pull_v3`), `extra_new:<YYYY-MM-DD>` (extra new cards allowed that day, this device only). |
 | error_log | no | `++id`, `at` | Newest 200 rows are kept. |
 | lexicon_cache | no | `id`, `term_id`, `lemma_norm`, `updated_at` | Shared lexicon senses the user's senses reference (sync layer). Since Dexie v4 also `cefr`, `cefr_source`, `cefr_list`, `cefr_reason_tr`, `zipf` (word level, see "Word levels"); the v4 upgrade set `lexicon_cursor` back to 0 so they are pulled again with levels. |
-| chunk_cache, import_jobs, import_candidates | no | | Owned by the AI layer. |
+| chunk_cache, import_jobs, import_candidates | no | | Owned by the AI layer. Since Dexie v10 (v0.2 İP4, smart extraction) a candidate also has `cefr` / `cefr_source` (its sense's level), `bucket` (`for_you` / `easy` / `known` / `too_hard`; null until the job's last chunk is in), `from_list` (from a vocabulary-list chunk) and `rank` (display order); the v10 upgrade put rows of older jobs in `known` ("zaten var") or `for_you` with their selection unchanged. Decision 0018. |
 
 Every synced mutable row has `id` (UUID v7), `user_id` (null in guest mode), `created_at`,
 `updated_at`, `deleted_at` and `hlc`.

@@ -17,6 +17,7 @@ export const DEFAULT_SETTINGS = {
   level: 'B1',
   fsrs_params: null,
   last_backup_at: null,
+  show_easy_candidates: false,
 } as const satisfies Partial<Settings>;
 
 /** Defaults; timezone comes from the device. Not persisted by itself. */
@@ -58,6 +59,7 @@ export const settingsPatchSchema = z
     level: z.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']),
     fsrs_params: z.array(z.number()).nullable(),
     last_backup_at: z.number().int().nullable(),
+    show_easy_candidates: z.boolean(),
   })
   .partial();
 

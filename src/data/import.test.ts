@@ -26,6 +26,9 @@ const lex = (id: string, lemma: string, meaning: string) => ({
   meaning_tr: meaning,
   ipa: '/x/',
   updated_at: T,
+  // At the learner's level (B1), so smart extraction pre-selects every new word here.
+  cefr: 'B1' as const,
+  cefr_source: 'cefrj' as const,
 });
 
 function result(
@@ -76,11 +79,13 @@ describe('import jobs', () => {
     const r2 = result([{ term: 'cope', lexId: 'L-cope', meaning: 'başa çıkmak' }]);
     await recordChunkResult(job.id, 1, 'h1', r2, { fromLocalCache: true }, T);
 
+    // Words with a note are never pre-selected (smart extraction); the preview shows
+    // "Senin için" first (rank).
     const cands = await listImportCandidates(job.id);
-    expect(cands.map((c) => [c.term, c.user_status, c.selected])).toEqual([
-      ['bank', 'exists', false],
-      ['bank', 'add_sense', true],
-      ['cope', 'new', true],
+    expect(cands.map((c) => [c.term, c.user_status, c.selected, c.bucket, c.rank])).toEqual([
+      ['bank', 'exists', false, 'known', 1],
+      ['bank', 'add_sense', false, 'known', 2],
+      ['cope', 'new', true, 'for_you', 0],
     ]);
     const j = (await getImportJob(job.id))!;
     expect(j).toMatchObject({ status: 'ready', chunk_done: 2, chunk_cache_hits: 1, cache_hits: 2 });
@@ -116,7 +121,7 @@ describe('import jobs', () => {
     );
     expect((await listImportCandidates(job.id)).map((c) => [c.user_status, c.selected])).toEqual([
       ['exists', false],
-      ['add_sense', true],
+      ['add_sense', false],
     ]);
   });
 });
@@ -143,6 +148,8 @@ describe('confirmImport', () => {
     const choices = new Map(cands.map((c) => [c.id, { selected: c.selected, meaning_tr_edit: null as string | null }]));
     choices.set(byTerm('thrive', 'L-thrive').id, { selected: false, meaning_tr_edit: null });
     choices.set(byTerm('cope', 'L-cope').id, { selected: true, meaning_tr_edit: 'üstesinden gelmek' });
+    // A new meaning of a word with cards is not pre-selected; the user picks it.
+    choices.set(byTerm('bank', 'L-bank-2').id, { selected: true, meaning_tr_edit: null });
 
     const res = await confirmImport(job.id, { choices, now: T + 1 });
     expect(res).toMatchObject({ notesCreated: 1, sensesAdded: 2 });

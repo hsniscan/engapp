@@ -5,7 +5,7 @@ Server side of "Kart oluşturma ve AI çıkarma hattı" in `plan-v0.1.md`. Code:
 two Deno entrypoints `supabase/functions/ai-extract/index.ts` and `ai-enrich/index.ts`.
 Client: `src/ai/client.ts`.
 
-Prompt versions: **`extract-v3`**, **`enrich-v2`** (`_shared/prompts.ts`); the level job's
+Prompt versions: **`extract-v4`**, **`enrich-v2`** (`_shared/prompts.ts`); the level job's
 **`level-guess-v1`** and **`level-tr-v1`** (`_shared/level-job.ts`, see "Level job"). Any change to a
 prompt or a response schema bumps the version (the chunk cache is keyed by it) and is
 copied here; `src/ai/docs-sync.test.ts` fails when this file and the code differ.
@@ -55,7 +55,7 @@ Response (`extractResponse` in `_shared/contracts.ts`):
 
 ```json
 {
-  "prompt_version": "extract-v3",
+  "prompt_version": "extract-v4",
   "cache_hit": false,
   "ai_called": true,
   "model": "gemini-3.8-flash",
@@ -249,9 +249,19 @@ responseMimeType:"application/json", responseJsonSchema, maxOutputTokens}}`
   INVALID_ARGUMENT for `maxItems: 30` on this schema (observed Oct 2026); the limits are
   in the prompts and enforced by the server.
 
-## Extract prompt (`extract-v3`)
+## Extract prompt (`extract-v4`)
 
-`extract-v3` (v0.2 İP2) adds `cefr_guess` to every new sense: the level at which a
+`extract-v4` (v0.2 İP4, smart extraction) aims the selection at the learner's level: the user
+message gains `TARGET_LEVEL` (the level above `LEVEL`, computed by the server from the
+request's `level`; C2 stays C2), and "WHAT TO SELECT" asks for mostly `LEVEL` items, about
+one in ten at `TARGET_LEVEL`, nothing above it, and lower-level items that learners at
+`LEVEL` often do not know yet for the rest. Vocabulary lists still return every entry. The
+response schema is unchanged. The model's choice is only a first filter: the device decides
+the preview sections and the default selection with the level rule (see "Smart extraction
+on the device"); what the learner already knows is never part of the request. The bump
+re-keys both chunk caches, so results of the old selection are not reused.
+
+`extract-v3` (v0.2 İP2) added `cefr_guess` to every new sense: the level at which a
 Turkish-speaking learner meets this sense, asked in the same call (no extra call). It is
 one input of the level rule, never the level itself (see "Word levels"); a missing or
 invalid value only drops the guess. A `known_sense` candidate sets it to null like the
@@ -284,13 +294,16 @@ System instruction:
 You are an expert lexicographer who builds English-to-Turkish vocabulary flashcards for a Turkish-speaking learner of English.
 
 TASK
-Read TEXT and select the words and multi-word expressions that are most worth learning for a learner at CEFR level LEVEL. Return them in "candidates" as defined by the response schema: at most 30, the most useful first. Return fewer, or none, when TEXT has few useful items.
+Read TEXT and select the words and multi-word expressions that are most worth learning for a learner at CEFR level LEVEL. TARGET_LEVEL is the next level above LEVEL (for C2 it is C2). Return them in "candidates" as defined by the response schema: at most 30, the most useful first. Return fewer, or none, when TEXT has few useful items.
 
 VOCABULARY LISTS
-If TEXT is a vocabulary list or glossary (numbered or bulleted entries, each usually a term followed by an example sentence, e.g. "12 bad Be careful of bad people."), the learner chose these words: return EVERY entry, in the order of the list, including easy entries and entries below LEVEL, at most 150. The selection rules below do not apply to a list, except that proper nouns are skipped. Use the entry's own example sentence as source_sentence; if an entry has no example sentence, use the entry's text as it stands in TEXT. Skip headings, page numbers and other lines that are not entries.
+If TEXT is a vocabulary list or glossary (numbered or bulleted entries, each usually a term followed by an example sentence, e.g. "12 bad Be careful of bad people."), the learner chose these words: return EVERY entry, in the order of the list, including easy entries, entries below LEVEL and entries above TARGET_LEVEL, at most 150. The selection rules below do not apply to a list, except that proper nouns are skipped. Use the entry's own example sentence as source_sentence; if an entry has no example sentence, use the entry's text as it stands in TEXT. Skip headings, page numbers and other lines that are not entries.
 
 WHAT TO SELECT
-- Words at or above LEVEL that are useful in general English. Skip words below LEVEL (for B1 skip e.g. "house", "go", "because", "very", "big"; select e.g. "reluctant", "cope", "subsidy").
+- Focus on LEVEL: most items should be words and expressions at LEVEL, useful in general English, that a learner at LEVEL is still learning.
+- Take only a few items at TARGET_LEVEL: about one in ten of the items you return.
+- Never select items above TARGET_LEVEL: the learner will not get them. For a B1 learner select e.g. "widespread", "eventually", "rely on"; a few B2 items such as "reluctant" or "cope"; no C1 or C2 items such as "subsidy" or "hinder".
+- Items one level below LEVEL that learners at LEVEL often do not know yet may fill the rest. Skip basic words that every learner at LEVEL knows (for B1 skip e.g. "house", "go", "because", "very", "big").
 - Multi-word expressions are especially valuable: phrasal verbs ("give up", "run into"), idioms ("cut corners"), fixed expressions ("by and large"), strong collocations ("make a decision", "heavy rain") and grammar patterns ("be used to doing sth"). Keep each one whole. Never split it into single words, and do not also list its parts unless a part is used on its own elsewhere in TEXT.
 - Skip proper nouns (people, places, brands, organizations, titles), numbers, dates, abbreviations and acronyms, URLs, code, misspellings, and narrow technical jargon with no general use.
 - One candidate per term and meaning. If a term occurs several times with the same meaning, return it once with its clearest sentence. If it occurs with two different meanings, return two candidates.
@@ -319,6 +332,7 @@ User message (example with one known sense):
 
 ```text
 LEVEL: B1
+TARGET_LEVEL: B2
 
 KNOWN_SENSES:
 s1 | bank | noun | the land beside a river
@@ -531,6 +545,43 @@ words (`level_refs()`, service role), resolve the level and store it with the se
 is stored without a level and the level job resolves it. Clients get `cefr`,
 `cefr_source`, `cefr_list`, `cefr_reason_tr` and `zipf` through `lexicon_entries`
 (`lexicon_pull`, `lexicon_get`); the raw guess stays on the server.
+
+## Smart extraction on the device
+
+v0.2 İP4 (decision 0018). The prompt (`extract-v4`) aims the model at the learner's level;
+the device then decides, with one pure function (`planCandidates` in
+`src/domain/candidates.ts`), which candidates the preview pre-selects and in which section
+each one is shown. It runs once, when a job's last chunk is recorded
+(`classifyJobCandidates` in `src/data/smartExtract.ts`, inside the same Dexie transaction).
+
+- **Level of a candidate:** the level stored with its lexicon sense (server rule, "Word
+  levels"); without one, the same rule on the client level file; else unknown.
+- **Known** (`Biliyorsun`): the user has a live note for the term (any sense: `user_status`
+  `exists` or `add_sense`) or the word is in the known-terms set (İP3's `known_terms`, read
+  through `src/data/knownTermsProvider.ts`). Never pre-selected. This set is compared only on
+  the device: the request to ai-extract is `{text, chunk_hash, level}` and nothing else.
+- **Above the target** (more than one level above the learner, e.g. C1/C2 for B1): never
+  pre-selected. For prose they are only counted in the summary line; for vocabulary lists
+  they are shown in a closed "Seviyenin üstünde" section, because a list yields every entry.
+- **Pre-selection** (`Senin için`): every eligible item at level L, plus as many L+1 and lower
+  items as keep **L ≥ 55 %** and **L+1 ≤ 10 %** of the selected set (largest such set;
+  `selectionQuota`). An item of unknown level counts as L+1. Without any L item nothing is
+  pre-selected: the quota is never filled with harder or only easier words. L+1 items that
+  did not fit stay in `Senin için`, unselected; lower items that did not fit go to `Kolay`
+  (closed unless `settings.show_easy_candidates`).
+- **Order:** inside each section more occurrences in the whole text first (inflected forms of
+  a word count; an expression counts its surface), then the more frequent word (Zipf); lower
+  items are picked closest level first. Vocabulary lists keep their own order.
+- **"Biliyorum"** on a candidate moves it (and the term's other candidates in the job) to
+  `Biliyorsun`, unselects it and calls `markKnown(term, 'preview')` on the provider.
+
+The acceptance check (plan criterion 5) is the golden set: five texts in
+`data/golden/extract/` (news, a work e-mail, popular science, a story, a 30-entry vocabulary
+list) with the words a simulated learner already has (`expected.json`). `node
+--env-file=<env> scripts/golden-extract.ts record` runs the real pipeline against Gemini for a
+B1 and a B2 learner and records the model's answers; `src/domain/candidates.golden.test.ts`
+replays them offline in every `pnpm test` and asserts the criterion per text and over the set.
+Its report, `docs/quality/golden-extract.md`, is a file snapshot (`pnpm vitest run golden -u`).
 
 ## Level job (`level-guess-v1`, `level-tr-v1`)
 

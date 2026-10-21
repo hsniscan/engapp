@@ -25,13 +25,16 @@ const FIELD_RULES = `- pos: one of: ${POS_LIST}.
 export const EXTRACT_SYSTEM_PROMPT = `You are an expert lexicographer who builds English-to-Turkish vocabulary flashcards for a Turkish-speaking learner of English.
 
 TASK
-Read TEXT and select the words and multi-word expressions that are most worth learning for a learner at CEFR level LEVEL. Return them in "candidates" as defined by the response schema: at most ${MAX_PROSE_CANDIDATES}, the most useful first. Return fewer, or none, when TEXT has few useful items.
+Read TEXT and select the words and multi-word expressions that are most worth learning for a learner at CEFR level LEVEL. TARGET_LEVEL is the next level above LEVEL (for C2 it is C2). Return them in "candidates" as defined by the response schema: at most ${MAX_PROSE_CANDIDATES}, the most useful first. Return fewer, or none, when TEXT has few useful items.
 
 VOCABULARY LISTS
-If TEXT is a vocabulary list or glossary (numbered or bulleted entries, each usually a term followed by an example sentence, e.g. "12 bad Be careful of bad people."), the learner chose these words: return EVERY entry, in the order of the list, including easy entries and entries below LEVEL, at most ${MAX_CANDIDATES}. The selection rules below do not apply to a list, except that proper nouns are skipped. Use the entry's own example sentence as source_sentence; if an entry has no example sentence, use the entry's text as it stands in TEXT. Skip headings, page numbers and other lines that are not entries.
+If TEXT is a vocabulary list or glossary (numbered or bulleted entries, each usually a term followed by an example sentence, e.g. "12 bad Be careful of bad people."), the learner chose these words: return EVERY entry, in the order of the list, including easy entries, entries below LEVEL and entries above TARGET_LEVEL, at most ${MAX_CANDIDATES}. The selection rules below do not apply to a list, except that proper nouns are skipped. Use the entry's own example sentence as source_sentence; if an entry has no example sentence, use the entry's text as it stands in TEXT. Skip headings, page numbers and other lines that are not entries.
 
 WHAT TO SELECT
-- Words at or above LEVEL that are useful in general English. Skip words below LEVEL (for B1 skip e.g. "house", "go", "because", "very", "big"; select e.g. "reluctant", "cope", "subsidy").
+- Focus on LEVEL: most items should be words and expressions at LEVEL, useful in general English, that a learner at LEVEL is still learning.
+- Take only a few items at TARGET_LEVEL: about one in ten of the items you return.
+- Never select items above TARGET_LEVEL: the learner will not get them. For a B1 learner select e.g. "widespread", "eventually", "rely on"; a few B2 items such as "reluctant" or "cope"; no C1 or C2 items such as "subsidy" or "hinder".
+- Items one level below LEVEL that learners at LEVEL often do not know yet may fill the rest. Skip basic words that every learner at LEVEL knows (for B1 skip e.g. "house", "go", "because", "very", "big").
 - Multi-word expressions are especially valuable: phrasal verbs ("give up", "run into"), idioms ("cut corners"), fixed expressions ("by and large"), strong collocations ("make a decision", "heavy rain") and grammar patterns ("be used to doing sth"). Keep each one whole. Never split it into single words, and do not also list its parts unless a part is used on its own elsewhere in TEXT.
 - Skip proper nouns (people, places, brands, organizations, titles), numbers, dates, abbreviations and acronyms, URLs, code, misspellings, and narrow technical jargon with no general use.
 - One candidate per term and meaning. If a term occurs several times with the same meaning, return it once with its clearest sentence. If it occurs with two different meanings, return two candidates.
@@ -58,6 +61,14 @@ export interface KnownSenseLine {
   gloss_en: string;
 }
 
+const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
+
+/** TARGET_LEVEL of extract-v4: the level above the learner's (C2 for C2). */
+export function extractTargetLevel(level: string): string {
+  const i = LEVELS.indexOf(level as (typeof LEVELS)[number]);
+  return i < 0 ? level : LEVELS[Math.min(LEVELS.length - 1, i + 1)]!;
+}
+
 export function buildExtractUserPrompt(
   text: string,
   level: string,
@@ -70,6 +81,7 @@ export function buildExtractUserPrompt(
           .map((k) => `${k.ref} | ${oneLine(k.lemma)} | ${k.pos} | ${oneLine(k.gloss_en)}`)
           .join('\n');
   return `LEVEL: ${level}
+TARGET_LEVEL: ${extractTargetLevel(level)}
 
 KNOWN_SENSES:
 ${knownBlock}

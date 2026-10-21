@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CefrLevel, Settings, ThemePref } from '@/domain/types';
-import { Button, SegmentedControl, Select, Skeleton, Slider } from '@/ui';
+import { Button, SegmentedControl, Select, Skeleton, Slider, Switch } from '@/ui';
 import { SettingsRow, SettingsSection } from './SettingsLayout';
 import { setTheme } from './themeSync';
 import { useAppSettings } from './useAppSettings';
@@ -113,6 +113,15 @@ export function StudySection() {
                 value: l,
                 label: `${l} · ${t(`settings.levels.${l}`)}`,
               }))}
+            />
+          </SettingsRow>
+          <SettingsRow className="py-2">
+            <Switch
+              className="w-full"
+              label={t('settings.study.showEasy')}
+              description={t('settings.study.showEasyHint')}
+              checked={settings.show_easy_candidates === true}
+              onCheckedChange={(v) => void update({ show_easy_candidates: v })}
             />
           </SettingsRow>
         </>

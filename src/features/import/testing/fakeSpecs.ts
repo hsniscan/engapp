@@ -428,6 +428,54 @@ const SPECS: Spec[] = [
 
 export const FAKE_SPECS = SPECS;
 
+/**
+ * The level the server stores with each corpus sense (the İP2 rule on the real reference data,
+ * with the e2e model's guesses), by index in SPECS. Unit tests and the dev page get the
+ * same preview sections as the deployed pipeline would give.
+ */
+export const FAKE_LEVELS: readonly [string, string][] = [
+  ['A2', 'ai'],
+  ['B2', 'cefrj'],
+  ['B2', 'cefrj'],
+  ['C1', 'ai'],
+  ['C1', 'ai'],
+  ['C2', 'octanove'],
+  ['A1', 'words'],
+  ['A1', 'words'],
+  ['B2', 'ai'],
+  ['A1', 'cefrj'],
+  ['A2', 'words'],
+  ['A2', 'words'],
+  ['A1', 'words'],
+  ['B2', 'freq'],
+  ['B2', 'freq'],
+  ['A1', 'words'],
+  ['B1', 'cefrj'],
+  ['A1', 'words'],
+  ['B2', 'freq'],
+  ['A1', 'words'],
+  ['B1', 'cefrj'],
+  ['A1', 'words'],
+  ['B2', 'freq'],
+  ['A1', 'words'],
+  ['B2', 'cefrj'],
+  ['B1', 'words'],
+  ['B1', 'freq'],
+  ['A2', 'words'],
+  ['B2', 'cefrj'],
+  ['A1', 'words'],
+  ['B1', 'freq'],
+  ['A1', 'words'],
+  ['B1', 'cefrj'],
+  ['A1', 'words'],
+  ['B1', 'cefrj'],
+  ['B1', 'words'],
+  ['B1', 'words'],
+  ['C2', 'octanove'],
+  ['B2', 'words'],
+  ['B2', 'cefrj'],
+];
+
 /** A realistic English text containing every fake candidate's sentence. */
 export function fakeText(n = SPECS.length): string {
   return SPECS.slice(0, n)
@@ -447,6 +495,8 @@ function lexiconOf(s: Spec, i: number) {
     meaning_tr: s.tr,
     ipa: s.ipa,
     updated_at: 1761057600000,
+    cefr: FAKE_LEVELS[i]?.[0] ?? null,
+    cefr_source: FAKE_LEVELS[i]?.[1] ?? null,
   };
 }
 

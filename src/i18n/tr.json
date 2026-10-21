@@ -339,7 +339,9 @@
       "dayStart": "Gün başlangıcı",
       "dayStartHint": "Bu saatten önce yaptığın tekrarlar önceki güne sayılır; gece yarısı çalışıyorsan seri bozulmaz.",
       "level": "Tahmini seviye",
-      "levelHint": "AI, bu seviyenin altındaki çok temel kelimeleri önermez."
+      "levelHint": "AI, bu seviyenin altındaki çok temel kelimeleri önermez.",
+      "showEasy": "Kolay adayları açık göster",
+      "showEasyHint": "Metinden kelime çıkarırken seviyenin altındaki adaylar kapalı bir bölümde gelir. Açarsan bu bölüm hep açık görünür."
     },
     "levels": {
       "A1": "Başlangıç",
@@ -863,7 +865,28 @@
       "toLibrary": "Kartlara git",
       "pos": "Sözcük türü",
       "addedSenses_one": "{{count}} anlam eklendi",
-      "addedSenses_other": "{{count}} anlam eklendi"
+      "addedSenses_other": "{{count}} anlam eklendi",
+      "smartSummary": "{{level}} seviyene göre bu metinde {{total}} aday: senin için {{forYou}}, kolay {{easy}}, zaten bildiğin {{known}}.",
+      "tooHardHidden": "Seviyenin bir üstünü aşan {{count}} aday önerilmedi.",
+      "sections": {
+        "for_you": "Senin için",
+        "easy": "Kolay",
+        "known": "Biliyorsun",
+        "too_hard": "Seviyenin üstünde"
+      },
+      "sectionHints": {
+        "for_you": "Çoğu {{level}} seviyesinde; birkaçı bir üst seviyeden, kalanı alt seviyelerden. Seçili olanlar hazır geldi.",
+        "easy": "Seviyenin altındaki kelimeler. Bilmediklerini seçebilirsin.",
+        "known": "Kartın olan ya da bildiğini söylediğin kelimeler. Yine de eklemek istersen seçebilirsin.",
+        "too_hard": "Listedeki bu kelimeler seviyenin bir üstünü aşıyor. Seçili gelmez; istersen ekleyebilirsin."
+      },
+      "forYouEmpty": "Bu metinde {{level}} seviyesinde yeni kelime yok. Kolay bölümüne göz atabilirsin.",
+      "selectAllIn": "{{section}}: tümünü seç",
+      "selectNoneIn": "{{section}}: hiçbirini seçme",
+      "knowIt": "{{term}}: biliyorum",
+      "knowItShort": "Biliyorum",
+      "markedKnown": "“{{term}}” bildiklerine eklendi",
+      "markKnownFailed": "İşaretlenemedi. Tekrar dene."
     },
     "lookup": {
       "offline": "Çevrimdışısın. Bu kelime sözlük önbelleğinde yok; bağlantı gelince tekrar dene.",

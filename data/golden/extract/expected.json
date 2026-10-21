@@ -1,0 +1,12 @@
+{
+  "about": "Golden set of smart extraction (plan acceptance criterion 5, decision 0018). For each text and learner level, the pre-selected candidates must be at least 55 % at the learner's level, at most 10 % one level above, the rest below, none higher, and none of the words the learner already has ('known': simulated notes / known terms). A vocabulary list must still yield every entry ('list_entries'). Checked by src/domain/candidates.golden.test.ts on the recordings in recorded/.",
+  "criteria": { "same_min": 0.55, "next_max": 0.1 },
+  "levels": ["B1", "B2"],
+  "texts": {
+    "1-city-heat": { "known": ["temperature", "adapt", "council"] },
+    "2-hybrid-work": { "known": ["commute", "survey"] },
+    "3-sleep-science": { "known": ["research", "memory", "concentrate"] },
+    "4-lighthouse-story": { "known": ["storm", "wave"] },
+    "5-word-list": { "known": ["decision", "improve", "borrow"], "list_entries": 30 }
+  }
+}
