@@ -133,6 +133,10 @@ export interface Settings extends SyncedRow {
   level: CefrLevel; // self-estimated, default B1
   fsrs_params: number[] | null; // null = ts-fsrs defaults
   last_backup_at: Millis | null;
+  /** Example sentences: Turkish translation always shown (default: hidden until tapped). */
+  example_tr_visible?: boolean | null;
+  /** Example contexts prepared in the background, in order (null/absent = defaults). */
+  example_contexts?: string[] | null;
 }
 
 /** Shared dictionary entries, read-only on the client (pulled from server). */
@@ -147,6 +151,71 @@ export interface LexiconSense {
   meaning_tr: string;
   ipa: string | null;
   updated_at: Millis;
+}
+
+/** Level band of an example sentence (A1/A2 → A2, …, C1/C2 → C1). */
+export type LevelBand = 'A2' | 'B1' | 'B2' | 'C1';
+
+/** Shared example sentence (lexicon_examples), read-only on the client. Never user text. */
+export interface LexiconExample {
+  id: Id;
+  /** lexicon_senses.id (not the user's sense id). */
+  sense_id: Id;
+  context: string;
+  level_band: LevelBand;
+  text_en: string;
+  /** [start, end) of the term in text_en. */
+  span: [number, number];
+  /** {"tr": "..."} */
+  translations: Record<string, string>;
+  status: 'active' | 'retired';
+  updated_at: Millis;
+}
+
+export type FeedbackVerdict = 'like' | 'skip' | 'reject';
+
+/** The user's verdict on a piece of content. One row per target (id derived from the target). */
+export interface ContentFeedback extends SyncedRow {
+  /** 'example' (lexicon_examples) | 'user_content' | later 'mnemonic', 'false_friend', 'theme'. */
+  target_kind: string;
+  target_id: Id;
+  verdict: FeedbackVerdict;
+}
+
+/**
+ * Text the user wrote or corrected (an edited example sentence; mnemonics in İP6). Private
+ * to the user's account: synced, never written to a shared table.
+ */
+export interface UserContent extends SyncedRow {
+  /** 'example_sentence' | later 'mnemonic', … */
+  kind: string;
+  lexicon_sense_id: Id | null;
+  sense_id: Id | null;
+  context: string | null;
+  /** The shared item this text corrects (lexicon_examples.id). */
+  replaces_id: Id | null;
+  text: string;
+  translations: Record<string, string> | null;
+  span: [number, number] | null;
+  selected: boolean | null;
+}
+
+/** Background preparation of example sentences for one lexicon sense (device-local queue). */
+export interface ExampleJob {
+  /** `${sense_id}|${level_band}` */
+  key: string;
+  sense_id: Id;
+  level_band: LevelBand;
+  /** Contexts asked for in the last attempt. */
+  contexts: string[];
+  status: 'queued' | 'done' | 'failed';
+  /** Higher runs first (opened on screen > new note > older note). */
+  priority: number;
+  attempts: number;
+  next_attempt_at: Millis;
+  created_at: Millis;
+  updated_at: Millis;
+  error: string | null;
 }
 
 export type ImportJobStatus = 'queued' | 'processing' | 'ready' | 'failed' | 'done';
@@ -195,7 +264,15 @@ export interface ChunkCacheRow {
 }
 
 export type OutboxTable =
-  'notes' | 'senses' | 'cards' | 'review_logs' | 'sources' | 'settings' | 'practice_logs';
+  | 'notes'
+  | 'senses'
+  | 'cards'
+  | 'review_logs'
+  | 'sources'
+  | 'settings'
+  | 'practice_logs'
+  | 'content_feedback'
+  | 'user_content';
 /** Synced tables whose rows are never changed or deleted. */
 export const INSERT_ONLY_TABLES = [
   'review_logs',

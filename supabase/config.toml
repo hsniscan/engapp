@@ -407,6 +407,9 @@ verify_jwt = false
 [functions.ai-enrich]
 verify_jwt = false
 
+[functions.ai-examples]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
