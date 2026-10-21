@@ -143,10 +143,13 @@ not delete local insert-only rows that the pull did not return.
 Known gap: a v0.1 client pulls with v2 and moves its cursor past practice rows written by
 another device. After it updates, it does not get them (decision 0010).
 
-### Tables added after v3: `decks` (İP8, ADR 0016)
+### Tables added after v3: `content_feedback`, `user_content` (İP5), `decks` (İP8)
 
-`decks` (migration `20261022000400_decks.sql`) is an ordinary mutable table: the standard
-columns, stamp trigger and RLS, plus one registry row. Nothing in the RPCs changed. Two
+`content_feedback`, `user_content` (migration `20261022000100_examples.sql`, ADR 0013) and
+`decks` (migration `20261022000400_decks.sql`, ADR 0016) are ordinary mutable tables: the
+standard columns, stamp trigger and RLS, plus one registry row each. False-friend "Gizle" /
+"Hatalı" (İP6) are `content_feedback` rows with `target_kind = 'false_friend'`, so they need
+no table of their own. Nothing in the RPCs changed. Two
 client mechanisms make it safe to add a table after clients already pull with v3:
 
 - **Push waits for the registry.** `LATE_SYNC_TABLES` (`src/sync/engine.ts`) lists tables
@@ -155,14 +158,16 @@ client mechanisms make it safe to add a table after clients already pull with v3
   until the registry lists it; then it remembers this in `meta.server_tables` and never
   asks again. A backend without the migration (or without a registry at all) therefore
   costs no attempts, and the deploy order does not matter.
-- **One-time re-pull.** An app version that does not know `decks` still pulls with v3, gets
-  deck rows, drops them as invalid and moves its cursor past them. The Dexie v8 upgrade
-  (the version that adds the table) records `meta.pull_backfill = ['decks']` when the device
+- **One-time re-pull.** An app version that does not know a table still pulls with v3, gets
+  its rows, drops them as invalid and moves its cursor past them. The Dexie upgrade that
+  adds the table (v5 for the İP5 tables, v8 for decks) adds it to `meta.pull_backfill` when the device
   has pulled before (`sync_cursor > 0`). After the next normal pull the engine pages from 0
   up to the stored cursor, applies only rows of the listed tables (last writer wins, so it
   is idempotent and an interrupted run simply starts over), and clears the list. A full
-  resync clears it too, because it pulls every row anyway. This closes for decks the gap
-  that practice logs still have.
+  resync clears it too, because it pulls every row anyway. This closes for these tables the
+  gap that practice logs still have.
+- Both mechanisms work with İP2's `_sync_upsert`, which keeps server columns a payload
+  lacks: the registry check only delays a push, and the re-pull applies full server rows.
 
 ### Tombstones and full resync
 

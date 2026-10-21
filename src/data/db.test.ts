@@ -1,13 +1,17 @@
 import Dexie from 'dexie';
 import { describe, expect, it } from 'vitest';
-import { makeSense } from '../test/factories';
+import { makeCard, makeSense } from '../test/factories';
+import { PULL_BACKFILL_KEY } from './backfill';
 import { EngDb } from './db';
+
+/** The current schema version; bump with every new Dexie version. */
+const LATEST = 8;
 
 describe('Dexie schema', () => {
   it('opens with every table and the indexes the queries rely on', async () => {
     const d = new EngDb('schema-test');
     await d.open();
-    expect(d.verno).toBe(8);
+    expect(d.verno).toBe(LATEST);
     expect(d.tables.map((t) => t.name).sort()).toEqual(
       ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs', 'decks', 'theme_previews'].sort(),
     );
@@ -152,6 +156,76 @@ describe('Dexie schema', () => {
     const d = new EngDb(name);
     await d.open();
     expect(await d.meta.get('sync_cursor')).toEqual({ key: 'sync_cursor', value: 0 });
+    d.close();
+    await d.delete();
+  });
+
+  it('fresh install: latest version, no backfill, sources topic index works', async () => {
+    const d = new EngDb('fresh-install-test');
+    await d.open();
+    expect(d.verno).toBe(LATEST);
+    expect(d.tables.map((t) => t.name)).not.toContain('pair_note_feedback');
+    expect(await d.meta.count()).toBe(0);
+    expect(d.sources.schema.indexes.find((i) => i.name === 'topics')?.multi).toBe(true);
+    await d.sources.add({ id: 's1', created_at: 1, topics: ['travel', 'food'] } as never);
+    expect((await d.sources.where('topics').equals('food').toArray()).map((x) => x.id)).toEqual(['s1']);
+    d.close();
+    await d.delete();
+  });
+
+  it('upgrades a v3 (v0.1 + İP1) database straight to the latest version with its data', async () => {
+    const name = 'upgrade-from-v3';
+    const old = new Dexie(name);
+    old.version(1).stores({
+      notes: 'id, term_norm, lexicon_term_id, updated_at, deleted_at, *tags',
+      senses: 'id, note_id, [note_id+lexicon_sense_id], lexicon_sense_id, deleted_at',
+      cards: 'id, note_id, sense_id, [state+due], due, card_type, deleted_at',
+      review_logs: 'id, card_id, reviewed_at, undo_of',
+      sources: 'id, created_at',
+      settings: 'id',
+      lexicon_cache: 'id, term_id, lemma_norm, updated_at',
+      chunk_cache: 'chunk_hash, created_at',
+      import_jobs: 'id, status, created_at',
+      import_candidates: 'id, job_id',
+      outbox: '++seq, [table+row_id], next_attempt_at',
+      daily_activity: 'date',
+      error_log: '++id, at',
+      meta: 'key',
+    });
+    old.version(2).stores({});
+    old.version(3).stores({ practice_logs: 'id, card_id, practiced_at, session_id' });
+    await old.open();
+    await old.table('notes').add({ id: 'n1', term: 'desk', term_norm: 'desk', tags: ['iş'], deleted_at: null });
+    await old.table('senses').add(makeSense({ id: 'se1', note_id: 'n1', source_id: 'src1' }));
+    await old.table('cards').add(makeCard({ id: 'c1', note_id: 'n1' }));
+    await old.table('review_logs').add({ id: 'r1', card_id: 'c1', reviewed_at: 5, undo_of: null });
+    await old.table('practice_logs').add({ id: 'p1', card_id: 'c1', practiced_at: 6, session_id: 'x' });
+    await old.table('sources').add({ id: 'src1', created_at: 1, title: 'Text' });
+    await old.table('settings').add({ id: 'settings', timezone: 'Europe/Istanbul' });
+    await old.table('outbox').add({ table: 'notes', row_id: 'n1', next_attempt_at: 0 });
+    await old.table('meta').bulkAdd([
+      { key: 'sync_cursor', value: 42 },
+      { key: 'lexicon_cursor', value: 9 },
+    ]);
+    old.close();
+
+    const d = new EngDb(name);
+    await d.open();
+    expect(d.verno).toBe(LATEST);
+    expect(d.tables.map((t) => t.name)).not.toContain('pair_note_feedback');
+    expect(await d.notes.get('n1')).toMatchObject({ term: 'desk', tags: ['iş'], level_override: null });
+    expect(await d.senses.get('se1')).toMatchObject({ source_id: 'src1' });
+    expect(await d.cards.count()).toBe(1);
+    expect(await d.review_logs.count()).toBe(1);
+    expect(await d.practice_logs.count()).toBe(1);
+    expect(await d.outbox.count()).toBe(1);
+    expect(await d.settings.get('settings')).toMatchObject({ timezone: 'Europe/Istanbul' });
+    expect((await d.sources.get('src1'))?.topics).toBeUndefined();
+    expect((await d.meta.get('sync_cursor'))?.value).toBe(42);
+    expect((await d.meta.get('lexicon_cursor'))?.value).toBe(0);
+    expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(
+      expect.arrayContaining(['content_feedback', 'user_content', 'decks']),
+    );
     d.close();
     await d.delete();
   });
