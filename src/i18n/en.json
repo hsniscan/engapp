@@ -565,7 +565,8 @@
     "termType": {
       "word": "Word",
       "phrase": "Phrase",
-      "pattern": "Pattern"
+      "pattern": "Pattern",
+      "affix": "Root/affix"
     },
     "cardType": {
       "recognition": "Recognition",
@@ -594,7 +595,10 @@
       "interjection": "interjection",
       "phrase": "phrase",
       "determiner": "determiner",
-      "other": "other"
+      "other": "other",
+      "root": "root",
+      "prefix": "prefix",
+      "suffix": "suffix"
     },
     "tags": {
       "label": "Tags",
@@ -1073,5 +1077,52 @@
     },
     "aiTitle": "AI estimates",
     "aiBody": "Levels of words outside the lists and the corrections for Turkish learners are made with Google Gemini. They are estimates: a correction moves a list level by at most one step, and an estimate is bounded by the word's frequency. You can always change a word's level yourself."
+  },
+  "family": {
+    "title": "Family",
+    "hint": "Bold words are already in your cards. Tap any other word to add it.",
+    "addWord": "Add {{word}}",
+    "adding": "Adding {{word}}…",
+    "added": "{{word}} added",
+    "addedBody": "Meaning: {{meaning}}",
+    "addFailed": "Could not add {{word}}",
+    "showMore_one": "{{count}} more word",
+    "showMore_other": "{{count}} more words",
+    "showLess": "Show less",
+    "parts": "Root and affixes",
+    "kind": {
+      "root": "root",
+      "prefix": "prefix",
+      "suffix": "suffix"
+    },
+    "kindOf": {
+      "root": "root",
+      "prefix": "prefix",
+      "suffix": "suffix"
+    },
+    "suggest_one": "The {{kind}} {{form}} appears in {{count}} of your words: {{words}}.",
+    "suggest_other": "The {{kind}} {{form}} appears in {{count}} of your words: {{words}}.",
+    "suggestWhy": "Learn its meaning once and these words, and new ones, get easier.",
+    "addRootCard": "Add root card",
+    "addAffixCard": "Add affix card",
+    "dismissSuggestion": "Don't suggest this",
+    "morphemeAdded": "{{form}} card added",
+    "morphemeAddedBody": "Recognition only: {{form}} on the front, its meaning and your words on the back.",
+    "yourWords": "In your words",
+    "otherWords": "More examples",
+    "noYourWords": "None of your words has this {{kind}} yet.",
+    "source": "Source: Wiktionary, MorphyNet, wordfreq (CC BY-SA 4.0)",
+    "falseFriend": {
+      "label": "False friend",
+      "full": "Different meanings",
+      "partial": "Meanings partly overlap",
+      "trEn": "English: {{en}}",
+      "hide": "Hide",
+      "report": "Wrong",
+      "reportLabel": "Report this warning as wrong",
+      "hidden": "Warning hidden",
+      "reported": "Reported, thank you",
+      "reportedBody": "We won't show this warning again."
+    }
   }
 }

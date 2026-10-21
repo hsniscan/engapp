@@ -15,7 +15,9 @@ import {
   softDeleteSense,
   type NoteDetail,
 } from '@/data';
-import type { Card, Sense, TermType } from '@/domain/types';
+import type { Card, NoteTermType, Sense } from '@/domain/types';
+import { FalseFriendStrips } from '@/features/family/FalseFriendStrip';
+import { FamilySection } from '@/features/family/FamilySection';
 import {
   Badge,
   Button,
@@ -60,7 +62,7 @@ interface Draft {
   term: string;
   ipa: string;
   tags: string[];
-  termType: TermType;
+  termType: NoteTermType;
   senses: Record<string, SenseEdit>;
   added: NewSense[];
 }
@@ -289,6 +291,7 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
           {t('library.detail.duplicateHint')}
         </p>
       )}
+      <FalseFriendStrips term={note.term_norm} className="max-w-none" />
       <div className="grid gap-4 sm:grid-cols-2">
         <TextField
           maxLength={LIMITS.term}
@@ -316,16 +319,18 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
           spellCheck={false}
         />
       </div>
-      <SegmentedControl<TermType>
-        legend={t('cards.add.termType')}
-        value={draft.termType}
-        onValueChange={(v) => setDraft((d) => ({ ...d, termType: v }))}
-        options={[
-          { value: 'word', label: t('cards.termType.word') },
-          { value: 'phrase', label: t('cards.termType.phrase') },
-          { value: 'pattern', label: t('cards.termType.pattern') },
-        ]}
-      />
+      {note.term_type !== 'affix' && (
+        <SegmentedControl<NoteTermType>
+          legend={t('cards.add.termType')}
+          value={draft.termType}
+          onValueChange={(v) => setDraft((d) => ({ ...d, termType: v }))}
+          options={[
+            { value: 'word', label: t('cards.termType.word') },
+            { value: 'phrase', label: t('cards.termType.phrase') },
+            { value: 'pattern', label: t('cards.termType.pattern') },
+          ]}
+        />
+      )}
       <TagInput
         label={t('cards.tags.label')}
         value={draft.tags}
@@ -519,6 +524,7 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
           speech={{ available: speech.available, speak: speech.speak }}
         />
       )}
+      <FamilySection note={note} />
 
       <section aria-labelledby={`${id}-cards`} className="flex flex-col gap-2">
         <h3 id={`${id}-cards`} className="font-serif text-lg font-semibold text-fg">

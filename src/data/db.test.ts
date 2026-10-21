@@ -7,9 +7,9 @@ describe('Dexie schema', () => {
   it('opens with every table and the indexes the queries rely on', async () => {
     const d = new EngDb('schema-test');
     await d.open();
-    expect(d.verno).toBe(5);
+    expect(d.verno).toBe(6);
     expect(d.tables.map((t) => t.name).sort()).toEqual(
-      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs'].sort(),
+      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'pair_note_feedback', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs'].sort(),
     );
     const idx = (table: string) => d.table(table).schema.indexes.map((i) => i.name);
     expect(idx('cards')).toEqual(expect.arrayContaining(['[state+due]', 'note_id', 'sense_id']));
@@ -104,7 +104,7 @@ describe('Dexie schema', () => {
 
     const d = new EngDb(name);
     await d.open();
-    expect(d.verno).toBe(5);
+    expect(d.verno).toBe(6);
     expect(await d.cards.get('c1')).toMatchObject({ state: 2, due: 5 });
     expect(await d.practice_logs.count()).toBe(1);
     expect(await d.lexicon_examples.count()).toBe(0);
@@ -113,6 +113,44 @@ describe('Dexie schema', () => {
     expect(idx('content_feedback')).toEqual(expect.arrayContaining(['[target_kind+target_id]']));
     expect(idx('user_content')).toEqual(expect.arrayContaining(['replaces_id', 'lexicon_sense_id', 'kind']));
     expect(idx('example_jobs')).toEqual(expect.arrayContaining(['status', 'next_attempt_at']));
+    d.close();
+    await d.delete();
+  });
+
+  it('v6 upgrade adds ref_cache and pair_note_feedback and keeps the sync cursor', async () => {
+    const name = 'upgrade-v6-test';
+    const old = new Dexie(name);
+    old.version(3).stores({ notes: 'id, term_norm', error_log: '++id, at', meta: 'key' });
+    await old.open();
+    await old.table('notes').add({ id: 'n1', term_norm: 'bank', term_type: 'word' });
+    await old.table('meta').put({ key: 'sync_cursor', value: 420 });
+    await old.table('error_log').add({ at: 1, message: 'x', stack: null, context: 'sync.pull invalid senses/s9' });
+    old.close();
+
+    const d = new EngDb(name);
+    await d.open();
+    expect(d.verno).toBe(6);
+    expect(await d.notes.get('n1')).toMatchObject({ term_norm: 'bank' });
+    expect(await d.meta.get('sync_cursor')).toEqual({ key: 'sync_cursor', value: 420 });
+    expect(await d.ref_cache.count()).toBe(0);
+    expect(await d.pair_note_feedback.count()).toBe(0);
+    d.close();
+    await d.delete();
+  });
+
+  it('v6 upgrade pulls again from the start when an older version skipped a note', async () => {
+    // An older app could not read an affix note: it logged the row as invalid and moved on.
+    const name = 'upgrade-v6-skipped';
+    const old = new Dexie(name);
+    old.version(3).stores({ notes: 'id, term_norm', error_log: '++id, at', meta: 'key' });
+    await old.open();
+    await old.table('meta').put({ key: 'sync_cursor', value: 420 });
+    await old.table('error_log').add({ at: 1, message: 'invalid term_type', stack: null, context: 'sync.pull invalid notes/n7' });
+    old.close();
+
+    const d = new EngDb(name);
+    await d.open();
+    expect(await d.meta.get('sync_cursor')).toEqual({ key: 'sync_cursor', value: 0 });
     d.close();
     await d.delete();
   });

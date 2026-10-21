@@ -1,0 +1,56 @@
+{
+  "built_at": "2026-10-21",
+  "output": {
+    "file": "public/data/morphology-4e1bbd0e0d.json",
+    "sha256": "4e1bbd0e0d520775bdcf176e37e0d6dc64a644eb53ae92f742b20509d7847c57",
+    "bytes": 353458
+  },
+  "etymology": "mirror",
+  "vocabulary_limit": 30000,
+  "stats": {
+    "vocab": 30000,
+    "lemmas": 29673,
+    "edges": 4547,
+    "families": 2598,
+    "familyWords": 7142,
+    "droppedFamilies": 0,
+    "morphemes": 133,
+    "words": 7744
+  },
+  "ai_meanings": {
+    "prompt_version": "morpheme-tr-v1",
+    "count": 133
+  },
+  "sources": [
+    {
+      "name": "wordfreq (English \"large\" frequency list)",
+      "version": "3.1.1",
+      "url": "https://files.pythonhosted.org/packages/24/61/62835c475d69872d30689f284497853fe33fe1d6dd18f57346d13305861d/wordfreq-3.1.1-py3-none-any.whl",
+      "sha256": "4b1c6ecffc6198be3396d5cf871c4423ca71c907c231348d352dd54d62b97473",
+      "downloaded_at": "2026-10-21",
+      "license": "CC BY-SA 4.0 (data); Apache-2.0 (code)",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "attribution": "Robyn Speer, wordfreq v3.1.1 (2022), https://github.com/rspeer/wordfreq"
+    },
+    {
+      "name": "MorphyNet English derivational morphology (eng.derivational.v1.tsv)",
+      "version": "v1, commit 378144f64df58c78db5245af19d16a511ccecf3a",
+      "url": "https://raw.githubusercontent.com/kbatsuren/MorphyNet/378144f64df58c78db5245af19d16a511ccecf3a/eng/eng.derivational.v1.tsv",
+      "sha256": "5920edacc1888b14464fc5cd96beea0a721221d56d1dc0e49de22f4c7c537c50",
+      "downloaded_at": "2026-10-21",
+      "license": "CC BY-SA 3.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution": "Khuyagbaatar Batsuren, Gábor Bella, Fausto Giunchiglia: MorphyNet: a Large Multilingual Database of Derivational and Inflectional Morphology (SIGMORPHON 2021), https://github.com/kbatsuren/MorphyNet"
+    },
+    {
+      "name": "Wiktionary English via kaikki.org, SQLite mirror (thymesis-dictionary kaikki-en-v1)",
+      "version": "kaikki-en-v1 (repository commit 674989f6e6081ef89e1f2e65659825fbe0e81afd)",
+      "url": "https://github.com/ZexiKuang/thymesis-dictionary/releases/download/kaikki-en-v1/kaikki_en.sqlite",
+      "sha256": "043014669e0c0242be3bd93ec2e48084b5e2a8c9843800fbc664230b9faece1a",
+      "downloaded_at": "2026-10-21",
+      "license": "CC BY-SA 4.0 and GFDL (Wiktionary content)",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "attribution": "Wiktionary contributors, https://en.wiktionary.org; extracted by kaikki.org / wiktextract; SQLite packaging by the thymesis-dictionary project"
+    }
+  ]
+}

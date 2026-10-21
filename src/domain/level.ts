@@ -113,10 +113,13 @@ export function senseLevel(
   const stored = storedLevel(lex);
   if (stored) return stored;
   if (!data) return null;
+  const termType = lex?.term_type ?? note.term_type;
+  // A root/affix card (İP6) is not a word: it has no CEFR level.
+  if (termType === 'affix') return null;
   return resolveLevel(
     {
       lemma_norm: lex?.lemma_norm ?? note.term_norm,
-      term_type: lex?.term_type ?? note.term_type,
+      term_type: termType,
       pos: sense?.pos ?? lex?.pos ?? null,
       cefr_guess: null,
     },

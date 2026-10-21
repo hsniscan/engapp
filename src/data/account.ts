@@ -68,7 +68,7 @@ export async function dropLocalSettings(): Promise<void> {
 
 /** "Yerel veriyi at": forget everything on this device and link it to `userId`. */
 export async function discardLocalData(userId: string): Promise<void> {
-  const keep = new Set(['meta']);
+  const keep = new Set(['meta', 'ref_cache']);
   await db.transaction('rw', db.tables, async () => {
     for (const t of db.tables) if (!keep.has(t.name)) await t.clear();
     await setMeta(META.userId, userId);
@@ -116,7 +116,7 @@ export async function discardAccountData(userId: string, snapshot: RemoteSnapsho
 /** Device-level caches that do not belong to an account and survive a copy. */
 // lexicon_examples is the shared sentence cache; the other account's likes, rejections and
 // edits (content_feedback, user_content) are personal and are NOT copied (ADR 0009).
-const KEEP_ON_COPY = new Set(['meta', 'chunk_cache', 'lexicon_cache', 'lexicon_examples', 'error_log']);
+const KEEP_ON_COPY = new Set(['meta', 'chunk_cache', 'lexicon_cache', 'lexicon_examples', 'error_log', 'ref_cache']);
 
 /** The user's own content of a live note, as input for the normal add path. */
 function copyInput(note: Note, senses: Sense[], sourceIds: Map<Id, Id>): AddNoteInput {

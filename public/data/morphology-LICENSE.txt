@@ -1,0 +1,21 @@
+Engapp word-family and morpheme data (morphology-*.json)
+
+This data is licensed under the Creative Commons Attribution-ShareAlike 4.0 International
+licence: https://creativecommons.org/licenses/by-sa/4.0/
+
+It is an adaptation of:
+
+- MorphyNet (English derivational morphology, v1), by Khuyagbaatar Batsuren, Gábor Bella and
+  Fausto Giunchiglia, https://github.com/kbatsuren/MorphyNet (CC BY-SA 3.0)
+- Wiktionary (https://en.wiktionary.org), by the Wiktionary contributors, extracted by kaikki.org /
+  wiktextract (Tatu Ylonen) (CC BY-SA 4.0 / GFDL)
+- wordfreq 3.1.1, by Robyn Speer, https://github.com/rspeer/wordfreq (data CC BY-SA 4.0)
+
+Changes:
+- words limited to the 30,000 most frequent;
+- derivations filtered and grouped into families;
+- roots and affixes assigned from etymologies;
+- Turkish explanations added (written by hand and generated with AI).
+
+Versions and checksums of the sources are listed in data/reference/morphology.sources.json
+in the Engapp repository.

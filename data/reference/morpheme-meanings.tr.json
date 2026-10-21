@@ -1,0 +1,673 @@
+{
+  "prompt_version": "morpheme-tr-v1",
+  "generated_at": "2026-10-21",
+  "items": {
+    "-able": {
+      "meaning_tr": "edilebilir, yapılabilir",
+      "note_tr": "Kelimelere edilebilirlik anlamı katar: comfortable (rahat) ve reasonable (makul) sözcüklerinde olduğu gibi.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-age": {
+      "meaning_tr": "eylem, sonuç",
+      "note_tr": "İsim türetir: marriage (evlilik) ve package (paket) kelimelerinde olduğu gibi.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-al": {
+      "meaning_tr": "-sel, ilgili",
+      "note_tr": "İsimlerden ilişkili olma anlamı katan sıfatlar yapar: national (ulusal) ve personal (kişisel).",
+      "model": "gemini-3.8-flash"
+    },
+    "-ary": {
+      "meaning_tr": "ile ilgili",
+      "note_tr": "İsimden sıfat yapar: primary (birincil) ve secondary (ikincil) kelimelerinde olduğu gibi.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-ate": {
+      "meaning_tr": "durumuna getirmek",
+      "note_tr": "Fiil türetir: operate (ameliyat etmek veya çalıştırmak) kelimesinde bu eki görebilirsiniz.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-dom": {
+      "meaning_tr": "durum, krallık",
+      "note_tr": "Soyut isimler türetir: freedom (özgürlük) ve kingdom (krallık).",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-ee": {
+      "meaning_tr": "maruz kalan kişi",
+      "note_tr": "Eylemin yöneldiği kişiyi belirtir: employee (çalışan) ve refugee (mülteci).",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-en": {
+      "meaning_tr": "dönüştürmek",
+      "note_tr": "Sıfat ya da isimden fiil yapar: strength (güç) → strengthen (güçlendirmek).",
+      "model": "gemini-3.5-flash-lite",
+      "reviewed": true
+    },
+    "-ence": {
+      "meaning_tr": "durum, nitelik",
+      "note_tr": "Fiil ve sıfatlardan durum veya nitelik ismi yapar: difference (fark) ve evidence (kanıt).",
+      "model": "gemini-3.8-flash"
+    },
+    "-ent": {
+      "meaning_tr": "yapan, eden",
+      "note_tr": "Sıfat veya isim üretir: different (farklı) ve student (öğrenci) sözcüklerinde bulunur.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-er": {
+      "meaning_tr": "yapan kişi veya araç",
+      "note_tr": "Fiilden o işi yapan kişiyi veya nesneyi türetir: player (oyuncu).",
+      "model": "gemini-3.8-flash"
+    },
+    "-ery": {
+      "meaning_tr": "yer, uygulama",
+      "note_tr": "Yer veya kavram bildirir: chemistry (kimya) ve jewelry (mücevherat) kelimelerinde bulunur.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-ess": {
+      "meaning_tr": "dişi",
+      "note_tr": "İsimleri dişil yapar: actress (kadın oyuncu) ve princess (prenses).",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-ful": {
+      "meaning_tr": "ile dolu",
+      "note_tr": "İsimlere doluluk anlamı katar: beautiful (güzel) ve powerful (güçlü) kelimelerinde görülebilir.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-hood": {
+      "meaning_tr": "durum, dönem",
+      "note_tr": "İsimlere gelerek durum bildirir: childhood (çocukluk) ve brotherhood (kardeşlik).",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-ian": {
+      "meaning_tr": "mensup, ilgili",
+      "note_tr": "Milliyet veya meslek bildirir: russian (rus) ve asian (asya) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-ic": {
+      "meaning_tr": "-sel, ile ilgili",
+      "note_tr": "İsimlerden aitlik veya nitelik bildiren sıfat yapar: basic (temel) ve democratic (demokratik).",
+      "model": "gemini-3.8-flash"
+    },
+    "-ics": {
+      "meaning_tr": "bilim dalı",
+      "note_tr": "Genellikle bilim veya alan adı yapar: economics (ekonomi) ve electronics (elektronik).",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-ify": {
+      "meaning_tr": "durumuna getirmek",
+      "note_tr": "İsim veya sıfatlardan fiil yapar: clarify (açıklamak) ve simplify (basitleştirmek).",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-ish": {
+      "meaning_tr": "andıran, -imsi",
+      "note_tr": "Sıfat yapar: selfish (bencil) ve spanish (ispanyol) kelimelerinde bu eki görebilirsiniz.",
+      "model": "gemini-3.5-flash-lite",
+      "reviewed": true
+    },
+    "-ism": {
+      "meaning_tr": "akım, inanç",
+      "note_tr": "Sistem veya görüş bildirir: tourism (turizm) ve racism (ırkçılık) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-ist": {
+      "meaning_tr": "yapan kişi",
+      "note_tr": "Meslek veya görüş taraftarı bildirir: artist (sanatçı) ve journalist (gazeteci) gibi.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-itude": {
+      "meaning_tr": "nitelik, durum",
+      "note_tr": "Soyut isimler oluşturur: solitude (yalnızlık) ve aptitude (yetenek).",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-ity": {
+      "meaning_tr": "durum, nitelik",
+      "note_tr": "Sıfatlardan durum veya özellik bildiren soyut isimler türetir: security (güvenlik).",
+      "model": "gemini-3.8-flash"
+    },
+    "-ive": {
+      "meaning_tr": "eğilimli, niteliğinde",
+      "note_tr": "Fiilden yatkınlık veya işlev bildiren sıfat yapar: active (aktif) ve effective (etkili).",
+      "model": "gemini-3.8-flash"
+    },
+    "-ize": {
+      "meaning_tr": "haline getirmek",
+      "note_tr": "İsimden fiil yapar: realize (fark etmek) ve organize (düzenlemek) kelimelerinde yer alır.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-less": {
+      "meaning_tr": "-sız, -siz",
+      "note_tr": "Yokluk bildirir: homeless (evsiz) ve useless (faydasız) sözcüklerindeki gibi.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-ling": {
+      "meaning_tr": "küçük şey",
+      "note_tr": "Küçültme anlamı katar: sibling (kardeş) kelimesinde olduğu gibi.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-logy": {
+      "meaning_tr": "bilim dalı",
+      "note_tr": "Uzmanlık alanı bildirir: technology (teknoloji) ve psychology (psikoloji) kelimelerindeki gibi.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-ly": {
+      "meaning_tr": "-ce, bir şekilde",
+      "note_tr": "Sıfatlardan zarf türeterek durum belirtir: really (gerçekten) ve probably (muhtemelen).",
+      "model": "gemini-3.8-flash"
+    },
+    "-ment": {
+      "meaning_tr": "eylem, sonuç",
+      "note_tr": "Fiillerden isim yapar: government (hükümet) ve development (gelişme) örneklerindeki gibi.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-ness": {
+      "meaning_tr": "durum, nitelik",
+      "note_tr": "Sıfattan isim yapar: happiness (mutluluk) ve illness (hastalık) sözcüklerindeki gibi.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-ous": {
+      "meaning_tr": "niteliğinde olan",
+      "note_tr": "İsimden sıfat yapar: famous (ünlü) ve dangerous (tehlikeli) kelimelerinde karşımıza çıkar.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-ship": {
+      "meaning_tr": "durum, uzmanlık",
+      "note_tr": "Soyut isim yapar: relationship (ilişki) ve leadership (liderlik) örneklerindeki gibi.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-some": {
+      "meaning_tr": "eğilimli olan",
+      "note_tr": "Sıfatlar üretir: awesome (muhteşem) ve troublesome (sıkıntılı).",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-ster": {
+      "meaning_tr": "yapan kişi",
+      "note_tr": "Meslek veya tip bildirir: gangster (gangster) kelimesinde görüldüğü gibi.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-th": {
+      "meaning_tr": "durum, ölçü",
+      "note_tr": "İsim üretir: health (sağlık) ve truth (gerçek) sözcüklerinde bu eki tanıyabilirsiniz.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-tion": {
+      "meaning_tr": "eylem, durum, sonuç",
+      "note_tr": "Fiillerden eylemi veya sonucunu gösteren isim yapar: education (eğitim) ve action (eylem).",
+      "model": "gemini-3.8-flash"
+    },
+    "-ure": {
+      "meaning_tr": "eylem, sonuç",
+      "note_tr": "Fiilden isim türetir: failure (başarısızlık) veya departure (ayrılış).",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-ward": {
+      "meaning_tr": "yönünde, doğru",
+      "note_tr": "Yön bildiren zarflar türetir: forward (ileri) veya toward (-e doğru).",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-wise": {
+      "meaning_tr": "şeklinde, bakımından",
+      "note_tr": "Tarz bildirir: clockwise (saat yönünde) ve otherwise (aksi takdirde).",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "-y": {
+      "meaning_tr": "-li, gibi, dolu",
+      "note_tr": "Nitelik bildirerek sıfat yapar: funny (komik, eğlenceli) ve easy (kolay).",
+      "model": "gemini-3.8-flash"
+    },
+    "anti-": {
+      "meaning_tr": "karşı, zıt, aleyhinde",
+      "note_tr": "Karşıtlık veya engelleme anlamı taşır: antibiotic (antibiyotik) ve antisocial (antisosyal).",
+      "model": "gemini-3.8-flash"
+    },
+    "aud": {
+      "meaning_tr": "duymak, işitmek",
+      "note_tr": "İşitme duyusuyla ilgilidir: audio (ses) ve audience (seyirci, dinleyici kitlesi).",
+      "model": "gemini-3.8-flash"
+    },
+    "auto-": {
+      "meaning_tr": "kendi, kendiliğinden",
+      "note_tr": "Kendi kendine olan durumları belirtir: autobiography (öz yaşam öyküsü) ve automotive (otomotiv).",
+      "model": "gemini-3.8-flash"
+    },
+    "bi-": {
+      "meaning_tr": "iki, çift",
+      "note_tr": "İki veya çift anlamı katar: bilingual (iki dilli) ve bicycle (bisiklet).",
+      "model": "gemini-3.8-flash"
+    },
+    "bio-": {
+      "meaning_tr": "yaşam, canlı",
+      "note_tr": "Canlılar ve yaşamla ilgili kavramlarda yer alır: biochemistry (biyokimya) ve biomass (biyokütle).",
+      "model": "gemini-3.8-flash"
+    },
+    "cede": {
+      "meaning_tr": "gitmek, ayrılmak",
+      "note_tr": "Bu kök ilerleme anlamı taşır; process (süreç) ve success (başarı) kelimelerinde karşımıza çıkar.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "cept": {
+      "meaning_tr": "almak, yakalamak",
+      "note_tr": "Bu kök alma anlamı verir; accept (kabul etmek) ve receive (almak) kelimelerinde fark edilir.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "chron": {
+      "meaning_tr": "zaman",
+      "note_tr": "Zamanla ilgili kavramlar kurar: chronic (kronik, uzun süren) ve chronological (kronolojik).",
+      "model": "gemini-3.8-flash"
+    },
+    "clud": {
+      "meaning_tr": "kapatmak",
+      "note_tr": "Bu kök 'kapatmak' anlamına gelir; include (dahil etmek) ve close (kapatmak) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "co-": {
+      "meaning_tr": "birlikte, beraber",
+      "note_tr": "Birlikte yapma veya ortaklık belirtir: cooperation (iş birliği).",
+      "model": "gemini-3.8-flash"
+    },
+    "cogn": {
+      "meaning_tr": "bilmek, öğrenmek",
+      "note_tr": "Bilgi ve zihinle ilgilidir: recognize (tanımak) ve cognitive (bilişsel).",
+      "model": "gemini-3.8-flash"
+    },
+    "corp": {
+      "meaning_tr": "beden, gövde",
+      "note_tr": "Fiziksel gövde veya kurum anlatır: corpse (ceset) ve corporation (şirket, kurum).",
+      "model": "gemini-3.8-flash"
+    },
+    "counter-": {
+      "meaning_tr": "karşı, zıt",
+      "note_tr": "Karşıtlık veya zıt tepki bildirir: counteract (karşı koymak) ve counterpart (emsal, denk).",
+      "model": "gemini-3.8-flash"
+    },
+    "cred": {
+      "meaning_tr": "inanmak, güvenmek",
+      "note_tr": "İnanç ve güven bildirir: credit (kredi, güven) ve incredible (inanılmaz).",
+      "model": "gemini-3.8-flash"
+    },
+    "cur": {
+      "meaning_tr": "koşmak",
+      "note_tr": "Bu kök 'koşmak' anlamına gelir; current (akım, güncel) ve occur (meydana gelmek) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "de-": {
+      "meaning_tr": "giderme, tersine çevirme, aşağı",
+      "note_tr": "Bir durumun tersine dönmesini veya eksilmesini anlatır: dehydration (su kaybı) ve deregulation (kuralsızlaştırma).",
+      "model": "gemini-3.8-flash"
+    },
+    "dict": {
+      "meaning_tr": "söylemek",
+      "note_tr": "Bu kök söyleme anlamı taşır; predict (tahmin etmek) ve addiction (bağımlılık) kelimelerinde vardır.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "dis-": {
+      "meaning_tr": "olumsuzluk, tersi",
+      "note_tr": "Olumsuzluk veya eylemin tersini ifade eder: discover (keşfetmek) ve discount (indirim).",
+      "model": "gemini-3.8-flash"
+    },
+    "duc": {
+      "meaning_tr": "yöneltmek, yönetmek",
+      "note_tr": "Bu kök yöneltme veya yönetme anlamı taşır; education (eğitim) ve produce (üretmek) kelimelerinde vardır.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "en-": {
+      "meaning_tr": "yapmak, kılmak",
+      "note_tr": "Kelimelerden fiil türeterek o duruma getirmeyi sağlar: ensure (sağlamak) ve encourage (cesaretlendirmek).",
+      "model": "gemini-3.8-flash"
+    },
+    "extra-": {
+      "meaning_tr": "dışında, ötesinde",
+      "note_tr": "Sınırların ötesini ya da fazlasını anlatır: extraordinary (olağanüstü) ve extracurricular (müfredat dışı).",
+      "model": "gemini-3.8-flash"
+    },
+    "fac": {
+      "meaning_tr": "yapmak, etmek",
+      "note_tr": "Yapmak veya üretmekle ilişkili köktür: fact (gerçek, olgu) ve perfect (kusursuz).",
+      "model": "gemini-3.8-flash"
+    },
+    "fer": {
+      "meaning_tr": "taşımak",
+      "note_tr": "Bu kök taşıma anlamı verir; offer (teklif etmek) ve difference (fark) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "fin": {
+      "meaning_tr": "son, sınır",
+      "note_tr": "Bu kök bitiş anlamı taşır; final (son) ve finally (sonunda) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "flect": {
+      "meaning_tr": "bükmek, eğmek",
+      "note_tr": "Bükülme ve yansıma anlamı katar: flexible (esnek) ve reflect (yansıtmak).",
+      "model": "gemini-3.8-flash"
+    },
+    "fore-": {
+      "meaning_tr": "ön, önde, önceden",
+      "note_tr": "Konum veya zaman olarak önde olmayı bildirir: forehead (alın) ve forecast (tahmin etmek).",
+      "model": "gemini-3.8-flash"
+    },
+    "form": {
+      "meaning_tr": "şekil",
+      "note_tr": "Bu kök biçim anlamı taşır; form (şekil) ve information (bilgi) kelimelerinde karşımıza çıkar.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "geo-": {
+      "meaning_tr": "yer, dünya",
+      "note_tr": "Dünya ve yerbilimleriyle ilgili sözcüklerde geçer: geothermal (jeotermal) ve geological (jeolojik).",
+      "model": "gemini-3.8-flash"
+    },
+    "graph": {
+      "meaning_tr": "yazmak, çizmek",
+      "note_tr": "Bu kök çizme veya yazma anlamı taşır; photography (fotoğrafçılık) ve photograph (fotoğraf) kelimelerinde vardır.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "gress": {
+      "meaning_tr": "adım atmak, yürümek",
+      "note_tr": "Bu kök 'adım atmak' anlamına gelir; progress (ilerleme) ve grade (not, sınıf) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "hab": {
+      "meaning_tr": "sahip olmak, tutmak",
+      "note_tr": "Bu kök 'sahip olmak' anlamına gelir; habit (alışkanlık) ve exhibit (sergilemek) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "in-": {
+      "meaning_tr": "değil, -siz, olumsuzluk",
+      "note_tr": "Sıfatlara olumsuzluk anlamı katar: impossible (imkânsız) ve illegal (yasa dışı).",
+      "model": "gemini-3.8-flash"
+    },
+    "inter-": {
+      "meaning_tr": "arası, arasında, karşılıklı",
+      "note_tr": "Unsurlar arasındaki bağlantıyı veya etkileşimi gösterir: international (uluslararası) ve interaction (etkileşim).",
+      "model": "gemini-3.8-flash"
+    },
+    "ject": {
+      "meaning_tr": "atmak",
+      "note_tr": "Bu kök 'atmak' anlamına gelir; project (proje) ve reject (reddetmek) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "lect": {
+      "meaning_tr": "seçmek, toplamak, okumak",
+      "note_tr": "Bu kök seçme veya okuma anlamı taşır; election (seçim) ve collection (koleksiyon) kelimelerinde vardır.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "loc": {
+      "meaning_tr": "yer",
+      "note_tr": "Bu kök 'yer' anlamına gelir; local (yerel) ve location (konum) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "log": {
+      "meaning_tr": "akıl, bilim, söz",
+      "note_tr": "Bilim dalı veya düşünce/söz bildirir: logic (mantık) ve psychology (psikoloji).",
+      "model": "gemini-3.8-flash"
+    },
+    "mand": {
+      "meaning_tr": "emretmek, emanet etmek",
+      "note_tr": "Bu kök 'emretmek' anlamına gelir; demand (talep etmek) ve command (komuta etmek) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "meter": {
+      "meaning_tr": "ölçmek",
+      "note_tr": "Bu kök 'ölçmek' anlamına gelir; geometry (geometri) ve metric (metrik) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "mid-": {
+      "meaning_tr": "orta, ortasında",
+      "note_tr": "Bir şeyin ortasını veya orta kısmını ifade eder: midnight (gece yarısı) ve midfield (orta saha).",
+      "model": "gemini-3.8-flash"
+    },
+    "mis-": {
+      "meaning_tr": "yanlış, kötü, hatalı",
+      "note_tr": "Yanlış veya hatalı yapılma anlamı katar: mistake (hata) ve misunderstanding (yanlış anlaşılma).",
+      "model": "gemini-3.8-flash"
+    },
+    "mit": {
+      "meaning_tr": "göndermek",
+      "note_tr": "Bu kök gönderme anlamı verir; mission (görev) ve admit (kabul etmek) kelimelerinde fark edilir.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "mono-": {
+      "meaning_tr": "tek, bir",
+      "note_tr": "Tek veya biricik olmayı gösterir: monologue (monolog) ve monopoly (tekel).",
+      "model": "gemini-3.8-flash"
+    },
+    "mort": {
+      "meaning_tr": "ölüm",
+      "note_tr": "Ölüm ve fanilik kavramlarını taşır: mortal (ölümlü) ve immortal (ölümsüz).",
+      "model": "gemini-3.8-flash"
+    },
+    "mot": {
+      "meaning_tr": "hareket etmek",
+      "note_tr": "Bu kök hareket anlamı verir; move (hareket etmek) ve mobile (mobil) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "multi-": {
+      "meaning_tr": "çok, birden fazla",
+      "note_tr": "Eklendiği sözcüğe çokluk katar: multinational (çok uluslu) veya multiplayer (çok oyunculu).",
+      "model": "gemini-3.8-flash"
+    },
+    "nat": {
+      "meaning_tr": "doğmuş, doğa",
+      "note_tr": "Bu kök doğum anlamı taşır; natural (doğal) ve nation (millet) kelimelerinde fark edilir.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "neo-": {
+      "meaning_tr": "yeni",
+      "note_tr": "Yenilik veya sonradan ortaya çıkma anlamı verir: neonatal (yenidoğan) ve neoliberal (neoliberal).",
+      "model": "gemini-3.8-flash"
+    },
+    "non-": {
+      "meaning_tr": "olmayan, -sız",
+      "note_tr": "Kelimeleri olumsuz yapar: nonprofit (kâr amacı gütmeyen) ve nonstop (durmaksızın).",
+      "model": "gemini-3.8-flash"
+    },
+    "out-": {
+      "meaning_tr": "dış, dışarı, öte",
+      "note_tr": "Dışarısı veya aşma anlamı katar: outside (dışarısı) ve outdoor (açık hava).",
+      "model": "gemini-3.8-flash"
+    },
+    "over-": {
+      "meaning_tr": "aşırı, fazla, üstünde",
+      "note_tr": "Aşırılık veya üstünde olma anlamı verir: overtime (fazla mesai) ve overview (genel bakış).",
+      "model": "gemini-3.8-flash"
+    },
+    "para-": {
+      "meaning_tr": "yanında, ötesinde",
+      "note_tr": "Yanında olma veya ötesine geçme anlamı taşır: paramedic (sağlık görevlisi) ve paranormal (normalötesi).",
+      "model": "gemini-3.8-flash"
+    },
+    "pend": {
+      "meaning_tr": "asmak, ödemek",
+      "note_tr": "Bu kök 'asmak veya ödemek' anlamına gelir; spend (harcamak) ve expensive (pahalı) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "phon": {
+      "meaning_tr": "ses",
+      "note_tr": "Ses ve işitmeyle ilgili kelimeler türetir: telephone (telefon) ve symphony (senfoni).",
+      "model": "gemini-3.8-flash"
+    },
+    "plic": {
+      "meaning_tr": "katlamak",
+      "note_tr": "Bu kök katlama anlamı taşır; complex (karmaşık) ve apply (başvurmak) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "port": {
+      "meaning_tr": "taşımak",
+      "note_tr": "Bu kök taşıma anlamı verir; support (desteklemek) ve report (rapor) kelimelerinde karşımıza çıkar.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "pos": {
+      "meaning_tr": "koymak, yerleştirmek",
+      "note_tr": "Bu kök yerleştirme anlamı verir; position (konum) ve positive (olumlu) kelimelerinde karşımıza çıkar.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "post-": {
+      "meaning_tr": "sonra, sonrası",
+      "note_tr": "Zaman veya sıra bakımından sonrasını belirtir: postgraduate (lisansüstü) ve postdoctoral (doktora sonrası).",
+      "model": "gemini-3.8-flash"
+    },
+    "pre-": {
+      "meaning_tr": "ön, önce, önceden",
+      "note_tr": "Zaman veya sıra olarak önceliği belirtir: preview (ön izleme) ve premature (erken doğan, erken).",
+      "model": "gemini-3.8-flash"
+    },
+    "press": {
+      "meaning_tr": "baskı yapmak",
+      "note_tr": "Bu kök 'baskı yapmak' anlamına gelir; press (basın, basmak) ve pressure (basınç) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "pro-": {
+      "meaning_tr": "ileri, öne, yana",
+      "note_tr": "İleriye doğru bakma veya yönelme anlamı katar: prospect (olasılık, beklenti) ve prospective (müstakbel).",
+      "model": "gemini-3.8-flash"
+    },
+    "re-": {
+      "meaning_tr": "yeniden, tekrar, geri",
+      "note_tr": "Tekrarlama veya geriye dönme bildirir: return (geri dönmek) ve review (gözden geçirmek).",
+      "model": "gemini-3.8-flash"
+    },
+    "rupt": {
+      "meaning_tr": "kırmak",
+      "note_tr": "Bu kök 'kırmak' anlamına gelir; corrupt (yozlaşmış) ve interrupt (sözünü kesmek) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "sci": {
+      "meaning_tr": "bilmek",
+      "note_tr": "Bu kök 'bilmek' anlamına gelir; science (bilim) ve scientist (bilim insanı) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "scrib": {
+      "meaning_tr": "yazmak",
+      "note_tr": "Bu kök 'yazmak' anlamına gelir; describe (tanımlamak) ve script (senaryo) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "sens": {
+      "meaning_tr": "hissetmek, algılamak",
+      "note_tr": "Bu kök 'hissetmek' anlamına gelir; sense (duyu) ve sentence (cümle) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "sequ": {
+      "meaning_tr": "takip etmek",
+      "note_tr": "Bu kök 'takip etmek' anlamına gelir; sequence (sıra, dizi) ve consequence (sonuç) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "sign": {
+      "meaning_tr": "işaret etmek",
+      "note_tr": "Bu kök 'işaret' anlamına gelir; sign (imza atmak, işaret) ve signature (imza) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "simil": {
+      "meaning_tr": "benzer, aynı",
+      "note_tr": "Bu kök 'benzer' anlamına gelir; similar (benzer) ve assembly (meclis, montaj) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "sist": {
+      "meaning_tr": "durmak, bulunmak",
+      "note_tr": "Durma, bulunma veya konum anlamı içerir: station (istasyon) ve status (statü, durum).",
+      "model": "gemini-3.8-flash"
+    },
+    "solv": {
+      "meaning_tr": "çözmek, gevşetmek",
+      "note_tr": "Bir sorunu çözmeyi veya ayrıştırmayı anlatır: solve (çözmek) ve solution (çözüm).",
+      "model": "gemini-3.8-flash"
+    },
+    "spect": {
+      "meaning_tr": "bakmak, görmek",
+      "note_tr": "Bu kök bakış anlamı verir; respect (saygı) ve suspect (şüpheli) kelimelerinde karşımıza çıkar.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "spir": {
+      "meaning_tr": "nefes almak, solumak",
+      "note_tr": "Nefes ve can fikri taşır: inspire (ilham vermek) ve spirit (ruh, can).",
+      "model": "gemini-3.8-flash"
+    },
+    "struct": {
+      "meaning_tr": "inşa etmek",
+      "note_tr": "Bu kök 'inşa etmek' anlamına gelir; structure (yapı) ve destruction (yıkım) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "sub-": {
+      "meaning_tr": "alt, altında",
+      "note_tr": "Bir şeyin altında veya astı olma anlamı verir: subway (metro/alt geçit) ve suburban (banliyö).",
+      "model": "gemini-3.8-flash"
+    },
+    "super-": {
+      "meaning_tr": "üst, üstün, aşırı",
+      "note_tr": "Normalin üstünde, olağanüstü veya büyük olmayı anlatır: superhero (süper kahraman) ve supermarket (süpermarket).",
+      "model": "gemini-3.8-flash"
+    },
+    "tain": {
+      "meaning_tr": "tutmak, alıkoymak",
+      "note_tr": "Bu kök tutma anlamı verir; maintain (sürdürmek) ve contain (içermek) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "tele-": {
+      "meaning_tr": "uzak, uzaktan",
+      "note_tr": "Mesafeyi veya uzaktan iletişimi ifade eder: telephone (telefon) ve television (televizyon).",
+      "model": "gemini-3.8-flash"
+    },
+    "tend": {
+      "meaning_tr": "uzatmak, yönelmek",
+      "note_tr": "Bu kök yönelme anlamı taşır; attention (dikkat) ve contend (iddia etmek) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "therm": {
+      "meaning_tr": "ısı, sıcaklık",
+      "note_tr": "Isı ve sıcaklıkla ilgili sözcüklerde geçer: thermal (termal, ısıl) ve thermometer (termometre).",
+      "model": "gemini-3.8-flash"
+    },
+    "tract": {
+      "meaning_tr": "çekmek",
+      "note_tr": "Bu kök 'çekmek' anlamına gelir; attract (çekmek) ve contract (sözleşme) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "trans-": {
+      "meaning_tr": "ötesine, karşıya, değişim",
+      "note_tr": "Bir taraftan diğerine geçiş veya dönüşüm bildirir: transform (dönüştürmek) ve transformation (dönüşüm).",
+      "model": "gemini-3.8-flash"
+    },
+    "tri-": {
+      "meaning_tr": "üç",
+      "note_tr": "Üç sayısını veya üçlü yapıları ifade eder: triangle (üçgen) ve tripod (üçayak).",
+      "model": "gemini-3.8-flash"
+    },
+    "ultra-": {
+      "meaning_tr": "aşırı, ötesinde",
+      "note_tr": "Normalin üstünde veya ötesinde olmayı belirtir: ultraviolet (morötesi) ve ultrasound (ultrason).",
+      "model": "gemini-3.8-flash"
+    },
+    "un-": {
+      "meaning_tr": "değil, olumsuzluk",
+      "note_tr": "Eklendiği kelimeye olumsuz anlam katar: unable (yapamayan) ve unknown (bilinmeyen).",
+      "model": "gemini-3.8-flash"
+    },
+    "under-": {
+      "meaning_tr": "alt, altında, yetersiz",
+      "note_tr": "Bir şeyin altında veya aşağısında olmayı belirtir: underground (yeraltı) ve underwear (iç çamaşırı).",
+      "model": "gemini-3.8-flash"
+    },
+    "uni-": {
+      "meaning_tr": "bir, tek",
+      "note_tr": "Birlik ve teklik kavramı kazandırır: unilateral (tek taraflı) ve unisex (üniseks).",
+      "model": "gemini-3.8-flash"
+    },
+    "ven": {
+      "meaning_tr": "gelmek",
+      "note_tr": "Bu kök gelme anlamı verir; event (etkinlik) ve prevent (önlemek) kelimelerinde fark edilir.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "vert": {
+      "meaning_tr": "dönmek",
+      "note_tr": "Bu kök dönme anlamı verir; version (sürüm) ve conversation (konuşma) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "vis": {
+      "meaning_tr": "görmek",
+      "note_tr": "Göz ve görme eylemiyle ilgilidir: video (görüntü, video) ve evidence (kanıt).",
+      "model": "gemini-3.8-flash"
+    },
+    "voc": {
+      "meaning_tr": "çağırmak, ses",
+      "note_tr": "Bu kök 'çağırmak' anlamına gelir; voice (ses) ve vocabulary (kelime hazinesi) kelimelerinde görülür.",
+      "model": "gemini-3.5-flash-lite"
+    }
+  }
+}

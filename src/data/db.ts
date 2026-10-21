@@ -13,7 +13,9 @@ import type {
   MetaRow,
   Note,
   OutboxRow,
+  PairNoteFeedbackRow,
   PracticeLog,
+  RefCacheRow,
   ReviewLog,
   Sense,
   Settings,
@@ -47,6 +49,8 @@ export class EngDb extends Dexie {
   content_feedback!: EntityTable<ContentFeedback, 'id'>;
   user_content!: EntityTable<UserContent, 'id'>;
   example_jobs!: EntityTable<ExampleJob, 'key'>;
+  ref_cache!: EntityTable<RefCacheRow, 'key'>;
+  pair_note_feedback!: EntityTable<PairNoteFeedbackRow, 'key'>;
 
   constructor(name = 'engapp') {
     super(name);
@@ -111,6 +115,21 @@ export class EngDb extends Dexie {
       user_content: 'id, kind, lexicon_sense_id, replaces_id, deleted_at',
       example_jobs: 'key, status, next_attempt_at',
     });
+    // v6 (v0.2 İP6, word families): ref_cache keeps the lazily
+    // fetched morphology file for offline use; pair_note_feedback holds the user's "gizle" /
+    // "bildir" on false-friend warnings. Notes may now have term_type 'affix'. An older app
+    // version skipped such a pulled note as invalid and moved its cursor past it; if this
+    // device logged one, pull again from the start so the note arrives (rows are merged by
+    // HLC, so a repeated pull changes nothing else).
+    this.version(6)
+      .stores({ ref_cache: 'key', pair_note_feedback: 'key, verdict' })
+      .upgrade(async (tx) => {
+        const skippedNote = await tx
+          .table('error_log')
+          .filter((r: { context?: string | null }) => !!r.context?.startsWith('sync.pull invalid notes/'))
+          .count();
+        if (skippedNote > 0) await tx.table('meta').put({ key: 'sync_cursor', value: 0 });
+      });
   }
 }
 

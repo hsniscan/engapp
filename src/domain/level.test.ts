@@ -86,6 +86,10 @@ describe('levels on the client', () => {
     expect(senseLevel(note('gadget'), null, undefined, null)).toBeNull();
   });
 
+  it('a root/affix card (İP6) has no computed level', () => {
+    expect(senseLevel({ term_norm: 'spect', term_type: 'affix' }, { pos: 'root' }, undefined, data)).toBeNull();
+  });
+
   it('noteLevel: first sense with a level, then the override', () => {
     const lexOf = (id: string) => (id === 'l-adj' ? lex({ id, lemma_norm: 'light', pos: 'adjective' }) : undefined);
     const senses = [

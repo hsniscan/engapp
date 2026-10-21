@@ -8,6 +8,7 @@ import { posLabel } from '@/features/cards/labels';
 import { LevelDialogButton } from '@/features/levels/LevelDetails';
 import { useCardLevel } from '@/features/levels/useWordLevel';
 import { CardExamples } from '@/features/examples/ExamplesPanel';
+import { CardBackExtras } from '@/features/family/CardBackExtras';
 import { Badge, cn, IconButton } from '@/ui';
 
 const meaningOf = (s: Pick<Sense, 'meaning_tr' | 'meaning_tr_override'>) =>
@@ -257,7 +258,7 @@ export const CardFront = memo(function CardFront({ view, isNew, speech }: FacePr
   return (
     <Face prompt={prompt} isNew={isNew}>
       <Term term={note.term} />
-      <SpeakButton {...speech} />
+      {note.term_type !== 'affix' && <SpeakButton {...speech} />}
       {view.sentence && (
         <Sentence
           sentence={view.sentence.text}
@@ -371,7 +372,7 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
             <p lang="en" className="font-serif text-2xl font-semibold text-fg">
               {note.term}
             </p>
-            <SpeakButton {...speech} />
+            {note.term_type !== 'affix' && <SpeakButton {...speech} />}
           </div>
           <Ipa ipa={note.ipa} />
         </div>
@@ -382,6 +383,7 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
           </div>
         )}
         {examples}
+        <CardBackExtras note={note} />
       </Face>
     );
   }
@@ -420,6 +422,7 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
       </div>
       {card.card_type === 'production' && sentence}
       {examples}
+      <CardBackExtras note={note} />
     </Face>
   );
 });

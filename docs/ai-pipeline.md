@@ -726,3 +726,77 @@ demand") on every attempt that day, so the fallback served all requests.
   glosses use hard words ("perfunctorily"; the prompt now asks for B1 words).
 - "take out (a loan)" got a vague gloss. Use the weekly golden set to judge the primary
   model once it is available.
+
+## Root and affix meanings (`morpheme-tr-v1`)
+
+A one-off system job (İP6, ADR 0014), not an edge function. It runs with
+`scripts/build-morphology/meanings.ts`, locally or in the "Build morphology data" workflow.
+
+- **Input.** Reference data only: the morpheme's form, kind, origin and English gloss, plus up to
+  6 example words from the frequency list. No user text is ever sent.
+- **Batches.** 20 morphemes per request, about 7 requests for the current 133.
+  The job uses the system budget, never a user's quota.
+- **Model.** `GEMINI_MODEL`, with `GEMINI_FALLBACK_MODEL` on quota or overload errors. Both
+  come from the environment only.
+- **Validation.** `validateMorphemeAnswer`:
+  - `meaning_tr`: at most 40 characters and 6 words;
+  - only letters and punctuation are allowed;
+  - every id must be answered exactly once.
+
+  Rejected items keep the hand-written meaning from `inventory.ts` and are retried on the next run.
+- **Output.** `data/reference/morpheme-meanings.tr.json`. Each item records its model and the
+  prompt version, and the owner can set `"reviewed": true` on an item. `load-sql.ts` writes it to
+  `ref_morphemes.meanings.tr` with `source: "ai"`.
+
+### System prompt
+
+```text
+You explain English word parts (prefixes, suffixes and Latin/Greek roots) to a Turkish-speaking learner of English.
+
+For every item you get: id, form (for example "re-", "-ness", "-spect-"), kind (prefix, suffix or root), origin, an English gloss and a few English example words that contain it.
+
+Return for every item:
+- meaning_tr: the core meaning in natural Turkish, 1 to 4 words, lower case, no trailing punctuation. Roots and prefixes: the meaning ("bakmak", "yeniden"). Suffixes: what the suffix adds ("-sız", "durum, nitelik").
+- note_tr: one short Turkish sentence (at most 140 characters) that helps the learner recognise the part in new words. Name one or two of the given example words with their Turkish meaning in parentheses, for example: "Sıfattan isim yapar: kind (nazik) → kindness (nezaket)."
+
+Rules:
+- Write correct, natural Turkish with Turkish characters (ç, ğ, ı, İ, ö, ş, ü).
+- Use only the example words you were given; never invent English words.
+- Do not repeat the English gloss in English.
+- Keep the ids exactly as given and answer every item once.
+```
+
+### Response schema
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "meaning_tr": {
+            "type": "string"
+          },
+          "note_tr": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "meaning_tr",
+          "note_tr"
+        ]
+      }
+    }
+  },
+  "required": [
+    "items"
+  ]
+}
+```

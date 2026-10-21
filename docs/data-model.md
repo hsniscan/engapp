@@ -17,10 +17,12 @@ only from `@/data` (`src/data/index.ts`).
 | settings | yes | `id = 'settings'` | Defaults: `daily_new_limit 10`, `request_retention 0.9`, `timezone` from the device, `day_start_hour 4`, `theme 'system'`, `voice 'en-US'`, `level 'B1'`. |
 | outbox | no | `++seq`, `[table+row_id]`, `next_attempt_at` | Rows waiting to be pushed. |
 | daily_activity | no (derived) | `date` (local `YYYY-MM-DD`) | `reviews`, `new_cards`, `time_ms`, `review_answers`, `review_passed`, `completed`. |
-| meta | no | `key` | `device_id`, `user_id`, `hlc`, `sync_cursor`, `lexicon_cursor`, `server_practice_logs` (the server answered with `sync_pull_v3`), `extra_new:<YYYY-MM-DD>` (extra new cards allowed that day, this device only). |
+| meta | no | `key` | `device_id`, `user_id`, `hlc`, `sync_cursor`, `lexicon_cursor`, `server_practice_logs` (the server answered with `sync_pull_v3`), `extra_new:<YYYY-MM-DD>` (extra new cards allowed that day, this device only), `family_dismissed_morphemes` (root/affix card suggestions the user closed). |
 | error_log | no | `++id`, `at` | Newest 200 rows are kept. |
 | lexicon_cache | no | `id`, `term_id`, `lemma_norm`, `updated_at` | Shared lexicon senses the user's senses reference (sync layer). Since Dexie v4 also `cefr`, `cefr_source`, `cefr_list`, `cefr_reason_tr`, `zipf` (word level, see "Word levels"); the v4 upgrade set `lexicon_cursor` back to 0 so they are pulled again with levels. |
 | chunk_cache, import_jobs, import_candidates | no | | Owned by the AI layer. |
+| ref_cache | no | `key` | Static reference files fetched lazily, with their checksum. Currently `morphology`: word families, roots and affixes (decision 0014). Device-level: kept when switching or copying accounts (Dexie v6). |
+| pair_note_feedback | no | `key`, `verdict` | The user hid (`dismissed`) or reported (`reported`) a false-friend warning. `key` is `term_norm|tr_word`, and `sent_at` stays null until a shared feedback table exists. Per account: cleared when the account changes (Dexie v6). |
 
 Every synced mutable row has `id` (UUID v7), `user_id` (null in guest mode), `created_at`,
 `updated_at`, `deleted_at` and `hlc`.
@@ -45,7 +47,8 @@ Every synced mutable row has `id` (UUID v7), `user_id` (null in guest mode), `cr
    undo, sync and restore.
 5. **Card set per note.** Each live note has 1 recognition card. Each live sense has 1
    production card, plus 1 cloze card only when it has `source_sentence` and a valid
-   `span`.
+   `span`. A root/affix note (`term_type = 'affix'`, e.g. "-spect-") has only its recognition
+   card (decision 0014).
 6. **HLC.** The format is `"<ms:15>:<counter:5>:<device_id>"`, and the strings compare
    lexicographically. The clock is stored in `meta.hlc` and advanced inside each write
    transaction. Remote and restored stamps are merged with `receive`, so the next local
