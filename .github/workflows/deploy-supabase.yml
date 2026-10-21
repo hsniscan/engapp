@@ -86,8 +86,24 @@ jobs:
       - name: Link project
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
 
+      # GitHub runners have no IPv6 and the direct database host is IPv6-only,
+      # so migrations go through the project's IPv4 session pooler.
       - name: Apply database migrations
-        run: supabase db push --linked --yes
+        run: |
+          set -euo pipefail
+          status=$(curl -sS -o pooler.json -w '%{http_code}' \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/config/database/pooler")
+          if [ "$status" != "200" ]; then
+            echo "::error::Could not read the connection pooler config (HTTP $status). Give the SUPABASE_ACCESS_TOKEN the 'Connection Pooling: Read' permission."
+            exit 1
+          fi
+          host=$(jq -r '[.[] | select(.database_type == "PRIMARY")][0].db_host' pooler.json)
+          user=$(jq -r '[.[] | select(.database_type == "PRIMARY")][0].db_user' pooler.json)
+          name=$(jq -r '[.[] | select(.database_type == "PRIMARY")][0].db_name' pooler.json)
+          pass=$(jq -rn --arg p "$SUPABASE_DB_PASSWORD" '$p|@uri')
+          echo "::add-mask::$pass"
+          supabase db push --db-url "postgresql://$user:$pass@$host:5432/$name" --yes
 
       - name: Set function secrets
         env:
