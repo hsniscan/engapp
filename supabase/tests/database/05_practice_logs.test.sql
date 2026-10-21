@@ -8,9 +8,10 @@ select plan(28);
 -- ---------------------------------------------------------------- registry and RLS
 
 select has_table('public', 'practice_logs', 'practice_logs exists');
-select set_eq(
-  $$ select name from public.sync_tables $$,
-  array['notes', 'senses', 'cards', 'review_logs', 'sources', 'settings', 'practice_logs'],
+-- Later packages register more tables (decks, ...): check the v0.1 + İP1 ones are there.
+select ok(
+  array['notes', 'senses', 'cards', 'review_logs', 'sources', 'settings', 'practice_logs']
+    <@ array(select name from public.sync_tables),
   'the registry lists the six v0.1 tables and practice_logs');
 
 select is_empty(

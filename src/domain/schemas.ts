@@ -1,6 +1,6 @@
 // zod schemas for synced rows. Used to validate backup files and (later) sync payloads.
 import { z } from 'zod';
-import type { Card, Note, PracticeLog, ReviewLog, Sense, Settings, Source } from './types';
+import type { Card, Deck, Note, PracticeLog, ReviewLog, Sense, Settings, Source } from './types';
 
 const millis = z.number().int();
 const id = z.string().min(1);
@@ -111,4 +111,12 @@ export const settingsSchema: z.ZodType<Settings> = z.object({
   level: z.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']),
   fsrs_params: z.array(z.number()).nullable(),
   last_backup_at: millis.nullable(),
+});
+
+/** decks.filter is kept as raw JSON here; domain/deckFilter.ts parses it for evaluation. */
+export const deckSchema: z.ZodType<Deck> = z.object({
+  ...synced,
+  name: z.string().min(1).max(200),
+  filter: z.record(z.string(), z.unknown()),
+  sort: z.number().int(),
 });

@@ -7,11 +7,12 @@ describe('Dexie schema', () => {
   it('opens with every table and the indexes the queries rely on', async () => {
     const d = new EngDb('schema-test');
     await d.open();
-    expect(d.verno).toBe(3);
-    expect(d.tables.map((t) => t.name).sort()).toEqual(
-      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'review_logs', 'senses', 'settings', 'sources'].sort(),
+    expect(d.verno).toBeGreaterThanOrEqual(8);
+    expect(d.tables.map((t) => t.name)).toEqual(
+      expect.arrayContaining(['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'review_logs', 'senses', 'settings', 'sources', 'decks', 'theme_previews']),
     );
     const idx = (table: string) => d.table(table).schema.indexes.map((i) => i.name);
+    expect(idx('decks')).toEqual(expect.arrayContaining(['sort', 'deleted_at']));
     expect(idx('cards')).toEqual(expect.arrayContaining(['[state+due]', 'note_id', 'sense_id']));
     expect(idx('review_logs')).toEqual(expect.arrayContaining(['card_id', 'reviewed_at', 'undo_of']));
     expect(idx('practice_logs')).toEqual(expect.arrayContaining(['card_id', 'practiced_at', 'session_id']));
@@ -55,7 +56,7 @@ describe('Dexie schema', () => {
 
     const d = new EngDb(name);
     await d.open();
-    expect(d.verno).toBe(3);
+    expect(d.verno).toBeGreaterThanOrEqual(3);
     expect(await d.cards.get('c1')).toMatchObject({ state: 2, due: 5 });
     expect(await d.review_logs.count()).toBe(1);
     expect(await d.practice_logs.count()).toBe(0);

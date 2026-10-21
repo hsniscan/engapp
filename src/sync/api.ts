@@ -7,6 +7,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { lexiconEntry } from '../../supabase/functions/_shared/contracts';
 import {
   cardSchema,
+  deckSchema,
   noteSchema,
   practiceLogSchema,
   reviewLogSchema,
@@ -16,6 +17,7 @@ import {
 } from '@/domain/schemas';
 import type {
   Card,
+  Deck,
   LexiconSense,
   Note,
   OutboxTable,
@@ -60,6 +62,7 @@ export interface RowByTable {
   sources: Source;
   settings: Settings;
   practice_logs: PracticeLog;
+  decks: Deck;
 }
 export type PulledRow = {
   [T in OutboxTable]: { table: T; seq: number; row: RowByTable[T] };
@@ -73,6 +76,7 @@ const ROW_SCHEMAS: { [T in OutboxTable]: z.ZodType<RowByTable[T]> } = {
   sources: sourceSchema,
   settings: settingsSchema,
   practice_logs: practiceLogSchema,
+  decks: deckSchema,
 };
 
 const pullEnvelope = z.object({
@@ -222,6 +226,24 @@ export async function pullChanges(
     full_resync: env.full_resync,
     version,
   };
+}
+
+/**
+ * Names in the server's table registry (public.sync_tables, readable by signed-in users).
+ * Lets a client hold back rows of a table the backend does not have yet.
+ */
+export async function listSyncTables(c?: SupabaseClient | null): Promise<string[]> {
+  const cl = client(c);
+  let res: { data: unknown; error: { code?: string; message: string } | null };
+  try {
+    res = await cl.from('sync_tables').select('name');
+  } catch (e) {
+    throw new SyncApiError('network', e instanceof Error ? e.message : String(e));
+  }
+  if (res.error) throw new SyncApiError('server', `${res.error.code ?? ''} ${res.error.message}`.trim());
+  const parsed = z.array(z.object({ name: z.string() })).safeParse(res.data);
+  if (!parsed.success) throw new SyncApiError('invalid_response', parsed.error.message);
+  return parsed.data.map((r) => r.name);
 }
 
 /** Lexicon senses referenced by the user's senses, changed after `sinceSeq` (lexicon_cursor). */

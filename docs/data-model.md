@@ -13,11 +13,13 @@ only from `@/data` (`src/data/index.ts`).
 | cards | yes | `id`, `note_id`, `sense_id`, `[state+due]`, `due`, `card_type`, `deleted_at` | FSRS fields in UTC ms. `unlocked`, `suspended`. |
 | review_logs | yes, insert-only | `id`, `card_id`, `reviewed_at`, `undo_of` | Never updated or deleted. An undo is a new row with `undo_of`. |
 | practice_logs | yes, insert-only | `id`, `card_id`, `practiced_at`, `session_id` | One row per answer in a practice round: `result` (`known`/`unknown`), `mode` (the source: `hard`, `recent`, `tag`; free text, 1–32 chars), `session_id`, `duration_ms` (≤ 60 s), `device_id`. Never read by scheduling, `daily_activity` or the streak (Dexie v3, decision 0010). |
+| decks | yes | `id`, `sort`, `deleted_at` | Smart decks (Dexie v8, ADR 0016): `name` (1–60 chars on the client), `filter` (versioned JSON, see "Smart decks"), `sort` (1..n). The deck is a saved filter: no note ids are stored, membership is computed on the device. |
+| theme_previews | no | `id` (`'current'`) | The pending "Kelimelerimi temalara ayır" preview: AI groups with the user's edits (`name`, `removed`, `rejected`) until approved or discarded. Local only; cleared with the account's data. |
 | sources | metadata | `id`, `created_at` | |
 | settings | yes | `id = 'settings'` | Defaults: `daily_new_limit 10`, `request_retention 0.9`, `timezone` from the device, `day_start_hour 4`, `theme 'system'`, `voice 'en-US'`, `level 'B1'`. |
 | outbox | no | `++seq`, `[table+row_id]`, `next_attempt_at` | Rows waiting to be pushed. |
 | daily_activity | no (derived) | `date` (local `YYYY-MM-DD`) | `reviews`, `new_cards`, `time_ms`, `review_answers`, `review_passed`, `completed`. |
-| meta | no | `key` | `device_id`, `user_id`, `hlc`, `sync_cursor`, `lexicon_cursor`, `server_practice_logs` (the server answered with `sync_pull_v3`), `extra_new:<YYYY-MM-DD>` (extra new cards allowed that day, this device only). |
+| meta | no | `key` | `device_id`, `user_id`, `hlc`, `sync_cursor`, `lexicon_cursor`, `server_practice_logs` (the server answered with `sync_pull_v3`), `extra_new:<YYYY-MM-DD>` (extra new cards allowed that day, this device only), `server_tables` (late sync tables the server registry confirmed), `pull_backfill` (tables to re-pull once, see sync-strategy.md). |
 | error_log | no | `++id`, `at` | Newest 200 rows are kept. |
 | lexicon_cache, chunk_cache, import_jobs, import_candidates | no | | Owned by the AI and sync layers. |
 
@@ -90,11 +92,35 @@ live, unsuspended, unlocked cards with at least one review that still counts:
   the last 14 days. Most recent miss first, then lapses and difficulty.
 - `recent`: first review within the last 7 days.
 - `tag`: notes with that tag.
+- `deck`: notes of a smart deck (`deckId`; the data layer resolves it to note ids).
 
 Each round has one card per note and 10 or 20 cards, shuffled with the session id as seed
 (except `hard`). A card answered `unknown` the first time comes back once at the end.
 `recordPractice` writes a `practice_logs` row and nothing else. A property test checks that
 cards, review logs, `daily_activity`, the streak and the queue are unchanged.
+
+## Tags and smart decks (`domain/tags.ts`, `domain/deckFilter.ts`)
+
+Tags compare case-insensitively with Turkish rules (`İş` = `iş`); a note keeps the first
+spelling. New tags are cleaned (one line, no leading `#`, ≤ 40 chars); a note has at most
+`LIMITS.tags` (50) tags, and bulk actions leave a full note unchanged and report it.
+
+Deck filter, version 1 (`{v: 1, ...}`; every key optional, an empty filter matches every
+word):
+
+| Key | Meaning |
+| --- | --- |
+| `states` | Any of `new`, `learning`, `learned`, `struggling`, `suspended` (OR). The status comes from the note's recognition card (`learned` = Review); `suspended` = every live card suspended, and such a note has no other status. `struggling` is an overlay: the practice "hard" rule at note level (`lapses ≥ 2`, `difficulty ≥ 7`, or an Again / "Bilemedim" within 14 days). |
+| `tags`, `tagMode` | Tags (OR by default, `tagMode: 'all'` = every tag). |
+| `addedWithinDays` | Note created within the last N days (the UI offers 7 and 30). |
+| `levels` | Reserved for İP2: CEFR levels (`A1`…`C2`, OR). |
+| `topics` | Reserved for İP7: topic keys (OR). |
+
+Different keys are AND-ed. A deck that uses `levels` or `topics` is evaluated only when
+`deckContext()` (`src/data/decks.ts`) provides `levelOf` / `topicsOf`; until then it shows
+no count and no words. A filter with a higher `v` or an unknown key was written by a newer
+app: it is shown as "made by a newer version", never evaluated or rewritten, and keeps its
+JSON when renamed.
 
 ## Actions API (`@/data`)
 
@@ -117,11 +143,15 @@ All actions take an optional trailing `now` (ms) for tests. They throw `ActionEr
 | `getMoreStudyOverview()` | The `/more` page: due now, daily limit, extra today, new cards waiting, tomorrow's count and practice source counts. |
 | `getPracticeSourceCounts()` / `getPracticeCards(filter, {size, seed})` | Practice selection (see "Practice rounds"). |
 | `recordPractice({card_id, result, mode, session_id, duration_ms})` | One practice answer → one `practice_logs` row. |
+| `listDecks()` / `getDeckSummaries()` / `getDeckNoteIds(id)` / `countDeckFilter(filter)` | Smart decks with their counts; a deck's note ids (null when it cannot be evaluated here). |
+| `createDeck({name, filter})` / `updateDeck(id, patch)` / `deleteDeck(id)` / `moveDeck(id, ±1)` | Deck CRUD (synced; delete is a tombstone, notes are untouched). |
+| `listTags()` / `setNoteTags(noteIds, {add, remove})` / `renameTag(from, to)` / `deleteTag(tag)` | Tags with counts; bulk add/remove in one transaction (`{changed, full}`); rename also updates deck filters. |
+| `getThemeSource()` / `saveThemePreview` / `updateThemePreview` / `applyThemePreview()` / `discardThemePreview()` | "Kelimelerimi temalara ayır": the words to send (term + English gloss only) and the local preview; applying turns kept groups into tags in one transaction. |
 | `getCardView(cardId)` | Returns the note, senses, the sense to show, cloze/hint and the 4 interval previews. |
 | `getHomeSummary()` / `getStreakSummary()` / `getHeatmap()` | Feed the home line, the stats metrics and the 26-week heatmap. |
 | `getNoteDetail`, `findNoteByTerm`, `listNotes`, `listSources`, `pendingChangesCount` | Read helpers. |
 | `getSettings` / `ensureSettings` / `updateSettings(patch)` | Settings. `updateSettings` validates with zod and with ts-fsrs. Call `ensureSettings()` at startup. |
-| `exportBackup()` → `BackupFile` | Builds the backup (`schema_version` 3 with `practice_logs`; version 1 and 2 files still restore) and records `last_backup_at`. |
+| `exportBackup()` → `BackupFile` | Builds the backup (`schema_version` 4 with `practice_logs` and `decks`; version 1–3 files still restore, and a file without `decks` leaves the local decks alone) and records `last_backup_at`. |
 | `restoreBackup(fileOrJson, 'merge' \| 'overwrite')` | Verifies the zod schema and checksum, restores, then recomputes all cards and `daily_activity`. |
 | `exportCsv(headers)` | CSV export. |
 | `runIntegrityCheck()` / `repairIntegrity()` | Startup check and the "Veri onarımı" repair. |

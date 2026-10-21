@@ -1,4 +1,4 @@
-// Typed client for the ai-extract and ai-enrich edge functions. Every response is
+// Typed client for the ai-extract, ai-enrich and ai-themes edge functions. Every response is
 // validated with the same zod schemas the server uses. AI needs a signed-in account;
 // guests get AiClientError('not_signed_in') without a network call.
 
@@ -16,11 +16,17 @@ import {
   type ExtractResponse,
   type LexiconEntry,
 } from '../../supabase/functions/_shared/contracts';
+import {
+  themesRequest,
+  themesResponse,
+  type ThemesRequest,
+  type ThemesResponse,
+} from '../../supabase/functions/_shared/themes-contract';
 import { hashChunk } from '@/domain/chunking';
 import type { CefrLevel, ImportCandidate, LexiconSense } from '@/domain/types';
 import { backendConfig, getAccessToken } from '@/lib/supabase';
 
-export type { EnrichResponse, ExtractCandidate, ExtractResponse, LexiconEntry };
+export type { EnrichResponse, ExtractCandidate, ExtractResponse, LexiconEntry, ThemesResponse };
 /** Prompt version the deployed ai-extract is expected to answer with (local chunk cache key). */
 export { EXTRACT_PROMPT_VERSION };
 
@@ -66,7 +72,7 @@ export interface AiClientDeps {
 }
 
 async function call<T>(
-  fn: 'ai-extract' | 'ai-enrich',
+  fn: 'ai-extract' | 'ai-enrich' | 'ai-themes',
   body: unknown,
   parse: (x: unknown) => T,
   deps: AiClientDeps,
@@ -156,6 +162,18 @@ export async function enrichTerm(
 ): Promise<EnrichResponse> {
   const body = enrichRequest.parse(input);
   return call('ai-enrich', body, (x) => enrichResponse.parse(x), deps);
+}
+
+/**
+ * Theme groups for up to 200 words ("Kelimelerimi temalara ayır"). Send only terms and
+ * English glosses with short refs; one call counts against the daily AI budget.
+ */
+export async function groupThemes(
+  input: ThemesRequest,
+  deps: AiClientDeps = {},
+): Promise<ThemesResponse> {
+  const body = themesRequest.parse(input);
+  return call('ai-themes', body, (x) => themesResponse.parse(x), deps);
 }
 
 /** A lexicon entry as stored in Dexie's lexicon_cache. */

@@ -20,7 +20,7 @@ export class FakeServer implements SyncTransport {
   readonly lexicon = new Map<Id, { row: LexiconSense; seq: number }>();
   private lexSeq = 0;
   /** Calls made, for assertions. */
-  readonly calls = { push: 0, pull: 0, lexiconPull: 0, lexiconGet: 0 };
+  readonly calls = { push: 0, pull: 0, lexiconPull: 0, lexiconGet: 0, registry: 0 };
   /** Fault injection. */
   faults: {
     /** Throw a network error before the server applies the batch (n times). */
@@ -38,6 +38,12 @@ export class FakeServer implements SyncTransport {
    * as an unknown table and pulls answer like sync_pull_v2 (version 2, no practice rows).
    */
   practiceSupported = true;
+
+  /**
+   * false = a backend from before migration 20261022000400 (decks): the registry does not list
+   * decks, sync_push rejects them as an unknown table and pulls never return them.
+   */
+  decksSupported = true;
 
   readonly userId: string;
   constructor(userId = 'user-1') {
@@ -64,7 +70,10 @@ export class FakeServer implements SyncTransport {
         res.rejected.push({ table: it.table, id: p.id, code: '23502', message: 'not-null violation' });
         continue;
       }
-      if (it.table === 'practice_logs' && !this.practiceSupported) {
+      if (
+        (it.table === 'practice_logs' && !this.practiceSupported) ||
+        (it.table === 'decks' && !this.decksSupported)
+      ) {
         res.rejected.push({ table: it.table, id: p.id, code: '22023', message: 'unknown table' });
         continue;
       }
@@ -109,7 +118,12 @@ export class FakeServer implements SyncTransport {
       return { rows: [], invalid: [], next_seq: since, has_more: false, full_resync: true, version };
     }
     const all = [...this.rows.values()]
-      .filter((r) => r.seq > since && (version === 3 || r.table !== 'practice_logs'))
+      .filter(
+        (r) =>
+          r.seq > since &&
+          (version === 3 || r.table !== 'practice_logs') &&
+          (version === 3 || r.table !== 'decks'),
+      )
       .sort((a, b) => a.seq - b.seq);
     const page = all.slice(0, Math.min(limit, 500));
     return {
@@ -120,6 +134,15 @@ export class FakeServer implements SyncTransport {
       full_resync: false,
       version,
     };
+  }
+
+  /** public.sync_tables names (read with a plain select by the client). */
+  async listSyncTables(): Promise<string[]> {
+    this.calls.registry++;
+    if (this.faults.offline) throw new SyncApiError('network', 'offline');
+    if (!this.practiceSupported) throw new SyncApiError('server', '42P01 relation "public.sync_tables" does not exist');
+    const names = ['notes', 'senses', 'cards', 'review_logs', 'sources', 'settings', 'practice_logs'];
+    return this.decksSupported ? [...names, 'decks'] : names;
   }
 
   /** purge_tombstones: drop every tombstone, remember the highest purged seq. */

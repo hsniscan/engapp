@@ -3,6 +3,7 @@ import type {
   Card,
   ChunkCacheRow,
   DailyActivity,
+  Deck,
   ErrorLogRow,
   ImportCandidate,
   ImportJob,
@@ -15,7 +16,9 @@ import type {
   Sense,
   Settings,
   Source,
+  ThemePreview,
 } from '../domain/types';
+import { addPullBackfill } from './backfill';
 
 /**
  * Local database. The source of truth for the UI: screens read and write only here,
@@ -29,6 +32,8 @@ export class EngDb extends Dexie {
   cards!: EntityTable<Card, 'id'>;
   review_logs!: EntityTable<ReviewLog, 'id'>;
   practice_logs!: EntityTable<PracticeLog, 'id'>;
+  decks!: EntityTable<Deck, 'id'>;
+  theme_previews!: EntityTable<ThemePreview, 'id'>;
   sources!: EntityTable<Source, 'id'>;
   settings!: EntityTable<Settings, 'id'>;
   lexicon_cache!: EntityTable<LexiconSense, 'id'>;
@@ -79,6 +84,12 @@ export class EngDb extends Dexie {
     // v3 (v0.2 İP1): practice_logs, insert-only and synced. Practice answers never feed FSRS.
     // Meta keys `extra_new:<day>` hold today's extra new-card allowance (no schema change).
     this.version(3).stores({ practice_logs: 'id, card_id, practiced_at, session_id' });
+    // v8 (v0.2 İP8; 4–7 belong to İP2, İP5, İP6, İP7): decks (synced, mutable) and the local
+    // theme-grouping preview. A device that has pulled before may have skipped deck rows
+    // written by a newer device while it ran an older version: re-pull them once.
+    this.version(8)
+      .stores({ decks: 'id, sort, deleted_at', theme_previews: 'id' })
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['decks']));
   }
 }
 

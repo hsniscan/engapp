@@ -4,6 +4,34 @@ export * from './actions';
 export * from './queries';
 export { addExtraNew, getMoreStudyOverview, MAX_EXTRA_NEW_STEP, type MoreStudyOverview } from './extraStudy';
 export {
+  countDeckFilter,
+  createDeck,
+  deleteDeck,
+  deleteTag,
+  getDeckNoteIds,
+  getDeckSummaries,
+  listDecks,
+  listTags,
+  loadDeckFacts,
+  moveDeck,
+  renameTag,
+  setNoteTags,
+  updateDeck,
+  type BulkTagResult,
+  type DeckInput,
+  type DeckSummary,
+} from './decks';
+export {
+  applyThemePreview,
+  discardThemePreview,
+  getThemePreview,
+  getThemeSource,
+  saveThemePreview,
+  updateThemePreview,
+  type ApplyThemesResult,
+  type ThemeSource,
+} from './themes';
+export {
   getPracticeCards,
   getPracticeSourceCounts,
   loadPracticeCandidates,
@@ -33,6 +61,7 @@ export { getSettings, ensureSettings, updateSettings, defaultSettings, DEFAULT_S
 export { rebuildDailyActivity, listDailyActivity } from './dailyActivity';
 export { repairDuplicateSenses, repairListEntrySentences } from './repairs';
 export { getDeviceId, getCurrentUserId, getMeta, setMeta, META } from './meta';
+export { PULL_BACKFILL_KEY } from './backfill';
 export { logError, listErrors, clearErrors, ERROR_LOG_LIMIT } from './errorLog';
 export { ActionError, type ActionErrorCode } from './errors';
 export * from './connected';

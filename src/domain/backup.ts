@@ -5,6 +5,7 @@ import { type DayConfig, dayKeyOf } from './day';
 import { effectiveLogs } from './recompute';
 import {
   cardSchema,
+  deckSchema,
   noteSchema,
   practiceLogSchema,
   reviewLogSchema,
@@ -12,12 +13,13 @@ import {
   settingsSchema,
   sourceSchema,
 } from './schemas';
-import type { Card, Millis, Note, PracticeLog, ReviewLog, Sense, Settings, Source } from './types';
+import type { Card, Deck, Millis, Note, PracticeLog, ReviewLog, Sense, Settings, Source } from './types';
 
 export const BACKUP_FORMAT = 'engapp-backup';
 // 2: senses.source_sentence_tr. Version 1 files (without it) are still accepted.
 // 3: practice_logs. Older files have no such table (restored as none).
-export const BACKUP_SCHEMA_VERSION = 3;
+// 4: decks. Older files have no such table (restore keeps the local decks).
+export const BACKUP_SCHEMA_VERSION = 4;
 
 export interface BackupTables {
   notes: Note[];
@@ -28,6 +30,8 @@ export interface BackupTables {
   settings: Settings[];
   /** Absent in files before schema_version 3; buildBackup always writes it. */
   practice_logs?: PracticeLog[];
+  /** Absent in files before schema_version 4; buildBackup always writes it. */
+  decks?: Deck[];
 }
 
 export const backupTablesSchema = z.object({
@@ -39,6 +43,7 @@ export const backupTablesSchema = z.object({
   settings: z.array(settingsSchema).max(1),
   // Optional, not defaulted: a file without the key must keep the checksum it was written with.
   practice_logs: z.array(practiceLogSchema).optional(),
+  decks: z.array(deckSchema).optional(),
 });
 
 export const backupSchema = z.object({
@@ -76,6 +81,7 @@ export function sortTables(t: BackupTables): BackupTables {
     sources: byId(t.sources),
     settings: byId(t.settings),
     ...(t.practice_logs ? { practice_logs: byId(t.practice_logs) } : {}),
+    ...(t.decks ? { decks: byId(t.decks) } : {}),
   };
 }
 
@@ -87,7 +93,11 @@ export async function buildBackup(
   tables: BackupTables,
   meta: { exported_at: Millis; device_id: string | null },
 ): Promise<BackupFile> {
-  const sorted = sortTables({ ...tables, practice_logs: tables.practice_logs ?? [] });
+  const sorted = sortTables({
+    ...tables,
+    practice_logs: tables.practice_logs ?? [],
+    decks: tables.decks ?? [],
+  });
   return {
     format: BACKUP_FORMAT,
     schema_version: BACKUP_SCHEMA_VERSION,

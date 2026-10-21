@@ -29,4 +29,4 @@ Work packages from `plan/v0.2-plan.md` (İP1–İP8).
 | İP5 | Example sentences | planned |
 | İP6 | Word family, roots, false friends, mnemonics | planned |
 | İP7 | Interests and profile | planned |
-| İP8 | Vocabulary inventory, decks, Anki | planned |
+| İP8 | Vocabulary inventory, decks, Anki | part 1 built on `feat/decks`: tags UI, smart decks, AI themes (decision 0016; needs migration `20261022000400_decks.sql` and function `ai-themes` deployed). Counter and Anki import: planned |

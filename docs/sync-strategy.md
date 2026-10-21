@@ -127,6 +127,27 @@ not delete local insert-only rows that the pull did not return.
 Known gap: a v0.1 client pulls with v2 and moves its cursor past practice rows written by
 another device. After it updates, it does not get them (decision 0010).
 
+### Tables added after v3: `decks` (İP8, ADR 0016)
+
+`decks` (migration `20261022000400_decks.sql`) is an ordinary mutable table: the standard
+columns, stamp trigger and RLS, plus one registry row. Nothing in the RPCs changed. Two
+client mechanisms make it safe to add a table after clients already pull with v3:
+
+- **Push waits for the registry.** `LATE_SYNC_TABLES` (`src/sync/engine.ts`) lists tables
+  that may be missing on the backend. While such rows wait in the outbox, the engine reads
+  `public.sync_tables` (a plain PostgREST select, at most once per run) and skips the table
+  until the registry lists it; then it remembers this in `meta.server_tables` and never
+  asks again. A backend without the migration (or without a registry at all) therefore
+  costs no attempts, and the deploy order does not matter.
+- **One-time re-pull.** An app version that does not know `decks` still pulls with v3, gets
+  deck rows, drops them as invalid and moves its cursor past them. The Dexie v8 upgrade
+  (the version that adds the table) records `meta.pull_backfill = ['decks']` when the device
+  has pulled before (`sync_cursor > 0`). After the next normal pull the engine pages from 0
+  up to the stored cursor, applies only rows of the listed tables (last writer wins, so it
+  is idempotent and an interrupted run simply starts over), and clears the list. A full
+  resync clears it too, because it pulls every row anyway. This closes for decks the gap
+  that practice logs still have.
+
 ### Tombstones and full resync
 
 `purge_tombstones(30)` (daily at 03:17 UTC via pg_cron) deletes tombstones whose
@@ -170,6 +191,10 @@ on the user's sense always wins over the lexicon.
   them.
 - `src/sync/practice.test.ts` (FakeServer): practice logs wait for a v3 server, then sync
   insert-only between devices without touching cards.
+- `src/sync/decks.test.ts` (FakeServer): decks between two devices, waiting without
+  attempts on a backend without the table, and the one-time re-pull.
+  `supabase/tests/database/08_decks.test.sql`: RLS, LWW, tombstones, v3 pull and v1/v2 not
+  returning decks.
 - `supabase/tests/integration/stack.test.ts`: the same through PostgREST with
   `src/sync/api.ts`.
 - `src/sync/api.test.ts`: response validation and error classification.

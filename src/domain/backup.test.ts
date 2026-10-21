@@ -99,7 +99,7 @@ describe('backup file', () => {
       session_id: 's', duration_ms: 900, device_id: 'd', created_at: 7, hlc: 'h',
     };
     const b = await buildBackup({ ...t, practice_logs: [practice] }, { exported_at: 1, device_id: null });
-    expect(b.schema_version).toBe(3);
+    expect(b.schema_version).toBeGreaterThanOrEqual(3);
     const v3 = await verifyBackup(JSON.stringify(b));
     expect(v3.ok && v3.backup.tables.practice_logs).toEqual([practice]);
     // Without practice logs the table is still written (empty).

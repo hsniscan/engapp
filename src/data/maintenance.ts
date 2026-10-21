@@ -14,6 +14,7 @@ import { checkIntegrity, type IntegrityReport } from '../domain/integrity';
 import { deriveUnlocked, effectiveLogs, replayCard } from '../domain/recompute';
 import {
   cardSchema,
+  deckSchema,
   noteSchema,
   practiceLogSchema,
   reviewLogSchema,
@@ -39,7 +40,7 @@ import { getDeviceId, META, setMeta } from './meta';
 import { dayConfig, getSettings, schedulerFor, updateSettings } from './settings';
 import { type MutableRows, type MutableTable, type SyncWriter, writeTx } from './writer';
 
-const MUTABLE: MutableTable[] = ['notes', 'senses', 'cards', 'sources', 'settings'];
+const MUTABLE: MutableTable[] = ['notes', 'senses', 'cards', 'sources', 'settings', 'decks'];
 const allSyncedTables = () => [
   db.notes,
   db.senses,
@@ -48,6 +49,7 @@ const allSyncedTables = () => [
   db.sources,
   db.settings,
   db.practice_logs,
+  db.decks,
 ];
 
 // ------------------------------------------------------------------ recompute
@@ -202,6 +204,7 @@ const rowSchemas = {
   settings: settingsSchema,
   review_logs: reviewLogSchema,
   practice_logs: practiceLogSchema,
+  decks: deckSchema,
 } satisfies Record<MutableTable | 'review_logs' | 'practice_logs', z.ZodType>;
 
 /**
@@ -298,6 +301,7 @@ async function readTables(): Promise<BackupTables> {
     sources: await db.sources.toArray(),
     settings: await db.settings.toArray(),
     practice_logs: await db.practice_logs.toArray(),
+    decks: await db.decks.toArray(),
   }));
 }
 
@@ -372,7 +376,9 @@ export async function restoreBackup(
   await writeTx(allSyncedTables(), now, async (w) => {
     const terms = new Set<string>();
     for (const table of MUTABLE) {
-      const incoming = tables[table] as MutableRows[MutableTable][];
+      // Files before schema_version 4 have no decks: local decks are kept as they are.
+      if (table === 'decks' && !tables.decks) continue;
+      const incoming = (tables[table] ?? []) as MutableRows[MutableTable][];
       const ids = new Set(incoming.map((r) => r.id));
       // One bulkGet instead of a get per row: 10,000 cards restore minutes → seconds.
       const existing = (await db.table(table).bulkGet(incoming.map((r) => r.id))) as (

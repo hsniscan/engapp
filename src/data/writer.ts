@@ -5,6 +5,7 @@ import { decodeHlc, encodeHlc, type Hlc, isHlc, receive, tick } from '../domain/
 import { uuidv7 } from '../domain/ids';
 import type {
   Card,
+  Deck,
   Id,
   Millis,
   Note,
@@ -26,6 +27,7 @@ export interface MutableRows {
   cards: Card;
   sources: Source;
   settings: Settings;
+  decks: Deck;
 }
 export type MutableTable = keyof MutableRows;
 
