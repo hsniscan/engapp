@@ -261,13 +261,22 @@ describe('runExtract', () => {
   it('a result cached under an older prompt version is not reused', async () => {
     const store = new MemoryAiStore();
     const b = await body();
-    await store.putChunkCache('user-1', b.chunk_hash, 'extract-v1', 'B1', { v: 1, candidates: [], dropped: {} }, 'm');
+    await store.putChunkCache(
+      'user-1',
+      b.chunk_hash,
+      'extract-v1',
+      'B1',
+      { v: 1, candidates: [], dropped: {} },
+      'm',
+    );
     const { provider } = scripted(GOOD_EXTRACT);
     const res = await runExtract(b, deps(store, provider));
     expect(provider.generateJson).toHaveBeenCalledTimes(1);
     expect(res).toMatchObject({ cache_hit: false, prompt_version: EXTRACT_PROMPT_VERSION });
     expect(EXTRACT_PROMPT_VERSION).not.toBe('extract-v1');
-    expect(await store.getChunkCache('user-1', b.chunk_hash, EXTRACT_PROMPT_VERSION, 'B1')).not.toBeNull();
+    expect(
+      await store.getChunkCache('user-1', b.chunk_hash, EXTRACT_PROMPT_VERSION, 'B1'),
+    ).not.toBeNull();
   });
 
   it('keeps the items of an answer cut off by MAX_TOKENS and says so', async () => {
@@ -302,11 +311,21 @@ describe('validateExtractOutput', () => {
   const base = GOOD_EXTRACT.candidates[1]!;
 
   it('caps at MAX_CANDIDATES and removes duplicates', () => {
-    const many = Array.from({ length: MAX_CANDIDATES + 10 }, (_, i) => ({
+    // A word list: one sentence per entry (one sense per term and sentence is kept).
+    const sentences = Array.from(
+      { length: MAX_CANDIDATES + 10 },
+      (_, i) => `Bank number ${i} is by the bank.`,
+    );
+    const many = sentences.map((s, i) => ({
       ...base,
+      source_sentence: s,
       gloss_en: `meaning number ${i} unique${i}`,
     }));
-    const r = validateExtractOutput({ candidates: [base, base, ...many] }, CHUNK, known);
+    const r = validateExtractOutput(
+      { candidates: [base, base, ...many] },
+      `${CHUNK}\n${sentences.join('\n')}`,
+      known,
+    );
     expect(r.candidates).toHaveLength(MAX_CANDIDATES);
     expect(r.dropped.duplicate).toBe(1);
     expect(r.dropped.over_limit).toBe(11);
@@ -362,7 +381,10 @@ describe('validateExtractOutput', () => {
       {
         candidates: [
           { ...base, sentence_tr: undefined },
-          { ...GOOD_EXTRACT.candidates[0]!, sentence_tr: GOOD_EXTRACT.candidates[0]!.source_sentence },
+          {
+            ...GOOD_EXTRACT.candidates[0]!,
+            sentence_tr: GOOD_EXTRACT.candidates[0]!.source_sentence,
+          },
           { ...GOOD_EXTRACT.candidates[2]!, sentence_tr: 'ç'.repeat(1501) },
         ],
       },
@@ -428,9 +450,50 @@ describe('validateExtractOutput', () => {
 });
 
 const LIST_WORDS = [
-  'I', 'ability', 'absence', 'accent', 'account', 'action', 'advice', 'airport', 'amount',
-  'animal', 'answer', 'apple', 'area', 'army', 'article', 'artist', 'attempt', 'author',
-  'baby', 'bag', 'balance', 'ball', 'band', 'basket', 'beach', 'bean', 'bear', 'bed',
-  'bell', 'bench', 'bicycle', 'bird', 'blanket', 'boat', 'bone', 'book', 'bottle', 'box',
-  'brain', 'bread', 'bridge', 'brother', 'bucket', 'building', 'butter', 'button',
+  'I',
+  'ability',
+  'absence',
+  'accent',
+  'account',
+  'action',
+  'advice',
+  'airport',
+  'amount',
+  'animal',
+  'answer',
+  'apple',
+  'area',
+  'army',
+  'article',
+  'artist',
+  'attempt',
+  'author',
+  'baby',
+  'bag',
+  'balance',
+  'ball',
+  'band',
+  'basket',
+  'beach',
+  'bean',
+  'bear',
+  'bed',
+  'bell',
+  'bench',
+  'bicycle',
+  'bird',
+  'blanket',
+  'boat',
+  'bone',
+  'book',
+  'bottle',
+  'box',
+  'brain',
+  'bread',
+  'bridge',
+  'brother',
+  'bucket',
+  'building',
+  'butter',
+  'button',
 ];
