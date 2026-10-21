@@ -4,7 +4,7 @@ import { db, ensureSettings, getCurrentUserId, logError } from '@/data';
 import i18n from '@/i18n';
 import { toast } from '@/ui';
 import { downloadBackup } from './backupActions';
-import { checkIntegrityNow } from './integrity';
+import { scheduleStartupIntegrityCheck } from './integrity';
 import { captureInstallPrompt, flags, refreshStorageInfo, requestPersistence } from './platform';
 import { startThemeSync } from './themeSync';
 
@@ -67,6 +67,6 @@ export function bootstrap(): void {
     }
     watchFirstCard();
     void refreshStorageInfo();
-    void checkIntegrityNow();
+    scheduleStartupIntegrityCheck(() => /^\/review(\/|$)/.test(window.location.pathname));
   })();
 }

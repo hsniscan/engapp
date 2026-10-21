@@ -378,6 +378,9 @@
     "signOutTitle": "Çıkış yapılsın mı?",
     "signOutBody": "Verilerin bu cihazda kalır. Çıkış yapınca senkron durur; aynı hesapla tekrar giriş yaptığında kaldığı yerden devam eder.",
     "signedOut": "Çıkış yapıldı",
+    "signOutPending_one": "{{count}} değişiklik henüz hesabına gönderilemedi. Çıkış yaparsan bu cihazda kalır; aynı hesapla yeniden giriş yaptığında gönderilir.",
+    "signOutPending_other": "{{count}} değişiklik henüz hesabına gönderilemedi. Çıkış yaparsan bu cihazda kalır; aynı hesapla yeniden giriş yaptığında gönderilir.",
+    "signOutAnyway": "Yine de çıkış yap",
     "signOutFailed": "Çıkış yapılamadı. Tekrar dene.",
     "avatar": "Profil fotoğrafı",
     "noName": "Google hesabı",
@@ -397,6 +400,13 @@
   "notFound": {
     "title": "Sayfa bulunamadı",
     "body": "Aradığın sayfa taşınmış ya da hiç olmamış olabilir."
+  },
+  "routeError": {
+    "title": "Bir şeyler ters gitti",
+    "body": "Bu ekran açılırken beklenmeyen bir hata oldu. Verilerin bu cihazda güvende; sayfayı yenile.",
+    "chunkTitle": "Bu ekran yüklenemedi",
+    "chunkBody": "Uygulamanın bu bölümü indirilemedi. Bağlantını kontrol edip sayfayı yenile; verilerin bu cihazda güvende.",
+    "reload": "Sayfayı yenile"
   },
   "a11y": {
     "notifications": "Bildirimler",
@@ -735,6 +745,7 @@
       "notPdf": "Bu dosya bir PDF değil.",
       "tooBig": "Dosya çok büyük (en fazla {{mb}} MB).",
       "encrypted": "Bu PDF parola korumalı; açılamadı.",
+      "readerUnavailable": "PDF okuyucu indirilemedi. İlk PDF için internet bağlantısı gerekir; bağlanınca tekrar dene.",
       "failed": "PDF okunamadı. Dosya bozuk olabilir.",
       "fileLabel": "PDF dosyası"
     },

@@ -42,7 +42,9 @@ describe('AuthPage', () => {
   it('without backend env: says sign-in is off and guest works', () => {
     setAuthStateForTesting({ status: 'unavailable', user: null });
     renderAt(<AuthPage />, '/auth');
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Kelimelerin seninle gelsin');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'Kelimelerin seninle gelsin',
+    );
     expect(screen.getByText('Giriş bu sürümde kapalı')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Google/ })).toBeNull();
     expect(screen.getByRole('button', { name: 'Misafir olarak devam et' })).toBeInTheDocument();
@@ -51,7 +53,9 @@ describe('AuthPage', () => {
   it('guest: Google sign-in, guest option and one line on what an account gives', async () => {
     setAuthStateForTesting({ status: 'guest', user: null });
     const router = renderAt(<AuthPage />, '/auth');
-    expect(screen.getByText(/senkronlanır ve metinlerden AI ile kart çıkarabilirsin/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/senkronlanır ve metinlerden AI ile kart çıkarabilirsin/),
+    ).toBeInTheDocument();
     const google = screen.getByRole('button', { name: 'Google ile giriş yap' });
     // No backend in tests: starting the redirect fails and says so.
     await userEvent.click(google);
@@ -98,11 +102,20 @@ describe('AccountLinkDialog', () => {
       {
         table: 'notes',
         op: 'upsert',
-        payload: { id: 'n-remote', hlc: '000000000000001:00000:x', term: 'cope', term_norm: 'cope', deleted_at: null },
+        payload: {
+          id: 'n-remote',
+          hlc: '000000000000001:00000:x',
+          term: 'cope',
+          term_norm: 'cope',
+          deleted_at: null,
+        },
       },
     ]);
     await addNoteWithSenses({ term: 'thrive', senses: [{ meaning_tr: 'gelişmek' }] });
-    configureLink({ transport: server, engine: new SyncEngine({ transport: server, getSessionUserId: async () => 'u1' }) });
+    configureLink({
+      transport: server,
+      engine: new SyncEngine({ transport: server, getSessionUserId: async () => 'u1' }),
+    });
     await linkAccount('u1');
     renderAt(<AccountLinkDialog />);
     const dialog = await screen.findByRole('dialog', { name: 'Bu hesapta zaten kartların var' });

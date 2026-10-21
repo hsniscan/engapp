@@ -378,6 +378,9 @@
     "signOutTitle": "Sign out?",
     "signOutBody": "Your data stays on this device. Sync stops while you're signed out and picks up where it left off when you sign in with the same account.",
     "signedOut": "Signed out",
+    "signOutPending_one": "{{count}} change has not reached your account yet. If you sign out it stays on this device and is sent when you sign in again with the same account.",
+    "signOutPending_other": "{{count}} changes have not reached your account yet. If you sign out they stay on this device and are sent when you sign in again with the same account.",
+    "signOutAnyway": "Sign out anyway",
     "signOutFailed": "Couldn't sign out. Try again.",
     "avatar": "Profile photo",
     "noName": "Google account",
@@ -397,6 +400,13 @@
   "notFound": {
     "title": "Page not found",
     "body": "The page you are looking for has moved or never existed."
+  },
+  "routeError": {
+    "title": "Something went wrong",
+    "body": "An unexpected error occurred while opening this screen. Your data is safe on this device; reload the page.",
+    "chunkTitle": "This screen could not be loaded",
+    "chunkBody": "This part of the app could not be downloaded. Check your connection and reload; your data is safe on this device.",
+    "reload": "Reload page"
   },
   "a11y": {
     "notifications": "Notifications",
@@ -735,6 +745,7 @@
       "notPdf": "This file isn't a PDF.",
       "tooBig": "The file is too large (at most {{mb}} MB).",
       "encrypted": "This PDF is password-protected and couldn't be opened.",
+      "readerUnavailable": "Couldn't download the PDF reader. The first PDF needs an internet connection; try again when you're online.",
       "failed": "Couldn't read the PDF. The file may be damaged.",
       "fileLabel": "PDF file"
     },

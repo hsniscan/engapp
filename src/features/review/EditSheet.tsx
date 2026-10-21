@@ -1,3 +1,4 @@
+import { LIMITS } from '@/domain/limits';
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { editSense, logError, type CardView } from '@/data';
@@ -90,6 +91,7 @@ function EditForm({
             : t('review.editMeaning')
         }
         value={meaning}
+        maxLength={LIMITS.meaning_tr}
         onChange={(e) => {
           setMeaning(e.target.value);
           setError(null);
@@ -103,6 +105,7 @@ function EditForm({
         autoComplete="off"
       />
       <TextArea
+        maxLength={LIMITS.source_sentence}
         label={t('review.editSentence')}
         hint={t('review.editSentenceHint')}
         optional

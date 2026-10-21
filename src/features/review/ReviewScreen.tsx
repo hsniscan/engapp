@@ -6,6 +6,7 @@ import { db, getSettings } from '@/data';
 import { Rating as R, type RatingValue } from '@/domain/types';
 import { getNextDue, cfgOf } from '@/features/home/queries';
 import { nextDueText } from '@/features/home/nextDueText';
+import { requestSync } from '@/sync';
 import {
   Button,
   buttonClasses,
@@ -100,6 +101,19 @@ export function ReviewScreen() {
       busy.current = false;
     }
   }, [session, t]);
+
+  // Push the session's review logs soon after it ends (and when leaving mid-session):
+  // the sync engine's own triggers would otherwise wait for the next interval.
+  useEffect(() => {
+    if (state.phase !== 'done') return;
+    void session.settled().then(() => requestSync(0));
+  }, [state.phase, session]);
+  useEffect(
+    () => () => {
+      if (session.getAnswers().length > 0) void session.settled().then(() => requestSync(0));
+    },
+    [session],
+  );
 
   const stateRef = useRef(state);
   const editOpenRef = useRef(editOpen);

@@ -21,12 +21,23 @@ const sense = (id: string, lemma: string, meaning: string, gloss = 'a gloss'): L
   updated_at: 1,
 });
 
-function enrichReply(senses: LexiconSense[], aiCalled: boolean, newIds: string[] = []): EnrichResponse {
+function enrichReply(
+  senses: LexiconSense[],
+  aiCalled: boolean,
+  newIds: string[] = [],
+): EnrichResponse {
   return {
     prompt_version: 'enrich-v1',
     ai_called: aiCalled,
     model: aiCalled ? 'fake' : null,
-    term: senses[0] ? { id: senses[0].term_id, lemma: senses[0].lemma, lemma_norm: senses[0].lemma_norm, term_type: 'word' } : null,
+    term: senses[0]
+      ? {
+          id: senses[0].term_id,
+          lemma: senses[0].lemma,
+          lemma_norm: senses[0].lemma_norm,
+          term_type: 'word',
+        }
+      : null,
     senses,
     new_sense_ids: newIds,
     suggested_sense_id: null,
@@ -67,16 +78,23 @@ describe('lookupLexicon', () => {
 
   it('"Başka anlam ara" calls with more: true and marks new senses as AI', async () => {
     await db.lexicon_cache.put(sense('s1', 'bank', 'kıyı'));
-    enrich.mockResolvedValue(enrichReply([sense('s1', 'bank', 'kıyı'), sense('s3', 'bank', 'banka')], true, ['s3']));
+    enrich.mockResolvedValue(
+      enrichReply([sense('s1', 'bank', 'kıyı'), sense('s3', 'bank', 'banka')], true, ['s3']),
+    );
     const res = await lookupLexicon('bank', { more: true }, deps);
     expect(enrich).toHaveBeenCalledWith(expect.objectContaining({ more: true }));
     expect(res.ok && res.senses.map((s) => s.origin)).toEqual(['lexicon', 'ai']);
   });
 
   it('offline without a cached term, and server errors, come back as codes', async () => {
-    expect(await lookupLexicon('zeal', { more: false }, { ...deps, isOnline: () => false })).toEqual({ ok: false, error: 'offline' });
+    expect(
+      await lookupLexicon('zeal', { more: false }, { ...deps, isOnline: () => false }),
+    ).toEqual({ ok: false, error: 'offline' });
     enrich.mockRejectedValue(new AiClientError('daily_limit', 'x', 429));
-    expect(await lookupLexicon('zeal', { more: false }, deps)).toEqual({ ok: false, error: 'daily_limit' });
+    expect(await lookupLexicon('zeal', { more: false }, deps)).toEqual({
+      ok: false,
+      error: 'daily_limit',
+    });
   });
 });
 
@@ -86,10 +104,17 @@ describe('useLexiconLookup', () => {
     const guest = renderHook(() => useLexiconLookup('bank', deps));
     expect(guest.result.current.available).toBe(false);
 
-    setAuthStateForTesting({ status: 'signed_in', user: { id: 'u', email: null, name: null, avatarUrl: null } });
+    setAuthStateForTesting({
+      status: 'signed_in',
+      user: { id: 'u', email: null, name: null, avatarUrl: null },
+    });
     await db.lexicon_cache.put(sense('s1', 'bank', 'kıyı'));
-    enrich.mockResolvedValue(enrichReply([sense('s1', 'bank', 'kıyı'), sense('s3', 'bank', 'banka')], true, ['s3']));
-    const { result, rerender } = renderHook(({ term }) => useLexiconLookup(term, deps), { initialProps: { term: 'bank' } });
+    enrich.mockResolvedValue(
+      enrichReply([sense('s1', 'bank', 'kıyı'), sense('s3', 'bank', 'banka')], true, ['s3']),
+    );
+    const { result, rerender } = renderHook(({ term }) => useLexiconLookup(term, deps), {
+      initialProps: { term: 'bank' },
+    });
     expect(result.current.available).toBe(true);
     expect(result.current.canSearchMore).toBe(false);
     act(() => result.current.fill());

@@ -119,7 +119,9 @@ function PdfImportForm() {
             ? t('importer.pdf.encrypted')
             : code === 'not_pdf'
               ? t('importer.pdf.notPdf')
-              : t('importer.pdf.failed');
+              : code === 'reader_unavailable'
+                ? t('importer.pdf.readerUnavailable')
+                : t('importer.pdf.failed');
 
   const fileInput = (
     <input

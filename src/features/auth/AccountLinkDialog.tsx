@@ -22,7 +22,8 @@ const OPTIONS: {
 
 /**
  * Second-device question after sign-in (plan: birleştir [varsayılan] / yerel veriyi at /
- * hesaptakini at). Must be answered; it cannot be dismissed by clicking outside.
+ * hesaptakini at). It cannot be dismissed by clicking outside; besides answering, the user can
+ * always "Misafir olarak devam et" (sign out, nothing changes on either side).
  */
 export function AccountLinkDialog() {
   const { t } = useTranslation();
@@ -80,14 +81,20 @@ function ChooseDialog({ applying, otherAccount }: { applying: boolean; otherAcco
       title={t('account.chooseTitle')}
       description={otherAccount ? t('account.chooseBodyOther') : t('account.chooseBody')}
       footer={
-        <Button
-          variant={destructive ? 'danger' : 'primary'}
-          loading={applying}
-          onClick={() => void resolveLink(choice)}
-          className="sm:min-w-32"
-        >
-          {applying ? t('account.applying') : t('account.apply')}
-        </Button>
+        <>
+          {/* The only way out besides answering: sign out, nothing on either side changes. */}
+          <Button variant="ghost" disabled={applying} onClick={() => void continueAsGuest()}>
+            {t('account.continueAsGuest')}
+          </Button>
+          <Button
+            variant={destructive ? 'danger' : 'primary'}
+            loading={applying}
+            onClick={() => void resolveLink(choice)}
+            className="sm:min-w-32"
+          >
+            {applying ? t('account.applying') : t('account.apply')}
+          </Button>
+        </>
       }
     >
       <fieldset disabled={applying} className="flex flex-col gap-2">

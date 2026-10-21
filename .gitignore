@@ -28,3 +28,10 @@ supabase/.temp
 supabase/.branches
 supabase/.env
 supabase/functions/.env
+
+# Playwright
+test-results
+playwright-report
+blob-report
+.claude/worktrees/
+docs/screenshots/q-*.png

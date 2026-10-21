@@ -5,7 +5,9 @@ import { cleanPdfText } from '@/domain/chunking';
 
 export const MAX_PDF_BYTES = 30 * 1024 * 1024;
 
-export type PdfErrorCode = 'not_pdf' | 'too_big' | 'encrypted' | 'no_text' | 'failed';
+/** reader_unavailable: pdf.js or its worker could not be downloaded (offline before first use). */
+export type PdfErrorCode =
+  'not_pdf' | 'too_big' | 'encrypted' | 'no_text' | 'reader_unavailable' | 'failed';
 
 export class PdfError extends Error {
   readonly code: PdfErrorCode;
@@ -56,10 +58,13 @@ function loadPdfJs() {
   loaded ??= Promise.all([
     import('pdfjs-dist'),
     import('pdfjs-dist/build/pdf.worker.min.mjs?url'),
-  ]).then(([pdfjs, w]) => ({
-    pdfjs,
-    workerUrl: w.default,
-  }));
+  ]).then(
+    ([pdfjs, w]) => ({ pdfjs, workerUrl: w.default }),
+    (e: unknown) => {
+      loaded = null; // try again next time (e.g. back online)
+      throw new PdfError('reader_unavailable', e instanceof Error ? e.message : String(e));
+    },
+  );
   return loaded;
 }
 
@@ -92,11 +97,21 @@ export async function extractPdfText(
   let port: Worker | null = null;
   let worker: InstanceType<PdfJs['PDFWorker']> | null = null;
   let getDocument: PdfJs['getDocument'];
+  // The worker file is cached on first use, not precached (docs/decisions/0008): offline before
+  // the first PDF it cannot load, and pdf.js would wait for it forever.
+  let workerFailed: Promise<never> | null = null;
   if (opts.pdfjs) {
     getDocument = opts.pdfjs.getDocument;
   } else {
     const { pdfjs, workerUrl } = await loadPdfJs();
     port = new Worker(workerUrl, { type: 'module' });
+    const p = port;
+    workerFailed = new Promise<never>((_, reject) =>
+      p.addEventListener('error', () => reject(new PdfError('reader_unavailable')), {
+        once: true,
+      }),
+    );
+    workerFailed.catch(() => {});
     worker = pdfjs.PDFWorker.create({ port });
     getDocument = pdfjs.getDocument;
   }
@@ -107,15 +122,18 @@ export async function extractPdfText(
     ...(worker ? { worker } : {}),
   });
   const release = async () => {
-    await task.destroy().catch(() => {});
+    // destroy() waits for the worker's answer: never longer than a moment (a worker that did
+    // not load never answers).
+    await Promise.race([task.destroy().catch(() => {}), new Promise((r) => setTimeout(r, 1000))]);
     worker?.destroy();
     port?.terminate();
   };
   let doc: Awaited<typeof task.promise>;
   try {
-    doc = await task.promise;
+    doc = await (workerFailed ? Promise.race([task.promise, workerFailed]) : task.promise);
   } catch (e) {
     await release();
+    if (e instanceof PdfError) throw e;
     const name = (e as { name?: string } | null)?.name;
     if (name === 'PasswordException') throw new PdfError('encrypted');
     if (name === 'InvalidPDFException') throw new PdfError('not_pdf');

@@ -3,7 +3,13 @@ import { AiClientError, type ExtractResponse } from '@/ai/client';
 import { createImportJob, db, getImportJob, listImportCandidates } from '@/data';
 import { chunkText, hashChunk } from '@/domain/chunking';
 import { resetDb } from '@/test/db';
-import { processImportQueue, type ImportQueueDeps } from './queue';
+import {
+  CHUNK_CONCURRENCY,
+  CHUNK_GAP_MS,
+  processImportQueue,
+  resetImportPrefetchForTesting,
+  type ImportQueueDeps,
+} from './queue';
 import { FAKE_SPECS, fakeExtractResponse, fakeText } from './testing/fakeData';
 
 interface Harness {
@@ -41,7 +47,10 @@ function harness(opts: { latencyMs?: number; gapMs?: number } = {}): Harness {
   return { deps, calls, clock, online, fail };
 }
 
-beforeEach(resetDb);
+beforeEach(async () => {
+  resetImportPrefetchForTesting();
+  await resetDb();
+});
 
 describe('import queue', () => {
   it('processes chunks in order and produces candidates', async () => {
@@ -236,5 +245,85 @@ describe('import queue', () => {
     });
     expect(await getImportJob(b.id)).toMatchObject({ status: 'ready' });
     expect(await db.import_jobs.count()).toBe(2);
+  });
+});
+
+describe('import queue concurrency (acceptance criterion 5)', () => {
+  /** ~51,000 characters, like a 20-page article PDF: corpus sentences plus filler prose. */
+  function longText(): string {
+    const filler =
+      'The council met again on Tuesday to discuss the plan for the new library and the park. ';
+    const parts: string[] = [];
+    let i = 0;
+    while (parts.join(' ').length < 51_000) {
+      parts.push(FAKE_SPECS[i % FAKE_SPECS.length]!.sentence, filler.repeat(6).trim());
+      i++;
+    }
+    return parts.join(' ');
+  }
+
+  it(`a 51k-character text at 4.5 s per chunk finishes well under 60 s with ${CHUNK_CONCURRENCY} in flight`, async () => {
+    // Real timers, scaled 1:100 (45 ms stands for 4.5 s, 6 ms for the 600 ms gap).
+    const SCALE = 100;
+    const text = longText();
+    const chunks = chunkText(text);
+    expect(text.length).toBeGreaterThanOrEqual(51_000);
+    expect(chunks.length).toBeGreaterThanOrEqual(9);
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const deps: ImportQueueDeps = {
+      extract: async ({ text: t }) => {
+        inFlight++;
+        maxInFlight = Math.max(maxInFlight, inFlight);
+        await new Promise((r) => setTimeout(r, 4500 / SCALE));
+        inFlight--;
+        return { ...(fakeExtractResponse(t) as ExtractResponse), chunk_hash: await hashChunk(t) };
+      },
+      isOnline: () => true,
+      isSignedIn: async () => true,
+      sleep: (ms) => new Promise((r) => setTimeout(r, ms / SCALE)),
+      now: () => Date.now(),
+      gapMs: CHUNK_GAP_MS,
+    };
+    const job = await createImportJob({ kind: 'pdf', title: '20 sayfa', chunks, level: 'B1' });
+    const t0 = performance.now();
+    expect(await processImportQueue(deps)).toBe('idle');
+    const simulatedMs = (performance.now() - t0) * SCALE;
+    const sequentialMs = chunks.length * 4500 + (chunks.length - 1) * CHUNK_GAP_MS;
+    expect(maxInFlight).toBe(CHUNK_CONCURRENCY);
+    expect(sequentialMs).toBeGreaterThan(45_000); // one by one this was close to the limit
+    expect(simulatedMs).toBeLessThan(30_000);
+    console.info(
+      `criterion 5: ${chunks.length} chunks, ${text.length} chars → ~${Math.round(simulatedMs / 1000)} s (one by one: ${Math.round(sequentialMs / 1000)} s)`,
+    );
+    const j = (await getImportJob(job.id))!;
+    expect(j).toMatchObject({ status: 'ready', chunk_done: chunks.length });
+    // Same candidates, in chunk order, as processing one by one.
+    const cands = await listImportCandidates(job.id);
+    const orders = cands.map((c) => c.order);
+    expect(orders).toEqual([...orders].sort((a, b) => a - b));
+    expect(new Set(cands.map((c) => c.lexicon_sense_id)).size).toBe(cands.length);
+  });
+
+  it('records chunks in order even when later requests answer first', async () => {
+    const h = harness();
+    const chunks = chunkText(fakeText(), 400);
+    expect(chunks.length).toBeGreaterThan(4);
+    let n = 0;
+    h.deps.extract = async ({ text }) => {
+      h.calls.push(text);
+      // Earlier chunks are slower than later ones.
+      await new Promise((r) => setTimeout(r, Math.max(0, 30 - 10 * n++)));
+      return {
+        ...(fakeExtractResponse(text) as ExtractResponse),
+        chunk_hash: await hashChunk(text),
+      };
+    };
+    const job = await createImportJob({ kind: 'text', title: 'T', chunks, level: 'B1' });
+    expect(await processImportQueue(h.deps)).toBe('idle');
+    const cands = await listImportCandidates(job.id);
+    expect(cands.map((c) => c.term)).toEqual(
+      FAKE_SPECS.filter((s) => chunks.join(' ').includes(s.sentence)).map((s) => s.term),
+    );
   });
 });
