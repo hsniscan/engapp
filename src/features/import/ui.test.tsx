@@ -14,7 +14,11 @@ import { FAKE_SPECS, seedReadyJob } from './testing/fakeData';
 
 function renderAt(path: string, routes: { path: string; element: React.ReactNode }[]) {
   const router = createMemoryRouter(
-    [...routes, { path: '/library', element: <p>library page</p> }, { path: '/add', element: <p>add page</p> }],
+    [
+      ...routes,
+      { path: '/library', element: <p>library page</p> },
+      { path: '/add', element: <p>add page</p> },
+    ],
     { initialEntries: [path] },
   );
   render(
@@ -26,7 +30,11 @@ function renderAt(path: string, routes: { path: string; element: React.ReactNode
   return router;
 }
 
-const signedIn = () => setAuthStateForTesting({ status: 'signed_in', user: { id: 'u1', email: 'h@example.com', name: 'Hasan', avatarUrl: null } });
+const signedIn = () =>
+  setAuthStateForTesting({
+    status: 'signed_in',
+    user: { id: 'u1', email: 'h@example.com', name: 'Hasan', avatarUrl: null },
+  });
 
 beforeEach(async () => {
   await resetDb();
@@ -35,14 +43,17 @@ beforeEach(async () => {
 afterEach(cleanup);
 
 /** The preview row whose headword is `term`. */
-const row = (items: HTMLElement[], term: string) => items.find((li) => li.querySelector('span[lang="en"]')?.textContent === term)!;
+const row = (items: HTMLElement[], term: string) =>
+  items.find((li) => li.querySelector('span[lang="en"]')?.textContent === term)!;
 
 describe('import panels', () => {
   it('guests see a calm sign-in prompt and the privacy note', () => {
     setAuthStateForTesting({ status: 'guest', user: null });
     renderAt('/', [{ path: '/', element: <TextImportPanel /> }]);
     expect(screen.getByText('Gizli iş belgelerini yükleme.')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /AI ile kart çıkarmak için giriş yap/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /AI ile kart çıkarmak için giriş yap/ }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Google ile giriş yap/ })).toBeInTheDocument();
     expect(screen.queryByRole('textbox')).toBeNull();
   });
@@ -60,7 +71,11 @@ describe('import panels', () => {
     expect(screen.queryByText('Gizli iş belgelerini yükleme.')).toBeNull();
     const area = screen.getByRole('textbox', { name: 'İngilizce metin' });
     await user.click(area);
-    await user.paste(FAKE_SPECS.slice(0, 5).map((s) => s.sentence).join(' '));
+    await user.paste(
+      FAKE_SPECS.slice(0, 5)
+        .map((s) => s.sentence)
+        .join(' '),
+    );
     expect(screen.getByText(/karakter · 1 parça/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Kelimeleri çıkar' }));
     await waitFor(async () => expect(await db.import_jobs.count()).toBe(1));
@@ -87,10 +102,15 @@ describe('ImportPreviewPage', () => {
   it('lists candidates with highlights, flags, statuses and filters; confirm creates notes', async () => {
     // "bank" (kıyı) already exists with the same lexicon sense → "zaten var", preselected off.
     const { addNoteWithSenses } = await import('@/data');
-    await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'kıyı', lexicon_sense_id: 'lex-sense-9' }] });
+    await addNoteWithSenses({
+      term: 'bank',
+      senses: [{ meaning_tr: 'kıyı', lexicon_sense_id: 'lex-sense-9' }],
+    });
     const jobId = await seedReadyJob(40);
     const user = userEvent.setup();
-    const router = renderAt(`/import/${jobId}`, [{ path: '/import/:jobId', element: <ImportPreviewPage /> }]);
+    const router = renderAt(`/import/${jobId}`, [
+      { path: '/import/:jobId', element: <ImportPreviewPage /> },
+    ]);
 
     const list = await screen.findByRole('list', { name: 'Önizleme' });
     const items = within(list).getAllByRole('listitem');
@@ -111,13 +131,16 @@ describe('ImportPreviewPage', () => {
 
     // Type filter.
     await user.click(screen.getByRole('radio', { name: /Yapı/ }));
-    expect(within(screen.getByRole('list', { name: 'Önizleme' })).getAllByRole('listitem')).toHaveLength(
-      FAKE_SPECS.filter((s) => s.type === 'pattern').length,
-    );
+    expect(
+      within(screen.getByRole('list', { name: 'Önizleme' })).getAllByRole('listitem'),
+    ).toHaveLength(FAKE_SPECS.filter((s) => s.type === 'pattern').length);
     await user.click(screen.getByRole('radio', { name: /Tümü/ }));
 
     // Edit a meaning in place.
-    const reluctant = row(within(screen.getByRole('list', { name: 'Önizleme' })).getAllByRole('listitem'), 'reluctant');
+    const reluctant = row(
+      within(screen.getByRole('list', { name: 'Önizleme' })).getAllByRole('listitem'),
+      'reluctant',
+    );
     const input = within(reluctant).getByRole('textbox', { name: 'Türkçe anlamı: reluctant' });
     await user.clear(input);
     await user.type(input, 'gönülsüz{Enter}');
@@ -135,7 +158,11 @@ describe('ImportPreviewPage', () => {
     expect(await screen.findByText('2 kelime eklendi')).toBeInTheDocument();
     const note = (await db.notes.where('term_norm').equals('reluctant').first())!;
     const sense = (await db.senses.where('note_id').equals(note.id).first())!;
-    expect(sense).toMatchObject({ meaning_tr: 'isteksiz', meaning_tr_override: 'gönülsüz', lexicon_sense_id: 'lex-sense-1' });
+    expect(sense).toMatchObject({
+      meaning_tr: 'isteksiz',
+      meaning_tr_override: 'gönülsüz',
+      lexicon_sense_id: 'lex-sense-1',
+    });
     expect((await getImportJob(jobId))!.status).toBe('done');
   });
 

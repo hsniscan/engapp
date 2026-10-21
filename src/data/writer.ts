@@ -70,6 +70,13 @@ export class SyncWriter {
     this.enqueue('review_logs', log.id, 'upsert', log);
   }
 
+  /** Many new logs at once (history reset); bulkAdd fails if an id exists. */
+  async insertLogs(logs: ReviewLog[]): Promise<void> {
+    if (logs.length === 0) return;
+    await db.review_logs.bulkAdd(logs);
+    for (const log of logs) this.enqueue('review_logs', log.id, 'upsert', log);
+  }
+
   enqueue(table: OutboxTable, rowId: Id, op: OutboxRow['op'], payload: unknown): void {
     this.pending.push({ table, row_id: rowId, op, payload, attempts: 0, next_attempt_at: this.now });
   }

@@ -99,6 +99,8 @@ All actions take an optional trailing `now` (ms) for tests. They throw `ActionEr
 | `runIntegrityCheck()` / `repairIntegrity()` | Startup check and the "Veri onarımı" repair. |
 | `applyRemoteRows(batch)` | Sync pull hook. Mutable rows use last-writer-wins by HLC; logs are inserted if new. Pulled rows are not queued. Touched cards are recomputed (and queued if changed), duplicates are flagged, and `daily_activity` is rebuilt when logs arrive. |
 | `adoptGuestData(userId)` | Moves guest data to an account: sets `meta.user_id`, stamps guest rows and queues everything, including logs. |
+| `copyCardsFromOtherAccount(userId, snapshot)` | Another account's data on this device: copies its live notes, senses and referenced sources into `userId` as new rows (new ids, cards New), applies the account's snapshot and drops the other account's rows, logs, settings and import jobs locally. No history crosses accounts (decision 0008). |
+| `resetStudyHistory()` | "Çalışma geçmişini sıfırla": an undo row for every answer that still counts, all cards recomputed (New, re-locked), `daily_activity` rebuilt. Syncs as ordinary log and card rows. |
 | `rebuildDailyActivity()`, `recomputeAllCards()` | Maintenance. |
 | `logError`, `listErrors`, `clearErrors` | Error log. |
 

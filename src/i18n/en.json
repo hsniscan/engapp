@@ -379,6 +379,9 @@
     "signOutTitle": "Sign out?",
     "signOutBody": "Your data stays on this device. Sync stops while you're signed out and picks up where it left off when you sign in with the same account.",
     "signedOut": "Signed out",
+    "signOutPending_one": "{{count}} change has not reached your account yet. If you sign out it stays on this device and is sent when you sign in again with the same account.",
+    "signOutPending_other": "{{count}} changes have not reached your account yet. If you sign out they stay on this device and are sent when you sign in again with the same account.",
+    "signOutAnyway": "Sign out anyway",
     "signOutFailed": "Couldn't sign out. Try again.",
     "avatar": "Profile photo",
     "noName": "Google account",
@@ -398,6 +401,13 @@
   "notFound": {
     "title": "Page not found",
     "body": "The page you are looking for has moved or never existed."
+  },
+  "routeError": {
+    "title": "Something went wrong",
+    "body": "An unexpected error occurred while opening this screen. Your data is safe on this device; reload the page.",
+    "chunkTitle": "This screen could not be loaded",
+    "chunkBody": "This part of the app could not be downloaded. Check your connection and reload; your data is safe on this device.",
+    "reload": "Reload page"
   },
   "a11y": {
     "notifications": "Notifications",
@@ -641,6 +651,17 @@
       "ok": "Got it"
     }
   },
+  "resetHistory": {
+    "title": "Reset study history",
+    "hint": "Resets the progress of your cards and your stats. The cards stay.",
+    "button": "Reset",
+    "confirmTitle": "Reset your study history?",
+    "confirmBody": "The progress of all your cards and your study history are deleted; the cards themselves stay. This can't be undone.",
+    "confirm": "Reset history",
+    "done": "Study history reset",
+    "doneHint": "All cards start over as new cards.",
+    "failed": "Couldn't reset the study history."
+  },
   "integrity": {
     "title": "Data integrity",
     "hint": "Checks that cards, notes and review records are consistent.",
@@ -671,7 +692,12 @@
     "checking": "Setting up your account…",
     "chooseTitle": "This account already has cards",
     "chooseBody": "How should we bring the cards on this device together with the ones in your account?",
-    "chooseBodyOther": "This device holds another account's cards. How should we combine them with the account you signed in with?",
+    "chooseTitleOther": "This device has another account's cards",
+    "chooseBodyOther": "Someone signed in here with another Google account before. Study history is never shared between accounts.",
+    "copyCards": "Copy the cards (without study history)",
+    "copyCardsHint": "Recommended. Words, meanings and sentences come to this account as new cards. Review history, streak and stats stay with the other account.",
+    "startWithAccount": "Start with this account's data",
+    "startWithAccountHint": "Only this account's cards will be on this device. The other account's cards are not deleted; they come back when you sign in with it.",
     "options": "Options",
     "merge": "Merge",
     "mergeHint": "Recommended. Cards and review history from both sides are kept. A word that appears twice is marked “possible duplicate”; nothing is deleted.",
@@ -686,6 +712,7 @@
     "errorBody": "Check your connection and try again, or continue as a guest for now. Your data is safe on this device.",
     "continueAsGuest": "Continue as guest",
     "done": "Connected to your account",
+    "doneCopied": "{{count}} words were copied as new cards.",
     "doneDuplicates": "{{count}} words were marked “possible duplicate”; you can review them in Cards."
   },
   "syncPanel": {
@@ -741,6 +768,7 @@
       "notPdf": "This file isn't a PDF.",
       "tooBig": "The file is too large (at most {{mb}} MB).",
       "encrypted": "This PDF is password-protected and couldn't be opened.",
+      "readerUnavailable": "Couldn't download the PDF reader. The first PDF needs an internet connection; try again when you're online.",
       "failed": "Couldn't read the PDF. The file may be damaged.",
       "fileLabel": "PDF file"
     },

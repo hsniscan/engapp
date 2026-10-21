@@ -33,10 +33,17 @@ const rowKey = (table: string, id: string) => `${table}\u0000${id}`;
 /** Key of an outbox row's target (table + row id), e.g. for takeOutboxItems' `skip`. */
 export const outboxKey = (item: Pick<OutboxItem, 'table' | 'row_id'>): string => rowKey(item.table, item.row_id);
 
+/** Outbox rows read per page while looking for items to push. */
+const OUTBOX_PAGE = 500;
+
 /**
  * Coalesced, due outbox items in outbox order (oldest first), at most `limit`.
  * `force` ignores next_attempt_at (manual "Şimdi senkronla"). `skip` (outboxKey values)
  * leaves out rows already tried in the current run.
+ *
+ * Reads the outbox page by page and stops once `limit` items are found, so pushing a large
+ * outbox (e.g. a history reset: thousands of rows) costs one page per batch instead of a
+ * full scan per batch. Each candidate's entries are read through the [table+row_id] index.
  */
 export async function takeOutboxItems(
   limit: number,
@@ -44,30 +51,35 @@ export async function takeOutboxItems(
   force = false,
   skip?: ReadonlySet<string>,
 ): Promise<OutboxItem[]> {
-  const rows = await db.outbox.orderBy('seq').toArray();
-  const groups = new Map<string, { first: number; item: OutboxItem; due: Millis }>();
-  for (const r of rows) {
-    const key = rowKey(r.table, r.row_id);
-    const g = groups.get(key);
-    if (!g) {
-      groups.set(key, {
-        first: r.seq!,
-        due: r.next_attempt_at,
-        item: { table: r.table, row_id: r.row_id, op: r.op, payload: r.payload, maxSeq: r.seq!, attempts: r.attempts },
-      });
-    } else {
-      g.item = { ...g.item, op: r.op, payload: r.payload, maxSeq: r.seq!, attempts: Math.max(g.item.attempts, r.attempts) };
-      g.due = Math.max(g.due, r.next_attempt_at);
-    }
-  }
   const out: OutboxItem[] = [];
-  for (const g of [...groups.values()].sort((a, b) => a.first - b.first)) {
-    if (!force && g.due > now) continue;
-    if (skip?.has(outboxKey(g.item))) continue;
-    out.push(g.item);
-    if (out.length >= limit) break;
+  const seen = new Set<string>();
+  let after = -Infinity;
+  for (;;) {
+    const page = await db.outbox.where('seq').above(after).limit(OUTBOX_PAGE).toArray();
+    for (const r of page) {
+      const key = rowKey(r.table, r.row_id);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      // A row's entries share their backoff (failOutboxItems), and newer entries are due
+      // when written: if the oldest one is not due, the item is not due.
+      if (skip?.has(key) || (!force && r.next_attempt_at > now)) continue;
+      const entries = await db.outbox.where('[table+row_id]').equals([r.table, r.row_id]).sortBy('seq');
+      const newest = entries.at(-1) ?? r;
+      const due = Math.max(...entries.map((e) => e.next_attempt_at));
+      if (!force && due > now) continue;
+      out.push({
+        table: r.table,
+        row_id: r.row_id,
+        op: newest.op,
+        payload: newest.payload,
+        maxSeq: newest.seq!,
+        attempts: Math.max(...entries.map((e) => e.attempts)),
+      });
+      if (out.length >= limit) return out;
+    }
+    if (page.length < OUTBOX_PAGE) return out;
+    after = page[page.length - 1]!.seq!;
   }
-  return out;
 }
 
 async function entriesOf(item: Pick<OutboxItem, 'table' | 'row_id' | 'maxSeq'>): Promise<OutboxRow[]> {
@@ -82,13 +94,10 @@ async function entriesOf(item: Pick<OutboxItem, 'table' | 'row_id' | 'maxSeq'>):
 export async function ackOutboxItems(items: OutboxItem[]): Promise<number> {
   if (items.length === 0) return 0;
   return db.transaction('rw', db.outbox, async () => {
-    let n = 0;
-    for (const item of items) {
-      const seqs = (await entriesOf(item)).map((r) => r.seq!);
-      await db.outbox.bulkDelete(seqs);
-      n += seqs.length;
-    }
-    return n;
+    const seqs: number[] = [];
+    for (const item of items) for (const r of await entriesOf(item)) seqs.push(r.seq!);
+    await db.outbox.bulkDelete(seqs);
+    return seqs.length;
   });
 }
 

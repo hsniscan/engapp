@@ -442,7 +442,7 @@ function RecentWords({ data, className }: { data: HomeDashboard; className?: str
         {data.recent.map((n) => (
           <li key={n.id}>
             <Link
-              to="/library"
+              to={`/library?note=${encodeURIComponent(n.id)}`}
               className="flex min-h-11 items-baseline gap-3 rounded-control px-2 py-2 hover:bg-hover"
             >
               <span lang="en" className="shrink-0 font-serif text-lg font-semibold text-fg">

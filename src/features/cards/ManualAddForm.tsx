@@ -1,3 +1,4 @@
+import { LIMITS } from '@/domain/limits';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -219,6 +220,7 @@ export function ManualAddForm() {
 
       <div className="flex flex-col gap-3">
         <TextField
+          maxLength={LIMITS.term}
           ref={termRef}
           label={t('cards.add.term')}
           hint={t('cards.add.termHint')}
@@ -330,6 +332,7 @@ export function ManualAddForm() {
       <div className="grid gap-5 sm:grid-cols-2">
         {!existingNote?.note.ipa && (
           <TextField
+            maxLength={LIMITS.ipa}
             label={t('cards.add.ipa')}
             hint={t('cards.add.ipaHint')}
             optional
@@ -411,6 +414,7 @@ function SenseEditor({
           )}
         </div>
         <TextField
+          maxLength={LIMITS.meaning_tr}
           id={`${idBase}-meaning`}
           label={t('cards.add.meaning')}
           hint={t('cards.add.meaningHint')}
@@ -421,6 +425,7 @@ function SenseEditor({
           autoComplete="off"
         />
         <TextArea
+          maxLength={LIMITS.source_sentence}
           label={t('cards.add.sentence')}
           hint={sentence ? undefined : t('cards.add.sentenceHint')}
           optional
@@ -470,6 +475,7 @@ function SenseEditor({
           {draft.showDetails && (
             <div id={detailsId} className="mt-3 grid gap-4 sm:grid-cols-2">
               <TextField
+                maxLength={LIMITS.gloss_en}
                 label={t('cards.add.gloss')}
                 hint={t('cards.add.glossHint')}
                 optional

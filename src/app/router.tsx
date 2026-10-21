@@ -3,8 +3,14 @@ import { RootLayout, type RouteHandle } from './RootLayout';
 import { AuthPage } from '@/features/auth/AuthPage';
 import { HomeScreen } from '@/features/home/HomeScreen';
 import { NotFoundPage } from './pages/NotFoundPage';
-import { ReviewScreen } from '@/features/review/ReviewScreen';
-import { StatsScreen } from '@/features/stats/StatsScreen';
+import { RouteErrorPage } from './pages/RouteErrorPage';
+
+/** The review session is the most used screen: its chunk is fetched while the browser is idle. */
+const loadReview = () => import('@/features/review/ReviewScreen');
+if (typeof window !== 'undefined') {
+  const idle = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 1500));
+  idle(() => void loadReview().catch(() => {}));
+}
 
 /*
  * Placeholder pages live in src/app/pages. Feature agents replace each `element` with the
@@ -12,18 +18,56 @@ import { StatsScreen } from '@/features/stats/StatsScreen';
  */
 const children: RouteObject[] = [
   { index: true, element: <HomeScreen /> },
-  { path: 'review', element: <ReviewScreen />, handle: { immersive: true } satisfies RouteHandle },
-  { path: 'add', HydrateFallback: () => null, lazy: async () => ({ Component: (await import('@/features/cards/AddPage')).AddPage }) },
-  { path: 'import/:jobId', HydrateFallback: () => null, lazy: async () => ({ Component: (await import('@/features/import/ImportPreviewPage')).ImportPreviewPage }) },
-  { path: 'library', HydrateFallback: () => null, lazy: async () => ({ Component: (await import('@/features/cards/LibraryPage')).LibraryPage }) },
-  { path: 'stats', element: <StatsScreen /> },
-  { path: 'settings', HydrateFallback: () => null, lazy: async () => ({ Component: (await import('@/features/settings/SettingsPage')).SettingsPage }) },
+  {
+    path: 'review',
+    handle: { immersive: true } satisfies RouteHandle,
+    HydrateFallback: () => null,
+    lazy: async () => ({ Component: (await loadReview()).ReviewScreen }),
+  },
+  {
+    path: 'add',
+    HydrateFallback: () => null,
+    lazy: async () => ({ Component: (await import('@/features/cards/AddPage')).AddPage }),
+  },
+  {
+    path: 'import/:jobId',
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/import/ImportPreviewPage')).ImportPreviewPage,
+    }),
+  },
+  {
+    path: 'library',
+    HydrateFallback: () => null,
+    lazy: async () => ({ Component: (await import('@/features/cards/LibraryPage')).LibraryPage }),
+  },
+  {
+    path: 'stats',
+    HydrateFallback: () => null,
+    lazy: async () => ({ Component: (await import('@/features/stats/StatsScreen')).StatsScreen }),
+  },
+  {
+    path: 'settings',
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/settings/SettingsPage')).SettingsPage,
+    }),
+  },
   { path: 'auth', element: <AuthPage /> },
 ];
 
 children.push({ path: '*', element: <NotFoundPage /> });
 
-const routes: RouteObject[] = [{ path: '/', element: <RootLayout />, children }];
+// The pathless child keeps the shell (navigation) around a screen that failed to render or load;
+// the root errorElement is the last resort if the shell itself fails.
+const routes: RouteObject[] = [
+  {
+    path: '/',
+    element: <RootLayout />,
+    errorElement: <RouteErrorPage />,
+    children: [{ errorElement: <RouteErrorPage />, children }],
+  },
+];
 
 // Dev-only component gallery, outside the shell. Tree-shaken from production builds.
 if (import.meta.env.DEV) {
@@ -31,7 +75,9 @@ if (import.meta.env.DEV) {
   children.unshift({
     path: 'dev/import',
     HydrateFallback: () => null,
-    lazy: async () => ({ Component: (await import('@/features/import/DevImportPage')).DevImportPage }),
+    lazy: async () => ({
+      Component: (await import('@/features/import/DevImportPage')).DevImportPage,
+    }),
   });
   routes.unshift({
     path: '/dev/ui',

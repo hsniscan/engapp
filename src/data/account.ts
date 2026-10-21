@@ -2,9 +2,14 @@
 //   - first sign-in: stamp user_id on local rows and queue them (adoptGuestData)
 //   - the account already has data (second device): merge (default), discard local data,
 //     or discard the account's data.
-import type { Millis, Note } from '../domain/types';
+//   - the local data belongs to ANOTHER account: copy its cards without study history
+//     (copyCardsFromOtherAccount) or start with the account's data (discardLocalData).
+//     Review history is never moved between accounts.
+import { LIMITS } from '../domain/limits';
+import type { Id, Millis, Note, Sense } from '../domain/types';
+import { type AddNoteInput, addNoteWithSenses } from './actions';
 import { db } from './db';
-import { adoptGuestData } from './maintenance';
+import { adoptGuestData, applyRemoteRows, type RemoteBatch } from './maintenance';
 import { getMeta, META, setMeta } from './meta';
 import { SETTINGS_ID } from './settings';
 import { type MutableRows, type MutableTable, writeTx } from './writer';
@@ -23,36 +28,20 @@ export async function getLinkedUserId(): Promise<string | null> {
 }
 
 /**
- * Give every local row to `userId` and queue it for push. Guest rows go through
- * adoptGuestData; rows of another account that signed in on this device earlier are
- * re-stamped the same way. Cursors restart at 0 so the account's rows are pulled.
+ * Give every local guest row to `userId` and queue it for push (adoptGuestData), review
+ * logs included: guest history is the same person's. Cursors restart at 0 so the
+ * account's rows are pulled. Rows of ANOTHER account are never claimed: that would copy
+ * its review history into this account (use copyCardsFromOtherAccount).
  */
 export async function claimLocalData(userId: string, now: Millis = Date.now()): Promise<number> {
   const previous = await getLinkedUserId();
   if (previous === userId) return 0;
+  if (previous !== null) throw new Error("Another account's data cannot be claimed");
   await db.transaction('rw', db.meta, async () => {
     await setMeta(META.syncCursor, 0);
     await setMeta(META.lexiconCursor, 0);
   });
-  if (previous === null) return adoptGuestData(userId, now);
-  await db.transaction('rw', db.meta, () => setMeta(META.userId, userId));
-  return writeTx([db.notes, db.senses, db.cards, db.review_logs, db.sources, db.settings], now, async (w) => {
-    let n = 0;
-    for (const table of MUTABLE) {
-      const rows = (await db.table(table).toArray()) as MutableRows[MutableTable][];
-      for (const row of rows) {
-        if (row.user_id !== userId) {
-          await w.put(table, { ...row, user_id: userId });
-          n++;
-        }
-      }
-    }
-    for (const log of await db.review_logs.toArray()) {
-      w.enqueue('review_logs', log.id, 'upsert', log);
-      n++;
-    }
-    return n;
-  });
+  return adoptGuestData(userId, now);
 }
 
 /**
@@ -112,6 +101,97 @@ export async function discardAccountData(userId: string, snapshot: RemoteSnapsho
   });
   await db.transaction('rw', db.meta, () => setMeta(META.syncCursor, snapshot.nextSeq));
   return n;
+}
+
+/** Device-level caches that do not belong to an account and survive a copy. */
+const KEEP_ON_COPY = new Set(['meta', 'chunk_cache', 'lexicon_cache', 'error_log']);
+
+/** The user's own content of a live note, as input for the normal add path. */
+function copyInput(note: Note, senses: Sense[], sourceIds: Map<Id, Id>): AddNoteInput {
+  return {
+    term: note.term,
+    term_type: note.term_type,
+    ipa: note.ipa,
+    tags: note.tags,
+    lexicon_term_id: note.lexicon_term_id,
+    senses: senses
+      .filter((s) => s.meaning_tr.trim())
+      .sort((a, b) => a.sense_no - b.sense_no)
+      .map((s) => ({
+        meaning_tr: s.meaning_tr,
+        meaning_tr_override: s.meaning_tr_override,
+        lexicon_sense_id: s.lexicon_sense_id,
+        pos: s.pos,
+        gloss_en: s.gloss_en,
+        source_sentence: s.source_sentence,
+        source_sentence_tr: s.source_sentence_tr,
+        span: s.span,
+        source_id: s.source_id ? (sourceIds.get(s.source_id) ?? null) : null,
+      })),
+  };
+}
+
+/**
+ * "Kartları kopyala": this device holds another account's data and `userId` signed in.
+ * In ONE transaction (a crash leaves the device as it was and the dialog asks again):
+ *   1. read the other account's live notes, senses and the sources they reference;
+ *   2. clear every local table except device caches (chunk/lexicon cache, error log). The
+ *      other account's rows, review logs, settings, outbox, import jobs and daily activity
+ *      go; they stay on the server under that account;
+ *   3. link the device to `userId` and apply the account's `snapshot` (cursor after it);
+ *   4. add each note again through addNoteWithSenses: new ids, user_id = `userId`, fresh
+ *      HLC, every card New with the normal unlock rule. A term the account already has
+ *      gets only the senses it is missing (same path as adding it by hand), so exact
+ *      duplicates are skipped instead of flagged.
+ * Returns the number of notes copied (created, reactivated or extended).
+ */
+export async function copyCardsFromOtherAccount(userId: string, snapshot: RemoteSnapshot, now: Millis = Date.now()): Promise<number> {
+  return db.transaction('rw', db.tables, async () => {
+    const notes = (await db.notes.toArray()).filter((n) => n.deleted_at === null).sort((a, b) => a.created_at - b.created_at);
+    const senses = (await db.senses.toArray()).filter((s) => s.deleted_at === null);
+    const sources = new Map((await db.sources.toArray()).filter((s) => s.deleted_at === null).map((s) => [s.id, s]));
+    const sensesByNote = new Map<Id, Sense[]>();
+    for (const s of senses) {
+      const list = sensesByNote.get(s.note_id);
+      if (list) list.push(s);
+      else sensesByNote.set(s.note_id, [s]);
+    }
+
+    for (const t of db.tables) if (!KEEP_ON_COPY.has(t.name)) await t.clear();
+    await setMeta(META.userId, userId);
+    await setMeta(META.syncCursor, snapshot.nextSeq);
+    await setMeta(META.lexiconCursor, 0);
+
+    const batch: RemoteBatch = {};
+    for (const { table, row } of snapshot.rows) (batch[table as keyof RemoteBatch] ??= []).push(row);
+    await applyRemoteRows(batch, now);
+
+    // Sources referenced by a copied sense come along under new ids.
+    const used = new Set(senses.map((s) => s.source_id).filter((id): id is Id => !!id && sources.has(id)));
+    const sourceIds = await writeTx([db.sources], now, async (w) => {
+      const map = new Map<Id, Id>();
+      for (const id of used) {
+        const { kind, title, file_name, page_count } = sources.get(id)!;
+        map.set(id, (await w.put('sources', { ...w.base(), kind, title, file_name, page_count })).id);
+      }
+      return map;
+    });
+
+    let copied = 0;
+    for (const note of notes) {
+      const input = copyInput(note, sensesByNote.get(note.id) ?? [], sourceIds);
+      // The rows passed the same checks before; only the tag union with a note the account
+      // already has can overflow. A failing add would abort this whole transaction.
+      const existing = (await db.notes.where('term_norm').equals(note.term_norm).toArray()).find((n) => n.deleted_at === null);
+      if (existing) {
+        const extra = (input.tags ?? []).filter((t) => !existing.tags.includes(t));
+        input.tags = extra.slice(0, Math.max(0, LIMITS.tags - existing.tags.length));
+      }
+      const res = await addNoteWithSenses(input, now);
+      if (res.status !== 'existing' || res.addedSenses.length > 0) copied++;
+    }
+    return copied;
+  });
 }
 
 /** Notes flagged possible_duplicate (shown in the library after a merge). */

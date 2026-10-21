@@ -82,6 +82,28 @@ describe('settings', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
+  it('"Çalışma geçmişini sıfırla" asks first, then resets every card to New', async () => {
+    const { createdCards } = await addNoteWithSenses({
+      term: 'tide',
+      senses: [{ meaning_tr: 'gelgit' }],
+    });
+    const rec = createdCards.find((c) => c.card_type === 'recognition')!;
+    await answerCard({ card_id: rec.id, rating: 4, duration_ms: 2000 });
+    const user = userEvent.setup();
+    renderRoute(<SettingsPage />, { path: '/settings' });
+    await user.click(await screen.findByRole('button', { name: 'Sıfırla' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Çalışma geçmişi sıfırlansın mı?' });
+    expect(dialog).toHaveTextContent(
+      'Tüm kartların ilerlemesi ve çalışma geçmişin silinir; kartların kendisi kalır. Bu işlem geri alınamaz.',
+    );
+    expect(within(dialog).getByRole('button', { name: 'Vazgeç' })).toHaveFocus();
+    await user.click(within(dialog).getByRole('button', { name: 'Geçmişi sıfırla' }));
+    await waitFor(async () => expect((await db.cards.get(rec.id))!.reps).toBe(0));
+    expect(await db.notes.count()).toBe(1);
+    expect(await db.daily_activity.count()).toBe(0);
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
   it('rejects a file that is not a valid backup without changing data', async () => {
     renderRoute(<SettingsPage />, { path: '/settings' });
     const input = await screen.findByTestId('restore-input');

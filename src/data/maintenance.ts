@@ -1,12 +1,33 @@
 // Whole-database operations: recompute, sync apply hook, backup/restore, CSV, integrity.
 import { z } from 'zod';
-import { type BackupFile, type BackupTables, buildBackup, buildNotesCsv, type CsvHeaders, verifyBackup } from '../domain/backup';
+import {
+  type BackupFile,
+  type BackupTables,
+  buildBackup,
+  buildNotesCsv,
+  type CsvHeaders,
+  verifyBackup,
+} from '../domain/backup';
 import { fsrsEqual, pickFsrs } from '../domain/fsrs';
 import { compareHlc } from '../domain/hlc';
 import { checkIntegrity, type IntegrityReport } from '../domain/integrity';
-import { deriveUnlocked, replayCard } from '../domain/recompute';
-import { cardSchema, noteSchema, reviewLogSchema, senseSchema, settingsSchema, sourceSchema } from '../domain/schemas';
-import { type Card, type CardStateValue, type Id, type Millis, type Note, type ReviewLog } from '../domain/types';
+import { deriveUnlocked, effectiveLogs, replayCard } from '../domain/recompute';
+import {
+  cardSchema,
+  noteSchema,
+  reviewLogSchema,
+  senseSchema,
+  settingsSchema,
+  sourceSchema,
+} from '../domain/schemas';
+import {
+  type Card,
+  type CardStateValue,
+  type Id,
+  type Millis,
+  type Note,
+  type ReviewLog,
+} from '../domain/types';
 import { emptyFsrs } from '../domain/fsrs';
 import { db } from './db';
 import { rebuildDailyActivity } from './dailyActivity';
@@ -17,7 +38,14 @@ import { dayConfig, getSettings, schedulerFor, updateSettings } from './settings
 import { type MutableRows, type MutableTable, type SyncWriter, writeTx } from './writer';
 
 const MUTABLE: MutableTable[] = ['notes', 'senses', 'cards', 'sources', 'settings'];
-const allSyncedTables = () => [db.notes, db.senses, db.cards, db.review_logs, db.sources, db.settings];
+const allSyncedTables = () => [
+  db.notes,
+  db.senses,
+  db.cards,
+  db.review_logs,
+  db.sources,
+  db.settings,
+];
 
 // ------------------------------------------------------------------ recompute
 
@@ -40,7 +68,12 @@ async function recomputeCardsIn(w: SyncWriter, cardIds: Iterable<Id> | 'all'): P
     const touched = (await db.cards.bulkGet(ids)).filter((c): c is Card => !!c);
     const noteIds = [...new Set(touched.map((c) => c.note_id))];
     cards = noteIds.length ? await db.cards.where('note_id').anyOf(noteIds).toArray() : [];
-    byCard = groupLogs(await db.review_logs.where('card_id').anyOf(cards.map((c) => c.id)).toArray());
+    byCard = groupLogs(
+      await db.review_logs
+        .where('card_id')
+        .anyOf(cards.map((c) => c.id))
+        .toArray(),
+    );
   }
 
   const updated = new Map<Id, Card>();
@@ -50,7 +83,10 @@ async function recomputeCardsIn(w: SyncWriter, cardIds: Iterable<Id> | 'all'): P
   }
   const recognitionState = new Map<Id, CardStateValue>();
   for (const c of updated.values()) {
-    if (c.card_type === 'recognition' && (c.deleted_at === null || !recognitionState.has(c.note_id))) {
+    if (
+      c.card_type === 'recognition' &&
+      (c.deleted_at === null || !recognitionState.has(c.note_id))
+    ) {
       recognitionState.set(c.note_id, c.state);
     }
   }
@@ -70,6 +106,78 @@ async function recomputeCardsIn(w: SyncWriter, cardIds: Iterable<Id> | 'all'): P
 /** Rebuild every card's FSRS state and unlock flag from the review logs. */
 export async function recomputeAllCards(now: Millis = Date.now()): Promise<number> {
   return writeTx([db.cards, db.review_logs, db.settings], now, (w) => recomputeCardsIn(w, 'all'));
+}
+
+// ------------------------------------------------------------------ reset study history
+
+/** Notes per transaction in resetStudyHistory (their cards and logs go together). */
+export const RESET_CHUNK_NOTES = 200;
+
+export interface ResetHistoryResult {
+  /** Answers cancelled (one undo row each). */
+  undoneLogs: number;
+  /** Cards whose state changed (back to New, re-locked). */
+  resetCards: number;
+}
+
+/** One undo row per answer that still counts; the logs themselves are never changed. */
+async function undoLogsIn(w: SyncWriter, logs: ReviewLog[]): Promise<number> {
+  const undo: ReviewLog[] = [];
+  for (const list of groupLogs(logs).values()) {
+    for (const log of effectiveLogs(list)) {
+      undo.push({
+        id: w.newId(),
+        user_id: w.userId,
+        card_id: log.card_id,
+        rating: log.rating,
+        reviewed_at: Math.max(w.now, log.reviewed_at),
+        duration_ms: 0,
+        device_id: w.deviceId,
+        undo_of: log.id,
+        shown_sense_id: null,
+        created_at: w.now,
+        hlc: w.nextHlc(),
+      });
+    }
+  }
+  await w.insertLogs(undo);
+  return undo.length;
+}
+
+/**
+ * "Çalışma geçmişini sıfırla": every card goes back to New and the review history stops
+ * counting, so stats, streak and the heatmap start empty. Logs are immutable, so each
+ * answer that still counts gets an undo row (the same rows undoAnswer writes); the server
+ * accepts them as ordinary log inserts and other devices recompute their cards from them
+ * when they pull. Cards are then recomputed (New, production/cloze re-locked) and queued.
+ * Notes, senses, cards and suspensions are kept.
+ *
+ * Runs in transactions of `chunkNotes` notes; an interrupted reset is finished by
+ * running it again (answers already undone no longer count).
+ */
+export async function resetStudyHistory(now: Millis = Date.now(), chunkNotes = RESET_CHUNK_NOTES): Promise<ResetHistoryResult> {
+  const res: ResetHistoryResult = { undoneLogs: 0, resetCards: 0 };
+  const cardNote = new Map<Id, Id>();
+  await db.cards.each((c) => cardNote.set(c.id, c.note_id));
+  const noteIds = [...new Set(cardNote.values())];
+  for (let i = 0; i < noteIds.length; i += chunkNotes) {
+    const chunk = noteIds.slice(i, i + chunkNotes);
+    await writeTx([db.cards, db.review_logs, db.settings], now, async (w) => {
+      const cardIds = (await db.cards.where('note_id').anyOf(chunk).primaryKeys()) as Id[];
+      res.undoneLogs += await undoLogsIn(w, await db.review_logs.where('card_id').anyOf(cardIds).toArray());
+      res.resetCards += await recomputeCardsIn(w, cardIds);
+    });
+  }
+  // Logs whose card is not on this device (it may still arrive by sync) are history too.
+  const orphanCardIds = ((await db.review_logs.orderBy('card_id').uniqueKeys()) as Id[]).filter((id) => !cardNote.has(id));
+  for (let i = 0; i < orphanCardIds.length; i += chunkNotes) {
+    const chunk = orphanCardIds.slice(i, i + chunkNotes);
+    await writeTx([db.review_logs], now, async (w) => {
+      res.undoneLogs += await undoLogsIn(w, await db.review_logs.where('card_id').anyOf(chunk).toArray());
+    });
+  }
+  await rebuildDailyActivity(now);
+  return res;
 }
 
 // ------------------------------------------------------------------ sync hook
@@ -99,7 +207,10 @@ const rowSchemas = {
  * recomputed (changes are queued), possible duplicate notes are flagged, and daily_activity
  * is rebuilt when logs arrived.
  */
-export async function applyRemoteRows(batch: RemoteBatch, now: Millis = Date.now()): Promise<ApplyRemoteResult> {
+export async function applyRemoteRows(
+  batch: RemoteBatch,
+  now: Millis = Date.now(),
+): Promise<ApplyRemoteResult> {
   const result: ApplyRemoteResult = { applied: 0, skipped: 0, invalid: 0, recomputedCards: 0 };
   let logsArrived = false;
   await writeTx(allSyncedTables(), now, async (w) => {
@@ -147,7 +258,9 @@ export async function applyRemoteRows(batch: RemoteBatch, now: Millis = Date.now
 async function flagDuplicates(w: SyncWriter, termNorms: Iterable<string>): Promise<number> {
   let n = 0;
   for (const norm of termNorms) {
-    const live = (await db.notes.where('term_norm').equals(norm).toArray()).filter((x) => x.deleted_at === null);
+    const live = (await db.notes.where('term_norm').equals(norm).toArray()).filter(
+      (x) => x.deleted_at === null,
+    );
     if (live.length < 2) continue;
     for (const note of live) {
       if (!note.possible_duplicate) {
@@ -177,7 +290,10 @@ async function readTables(): Promise<BackupTables> {
  * checksum) and record last_backup_at. The UI serializes it with JSON.stringify.
  */
 export async function exportBackup(now: Millis = Date.now()): Promise<BackupFile> {
-  const backup = await buildBackup(await readTables(), { exported_at: now, device_id: await getDeviceId() });
+  const backup = await buildBackup(await readTables(), {
+    exported_at: now,
+    device_id: await getDeviceId(),
+  });
   await updateSettings({ last_backup_at: now }, now);
   return backup;
 }
@@ -186,7 +302,10 @@ export async function exportBackup(now: Millis = Date.now()): Promise<BackupFile
 export async function exportCsv(headers?: CsvHeaders, now: Millis = Date.now()): Promise<string> {
   const settings = await getSettings(now);
   const [notes, senses] = await Promise.all([db.notes.toArray(), db.senses.toArray()]);
-  return buildNotesCsv(notes, senses, { timezone: dayConfig(settings).timezone, ...(headers ? { headers } : {}) });
+  return buildNotesCsv(notes, senses, {
+    timezone: dayConfig(settings).timezone,
+    ...(headers ? { headers } : {}),
+  });
 }
 
 export type RestoreMode = 'overwrite' | 'merge';
@@ -201,7 +320,10 @@ export interface RestoreResult {
 }
 
 function sameRow(a: unknown, b: unknown): boolean {
-  return JSON.stringify(a, Object.keys(a as object).sort()) === JSON.stringify(b, Object.keys(b as object).sort());
+  return (
+    JSON.stringify(a, Object.keys(a as object).sort()) ===
+    JSON.stringify(b, Object.keys(b as object).sort())
+  );
 }
 
 /**
@@ -214,19 +336,34 @@ function sameRow(a: unknown, b: unknown): boolean {
  * Afterwards all cards are recomputed and daily_activity is rebuilt.
  * @throws ActionError('invalid_backup') with the verify error as message.
  */
-export async function restoreBackup(file: unknown, mode: RestoreMode, now: Millis = Date.now()): Promise<RestoreResult> {
+export async function restoreBackup(
+  file: unknown,
+  mode: RestoreMode,
+  now: Millis = Date.now(),
+): Promise<RestoreResult> {
   const verified = await verifyBackup(file);
   if (!verified.ok) throw new ActionError('invalid_backup', verified.error);
   const tables = verified.backup.tables;
-  const res: RestoreResult = { inserted: 0, replaced: 0, kept: 0, deleted: 0, logsAdded: 0, recomputedCards: 0 };
+  const res: RestoreResult = {
+    inserted: 0,
+    replaced: 0,
+    kept: 0,
+    deleted: 0,
+    logsAdded: 0,
+    recomputedCards: 0,
+  };
 
   await writeTx(allSyncedTables(), now, async (w) => {
     const terms = new Set<string>();
     for (const table of MUTABLE) {
       const incoming = tables[table] as MutableRows[MutableTable][];
       const ids = new Set(incoming.map((r) => r.id));
-      for (const row of incoming) {
-        const local = (await db.table(table).get(row.id)) as MutableRows[MutableTable] | undefined;
+      // One bulkGet instead of a get per row: 10,000 cards restore minutes → seconds.
+      const existing = (await db.table(table).bulkGet(incoming.map((r) => r.id))) as (
+        MutableRows[MutableTable] | undefined
+      )[];
+      for (const [i, row] of incoming.entries()) {
+        const local = existing[i];
         if (!local) {
           await w.putAsIs(table, row);
           res.inserted++;
@@ -253,8 +390,9 @@ export async function restoreBackup(file: unknown, mode: RestoreMode, now: Milli
         }
       }
     }
-    for (const log of tables.review_logs) {
-      if (await db.review_logs.get(log.id)) continue;
+    const knownLogs = await db.review_logs.bulkGet(tables.review_logs.map((l) => l.id));
+    for (const [i, log] of tables.review_logs.entries()) {
+      if (knownLogs[i]) continue;
       w.observe(log.hlc);
       await w.insertLog(log);
       res.logsAdded++;
@@ -305,7 +443,9 @@ export async function repairIntegrity(now: Millis = Date.now()): Promise<RepairR
       if (s && s.deleted_at === null) await w.put('senses', { ...s, deleted_at: now });
     }
     for (const noteId of before.notesWithoutRecognition) {
-      const old = (await db.cards.where('note_id').equals(noteId).toArray()).find((c) => c.card_type === 'recognition');
+      const old = (await db.cards.where('note_id').equals(noteId).toArray()).find(
+        (c) => c.card_type === 'recognition',
+      );
       if (old) await w.put('cards', { ...old, deleted_at: null, unlocked: true });
       else
         await w.put('cards', {
@@ -318,7 +458,8 @@ export async function repairIntegrity(now: Millis = Date.now()): Promise<RepairR
           ...emptyFsrs(now),
         });
     }
-    for (const seq of before.stuckOutbox) await db.outbox.update(seq, { attempts: 0, next_attempt_at: now });
+    for (const seq of before.stuckOutbox)
+      await db.outbox.update(seq, { attempts: 0, next_attempt_at: now });
     recomputedCards = await recomputeCardsIn(w, 'all');
   });
   await rebuildDailyActivity(now);
@@ -352,4 +493,3 @@ export async function adoptGuestData(userId: string, now: Millis = Date.now()): 
     return n;
   });
 }
-

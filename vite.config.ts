@@ -33,22 +33,49 @@ export default defineConfig({
         icons: [
           { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
           { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-          { src: '/icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          {
+            src: '/icons/maskable-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
         ],
       },
       workbox: {
         // Precache the whole build (app shell, route chunks, fonts, icons): works offline after one visit.
         globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest}'],
-        maximumFileSizeToCacheInBytes: 6 * 1024 * 1024, // the pdf.js worker is large
+        // Not the pdf.js worker (1.26 MB, only for PDF import): it is cached on first use
+        // below (docs/decisions/0008-pdf-worker-runtime-cache.md).
+        globIgnores: ['**/pdf.worker*.mjs'],
+        maximumFileSizeToCacheInBytes: 2 * 1024 * 1024,
         cleanupOutdatedCaches: true,
         navigateFallback: '/index.html',
         // Server endpoints are never answered with the app shell.
-        navigateFallbackDenylist: [/^\/functions\//, /^\/rest\//, /^\/auth\/v1\//, /^\/storage\//, /^\/realtime\//],
+        navigateFallbackDenylist: [
+          /^\/functions\//,
+          /^\/rest\//,
+          /^\/auth\/v1\//,
+          /^\/storage\//,
+          /^\/realtime\//,
+        ],
         // Supabase (data, auth, edge functions incl. ai-extract / ai-enrich) is never cached.
         runtimeCaching: [
           {
-            urlPattern: ({ url }) => url.hostname.endsWith('.supabase.co') || url.hostname.endsWith('.supabase.in') || url.pathname.startsWith('/functions/v1/'),
+            urlPattern: ({ url }) =>
+              url.hostname.endsWith('.supabase.co') ||
+              url.hostname.endsWith('.supabase.in') ||
+              url.pathname.startsWith('/functions/v1/'),
             handler: 'NetworkOnly',
+          },
+          {
+            // Hashed file name: CacheFirst is safe; after the first PDF import it works offline.
+            urlPattern: ({ url, sameOrigin }) =>
+              sameOrigin && /\/assets\/pdf\.worker[^/]*\.mjs$/.test(url.pathname),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'engapp-pdf-worker',
+              expiration: { maxEntries: 2 },
+            },
           },
         ],
       },
@@ -64,10 +91,16 @@ export default defineConfig({
             output: {
               codeSplitting: {
                 groups: [
-                  { name: 'react', priority: 30, test: /node_modules[\\/](react|react-dom|scheduler|react-router|i18next|react-i18next)[\\/]/ },
-                  { name: 'motion', priority: 20, test: /node_modules[\\/](motion|motion-dom|motion-utils|framer-motion)[\\/]/ },
-                  { name: 'db', priority: 20, test: /node_modules[\\/](dexie|dexie-react-hooks|zod|ts-fsrs)[\\/]/ },
-                  { name: 'radix', priority: 10, test: /node_modules[\\/](@radix-ui|@floating-ui|aria-hidden|react-remove-scroll[^\\/]*|use-sidecar|use-callback-ref|react-style-singleton|get-nonce|tslib|detect-node-es)[\\/]/ },
+                  {
+                    name: 'react',
+                    priority: 30,
+                    test: /node_modules[\\/](react|react-dom|scheduler|react-router|i18next|react-i18next)[\\/]/,
+                  },
+                  {
+                    name: 'db',
+                    priority: 20,
+                    test: /node_modules[\\/](dexie|dexie-react-hooks|zod|ts-fsrs)[\\/]/,
+                  },
                 ],
               },
             },
@@ -82,6 +115,10 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    include: ['src/**/*.test.{ts,tsx}', 'supabase/functions/_shared/**/*.test.ts', 'supabase/tests/**/*.test.ts'],
+    include: [
+      'src/**/*.test.{ts,tsx}',
+      'supabase/functions/_shared/**/*.test.ts',
+      'supabase/tests/**/*.test.ts',
+    ],
   },
 });

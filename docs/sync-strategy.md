@@ -7,6 +7,8 @@ itself lives in `src/sync/` and is built on `src/sync/api.ts`).
 
 Sign-in is Google only. Guests sync nothing; on first sign-in all local rows get the
 user's id and go through the outbox.
+Data that belongs to another account is never re-stamped: the device offers to copy its
+cards without study history, or to start with the signed-in account's data (decision 0008).
 
 ## Transport: Postgres RPC, not edge functions
 

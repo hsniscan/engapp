@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { exportCsv, logError, restoreBackup, type RestoreMode } from '@/data';
+import { exportCsv, logError, resetStudyHistory, restoreBackup, type RestoreMode } from '@/data';
 import { verifyBackup, type BackupError, type BackupSummary } from '@/domain/backup';
+import { ConfirmDialog } from '@/features/cards/ConfirmDialog';
 import { Badge, Button, Dialog, DialogClose, Icon, toast } from '@/ui';
 import { downloadBackup } from './backupActions';
 import { csvFileName, downloadText, formatBytes, relativeDays } from './download';
@@ -19,17 +20,21 @@ interface PendingRestore {
 
 const nf = new Intl.NumberFormat('tr-TR');
 
-/** "Veri": JSON backup and restore, CSV export, last backup, persistent storage and usage. */
+/**
+ * "Veri": JSON backup and restore, CSV export, last backup, persistent storage and usage,
+ * and "Çalışma geçmişini sıfırla".
+ */
 export function DataSection() {
   const { t } = useTranslation();
   const { settings } = useAppSettings();
   const userId = useUserId();
   const storage = useStorageInfo();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [busy, setBusy] = useState<'backup' | 'csv' | 'read' | RestoreMode | 'persist' | null>(
-    null,
-  );
+  const [busy, setBusy] = useState<
+    'backup' | 'csv' | 'read' | RestoreMode | 'persist' | 'reset' | null
+  >(null);
   const [pending, setPending] = useState<PendingRestore | null>(null);
+  const [confirmReset, setConfirmReset] = useState(false);
   const now = useNow();
 
   useEffect(() => {
@@ -121,6 +126,25 @@ export function DataSection() {
     } catch (e) {
       void logError(e, 'restore.apply');
       toast({ title: t('restore.failed'), tone: 'danger' });
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  // Undo rows for every answer + cards back to New; the outbox push takes it to other devices.
+  const resetHistory = async () => {
+    setBusy('reset');
+    try {
+      await resetStudyHistory();
+      setConfirmReset(false);
+      toast({
+        title: t('resetHistory.done'),
+        description: t('resetHistory.doneHint'),
+        tone: 'success',
+      });
+    } catch (e) {
+      void logError(e, 'resetHistory');
+      toast({ title: t('resetHistory.failed'), tone: 'danger' });
     } finally {
       setBusy(null);
     }
@@ -245,6 +269,21 @@ export function DataSection() {
               : formatBytes(storage.usage)
             : t('storage.unknown')
         }
+      />
+      <SettingsRow label={t('resetHistory.title')} description={t('resetHistory.hint')}>
+        <Button variant="danger" onClick={() => setConfirmReset(true)}>
+          {t('resetHistory.button')}
+        </Button>
+      </SettingsRow>
+
+      <ConfirmDialog
+        open={confirmReset}
+        onOpenChange={(o) => busy !== 'reset' && setConfirmReset(o)}
+        title={t('resetHistory.confirmTitle')}
+        description={t('resetHistory.confirmBody')}
+        confirmLabel={t('resetHistory.confirm')}
+        busy={busy === 'reset'}
+        onConfirm={resetHistory}
       />
 
       <Dialog

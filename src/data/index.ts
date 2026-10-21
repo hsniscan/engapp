@@ -11,6 +11,9 @@ export {
   runIntegrityCheck,
   repairIntegrity,
   adoptGuestData,
+  resetStudyHistory,
+  RESET_CHUNK_NOTES,
+  type ResetHistoryResult,
   type RemoteBatch,
   type ApplyRemoteResult,
   type RestoreMode,
@@ -19,6 +22,7 @@ export {
 } from './maintenance';
 export { getSettings, ensureSettings, updateSettings, defaultSettings, DEFAULT_SETTINGS, type SettingsPatch } from './settings';
 export { rebuildDailyActivity, listDailyActivity } from './dailyActivity';
+export { repairListEntrySentences } from './repairs';
 export { getDeviceId, getCurrentUserId, getMeta, setMeta, META } from './meta';
 export { logError, listErrors, clearErrors, ERROR_LOG_LIMIT } from './errorLog';
 export { ActionError, type ActionErrorCode } from './errors';

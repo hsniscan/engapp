@@ -601,6 +601,15 @@ function BulkBar({
       on ? t('library.bulk.suspended', { count: n }) : t('library.bulk.unsuspended', { count: n }),
     );
 
+  // While the bar floats over the list, keyboard focus scrolls rows clear of it.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--floating-bar', '4.5rem');
+    return () => {
+      root.style.removeProperty('--floating-bar');
+    };
+  }, []);
+
   return (
     <div className="pointer-events-none sticky bottom-[calc(var(--nav-height)+env(safe-area-inset-bottom)+0.75rem)] z-20 mt-4 flex justify-center md:bottom-4">
       <div

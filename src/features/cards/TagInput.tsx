@@ -1,3 +1,4 @@
+import { LIMITS } from '@/domain/limits';
 import { useId, useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon, cn } from '@/ui';
@@ -27,7 +28,7 @@ export function TagInput({ label, value, onChange, suggestions = [], className }
     const next = [...value];
     for (const p of parts)
       if (!next.some((x) => x.toLocaleLowerCase('tr') === p.toLocaleLowerCase('tr'))) next.push(p);
-    onChange(next);
+    onChange(next.slice(0, LIMITS.tags)); // the server keeps at most LIMITS.tags tags per note
     setDraft('');
   };
 

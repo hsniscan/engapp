@@ -1,10 +1,10 @@
 // App startup: settings row, theme, error log, storage persistence, install prompt, integrity.
 import { liveQuery } from 'dexie';
-import { db, ensureSettings, getCurrentUserId, logError } from '@/data';
+import { db, ensureSettings, getCurrentUserId, logError, repairListEntrySentences } from '@/data';
 import i18n from '@/i18n';
 import { toast } from '@/ui';
 import { downloadBackup } from './backupActions';
-import { checkIntegrityNow } from './integrity';
+import { scheduleStartupIntegrityCheck } from './integrity';
 import { captureInstallPrompt, flags, refreshStorageInfo, requestPersistence } from './platform';
 import { startThemeSync } from './themeSync';
 
@@ -52,6 +52,18 @@ export function watchFirstCard(): () => void {
   return () => sub.unsubscribe();
 }
 
+/** One-off data repairs (src/data/repairs.ts), once the app is idle and not in a review. */
+function scheduleRepairs(isBusy: () => boolean, delayMs = 5000): void {
+  const attempt = () => {
+    if (isBusy()) {
+      setTimeout(attempt, 60_000);
+      return;
+    }
+    repairListEntrySentences().catch((e: unknown) => void logError(e, 'repair.listEntry'));
+  };
+  setTimeout(attempt, delayMs);
+}
+
 export function bootstrap(): void {
   if (started) return;
   started = true;
@@ -67,6 +79,8 @@ export function bootstrap(): void {
     }
     watchFirstCard();
     void refreshStorageInfo();
-    void checkIntegrityNow();
+    const inReview = () => /^\/review(\/|$)/.test(window.location.pathname);
+    scheduleStartupIntegrityCheck(inReview);
+    scheduleRepairs(inReview);
   })();
 }

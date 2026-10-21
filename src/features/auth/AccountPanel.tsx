@@ -2,7 +2,8 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { getCurrentUserId } from '@/data';
+import { db, getCurrentUserId } from '@/data';
+import { syncNow } from '@/sync';
 import { useSyncStatus } from '@/sync/status';
 import { Button, Dialog, DialogClose, Icon, Skeleton, buttonClasses, toast } from '@/ui';
 import { Avatar } from './Avatar';
@@ -13,6 +14,8 @@ import { formatSince } from './time';
  * "Hesap" section body for Settings: who is signed in, last sync, sign out. In guest mode
  * a short explanation and the way to /auth.
  */
+const SIGN_OUT_SYNC_TIMEOUT_MS = 10_000;
+
 export function AccountPanel() {
   const { t } = useTranslation();
   const auth = useAuth();
@@ -20,6 +23,8 @@ export function AccountPanel() {
   const linkedUserId = useLiveQuery(() => getCurrentUserId(), []);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  /** Changes still in the outbox after the pre-sign-out sync (null: not checked yet). */
+  const [unsynced, setUnsynced] = useState<number | null>(null);
 
   if (auth.status === 'loading') {
     return (
@@ -33,9 +38,21 @@ export function AccountPanel() {
   if (auth.status === 'signed_in' && auth.user) {
     const u = auth.user;
     const name = u.name ?? u.email ?? t('auth.noName');
-    const doSignOut = async () => {
+    const doSignOut = async (anyway: boolean) => {
       setBusy(true);
       try {
+        if (!anyway) {
+          // Push what is waiting first; if something is left, say so before signing out.
+          await Promise.race([
+            syncNow().catch(() => undefined),
+            new Promise((r) => setTimeout(r, SIGN_OUT_SYNC_TIMEOUT_MS)),
+          ]);
+          const left = await db.outbox.count();
+          if (left > 0) {
+            setUnsynced(left);
+            return;
+          }
+        }
         await auth.signOut();
         toast({ title: t('auth.signedOut') });
         setConfirmOpen(false);
@@ -66,7 +83,10 @@ export function AccountPanel() {
         </div>
         <Dialog
           open={confirmOpen}
-          onOpenChange={setConfirmOpen}
+          onOpenChange={(o) => {
+            setConfirmOpen(o);
+            if (!o) setUnsynced(null);
+          }}
           trigger={
             <Button variant="secondary" leadingIcon="log-out" className="shrink-0">
               {t('auth.signOut')}
@@ -79,12 +99,25 @@ export function AccountPanel() {
               <DialogClose asChild>
                 <Button variant="secondary">{t('common.cancel')}</Button>
               </DialogClose>
-              <Button loading={busy} onClick={() => void doSignOut()}>
-                {t('auth.signOut')}
+              <Button
+                variant={unsynced ? 'danger' : 'primary'}
+                loading={busy}
+                onClick={() => void doSignOut(unsynced !== null)}
+              >
+                {unsynced ? t('auth.signOutAnyway') : t('auth.signOut')}
               </Button>
             </>
           }
-        />
+        >
+          {unsynced ? (
+            <p
+              role="alert"
+              className="rounded-control bg-warn-soft px-3 py-2.5 text-sm text-warn-text"
+            >
+              {t('auth.signOutPending', { count: unsynced })}
+            </p>
+          ) : null}
+        </Dialog>
       </div>
     );
   }

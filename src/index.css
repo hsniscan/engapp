@@ -103,6 +103,7 @@
   --ease-exit: cubic-bezier(0.4, 0, 1, 1);
 
   --animate-fade-in: fade-in 280ms var(--ease-standard);
+  --animate-page-in: page-in 280ms var(--ease-standard);
   --animate-fade-out: fade-out 180ms var(--ease-exit);
   --animate-sheet-in: sheet-in 300ms var(--ease-standard);
   --animate-sheet-out: sheet-out 220ms var(--ease-exit);
@@ -114,6 +115,12 @@
   @keyframes fade-in {
     from {
       opacity: 0;
+    }
+  }
+  @keyframes page-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
     }
   }
   @keyframes fade-out {
@@ -167,6 +174,15 @@
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
     text-rendering: optimizeLegibility;
+    /* Focus moved by keyboard never lands under the sticky top bar, the bottom tab bar or a
+       floating action bar (--floating-bar, set while one is shown; WCAG 2.4.11). */
+    scroll-padding-top: calc(3.5rem + env(safe-area-inset-top) + 0.5rem);
+    scroll-padding-bottom: calc(
+      var(--nav-height) + env(safe-area-inset-bottom) + 0.5rem + var(--floating-bar, 0px)
+    );
+    @media (width >= 48rem) {
+      scroll-padding-bottom: calc(0.5rem + var(--floating-bar, 0px));
+    }
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -220,6 +236,7 @@
 /* Reduced motion: only short opacity fades remain. */
 @media (prefers-reduced-motion: reduce) {
   :root {
+    --animate-page-in: fade-in 120ms linear;
     --animate-sheet-in: fade-in 150ms linear;
     --animate-sheet-out: fade-out 120ms linear;
     --animate-pop-in: fade-in 120ms linear;

@@ -2,6 +2,7 @@
 // The queue runner lives in src/features/import/queue.ts; this module owns the Dexie side:
 // jobs with their chunk texts, the local chunk cache, candidates with their status against
 // the user's own notes, and the single-transaction confirm.
+import { stripListEntry } from '../../supabase/functions/_shared/listEntry';
 import { normalizeTerm } from '../domain/normalize';
 import type {
   CandidateUserStatus,
@@ -212,7 +213,11 @@ export async function recordChunkResult(
       i++;
       if (seen.has(key)) continue;
       seen.add(key);
-      const status = await userStatusOf(c.term, c.lexicon.id, c.lexicon.meaning_tr, c.source_sentence);
+      // Results cached before ai-extract cut word-list prefixes ("1988 trailer I own a trailer.").
+      const clean = stripListEntry(c.source_sentence, c.term, c.span);
+      const sentence = clean.span ? clean.sentence : c.source_sentence;
+      const span = clean.span ?? c.span;
+      const status = await userStatusOf(c.term, c.lexicon.id, c.lexicon.meaning_tr, sentence);
       rows.push({
         id: uuidv7(now),
         job_id: jobId,
@@ -226,9 +231,9 @@ export async function recordChunkResult(
         gloss_en: c.lexicon.gloss_en,
         meaning_tr: c.lexicon.meaning_tr,
         ipa: c.lexicon.ipa,
-        source_sentence: c.source_sentence,
+        source_sentence: sentence,
         source_sentence_tr: c.sentence_tr ?? null,
-        span: c.span,
+        span,
         confidence: c.confidence,
         selected: status !== 'exists',
         user_status: status,

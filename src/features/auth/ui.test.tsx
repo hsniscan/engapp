@@ -11,7 +11,7 @@ import { AccountPanel } from './AccountPanel';
 import { AuthPage } from './AuthPage';
 import { configureLink, linkAccount, resetLinkForTesting } from './link';
 import { setAuthStateForTesting } from './session';
-import { addNoteWithSenses } from '@/data';
+import { addNoteWithSenses, db, META, setMeta } from '@/data';
 import { FakeServer } from '@/sync/testing/fakeServer';
 import { SyncEngine } from '@/sync/engine';
 
@@ -42,7 +42,9 @@ describe('AuthPage', () => {
   it('without backend env: says sign-in is off and guest works', () => {
     setAuthStateForTesting({ status: 'unavailable', user: null });
     renderAt(<AuthPage />, '/auth');
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Kelimelerin seninle gelsin');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'Kelimelerin seninle gelsin',
+    );
     expect(screen.getByText('Giriş bu sürümde kapalı')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Google/ })).toBeNull();
     expect(screen.getByRole('button', { name: 'Misafir olarak devam et' })).toBeInTheDocument();
@@ -51,7 +53,9 @@ describe('AuthPage', () => {
   it('guest: Google sign-in, guest option and one line on what an account gives', async () => {
     setAuthStateForTesting({ status: 'guest', user: null });
     const router = renderAt(<AuthPage />, '/auth');
-    expect(screen.getByText(/senkronlanır ve metinlerden AI ile kart çıkarabilirsin/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/senkronlanır ve metinlerden AI ile kart çıkarabilirsin/),
+    ).toBeInTheDocument();
     const google = screen.getByRole('button', { name: 'Google ile giriş yap' });
     // No backend in tests: starting the redirect fails and says so.
     await userEvent.click(google);
@@ -98,11 +102,20 @@ describe('AccountLinkDialog', () => {
       {
         table: 'notes',
         op: 'upsert',
-        payload: { id: 'n-remote', hlc: '000000000000001:00000:x', term: 'cope', term_norm: 'cope', deleted_at: null },
+        payload: {
+          id: 'n-remote',
+          hlc: '000000000000001:00000:x',
+          term: 'cope',
+          term_norm: 'cope',
+          deleted_at: null,
+        },
       },
     ]);
     await addNoteWithSenses({ term: 'thrive', senses: [{ meaning_tr: 'gelişmek' }] });
-    configureLink({ transport: server, engine: new SyncEngine({ transport: server, getSessionUserId: async () => 'u1' }) });
+    configureLink({
+      transport: server,
+      engine: new SyncEngine({ transport: server, getSessionUserId: async () => 'u1' }),
+    });
     await linkAccount('u1');
     renderAt(<AccountLinkDialog />);
     const dialog = await screen.findByRole('dialog', { name: 'Bu hesapta zaten kartların var' });
@@ -112,5 +125,22 @@ describe('AccountLinkDialog', () => {
     await userEvent.click(screen.getByRole('radio', { name: /Hesaptakini at/ }));
     expect(screen.getByRole('alert')).toHaveTextContent('geri alınamaz');
     expect(screen.getByRole('button', { name: 'Devam et' })).toBeInTheDocument();
+  });
+
+  it("another account's data: copy without history (preselected) or start with the account", async () => {
+    const server = new FakeServer('u1');
+    await db.transaction('rw', db.meta, () => setMeta(META.userId, 'u-other'));
+    await addNoteWithSenses({ term: 'thrive', senses: [{ meaning_tr: 'gelişmek' }] });
+    configureLink({ transport: server, engine: new SyncEngine({ transport: server, getSessionUserId: async () => 'u1' }) });
+    await linkAccount('u1');
+    renderAt(<AccountLinkDialog />);
+    await screen.findByRole('dialog', { name: 'Bu cihazda başka bir hesabın kartları var' });
+    const radios = screen.getAllByRole('radio');
+    expect(radios).toHaveLength(2);
+    expect(screen.getByRole('radio', { name: /Kartları kopyala \(çalışma geçmişi olmadan\)/ })).toBeChecked();
+    await userEvent.click(screen.getByRole('radio', { name: /Bu hesabın verisiyle başla/ }));
+    expect(screen.queryByRole('radio', { name: /Birleştir/ })).toBeNull();
+    expect(screen.queryByRole('radio', { name: /Hesaptakini at/ })).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });

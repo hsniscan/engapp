@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { logError, repairIntegrity, runIntegrityCheck } from '@/data';
 import type { IntegrityReport } from '@/domain/integrity';
+import { flags } from './platform';
 
 /** Problems worth a "Veri onarımı" button (logs without a card may still arrive by sync). */
 export function integrityProblems(r: IntegrityReport): number {
@@ -30,6 +31,33 @@ export async function checkIntegrityNow(): Promise<IntegrityReport | null> {
     void logError(e, 'integrity.check');
     return null;
   }
+}
+
+const LAST_CHECK_FLAG = 'integrityCheckedAt';
+const CHECK_EVERY_MS = 24 * 3600_000;
+
+/**
+ * The startup check reads every note, card and review log, which costs seconds of main-thread
+ * work on a large collection (10,000 cards: ~3 s). It runs at most once a day, when the
+ * browser is idle, and never while a review session is open (it would stall card switches).
+ */
+export function scheduleStartupIntegrityCheck(isBusy: () => boolean, delayMs = 8000): void {
+  const last = Number(flags.get(LAST_CHECK_FLAG) ?? 0);
+  if (Date.now() - last < CHECK_EVERY_MS) return;
+  const idle = (cb: () => void) =>
+    typeof requestIdleCallback === 'function'
+      ? requestIdleCallback(cb, { timeout: 30_000 })
+      : setTimeout(cb, 0);
+  const attempt = () =>
+    idle(() => {
+      if (isBusy()) {
+        setTimeout(attempt, 60_000);
+        return;
+      }
+      flags.set(LAST_CHECK_FLAG, String(Date.now()));
+      void checkIntegrityNow();
+    });
+  setTimeout(attempt, delayMs);
 }
 
 export async function repairNow(): Promise<IntegrityReport | null> {

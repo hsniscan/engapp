@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { db, listErrors, logError } from '@/data';
 import { Badge, Button, toast } from '@/ui';
@@ -15,6 +15,10 @@ export function AdvancedSection() {
   const [busy, setBusy] = useState<'check' | 'repair' | null>(null);
   const errorCount = useLiveQuery(() => db.error_log.count(), []) ?? 0;
   const problems = report ? integrityProblems(report) : 0;
+  // The startup check runs at most daily (bootstrap); on this screen the badge is always current.
+  useEffect(() => {
+    if (!report) void checkIntegrityNow();
+  }, [report]);
 
   const check = async () => {
     setBusy('check');

@@ -32,7 +32,9 @@ export function DevImportPage() {
     >
       <Tabs
         label="İçe aktarma"
-        defaultValue={new URLSearchParams(window.location.search).get('tab') === 'pdf' ? 'pdf' : 'paste'}
+        defaultValue={
+          new URLSearchParams(window.location.search).get('tab') === 'pdf' ? 'pdf' : 'paste'
+        }
         items={[
           { value: 'paste', label: 'Metin yapıştır', icon: 'file', content: <TextImportPanel /> },
           { value: 'pdf', label: 'PDF yükle', icon: 'upload', content: <PdfImportPanel /> },

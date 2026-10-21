@@ -1,3 +1,4 @@
+import { LIMITS } from '@/domain/limits';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useNow } from '@/features/settings/useNow';
 import { useEffect, useId, useMemo, useState } from 'react';
@@ -285,6 +286,7 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
       )}
       <div className="grid gap-4 sm:grid-cols-2">
         <TextField
+          maxLength={LIMITS.term}
           label={t('cards.add.term')}
           value={draft.term}
           error={termError}
@@ -298,6 +300,7 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
           spellCheck={false}
         />
         <TextField
+          maxLength={LIMITS.ipa}
           label={t('cards.add.ipa')}
           optional
           value={draft.ipa}
@@ -353,6 +356,7 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
                     />
                   </div>
                   <TextField
+                    maxLength={LIMITS.meaning_tr}
                     label={t('cards.add.meaning')}
                     value={e.meaning}
                     error={senseErrors[s.id]}
@@ -369,6 +373,7 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
                     }
                   />
                   <TextArea
+                    maxLength={LIMITS.source_sentence}
                     label={t('cards.add.sentence')}
                     optional
                     rows={2}
@@ -426,6 +431,7 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
                   />
                 </div>
                 <TextField
+                  maxLength={LIMITS.meaning_tr}
                   id={`${id}-${a.key}`}
                   label={t('cards.add.meaning')}
                   value={a.meaning}
@@ -440,6 +446,7 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
                   }
                 />
                 <TextArea
+                  maxLength={LIMITS.source_sentence}
                   label={t('cards.add.sentence')}
                   optional
                   rows={2}

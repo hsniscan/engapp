@@ -20,7 +20,11 @@ export function registerServiceWorker(): void {
       title: i18n.t('pwa.updateReady'),
       tone: 'neutral',
       duration: Infinity,
-      action: { label: i18n.t('pwa.reload'), altText: i18n.t('pwa.reloadAlt'), onClick: () => void updateSW(true) },
+      action: {
+        label: i18n.t('pwa.reload'),
+        altText: i18n.t('pwa.reloadAlt'),
+        onClick: () => void updateSW(true),
+      },
     });
   };
 

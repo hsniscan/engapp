@@ -11,6 +11,7 @@ import {
 } from './contracts.ts';
 import { ApiError } from './errors.ts';
 import { AiError, type AiProvider } from './ai-provider.ts';
+import { stripListEntryPrefix } from './listEntry.ts';
 import { findGappedSpan, findSentence, findSpan } from './locate.ts';
 import {
   buildExtractUserPrompt,
@@ -245,11 +246,13 @@ export function validateExtractOutput(
       continue;
     }
 
-    const sentence = findSentence(chunk, c.source_sentence);
-    if (!sentence) {
+    const located = findSentence(chunk, c.source_sentence);
+    if (!located) {
       drop('sentence_not_in_text');
       continue;
     }
+    // "1988 trailer I own a trailer." from a word list: keep only the example sentence.
+    const sentence = { text: stripListEntryPrefix(located.text, term) };
     if (sentence.text.length > MAX_SENTENCE_CHARS) {
       drop('sentence_too_long');
       continue;

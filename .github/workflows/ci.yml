@@ -17,3 +17,24 @@ jobs:
       - run: pnpm lint
       - run: pnpm test
       - run: pnpm build
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      # Builds the app and serves it with `vite preview` (playwright.config.ts webServer);
+      # the Supabase backend is mocked in the browser (tests/e2e/support/backend.ts).
+      - run: pnpm e2e
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: test-results
+          retention-days: 7

@@ -1,4 +1,3 @@
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink, useLocation, useMatch, useOutlet } from 'react-router';
@@ -7,7 +6,6 @@ import { cn } from './cn';
 import { Icon } from './Icon';
 import { navItems } from './nav';
 import { Tooltip } from './Tooltip';
-import { duration, ease } from './tokens/motion';
 
 export interface AppShellProps {
   /** Sync status indicator for the top bar (e.g. <SyncStatus />). */
@@ -29,7 +27,6 @@ export function AppShell({ syncSlot, immersive = false, children }: AppShellProp
   const { t } = useTranslation();
   const location = useLocation();
   const outlet = useOutlet();
-  const reduce = useReducedMotion();
   const mainRef = useRef<HTMLElement>(null);
   const firstRender = useRef(true);
 
@@ -146,20 +143,10 @@ export function AppShell({ syncSlot, immersive = false, children }: AppShellProp
           !immersive && 'pb-[calc(var(--nav-height)+env(safe-area-inset-bottom))] md:pb-0',
         )}
       >
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={location.pathname}
-            initial={reduce ? { opacity: 0 } : { opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={reduce ? { opacity: 0 } : { opacity: 0, y: -4 }}
-            transition={{
-              duration: reduce ? 0.12 : duration.medium,
-              ease: ease.standard,
-            }}
-          >
-            {content}
-          </motion.div>
-        </AnimatePresence>
+        {/* CSS-only page enter (keyed by path; no exit wait, so a switch never lags). */}
+        <div key={location.pathname} className="animate-page-in">
+          {content}
+        </div>
       </main>
 
       {!immersive && (

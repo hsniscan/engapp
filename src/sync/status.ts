@@ -52,17 +52,27 @@ export function useSyncStatus(): SyncStatusInfo {
     () => navigator.onLine,
     () => true,
   );
+  const active = snap.active && isBackendConfigured();
   const pending = useLiveQuery(() => pendingChangesCount(), []) ?? 0;
-  const stuck = useLiveQuery(() => stuckOutboxCount(), []) ?? 0;
-  const lastSyncAt = useLiveQuery(async () => (await getMeta<number>(LAST_SYNC_KEY)) ?? null, []) ?? null;
+  // stuckOutboxCount scans the outbox; a guest's outbox only grows (nothing is pushed) and is
+  // never "stuck", so the scan would cost seconds per answer on a large collection.
+  const stuck = useLiveQuery(() => (active ? stuckOutboxCount() : 0), [active]) ?? 0;
+  const lastSyncAt =
+    useLiveQuery(async () => (await getMeta<number>(LAST_SYNC_KEY)) ?? null, []) ?? null;
   // Re-evaluate "linked account?" when the indicator mounts (cheap, local only).
   useEffect(() => {
     void engine.isActive();
   }, []);
-  const active = snap.active && isBackendConfigured();
   return {
     mode: active ? 'account' : 'local',
-    state: deriveSyncState({ active, online, running: snap.running, error: snap.error, pending, stuck }),
+    state: deriveSyncState({
+      active,
+      online,
+      running: snap.running,
+      error: snap.error,
+      pending,
+      stuck,
+    }),
     pending,
     stuck,
     lastSyncAt,

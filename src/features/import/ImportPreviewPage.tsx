@@ -1,3 +1,4 @@
+import { LIMITS } from '@/domain/limits';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -283,10 +284,20 @@ function CandidateList({ job, rows }: { job: ImportJobRecord; rows: ImportCandid
             {t('importer.preview.summary', { selected: selectedCount, total: counts.all })}
           </span>
           <span className="flex gap-1">
-            <Button variant="ghost" size="sm" onClick={() => setAll(true)} disabled={allVisibleSelected}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setAll(true)}
+              disabled={allVisibleSelected}
+            >
               {t('importer.preview.selectAll')}
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setAll(false)} disabled={noneVisibleSelected}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setAll(false)}
+              disabled={noneVisibleSelected}
+            >
               {t('importer.preview.selectNone')}
             </Button>
           </span>
@@ -473,6 +484,7 @@ const CandidateRow = memo(function CandidateRow({
           <input
             id={`m-${c.id}`}
             value={value}
+            maxLength={LIMITS.meaning_tr}
             onChange={(e) => onEdit(c.id, e.target.value)}
             onBlur={commit}
             onKeyDown={(e) => {
