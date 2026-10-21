@@ -120,7 +120,7 @@ jobs:
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.8-flash' }}
           GEMINI_FALLBACK_MODEL: ${{ vars.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite' }}
           AI_DAILY_LIMIT: ${{ vars.AI_DAILY_LIMIT || '200' }}
-          ALLOWED_ORIGINS: ${{ vars.ALLOWED_ORIGINS || 'http://localhost:5173' }}
+          ALLOWED_ORIGINS: ${{ format('{0},https://engapp-65y.pages.dev,http://localhost:5173', vars.ALLOWED_ORIGINS) }}
         run: |
           # Written to a temp file (not the command line) so values never show in logs.
           umask 077

@@ -9,6 +9,7 @@ const KNOWN: ImportErrorCode[] = [
   'not_configured',
   'invalid_input',
   'bad_response',
+  'unreachable',
   'unknown',
 ];
 

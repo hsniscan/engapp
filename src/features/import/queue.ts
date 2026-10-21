@@ -150,7 +150,10 @@ async function processJob(
       index++;
       retries = 0;
     } catch (e) {
-      const code = errorCodeOf(e);
+      let code = errorCodeOf(e);
+      // A failed request while the browser says it is online (server down, CORS rejection,
+      // flaky network) must not park the job until the next `online` event: retry, then fail.
+      if (code === 'offline' && deps.isOnline()) code = 'unreachable';
       if (code === 'offline') {
         await updateImportJob(job.id, { status: 'queued' }, deps.now());
         return 'offline';
@@ -163,7 +166,7 @@ async function processJob(
         );
         return 'signed_out';
       }
-      const transient = code === 'quota_exceeded' || code === 'ai_failed';
+      const transient = code === 'quota_exceeded' || code === 'ai_failed' || code === 'unreachable';
       if (transient && retries < TRANSIENT_RETRIES) {
         retries++;
         const retryAfter = e instanceof AiClientError && e.retryAfterS ? e.retryAfterS * 1000 : 0;

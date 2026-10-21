@@ -534,7 +534,7 @@
       "submitSense": "Add meaning",
       "saved": "“{{term}}” added",
       "senseAdded": "{{count}} new meaning(s) added to “{{term}}”",
-      "cardsCreated": "{{count}} card(s) created; they show up in tomorrow's review.",
+      "cardsCreated": "{{count}} card(s) created; they come up as new cards in turn.",
       "nothingNew": "This meaning of “{{term}}” is already saved",
       "invalid": "Term and meaning cannot be empty.",
       "failed": "The card could not be saved. Try again."
@@ -763,6 +763,7 @@
       "daily_limit": "You've reached today's AI limit. You can continue tomorrow where you left off; processed parts aren't lost.",
       "quota_exceeded": "The AI is very busy right now. Try again in a few minutes; processed parts aren't lost.",
       "ai_failed": "The AI couldn't process this part. Try again.",
+      "unreachable": "Couldn't reach the server. Check your connection and try again.",
       "not_signed_in": "You've been signed out. Sign in again and retry.",
       "not_configured": "No AI server is configured.",
       "invalid_input": "This text couldn't be processed. Shorten it a little and try again.",

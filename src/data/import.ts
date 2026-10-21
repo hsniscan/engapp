@@ -29,6 +29,7 @@ export type ImportErrorCode =
   | 'not_configured'
   | 'invalid_input'
   | 'bad_response'
+  | 'unreachable'
   | 'unknown';
 
 /** What Dexie stores in import_jobs: the ImportJob columns plus the work itself. */

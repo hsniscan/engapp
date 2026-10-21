@@ -81,9 +81,14 @@ describe('import queue', () => {
     const chunks = chunkText(fakeText(), 1000);
     const job = await createImportJob({ kind: 'text', title: 'T', chunks, level: 'B1' });
     h.fail.push(null, new AiClientError('offline', 'Failed to fetch'));
+    const extract = h.deps.extract;
+    let n = 0;
+    h.deps.extract = async (input) => {
+      if (++n === 2) h.online.value = false; // the connection drops during the second call
+      return extract(input);
+    };
     expect(await processImportQueue(h.deps)).toBe('offline');
     expect(await getImportJob(job.id)).toMatchObject({ status: 'queued', chunk_done: 1 });
-    h.online.value = false;
     expect(await processImportQueue(h.deps)).toBe('offline');
     h.online.value = true;
     expect(await processImportQueue(h.deps)).toBe('idle');
@@ -92,6 +97,31 @@ describe('import queue', () => {
       chunk_done: chunks.length,
     });
     expect(h.calls).toHaveLength(chunks.length + 1); // one lost call was repeated
+  });
+
+  it('a failed request while online is retried, not parked as offline', async () => {
+    const h = harness();
+    const chunks = chunkText(fakeText(), 1000);
+    const job = await createImportJob({ kind: 'text', title: 'T', chunks, level: 'B1' });
+    h.fail.push(new AiClientError('offline', 'Failed to fetch')); // e.g. CORS rejection
+    expect(await processImportQueue(h.deps)).toBe('idle');
+    expect(await getImportJob(job.id)).toMatchObject({ status: 'ready' });
+  });
+
+  it('a server that stays unreachable fails the job with a clear error', async () => {
+    const h = harness();
+    const job = await createImportJob({
+      kind: 'text',
+      title: 'T',
+      chunks: ['Hello there.'],
+      level: 'B1',
+    });
+    for (let i = 0; i < 5; i++) h.fail.push(new AiClientError('offline', 'Failed to fetch'));
+    expect(await processImportQueue(h.deps)).toBe('idle');
+    expect(await getImportJob(job.id)).toMatchObject({
+      status: 'failed',
+      error_code: 'unreachable',
+    });
   });
 
   it('daily_limit stops the queue with a friendly error; retrying continues', async () => {

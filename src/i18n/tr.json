@@ -534,7 +534,7 @@
       "submitSense": "Anlamı ekle",
       "saved": "“{{term}}” eklendi",
       "senseAdded": "“{{term}}” için {{count}} yeni anlam eklendi",
-      "cardsCreated": "{{count}} kart oluşturuldu; yarın ilk tekrarında görünecek.",
+      "cardsCreated": "{{count}} kart oluşturuldu; yeni kart olarak sırayla tekrara gelecek.",
       "nothingNew": "“{{term}}” için bu anlam zaten kayıtlı",
       "invalid": "Kelime ve anlam boş olamaz.",
       "failed": "Kart kaydedilemedi. Tekrar dene."
@@ -763,6 +763,7 @@
       "daily_limit": "Bugünkü AI kullanım sınırına ulaştın. Yarın kaldığın yerden devam edebilirsin; işlenen parçalar kaybolmadı.",
       "quota_exceeded": "AI şu an çok yoğun. Birkaç dakika sonra tekrar dene; işlenen parçalar kaybolmadı.",
       "ai_failed": "AI bu parçayı işleyemedi. Tekrar dene.",
+      "unreachable": "Sunucuya ulaşılamadı. Bağlantını kontrol edip tekrar dene; sorun sürerse biraz sonra yeniden dene.",
       "not_signed_in": "Oturumun kapanmış. Tekrar giriş yapıp dene.",
       "not_configured": "AI sunucusu ayarlanmamış.",
       "invalid_input": "Bu metin işlenemedi. Biraz kısaltıp tekrar dene.",
