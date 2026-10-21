@@ -1,6 +1,6 @@
 // Realistic fake AI output for tests and dev QA (no network). Not imported by app code
 // except the dev-only /dev/import page.
-import type { ExtractCandidate, ExtractResponse } from '@/ai/client';
+import { EXTRACT_PROMPT_VERSION, type ExtractCandidate, type ExtractResponse } from '@/ai/client';
 import { createImportJob, recordChunkResult, type ChunkResult } from '@/data';
 import { hashChunk } from '@/domain/chunking';
 import type { CefrLevel, TermType } from '@/domain/types';
@@ -473,7 +473,7 @@ export function fakeExtractResponse(
     text.includes(s.sentence) ? fakeCandidate(i) : null,
   ).filter((c): c is ExtractCandidate => c !== null);
   return {
-    prompt_version: 'extract-v1',
+    prompt_version: EXTRACT_PROMPT_VERSION,
     cache_hit: opts.cacheHit ?? false,
     ai_called: !opts.cacheHit,
     model: opts.cacheHit ? null : 'fake-model',

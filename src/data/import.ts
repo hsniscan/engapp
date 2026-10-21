@@ -65,6 +65,8 @@ export interface ChunkCandidate {
   surface: string;
   term_type: ImportCandidate['term_type'];
   source_sentence: string;
+  /** Since extract-v2; results cached on this device before that have none (→ null). */
+  sentence_tr?: string | null;
   span: [number, number];
   confidence: number;
   match: ImportCandidate['match'];
@@ -149,8 +151,18 @@ export async function getCachedChunk(hash: string, level: CefrLevel, promptVersi
 
 // ------------------------------------------------------------------ candidates
 
-/** "zaten var" / "yeni anlam olarak ekle" / "yeni" against the user's live notes. */
-export async function userStatusOf(term: string, lexiconSenseId: Id | null, meaning: string | null): Promise<CandidateUserStatus> {
+/**
+ * "zaten var" / "yeni anlam olarak ekle" / "yeni" against the user's live notes. A sense of
+ * the term with the same lexicon sense, the same meaning or the same example sentence
+ * counts as existing: importing the same list again (a newer prompt may word a sense
+ * differently) does not offer the words already added.
+ */
+export async function userStatusOf(
+  term: string,
+  lexiconSenseId: Id | null,
+  meaning: string | null,
+  sentence: string | null = null,
+): Promise<CandidateUserStatus> {
   const norm = normalizeTerm(term);
   const notes = (await db.notes.where('term_norm').equals(norm).toArray()).filter((n) => n.deleted_at === null);
   if (notes.length === 0) return 'new';
@@ -158,10 +170,12 @@ export async function userStatusOf(term: string, lexiconSenseId: Id | null, mean
     (s) => s.deleted_at === null,
   );
   const key = meaning ? normalizeTerm(meaning) : null;
+  const sentenceKey = sentence?.trim() ? normalizeTerm(sentence) : null;
   const same = senses.some(
     (s) =>
       (lexiconSenseId !== null && s.lexicon_sense_id === lexiconSenseId) ||
-      (key !== null && normalizeTerm(s.meaning_tr_override?.trim() || s.meaning_tr) === key),
+      (key !== null && normalizeTerm(s.meaning_tr_override?.trim() || s.meaning_tr) === key) ||
+      (sentenceKey !== null && !!s.source_sentence && normalizeTerm(s.source_sentence) === sentenceKey),
   );
   return same ? 'exists' : 'add_sense';
 }
@@ -198,7 +212,7 @@ export async function recordChunkResult(
       i++;
       if (seen.has(key)) continue;
       seen.add(key);
-      const status = await userStatusOf(c.term, c.lexicon.id, c.lexicon.meaning_tr);
+      const status = await userStatusOf(c.term, c.lexicon.id, c.lexicon.meaning_tr, c.source_sentence);
       rows.push({
         id: uuidv7(now),
         job_id: jobId,
@@ -213,6 +227,7 @@ export async function recordChunkResult(
         meaning_tr: c.lexicon.meaning_tr,
         ipa: c.lexicon.ipa,
         source_sentence: c.source_sentence,
+        source_sentence_tr: c.sentence_tr ?? null,
         span: c.span,
         confidence: c.confidence,
         selected: status !== 'exists',
@@ -318,6 +333,7 @@ export async function confirmImport(
           pos: c.pos,
           gloss_en: c.gloss_en,
           source_sentence: c.source_sentence,
+          source_sentence_tr: c.source_sentence_tr ?? null,
           span: c.span,
           source_id: job.source_id,
         };

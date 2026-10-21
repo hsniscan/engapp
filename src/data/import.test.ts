@@ -87,11 +87,35 @@ describe('import jobs', () => {
     expect(await db.chunk_cache.get('h1')).toBeUndefined(); // came from it, not stored again
   });
 
-  it('chunk cache lookups respect the level', async () => {
+  it('chunk cache lookups respect the level and the prompt version', async () => {
     const h = await hashChunk('Some text.');
     await db.chunk_cache.put({ chunk_hash: h, result: result([]), created_at: T });
     expect(await getCachedChunk(h, 'B1')).not.toBeNull();
     expect(await getCachedChunk(h, 'C1')).toBeNull();
+    expect(await getCachedChunk(h, 'B1', 'extract-v1')).not.toBeNull();
+    expect(await getCachedChunk(h, 'B1', 'extract-v2')).toBeNull();
+  });
+
+  it('a re-imported list entry with the same example sentence counts as existing', async () => {
+    // Added from the list before; a newer prompt words the sense differently (new lexicon id).
+    const sentence = 'We saw the bad weather today.';
+    await addNoteWithSenses({ term: 'bad', senses: [{ meaning_tr: 'kötü', lexicon_sense_id: 'L-old', source_sentence: sentence }] }, T);
+    const job = await createImportJob({ kind: 'text', title: 'T', chunks: ['a'], level: 'B1' }, T);
+    await recordChunkResult(
+      job.id,
+      0,
+      'h0',
+      result([
+        { term: 'bad', lexId: 'L-new', meaning: 'fena', sentence },
+        { term: 'bad', lexId: 'L-other', meaning: 'bozuk', sentence: 'The milk went bad today.' },
+      ]),
+      { fromLocalCache: true },
+      T,
+    );
+    expect((await listImportCandidates(job.id)).map((c) => [c.user_status, c.selected])).toEqual([
+      ['exists', false],
+      ['add_sense', true],
+    ]);
   });
 });
 
@@ -137,6 +161,23 @@ describe('confirmImport', () => {
     expect(await db.notes.where('term_norm').equals('thrive').count()).toBe(0);
     expect((await getImportJob(job.id))!.status).toBe('done');
     await expect(confirmImport(job.id)).rejects.toMatchObject({ code: 'invalid_input' });
+  });
+
+  it('carries the sentence translation into the sense; older cached results give null', async () => {
+    const job = await createImportJob({ kind: 'text', title: 'T', chunks: ['a'], level: 'B1' }, T);
+    const r = result([
+      { term: 'cope', lexId: 'L-cope', meaning: 'başa çıkmak' },
+      { term: 'bank', lexId: 'L-bank', meaning: 'banka' },
+    ]);
+    r.candidates[0]!.sentence_tr = 'Bugün baş ettik.'; // the second has no sentence_tr (extract-v1 cache)
+    await recordChunkResult(job.id, 0, 'h0', r, { fromLocalCache: true }, T);
+    expect((await listImportCandidates(job.id)).map((c) => c.source_sentence_tr)).toEqual(['Bugün baş ettik.', null]);
+    await confirmImport(job.id, { now: T + 1 });
+    const senses = await db.senses.toArray();
+    expect(senses.map((s) => [s.meaning_tr, s.source_sentence_tr]).sort()).toEqual([
+      ['banka', null],
+      ['başa çıkmak', 'Bugün baş ettik.'],
+    ]);
   });
 
   it('rolls everything back when a write fails', async () => {

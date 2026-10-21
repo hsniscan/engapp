@@ -15,9 +15,17 @@ export const POS_VALUES = [
   'interjection',
 ] as const;
 
+/** Every value with a label: the ones above plus the rest of the lexicon's list (text.ts). */
+const POS_LABELED = [...POS_VALUES, 'phrase', 'determiner', 'other'] as const;
+
+/**
+ * The part of speech in the UI language ("noun" → "isim"). Case, separators and spacing
+ * are ignored ("Phrasal  Verb", "phrasal_verb"); an unknown value is shown as stored.
+ */
 export function posLabel(t: TFunction, pos: string): string {
-  return (POS_VALUES as readonly string[]).includes(pos)
-    ? t(`cards.pos.${pos as (typeof POS_VALUES)[number]}`)
+  const key = pos.toLowerCase().replace(/[._-]/g, ' ').replace(/\s+/g, ' ').trim();
+  return (POS_LABELED as readonly string[]).includes(key)
+    ? t(`cards.pos.${key as (typeof POS_LABELED)[number]}`)
     : pos;
 }
 

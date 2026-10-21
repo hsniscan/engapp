@@ -53,6 +53,7 @@ export function makeSense(p: Partial<Sense> & { note_id: string }): Sense {
     meaning_tr: 'anlam',
     meaning_tr_override: null,
     source_sentence: null,
+    source_sentence_tr: null,
     span: null,
     source_id: null,
     ...p,

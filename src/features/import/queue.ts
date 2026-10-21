@@ -1,7 +1,7 @@
 // Import job runner (plan steps 4–5): chunks go one by one, local chunk_cache first (the
 // same text never reaches the AI twice), then ai-extract with a short gap between calls.
 // Offline: the job waits ("sırada") and resumes on the `online` event. One tab runs it.
-import { AiClientError, extractChunk, type ExtractResponse } from '@/ai/client';
+import { AiClientError, EXTRACT_PROMPT_VERSION, extractChunk, type ExtractResponse } from '@/ai/client';
 import {
   getCachedChunk,
   listPendingImportJobs,
@@ -52,6 +52,7 @@ export function toChunkResult(res: ExtractResponse, level: CefrLevel): ChunkResu
       surface: c.surface,
       term_type: c.term_type,
       source_sentence: c.source_sentence,
+      sentence_tr: c.sentence_tr,
       span: c.span,
       confidence: c.confidence,
       match: c.match,
@@ -114,7 +115,8 @@ async function processJob(
   for (let index = job.chunk_done; index < job.chunk_total;) {
     const text = (job.chunks[index] ?? '').normalize('NFC');
     const hash = await hashChunk(text);
-    const cached = await getCachedChunk(hash, job.level);
+    // A result of an older prompt version is not reused: the new prompt may find more.
+    const cached = await getCachedChunk(hash, job.level, EXTRACT_PROMPT_VERSION);
     if (cached) {
       await recordChunkResult(job.id, index, hash, cached, { fromLocalCache: true }, deps.now());
       index++;

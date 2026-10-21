@@ -125,4 +125,22 @@ describe('library', () => {
       expect((await db.notes.where('term_norm').equals('bank').first())?.deleted_at).not.toBeNull(),
     );
   });
+
+  it('edits the sentence translation in the detail sheet', async () => {
+    const user = userEvent.setup();
+    renderRoute(<LibraryPage />, { path: '/library' });
+    await screen.findByRole('list', { name: 'Notlar' });
+    await user.click(screen.getByRole('button', { name: /^bank/ }));
+    const dialog = await screen.findByRole('dialog', { name: 'bank' });
+    // Only the sense with a sentence offers a translation field.
+    const fields = within(dialog).getAllByLabelText(/Türkçe çevirisi/);
+    expect(fields).toHaveLength(1);
+    await user.type(fields[0]!, 'Kıyıda oturduk.');
+    await user.click(within(dialog).getByRole('button', { name: 'Kaydet' }));
+    await waitFor(async () =>
+      expect((await db.senses.filter((s) => s.meaning_tr === 'kıyı').first())?.source_sentence_tr).toBe(
+        'Kıyıda oturduk.',
+      ),
+    );
+  });
 });

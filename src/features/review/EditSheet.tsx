@@ -11,7 +11,7 @@ export interface EditSheetProps {
   onSaved: () => void;
 }
 
-/** Inline edit of the shown sense: the Turkish meaning (as an override) and the example sentence. */
+/** Inline edit of the shown sense: the Turkish meaning (as an override), the example sentence and its translation. */
 export function EditSheet({ view, open, onOpenChange, onSaved }: EditSheetProps) {
   const { t } = useTranslation();
   const sense = view ? (view.sense ?? view.senses[0] ?? null) : null;
@@ -50,6 +50,7 @@ function EditForm({
   const sense = view.senses.find((s) => s.id === senseId) ?? view.sense!;
   const [meaning, setMeaning] = useState(sense.meaning_tr_override ?? sense.meaning_tr);
   const [sentence, setSentence] = useState(sense.source_sentence ?? '');
+  const [sentenceTr, setSentenceTr] = useState(sense.source_sentence_tr ?? '');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const index = view.senses.findIndex((s) => s.id === sense.id);
@@ -63,6 +64,7 @@ function EditForm({
     }
     const s = sentence.trim();
     const sentenceChanged = s !== (sense.source_sentence ?? '');
+    const tr = sentenceTr.trim();
     setSaving(true);
     try {
       await editSense(sense.id, {
@@ -70,6 +72,7 @@ function EditForm({
         ...(sentenceChanged
           ? { source_sentence: s || null, span: s ? findSpan(s, view.note.term) : null }
           : {}),
+        ...(sentenceChanged || tr !== (sense.source_sentence_tr ?? '') ? { source_sentence_tr: tr || null } : {}),
       });
       toast({ title: t('review.saved'), tone: 'success' });
       onDone();
@@ -110,6 +113,14 @@ function EditForm({
         rows={3}
         value={sentence}
         onChange={(e) => setSentence(e.target.value)}
+      />
+      <TextArea
+        label={t('cards.add.sentenceTr')}
+        optional
+        lang="tr"
+        rows={2}
+        value={sentenceTr}
+        onChange={(e) => setSentenceTr(e.target.value)}
       />
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <DialogClose asChild>

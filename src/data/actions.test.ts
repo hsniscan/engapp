@@ -207,6 +207,26 @@ describe('editing and deleting', () => {
     expect(clozes[0]!.deleted_at).toBeNull();
   });
 
+  it('keeps the sentence translation with its sentence', async () => {
+    const a = await addNoteWithSenses(
+      { term: 'bank', senses: [{ meaning_tr: 'kıyı', source_sentence: sentence, source_sentence_tr: ' Nehir kıyısında yürüdük. ', span: [26, 30] }] },
+      T,
+    );
+    const id = a.addedSenses[0]!.id;
+    expect(a.addedSenses[0]!.source_sentence_tr).toBe('Nehir kıyısında yürüdük.');
+    const outbox = (await db.outbox.toArray()).find((o) => o.row_id === id);
+    expect((outbox!.payload as { source_sentence_tr: string }).source_sentence_tr).toBe('Nehir kıyısında yürüdük.');
+    await editSense(id, { source_sentence_tr: 'Akşam nehir kıyısında yürüdük.' }, T + 1);
+    expect((await db.senses.get(id))!.source_sentence_tr).toBe('Akşam nehir kıyısında yürüdük.');
+    await editSense(id, { source_sentence: 'The bank was muddy.', span: [4, 8] }, T + 2);
+    expect((await db.senses.get(id))!.source_sentence_tr).toBeNull(); // stale translation dropped
+    await editSense(id, { source_sentence_tr: 'Kıyı çamurluydu.' }, T + 3);
+    await editSense(id, { source_sentence: null }, T + 4);
+    expect((await db.senses.get(id))!.source_sentence_tr).toBeNull();
+    const b = await addNoteWithSenses({ term: 'shore', senses: [{ meaning_tr: 'sahil', source_sentence_tr: 'Yalnız çeviri.' }] }, T);
+    expect(b.addedSenses[0]!.source_sentence_tr).toBeNull();
+  });
+
   it('editNote renames with duplicate check', async () => {
     const a = await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] }, T);
     await addNoteWithSenses({ term: 'shore', senses: [{ meaning_tr: 'kıyı' }] }, T);

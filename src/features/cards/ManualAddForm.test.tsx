@@ -17,6 +17,7 @@ describe('manual add (Elle)', () => {
     await user.type(screen.getByLabelText('Türkçe anlamı'), 'kıyı');
     await user.type(screen.getByLabelText(/Örnek cümle/), 'We sat on the bank of the river.');
     expect(await screen.findByText('bank', { selector: 'mark' })).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/Türkçe çevirisi/), 'Nehir kıyısında oturduk.');
     await user.click(screen.getByRole('button', { name: 'Kartı kaydet' }));
 
     await waitFor(async () => expect(await db.notes.count()).toBe(1));
@@ -26,6 +27,7 @@ describe('manual add (Elle)', () => {
     const sense = found!.senses[0]!;
     expect(sense.meaning_tr).toBe('kıyı');
     expect(sense.source_sentence!.slice(...sense.span!)).toBe('bank');
+    expect(sense.source_sentence_tr).toBe('Nehir kıyısında oturduk.');
     const cards = await db.cards.where('note_id').equals(found!.note.id).toArray();
     expect(cards.map((c) => c.card_type).sort()).toEqual(['cloze', 'production', 'recognition']);
     // The form is cleared for the next word.

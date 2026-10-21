@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chunkText, cleanPdfText, hashChunk, joinHyphenatedLines, removeRepeatedHeaders, splitSentences, MAX_CHUNK_HARD } from './chunking';
+import { chunkText, cleanPdfText, hashChunk, joinHyphenatedLines, LIST_CHUNK_SIZE, looksLikeVocabularyList, removeRepeatedHeaders, splitSentences, MAX_CHUNK_HARD } from './chunking';
 
 describe('chunking', () => {
   it('splits sentences', () => {
@@ -31,6 +31,25 @@ describe('chunking', () => {
     const chunks = chunkText(text);
     expect(chunks[0]!.length).toBeLessThanOrEqual(6000);
     expect(chunks[0]!.length).toBeGreaterThan(5900);
+  });
+
+  it('a numbered vocabulary list gets smaller chunks that never split an entry', () => {
+    const words = ['bad', 'big', 'good', 'able', 'about', 'cat', 'dog', 'eat', 'run', 'Monday'];
+    const entries = Array.from({ length: 300 }, (_, i) => {
+      const w = words[i % words.length]!;
+      return `${i + 1} ${w} This sentence uses ${w} here.`;
+    });
+    const text = entries.join(' ');
+    expect(looksLikeVocabularyList(text)).toBe(true);
+    const chunks = chunkText(text);
+    for (const c of chunks) expect(c.length).toBeLessThanOrEqual(LIST_CHUNK_SIZE);
+    expect(chunks.length).toBeGreaterThan(text.length / LIST_CHUNK_SIZE);
+    for (const e of entries) expect(chunks.filter((c) => ` ${c} `.includes(` ${e} `))).toHaveLength(1);
+    expect(chunks.join(' ')).toBe(text);
+    // Bulleted lines count too; prose with a few numbers does not.
+    expect(looksLikeVocabularyList(entries.slice(0, 12).map((e) => `• ${e.replace(/^\d+ /, '')}`).join('\n'))).toBe(true);
+    expect(looksLikeVocabularyList('This is a sentence about 3 cats. '.repeat(50))).toBe(false);
+    expect(looksLikeVocabularyList('Steps: 1 open the box. 2 take the toy. And then we went home.')).toBe(false);
   });
 
   it('hashes chunks with sha-256', async () => {

@@ -39,6 +39,8 @@ export const senseSchema: z.ZodType<Sense> = z.object({
   meaning_tr: z.string(),
   meaning_tr_override: z.string().nullable(),
   source_sentence: z.string().nullable(),
+  // Absent in backups and server rows from before the column existed.
+  source_sentence_tr: z.string().nullable().default(null),
   span: z.tuple([z.number().int(), z.number().int()]).nullable(),
   source_id: id.nullable(),
 });
