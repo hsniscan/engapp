@@ -16,6 +16,7 @@ const nothingSeen = (): Record<ResyncTable, Set<string>> => ({
   settings: new Set(),
   content_feedback: new Set(),
   user_content: new Set(),
+  decks: new Set(),
 });
 
 describe('removeRowsMissingOnServer', () => {

@@ -14,6 +14,8 @@ export const META = {
   lexiconExamplesCursor: 'lexicon_examples_cursor',
   /** The server has lexicon_examples_pull, so it stores content_feedback / user_content. */
   serverExamples: 'server_examples',
+  /** Tables added after the registry (LATE_SYNC_TABLES) that the server confirmed it stores. */
+  serverTables: 'server_tables',
 } as const;
 
 /** Meta key of a day's extra new-card allowance ("+5 yeni kart"). Device-local, never synced. */

@@ -57,6 +57,16 @@ const children: RouteObject[] = [
     lazy: async () => ({ Component: (await import('@/features/cards/LibraryPage')).LibraryPage }),
   },
   {
+    path: 'decks',
+    HydrateFallback: () => null,
+    lazy: async () => ({ Component: (await import('@/features/decks/DecksPage')).DecksPage }),
+  },
+  {
+    path: 'decks/themes',
+    HydrateFallback: () => null,
+    lazy: async () => ({ Component: (await import('@/features/decks/ThemesPage')).ThemesPage }),
+  },
+  {
     path: 'stats',
     HydrateFallback: () => null,
     lazy: async () => ({ Component: (await import('@/features/stats/StatsScreen')).StatsScreen }),

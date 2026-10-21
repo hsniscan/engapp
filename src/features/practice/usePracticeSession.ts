@@ -104,7 +104,7 @@ export function usePracticeSession(params: PracticeParams) {
     void (async () => {
       try {
         const ids = await getPracticeCards(
-          { source: params.source, tag: params.tag },
+          { source: params.source, tag: params.tag, deckId: params.deck ?? null },
           { size: params.size, seed: sessionId.current },
         );
         if (!cancelled) await showCurrent(startRound(ids));
@@ -117,7 +117,7 @@ export function usePracticeSession(params: PracticeParams) {
       cancelled = true;
       alive.current = false;
     };
-  }, [params.source, params.tag, params.size, patch, showCurrent]);
+  }, [params.source, params.tag, params.deck, params.size, patch, showCurrent]);
 
   const flip = useCallback(() => {
     const s = stateRef.current;

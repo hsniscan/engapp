@@ -6,6 +6,7 @@ import { uuidv7 } from '../domain/ids';
 import type {
   Card,
   ContentFeedback,
+  Deck,
   Id,
   Millis,
   Note,
@@ -30,6 +31,7 @@ export interface MutableRows {
   settings: Settings;
   content_feedback: ContentFeedback;
   user_content: UserContent;
+  decks: Deck;
 }
 export type MutableTable = keyof MutableRows;
 

@@ -20,6 +20,8 @@ import {
 } from '../domain/types';
 import { db } from './db';
 import { ActionError } from './errors';
+import { deckNoteIds } from '../domain/deckFilter';
+import { deckContext, getDeckNoteIds, listDecks, loadDeckFacts } from './decks';
 import { dueStudiedCards, logsByCard } from './history';
 import { writeTx } from './writer';
 
@@ -78,16 +80,30 @@ export interface PracticeSourceCounts {
   recent: number;
   /** Tags of practicable notes with their note counts, most used first. */
   tags: { tag: string; count: number }[];
+  /** Smart decks (in deck order) with their practicable notes; decks with none are left out. */
+  decks: { id: Id; name: string; count: number }[];
 }
 
 export async function getPracticeSourceCounts(
   now: Millis = Date.now(),
 ): Promise<PracticeSourceCounts> {
-  const c = countPracticeSources(await loadPracticeCandidates(now), now);
+  const candidates = await loadPracticeCandidates(now);
+  const c = countPracticeSources(candidates, now);
   const tags = [...c.tags]
     .map(([tag, count]) => ({ tag, count }))
     .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag, 'tr'));
-  return { hard: c.hard, recent: c.recent, tags };
+  const practicable = new Set(candidates.map((x) => x.card.note_id));
+  const decks: PracticeSourceCounts['decks'] = [];
+  const deckList = await listDecks();
+  if (deckList.length) {
+    const [facts, ctx] = await Promise.all([loadDeckFacts(now), deckContext(now)]);
+    for (const deck of deckList) {
+      const ids = deckNoteIds(deck.filter, facts, ctx);
+      const count = ids ? [...ids].filter((id) => practicable.has(id)).length : 0;
+      if (count > 0) decks.push({ id: deck.id, name: deck.name, count });
+    }
+  }
+  return { hard: c.hard, recent: c.recent, tags, decks };
 }
 
 /** The card ids of a new round, in play order. `seed` (the session id) fixes the shuffle. */
@@ -96,7 +112,11 @@ export async function getPracticeCards(
   opts: { size: number; seed: string },
   now: Millis = Date.now(),
 ): Promise<Id[]> {
-  return selectPracticeCards(await loadPracticeCandidates(now), filter, {
+  const resolved: PracticeFilter =
+    filter.source === 'deck'
+      ? { ...filter, noteIds: filter.deckId ? await getDeckNoteIds(filter.deckId, now) : null }
+      : filter;
+  return selectPracticeCards(await loadPracticeCandidates(now), resolved, {
     now,
     size: opts.size,
     seed: opts.seed,

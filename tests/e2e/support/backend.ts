@@ -27,6 +27,7 @@ import { runEnrich } from '../../../supabase/functions/_shared/enrich.ts';
 import { runExamples } from '../../../supabase/functions/_shared/examples.ts';
 import { MemoryExampleStore } from '../../../supabase/functions/_shared/testing/memory-example-store.ts';
 import { ApiError } from '../../../supabase/functions/_shared/errors.ts';
+import { runThemes, THEMES_SYSTEM_PROMPT } from '../../../supabase/functions/_shared/themes.ts';
 import type { AiProvider } from '../../../supabase/functions/_shared/ai-provider.ts';
 import { MemoryAiStore } from '../../../supabase/functions/_shared/testing/memory-store.ts';
 import { FAKE_SPECS } from '../../../src/features/import/testing/fakeSpecs.ts';
@@ -226,6 +227,49 @@ function fakeExamplesModel(counter: { calls: number }): AiProvider {
   };
 }
 
+/** public.sync_tables as after migration 20261022000400_decks.sql. */
+const SYNC_TABLES = [
+  'notes',
+  'senses',
+  'cards',
+  'review_logs',
+  'sources',
+  'settings',
+  'practice_logs',
+  'content_feedback',
+  'user_content',
+  'decks',
+];
+
+/**
+ * Scripted ai-themes model: puts each "<ref> | <term> | …" line into the first theme whose
+ * keyword list contains the term (THEME_KEYWORDS); other words are left out.
+ */
+export const THEME_KEYWORDS: Record<string, string[]> = {
+  'Para ve bankacılık': ['loan', 'interest', 'mortgage', 'savings', 'debt'],
+  Duygular: ['anxious', 'grateful', 'furious', 'relieved', 'jealous'],
+  Yolculuk: ['ticket', 'luggage', 'boarding', 'departure'],
+};
+
+function fakeThemesModel(counter: { calls: number }): AiProvider {
+  return {
+    name: 'fake',
+    async generateJson(req) {
+      counter.calls++;
+      if (req.system !== THEMES_SYSTEM_PROMPT) throw new Error('unexpected prompt');
+      const groups = Object.entries(THEME_KEYWORDS).map(([name_tr, words]) => ({
+        name_tr,
+        refs: req.user
+          .split('\n')
+          .map((l) => /^(w\d+) \| (.+?) \| /.exec(l))
+          .filter((m): m is RegExpExecArray => !!m && words.includes(m[2]!))
+          .map((m) => m[1]!),
+      }));
+      return { data: { groups }, model: 'fake-model', attempts: 1, usage: null };
+    },
+  };
+}
+
 export interface BackendOptions {
   /** Artificial latency of ai-extract (ms). */
   extractDelayMs?: number;
@@ -337,6 +381,8 @@ export class FakeBackend {
         return this.json(route, 500, { error: { code: 'internal', message: String(e) } });
       }
     }
+    if (path === '/rest/v1/sync_tables') return this.json(route, 200, SYNC_TABLES.map((n) => ({ name: n })));
+    if (path === '/functions/v1/ai-themes') return this.themes(route, body);
     if (path === '/functions/v1/ai-extract' || path === '/functions/v1/ai-enrich') {
       if (this.opts.extractDelayMs)
         await new Promise((r) => setTimeout(r, this.opts.extractDelayMs));
@@ -360,6 +406,23 @@ export class FakeBackend {
       }
     }
     return this.json(route, 404, { message: `unmocked ${path}` });
+  }
+
+  /** ai-themes through the REAL runThemes, with a scripted model that groups by keyword. */
+  private async themes(route: Route, body: unknown) {
+    const deps = {
+      userId: TEST_USER.id,
+      store: this.store,
+      provider: () => fakeThemesModel(this.model),
+      dailyLimit: 200,
+    };
+    try {
+      return this.json(route, 200, await runThemes(body, deps));
+    } catch (e) {
+      if (e instanceof ApiError)
+        return this.json(route, e.status, { error: { code: e.code, message: e.message } });
+      return this.json(route, 500, { error: { code: 'internal', message: String(e) } });
+    }
   }
 
   private rpc(route: Route, fn: string, args: Record<string, unknown>) {

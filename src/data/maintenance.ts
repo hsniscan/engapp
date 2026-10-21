@@ -16,6 +16,7 @@ import { deriveUnlocked, effectiveLogs, replayCard } from '../domain/recompute';
 import {
   cardSchema,
   contentFeedbackSchema,
+  deckSchema,
   noteSchema,
   practiceLogSchema,
   reviewLogSchema,
@@ -50,6 +51,7 @@ const MUTABLE: MutableTable[] = [
   'settings',
   'content_feedback',
   'user_content',
+  'decks',
 ];
 const allSyncedTables = () => [
   db.content_feedback,
@@ -61,6 +63,7 @@ const allSyncedTables = () => [
   db.sources,
   db.settings,
   db.practice_logs,
+  db.decks,
 ];
 
 // ------------------------------------------------------------------ recompute
@@ -217,6 +220,7 @@ const rowSchemas = {
   practice_logs: practiceLogSchema,
   content_feedback: contentFeedbackSchema,
   user_content: userContentSchema,
+  decks: deckSchema,
 } satisfies Record<MutableTable | 'review_logs' | 'practice_logs', z.ZodType>;
 
 /**
@@ -315,6 +319,7 @@ async function readTables(): Promise<BackupTables> {
     practice_logs: await db.practice_logs.toArray(),
     content_feedback: await db.content_feedback.toArray(),
     user_content: await db.user_content.toArray(),
+    decks: await db.decks.toArray(),
   }));
 }
 
@@ -389,8 +394,9 @@ export async function restoreBackup(
   await writeTx(allSyncedTables(), now, async (w) => {
     const terms = new Set<string>();
     for (const table of MUTABLE) {
-      // content_feedback / user_content are absent in files before schema_version 5: such a
-      // file says nothing about them, so overwrite leaves the local rows alone.
+      // content_feedback / user_content (before schema_version 5) and decks (before 7) are
+      // absent in older files: such a file says nothing about them, so overwrite leaves the
+      // local rows alone.
       const fromFile = tables[table] as MutableRows[MutableTable][] | undefined;
       const incoming = fromFile ?? [];
       const ids = new Set(incoming.map((r) => r.id));

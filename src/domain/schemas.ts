@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type {
   Card,
   ContentFeedback,
+  Deck,
   LexiconExample,
   Note,
   PracticeLog,
@@ -170,4 +171,12 @@ export const lexiconExampleSchema: z.ZodType<LexiconExample> = z.object({
   translations: z.record(z.string(), z.string()),
   status: z.enum(['active', 'retired']),
   updated_at: millis,
+});
+
+/** decks.filter is kept as raw JSON here; domain/deckFilter.ts parses it for evaluation. */
+export const deckSchema: z.ZodType<Deck> = z.object({
+  ...synced,
+  name: z.string().min(1).max(200),
+  filter: z.record(z.string(), z.unknown()),
+  sort: z.number().int(),
 });

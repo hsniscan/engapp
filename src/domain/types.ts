@@ -128,6 +128,40 @@ export interface Source extends SyncedRow {
   topics?: string[] | null;
 }
 
+/**
+ * A smart deck ("Akıllı deste", v0.2 İP8): a named, saved filter over the user's notes.
+ * `filter` is the raw JSON of a DeckFilter (domain/deckFilter.ts); it is kept as stored so a
+ * filter written by a newer app version survives an edit here.
+ */
+export interface Deck extends SyncedRow {
+  name: string;
+  filter: Record<string, unknown>;
+  /** Display order, ascending. */
+  sort: number;
+}
+
+/** "Temalara ayır" result waiting for the user's approval. Local only, never synced. */
+export interface ThemePreview {
+  id: string; // 'current'
+  created_at: Millis;
+  model: string | null;
+  groups: ThemePreviewGroup[];
+  /** Notes sent to the model (for the "N kelimeden M tanesi gruplandı" line). */
+  sent: number;
+}
+
+export interface ThemePreviewGroup {
+  key: string;
+  /** Name suggested by the model. */
+  suggested: string;
+  /** Name the user approves (editable). */
+  name: string;
+  note_ids: Id[];
+  /** Words the user took out of the group. */
+  removed: Id[];
+  rejected: boolean;
+}
+
 export type ThemePref = 'system' | 'light' | 'dark';
 export type CefrLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
 /**
@@ -303,7 +337,8 @@ export type OutboxTable =
   | 'settings'
   | 'practice_logs'
   | 'content_feedback'
-  | 'user_content';
+  | 'user_content'
+  | 'decks';
 /** Synced tables whose rows are never changed or deleted. */
 export const INSERT_ONLY_TABLES = [
   'review_logs',

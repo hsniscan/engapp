@@ -22,6 +22,7 @@ const MUTABLE: MutableTable[] = [
   'settings',
   'content_feedback',
   'user_content',
+  'decks',
 ];
 
 /** Data the user created on this device (settings alone do not count). */
@@ -93,7 +94,8 @@ export interface RemoteSnapshot {
  */
 export async function discardAccountData(userId: string, snapshot: RemoteSnapshot, now: Millis = Date.now()): Promise<number> {
   await claimLocalData(userId, now);
-  const n = await writeTx([db.notes, db.senses, db.cards, db.sources, db.settings, db.content_feedback, db.user_content], now, async (w) => {
+  const tables = [db.notes, db.senses, db.cards, db.sources, db.settings, db.content_feedback, db.user_content, db.decks];
+  const n = await writeTx(tables, now, async (w) => {
     let count = 0;
     for (const { table, row } of snapshot.rows) {
       if (!(MUTABLE as string[]).includes(table)) continue;
@@ -162,6 +164,7 @@ export async function copyCardsFromOtherAccount(userId: string, snapshot: Remote
     const notes = (await db.notes.toArray()).filter((n) => n.deleted_at === null).sort((a, b) => a.created_at - b.created_at);
     const senses = (await db.senses.toArray()).filter((s) => s.deleted_at === null);
     const sources = new Map((await db.sources.toArray()).filter((s) => s.deleted_at === null).map((s) => [s.id, s]));
+    const decks = (await db.decks.toArray()).filter((d) => d.deleted_at === null).sort((a, b) => a.sort - b.sort);
     const sensesByNote = new Map<Id, Sense[]>();
     for (const s of senses) {
       const list = sensesByNote.get(s.note_id);
@@ -203,6 +206,21 @@ export async function copyCardsFromOtherAccount(userId: string, snapshot: Remote
       }
       const res = await addNoteWithSenses(input, now);
       if (res.status !== 'existing' || res.addedSenses.length > 0) copied++;
+    }
+
+    // Smart decks are saved filters, not history: they come along under new ids unless the
+    // account already has a deck with the same name.
+    if (decks.length) {
+      await writeTx([db.decks], now, async (w) => {
+        const have = (await db.decks.toArray()).filter((d) => d.deleted_at === null);
+        const names = new Set(have.map((d) => d.name.toLocaleLowerCase('tr')));
+        let sort = have.reduce((m, d) => Math.max(m, d.sort), 0);
+        for (const d of decks) {
+          if (names.has(d.name.toLocaleLowerCase('tr'))) continue;
+          names.add(d.name.toLocaleLowerCase('tr'));
+          await w.put('decks', { ...w.base(), name: d.name, filter: d.filter, sort: ++sort });
+        }
+      });
     }
     return copied;
   });

@@ -6,6 +6,7 @@ import { effectiveLogs } from './recompute';
 import {
   cardSchema,
   contentFeedbackSchema,
+  deckSchema,
   noteSchema,
   practiceLogSchema,
   reviewLogSchema,
@@ -17,6 +18,7 @@ import {
 import type {
   Card,
   ContentFeedback,
+  Deck,
   Millis,
   Note,
   PracticeLog,
@@ -35,7 +37,9 @@ export const BACKUP_FORMAT = 'engapp-backup';
 //    the user's own edits). Older files have neither (restored as none).
 // 6 (v0.2 İP7): settings.interests, settings.muted_topics, sources.topics (optional and not
 //    defaulted, so older files restore and keep their checksum).
-export const BACKUP_SCHEMA_VERSION = 6;
+// 7 (v0.2 İP8): decks. Older files have none (restore keeps the local decks).
+//    (İP7 and İP8 were built as "4" on their branches; no such file was ever released.)
+export const BACKUP_SCHEMA_VERSION = 7;
 
 export interface BackupTables {
   notes: Note[];
@@ -49,6 +53,8 @@ export interface BackupTables {
   /** Absent in files before schema_version 5; buildBackup always writes them. */
   content_feedback?: ContentFeedback[];
   user_content?: UserContent[];
+  /** Absent in files before schema_version 7; buildBackup always writes it. */
+  decks?: Deck[];
 }
 
 export const backupTablesSchema = z.object({
@@ -62,6 +68,7 @@ export const backupTablesSchema = z.object({
   practice_logs: z.array(practiceLogSchema).optional(),
   content_feedback: z.array(contentFeedbackSchema).optional(),
   user_content: z.array(userContentSchema).optional(),
+  decks: z.array(deckSchema).optional(),
 });
 
 export const backupSchema = z.object({
@@ -101,6 +108,7 @@ export function sortTables(t: BackupTables): BackupTables {
     ...(t.practice_logs ? { practice_logs: byId(t.practice_logs) } : {}),
     ...(t.content_feedback ? { content_feedback: byId(t.content_feedback) } : {}),
     ...(t.user_content ? { user_content: byId(t.user_content) } : {}),
+    ...(t.decks ? { decks: byId(t.decks) } : {}),
   };
 }
 
@@ -117,6 +125,7 @@ export async function buildBackup(
     practice_logs: tables.practice_logs ?? [],
     content_feedback: tables.content_feedback ?? [],
     user_content: tables.user_content ?? [],
+    decks: tables.decks ?? [],
   });
   return {
     format: BACKUP_FORMAT,

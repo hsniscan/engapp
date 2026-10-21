@@ -2,7 +2,15 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router';
-import { db, logError, setSuspended, softDeleteNote } from '@/data';
+import {
+  db,
+  getDeckNoteIds,
+  getDeckSummaries,
+  listTags,
+  logError,
+  setSuspended,
+  softDeleteNote,
+} from '@/data';
 import { CEFR, noteLevel } from '@/domain/level';
 import type { CardType } from '@/domain/types';
 import { LevelBadge } from '@/features/levels/LevelBadge';
@@ -44,6 +52,11 @@ import {
 } from './libraryFilter';
 import { NoteDetailSheet } from './NoteDetailSheet';
 import { useNow } from '@/features/settings/useNow';
+import { DeckChips } from '@/features/decks/DeckChips';
+import { DeckEditorDialog } from '@/features/decks/DeckEditorDialog';
+import { describeDeckFilter } from '@/features/decks/describe';
+import { TagSheet } from '@/features/decks/TagSheet';
+import { practiceHref } from '@/features/extra/links';
 
 const PAGE_SIZE = 60;
 
@@ -78,6 +91,27 @@ export function LibraryPage() {
   const filters = useMemo(() => filtersFromParams(params), [params]);
   const openNoteId = params.get('note');
   const rows = useLibraryRows();
+  // Smart decks (v0.2 İP8): chips above the list; ?deck=<id> narrows the list to the deck.
+  const deckId = params.get('deck');
+  const decks = useLiveQuery(() => getDeckSummaries(), []);
+  const deckIds = useLiveQuery(
+    async () => ({ id: deckId, ids: deckId ? await getDeckNoteIds(deckId) : null }),
+    [deckId],
+  );
+  const activeDeck = decks?.find((d) => d.deck.id === deckId) ?? null;
+  const [editDeck, setEditDeck] = useState(false);
+  const selectDeck = useCallback(
+    (id: string | null) =>
+      setParams(
+        (p) => {
+          if (id) p.set('deck', id);
+          else p.delete('deck');
+          return p;
+        },
+        { replace: true },
+      ),
+    [setParams],
+  );
 
   // The search box is local state (instant typing); the URL follows without adding history entries.
   const [q, setQ] = useState(filters.q);
@@ -95,12 +129,18 @@ export function LibraryPage() {
   }, [deferredQ, filters.q, setFilters]);
 
   const effective = useMemo(() => ({ ...filters, q: deferredQ }), [filters, deferredQ]);
-  const filtered = useMemo(() => (rows ? filterRows(rows, effective) : []), [rows, effective]);
-  const tags = useMemo(() => {
-    const set = new Set<string>();
-    rows?.forEach((r) => r.note.tags.forEach((x) => set.add(x)));
-    return [...set].sort((a, b) => a.localeCompare(b, 'tr'));
-  }, [rows]);
+  const deckFilterIds = deckId && deckIds?.id === deckId ? deckIds.ids : undefined;
+  const filtered = useMemo(() => {
+    const list = rows ? filterRows(rows, effective) : [];
+    if (!deckId) return list;
+    if (!deckFilterIds) return []; // loading, or a deck this version cannot evaluate
+    return list.filter((r) => deckFilterIds.has(r.note.id));
+  }, [rows, effective, deckId, deckFilterIds]);
+  const tagList = useLiveQuery(() => listTags(), []);
+  const tags = useMemo(
+    () => (tagList ?? []).map((x) => x.tag).sort((a, b) => a.localeCompare(b, 'tr')),
+    [tagList],
+  );
   const hasDuplicates = useMemo(
     () => rows?.some((r) => r.note.possible_duplicate) ?? false,
     [rows],
@@ -208,6 +248,31 @@ export function LibraryPage() {
         </Surface>
       ) : (
         <div className="flex flex-col gap-4">
+          {decks && (
+            <div className="flex flex-col gap-2">
+              <DeckChips decks={decks} active={deckId} onSelect={selectDeck} />
+              {activeDeck && (
+                <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-fg-muted">
+                  <span className="min-w-0">{describeDeckFilter(t, activeDeck.filter)}</span>
+                  {activeDeck.count !== null && activeDeck.count > 0 && (
+                    <Link
+                      to={practiceHref({ source: 'deck', size: 10, tag: null, deck: activeDeck.deck.id })}
+                      className="inline-flex min-h-11 items-center font-medium text-accent-text underline-offset-4 hover:underline"
+                    >
+                      {t('library.decks.practice')}
+                    </Link>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setEditDeck(true)}
+                    className="inline-flex min-h-11 items-center font-medium text-accent-text underline-offset-4 hover:underline"
+                  >
+                    {t('library.decks.edit')}
+                  </button>
+                </p>
+              )}
+            </div>
+          )}
           <div role="search" className="flex items-end gap-2">
             <TextField
               label={t('common.search')}
@@ -289,7 +354,19 @@ export function LibraryPage() {
             </div>
           </div>
 
-          {filtered.length === 0 ? (
+          {deckId && deckIds?.id === deckId && deckIds.ids === null && activeDeck ? (
+            <Surface>
+              <EmptyState icon="info" title={activeDeck.deck.name} description={t('library.decks.unsupported')} />
+            </Surface>
+          ) : deckId && activeDeck && activeDeck.count === 0 ? (
+            <Surface>
+              <EmptyState
+                icon="layers"
+                title={t('library.decks.empty')}
+                description={t('library.decks.emptyHint')}
+              />
+            </Surface>
+          ) : filtered.length === 0 ? (
             <Surface>
               <EmptyState
                 icon="search"
@@ -327,6 +404,11 @@ export function LibraryPage() {
       )}
 
       <NoteDetailSheet noteId={openNoteId} onClose={() => openNote(null)} />
+      <DeckEditorDialog
+        open={editDeck && !!activeDeck}
+        onOpenChange={setEditDeck}
+        deck={activeDeck?.deck ?? null}
+      />
     </Page>
   );
 }
@@ -603,6 +685,7 @@ function BulkBar({
 }) {
   const { t } = useTranslation();
   const [confirm, setConfirm] = useState(false);
+  const [tagging, setTagging] = useState(false);
   const [busy, setBusy] = useState(false);
   const chosen = rows.filter((r) => selected.has(r.note.id));
   const allSuspended =
@@ -657,11 +740,24 @@ function BulkBar({
         <Button
           variant="secondary"
           size="sm"
+          leadingIcon="tag"
+          disabled={busy}
+          onClick={() => setTagging(true)}
+        >
+          {t('library.bulk.tag')}
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
           leadingIcon={allSuspended ? 'refresh' : 'pause'}
           disabled={busy}
           onClick={() => void suspend(!allSuspended)}
+          aria-label={allSuspended ? t('library.bulk.unsuspend') : t('common.suspend')}
+          className="max-sm:px-2.5"
         >
-          {allSuspended ? t('library.bulk.unsuspend') : t('common.suspend')}
+          <span aria-hidden="true" className="max-sm:hidden">
+            {allSuspended ? t('library.bulk.unsuspend') : t('common.suspend')}
+          </span>
         </Button>
         <IconButton
           icon="trash"
@@ -671,6 +767,11 @@ function BulkBar({
           className="hover:text-danger-text"
         />
       </div>
+      <TagSheet
+        open={tagging}
+        onOpenChange={setTagging}
+        notes={chosen.map((r) => r.note)}
+      />
       <ConfirmDialog
         open={confirm}
         onOpenChange={setConfirm}

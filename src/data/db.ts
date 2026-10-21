@@ -4,6 +4,7 @@ import type {
   ChunkCacheRow,
   ContentFeedback,
   DailyActivity,
+  Deck,
   ErrorLogRow,
   ExampleJob,
   ImportCandidate,
@@ -21,7 +22,9 @@ import type {
   Settings,
   Source,
   UserContent,
+  ThemePreview,
 } from '../domain/types';
+import { addPullBackfill } from './backfill';
 
 /**
  * Local database. The source of truth for the UI: screens read and write only here,
@@ -35,6 +38,8 @@ export class EngDb extends Dexie {
   cards!: EntityTable<Card, 'id'>;
   review_logs!: EntityTable<ReviewLog, 'id'>;
   practice_logs!: EntityTable<PracticeLog, 'id'>;
+  decks!: EntityTable<Deck, 'id'>;
+  theme_previews!: EntityTable<ThemePreview, 'id'>;
   sources!: EntityTable<Source, 'id'>;
   settings!: EntityTable<Settings, 'id'>;
   lexicon_cache!: EntityTable<LexiconSense, 'id'>;
@@ -108,13 +113,17 @@ export class EngDb extends Dexie {
       });
     // v5 (v0.2 İP5): example sentences. lexicon_examples is a read-only cache of the shared
     // table (like lexicon_cache); content_feedback and user_content are synced, per user;
-    // example_jobs is the device-local preparation queue. New tables only: no upgrade().
-    this.version(5).stores({
-      lexicon_examples: 'id, sense_id, [sense_id+level_band], updated_at',
-      content_feedback: 'id, [target_kind+target_id], deleted_at',
-      user_content: 'id, kind, lexicon_sense_id, replaces_id, deleted_at',
-      example_jobs: 'key, status, next_attempt_at',
-    });
+    // example_jobs is the device-local preparation queue. An older app version that pulled
+    // content_feedback / user_content rows (sync_pull_v3 returns every registered table)
+    // dropped them as invalid: re-pull those two tables once (data/backfill.ts).
+    this.version(5)
+      .stores({
+        lexicon_examples: 'id, sense_id, [sense_id+level_band], updated_at',
+        content_feedback: 'id, [target_kind+target_id], deleted_at',
+        user_content: 'id, kind, lexicon_sense_id, replaces_id, deleted_at',
+        example_jobs: 'key, status, next_attempt_at',
+      })
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['content_feedback', 'user_content']));
     // v6 (v0.2 İP6, word families): ref_cache keeps the lazily
     // fetched morphology file for offline use; pair_note_feedback holds the user's "gizle" /
     // "bildir" on false-friend warnings. Notes may now have term_type 'affix'. An older app
@@ -134,6 +143,12 @@ export class EngDb extends Dexie {
     // settings.interests / settings.muted_topics (not indexed). All optional: an absent list
     // means "unknown", so existing rows need no upgrade.
     this.version(7).stores({ sources: 'id, created_at, *topics' });
+    // v8 (v0.2 İP8): decks (synced, mutable) and the local
+    // theme-grouping preview. A device that has pulled before may have skipped deck rows
+    // written by a newer device while it ran an older version: re-pull them once.
+    this.version(8)
+      .stores({ decks: 'id, sort, deleted_at', theme_previews: 'id' })
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['decks']));
   }
 }
 

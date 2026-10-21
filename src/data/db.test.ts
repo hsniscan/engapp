@@ -7,11 +7,12 @@ describe('Dexie schema', () => {
   it('opens with every table and the indexes the queries rely on', async () => {
     const d = new EngDb('schema-test');
     await d.open();
-    expect(d.verno).toBe(7);
+    expect(d.verno).toBe(8);
     expect(d.tables.map((t) => t.name).sort()).toEqual(
-      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'pair_note_feedback', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs'].sort(),
+      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'pair_note_feedback', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs', 'decks', 'theme_previews'].sort(),
     );
     const idx = (table: string) => d.table(table).schema.indexes.map((i) => i.name);
+    expect(idx('decks')).toEqual(expect.arrayContaining(['sort', 'deleted_at']));
     expect(idx('cards')).toEqual(expect.arrayContaining(['[state+due]', 'note_id', 'sense_id']));
     expect(idx('review_logs')).toEqual(expect.arrayContaining(['card_id', 'reviewed_at', 'undo_of']));
     expect(idx('practice_logs')).toEqual(expect.arrayContaining(['card_id', 'practiced_at', 'session_id']));
@@ -104,7 +105,7 @@ describe('Dexie schema', () => {
 
     const d = new EngDb(name);
     await d.open();
-    expect(d.verno).toBe(7);
+    expect(d.verno).toBe(8);
     expect(await d.cards.get('c1')).toMatchObject({ state: 2, due: 5 });
     expect(await d.practice_logs.count()).toBe(1);
     expect(await d.lexicon_examples.count()).toBe(0);
@@ -129,7 +130,7 @@ describe('Dexie schema', () => {
 
     const d = new EngDb(name);
     await d.open();
-    expect(d.verno).toBe(7);
+    expect(d.verno).toBe(8);
     expect(await d.notes.get('n1')).toMatchObject({ term_norm: 'bank' });
     expect(await d.meta.get('sync_cursor')).toEqual({ key: 'sync_cursor', value: 420 });
     expect(await d.ref_cache.count()).toBe(0);
