@@ -482,7 +482,7 @@ function readMeanings(): Map<string, Meaning & Candidate> {
 function meaningModels(): Set<string> {
   if (!existsSync(MEANINGS_FILE)) return new Set();
   const head = readFileSync(MEANINGS_FILE, 'utf8').split('\n', 1)[0] ?? '';
-  const m = /models? ([^.]+?)\.$/.exec(head);
+  const m = /, models? (.+)\.$/.exec(head);
   return new Set(m ? m[1]!.split(', ') : []);
 }
 
@@ -611,8 +611,59 @@ function pickDistractors(item: Meaning & Candidate, pool: (Meaning & Candidate)[
   return null;
 }
 
+/**
+ * Hand review of meanings.tsv (2026-10, every C1/C2 row and spot checks below): a better
+ * Turkish answer, or null to leave the word out of the bank (wrong, offensive, not a word).
+ */
+const HAND_MEANINGS: Record<string, string | null> = {
+  'clutch\tnoun': 'kavrama',
+  'compromised\tadjective': 'tehlikeye atılmış',
+  'imp\tnoun': 'küçük şeytan',
+  'gypsy\tnoun': null,
+  'unscathing\tadjective': null,
+  'docilely\tadverb': 'uysalca',
+  'hypocrite\tnoun': 'ikiyüzlü',
+  'dutiful\tadjective': 'görevine bağlı',
+  'suburban\tadjective': 'banliyöye ait',
+  'misplace\tverb': 'bir yere koyup unutmak',
+  'exhilarate\tverb': 'coşturmak',
+  'elephantine\tadjective': 'fil gibi',
+  'euphemistic\tadjective': 'örtmeceli',
+  'histrionically\tadverb': null,
+  'magnanimity\tnoun': 'yüce gönüllülük',
+  'magnate\tnoun': 'iş dünyası patronu',
+  'minefield\tnoun': 'mayın tarlası',
+  'patronize\tverb': 'tepeden bakmak',
+  'philanthropic\tadjective': 'hayırsever',
+  'stultify\tverb': null,
+  'echolocation\tnoun': null,
+  'angsty\tadjective': 'kaygılı',
+  'shamble\tverb': 'ayaklarını sürüyerek yürümek',
+  'pyre\tnoun': 'ölü yakma odunu',
+  'ravish\tverb': null,
+  'bearing\tnoun': null,
+  'iceman\tnoun': null,
+  'ungodly\tadjective': null,
+  'pee\tverb': null,
+  'mediaeval\tadjective': 'orta çağa ait',
+  'petty\tadjective': 'önemsiz',
+  // Easy words whose list part of speech is not the sense a learner knows them by.
+  'wake\tnoun': null,
+  'spell\tnoun': null,
+  'along\tadverb': null,
+  'either\tadverb': null,
+  'due\tadjective': null,
+  'given\tadjective': null,
+  'flunk\tverb': 'sınıfta kalmak',
+};
+
 async function buildBank(withAi: boolean): Promise<void> {
-  const meanings = [...readMeanings().values()].filter((m) => m.ok && !m.cognate && m.tr.length <= 40);
+  const reviewed = [...readMeanings().values()].flatMap((m) => {
+    const fix = HAND_MEANINGS[`${m.lemma}\t${m.pos}`];
+    if (fix === null) return [];
+    return [fix === undefined ? m : { ...m, tr: fix, alt: [] }];
+  });
+  const meanings = reviewed.filter((m) => m.ok && !m.cognate && m.tr.length <= 40);
   const pseudo = readTsv(join(OUT, 'pseudowords.tsv'))
     .filter((r) => r[1] === 'use')
     .map((r) => r[0]!);

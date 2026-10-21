@@ -1,0 +1,1443 @@
+# Turkish meanings of the level-test candidate words. Prompt bank-tr-v1, models gemini-3.6-flash, gemini-3.5-flash, gemini-3-flash-preview, gemini-3.5-flash-lite.
+# Written by scripts/build-level-test.ts meanings; corrected by hand where noted in the commit.
+# Columns: lemma, pos, cefr, zipf, tr (shown as the right answer), alt (";"), cognate (1/0), ok (1/0).
+above	adverb	A1	5.2	yukarıda	yukarıya;yukarı	0	1
+actor	noun	A1	4.65	aktör	oyuncu;erkek oyuncu	1	1
+aeroplane	noun	A1	3.18	uçak	tayyare	0	1
+afraid	adjective	A1	4.7	korkmuş	ürkmüş	0	1
+afternoon	noun	A1	4.72	öğleden sonra	öğle vakti	0	1
+agree	verb	A1	4.97	katılmak	anlaşmak;kabul etmek	0	1
+along	adverb	A1	5.38	birlikte	ileri;yanında	0	1
+already	adverb	A1	5.55	zaten	çoktan;şimdiden	0	1
+answer	noun	A1	5.17	cevap	yanıt	0	1
+arrive	verb	A1	4.38	varmak	ulaşmak;gelmek	0	1
+aunt	noun	A1	4.16	teyze	hala;yenge	0	1
+autumn	noun	A1	4.26	sonbahar	güz	0	1
+become	verb	A1	5.4	olmak	hale gelmek	0	1
+bedroom	noun	A1	4.46	yatak odası		0	1
+beef	noun	A1	4.29	sığır eti	dana eti	0	1
+begin	verb	A1	4.84	başlamak	başlatmak	0	1
+behind	adverb	A1	5.29	arkada	geride	0	1
+below	adverb	A1	5.05	aşağıda	aşağıya	0	1
+bicycle	noun	A1	3.98	bisiklet		1	1
+biscuit	noun	A1	3.45	bisküvi		1	1
+blow	verb	A1	4.59	esmek	üflemek	0	1
+bookstore	noun	A1	3.42	kitapçı	kitabevi	0	1
+boring	adjective	A1	4.43	sıkıcı		0	1
+borrow	verb	A1	4	ödünç almak	borç almak	0	1
+both	adverb	A1	5.79	her ikisi de	hem	0	1
+bottle	noun	A1	4.57	şişe		0	1
+boyfriend	noun	A1	4.59	erkek arkadaş	sevgili	0	1
+bread	noun	A1	4.5	ekmek		0	1
+breathe	verb	A1	4.26	nefes almak	solumak	0	1
+bring	verb	A1	5.27	getirmek		0	1
+broken	adjective	A1	4.88	kırık	bozuk	0	1
+brush	noun	A1	4.23	fırça		0	1
+bucket	noun	A1	4.07	kova		0	1
+busy	adjective	A1	4.75	meşgul	yoğun	0	1
+butter	noun	A1	4.4	tereyağı		0	1
+butterfly	noun	A1	3.93	kelebek		0	1
+careful	adjective	A1	4.59	dikkatli	özenli	0	1
+carefully	adverb	A1	4.46	dikkatlice	dikkatle	0	1
+celebrate	verb	A1	4.49	kutlamak		0	1
+character	noun	A1	5.11	karakter	kişilik	1	1
+classmate	noun	A1	3.34	sınıf arkadaşı		0	1
+classroom	noun	A1	4.15	sınıf	derslik	0	1
+clever	adjective	A1	4.21	akıllı	zeki	0	1
+climb	noun	A1	4.22	tırmanış	tırmanma	0	1
+clothes	noun	A1	4.72	giysiler	kıyafetler	0	1
+coke	noun	A1	4.08	kola		1	1
+collect	verb	A1	4.37	toplamak	biriktirmek	0	1
+concert	noun	A1	4.55	konser		1	1
+contest	noun	A1	4.53	yarışma	müsabaka	0	1
+couch	noun	A1	4.17	koltuk	kanepe	0	1
+cousin	noun	A1	4.41	kuzen		1	1
+cow	noun	A1	4.14	inek		0	1
+cute	adjective	A1	4.65	sevimli	tatlı	0	1
+dancing	noun	A1	4.5	dans	dans etme	1	1
+daughter	noun	A1	5.07	kız evlat	kız	0	1
+december	noun	A1	5.07	aralık		0	1
+delicious	adjective	A1	4.34	lezzetli	nefis	0	1
+describe	verb	A1	4.56	tanımlamak	betimlemek;tarif etmek	0	1
+dictionary	noun	A1	4.02	sözlük		0	1
+difference	noun	A1	5.01	fark	farklılık	0	1
+difficult	adjective	A1	5.07	zor	güç;çetin	0	1
+dig	noun	A1	4.22	kazı	dürtme	0	1
+dinner	noun	A1	4.78	akşam yemeği		0	1
+discuss	verb	A1	4.66	tartışmak	görüşmek	0	1
+doll	noun	A1	4.06	oyuncak bebek	bebek	0	1
+dollar	noun	A1	4.59	dolar		1	1
+draw	verb	A1	4.81	çizmek	resim yapmak	0	1
+drink	noun	A1	4.9	içecek	içki	0	1
+due	adjective	A1	5.35	vadesi dolmuş	beklenen	0	1
+ear	noun	A1	4.43	kulak		0	1
+egg	noun	A1	4.46	yumurta		0	1
+either	adverb	A1	5.33	de	da	0	1
+elementary	adjective	A1	4.33	temel	başlangıç düzeyindeki	0	1
+engineer	noun	A1	4.5	mühendis		0	1
+enjoy	verb	A1	5.09	keyif almak	tadını çıkarmak;hoşlanmak	0	1
+evening	noun	A1	4.86	akşam		0	1
+everyday	adjective	A1	4.47	günlük	her günkü	0	1
+everywhere	adverb	A1	4.66	her yer	her yere;her yerde	0	1
+example	noun	A1	5.27	örnek		0	1
+excited	adjective	A1	4.74	heyecanlı		0	1
+exciting	adjective	A1	4.54	heyecan verici	heyecanlı	0	1
+exercise	verb	A1	4.68	egzersiz yapmak	spor yapmak	0	1
+factory	noun	A1	4.55	fabrika		1	1
+famous	adjective	A1	4.84	ünlü	meşhur	0	1
+favorite	adjective	A1	4.97	favori	en sevilen	1	1
+favourite	adjective	A1	4.57	favori	en sevilen	1	0
+february	noun	A1	5.03	şubat		0	1
+fill	verb	A1	4.64	doldurmak		0	1
+fishing	noun	A1	4.47	balık tutma	balıkçılık	0	1
+foggy	adjective	A1	3.19	sisli		0	1
+following	adjective	A1	5.46	takip eden	sonraki	0	1
+foreigner	noun	A1	3.48	yabancı		0	1
+forget	verb	A1	5.06	unutmak		0	1
+frog	noun	A1	3.89	kurbağa		0	1
+garbage	noun	A1	4.18	çöp		0	1
+girlfriend	noun	A1	4.68	kız arkadaş	sevgili	0	1
+glad	adjective	A1	4.9	memnun	sevinçli;mutlu	0	1
+glasses	noun	A1	4.34	gözlük		0	1
+grade	noun	A1	4.8	sınıf	not;derece	0	1
+grammar	noun	A1	4.17	dil bilgisi	gramer	1	1
+grandma	noun	A1	4.11	büyükanne	nene;nine	0	1
+grandmother	noun	A1	4.14	büyükanne	nene;nine	0	1
+grandpa	noun	A1	3.8	büyükbaba	dede	0	1
+grandparent	noun	A1	2.83	büyükanne ve büyükbaba	dede ve nene	0	1
+grape	noun	A1	3.7	üzüm		0	1
+ground	noun	A1	5.15	zemin	yer;toprak	0	1
+guitar	noun	A1	4.48	gitar		1	1
+habit	noun	A1	4.24	alışkanlık	huy	0	1
+handsome	adjective	A1	4.22	yakışıklı		0	1
+headache	noun	A1	3.97	baş ağrısı		0	1
+healthy	adjective	A1	4.8	sağlıklı		0	1
+hometown	noun	A1	3.91	memleket		0	1
+homework	noun	A1	4.13	ev ödevi	ödev	0	1
+hurt	verb	A1	4.94	incitmek	acıtmak;yaralamak	0	1
+important	adjective	A1	5.44	önemli	mühim	0	1
+interviewer	noun	A1	3.51	görüşmeci	mülakat yapan kişi	0	1
+introduce	verb	A1	4.37	tanıtmak	takdim etmek	0	1
+island	noun	A1	5.01	ada		0	1
+jacket	noun	A1	4.32	ceket		1	1
+jewellery	noun	A1	3.74	takı	mücevherat;mücevher	0	1
+join	verb	A1	5	katılmak	birleşmek;birleştirmek	0	1
+judge	verb	A1	4.95	yargılamak	değerlendirmek	0	1
+kite	noun	A1	3.55	uçurtma		0	1
+knee	noun	A1	4.33	diz		0	1
+knife	noun	A1	4.41	bıçak		0	1
+late	adjective	A1	5.34	geç	gecikmiş	0	1
+laugh	verb	A1	4.66	gülmek		0	1
+lazy	adjective	A1	4.24	tembel		0	1
+leader	noun	A1	4.95	lider	önder	1	1
+leaf	noun	A1	4.22	yaprak		0	1
+learn	verb	A1	5.17	öğrenmek		0	1
+lesson	noun	A1	4.47	ders		0	1
+lunch	noun	A1	4.66	öğle yemeği		0	1
+math	noun	A1	4.45	matematik		1	0
+maths	noun	A1	3.75	matematik		1	0
+meat	noun	A1	4.63	et		0	1
+meeting	noun	A1	5.15	toplantı		0	1
+mommie	noun	A1	2.02	anne		0	0
+mommy	noun	A1	3.89	anne	anneciğim	0	1
+month	noun	A1	5.25	ay		0	1
+musician	noun	A1	4.01	müzisyen	çalgıcı	1	1
+nationality	noun	A1	3.72	uyruk	milliyet	0	1
+neck	noun	A1	4.63	boyun		0	1
+neighbor	noun	A1	4.11	komşu		0	1
+neighbour	noun	A1	3.69	komşu		0	0
+newspaper	noun	A1	4.6	gazete		0	1
+noise	noun	A1	4.55	gürültü	ses	0	1
+nurse	noun	A1	4.4	hemşire		0	1
+officer	noun	A1	5.03	memur	subay;polis	0	1
+often	adverb	A1	5.41	sık sık	çoğunlukla	0	1
+outside	adverb	A1	5.25	dışarıda	dışarı	0	1
+owner	noun	A1	4.83	sahip	mal sahibi	0	1
+painting	noun	A1	4.6	tablo	resim	0	1
+pair	noun	A1	4.72	çift		0	1
+pants	noun	A1	4.48	pantolon		1	1
+parent	noun	A1	4.57	ebeveyn	anne baba	0	1
+pencil	noun	A1	3.95	kurşun kalem	kalem	0	1
+picture	noun	A1	5.13	resim	fotoğraf	0	1
+plane	noun	A1	4.72	uçak		0	1
+pleasure	noun	A1	4.57	zevk	keyif;memnuniyet	0	1
+poem	noun	A1	4.25	şiir		0	1
+poor	adjective	A1	5.09	fakir	yoksul;zavallı	0	1
+practice	noun	A1	5.06	pratik	alıştırma;uygulama	1	1
+practise	verb	A1	3.52	pratik yapmak	alıştırma yapmak	0	1
+quarter	noun	A1	4.72	çeyrek		0	1
+question	noun	A1	5.35	soru		0	1
+quickly	adverb	A1	5	hızlıca	çabucak;hızla	0	1
+quiet	adjective	A1	4.65	sessiz	sakin	0	1
+rainy	adjective	A1	3.74	yağmurlu		0	1
+reporter	noun	A1	4.35	muhabir		0	1
+result	noun	A1	5.18	sonuç	netice	0	1
+rule	noun	A1	4.94	kural		0	1
+ruler	noun	A1	3.84	cetvel	hükümdar	0	1
+sailor	noun	A1	3.78	denizci		0	1
+salad	noun	A1	4.15	salata		1	1
+saturday	noun	A1	4.87	cumartesi		0	1
+sell	verb	A1	4.98	satmak		0	1
+sentence	noun	A1	4.58	cümle	tümce	0	1
+sheep	noun	A1	4.19	koyun		0	1
+shoe	noun	A1	4.24	ayakkabı		0	1
+shower	noun	A1	4.5	duş	sağanak	0	1
+shy	adjective	A1	4.16	utangaç	sıkılgan	0	1
+skirt	noun	A1	3.96	etek		0	1
+smell	noun	A1	4.49	koku		0	1
+smoke	noun	A1	4.67	duman		0	1
+smoking	noun	A1	4.52	sigara içme	sigara kullanımı	0	1
+snowy	adjective	A1	3.46	karlı		0	1
+sofa	noun	A1	3.81	koltuk	kanape;sofa	1	1
+solve	verb	A1	4.42	çözmek	halletmek	0	1
+soup	noun	A1	4.15	çorba		0	1
+speak	verb	A1	5.03	konuşmak		0	1
+speech	noun	A1	4.85	konuşma	nutuk	0	1
+spell	noun	A1	4.37	büyü	sihir	0	1
+strict	adjective	A1	4.23	katı	sert;disiplinli	0	1
+student	noun	A1	5.02	öğrenci	talebe	0	1
+suggestion	noun	A1	4.23	öneri	tavsiye;teklif	0	1
+surprise	noun	A1	4.75	sürpriz		1	1
+swimming	noun	A1	4.43	yüzme		0	1
+tall	adjective	A1	4.52	uzun	uzun boylu	0	1
+telephone	noun	A1	4.41	telefon		1	1
+television	noun	A1	4.79	televizyon		1	1
+tennis	noun	A1	4.35	tenis		1	1
+terrible	adjective	A1	4.71	korkunç	berbat	0	1
+thanks	noun	A1	5.43	teşekkürler	teşekkür	0	1
+theatre	noun	A1	4.52	tiyatro		1	1
+thick	adjective	A1	4.46	kalın		0	1
+thin	adjective	A1	4.47	ince	zayıf	0	1
+throw	noun	A1	4.83	atış	atma	0	1
+tight	adjective	A1	4.57	sıkı	dar	0	1
+toilet	noun	A1	4.31	tuvalet		1	1
+tomato	noun	A1	3.85	domates		1	1
+tooth	noun	A1	4.08	diş		0	1
+towel	noun	A1	3.94	havlu		0	1
+trousers	noun	A1	3.7	pantolon		0	1
+tuesday	noun	A1	4.63	salı		0	1
+ugly	adjective	A1	4.42	çirkin		0	1
+uncle	noun	A1	4.45	amca	dayı	0	1
+underline	noun	A1	2.98	alt çizgi		0	1
+vacation	noun	A1	4.4	tatil		0	1
+vase	noun	A1	3.54	vazo		1	1
+vegetable	noun	A1	3.94	sebze		0	1
+visit	noun	A1	5.04	ziyaret		0	1
+volleyball	noun	A1	3.85	voleybol		1	1
+waiter	noun	A1	3.61	garson	erkek garson	0	1
+waitress	noun	A1	3.56	kadın garson	garson	0	1
+wake	noun	A1	4.76	iz	dalga köpüğü	0	1
+warm	adjective	A1	4.71	sıcak	ılık	0	1
+wear	verb	A1	4.92	giymek	takmak	0	1
+wednesday	noun	A1	4.59	çarşamba		0	1
+weekend	noun	A1	4.93	hafta sonu		0	1
+wish	noun	A1	5.18	dilek	istek	0	1
+wonderful	adjective	A1	4.85	harika	muhteşem	0	1
+worker	noun	A1	4.43	işçi	çalışan	0	1
+worry	noun	A1	4.84	endişe	kaygı	0	1
+write	verb	A1	5.03	yazmak		0	1
+writer	noun	A1	4.69	yazar		0	1
+yesterday	adverb	A1	4.91	dün		0	1
+yoghurt	noun	A1	3.01	yoğurt		1	1
+yogurt	noun	A1	3.63	yoğurt		1	0
+zoo	noun	A1	4.14	hayvanat bahçesi		0	1
+abroad	adverb	A2	4.39	yurt dışında	yurt dışına	0	1
+adjective	noun	A2	3.34	sıfat	ön ad	0	1
+admit	verb	A2	4.58	kabul etmek	itiraf etmek	0	1
+advertisement	noun	A2	3.84	reklam	ilan	0	1
+advertising	noun	A2	4.54	reklamcılık	reklam	0	1
+advice	noun	A2	4.88	tavsiye	öğüt;nasihat	0	1
+advise	verb	A2	4.09	tavsiye etmek	öğütlemek;önermek	0	1
+ahead	adverb	A2	5.01	önde	ileride;ileri	0	1
+aisle	noun	A2	3.72	koridor	geçit	0	1
+alright	adjective	A2	4.42	iyi	tamam;yolunda	0	1
+ambition	noun	A2	3.91	hırs	tutku;emel	0	1
+amusement	noun	A2	3.74	eğlence	neşe	0	1
+ancestor	noun	A2	3.49	ata	soy	0	1
+ancient	adjective	A2	4.68	antik	eski;kadim	1	1
+anymore	adverb	A2	4.94	artık	bundan böyle	0	1
+apparently	adverb	A2	4.8	görünüşe göre	anlaşılan;görünüşte	0	1
+appear	verb	A2	4.85	görünmek	ortaya çıkmak	0	1
+appropriate	adjective	A2	4.67	uygun	yerinde	0	1
+argue	verb	A2	4.46	tartışmak	iddia etmek	0	1
+argument	noun	A2	4.64	tartışma	iddia;argüman	0	1
+artificial	adjective	A2	4.24	yapay	suni	0	1
+attempt	noun	A2	4.85	girişim	deneme;çaba	0	1
+attention	noun	A2	5.11	dikkat	ilgi	0	1
+attractive	adjective	A2	4.53	çekici	cazip	0	1
+badly	adverb	A2	4.44	kötü şekilde	kötü;çok	0	1
+balcony	noun	A2	3.78	balkon		1	1
+basically	adverb	A2	4.63	temel olarak	aslında;esasen	0	1
+beg	verb	A2	4.05	yalvarmak	dilenmek	0	1
+behavior	noun	A2	4.69	davranış	tutum;hareket	0	1
+belly	noun	A2	4.1	karın	göbek	0	1
+belong	verb	A2	4.38	ait olmak		0	1
+blackboard	noun	A2	3.02	kara tahta	yazı tahtası	0	1
+blame	verb	A2	4.63	suçlamak		0	1
+bookcase	noun	A2	2.78	kitaplık		0	1
+bored	adjective	A2	4.2	sıkılmış		0	1
+bother	verb	A2	4.39	rahatsız etmek	dert etmek	0	1
+brave	adjective	A2	4.33	cesur	yiğit	0	1
+breeze	noun	A2	3.86	esinti	hafif rüzgar	0	1
+bury	verb	A2	3.89	gömmek		0	1
+businesswoman	noun	A2	2.95	iş kadını		0	1
+cafeteria	noun	A2	3.44	kafeterya		1	1
+camping	noun	A2	4	kamp yapma	kampçılık	0	1
+carrot	noun	A2	3.62	havuç		0	1
+cereal	noun	A2	3.74	tahıl	mısır gevreği	0	1
+certainly	adverb	A2	5	kesinlikle	elbette;şüphesiz	0	1
+chain	noun	A2	4.65	zincir		0	1
+chilli	noun	A2	3.29	acı biber		0	1
+chimpanzee	noun	A2	2.96	şempanze		1	1
+cigarette	noun	A2	4.06	sigara		1	1
+citizen	noun	A2	4.39	vatandaş	yurttaş	0	1
+clearly	adverb	A2	4.92	açıkça	net şekilde	0	1
+climbing	noun	A2	4.12	tırmanış	tırmanma	0	1
+colourful	adjective	A2	3.55	renkli		0	1
+complaint	noun	A2	4.32	şikayet		0	1
+concern	noun	A2	4.66	endişe	kaygı;ilgi	0	1
+confident	adjective	A2	4.43	kendinden emin	özgüvenli	0	1
+confused	adjective	A2	4.47	kafası karışık	şaşkın	0	1
+consist	verb	A2	3.94	oluşmak	meydana gelmek	0	1
+cost	noun	A2	5.24	maliyet	masraf;fiyat	0	1
+couple	noun	A2	5.19	çift	karı koca	0	1
+creativity	noun	A2	4.01	yaratıcılık		0	1
+creature	noun	A2	4.16	yaratık	canlı;varlık	0	1
+cricket	noun	A2	4.39	kriket	cırcır böceği	1	1
+criticize	verb	A2	3.63	eleştirmek		0	1
+crowded	adjective	A2	3.98	kalabalık		0	1
+degree	noun	A2	4.94	derece	diploma;aşama	1	1
+delay	noun	A2	4.4	gecikme	erteleme	0	1
+dessert	noun	A2	3.83	tatlı		0	1
+destroy	verb	A2	4.52	yok etmek	tahrip etmek;yıkmak	0	1
+develop	verb	A2	4.75	gelişmek	geliştirmek	0	1
+diary	noun	A2	4.09	günlük	günce	0	1
+disadvantage	noun	A2	3.71	dezavantaj	sakınca	1	1
+discover	verb	A2	4.39	keşfetmek		0	1
+discussion	noun	A2	4.71	tartışma		0	1
+doubt	noun	A2	4.9	şüphe	kuşku	0	1
+downtown	adverb	A2	4.4	şehir merkezinde	çarşıda	0	1
+drawing	noun	A2	4.58	çizim	resim	0	1
+dressed	adjective	A2	4.42	giyinik	giyinmiş	0	1
+empty	adjective	A2	4.59	boş		0	1
+endangered	adjective	A2	3.86	nesli tükenmekte olan	tehlikede olan	0	1
+ending	noun	A2	4.68	son	bitiş	0	1
+entrance	noun	A2	4.39	giriş		0	1
+exactly	adverb	A2	5.15	kesinlikle	tam olarak;aynen	0	1
+expect	verb	A2	5.01	beklemek	umut etmek	0	1
+expert	noun	A2	4.56	uzman	bilirkişi	1	1
+explain	verb	A2	4.89	açıklamak	izah etmek	0	1
+extremely	adverb	A2	4.79	son derece	aşırı derecede	0	1
+fact	noun	A2	5.41	gerçek	olgu	0	1
+fairly	adverb	A2	4.5	oldukça	epey;dürüstçe	0	1
+feather	noun	A2	3.69	tüy	kuş tüyü	0	1
+female	adjective	A2	5	dişi	kadın	0	1
+figure	noun	A2	5.07	figür	rakam;şekil	1	1
+finally	adverb	A2	5.17	sonunda	nihayet	0	1
+fisherman	noun	A2	3.49	balıkçı		0	1
+float	noun	A2	3.94	şamandıra	sal	0	1
+fog	noun	A2	3.9	sis		0	1
+fool	noun	A2	4.29	aptal	budala;ahmak	0	1
+footballer	noun	A2	3.69	futbolcu		1	1
+forbid	verb	A2	3.66	yasaklamak		0	1
+fortunately	adverb	A2	3.97	neyse ki	şans eseri	0	1
+freeze	verb	A2	4.11	donmak	dondurmak	0	1
+fridge	noun	A2	4.02	buzdolabı		0	1
+friendship	noun	A2	4.39	dostluk	arkadaşlık	0	1
+furniture	noun	A2	4.29	mobilya		0	1
+gather	verb	A2	4.24	toplamak	toplanmak	0	1
+given	adjective	A2	5.41	belirli	verilen;belli	0	1
+grandchild	noun	A2	3.13	torun		0	1
+granddad	noun	A2	2.68	dede	büyükbaba	0	1
+granny	noun	A2	3.61	nine	büyükanne;nene	0	1
+greedy	adjective	A2	3.75	açgözlü	hırslı	0	1
+handle	noun	A2	4.79	kulp	sap;tutamak	0	1
+helpful	adjective	A2	4.43	yardımsever	faydalı	0	1
+hike	noun	A2	3.95	doğa yürüyüşü	yürüyüş	0	1
+hiking	noun	A2	3.87	doğa yürüyüşü	yürüyüş yapma	0	1
+however	adverb	A2	5.58	ancak	fakat;yine de	0	1
+impossible	adjective	A2	4.78	imkansız	olanaksız	0	1
+indeed	adverb	A2	4.79	gerçekten	aslında;doğrusu	0	1
+inspiration	noun	A2	4.41	ilham	esin	0	1
+instant	adjective	A2	4.34	anlık	hazır	0	1
+labor	noun	A2	4.77	iş gücü	emek;çalışma	0	1
+laziness	noun	A2	3.17	tembellik	uyuşukluk	0	1
+less	adverb	A2	5.49	daha az		0	1
+licence	verb	A2	3.97	lisans vermek		1	0
+license	verb	A2	4.52	lisans vermek	ruhsat vermek;izin vermek	1	1
+likely	adjective	A2	5.2	muhtemel	olası	0	1
+loose	adjective	A2	4.46	gevşek	bol	0	1
+lover	noun	A2	4.26	sevgili	âşık	0	1
+male	noun	A2	4.89	erkek		0	1
+manage	verb	A2	4.54	yönetmek	idare etmek;başarmak	0	1
+marvellous	adjective	A2	3.4	harika	muhteşem;fevkalade	0	1
+marvelous	adjective	A2	3.53	harika		0	0
+material	noun	A2	4.95	malzeme	materyal;kumaş	1	1
+melon	noun	A2	3.32	kavun		0	1
+member	noun	A2	5.18	üye		0	1
+missing	adjective	A2	5.05	kayıp	eksik	0	1
+mosque	noun	A2	3.89	cami		0	1
+motorway	noun	A2	3.46	otoyol	otoban	0	1
+murder	noun	A2	4.86	cinayet		0	1
+nearly	adverb	A2	5	neredeyse	hemen hemen;yaklaşık	0	1
+necessary	adjective	A2	4.91	gerekli	lüzumlu;zorunlu	0	1
+nervous	adjective	A2	4.42	gergin	heyecanlı;endişeli	0	1
+occupation	noun	A2	4.2	meslek	iş;işgal	0	1
+offer	noun	A2	5.05	teklif	öneri	0	1
+omelette	noun	A2	2.85	omlet		1	1
+painter	noun	A2	3.93	ressam	boyacı	0	1
+passenger	noun	A2	4.38	yolcu		0	1
+patient	noun	A2	4.77	hasta		0	1
+pear	noun	A2	3.47	armut		0	1
+penfriend	noun	A2		mektup arkadaşı		0	1
+perform	verb	A2	4.66	sergilemek	gerçekleştirmek;oynamak	0	1
+personality	noun	A2	4.55	kişilik	şahsiyet	0	1
+photographer	noun	A2	4.28	fotoğrafçı		0	1
+pile	noun	A2	4.14	yığın	küme	0	1
+plate	noun	A2	4.55	tabak	plaka	0	1
+pleased	adjective	A2	4.44	memnun	hoşnut	0	1
+pleasing	adjective	A2	3.75	hoş	memnun edici	0	1
+policeman	noun	A2	3.74	polis	erkek polis	1	1
+policewoman	noun	A2	2.54	kadın polis		1	1
+polite	adjective	A2	3.92	kibar	nazik	0	1
+pollute	verb	A2	2.86	kirletmek		0	1
+popular	adjective	A2	5.07	popüler	sevilen;yaygın	1	1
+population	noun	A2	5.01	nüfus	popülasyon	0	1
+powerful	adjective	A2	4.85	güçlü	kuvvetli	0	1
+printer	noun	A2	3.93	yazıcı		0	1
+promise	noun	A2	4.71	söz	vaat	0	1
+pronounce	verb	A2	3.66	telaffuz etmek	okumak	0	1
+punctuation	noun	A2	3.29	noktalama	noktalama işaretleri	0	1
+pursue	verb	A2	4.26	takip etmek	sürdürmek;peşinden koşmak	0	1
+rate	noun	A2	5.14	oran	hız;kur	0	1
+receipt	noun	A2	3.92	fiş	makbuz	0	1
+receive	verb	A2	4.85	almak	teslim almak;kabul etmek	0	1
+refrigerator	noun	A2	3.61	buzdolabı		0	1
+regret	verb	A2	4.37	pişman olmak	üzülmek	0	1
+regular	adjective	A2	4.95	düzenli	kurallı	0	1
+relax	verb	A2	4.29	rahatlamak	gevşemek;dinlenmek	0	1
+request	noun	A2	4.76	istek	talep;rica	0	1
+retired	adjective	A2	4.44	emekli		0	1
+reveal	verb	A2	4.43	ortaya çıkarmak	açıklamak;ifşa etmek	0	1
+romance	noun	A2	4.32	romantizm	aşk	1	1
+roundabout	noun	A2	3.33	döner kavşak		0	1
+sample	noun	A2	4.53	örnek	numune	0	1
+satisfy	verb	A2	3.98	tatmin etmek	memnun etmek;doyurmak	0	1
+sausage	noun	A2	3.8	sosis	sucuk	1	1
+scale	noun	A2	4.83	ölçek	tartı;kantar	0	1
+scissors	noun	A2	3.58	makas		0	1
+seaside	noun	A2	3.58	deniz kenarı	sahil;kıyı	0	1
+seem	verb	A2	5.08	görünmek	gözükmek	0	1
+semester	noun	A2	4.03	dönem	sömestir;yarıyıl	1	1
+senior	adjective	A2	4.92	kıdemli	üst;yaşça büyük	0	1
+shade	noun	A2	4.16	gölge	ton	0	1
+shampoo	noun	A2	3.58	şampuan		1	1
+shoot	verb	A2	4.73	ateş etmek	vurmak;şut çekmek	0	1
+silence	noun	A2	4.46	sessizlik	sükut	0	1
+singular	adjective	A2	3.74	tekil		0	1
+situation	noun	A2	5.09	durum	vaziyet	0	1
+skate	noun	A2	3.74	paten		0	1
+skateboarding	noun	A2	3.15	kaykay		0	1
+skiing	noun	A2	3.84	kayak		0	1
+sleepy	adjective	A2	3.68	uykulu		0	1
+smooth	adjective	A2	4.4	pürüzsüz	düz;yumuşak	0	1
+smoothly	adverb	A2	3.68	pürüzsüzce	sorunsuzca;kolayca	0	1
+soap	noun	A2	4.18	sabun		0	1
+spaceship	noun	A2	3.36	uzay gemisi		0	1
+speaker	noun	A2	4.49	hoparlör	konuşmacı	0	1
+spill	verb	A2	3.84	dökmek	dökülmek	0	1
+spread	noun	A2	4.81	yayılma	sürme	0	1
+stadium	noun	A2	4.63	stadyum	stad	1	1
+stamp	noun	A2	4.11	pul	damga;kaşe	0	1
+statue	noun	A2	4.09	heykel		0	1
+steak	noun	A2	3.97	biftek		1	1
+strongly	adverb	A2	4.47	güçlü bir şekilde	şiddetle	0	1
+stuff	noun	A2	5.14	şey	eşya;madde	0	1
+success	noun	A2	5.06	başarı	muvaffakiyet	0	1
+sudden	adjective	A2	4.4	ani	beklenmedik	0	1
+suitable	adjective	A2	4.38	uygun	elverişli	0	1
+suitcase	noun	A2	3.55	bavul	valiz	0	1
+summary	noun	A2	4.37	özet		0	1
+sunlight	noun	A2	3.86	gün ışığı	güneş ışığı	0	1
+swallow	verb	A2	3.87	yutmak	yutkunmak	0	1
+sweat	verb	A2	4.14	terlemek		0	1
+swimsuit	noun	A2	3.28	mayo		0	1
+symphony	noun	A2	3.77	senfoni		1	1
+tear	noun	A2	4.35	gözyaşı		0	1
+teenage	adjective	A2	4.14	ergen	gençlik	0	1
+terrify	verb	A2	2.8	korkutmak	dehşete düşürmek	0	1
+therefore	adverb	A2	4.87	bu yüzden	dolayısıyla;bu nedenle	0	1
+thief	noun	A2	3.88	hırsız		0	1
+tidy	adjective	A2	3.53	düzenli	derli toplu	0	1
+tourist	noun	A2	4.2	turist		1	1
+traveler	noun	A2	3.57	gezgin	yolcu	0	1
+unimportant	adjective	A2	3.23	önemsiz		0	1
+unlike	adjective	A2	4.57	farklı	aksine	0	1
+unnecessary	adjective	A2	4.18	gereksiz	lüzumsuz	0	1
+upstairs	adverb	A2	3.87	üst katta	yukarıda	0	1
+violent	adjective	A2	4.46	şiddetli	sert	0	1
+wallet	noun	A2	4.15	cüzdan		0	1
+wander	verb	A2	3.67	dolaşmak	gezinmek	0	1
+weekly	adjective	A2	4.57	haftalık		0	1
+weight	noun	A2	5.02	ağırlık	kilo	0	1
+widely	adverb	A2	4.54	yaygın olarak	geniş çapta	0	1
+wooden	adjective	A2	4.33	ahşap	tahta	0	1
+abandon	verb	B1	4.02	terk etmek	bırakmak	0	1
+absorb	verb	B1	3.81	emmek	soğurmak	1	1
+accountant	noun	B1	3.76	muhasebeci		0	1
+accurate	adjective	B1	4.57	doğru	kesin;hatasız	0	1
+accustom	verb	B1	2.06	alıştırmak		0	1
+acquaintance	noun	B1	3.55	tanıdık	tanışıklık	0	1
+aggressive	adjective	B1	4.32	saldırgan	agresif	1	1
+aid	noun	B1	4.75	yardım	destek	0	1
+alcoholic	adjective	B1	3.91	alkollü	alkolik	1	1
+alternative	adjective	B1	4.71	alternatif	seçenek	1	1
+amazed	adjective	B1	3.91	şaşırmış	hayretler içinde	0	1
+animation	noun	B1	4.18	animasyon	canlandırma	1	1
+annoyance	noun	B1	3.33	rahatsızlık	kızgınlık	0	1
+applaud	verb	B1	3.46	alkışlamak		0	1
+appoint	verb	B1	3.7	atamak	tayin etmek	0	1
+approve	verb	B1	4.08	onaylamak	tasvip etmek	0	1
+arrangement	noun	B1	4.25	düzenleme	ayarlama	0	1
+ashamed	adjective	B1	4.06	utanmış	mahcup	0	1
+assign	verb	B1	3.66	atamak	görevlendirmek	0	1
+atmosphere	noun	B1	4.46	atmosfer	hava	1	1
+attach	verb	B1	3.75	eklemek	iliştirmek;bağlamak	0	1
+attraction	noun	B1	4.11	ilgi odağı	çekim;cazibe	0	1
+awareness	noun	B1	4.44	farkındalık	bilinç	0	1
+awesome	adjective	B1	4.92	harika	müthiş	0	1
+awkward	adjective	B1	4.29	beceriksiz	garip;tuhaf	0	1
+backpacker	noun	B1	2.64	sırt çantalı gezgin		0	1
+bakery	noun	B1	3.67	fırın	pastane	0	1
+basement	noun	B1	4.18	bodrum	bodrum katı	0	1
+beautifully	adverb	B1	3.92	güzelce	güzel bir şekilde	0	1
+beloved	adjective	B1	4.17	sevgili	sevilen	0	1
+boldly	adverb	B1	3.28	cesurca		0	1
+bound	adjective	B1	4.46	bağlı	zorunlu	0	1
+boxing	noun	B1	4.17	boks		1	1
+bubble	noun	B1	4.16	kabarcık	baloncuk	0	1
+bureau	noun	B1	4.41	büro	ofis	1	1
+burst	verb	B1	4.15	patlamak	fırlamak	0	1
+buyer	noun	B1	4.03	alıcı	müşteri	0	1
+cancer	noun	B1	4.93	kanser		1	1
+canned	adjective	B1	3.62	konserve		0	1
+capable	adjective	B1	4.61	yetenekli	becerikli;muktedir	0	1
+capsule	noun	B1	3.7	kapsül		1	1
+carelessly	adverb	B1	2.9	dikkatsizce	özensizce	0	1
+categorize	verb	B1	2.92	kategorize etmek	sınıflandırmak	1	1
+celebrity	noun	B1	4.29	ünlü	meşhur	0	1
+charm	noun	B1	4.12	cazibe	çekicilik;tılsım	0	1
+checkout	noun	B1	3.64	kasa	ödeme noktası	0	1
+chemist	noun	B1	3.51	eczacı	kimyager	0	1
+chronological	adjective	B1	3.4	kronolojik		1	1
+collapse	noun	B1	4.18	çöküş	yıkılma	0	1
+comma	noun	B1	3.27	virgül		0	1
+commercial	adjective	B1	4.92	ticari		0	1
+companion	noun	B1	4.13	arkadaş	yoldaş;refakatçi	0	1
+competitive	adjective	B1	4.57	rekabetçi	yarışmacı	0	1
+complement	noun	B1	3.77	tamamlayıcı	bütünleyici	0	1
+concerned	adjective	B1	4.75	endişeli	ilgili;kaygılı	0	1
+confirm	verb	B1	4.4	onaylamak	doğrulamak;teyit etmek	0	1
+confusion	noun	B1	4.19	kafa karışıklığı	karmaşa;şaşkınlık	0	1
+construction	noun	B1	4.97	inşaat	yapı;yapım	0	1
+crisis	noun	B1	4.62	kriz	bunalım	1	1
+current	adjective	B1	5.27	güncel	mevcut;şimdiki	0	1
+curriculum	noun	B1	4.12	müfredat	eğitim programı	0	1
+curtain	noun	B1	3.86	perde		0	1
+debris	noun	B1	3.92	enkaz	kalıntı;moloz	0	1
+debt	noun	B1	4.69	borç		0	1
+deed	noun	B1	3.75	eylem	tapu;iş	0	1
+defender	noun	B1	4.11	savunucu	defans oyuncusu;koruyucu	0	1
+defense	noun	B1	4.93	savunma	müdafaa	0	1
+delete	verb	B1	4.22	silmek		0	1
+departure	noun	B1	4.22	kalkış	ayrılış;gidiş	0	1
+dependent	adjective	B1	4.28	bağımlı	muhtaç	0	1
+depressing	adjective	B1	3.83	kasvetli	iç karartıcı;üzücü	0	1
+derive	verb	B1	3.51	türetmek	kaynaklanmak;almak	0	1
+diaper	noun	B1	3.49	bebek bezi	çocuk bezi	0	1
+diligence	noun	B1	3.51	çalışkanlık	gayret;özen	0	1
+directly	adverb	B1	4.9	doğrudan	direkt olarak;aracısız	0	1
+disability	noun	B1	4.21	engellilik	sakatlık;yetersizlik	0	1
+disable	verb	B1	3.52	etkisiz hale getirmek	devre dışı bırakmak;sakatlamak	0	1
+distance	noun	B1	4.85	mesafe	uzaklık	0	1
+distribution	noun	B1	4.64	dağıtım	dağılım	0	1
+doze	noun	B1	2.64	şekerleme	hafif uyku	0	1
+emotion	noun	B1	4.19	duygu	his	0	1
+endless	adjective	B1	4.18	sonsuz	bitmek bilmeyen;uçsuz bucaksız	0	1
+enrich	verb	B1	3.3	zenginleştirmek		0	1
+evenly	adverb	B1	3.65	eşit şekilde	dengeli bir biçimde	0	1
+eventually	adverb	B1	4.88	sonunda	nihayet;eninde sonunda	0	1
+exhausted	adjective	B1	4.08	yorgun	bitkin;tükenmiş	0	1
+explosion	noun	B1	4.22	patlama	infilak	0	1
+facility	noun	B1	4.6	tesis	olanak;imkan	0	1
+farther	adverb	B1	3.85	daha uzağa	daha uzak	0	1
+finding	noun	B1	4.85	bulgu	araştırma sonucu	0	1
+flunk	verb	B1	2.17	kalmak	başarısız olmak;çakmak	0	1
+fondness	noun	B1	3.14	düşkünlük	sevgi;merak	0	1
+forbidden	adjective	B1	3.96	yasak	yasaklanmış	0	1
+fortunate	adjective	B1	3.97	şanslı	talihli	0	1
+freely	adverb	B1	4.07	özgürce	serbestçe	0	1
+fur	noun	B1	4.03	kürk	post	0	1
+furthermore	adverb	B1	4.23	dahası	ayrıca;üstelik	0	1
+gentleman	noun	B1	4.16	beyefendi	centilmen	1	1
+giant	adjective	B1	4.62	dev	devasa	0	1
+glint	noun	B1	2.65	parıltı	pırıltı	0	1
+goddess	noun	B1	4.01	tanrıça		0	1
+goods	noun	B1	4.6	eşya	mal;ticari mal	0	1
+govern	verb	B1	3.67	yönetmek	idare etmek	0	1
+grab	verb	B1	4.52	yakalamak	kapmak;tutmak	0	1
+grill	noun	B1	3.84	ızgara		0	1
+guarantee	noun	B1	4.44	garanti	güvence	1	1
+hairdresser	noun	B1	3.17	kuaför	berber	0	1
+handball	noun	B1	3.11	hentbol	el topu	1	1
+handkerchief	noun	B1	3.18	mendil		0	1
+handshake	noun	B1	3.36	tokalaşma	el sıkışma	0	1
+handwriting	noun	B1	3.57	el yazısı		0	1
+harness	noun	B1	3.67	koşum takımı	emniyet kemeri	0	1
+hasty	adjective	B1	3.29	aceleci	telaşlı	0	1
+heal	verb	B1	4.12	iyileşmek	iyileştirmek	0	1
+historical	adjective	B1	4.69	tarihi	tarihsel	0	1
+homeless	adjective	B1	4.26	evsiz		0	1
+horrify	verb	B1	2.13	dehşete düşürmek	korkutmak	0	1
+hostel	noun	B1	3.43	hostel	pansiyon	1	1
+huge	adjective	B1	5.06	kocaman	devasa;çok büyük	0	1
+humorous	adjective	B1	3.6	mizahi	komik;güldürücü	0	1
+idiom	noun	B1	2.97	deyim	tabir	0	1
+illness	noun	B1	4.41	hastalık	rahatsızlık	0	1
+illuminate	verb	B1	3.3	aydınlatmak	ışıklandırmak	0	1
+immigrate	verb	B1	2.61	göç etmek		0	1
+incredibly	adverb	B1	4.38	inanılmaz derecede	müthiş	0	1
+industry	noun	B1	5.19	sanayi	endüstri	1	1
+inject	verb	B1	3.44	enjekte etmek	şırınga etmek	1	1
+ink	noun	B1	4.07	mürekkep		0	1
+inscription	noun	B1	3.54	yazıt	kitabe	0	1
+involuntarily	adverb	B1	2.91	istemeyerek	gayriihtiyari	0	1
+ivory	noun	B1	3.85	fildişi		0	1
+joint	adjective	B1	4.71	ortak	birleşik	0	1
+journalist	noun	B1	4.38	gazeteci	jurnalist	1	1
+kettle	noun	B1	3.54	su ısıtıcısı	çaydanlık	0	1
+ladder	noun	B1	4.03	merdiven	el merdiveni	0	1
+lessen	verb	B1	3.37	azaltmak	azalmak;hafifletmek	0	1
+lettuce	noun	B1	3.56	marul		0	1
+lifelong	adjective	B1	3.75	ömür boyu	hayat boyu	0	1
+lighter	noun	B1	4.09	çakmak		0	1
+likeness	noun	B1	3.34	benzerlik	resim;portre	0	1
+liquid	adjective	B1	4.39	sıvı	akışkan	0	1
+locate	verb	B1	3.94	yerini belirlemek	yerleştirmek;saptamak	0	1
+magician	noun	B1	3.53	sihirbaz	büyücü	0	1
+measurement	noun	B1	4.05	ölçüm	ölçü	0	1
+merchant	noun	B1	4.08	tüccar	tacir	0	1
+messy	adjective	B1	3.87	dağınık	karmakarışık	0	1
+moderate	adjective	B1	4.27	orta	ılımlı;makul	0	1
+monument	noun	B1	3.9	anıt	abide	0	1
+moreover	adverb	B1	4.16	dahası	ayrıca;üstelik	0	1
+mosquito	noun	B1	3.61	sivrisinek		0	1
+nickname	noun	B1	3.91	takma ad	lakap	0	1
+northwest	adjective	B1	4.14	kuzeybatı		0	1
+notion	noun	B1	4.17	kavram	fikir;düşünce	0	1
+nutrition	noun	B1	4.1	beslenme	gıda	0	1
+objection	noun	B1	3.77	itiraz	karşı çıkma	0	1
+obstacle	noun	B1	3.72	engel	mani	0	1
+occasional	adjective	B1	4.12	ara sıra olan	nadir	0	1
+officially	adverb	B1	4.53	resmen	resmi olarak	0	1
+otherwise	adverb	B1	4.88	aksi takdirde	yoksa;başka türlü	0	1
+package	noun	B1	4.46	paket	koli;ambalaj	1	1
+painful	adjective	B1	4.32	ağrılı	acı verici;sancılı	0	1
+parental	adjective	B1	3.78	ebeveynle ilgili	anne babaya ait	0	1
+passive	adjective	B1	4.03	pasif	edilgen	1	1
+pause	noun	B1	4	ara	duraklama;mola	0	1
+peculiar	adjective	B1	3.67	tuhaf	garip;özgü	0	1
+percent	noun	B1	5.04	yüzde		0	1
+permanently	adverb	B1	4.08	kalıcı olarak	sürekli	0	1
+persuade	verb	B1	3.82	ikna etmek	kandırmak	0	1
+philosopher	noun	B1	3.72	filozof	düşünür	1	1
+philosophy	noun	B1	4.49	felsefe	filozofi	1	1
+piety	noun	B1	3.09	dindarlık	takva;zahitlik	0	1
+poet	noun	B1	4.21	şair	ozan	0	1
+politics	noun	B1	4.87	siyaset	politika	1	1
+pollutant	noun	B1	2.69	kirletici madde	kirletici	0	1
+pond	noun	B1	3.98	gölet	havuz	0	1
+postcard	noun	B1	3.44	kartpostal		1	1
+praise	noun	B1	4.31	övgü	metih	0	1
+preschool	adjective	B1	3.51	okul öncesi		0	1
+proclaim	verb	B1	3.27	ilan etmek	duyurmak	0	1
+protest	noun	B1	4.45	protesto	itiraz	1	1
+puppy	noun	B1	4	köpek yavrusu	enik	0	1
+rage	noun	B1	4.11	öfke	hiddet;gazap	0	1
+reasonable	adjective	B1	4.59	makul	mantıklı;uygun	0	1
+recite	verb	B1	3.28	ezberden okumak	tilavet etmek	0	1
+recognise	verb	B1	3.92	tanımak	fark etmek	0	1
+recycling	noun	B1	3.76	geri dönüşüm		0	1
+reduction	noun	B1	4.39	azalma	indirim;eksiltme	0	1
+reflection	noun	B1	4.17	yansıma	aksetme	0	1
+refund	noun	B1	3.94	para iadesi	iade	0	1
+regain	verb	B1	3.73	yeniden kazanmak	geri almak	0	1
+repeatedly	adverb	B1	4.21	defalarca	tekrar tekrar	0	1
+reproduce	verb	B1	3.63	üremek	çoğalmak;kopyalamak	0	1
+routine	noun	B1	4.37	rutin	alışılagelmiş	1	1
+sacred	adjective	B1	4.24	kutsal	mukaddes	0	1
+safely	adverb	B1	4.22	güvenli bir şekilde	sağ salim	0	1
+scratch	noun	B1	4.16	çizik	kaşıma	0	1
+seaweed	noun	B1	3.22	deniz yosunu		0	1
+seize	verb	B1	3.8	ele geçirmek	zapt etmek;el koymak	0	1
+settle	verb	B1	4.37	yerleşmek	halletmek;çözmek	0	1
+settlement	noun	B1	4.49	yerleşim	uzlaşma;yerleşke	0	1
+shelter	noun	B1	4.25	barınak	sığınak	0	1
+shiny	adjective	B1	3.88	parlak	ışıltılı	0	1
+shiver	verb	B1	3.05	titremek	ürpermek	0	1
+signal	noun	B1	4.62	sinyal	işaret	1	1
+signature	noun	B1	4.25	imza		0	1
+similarly	adverb	B1	4.3	benzer şekilde	aynı biçimde	0	1
+spectacular	adjective	B1	4.06	muhteşem	görkemli	0	1
+sportsmanship	noun	B1	3.01	sportmenlik	centilmenlik	1	1
+stuck	adjective	B1	4.68	sıkışmış	takılmış	0	1
+stunning	adjective	B1	4.27	çarpıcı	baş döndürücü;şahane	0	1
+sufficient	adjective	B1	4.32	yeterli	kafi	0	1
+sunbathe	verb	B1	2.24	güneşlenmek		0	1
+sunrise	noun	B1	3.82	gün doğumu	güneşin doğuşu	0	1
+superstition	noun	B1	3.21	batıl inanç		0	1
+supposedly	adverb	B1	3.96	sözde	güya;varsayılana göre	0	1
+tasteless	adjective	B1	3.03	tatsız	lezzetsiz	0	1
+tax	noun	B1	5.14	vergi		0	1
+teaching	noun	B1	4.72	öğreti	öğretme;ders	0	1
+tendency	noun	B1	3.96	eğilim	meyil	0	1
+toss	verb	B1	3.91	fırlatmak	atmak	0	1
+tourism	noun	B1	4.28	turizm		1	1
+tournament	noun	B1	4.56	turnuva		1	1
+translate	verb	B1	3.93	çevirmek	tercüme etmek	0	1
+treatment	noun	B1	5.01	tedavi	muamele	0	1
+trim	noun	B1	3.89	kırpma	düzeltme	0	1
+turning	noun	B1	4.71	dönüş	sapma	0	1
+undress	verb	B1	2.87	soyunmak		0	1
+unique	adjective	B1	4.75	eşsiz	benzersiz;tek	0	1
+unlikely	adjective	B1	4.31	olası olmayan	ihtimal dışı	0	1
+unwell	adjective	B1	3.14	rahatsız	hasta	0	1
+urgent	adjective	B1	4.15	acil	ivedi	0	1
+vain	adjective	B1	3.74	beyhude	boşuna;kibirli	0	1
+vegetarian	adjective	B1	3.78	vejetaryen		1	1
+vessel	noun	B1	4.27	gemi	damar;kap	0	1
+viewpoint	noun	B1	3.64	bakış açısı		0	1
+warrior	noun	B1	4.16	savaşçı	cengaver	0	1
+weapon	noun	B1	4.54	silah		0	1
+weird	adjective	B1	4.81	tuhaf	garip	0	1
+wizard	adjective	B1	3.93	sihirbaz	becerikli	0	0
+workout	noun	B1	4.02	antrenman	egzersiz;çalışma	0	1
+additionally	adverb	B2	4.2	ayrıca	buna ek olarak;ek olarak	0	1
+adopted	adjective	B2	4.51	evlatlık	benimsenmiş	0	1
+adorn	verb	B2	3.01	süslemek	donatmak	0	1
+affordable	adjective	B2	4.22	uygun fiyatlı	hesaplı;bütçeye uygun	0	1
+amazingly	adverb	B2	3.64	şaşırtıcı bir şekilde	hayret verici şekilde	0	1
+ammonia	noun	B2	3.36	amonyak		1	1
+anticipation	noun	B2	3.74	beklenti	umut;merakla bekleme	0	1
+arrogant	adjective	B2	3.74	kibirli	küstah;kendini beğenmiş	0	1
+aspire	verb	B2	3.47	can atmak	arzulamak;hedeflemek	0	1
+assert	verb	B2	3.62	ileri sürmek	iddia etmek;savunmak	0	1
+astonish	verb	B2	2.47	şaşırtmak	hayrete düşürmek	0	1
+astonishment	noun	B2	2.86	şaşkınlık	hayret	0	1
+authorise	verb	B2	2.79	yetki vermek	izin vermek;onaylamak	0	1
+backwards	adverb	B2	4.04	geriye doğru	tersine	0	1
+backyard	noun	B2	3.87	arka bahçe		0	1
+ballad	noun	B2	3.42	balad	türkü;duygusal şarkı	1	1
+ballet	noun	B2	3.95	bale		1	1
+barn	noun	B2	3.99	ahır	samanlık	0	1
+beak	noun	B2	3.3	gaga		0	1
+bearing	noun	B2	4.22	ilişki	tavır;duruş;yön	0	1
+benevolent	adjective	B2	3.34	hayırsever	iyiliksever	0	1
+blindly	adverb	B2	3.32	körü körüne	düşüncesizce	0	1
+boiling	adjective	B2	3.75	kaynar	çok sıcak	0	1
+boost	noun	B2	4.41	artış	destek;yükseltme	0	1
+bothersome	adjective	B2	2.68	rahatsız edici	sıkıntılı;can sıkıcı	0	1
+breakable	adjective	B2	2.42	kırılabilir	hassas	0	1
+burdensome	adjective	B2	2.85	ağır	külfetli;yorucu	0	1
+burgle	verb	B2	2.01	evine hırsız girmek	soymak	0	1
+bustle	verb	B2	2.98	telaşla hareket etmek	koşturmak	0	1
+cannonball	noun	B2	2.87	gülle		0	1
+caravan	noun	B2	3.62	karavan	kafile	1	1
+carefree	adjective	B2	3.19	gamsız	tasasız;dertsiz	0	1
+casually	adverb	B2	3.66	gündelik bir şekilde	rastgele;öylesine	0	1
+categorization	noun	B2	2.82	kategorizasyon	sınıflandırma	1	1
+cheerfulness	noun	B2	2.3	neşe	canlılık;keyif	0	1
+chunk	noun	B2	3.64	yığın	büyük parça;kütle	0	1
+clause	noun	B2	3.99	madde	tümce;fıkra	0	1
+clumsy	adjective	B2	3.44	sakar	beceriksiz	0	1
+coaching	noun	B2	4.29	koçluk	antrenörlük;çalıştırma	1	1
+coalition	noun	B2	4.23	koalisyon	ittifak	1	1
+collocation	noun	B2	2.02	eşdizim	yan yana gelme	0	1
+commemorate	verb	B2	3.49	anmak	hatırasını yaşatmak	0	1
+compassionate	adjective	B2	3.55	merhametli	şefkatli	0	1
+concession	noun	B2	3.57	ödün	taviz;imtiyaz	0	1
+conscience	noun	B2	3.96	vicdan		0	1
+consolation	noun	B2	3.54	teselli	avunma	0	1
+contempt	noun	B2	3.74	aşağılama	küçümseme;hakaret	0	1
+corporate	adjective	B2	4.64	kurumsal	şirkete ait	0	1
+costume	noun	B2	4.18	kostüm	kıyafet	1	1
+cottage	noun	B2	4	kulübe	köy evi;bağ evi	0	1
+cozy	adjective	B2	3.64	rahat	sıcak;samimi	0	1
+crab	noun	B2	3.76	yengeç		0	1
+crawl	verb	B2	3.77	emeklemek	sürünmek	0	1
+creepy	adjective	B2	4.04	ürpertici	tüyler ürpertici;korkunç	0	1
+cruelly	adverb	B2	2.95	zalimce	acımasızca	0	1
+decomposition	noun	B2	3.26	çürüme	ayrışma;bozulma	0	1
+decoration	noun	B2	3.82	dekorasyon	süsleme;dekor	1	1
+dehumanise	verb	B2	1.57	insanlıktan çıkarmak	insani özelliklerini yok etmek	0	1
+delegate	noun	B2	3.7	delege	temsilci	1	1
+desolation	noun	B2	3.03	ıssızlık	perişanlık;keder	0	1
+detach	verb	B2	2.99	ayırmak	çıkarmak;sökmek	0	1
+dictator	noun	B2	3.66	diktatör		1	1
+discharge	noun	B2	3.93	tahliye	boşaltma;taburcu etme	0	1
+disrupt	verb	B2	3.59	bozmak	aksatmak;bölmek	0	1
+divert	verb	B2	3.42	yönünü değiştirmek	başka yöne çevirmek;saptırmak	0	1
+divorce	noun	B2	4.36	boşanma		0	1
+donate	verb	B2	4.04	bağışlamak	bağış yapmak	0	1
+dormitory	noun	B2	3.12	yurt	yatakhane	0	1
+draught	noun	B2	3.08	hava akımı	cereyan;taslak	0	1
+duel	noun	B2	3.65	düello		1	1
+duplicate	noun	B2	3.59	kopya	suret;eş	0	1
+duplication	noun	B2	3.16	kopyalama	ikileme;çoğaltma	0	1
+engulf	verb	B2	2.66	yutmak	sarmak;içine almak	0	1
+enhance	verb	B2	4.04	geliştirmek	artırmak;iyileştirmek	0	1
+erupt	verb	B2	2.97	patlamak	püskürmek	0	1
+essayist	noun	B2	2.66	deneme yazarı		0	1
+eternally	adverb	B2	3.26	sonsuza dek	ebediyen	0	1
+everlasting	adjective	B2	3.44	sonsuz	ebedi;kalıcı	0	1
+evolve	verb	B2	3.8	evrilmek	gelişmek;dönüşmek	0	1
+exaggeration	noun	B2	3.3	abartı	mübalağa	0	1
+exceed	verb	B2	3.92	aşmak	geçmek;sınırı aşmak	0	1
+exclusion	noun	B2	3.68	dışlama	hariç tutma	0	1
+exclusively	adverb	B2	4.24	sadece	yalnızca;özel olarak	0	1
+exhaust	noun	B2	3.81	egzoz	atık gaz	1	1
+expansion	noun	B2	4.54	genişleme	yayılma;büyüme	0	1
+eyelash	noun	B2	2.84	kirpik		0	1
+faculty	noun	B2	4.32	fakülte	yetenek;beceri	1	1
+falter	verb	B2	2.82	bocalamak	sendelemek;duraksamak	0	1
+fascination	noun	B2	3.48	hayranlık	büyülenme	0	1
+fictional	adjective	B2	3.86	kurgusal	hayali	0	1
+fingernail	noun	B2	2.73	tırnak		0	1
+flawless	adjective	B2	3.6	kusursuz	mükemmel;hatasız	0	1
+fluid	adjective	B2	4.22	akışkan	sıvı;değişken	0	1
+forthcoming	adjective	B2	3.75	gelecek	yaklaşan;yakındaki	0	1
+fraud	noun	B2	4.37	dolandırıcılık	sahtekarlık;hile	0	1
+fundamental	adjective	B2	4.33	temel	esas;köklü	0	1
+gardener	noun	B2	3.49	bahçıvan		0	1
+grief	noun	B2	4.08	keder	üzüntü;acı	0	1
+gulp	noun	B2	2.93	yudum	yutkunma	0	1
+headquarters	noun	B2	4.36	genel merkez	karargah	0	1
+hospice	noun	B2	3.39	bakımevi	darülaceze	0	1
+humane	adjective	B2	3.62	insancıl	merhametli	0	1
+humble	adjective	B2	4.11	mütevazı	alçakgönüllü	0	1
+iceman	noun	B2	2.72	buz adam	buzcu	0	1
+immortality	noun	B2	3.41	ölümsüzlük	ebediyet	0	1
+impose	verb	B2	3.92	dayatmak	zorla kabul ettirmek;uygulamaya koymak	0	1
+impulsive	adjective	B2	3.27	fevri	düşüncesizce davranan;atak	0	1
+indebted	adjective	B2	3.21	borçlu	minnettar	0	1
+indescribable	adjective	B2	2.9	tarif edilemez	anlatılamaz;betimlenemez	0	1
+indignity	noun	B2	2.6	aşağılanma	hakaret;onur kırıcı davranış	0	1
+infected	adjective	B2	4.13	enfekte	bulaşmış;iltihaplı	1	1
+influential	adjective	B2	4.09	etkili	nüfuzlu;sözü geçen	0	1
+inherit	verb	B2	3.52	miras almak	kalmak	0	1
+inseparable	adjective	B2	3.13	ayrılmaz	kopmaz	0	1
+interpersonal	adjective	B2	3.37	kişilerarası		0	1
+interruption	noun	B2	3.36	kesinti	ara verme;sözünü kesme	0	1
+intruder	noun	B2	3.37	davetsiz misafir	zorla giren kimse	0	1
+inventor	noun	B2	3.59	mucit	icat eden	0	1
+invisible	adjective	B2	4.09	görünmez		0	1
+irrational	adjective	B2	3.56	mantıksız	akıl dışı;irrasyonel	1	1
+justify	verb	B2	4.14	haklı çıkarmak	gerekçelendirmek;doğrulamak	0	1
+kangaroo	noun	B2	3.5	kanguru		1	1
+lengthen	verb	B2	2.81	uzatmak	boyunu uzatmak	0	1
+lengthy	adjective	B2	3.85	çok uzun	ayrıntılı	0	1
+likewise	adverb	B2	4.04	aynı şekilde	keza;benzer biçimde	0	1
+limb	noun	B2	3.7	uzuv	kol bacak	0	1
+loneliness	noun	B2	3.65	yalnızlık		0	1
+loosely	adverb	B2	3.62	gevşekçe	serbestçe;yaklaşık olarak	0	1
+magnify	verb	B2	2.77	büyütmek	abartmak	0	1
+manipulate	verb	B2	3.69	manipüle etmek	yönlendirmek;idare etmek	1	1
+manufacturer	noun	B2	4.21	üretici	imalatçı	0	1
+mediaeval	adjective	B2	2.78	orta çağ'a ait	orta çağ	0	1
+merge	verb	B2	3.75	birleşmek	kaynaşmak;birleştirmek	0	1
+metaphor	noun	B2	3.73	metafor	mecaz;eğretileme	1	1
+microphone	noun	B2	3.72	mikrofon		1	1
+millimetre	noun	B2	2.6	milimetre		1	1
+misfortune	noun	B2	3.38	talihsizlik	şanssızlık;aksilik	0	1
+mist	noun	B2	3.67	sis	pus	0	1
+mock	adjective	B2	3.85	sahte	taklit;deneme	0	1
+modernisation	noun	B2	2.97	modernleşme	çağdaşlaşma;modernizasyon	1	1
+monastery	noun	B2	3.65	manastır		1	1
+mould	noun	B2	3.45	kalıp	küf;şekil vermek	0	1
+mournful	adjective	B2	2.73	kederli	yaslı;hüzünlü	0	1
+murmur	noun	B2	2.92	mırıltı	fısıltı	0	1
+nationwide	adjective	B2	4.07	ülke çapında	ulusal	0	1
+naval	adjective	B2	4.24	deniz kuvvetlerine ait	bahri	0	1
+necessity	noun	B2	3.91	gereklilik	ihtiyaç;zorunluluk	0	1
+nerves	noun	B2	4.02	sinirler	gerginlik	0	1
+nominee	noun	B2	3.96	aday		0	1
+nought	noun	B2	2.51	sıfır	hiç	0	1
+opponent	noun	B2	4.2	rakip	muhalif	0	1
+optimism	noun	B2	3.66	iyimserlik	optimizm	1	1
+orchestral	adjective	B2	3.26	orkestra ile ilgili	orkestral	1	1
+outcome	noun	B2	4.35	sonuç	netice	0	1
+outrage	noun	B2	3.84	infial	öfke;hakaret	0	1
+overstep	verb	B2	2.38	aşmak	sınırı geçmek	0	1
+owl	noun	B2	3.87	baykuş		0	1
+paralysis	noun	B2	3.48	felç	paralizi	1	1
+partisan	noun	B2	3.81	taraftar	partizan;yandaş	1	1
+pavement	noun	B2	3.61	kaldırım	yol yüzeyi	0	1
+peak	noun	B2	4.53	zirve	doruk;tepe	0	1
+pedestrian	noun	B2	3.71	yaya		0	1
+pee	verb	B2	3.96	çiş yapmak	işemek	0	1
+pension	noun	B2	4.22	emekli maaşı	emeklilik	0	1
+percentage	noun	B2	4.48	yüzde	oran	0	1
+persuasion	noun	B2	3.33	ikna	inandırma	0	1
+petty	adjective	B2	4.07	küçük	önemsiz;değersiz	0	1
+piracy	noun	B2	3.52	korsanlık		0	1
+polity	noun	B2	2.88	siyasi düzen	devlet yapısı	0	1
+popularize	verb	B2	2.46	popülerleştirmek	sevdirmek	1	1
+porch	noun	B2	3.85	veranda	sundurma;giriş	0	1
+predictable	adjective	B2	3.76	öngörülebilir	tahmin edilebilir	0	1
+preferable	adjective	B2	3.44	tercih edilebilir	daha iyi	0	1
+prejudge	verb	B2	2.05	peşin hüküm vermek	ön yargılı davranmak	0	1
+preoccupy	verb	B2	1.83	zihnini meşgul etmek	dalgınlaştırmak	0	1
+prestigious	adjective	B2	3.86	prestijli	saygın	1	1
+presumably	adverb	B2	4.06	muhtemelen	tahminen	0	1
+priceless	adjective	B2	3.58	paha biçilemez	çok değerli	0	1
+prior	adjective	B2	4.85	önceki	öncelikli	0	1
+privilege	noun	B2	4.2	ayrıcalık	imtiyaz	0	1
+promptly	adverb	B2	3.84	derhal	hemen;vakit geçirmeden	0	1
+prosper	verb	B2	3.45	işleri yolunda gitmek	zenginleşmek;başarılı olmak	0	1
+proudly	adverb	B2	3.71	gururla	iftiharla	0	1
+purchase	noun	B2	4.71	satın alma	alım	0	1
+quarrelsome	adjective	B2	2.22	geçimsiz	kavgacı	0	1
+ramp	noun	B2	3.83	rampa	eğimli yüzey	1	1
+reaction	noun	B2	4.73	tepki	reaksiyon	1	1
+realisation	noun	B2	3.2	farkına varma	gerçekleştirme	0	1
+recipe	noun	B2	4.23	yemek tarifi	reçete	0	1
+reggae	noun	B2	3.47	reggae		1	1
+relay	noun	B2	3.86	bayrak yarışı	aktarma;röle	0	1
+resistance	noun	B2	4.55	direnç	direniş;rezistans	1	1
+resonant	adjective	B2	3.13	çınlayan	yankılanan	0	1
+respectably	adverb	B2	2.12	saygın bir şekilde	adamakıllı	0	1
+reverence	noun	B2	3.22	saygı	hürmet	0	1
+revolutionary	adjective	B2	4.17	devrimci	devrimsel	0	1
+rubble	noun	B2	3.44	moloz	enkaz	0	1
+sack	verb	B2	3.91	kovmak	işten atmak;yağmalamak	0	1
+seminar	noun	B2	3.77	seminer		1	1
+sexual	adjective	B2	4.82	cinsel	seksüel	1	1
+shed	noun	B2	4.23	kulübe	baraka;sundurma	0	1
+shortness	noun	B2	2.88	kısalık	eksiklik	0	1
+simplification	noun	B2	2.98	sadeleştirme	basitleştirme	0	1
+skilfully	adverb	B2	2.5	ustalıkla	beceriyle;maharetle	0	1
+skyward	adverb	B2	2.69	gökyüzüne doğru	yukarıya doğru	0	1
+sneer	noun	B2	2.7	dudak bükme	küçümseyici gülüş	0	1
+sociable	adjective	B2	2.97	sosyal	canayakın;girişken	1	1
+soviet	noun	B2	4.54	sovyet	konsey;meclis	1	1
+spare	adjective	B2	4.28	yedek	boş;fazla	0	1
+specialty	noun	B2	3.89	uzmanlık	ihtisas;özellik	0	1
+species	noun	B2	4.85	tür	cins;çeşit	0	1
+stain	noun	B2	3.7	leke	iz;ayıp	0	1
+stepfather	noun	B2	3.24	üvey baba		0	1
+subjunctive	noun	B2	2.55	dilek kipi	istek kipi	0	0
+submit	verb	B2	4.28	teslim etmek	sunmak;boyun eğmek	0	1
+supplier	noun	B2	3.84	tedarikçi	sağlayıcı;satıcı	0	1
+suspicious	adjective	B2	4.09	şüpheli	kuşkulu	0	1
+tatter	noun	B2	1.28	paçavra	yırtık parça	0	1
+teaspoon	noun	B2	3.3	çay kaşığı		0	1
+thoughtless	adjective	B2	2.9	düşüncesiz	anlayışsız;bencil	0	1
+toxic	adjective	B2	4.24	zehirli	toksik	1	1
+trader	noun	B2	3.77	tüccar	tacir;ticaret yapan	0	1
+tread	verb	B2	3.52	basmak	yürümek;adımlamak	0	1
+treaty	noun	B2	4.31	antlaşma	sözleşme;pakt	0	1
+tremendously	adverb	B2	3.41	muazzam derecede	son derece;çok fazla	0	1
+triangle	noun	B2	3.93	üçgen		0	1
+twisted	adjective	B2	3.98	bükülmüş	sapık;çarpık	0	1
+undergraduate	noun	B2	3.85	lisans öğrencisi		0	1
+undertake	verb	B2	3.73	üstlenmek	girişmek	0	1
+undreamed	adjective	B2	1.69	hayal edilmemiş	akla gelmemiş	0	1
+ungodly	adjective	B2	2.91	tanrısuz	yersiz;aşırı	0	1
+unjustly	adverb	B2	2.93	haksız yere	adaletsizce	0	1
+unselfish	adjective	B2	2.72	özverili	bencil olmayan	0	1
+vanity	noun	B2	3.74	kibir	boşluk;makyaj masası	0	1
+visibly	adverb	B2	3.39	görülür şekilde	açıkça	0	1
+waistcoat	noun	B2	2.66	yelek		0	1
+weakly	adverb	B2	3.17	zayıfça	güçsüzce	0	1
+widen	verb	B2	3.25	genişletmek	genişlemek	0	1
+worldview	noun	B2	3.26	dünya görüşü		0	1
+yearn	verb	B2	2.97	hasret çekmek	özlemek	0	1
+abound	verb	C1	3.27	bol olmak	taşmak	0	1
+acoustics	noun	C1	3.1	akustik		1	1
+adjustable	adjective	C1	3.6	ayarlanabilir		0	1
+advisory	adjective	C1	4.18	danışma	tavsiye niteliğinde	0	1
+aimlessly	adverb	C1	2.82	amaçsızca	gelişigüzel	0	1
+alienate	verb	C1	3.03	yabancılaştırmak	soğutmak	0	1
+altruistic	adjective	C1	2.95	özverili	diğergam	0	1
+amateur	adjective	C1	4.22	amatör	acemi	1	1
+amply	adverb	C1	2.61	bol bol	yeterince	0	1
+anchored	adjective	C1	3.46	demir atmış	sabitlenmiş	0	1
+antics	noun	C1	3.38	maskaralık	tuhaf hareketler	0	1
+antiquity	noun	C1	3.43	antikite	ilkçağ;eskilik	1	1
+appal	verb	C1	1.63	dehşete düşürmek	korkutmak	0	1
+apprehensive	adjective	C1	3.03	kaygılı	endişeli	0	1
+astray	adverb	C1	3.13	yoldan çıkmış	sapkın	0	1
+beforehand	adverb	C1	3.62	önceden	evvelden	0	1
+believably	adverb	C1	1.89	inanılır şekilde		0	1
+benign	adjective	C1	3.51	iyi huylu	zararsız	0	1
+billiards	noun	C1	2.84	bilardo		1	1
+brainwash	verb	C1	2.66	beyin yıkamak		0	1
+bulk	noun	C1	4.19	büyük kısım	yığın;kütle	0	1
+bureaucratic	adjective	C1	3.4	bürokratik		1	1
+buzzer	noun	C1	3.4	zil	buzzer	0	1
+calorie	noun	C1	3.59	kalori		1	1
+candidly	adverb	C1	2.76	açıkça	samimiyetle	0	1
+cavity	noun	C1	3.61	oyuk	boşluk;diş çürüğü	0	1
+citation	noun	C1	3.82	atıf	alıntı;başarı belgesi	0	1
+claustrophobia	noun	C1	2.56	klostrofobi	kapalı yer korkusu	1	1
+climax	noun	C1	3.6	doruk noktası	zirve	1	1
+clinical	adjective	C1	4.51	klinik		1	1
+clutch	noun	C1	3.88	kavramak	deriyaj;pençe	0	1
+clutter	noun	C1	3.21	dağınıklık	çöplük;bunalım	0	1
+collaborative	adjective	C1	3.78	işbirlikçi	ortaklaşa	0	1
+collaborator	noun	C1	3.16	işbirlikçi	ortak	0	1
+compel	verb	C1	3.28	zorlamak	mecbur etmek	0	1
+compliance	noun	C1	4.17	uyum	boyun eğme	0	1
+complimentary	adjective	C1	3.35	övgü dolu	ücretsiz	0	1
+compromised	adjective	C1	3.78	uzlaşılmış	riske atılmış	0	1
+concur	verb	C1	3.18	fikir birliğine varmak	aynı fikirde olmak	0	1
+confinement	noun	C1	3.46	hapsedilme	tecrit	0	1
+conservatory	noun	C1	3.3	konservatuar	sera	1	1
+conserve	verb	C1	3.37	korumak	tasarruf etmek	0	1
+constraint	noun	C1	3.28	kısıtlama	baskı	0	1
+consultation	noun	C1	4.02	danışma	istişare	0	1
+contested	adjective	C1	3.77	itiraz edilmiş	çekişmeli	0	1
+contextually	adverb	C1	2.3	bağlamsal olarak		0	1
+convict	noun	C1	3.56	mahkum	suçlu	0	1
+crave	verb	C1	3.47	can atmak	aşermek	0	1
+creamy	adjective	C1	3.43	kremsi	kaymaklı	0	1
+crumble	verb	C1	3.29	ufalanmak	çökertmek;dağılmak	0	1
+cynic	noun	C1	2.81	sinik	kuşkucu	1	1
+darkroom	noun	C1	2.66	karanlık oda		0	1
+daunting	adjective	C1	3.4	göz korkutucu	zorlu	0	1
+detest	verb	C1	2.87	nefret etmek	iğrenmek	0	1
+dispensary	noun	C1	3.09	eczane	sağlık ocağı	1	1
+docilely	adverb	C1	1.19	usulca	itaatkâr bir şekilde;uysalca	0	1
+domestication	noun	C1	2.74	evcilleştirme	evcilleşme	0	1
+dutiful	adjective	C1	2.63	itaatkâr	görevine bağlı;vazifesini bilen	0	1
+dynamically	adverb	C1	3.03	dinamik olarak	hareketli bir şekilde	1	1
+eclectic	adjective	C1	3.37	eklektik	seçmeci	1	1
+ecstatically	adverb	C1	2.03	coşkuyla	kendinden geçmişçesine;büyük bir sevinçle	0	1
+elaborate	adjective	C1	4.06	ayrıntılı	detaylı;özenle hazırlanmış	0	1
+elaboration	noun	C1	2.82	ayrıntılandırma	detaylandırma;özenle hazırlama	0	1
+elude	verb	C1	2.78	kaçmak	kurtulmak;sıyrılmak	0	1
+estimation	noun	C1	3.46	tahmin	değerlendirme;kestirim	0	1
+exhilarate	verb	C1	1.36	neşelendirmek	canlandırmak;keyiflendirmek	0	1
+exodus	noun	C1	3.69	toplu göç	çıkış	0	1
+exterior	noun	C1	3.91	dış yüzey	dış;dış taraf	0	1
+extortion	noun	C1	3.29	haraç	şantajla para alma;zorbalıkla alma	0	1
+extravagance	noun	C1	2.81	savurganlık	müsriflik;aşırılık	0	1
+facilitation	noun	C1	2.92	kolaylaştırma	yardımcı olma	0	1
+favorably	adverb	C1	3.2	olumlu bir şekilde	uygun bir biçimde;lehte	0	1
+favourably	adverb	C1	2.92	olumlu bir şekilde	uygun bir biçimde;lehte	0	0
+fiend	noun	C1	3.1	iblis	canavar;şeytan	0	1
+fiercely	adverb	C1	3.35	şiddetle	kıyasıya;vahşice	0	1
+fissure	noun	C1	2.82	yarık	çatlak;fay	0	1
+forensic	adjective	C1	3.75	adli	adli tıp ile ilgili	0	1
+formulate	verb	C1	3.23	formüle etmek	açıkça ifade etmek;tasarlamak	1	1
+fragmentation	noun	C1	3.23	parçalanma	bölünme	0	1
+frostily	adverb	C1	1.16	soğuk bir şekilde	soğukça	0	1
+gadget	noun	C1	3.45	alet	küçük cihaz;aygıt	0	1
+ghostly	adjective	C1	3.14	hayalet gibi	hortlağımsı	0	1
+gig	noun	C1	3.98	konser	iş;gösteri	0	1
+glean	verb	C1	2.73	toplamak	derlemek;azar azar toplamak	0	1
+glumly	adverb	C1	1.88	üzgün bir şekilde	asık suratla;mahzunca	0	1
+gourmet	adjective	C1	3.36	gurme		1	1
+gruelling	adjective	C1	2.51	yorucu	tüketici;zahmetli	0	1
+gushing	adjective	C1	2.98	coşkulu	aşırı övücü;fışkıran	0	1
+gushingly	adverb	C1		coşkuyla	aşırı bir coşkuyla	0	1
+gusto	noun	C1	3	zevk	şevk;coşku	1	1
+gutsy	adjective	C1	2.73	cesur	yürekli	0	1
+gypsy	noun	C1	3.55	çingene	roman	0	1
+haggle	verb	C1	2.65	pazarlık etmek	çekiştirmek	0	1
+headstrong	adjective	C1	2.69	dik başlı	inatçı;kafasının dikine giden	0	1
+heifer	noun	C1	2.6	düve		0	1
+hence	adverb	C1	4.38	bu nedenle	bundan ötürü;dolayısıyla	0	1
+honk	noun	C1	2.95	korna sesi	klakson sesi	0	1
+hostile	adjective	C1	4.07	düşmanca	düşman	0	1
+hostility	noun	C1	3.61	düşmanlık	husumet	0	1
+hypocrite	noun	C1	3.4	münafık	ikiyüzlü	0	1
+imp	noun	C1	3.23	cani	ufaklık;haşarı çocuk	0	1
+impersonally	adverb	C1	1.59	kişisel olmayan bir şekilde	resmi bir şekilde	0	1
+impersonate	verb	C1	2.75	taklidini yapmak	kılığına girmek	0	1
+impishly	adverb	C1	1.33	haşarıca	karnıyarık gibi	0	1
+inclusively	adverb	C1	1.93	dahil olmak üzere	kapsayıcı şekilde	0	1
+indefinite	adjective	C1	3.41	belirsiz	kesin olmayan	0	1
+individuality	noun	C1	3.2	bireysellik	şahsiyet	1	1
+inexplicable	adjective	C1	3.13	açıklanamaz	anlaşılmaz	0	1
+inherently	adverb	C1	3.59	doğası gereği	yapısı gereği;yaratılıştan	0	1
+insensitively	adverb	C1	1.58	duyarsızca	hassasiyetsizce	0	1
+instinctive	adjective	C1	3.04	içgüdüsel	sezişsel	0	1
+intellect	noun	C1	3.49	zeka	akıl;entelekt	1	1
+isolated	adjective	C1	4.24	izole	tecrit edilmiş;tek başına	1	1
+latent	adjective	C1	3.27	gizli	örtülü;potansiyel	1	1
+lavatory	noun	C1	2.9	tuvalet	helâ	1	1
+legacy	noun	C1	4.37	miras	kalan mal	0	1
+likelihood	noun	C1	3.91	olasılık	ihtimal	0	1
+limitless	adjective	C1	3.27	sınırsız	uçsuz bucaksız	0	1
+magnetic	adjective	C1	4.17	manyetik	mıknatıslı	1	1
+magnetism	noun	C1	3.03	manyetizma	çekicilik	1	1
+malfunction	verb	C1	3.29	arıza yapmak	bozulmak;hatalı çalışmak	1	1
+maneuver	noun	C1	3.53	manca	manyaklık;manevra	1	1
+manipulation	noun	C1	3.85	manipülasyon	yönlendirme;oyun	1	1
+manoeuvre	noun	C1	3.03	manevra	taktik	1	1
+marginal	adjective	C1	3.71	marjinal	aykırı;sınırdaki	1	1
+midwife	noun	C1	3.27	ebe		0	1
+misplace	verb	C1	2.28	yerini şaşırmak	kaybetmek;yanlış yere koymak	0	1
+monotony	noun	C1	2.75	tekdüzelik	monotonluk	1	1
+muscular	adjective	C1	3.67	kaslı	adalevi	0	1
+mythology	noun	C1	3.64	mitoloji	söylence bilimi	1	1
+naively	adverb	C1	2.68	safça	naif bir şekilde	1	1
+negligible	adjective	C1	3.39	ihmal edilebilir	önemsiz;çok az	0	1
+niche	noun	C1	3.85	niş	oyuk;uygun alan	1	1
+notable	adjective	C1	4.07	dikkat çekici	önemli;gözde	0	1
+numb	adjective	C1	3.53	uyuşmuş	hissizleşmiş	0	1
+oblige	verb	C1	3.1	mecbur bırakmak	zorunda bırakmak;maçka etmek	0	1
+occupational	adjective	C1	3.72	mesleki	meslekî	0	1
+orchard	noun	C1	3.57	meyve bahçesi	bağ	0	1
+organizational	adjective	C1	3.83	örgütsel	teşkilatsal;organizasyonel	1	1
+otter	noun	C1	3.37	su samuru		0	1
+outset	noun	C1	3.44	başlangıç	ilk an	0	1
+overalls	noun	C1	3	tulum	iş tulumu	0	1
+oversee	verb	C1	3.51	denetlemek	gözetmek;teftiş etmek	0	1
+overseer	noun	C1	2.93	gözetmen	müfettiş;başçavuş	0	1
+panoramic	adjective	C1	3.21	panoramik	kuşbakışı	1	1
+parasite	noun	C1	3.51	parazit	asalak	1	1
+peacock	noun	C1	3.44	tavus kuşu		0	1
+pedicure	noun	C1	2.71	pedikür		1	1
+persecute	verb	C1	2.79	zulmetmek	eziyet etmek;taciz etmek	0	1
+phenomenal	adjective	C1	3.76	fevkalade	olağanüstü;muazzam	1	1
+plaque	noun	C1	3.69	plak	plaka	1	1
+plausibility	noun	C1	2.55	akla yatkınlık	makullük	0	1
+plausible	adjective	C1	3.64	akla yatkın	makul;inanılır	0	1
+plummet	verb	C1	2.85	hızla düşmek	çakılmak	0	1
+plunge	noun	C1	3.49	dalış	düşüş	0	1
+popularization	noun	C1	2.23	popülerleştirme	yaygınlaştırma	1	1
+portable	adjective	C1	3.97	taşınabilir	seyyar	0	1
+portray	verb	C1	3.63	tasvir etmek	canlandırmak;rolünü oynamak	0	1
+principally	adverb	C1	3.4	başlıca	esas olarak;özellikle	0	1
+proliferate	verb	C1	2.69	çoğalmak	üremek;yayılmak	0	1
+prolifically	adverb	C1	2.03	bolca	verimli bir şekilde;üretken bir biçimde	0	1
+prospective	adjective	C1	3.87	müstakbel	olası;beklenen	0	1
+provisions	noun	C1	4.12	erzak	azık;hükümler	0	1
+provocative	adjective	C1	3.44	kışkırtıcı	tahrik edici;provokatif	1	1
+psyche	noun	C1	3.42	ruh	zihin;psişe	1	1
+psychiatric	adjective	C1	3.87	psikiyatrik	ruhsal	1	1
+quest	noun	C1	4.27	arayış	araştırma	0	1
+quirky	adjective	C1	3.53	alışılmadık	tuhaf;garip	0	1
+reap	verb	C1	3.53	hasat etmek	biçmek;toplamak	0	1
+recess	noun	C1	3.53	ara	teneffüs;mola	0	1
+recessive	adjective	C1	2.91	çekinik	resesif	1	1
+recognisably	adverb	C1	1.82	tanınabilir şekilde	fark edilebilir biçimde	0	1
+reenact	verb	C1	2.42	yeniden canlandırmak	tekrar sahnelemek	0	1
+refreshing	adjective	C1	3.83	ferahlatıcı	tazeleyici;canlandırıcı	0	1
+refurbish	verb	C1	2.57	yenilemek	restore etmek;elden geçirmek	0	1
+refurbishment	noun	C1	3.11	yenileme	restorasyon;tadilat	0	1
+remedial	adjective	C1	3.08	iyileştirici	düzeltici;telafi edici	0	1
+reminiscent	adjective	C1	3.61	andıran	hatırlatan;anımsatan	0	1
+rendering	noun	C1	3.79	sunum	temsil;yorum	0	1
+renown	noun	C1	3.11	ün	şöhret;nam	0	1
+repel	verb	C1	3.2	itmek	geri püskürtmek;tiksindirmek	0	1
+repertory	noun	C1	2.98	repertuvar	dağarcık	1	1
+resent	verb	C1	3.38	içerlemek	gücenmek;darılmak	0	1
+resin	noun	C1	3.61	reçine	zamk;rezin	1	1
+riveting	adjective	C1	2.99	sürükleyici	büyüleyici;çok ilginç	0	1
+sacrifice	noun	C1	4.29	kurban	fedakarlık	0	1
+salivate	verb	C1	2.12	ağzı sulanmak	tükürük salgılamak	0	1
+salvation	noun	C1	3.95	kurtuluş	selamet	0	1
+screenplay	noun	C1	3.54	senaryo		0	1
+sedate	adjective	C1	2.76	ağır başlı	sakin	0	1
+sedately	adverb	C1	1.54	sakin bir şekilde	ağır başlılıkla	0	1
+sedentary	adjective	C1	3.14	oturarak yapılan	hareketsiz	0	1
+slackly	adverb	C1		gevşekçe	ihmalkarca	0	1
+snooze	verb	C1	2.98	kestirmek	uyuklamak	0	1
+somberly	adverb	C1	1.77	kasvetli bir şekilde	üzgün bir şekilde	0	1
+specimen	noun	C1	3.72	örnek	numune	0	1
+speculative	adjective	C1	3.51	varsayımsal	spekülatif	1	1
+sponsorship	noun	C1	3.72	sponsorluk	destek	1	1
+spontaneous	adjective	C1	3.71	kendiliğinden	spontane;doğaçlama	1	1
+spontaneously	adverb	C1	3.34	kendiliğinden	spontane bir şekilde	1	1
+sprawl	noun	C1	2.99	yayılma	dağınık yapı	0	1
+staccato	adjective	C1	2.58	kesik kesik	stakkato	1	1
+staple	noun	C1	3.68	temel gıda	zımba teli	0	1
+stuffily	adverb	C1		basık bir şekilde	havasız bir şekilde	0	1
+suburban	adjective	C1	3.91	banliyö	şehir dışı	0	1
+suburbia	noun	C1	2.79	banliyöler	banliyö hayatı	0	1
+succession	noun	C1	3.97	ard arda gelme	veraset;silsile	0	1
+succulent	adjective	C1	3	sulu	etli	0	1
+suffice	verb	C1	3.46	yetmek	kâfi gelmek	0	1
+superficial	adjective	C1	3.56	yüzeysel	üstünkörü	0	1
+sustainably	adverb	C1	2.68	sürdürülebilir bir şekilde		0	1
+tactfully	adverb	C1	2.36	incelikle	nazikçe;ustalıkla	0	1
+tastebud	noun	C1	1.15	tat tomurcuğu		0	1
+tediously	adverb	C1	2.01	usandırıcı bir şekilde	sıkıcı bir şekilde	0	1
+telltale	adjective	C1	2.9	açığa vuran	ihbarcı;ispiyoncu	0	1
+tinker	noun	C1	3.28	kalaycı	ufak tefek tamirat	0	1
+torment	noun	C1	3.36	eziyet	azap;işkence	0	1
+torturous	adjective	C1	2.57	azap veren	işkence gibi	0	1
+toughness	noun	C1	3.31	dayanıklılık	sertlik;zorluk	0	1
+transfix	verb	C1	1.44	büyülemek	mıhlamak;delip geçmek	0	1
+trauma	noun	C1	4.14	travma	sarsıntı	1	1
+traumatic	adjective	C1	3.79	travmatik	sarsıcı	1	1
+turmoil	noun	C1	3.52	kargaşa	bunalım;karışıklık	0	1
+unconvincing	adjective	C1	2.69	inandırıcı olmayan	ikna edici olmayan	0	1
+unenviably	adverb	C1		kıskanılmayacak şekilde		0	1
+unmanageable	adjective	C1	2.68	başa çıkılamaz	idare edilemez	0	1
+unoccupied	adjective	C1	2.93	boş	oturulmayan	0	1
+unreliably	adverb	C1	1.33	güvenilmez bir şekilde		0	1
+unscathing	adjective	C1		hasar almamış		0	1
+untangle	verb	C1	2.54	çözmek	düğümleri çözmek	0	1
+vegetation	noun	C1	3.77	bitki örtüsü	vejetasyon	1	1
+venerate	verb	C1	2.28	saygı göstermek	yüceltmek	0	1
+versatility	noun	C1	3.32	çok yönlülük	beceriklilik	0	1
+victorious	adjective	C1	3.57	zafer kazanmış	galip	0	1
+voluntarily	adverb	C1	3.72	gönüllü olarak	kendi rızasıyla	0	1
+voraciously	adverb	C1	2.1	tıka basa	açgözlülükle	0	1
+washtub	noun	C1	1.7	çamaşır teknesi		0	1
+wayside	noun	C1	2.99	yol kenarı		0	1
+wry	adjective	C1	2.86	alaycı	eğri;çarpık	0	1
+abhorrent	adjective	C2	2.97	iğrenç	nefret uyandıran	0	1
+abhorrently	adverb	C2	1.18	iğrenç bir şekilde		0	1
+acrobatics	noun	C2	2.75	akrobasi		1	1
+adept	adjective	C2	3.33	usta	ehil;mahir	0	1
+aghast	adjective	C2	2.64	dehşete düşmüş	şaşkın	0	1
+allegory	noun	C2	3.07	alegori	tmsil	1	1
+allot	verb	C2	2.79	tahsis etmek	ayırmak;paylaştırmak	0	1
+allude	verb	C2	2.7	üstü kapalı değinmek	ima etmek	0	1
+angst	noun	C2	3.26	kaygı	bunalım;endişe	0	1
+angsty	adjective	C2	2.45	bunaltılı	kaygılı	0	1
+apprehend	verb	C2	3.02	tutuklamak	kavramak;anlamak	0	1
+arcane	adjective	C2	2.99	gizli	esrarengiz;anlaşılmaz	0	1
+armory	noun	C2	3.22	cephanelik	silahhane	0	1
+artifact	noun	C2	3.41	eser	yapıt;kalıntı	0	1
+astringent	noun	C2	2.51	büzücü	sıkılaştırıcı	0	1
+attuned	adjective	C2	2.88	uyumlu	uyarlanmış	0	1
+austere	adjective	C2	3	sade	ciddi;tasarruflu	0	1
+authenticity	noun	C2	3.6	özgünlük	otantiklik;aslına uygunluk	0	1
+autonomously	adverb	C2	2.64	özerk bir şekilde	bağımsız olarak	0	1
+autopilot	noun	C2	3.16	otopilot		1	1
+belligerence	noun	C2	2.12	saldırganlık	savaşçılık;hırçınlık	0	1
+beneficiary	noun	C2	3.37	hak sahibi	lehtar;faydalanan	0	1
+blight	noun	C2	3.24	yıkım	mahvolma;bitki hastalığı	0	1
+buzzard	noun	C2	2.83	şahin	yırtıcı kuş	0	1
+carbonize	verb	C2	1.13	karbonlaştırmak	kömürleşmek	1	1
+centralized	adjective	C2	3.47	merkezi	merkezileşmiş	1	1
+chronology	noun	C2	3.22	kronoloji	zaman dizini	1	1
+chrysalis	noun	C2	2.6	krizalit	pupa	1	1
+collide	verb	C2	3.29	çarpışmak	toslaşmak	0	1
+colloquium	noun	C2	2.54	kolokyum	bilimsel toplantı	1	1
+combustion	noun	C2	3.57	yanma	tutuşma	0	1
+commensurately	adverb	C2	1.7	orantılı olarak	uygun şekilde	0	1
+commodity	noun	C2	3.86	ticari mal	emtia;ürün	0	1
+computerise	verb	C2		bilgisayara geçirmek		0	0
+computerize	verb	C2	1.48	bilgisayara geçirmek	bilgisayarlaştırmak	0	1
+condone	verb	C2	3.17	göz yummak	hoş görmek;affetmek	0	1
+conglomerate	noun	C2	3.39	konglomera	şirketler topluluğu	1	1
+connotation	noun	C2	2.94	yan anlam	çağrışım	0	1
+consign	verb	C2	2.46	sevk etmek	emanet etmek;göndermek	0	1
+constrained	adjective	C2	3.41	kısıtlı	zoraki;tutuk	0	1
+contractually	adverb	C2	2.67	sözleşme gereği	kontrat uyarınca	0	1
+corpse	noun	C2	3.76	ceset	ölü;naaş	0	1
+crippling	adjective	C2	3.36	sakat bırakan	felç edici;ağır	0	1
+crony	noun	C2	2.73	yakın arkadaş	ahbap;suç ortağı	0	1
+declination	noun	C2	2.37	reddetme	sapma;eğim	0	1
+deficient	adjective	C2	3.33	eksik	yetersiz;noksan	0	1
+delicatessen	noun	C2	2.48	şarküteri		0	1
+denotation	noun	C2	1.9	sözcük anlamı	gerçek anlam	0	1
+depraved	adjective	C2	3.04	ahlaksız	sapkın;yozlaşmış	0	1
+deprecatingly	adverb	C2	1.44	küçümseyerek	yererek	0	1
+depressive	adjective	C2	3.3	depresif	bunalımlı	1	1
+derelict	adjective	C2	3.1	terkedilmiş	metruk;başıboş	0	1
+derisive	adjective	C2	2.36	alaycı	küçümser	0	1
+derisively	adverb	C2	2.29	alaycı bir şekilde	küçümseyerek	0	1
+deviantly	adverb	C2		sapkınca	saparak	0	1
+diligently	adverb	C2	3.13	çalışkanlıkla	titizlikle;özenle	0	1
+diminish	verb	C2	3.46	azaltmak	küçültmek;azalmak	0	1
+disdainful	adjective	C2	2.35	tepeden bakan	küçümser;haddini bilmez	0	1
+disparage	verb	C2	2.58	küçümsemek	alçaltmak;yerden yere vurmak	0	1
+dissemination	noun	C2	3.26	yayma	dağıtma;yayılım	0	1
+distill	verb	C2	2.47	damıtmak	özünü çıkarmak	0	1
+distillation	noun	C2	3.01	damıtma	özümseme	0	1
+dribble	noun	C2	3.06	damlama	salya akıtma;top sürme	0	1
+dubiously	adverb	C2	2.09	şüpheli bir şekilde	kuşkuyla	0	1
+echolocation	noun	C2	2.33	yankıla bulma	sesle yön bulma	0	1
+economize	verb	C2	2	tasarruf etmek	ekonomik kullanmak	0	1
+elephantine	adjective	C2	1.99	fildişinden	file benzer;hantal	0	1
+emulsification	noun	C2	1.79	emülsifiye etme	emülsiyonlaştırma	1	1
+emulsifier	noun	C2	2.11	emülgatör	emülsiyon yapıcı	1	1
+emulsify	verb	C2	1.73	emülsifiye etmek	emülsiyona dönüştürmek	1	1
+ephemeral	adjective	C2	2.99	geçici	ömürsüz;gelçer	0	1
+equilibrium	noun	C2	3.6	denge	muvazene	0	1
+etch	verb	C2	2.78	kazımak	asitle oymak	0	1
+euphemistic	adjective	C2	2.05	kibarca	tatlı dilli;üstü kapalı	0	1
+euphoric	adjective	C2	2.85	öforik	aşırı mutlu;coşkulu	1	1
+exaltedly	adverb	C2		yüce bir şekilde	coşkuyla	0	1
+exorcism	noun	C2	2.89	kötü ruhu kovma	şeytan çıkarma	0	1
+exude	verb	C2	2.52	sızdırmak	yaymak;salmak	0	1
+fabrication	noun	C2	3.48	üretim	uydurma;imalat	0	1
+fallacy	noun	C2	3.21	yanılgı	safsata;hata	0	1
+fete	noun	C2	2.68	şölen	şenlik	0	1
+floe	noun	C2	2.15	buz kütlesi	buz sahanlığı	0	1
+gauche	adjective	C2	2.53	acemi	kaba;görgüsüz	0	1
+gravitate	verb	C2	2.87	yönelmek	çekilmek	0	1
+haphazardly	adverb	C2	2.54	gelişigüzel	rastgele	0	1
+hapless	adjective	C2	2.88	bahtsız	şanssız;zavallı	0	1
+happenstance	noun	C2	2.44	tesadüf	rastlantı	0	1
+histrionically	adverb	C2		tiyatrosu bir şekilde	yapmacık olarak	0	1
+hitch	verb	C2	3.42	otostop çekmek	bağlamak;aksilik	0	1
+hypothesize	verb	C2	2.5	varsaymak	hipotez kurmak	0	1
+idiomatic	adjective	C2	2.46	deyimsel	mahalli	0	1
+idiomatically	adverb	C2	1.57	deyimsel olarak	deyim yerindeyse	0	1
+ignominious	adjective	C2	2.34	utanç verici	rezil;onursuz	0	1
+impeccable	adjective	C2	3.25	kusursuz	kusursuz;mükemmel	0	1
+impeccably	adverb	C2	2.63	kusursuzca	mükemmel bir şekilde	0	1
+imposition	noun	C2	3.19	dayatma	vergi koyma;yükümlülük	0	1
+inchoate	adjective	C2	2.06	başlangıç aşamasında	gelişmemiş;ham	0	1
+inchoately	adverb	C2		taslak halinde	tam gelişmemiş olarak	0	1
+incipient	adjective	C2	2.54	başlangıç halindeki	yeni başlayan	0	1
+incongruity	noun	C2	2.2	uyumsuzluk	aykırılık	0	1
+indignant	adjective	C2	2.86	öfkeli	tepkili;alınmış	0	1
+inducement	noun	C2	2.53	teşvik	cazibe;özendirme	0	1
+indulgently	adverb	C2	1.87	hoşgörüyle	anlayışla	0	1
+inexorably	adverb	C2	2.64	önüne geçilmez bir şekilde	acımasızca;kaçınılmaz olarak	0	1
+infallibly	adverb	C2	1.97	şaşmaz bir şekilde	kesinlikle;yanılmazca	0	1
+infernal	adjective	C2	3	cehennemsi	şeytani;azap verici	0	1
+informant	noun	C2	3.33	bilgi veren	muhbir;kaynak kişi	0	1
+ingenuous	adjective	C2	1.92	saf	deneyimsiz;ıssız	0	1
+inscrutable	adjective	C2	2.56	anlaşılmaz	gizemli;okunamaz	0	1
+instantaneous	adjective	C2	3.14	anlık	birdenbire;derhal	0	1
+interrogative	adjective	C2	2.35	soru bildiren	sorgulayıcı	0	1
+intrinsically	adverb	C2	3.06	özünde	aslında;yapısı gereği	0	1
+irrevocable	adjective	C2	2.76	geri alınamaz	kesin;değiştirilemez	0	1
+knack	noun	C2	3.26	yetenek	hüner;marifet	0	1
+lament	verb	C2	3.25	yas tutmak	ağıt yakmak;sızlanmak	0	1
+laud	verb	C2	2.6	övgüler düzmek	övmek;yüceltmek	0	1
+leavening	noun	C2	2.04	mayalama	maya;etki	0	1
+liaise	verb	C2	2.51	iletişim kurmak	koordinasyon sağlamak	0	1
+loiter	verb	C2	2.38	aylak aylak dolaşmak	gezinmek;sürtmek	0	1
+maggot	noun	C2	2.78	kurtçuk	larva	0	1
+magnanimity	noun	C2	2.22	alçakgönüllülük	cömertlik;yüce gönüllülük	0	1
+magnanimously	adverb	C2	1.73	yüce gönüllü bir şekilde	cömertçe	0	1
+magnate	noun	C2	3.04	sanayii patronu	kodaman;ağa	0	1
+mariner	noun	C2	3.03	denizci	gemici	0	1
+meager	adjective	C2	3.05	az	kıt;yetersiz	0	1
+melancholy	adjective	C2	3.39	melankolik	hüzünlü;kederli	1	1
+menace	noun	C2	3.54	tehdit	korku;tahdit	0	1
+mercenary	noun	C2	3.26	paralı asker	çıkarcı	0	1
+merit	noun	C2	4.08	liyakat	hak;değer	0	1
+meteorology	noun	C2	3.22	meteoroloji	hava bilimi	1	1
+methodological	adjective	C2	3.03	metodolojik	yöntemsel	1	1
+methodology	noun	C2	3.82	metodoloji	yöntem bilimi	1	1
+meticulous	adjective	C2	3.24	titiz	özenli;ince eleyip sık dokuyan	0	1
+meticulously	adverb	C2	3.08	titizlikle	özenle	0	1
+midwifery	noun	C2	2.93	ebelik		0	1
+minefield	noun	C2	2.92	mayin tarlası	riskli alan	0	1
+minster	verb	C2	2.95	kilise	katedral	0	0
+misdemanour	noun	C2		kabahat	küçük suç	0	0
+mundanity	noun	C2	1.57	sıradanlık	dünyevilik	0	1
+munificence	noun	C2	1.75	cömertlik	eli açıklık	0	1
+nonchalantly	adverb	C2	2.58	umursamazca	alakasızca	0	1
+nostalgic	adjective	C2	3.45	nostaljik	özlem dolu	1	1
+opaque	adjective	C2	3.37	opak	mat;saydam olmayan	1	1
+opulence	noun	C2	2.69	zenginlik	görkem;refah	0	1
+opulently	adverb	C2	1.31	görkemli bir şekilde	zengin bir şekilde	0	1
+ornate	adjective	C2	3.19	süslü	bezenmiş;müzehhep	0	1
+ostensibly	adverb	C2	3.35	görünüşte	sözde	0	1
+overlay	verb	C2	3.24	kaplamak	örtmek;üstünü kaplamak	0	1
+painstaking	adjective	C2	2.93	titiz	özenli;gayretli	0	1
+palate	noun	C2	3.35	damak	tat alma duyusu	0	1
+parable	noun	C2	3.1	mesel	hikaye;örnekleme	0	1
+paradoxically	adverb	C2	2.94	paradoksal olarak	çelişkili bir şekilde	1	1
+parasitic	adjective	C2	3.27	parazit	asalak	1	1
+patronize	verb	C2	2.72	taslamak	tepeden bakmak;korumak	0	1
+pervasive	adjective	C2	3.39	yaygın	her yere nüfuz eden	0	1
+philanthropic	adjective	C2	3.21	,erdemli	hayırsever	0	1
+philanthropy	noun	C2	3.32	hayırseverlik	insan sevgisi	0	1
+plume	noun	C2	3.19	tüy	sorguç	0	1
+plutocrat	noun	C2	1.79	zengin sınıfından kimse	plutokrat	1	1
+portraiture	noun	C2	2.83	portrecilik	portre yapma sanatı	0	1
+posterity	noun	C2	2.97	gelecek nesiller	sonraki kuşaklar	0	1
+postural	adjective	C2	2.56	duruşla ilgili	postüral	1	1
+practitioner	noun	C2	3.63	uygulayıcı	hekim;serbest meslek erbabı	0	1
+precocious	adjective	C2	2.86	erken gelişmiş	zekice	0	1
+predilection	noun	C2	2.52	düşkünlük	eğilim;tercih	0	1
+preeminent	adjective	C2	2.79	seçkin	önde gelen;üstün	0	1
+pressurization	noun	C2	2.29	basınçlandırma	basınç ayarı	0	1
+presupposition	noun	C2	2.16	ön varsayım	varsayım	0	1
+primeval	adjective	C2	2.71	ilkel	ilk çağlara ait	0	1
+procedural	adjective	C2	3.51	prosedürle ilgili	usule ilişkin	1	1
+proliferation	noun	C2	3.61	çoğalma	yayılma;artış	0	1
+prolong	verb	C2	3.21	uzatmak	devamını sağlamak	0	1
+prostrate	adjective	C2	2.68	yere kapanmış	serilmiş;bitkin	0	1
+provincial	adjective	C2	4.08	taşralı	taşra;yerel	0	1
+proximal	adjective	C2	3.17	proksimal	yakın	1	1
+prurience	noun	C2	1.3	şehvet düşkünlüğü	müstehcenlik	0	1
+punitively	adverb	C2	1.59	cezalandırırcasına	ceza olarak	0	1
+puritanical	adjective	C2	2.56	püriten	aşırı ahlakçı	1	1
+pyre	noun	C2	2.69	odun yığını	cenaze ateşi	0	1
+qualitative	adjective	C2	3.45	nitel	kalitatif	0	1
+rapturous	adjective	C2	2.41	coşkulu	vecd içinde	0	1
+rapturously	adverb	C2	1.78	coşkuyla	büyük bir zevkle	0	1
+ravish	verb	C2	2.2	baştan çıkarmak	büyülemek	0	1
+reconcile	verb	C2	3.5	uzlaştırmak	barıştırmak	0	1
+recourse	noun	C2	3.29	başvuru	çare	0	1
+redundancy	noun	C2	3.32	fazlalık	işten çıkarma;gereksizlik	0	1
+regulatory	adjective	C2	4.23	düzenleyici	tüzüksel	0	1
+remittance	noun	C2	2.62	havale	para transferi	0	1
+reptilian	adjective	C2	2.75	sürüngen	sürüngenlere ait	0	1
+resounding	adjective	C2	3.03	yankılanan	çınlayan;kesin	0	1
+resuscitation	noun	C2	2.93	hayata döndürme	canlandırma	0	1
+reverberation	noun	C2	2.42	yankı	akis	0	1
+revile	verb	C2	1.98	sövmek	azarlamak;hakaret etmek	0	1
+revulsion	noun	C2	2.71	iğrenme	tiksinti	0	1
+rickety	adjective	C2	2.68	çürük	sallantılı;döküntü	0	1
+rift	noun	C2	3.64	yarık	açıklık;kopukluk	0	1
+romper	noun	C2	2.49	tulum	çocuk tulumu	0	1
+rumination	noun	C2	2.29	kara kara düşünme	derin düşünce;geviş getirme	0	1
+scavenger	noun	C2	3.03	leşçil	çöplükten beslenen	0	1
+scholarly	adjective	C2	3.6	akademik	bilimsel;ilmî	0	1
+seedy	adjective	C2	2.83	pejmürde	şüpheli;yıkık dökük	0	1
+shamble	verb	C2	1.62	paytak yürümek	sürükleyerek yürümek	0	1
+shimmer	verb	C2	2.98	parıldamak	titrek titrek parlamak	0	1
+skew	verb	C2	3.01	eğriltmek	çarpıtmak	0	1
+snippet	noun	C2	3.12	kırpıntı	parça;kısmî bilgi	0	1
+snobbery	noun	C2	2.53	züppelik		0	1
+solicit	verb	C2	3.06	istemek	talep etmek;yardım istemek	0	1
+spurious	adjective	C2	2.96	sahte	düzmece	0	1
+squint	verb	C2	2.8	gözlerini kısarak bakmak	şarılgan bakmak	0	1
+stoicism	noun	C2	2.63	stoacılık	stoyacılık	1	1
+stultify	verb	C2		budalalığına hükmetmek	etkisiz kılmak;bunalmak	0	1
+suffuse	verb	C2	1.46	kaplamak	bürümek	0	1
+summarily	adverb	C2	2.83	derhal	özetle;hızlıca	0	1
+synthesis	noun	C2	3.84	sentez	bireşim	1	1
+taciturn	adjective	C2	2.37	sessiz	az konuşan;suskun	0	1
+tantalise	verb	C2	1.37	imrendirmek	gözünü boyamak;heveslendirmek	0	1
+tenaciously	adverb	C2	2.19	inatla	sıkıca;kısmetle	0	1
+testimonial	noun	C2	3.07	tavsiye mektubu	referans;övgü belgesi	0	1
+thicket	noun	C2	2.69	çallık	sık çalı	0	1
+topography	noun	C2	3.28	topoğrafya	yerbilim	1	1
+topple	verb	C2	2.95	devrilmek	yıkılmak	0	1
+totemic	adjective	C2	2.17	totemsel	toteme ait	1	1
+tranquilise	verb	C2		sakinleştirmek	yatıştırmak	0	1
+treachery	noun	C2	3.13	hainlik	ihanet	0	1
+turret	noun	C2	3.42	kulecik	mazgallı kule	0	1
+undiminishing	adjective	C2		azalmayan	eksilmeyen	0	1
+unfeasible	adjective	C2	2.49	gerçekleştirilemez	yapılamaz;olanaksız	0	1
+unfeasibly	adverb	C2	1.25	yapılamayacak şekilde	olanaksız bir şekilde	0	1
+unnerve	verb	C2	1.91	cesaretini kırmak	sinirlerini bozmak	0	1
+unnerving	adjective	C2	2.85	sinir bozucu	endişe verici	0	1
+unsuspected	adjective	C2	2.16	beklenmedik	şüphelenilmeyen	0	1
+utilisation	noun	C2	2.75	kullanım	yararlanma;değerlendirme	0	1
+utilitarian	adjective	C2	3.05	faydacı	yararcı	0	1
+vestigially	adverb	C2		kalıntı olarak	artık olarak	0	1
+vindicate	verb	C2	2.54	aklamak	haklı çıkarmak	0	1
+virtuosity	noun	C2	2.6	virtüözlük	ustalık	1	1
+virtuoso	noun	C2	2.9	virtüöz	usta sanatçı	1	1
+vocational	adjective	C2	3.65	mesleki	meslekî	0	1
+whir	verb	C2	2.04	vızıltıyla dönmek	vızıldamak	0	1
+zoology	noun	C2	3.19	zooloji	hayvanbilim	1	1

@@ -67,6 +67,12 @@ interface LoadedModel {
   tests: LevelTest[];
 }
 
+function push<K, V>(m: Map<K, V[]>, k: K, v: V): void {
+  const list = m.get(k);
+  if (list) list.push(v);
+  else m.set(k, [v]);
+}
+
 /** Everything the level model needs, read in one transaction. */
 async function loadModel(now: Millis): Promise<LoadedModel> {
   const data = await levelDataOrNull();
@@ -85,7 +91,7 @@ async function loadModel(now: Millis): Promise<LoadedModel> {
       const lexIds = [...new Set(senses.map((s) => s.lexicon_sense_id).filter((x): x is Id => !!x))];
       const lex = new Map((await db.lexicon_cache.bulkGet(lexIds)).filter((x) => !!x).map((x) => [x!.id, x!]));
       const sensesByNote = new Map<Id, typeof senses>();
-      for (const s of senses) sensesByNote.set(s.note_id, [...(sensesByNote.get(s.note_id) ?? []), s]);
+      for (const s of senses) push(sensesByNote, s.note_id, s);
       const recognition = new Map<Id, (typeof cards)[number]>();
       const noteOfCard = new Map<Id, Id>();
       for (const c of cards) {
@@ -95,11 +101,11 @@ async function loadModel(now: Millis): Promise<LoadedModel> {
       const recIds = [...recognition.values()].map((c) => c.id);
       const logs = recIds.length ? await db.review_logs.where('card_id').anyOf(recIds).toArray() : [];
       const logsByCard = new Map<Id, ReviewLog[]>();
-      for (const l of logs) logsByCard.set(l.card_id, [...(logsByCard.get(l.card_id) ?? []), l]);
+      for (const l of logs) push(logsByCard, l.card_id, l);
       const practiceByNote = new Map<Id, PracticeLog[]>();
       for (const p of await db.practice_logs.toArray()) {
         const noteId = noteOfCard.get(p.card_id);
-        if (noteId) practiceByNote.set(noteId, [...(practiceByNote.get(noteId) ?? []), p]);
+        if (noteId) push(practiceByNote, noteId, p);
       }
 
       const inList = (term: string) => !!data?.lookup(term)?.refs.length;
