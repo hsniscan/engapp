@@ -54,7 +54,7 @@ contract; this record lists what was built and where it differs.
 3. **Server: one migration, no RPC change.** `20261022000400_decks.sql` creates the table
    (name ≤ 200, filter an object ≤ 8 KB, standard RLS without DELETE, stamp trigger) and
    adds one row to `public.sync_tables`. The registry from İP1 does the rest. pgTAP:
-   `supabase/tests/database/08_decks.test.sql` (17 tests); the registry assertion in
+   `supabase/tests/database/11_decks.test.sql` (17 tests); the registry assertion in
    `05_practice_logs.test.sql` became a subset check so later tables do not break it.
 4. **Two client sync mechanisms for tables added after v3** (not in the plan; see
    `docs/sync-strategy.md`):

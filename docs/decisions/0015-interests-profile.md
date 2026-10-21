@@ -55,7 +55,7 @@ wired yet; the rule takes them as inputs.
    their checksum and restore; a v3 client refuses a v4 file instead of reporting a checksum
    error. Account merge copies a source's topics (text metadata, not history); the other
    account's settings (interests) are still dropped (decision 0009).
-9. Migration `20261022000300_interests_profile.sql`; pgTAP `07_interests_profile.test.sql`.
+9. Migration `20261022000300_interests_profile.sql`; pgTAP `10_interests_profile.test.sql`.
 
 ## Not done (later, after İP2 / İP5 merge)
 

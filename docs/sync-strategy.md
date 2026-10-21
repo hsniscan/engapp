@@ -218,7 +218,7 @@ to them (decision 0009).
   insert-only between devices without touching cards.
 - `src/sync/decks.test.ts` (FakeServer): decks between two devices, waiting without
   attempts on a backend without the table, and the one-time re-pull.
-  `supabase/tests/database/08_decks.test.sql`: RLS, LWW, tombstones, v3 pull and v1/v2 not
+  `supabase/tests/database/11_decks.test.sql`: RLS, LWW, tombstones, v3 pull and v1/v2 not
   returning decks.
 - `supabase/tests/integration/stack.test.ts`: the same through PostgREST with
   `src/sync/api.ts`.

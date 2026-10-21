@@ -4,7 +4,7 @@
 -- notes accept term_type 'affix' through sync_push.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(25);
+select plan(28);
 
 select has_table('public', 'ref_morphemes', 'ref_morphemes exists');
 select has_table('public', 'ref_word_morphemes', 'ref_word_morphemes exists');
@@ -35,6 +35,19 @@ insert into public.ref_word_morphemes (lemma_norm, morpheme_id, position)
 values ('pgtapinspect', 'pgtapspect', 0), ('pgtaprespect', 'pgtapre-', 0), ('pgtaprespect', 'pgtapspect', 1);
 insert into public.ref_families (lemma_norm, family_id, pos, rank)
 values ('pgtapinspect', 'pgtapinspect', null, 0), ('pgtapinspection', 'pgtapinspect', 'noun', 1);
+
+-- ref_sources is shared with İP2's word-level sources (cefrj, octanove, wordfreq): the
+-- morphology loader adds its own morph-* keys, without checksum or row count.
+insert into public.ref_sources (key, name, version, url, sha256, license, attribution)
+values ('morph-morphynet', 'MorphyNet English derivational morphology', 'v1, commit 378144f', 'https://example.org/m',
+        null, 'CC BY-SA 3.0', 'Batsuren et al. (2021)');
+select is((select count(*)::int from public.ref_sources where key in ('cefrj', 'octanove', 'wordfreq')), 3,
+  'the word-level sources are still there');
+select is((select attribution from public.ref_sources where key = 'morph-morphynet'), 'Batsuren et al. (2021)',
+  'a morphology source is stored next to them');
+select is((select conname::text from pg_constraint where conname = 'notes_term_type_check'
+            and pg_get_constraintdef(oid) like '%word%phrase%pattern%affix%'), 'notes_term_type_check',
+  'notes_term_type_check allows word, phrase, pattern and affix');
 
 insert into public.lexicon_pair_notes (term_norm, lang_pair, kind, content_key, content, curated)
 values ('pgtapactually', 'en-tr', 'false_friend', 'aktüel',

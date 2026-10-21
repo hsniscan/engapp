@@ -244,7 +244,7 @@ Response schema (`EXAMPLES_RESPONSE_SCHEMA`, Gemini `responseJsonSchema`):
 - `supabase/functions/_shared/examples.test.ts`: cache first and no charge, only missing
   pairs asked, bands, `fresh` with AVOID, duplicates, daily limit, quota mapping, unknown
   ids and contexts, malformed requests, no user text in the prompt, every validation rule.
-- `supabase/tests/database/07_examples.test.sql` (pgTAP): read-only for clients,
+- `supabase/tests/database/08_examples.test.sql` (pgTAP): read-only for clients,
   service-role insert, text-key uniqueness, pull scoped to the user's senses, content
   tables per user, registry and settings columns.
 - Client: `src/domain/examples.test.ts`, `src/data/examples.test.ts`,
