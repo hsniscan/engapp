@@ -576,7 +576,7 @@ const CandidateRow = memo(function CandidateRow({
         onCheckedChange={(v) => onToggle(c.id, v === true)}
         className="-mt-1.5"
       />
-      <div className={cn('flex min-w-0 flex-1 flex-col gap-2', !selected && 'opacity-70')}>
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
         <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
           <span lang="en" className="font-serif text-xl leading-snug font-semibold text-fg">
             {c.term}

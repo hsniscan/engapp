@@ -79,7 +79,11 @@ to the server. The preview shows "Senin için", "Kolay" (closed, `show_easy_cand
     21 Oct 2026 with `gemini-3.5-flash-lite` (the primary model was unavailable): B1 79 % at
     level / 3 % B2 / 18 % lower; B2 60 % / 5 % / 35 %; nothing above L+1, no known word
     selected; the list kept all 30 entries.
-12. **Numbering.** Migration `20261022000600_*`, pgTAP file `18_smart_extract.test.sql` (named
+12. **Unselected rows are no longer dimmed.** v0.1 faded an unselected row's content to 70 %
+    opacity; with nearly every row pre-selected that was rare, but now most rows start
+    unselected and the faded muted text fails WCAG AA contrast (axe, light and dark). The
+    checkbox and the card border show the selection.
+13. **Numbering.** Migration `20261022000600_*`, pgTAP file `18_smart_extract.test.sql` (named
     after this record to avoid clashing with the parallel packages' files).
 
 ## Consequences
