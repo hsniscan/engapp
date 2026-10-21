@@ -10,20 +10,65 @@ import {
   type LinkChoice,
 } from './link';
 
-const OPTIONS: {
+interface Option {
   value: LinkChoice;
-  label: 'account.merge' | 'account.discardLocal' | 'account.discardAccount';
-  hint: 'account.mergeHint' | 'account.discardLocalHint' | 'account.discardAccountHint';
-}[] = [
-  { value: 'merge', label: 'account.merge', hint: 'account.mergeHint' },
-  { value: 'discard_local', label: 'account.discardLocal', hint: 'account.discardLocalHint' },
-  { value: 'discard_account', label: 'account.discardAccount', hint: 'account.discardAccountHint' },
+  label:
+    | 'account.merge'
+    | 'account.discardLocal'
+    | 'account.discardAccount'
+    | 'account.copyCards'
+    | 'account.startWithAccount';
+  hint:
+    | 'account.mergeHint'
+    | 'account.discardLocalHint'
+    | 'account.discardAccountHint'
+    | 'account.copyCardsHint'
+    | 'account.startWithAccountHint';
+  /** Shows the "can't be undone" warning. */
+  destructive: boolean;
+}
+
+/** Guest data on this device: it is the same person's, so history may be merged. */
+const GUEST_OPTIONS: Option[] = [
+  { value: 'merge', label: 'account.merge', hint: 'account.mergeHint', destructive: false },
+  {
+    value: 'discard_local',
+    label: 'account.discardLocal',
+    hint: 'account.discardLocalHint',
+    destructive: true,
+  },
+  {
+    value: 'discard_account',
+    label: 'account.discardAccount',
+    hint: 'account.discardAccountHint',
+    destructive: true,
+  },
+];
+
+/**
+ * Another account's data on this device: only its cards may come over, as new cards.
+ * Nothing is lost either way (that account keeps its data on the server).
+ */
+const OTHER_ACCOUNT_OPTIONS: Option[] = [
+  {
+    value: 'copy_cards',
+    label: 'account.copyCards',
+    hint: 'account.copyCardsHint',
+    destructive: false,
+  },
+  {
+    value: 'discard_local',
+    label: 'account.startWithAccount',
+    hint: 'account.startWithAccountHint',
+    destructive: false,
+  },
 ];
 
 /**
  * Second-device question after sign-in (plan: birleştir [varsayılan] / yerel veriyi at /
- * hesaptakini at). It cannot be dismissed by clicking outside; besides answering, the user can
- * always "Misafir olarak devam et" (sign out, nothing changes on either side).
+ * hesaptakini at). When the device holds another account's data: kartları kopyala
+ * [varsayılan] / bu hesabın verisiyle başla. It cannot be dismissed by clicking outside;
+ * besides answering, the user can always "Misafir olarak devam et" (sign out, nothing changes).
  */
 export function AccountLinkDialog() {
   const { t } = useTranslation();
@@ -31,10 +76,13 @@ export function AccountLinkDialog() {
 
   useEffect(() => {
     if (s.phase !== 'done') return;
+    const notes = [
+      s.copied ? t('account.doneCopied', { count: s.copied }) : null,
+      s.duplicates > 0 ? t('account.doneDuplicates', { count: s.duplicates }) : null,
+    ].filter(Boolean);
     toast({
       title: t('account.done'),
-      description:
-        s.duplicates > 0 ? t('account.doneDuplicates', { count: s.duplicates }) : undefined,
+      description: notes.length ? notes.join(' ') : undefined,
       tone: 'success',
       duration: s.duplicates > 0 ? 10_000 : 5000,
     });
@@ -71,14 +119,15 @@ export function AccountLinkDialog() {
 
 function ChooseDialog({ applying, otherAccount }: { applying: boolean; otherAccount: boolean }) {
   const { t } = useTranslation();
-  const [choice, setChoice] = useState<LinkChoice>('merge');
-  const destructive = choice !== 'merge';
+  const options = otherAccount ? OTHER_ACCOUNT_OPTIONS : GUEST_OPTIONS;
+  const [choice, setChoice] = useState<LinkChoice>(options[0]!.value);
+  const destructive = options.find((o) => o.value === choice)?.destructive ?? false;
   return (
     <Dialog
       open
       onOpenChange={() => {}}
       hideClose
-      title={t('account.chooseTitle')}
+      title={otherAccount ? t('account.chooseTitleOther') : t('account.chooseTitle')}
       description={otherAccount ? t('account.chooseBodyOther') : t('account.chooseBody')}
       footer={
         <>
@@ -99,7 +148,7 @@ function ChooseDialog({ applying, otherAccount }: { applying: boolean; otherAcco
     >
       <fieldset disabled={applying} className="flex flex-col gap-2">
         <legend className="sr-only">{t('account.options')}</legend>
-        {OPTIONS.map((o) => {
+        {options.map((o) => {
           const selected = o.value === choice;
           return (
             <label

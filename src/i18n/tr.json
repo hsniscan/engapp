@@ -651,6 +651,17 @@
       "ok": "Anladım"
     }
   },
+  "resetHistory": {
+    "title": "Çalışma geçmişini sıfırla",
+    "hint": "Kartların ilerlemesini ve istatistikleri sıfırlar. Kartlar kalır.",
+    "button": "Sıfırla",
+    "confirmTitle": "Çalışma geçmişi sıfırlansın mı?",
+    "confirmBody": "Tüm kartların ilerlemesi ve çalışma geçmişin silinir; kartların kendisi kalır. Bu işlem geri alınamaz.",
+    "confirm": "Geçmişi sıfırla",
+    "done": "Çalışma geçmişi sıfırlandı",
+    "doneHint": "Tüm kartlar yeni kart olarak baştan başlıyor.",
+    "failed": "Çalışma geçmişi sıfırlanamadı."
+  },
   "integrity": {
     "title": "Veri bütünlüğü",
     "hint": "Kartların, notların ve tekrar kayıtlarının birbiriyle tutarlı olduğunu denetler.",
@@ -681,7 +692,12 @@
     "checking": "Hesabın hazırlanıyor…",
     "chooseTitle": "Bu hesapta zaten kartların var",
     "chooseBody": "Bu cihazdaki kartlar ile hesabındakileri nasıl bir araya getirelim?",
-    "chooseBodyOther": "Bu cihazda başka bir hesabın kartları var. Giriş yaptığın hesapla nasıl bir araya getirelim?",
+    "chooseTitleOther": "Bu cihazda başka bir hesabın kartları var",
+    "chooseBodyOther": "Daha önce başka bir Google hesabıyla giriş yapılmış. Çalışma geçmişi hesaplar arasında paylaşılmaz.",
+    "copyCards": "Kartları kopyala (çalışma geçmişi olmadan)",
+    "copyCardsHint": "Önerilen. Kelimeler, anlamlar ve cümleler bu hesaba yeni kart olarak gelir. Tekrar geçmişi, seri ve istatistikler diğer hesapta kalır.",
+    "startWithAccount": "Bu hesabın verisiyle başla",
+    "startWithAccountHint": "Bu cihazda yalnızca bu hesabın kartları olur. Diğer hesabın kartları silinmez; o hesapla girince geri gelir.",
     "options": "Seçenekler",
     "merge": "Birleştir",
     "mergeHint": "Önerilen. İki taraftaki kartlar ve tekrar geçmişi korunur. Aynı kelime iki kez varsa “olası kopya” diye işaretlenir, hiçbiri silinmez.",
@@ -696,6 +712,7 @@
     "errorBody": "Bağlantını kontrol edip tekrar dene ya da şimdilik misafir olarak devam et. Verilerin bu cihazda güvende.",
     "continueAsGuest": "Misafir olarak devam et",
     "done": "Hesabına bağlandın",
+    "doneCopied": "{{count}} kelime yeni kart olarak kopyalandı.",
     "doneDuplicates": "{{count}} kelime “olası kopya” olarak işaretlendi; Kartlar'da gözden geçirebilirsin."
   },
   "syncPanel": {

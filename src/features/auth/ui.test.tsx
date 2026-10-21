@@ -11,7 +11,7 @@ import { AccountPanel } from './AccountPanel';
 import { AuthPage } from './AuthPage';
 import { configureLink, linkAccount, resetLinkForTesting } from './link';
 import { setAuthStateForTesting } from './session';
-import { addNoteWithSenses } from '@/data';
+import { addNoteWithSenses, db, META, setMeta } from '@/data';
 import { FakeServer } from '@/sync/testing/fakeServer';
 import { SyncEngine } from '@/sync/engine';
 
@@ -125,5 +125,22 @@ describe('AccountLinkDialog', () => {
     await userEvent.click(screen.getByRole('radio', { name: /Hesaptakini at/ }));
     expect(screen.getByRole('alert')).toHaveTextContent('geri alınamaz');
     expect(screen.getByRole('button', { name: 'Devam et' })).toBeInTheDocument();
+  });
+
+  it("another account's data: copy without history (preselected) or start with the account", async () => {
+    const server = new FakeServer('u1');
+    await db.transaction('rw', db.meta, () => setMeta(META.userId, 'u-other'));
+    await addNoteWithSenses({ term: 'thrive', senses: [{ meaning_tr: 'gelişmek' }] });
+    configureLink({ transport: server, engine: new SyncEngine({ transport: server, getSessionUserId: async () => 'u1' }) });
+    await linkAccount('u1');
+    renderAt(<AccountLinkDialog />);
+    await screen.findByRole('dialog', { name: 'Bu cihazda başka bir hesabın kartları var' });
+    const radios = screen.getAllByRole('radio');
+    expect(radios).toHaveLength(2);
+    expect(screen.getByRole('radio', { name: /Kartları kopyala \(çalışma geçmişi olmadan\)/ })).toBeChecked();
+    await userEvent.click(screen.getByRole('radio', { name: /Bu hesabın verisiyle başla/ }));
+    expect(screen.queryByRole('radio', { name: /Birleştir/ })).toBeNull();
+    expect(screen.queryByRole('radio', { name: /Hesaptakini at/ })).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });
