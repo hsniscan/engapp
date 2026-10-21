@@ -4,5 +4,25 @@
   "rules": {
     "react/rules-of-hooks": "error",
     "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
+  },
+  "overrides": [
+    {
+      "files": ["src/domain/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              { "name": "react", "message": "src/domain must stay pure (AGENTS.md rule 4)." },
+              { "name": "dexie", "message": "src/domain must stay pure (AGENTS.md rule 4)." },
+              { "name": "@supabase/supabase-js", "message": "src/domain must stay pure (AGENTS.md rule 4)." }
+            ],
+            "patterns": [
+              { "group": ["@/data/*", "@/ui/*", "@/features/*", "@/sync/*", "@/ai/*", "@/lib/*", "../data/*", "../ui/*"], "message": "src/domain must stay pure (AGENTS.md rule 4)." }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }
