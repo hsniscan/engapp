@@ -8,6 +8,7 @@ import {
   topicWeights,
   type TopicWeight,
 } from '../domain/profile';
+import { EXAMPLE_TARGET } from '../domain/examples';
 import { isTopicKey, parseTopics, type TopicKey } from '../domain/topics';
 import type { Id, Millis, Settings } from '../domain/types';
 import { db } from './db';
@@ -27,21 +28,35 @@ export interface TopicProfile {
 }
 
 /**
- * Example-sentence verdicts for the profile. İP5 adds `content_feedback`; until then there
- * are none. Hook-up: read live like/skip rows of target_kind 'example', join each with its
- * sentence's context, return `{ context, verdict, at: updated_at }`.
+ * Example-sentence verdicts for the profile: live `content_feedback` rows on shared example
+ * sentences (İP5, target_kind 'example'), each joined with its sentence's context in the
+ * local lexicon_examples cache. A verdict whose sentence is not cached (yet) is left out;
+ * 'reject' rows are returned and ignored by the rule.
  */
 export async function loadFeedbackSignals(): Promise<FeedbackSignal[]> {
-  return [];
+  const rows = (
+    await db.content_feedback
+      .where('[target_kind+target_id]')
+      .between([EXAMPLE_TARGET, ''], [EXAMPLE_TARGET, '￿'], true, true)
+      .toArray()
+  ).filter((r) => r.deleted_at === null);
+  if (rows.length === 0) return [];
+  const examples = await db.lexicon_examples.bulkGet(rows.map((r) => r.target_id));
+  const out: FeedbackSignal[] = [];
+  rows.forEach((r, i) => {
+    const ex = examples[i];
+    if (ex) out.push({ context: ex.context, verdict: r.verdict, at: r.updated_at });
+  });
+  return out;
 }
 
 /** The profile from synced data (settings, sources, feedback). Safe inside useLiveQuery. */
 export async function getTopicProfile(now: Millis = Date.now()): Promise<TopicProfile> {
-  const [settings, sources, feedback] = await Promise.all([
-    db.settings.get(SETTINGS_ID),
-    db.sources.toArray(),
-    loadFeedbackSignals(),
-  ]);
+  // Plain sequential reads: this runs inside liveQueries (getSenseExamples calls it after its
+  // own reads; called first, the example reads after it stopped being observed in tests).
+  const settings = await db.settings.get(SETTINGS_ID);
+  const sources = await db.sources.toArray();
+  const feedback = await loadFeedbackSignals();
   const weights = topicWeights({
     now,
     interests: settings?.interests,
@@ -59,7 +74,7 @@ export async function getTopicProfile(now: Millis = Date.now()): Promise<TopicPr
 
 /**
  * The given example-sentence contexts, the user's most interesting first; equal ones keep
- * the given order. İP5 calls this to pick the tab that opens first.
+ * the given order. getSenseExamples (İP5) uses it to order the context tabs.
  */
 export async function getOrderedContexts<C extends string>(
   contexts: readonly C[],

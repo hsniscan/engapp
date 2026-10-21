@@ -98,10 +98,10 @@ describe('source topics', () => {
     expect(await db.sources.where('topics').equals('technology').count()).toBe(3);
     const p = await getTopicProfile(T);
     expect(p.weights[0]).toMatchObject({ topic: 'technology', texts: 3, weight: 3 });
-    // Plan acceptance: three technology texts → the "technical" tab opens first.
-    expect((await getOrderedContexts(['daily', 'business', 'technical', 'formal'], T))[0]).toBe(
-      'technical',
-    );
+    // Plan acceptance: three technology texts → the "technology" tab opens first.
+    expect(
+      (await getOrderedContexts(['daily', 'conversation', 'work', 'formal', 'technology'], T))[0],
+    ).toBe('technology');
   });
 
   it('a deleted text no longer counts', async () => {

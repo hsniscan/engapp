@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import tr from '../i18n/tr.json';
 import en from '../i18n/en.json';
+import { EXAMPLE_CONTEXT_KEYS } from './examples';
 import {
   aggregateTopics,
-  BASE_CONTEXTS,
+  CONTEXT_TOPIC,
   isTopicKey,
   parseTopics,
-  TOPIC_CONTEXT,
+  TOPIC_CONTEXTS,
   TOPIC_KEYS,
   topicsForContext,
 } from './topics';
@@ -44,8 +45,20 @@ describe('topic list', () => {
     }
   });
 
-  it('maps every topic to a base context', () => {
-    for (const k of TOPIC_KEYS) expect(BASE_CONTEXTS).toContain(TOPIC_CONTEXT[k]);
+  it('maps every topic to contexts of the İP5 catalogue', () => {
+    for (const k of TOPIC_KEYS) {
+      expect(TOPIC_CONTEXTS[k].length).toBeGreaterThan(0);
+      for (const c of TOPIC_CONTEXTS[k]) expect(EXAMPLE_CONTEXT_KEYS).toContain(c);
+    }
+  });
+
+  it('counts feedback on a context only for a topic that favours it', () => {
+    for (const [context, topic] of Object.entries(CONTEXT_TOPIC)) {
+      expect(TOPIC_CONTEXTS[topic!]).toContain(context);
+    }
+    // Every subject context of the catalogue stands for a topic; registers do not.
+    const subjects = EXAMPLE_CONTEXT_KEYS.filter((c) => c !== 'conversation' && c !== 'formal');
+    expect(Object.keys(CONTEXT_TOPIC).sort()).toEqual([...subjects].sort());
   });
 });
 
@@ -63,10 +76,14 @@ describe('parseTopics', () => {
 
 describe('topicsForContext', () => {
   it('maps contexts to the topics they are about', () => {
-    expect(topicsForContext('technical')).toEqual(['technology']);
-    expect(topicsForContext('business')).toEqual(['business']);
+    expect(topicsForContext('technology')).toEqual(['technology']);
+    expect(topicsForContext('work')).toEqual(['business']);
+    expect(topicsForContext('money')).toEqual(['business']);
+    expect(topicsForContext('academic')).toEqual(['education']);
+    expect(topicsForContext('culture')).toEqual(['arts']);
     expect(topicsForContext('daily')).toEqual(['daily_life']);
     expect(topicsForContext('formal')).toEqual([]);
+    expect(topicsForContext('conversation')).toEqual([]);
     expect(topicsForContext('travel')).toEqual(['travel']);
     expect(topicsForContext('unknown')).toEqual([]);
   });

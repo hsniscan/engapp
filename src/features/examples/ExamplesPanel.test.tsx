@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { addNoteWithSenses, db, ensureSettings, getCardView, storeExamples, type CardView } from '@/data';
+import { addNoteWithSenses, db, ensureSettings, getCardView, setInterest, storeExamples, type CardView } from '@/data';
 import type { LexiconExample } from '@/domain/types';
 import { CardBack } from '@/features/review/CardFaces';
 import { resetDb } from '@/test/db';
@@ -68,6 +68,17 @@ describe('example sentences on the back of a card', () => {
 
     await user.click(within(tabs).getByRole('tab', { name: /İş/ }));
     expect(await screen.findByText(/Our team can/)).toBeInTheDocument();
+  });
+
+  it('orders the context tabs by the interest profile (İP7) and follows its changes', async () => {
+    localStorage.setItem('engapp.examples.open', '1');
+    renderRoute(<CardBack view={await view()} isNew={false} speech={speech} />);
+    const tabs = await screen.findByRole('tablist', { name: 'Bağlamlar' });
+    expect(within(tabs).getAllByRole('tab').map((t) => t.textContent)).toEqual(['Günlük2', 'Sohbet0', 'İş1', 'Resmi0']);
+    await setInterest('business', true, T);
+    await waitFor(() =>
+      expect(within(tabs).getAllByRole('tab').map((t) => t.textContent)).toEqual(['İş1', 'Günlük2', 'Sohbet0', 'Resmi0']),
+    );
   });
 
   it('like is a toggle with a text label; reject hides the sentence for good', async () => {

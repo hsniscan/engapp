@@ -28,6 +28,7 @@ import type {
 import { db } from './db';
 import { ActionError } from './errors';
 import { exampleCallsKey, getMeta, setMeta } from './meta';
+import { getOrderedContexts } from './profile';
 import { dayConfig, getSettings } from './settings';
 import { applyLexiconExamples } from './sync';
 import { writeTx } from './writer';
@@ -78,16 +79,19 @@ export interface SenseExamplesView {
 export async function getSenseExamples(lexiconSenseId: Id, now: Millis = Date.now()): Promise<SenseExamplesView> {
   const settings = await getSettings(now);
   const band = bandFor(settings);
-  const selected = selectedContexts(settings);
   const rows = (await cachedExamples([lexiconSenseId])).get(lexiconSenseId) ?? [];
   const state = await stateFor(rows.map((r) => r.id));
+  const job = (await db.example_jobs.get(jobKey(lexiconSenseId, band))) ?? null;
+  // Tabs: the selected contexts, the user's most interesting first (İP7 profile; with an
+  // empty profile the settings order stays).
+  const selected = await getOrderedContexts(selectedContexts(settings), now);
   return {
     lexiconSenseId,
     band,
     selected,
     trVisible: settings.example_tr_visible === true,
     examples: buildSenseExamples(rows, state, band, selected),
-    job: (await db.example_jobs.get(jobKey(lexiconSenseId, band))) ?? null,
+    job,
   };
 }
 

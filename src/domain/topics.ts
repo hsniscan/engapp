@@ -2,6 +2,7 @@
 // in settings.interests / settings.muted_topics / sources.topics and returned by the extract
 // prompt, so a key is never renamed or removed, only added. Display names live in i18n
 // (`topics.<key>` in tr.json / en.json). Order here = order on screen.
+import type { ExampleContext } from '../../supabase/functions/_shared/examples-contracts';
 
 export const TOPIC_KEYS = [
   'daily_life',
@@ -31,49 +32,53 @@ export function isTopicKey(value: unknown): value is TopicKey {
 }
 
 /**
- * The example-sentence contexts every word starts with (İP5). A context may also be a topic
- * key ("travel", "sports"): those are the contexts that grow with the user's interests.
+ * Topic → example-sentence contexts it favours, in İP5's catalogue (examples-contracts.ts,
+ * EXAMPLE_CONTEXTS). orderContexts scores a context with the weights of the topics that
+ * list it, so the context tab of the user's interests opens first.
+ * "conversation" and "formal" are registers (how a sentence sounds, not what it is about):
+ * politics and law favour "formal" (news, notices), nothing favours "conversation".
  */
-export const BASE_CONTEXTS = ['daily', 'business', 'technical', 'formal'] as const;
-export type BaseContext = (typeof BASE_CONTEXTS)[number];
-
-/** The base context whose sentences sound most like each topic. */
-export const TOPIC_CONTEXT: Readonly<Record<TopicKey, BaseContext>> = {
-  daily_life: 'daily',
-  technology: 'technical',
-  science: 'technical',
-  business: 'business',
-  health: 'daily',
-  education: 'formal',
-  travel: 'daily',
-  food: 'daily',
-  sports: 'daily',
-  nature: 'daily',
-  arts: 'daily',
-  literature: 'daily',
-  film: 'daily',
-  games: 'daily',
-  politics: 'formal',
-  law: 'formal',
+export const TOPIC_CONTEXTS: Readonly<Record<TopicKey, readonly ExampleContext[]>> = {
+  daily_life: ['daily'],
+  technology: ['technology'],
+  science: ['nature', 'academic'],
+  business: ['work', 'money'],
+  health: ['health'],
+  education: ['academic'],
+  travel: ['travel'],
+  food: ['daily'],
+  sports: ['sports'],
+  nature: ['nature'],
+  arts: ['culture'],
+  literature: ['culture'],
+  film: ['culture'],
+  games: ['culture'],
+  politics: ['formal'],
+  law: ['formal'],
 };
 
 /**
- * Topics a liked or skipped example sentence says something about. An interest context
- * ("travel") is its own topic; a base context names the one topic it stands for. "formal"
- * says how a sentence sounds, not what it is about, so it counts for no topic.
+ * The one topic a liked or skipped sentence of a context counts for (its main subject).
+ * Registers ("conversation", "formal") are absent: feedback on them counts for no topic.
+ * Every entry is a context its topic lists in TOPIC_CONTEXTS (tested).
  */
+export const CONTEXT_TOPIC: Readonly<Partial<Record<ExampleContext, TopicKey>>> = {
+  daily: 'daily_life',
+  work: 'business',
+  money: 'business',
+  academic: 'education',
+  technology: 'technology',
+  travel: 'travel',
+  health: 'health',
+  culture: 'arts',
+  sports: 'sports',
+  nature: 'nature',
+};
+
+/** Topics a liked or skipped example sentence says something about (none or one). */
 export function topicsForContext(context: string): TopicKey[] {
-  if (isTopicKey(context)) return [context];
-  switch (context) {
-    case 'daily':
-      return ['daily_life'];
-    case 'business':
-      return ['business'];
-    case 'technical':
-      return ['technology'];
-    default:
-      return [];
-  }
+  const topic = (CONTEXT_TOPIC as Readonly<Record<string, TopicKey | undefined>>)[context];
+  return topic ? [topic] : [];
 }
 
 /** Accepts "Technology", " daily-life ", "daily life" for daily_life etc. */

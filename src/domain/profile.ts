@@ -7,7 +7,7 @@
 //          + 0.5 for each liked example sentence about it, halved every 60 days
 //          − 0.25 for each skipped one, halved every 60 days
 //   never below 0; a topic the user turned off weighs 0.
-import { isTopicKey, TOPIC_CONTEXT, TOPIC_KEYS, type TopicKey, topicsForContext } from './topics';
+import { isTopicKey, TOPIC_CONTEXTS, TOPIC_KEYS, type TopicKey, topicsForContext } from './topics';
 import type { Millis } from './types';
 
 export const PROFILE_RULE = {
@@ -136,9 +136,9 @@ export function rankedTopics(weights: readonly TopicWeight[]): TopicKey[] {
 }
 
 /**
- * Orders example-sentence contexts by the profile, heaviest first. A context scores the
- * weight of the topic with the same key (an interest context such as "travel") plus the
- * weights of the topics that fall under it (TOPIC_CONTEXT: technology and science → "technical").
+ * Orders example-sentence contexts (İP5 catalogue keys) by the profile, heaviest first. A
+ * context scores the weights of the topics that favour it (TOPIC_CONTEXTS: technology →
+ * "technology"; business → "work" and "money"; law and politics → "formal").
  * Contexts with equal scores — including everything when the profile is empty — keep the
  * order they were given in, so the caller's default order is the fallback.
  */
@@ -148,7 +148,9 @@ export function orderContexts<C extends string>(
 ): C[] {
   const score = (c: string): number => {
     let s = 0;
-    for (const w of weights) if (w.topic === c || TOPIC_CONTEXT[w.topic] === c) s += w.weight;
+    for (const w of weights) {
+      if ((TOPIC_CONTEXTS[w.topic] as readonly string[]).includes(c)) s += w.weight;
+    }
     return s;
   };
   return contexts

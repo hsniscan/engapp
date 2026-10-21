@@ -15,8 +15,13 @@ wired yet; the rule takes them as inputs.
 1. **Topic list** (`src/domain/topics.ts`): 16 stable snake_case keys — the plan's 15 plus
    `literature` ("Kitap ve edebiyat"), because books and novels are a main import source and
    fit no other topic. Keys are never renamed or removed. Names live in i18n (`topics.*`).
-   Each topic maps to one of İP5's base contexts (`daily`, `business`, `technical`,
-   `formal`); an interest context such as `travel` is the topic key itself.
+   Each topic favours one or two contexts of İP5's 12-context catalogue (`TOPIC_CONTEXTS`:
+   technology → `technology`, business → `work` + `money`, science → `nature` + `academic`,
+   arts/literature/film/games → `culture`, politics/law → `formal`, …), and each subject
+   context counts feedback for exactly one topic (`CONTEXT_TOPIC`: `culture` → arts,
+   `work`/`money` → business). The registers `conversation` and `formal` count for none.
+   (Built against a 4-context draft — `daily`, `business`, `technical`, `formal` — and
+   reconciled with İP5's catalogue when the packages were merged, v0.2 batch 1.)
 2. **Rule** (`src/domain/profile.ts`, pure, tested with fixed scenarios and a property test):
    picked 3 + each live text about the topic 1 + each liked example 0.5 − each skipped 0.25,
    floored at 0; muted = 0. Deviations:
@@ -25,7 +30,8 @@ wired yet; the rule takes them as inputs.
    - **A text with two topics counts 1 for each** (not ½): "3 teknoloji metni yükledin" stays
      literally true.
    - **Deleted texts do not count; `reject` verdicts are ignored** (they say a sentence is
-     wrong, not that the topic is dull). A `formal` example counts for no topic.
+     wrong, not that the topic is dull). A `formal` or `conversation` example counts for no
+     topic.
    - The "neden" shows plain counts ("Sen seçtin · 3 metin yükledin"); only the bar decays.
 3. **API for other features**: `orderContexts(contexts, weights)` (equal scores keep the
    caller's order, so an empty profile changes nothing), `rankedTopics`, data-layer
@@ -51,9 +57,10 @@ wired yet; the rule takes them as inputs.
    `source_sentence_tr`; here it would re-open the first-run question.
 8. **Dexie v7** (numbering agreed for the parallel packages): `sources` gains a `*topics`
    multi-entry index (for "texts about this topic", e.g. practice by topic); no row upgrade
-   because the fields are optional. **Backup schema 4**: optional fields, so older files keep
-   their checksum and restore; a v3 client refuses a v4 file instead of reporting a checksum
-   error. Account merge copies a source's topics (text metadata, not history); the other
+   because the fields are optional. **Backup schema 6** (built as 4; renumbered after İP2's 4
+   and İP5's 5 when merged, final format 7 with İP8's decks): optional fields, so older files
+   keep their checksum and restore; an older client refuses a newer file instead of
+   reporting a checksum error. Account merge copies a source's topics (text metadata, not history); the other
    account's settings (interests) are still dropped (decision 0009).
 9. Migration `20261022000300_interests_profile.sql`; pgTAP `10_interests_profile.test.sql`.
 
@@ -61,8 +68,11 @@ wired yet; the rule takes them as inputs.
 
 - extract-v3 returns `topics` per chunk → after a job, `setSourceTopics(source_id,
   aggregateTopics(chunkTopics))`.
-- `loadFeedbackSignals()` reads İP5's `content_feedback` (like/skip on examples) joined with
-  the example's context.
-- İP5 orders its tabs with `orderContexts`; practice "ilgi alanımdan" (mode `topic`) selects
-  notes whose senses' `source_id` has one of `rankedTopics`.
+- Done in the batch-1 merge: `loadFeedbackSignals()` reads İP5's live `content_feedback`
+  rows of kind `example` joined with the sentence's context in `lexicon_examples` (a
+  verdict whose sentence is not cached is left out), and `getSenseExamples` orders the
+  selected context tabs with `getOrderedContexts` (the card rotation keeps the settings
+  order; a tab the user picked last still wins).
+- Practice "ilgi alanımdan" (mode `topic`) selects notes whose senses' `source_id` has one
+  of `rankedTopics`.
 - No manual way to set a text's topics; the extract call is the only source for now.

@@ -19,6 +19,7 @@ import {
 } from './examples';
 import { exportBackup, restoreBackup } from './maintenance';
 import { META, setMeta } from './meta';
+import { getTopicProfile, loadFeedbackSignals, setInterest } from './profile';
 import { getCardView } from './queries';
 import { updateSettings } from './settings';
 import { backupChecksum } from '../domain/backup';
@@ -79,6 +80,39 @@ describe('verdicts', () => {
     await setExampleVerdict('e1', null, T + 2);
     expect((await db.content_feedback.toArray())[0]!.deleted_at).toBe(T + 2);
     expect((await getSenseExamples('ls-cope', T)).examples.byContext.get('daily')).toHaveLength(2);
+  });
+});
+
+describe('interest profile (İP7 hook-up)', () => {
+  it('likes and skips feed the profile through the sentence context', async () => {
+    await storeExamples([
+      ex({ id: 'e1', context: 'travel' }),
+      ex({ id: 'e2', context: 'travel', text_en: 'She copes.', span: [4, 9] }),
+      ex({ id: 'e3', context: 'formal' }),
+      ex({ id: 'e4', context: 'work' }),
+    ]);
+    await setExampleVerdict('e1', 'like', T);
+    await setExampleVerdict('e2', 'like', T);
+    await setExampleVerdict('e3', 'like', T); // a register: counts for no topic
+    await setExampleVerdict('e4', 'skip', T);
+    await setExampleVerdict('e4', null, T + 1); // taken back: not counted
+    const signals = await loadFeedbackSignals();
+    expect(signals.map((s) => [s.context, s.verdict]).sort()).toEqual([
+      ['formal', 'like'],
+      ['travel', 'like'],
+      ['travel', 'like'],
+    ]);
+    const p = await getTopicProfile(T);
+    expect(p.weights.find((w) => w.topic === 'travel')).toMatchObject({ likes: 2, weight: 1 });
+    expect(p.ranked).toEqual(['travel']);
+  });
+
+  it('orders the context tabs by the profile; an empty profile keeps the settings order', async () => {
+    await storeExamples([ex({ id: 'e1', context: 'daily' })]);
+    await updateSettings({ example_contexts: ['daily', 'work', 'technology'] }, T);
+    expect((await getSenseExamples('ls-cope', T)).selected).toEqual(['daily', 'work', 'technology']);
+    await setInterest('technology', true, T);
+    expect((await getSenseExamples('ls-cope', T)).selected).toEqual(['technology', 'daily', 'work']);
   });
 });
 

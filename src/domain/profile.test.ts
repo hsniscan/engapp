@@ -10,7 +10,8 @@ import {
   toggleInList,
   topicWeights,
 } from './profile';
-import { BASE_CONTEXTS, TOPIC_KEYS, type TopicKey } from './topics';
+import { EXAMPLE_CONTEXT_KEYS } from './examples';
+import { TOPIC_KEYS, type TopicKey } from './topics';
 
 const DAY = 86_400_000;
 const NOW = Date.UTC(2026, 9, 21, 12);
@@ -79,7 +80,7 @@ describe('topicWeights (fixed scenarios)', () => {
         fb('travel', 'like'),
         fb('travel', 'like'),
         fb('travel', 'skip'),
-        fb('technical', 'skip'),
+        fb('technology', 'skip'),
         fb('daily', 'reject'),
       ],
     });
@@ -89,7 +90,7 @@ describe('topicWeights (fixed scenarios)', () => {
   });
 
   it('decays feedback like texts', () => {
-    const ws = topicWeights({ now: NOW, feedback: [fb('business', 'like', 60)] });
+    const ws = topicWeights({ now: NOW, feedback: [fb('work', 'like', 60)] });
     expect(weightOf(ws, 'business').weight).toBe(0.25);
   });
 
@@ -122,7 +123,7 @@ describe('topicWeights (fixed scenarios)', () => {
         fc.array(fc.record({ topics: fc.array(topic, { maxLength: 3 }), days: fc.nat(400) })),
         fc.array(
           fc.record({
-            context: fc.constantFrom(...BASE_CONTEXTS, ...TOPIC_KEYS),
+            context: fc.constantFrom(...EXAMPLE_CONTEXT_KEYS, ...TOPIC_KEYS),
             verdict: fc.constantFrom('like' as const, 'skip' as const, 'reject' as const),
             days: fc.nat(400),
           }),
@@ -154,34 +155,47 @@ describe('topicWeights (fixed scenarios)', () => {
 });
 
 describe('orderContexts', () => {
-  const contexts = ['daily', 'business', 'technical', 'formal'] as const;
+  // İP5's default contexts plus the technology tab.
+  const contexts = ['daily', 'conversation', 'work', 'formal', 'technology'] as const;
 
   it('keeps the given order for an empty profile', () => {
     expect(orderContexts(contexts, topicWeights({ now: NOW }))).toEqual([...contexts]);
   });
 
-  it('opens "technical" first for a user who imported 3 technology texts (plan acceptance)', () => {
+  it('opens "technology" first for a user who imported 3 technology texts (plan acceptance)', () => {
     const ws = topicWeights({
       now: NOW,
       sources: [src(['technology']), src(['technology']), src(['technology'])],
     });
-    expect(orderContexts(contexts, ws)[0]).toBe('technical');
+    expect(orderContexts(contexts, ws)[0]).toBe('technology');
   });
 
-  it('sums the topics under a base context and puts an interest context by its own topic', () => {
+  it('sums the topics that favour a context', () => {
     const ws = topicWeights({
       now: NOW,
       interests: ['law', 'politics', 'travel'],
       sources: [src(['business']), src(['business'])],
     });
-    // formal = law 3 + politics 3 = 6; daily = travel 3; business = 2; travel = 3 (own key) + 0.
-    expect(orderContexts([...contexts, 'travel'], ws)).toEqual([
+    // formal = law 3 + politics 3 = 6; travel = 3; work = money = business 2; the rest 0.
+    expect(orderContexts([...contexts, 'travel', 'money'], ws)).toEqual([
       'formal',
-      'daily',
       'travel',
-      'business',
-      'technical',
+      'work',
+      'money',
+      'daily',
+      'conversation',
+      'technology',
     ]);
+  });
+
+  it('counts a liked sentence for its context topic only (registers count for none)', () => {
+    const ws = topicWeights({
+      now: NOW,
+      feedback: [fb('culture', 'like'), fb('formal', 'like'), fb('conversation', 'like')],
+    });
+    expect(weightOf(ws, 'arts')).toMatchObject({ weight: 0.5, likes: 1 });
+    expect(weightOf(ws, 'film').likes).toBe(0);
+    expect(rankedTopics(ws)).toEqual(['arts']);
   });
 });
 
