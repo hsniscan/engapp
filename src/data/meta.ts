@@ -8,7 +8,13 @@ export const META = {
   schemaVersion: 'schema_version',
   syncCursor: 'sync_cursor',
   lexiconCursor: 'lexicon_cursor',
+  /** The server answered sync_pull_v3, so it stores practice_logs (see sync/engine.ts). */
+  serverPractice: 'server_practice_logs',
 } as const;
+
+/** Meta key of a day's extra new-card allowance ("+5 yeni kart"). Device-local, never synced. */
+export const EXTRA_NEW_PREFIX = 'extra_new:';
+export const extraNewKey = (day: string): string => `${EXTRA_NEW_PREFIX}${day}`;
 
 export async function getMeta<T>(key: string): Promise<T | undefined> {
   return (await db.meta.get(key))?.value as T | undefined;

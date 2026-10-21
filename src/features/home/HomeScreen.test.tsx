@@ -35,7 +35,9 @@ describe('home', () => {
     for (const item of (await getStudyQueue()).items)
       await answerCard({ card_id: item.card_id, rating: 4, duration_ms: 5000 });
     expect(await screen.findByText('Bugünlük bitti')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Tekrara başla' })).toBeDisabled();
+    // Done for today: the way on is "Biraz daha çalış", not a disabled review button.
+    expect(screen.getByRole('link', { name: 'Biraz daha çalış' })).toHaveAttribute('href', '/more');
+    expect(screen.queryByRole('link', { name: 'Tekrara başla' })).toBeNull();
     expect(screen.getByRole('status')).toHaveTextContent(/Sıradaki tekrar|Yarın/);
     expect(await db.daily_activity.count()).toBe(1);
   });

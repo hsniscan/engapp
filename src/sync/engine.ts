@@ -7,6 +7,9 @@
 //         re-pull from 0, drop local rows the server no longer has.
 //   lexicon: lexicon_pull from meta.lexicon_cursor, then lexicon_get for referenced senses
 //         missing from lexicon_cache.
+//   practice_logs wait in the outbox until a pull has been answered by sync_pull_v3 (the
+//         server has the table): a client deployed before the migration does not burn the
+//         rows' attempts on "unknown table" rejections.
 //
 // Triggers (startSyncEngine): app open, `online`, back to a visible tab, every 60 s while
 // visible, shortly after local changes, requestSync() (end of a review session) and the
@@ -33,7 +36,7 @@ import {
   type RemoteBatch,
   type ResyncTable,
 } from '@/data';
-import type { Id, Millis } from '@/domain/types';
+import type { Id, Millis, OutboxTable } from '@/domain/types';
 import {
   getLexiconSenses,
   MAX_PULL_PAGE,
@@ -129,11 +132,12 @@ export interface RunOptions {
  */
 export async function pushOutbox(t: SyncTransport, report: SyncReport, opts: RunOptions = {}): Promise<void> {
   const now = opts.now ?? Date.now;
+  const skipTables = new Set<OutboxTable>((await getMeta<boolean>(META.serverPractice)) ? [] : ['practice_logs']);
   // Rows that failed in this run are not sent again in the same run (a forced run would
   // otherwise resend them with every batch and burn through their attempts at once).
   const failedThisRun = new Set<string>();
   for (let round = 0; round < MAX_ROUNDS; round++) {
-    const items = await takeOutboxItems(MAX_PUSH_BATCH, now(), opts.force, failedThisRun);
+    const items = await takeOutboxItems(MAX_PUSH_BATCH, now(), opts.force, failedThisRun, skipTables);
     if (items.length === 0) return;
     let res: PushResult;
     try {
@@ -160,12 +164,21 @@ export async function pushOutbox(t: SyncTransport, report: SyncReport, opts: Run
   }
 }
 
+/** Remember whether the server stores practice_logs (it answered with sync_pull_v3). */
+async function notePullVersion(page: PullResult): Promise<void> {
+  const supported = page.version >= 3;
+  if (((await getMeta<boolean>(META.serverPractice)) ?? false) !== supported) {
+    await db.transaction('rw', db.meta, () => setMeta(META.serverPractice, supported));
+  }
+}
+
 /** Incremental pull. Returns true when the server asked for a full resync. */
 async function pullAll(t: SyncTransport, report: SyncReport, now: () => Millis): Promise<boolean> {
   const start = await getCursor(META.syncCursor);
   let cursor = start;
   for (let round = 0; round < MAX_ROUNDS; round++) {
     const page = await t.pullChanges(cursor, MAX_PULL_PAGE, start);
+    await notePullVersion(page);
     if (page.full_resync) return true;
     for (const bad of page.invalid) void logError(bad.error, `sync.pull invalid ${bad.table}/${String(bad.id)}`);
     await applyPulledPage(toBatch(page.rows), page.next_seq, now());
@@ -198,6 +211,7 @@ async function fullResync(t: SyncTransport, report: SyncReport, now: () => Milli
   let restarts = 0;
   for (let round = 0; round < MAX_ROUNDS; round++) {
     const page = await t.pullChanges(cursor, MAX_PULL_PAGE, 0);
+    await notePullVersion(page);
     if (page.full_resync) {
       // Tombstones were purged past our cursor while we were paging: the pages we have are
       // fine, but `seen` would miss every row of the pages not pulled yet, and removing
@@ -207,7 +221,7 @@ async function fullResync(t: SyncTransport, report: SyncReport, now: () => Milli
       cursor = 0;
       continue;
     }
-    for (const r of page.rows) if (r.table !== 'review_logs') seen[r.table].add(r.row.id);
+    for (const r of page.rows) if (r.table !== 'review_logs' && r.table !== 'practice_logs') seen[r.table].add(r.row.id);
     for (const bad of page.invalid) {
       // An invalid row still exists on the server: never delete it locally.
       if (bad.table in seen && typeof bad.id === 'string') seen[bad.table as ResyncTable].add(bad.id);

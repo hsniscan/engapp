@@ -1,13 +1,14 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
+import { Link, useLocation, useSearchParams } from 'react-router';
 import { db, getSettings } from '@/data';
 import { Rating as R, type RatingValue } from '@/domain/types';
 import { getNextDue, cfgOf } from '@/features/home/queries';
 import { nextDueText } from '@/features/home/nextDueText';
 import { requestSync } from '@/sync';
 import {
+  Badge,
   Button,
   buttonClasses,
   DropdownMenu,
@@ -38,9 +39,17 @@ const ratingValue: Record<Rating, RatingValue> = {
 const KEY_SCOPE_IGNORE =
   'input, textarea, select, [contenteditable="true"], [role="dialog"], [role="menu"]';
 
+/** A fresh session for every navigation, so /review -> /review?mode=ahead starts over. */
+export function ReviewRoute() {
+  const location = useLocation();
+  return <ReviewScreen key={location.key} />;
+}
+
 export function ReviewScreen() {
   const { t } = useTranslation();
-  const { state, start, actions: session } = useReviewSession();
+  const [search] = useSearchParams();
+  const ahead = search.get('mode') === 'ahead';
+  const { state, start, actions: session } = useReviewSession(ahead ? 'ahead' : 'normal');
   const settings = useLiveQuery(() => getSettings(), []);
   const speech = useSpeech(settings?.voice ?? 'en-US');
   const [editOpen, setEditOpen] = useState(false);
@@ -153,7 +162,8 @@ export function ReviewScreen() {
 
   if (state.phase === 'done') {
     const answers = session.getAnswers();
-    if (answers.length === 0) return <ReviewEmpty canUndo={state.canUndo} onUndo={doUndo} />;
+    if (answers.length === 0)
+      return <ReviewEmpty ahead={ahead} canUndo={state.canUndo} onUndo={doUndo} />;
     return (
       <SessionSummary
         answers={answers}
@@ -176,6 +186,11 @@ export function ReviewScreen() {
   return (
     <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] w-full max-w-xl flex-col px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:pt-5">
       <h1 className="sr-only">{t('review.title')}</h1>
+      {ahead && (
+        <div className="mb-1 flex">
+          <Badge tone="accent">{t('review.aheadBadge')}</Badge>
+        </div>
+      )}
       <div className="mb-4 flex items-center gap-2">
         <ProgressBar
           value={state.answered}
@@ -308,7 +323,15 @@ function ReviewSkeleton() {
   );
 }
 
-function ReviewEmpty({ canUndo, onUndo }: { canUndo: boolean; onUndo: () => void }) {
+function ReviewEmpty({
+  ahead,
+  canUndo,
+  onUndo,
+}: {
+  ahead: boolean;
+  canUndo: boolean;
+  onUndo: () => void;
+}) {
   const { t } = useTranslation();
   const info = useLiveQuery(async () => {
     const [next, settings, anyNote] = await Promise.all([
@@ -324,23 +347,29 @@ function ReviewEmpty({ canUndo, onUndo }: { canUndo: boolean; onUndo: () => void
       <h1 className="sr-only">{t('review.title')}</h1>
       <EmptyState
         icon={info.hasCards ? 'check' : 'cards'}
-        title={info.hasCards ? t('review.emptyTitle') : t('review.noCardsTitle')}
+        title={
+          !info.hasCards
+            ? t('review.noCardsTitle')
+            : ahead
+              ? t('review.aheadEmptyTitle')
+              : t('review.emptyTitle')
+        }
         description={
           info.hasCards ? nextDueText(t, info.next, info.now, info.tz) : t('review.noCardsBody')
         }
         action={
           <>
-            <Link
-              to={info.hasCards ? '/' : '/add'}
-              className={buttonClasses({ size: 'lg', className: 'min-w-60' })}
-            >
-              {info.hasCards ? t('review.backHome') : t('review.addCards')}
-            </Link>
-            {info.hasCards && (
-              <Link
-                to="/add"
-                className={buttonClasses({ variant: 'ghost', className: 'min-w-60' })}
-              >
+            {info.hasCards ? (
+              <>
+                <Link to="/more" className={buttonClasses({ size: 'lg', className: 'min-w-60' })}>
+                  {t('review.moreStudy')}
+                </Link>
+                <Link to="/" className={buttonClasses({ variant: 'ghost', className: 'min-w-60' })}>
+                  {t('review.backHome')}
+                </Link>
+              </>
+            ) : (
+              <Link to="/add" className={buttonClasses({ size: 'lg', className: 'min-w-60' })}>
                 {t('review.addCards')}
               </Link>
             )}

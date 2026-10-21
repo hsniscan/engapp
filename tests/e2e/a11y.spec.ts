@@ -104,6 +104,18 @@ for (const width of [360, 1280]) {
       ).toBeVisible();
       await check(page, 'stats', tag);
 
+      await page.goto('/more');
+      await expect(
+        page.getByRole('heading', { name: 'Biraz daha çalış', level: 1, exact: true }),
+      ).toBeVisible();
+      await check(page, 'more', tag);
+      await page.getByRole('button', { name: 'Pratiğe başla' }).click();
+      await expect(page.getByText('Pratik · takvimin değişmez')).toBeVisible();
+      await check(page, 'practice-front', tag);
+      await page.locator('body').press('Space');
+      await expect(page.getByRole('group', { name: 'Bildin mi?' })).toBeVisible();
+      await check(page, 'practice-back', tag);
+
       await page.goto('/settings');
       await expect(
         page.getByRole('heading', { name: 'Ayarlar', level: 1, exact: true }),

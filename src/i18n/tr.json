@@ -112,7 +112,8 @@
     "emptyStep1": "İngilizce bir kelime ya da kalıp ekle: Türkçe anlamı ve bir örnek cümleyle.",
     "emptyStep2": "Her gün birkaç dakika tekrar et; kartlar tam unutmak üzereyken geri gelir.",
     "emptyStep3": "Serini buradan izle; tekrar yaptığın her gün seriye eklenir.",
-    "emptyAction": "İlk kelimeni ekle"
+    "emptyAction": "İlk kelimeni ekle",
+    "moreStudy": "Biraz daha çalış"
   },
   "review": {
     "title": "Tekrar",
@@ -166,7 +167,10 @@
       "ratings": "Cevapların dağılımı",
       "streakExtended": "Bugün serine eklendi.",
       "streakKept": "Bugünkü tekrarların kaydedildi."
-    }
+    },
+    "moreStudy": "Biraz daha çalış",
+    "aheadBadge": "Yarının kartları",
+    "aheadEmptyTitle": "Yarının kartları bitti"
   },
   "add": {
     "title": "Kart ekle"
@@ -856,6 +860,66 @@
       "signIn": "AI ile doldurmak için giriş yap.",
       "noSenses": "Bu kelime için sözlükte ya da AI'da anlam bulunamadı.",
       "noMore": "Başka yaygın anlam bulunamadı."
+    }
+  },
+  "more": {
+    "title": "Biraz daha çalış",
+    "descDone": "Bugünkü tekrarların bitti. İstersen biraz daha devam et.",
+    "descPending_one": "Bugün {{count}} kart daha seni bekliyor.",
+    "descPending_other": "Bugün {{count}} kart daha seni bekliyor.",
+    "startReview": "Tekrara başla",
+    "newTitle": "Yeni kartlar",
+    "newBody": "Günlük sınırının üstüne, yalnızca bugün için.",
+    "newWaiting_one": "Bekleyen yeni kart: {{count}}",
+    "newWaiting_other": "Bekleyen yeni kart: {{count}}",
+    "newExtraToday_one": "Bugün {{count}} ek kart açtın.",
+    "newExtraToday_other": "Bugün {{count}} ek kart açtın.",
+    "newAdd": "+{{count}} yeni kart",
+    "newNone": "Bekleyen yeni kart yok.",
+    "addCards": "Kart ekle",
+    "practiceTitle": "Pratik turu",
+    "practiceBody": "Puan tutulmaz; kartların takvimi değişmez.",
+    "sourceLegend": "Hangi kartlar?",
+    "sourceHard": "Zorlandıklarım",
+    "sourceHardHint": "Sık unuttukların ve son iki haftada bilemediklerin",
+    "sourceRecent": "Son 7 günde öğrendiklerim",
+    "sourceRecentHint": "Bu hafta ilk kez çalıştığın kelimeler",
+    "sourceTag": "Etiket",
+    "sourceTagHint": "Seçtiğin etiketteki kelimeler",
+    "sourceCount_one": "{{count}} kelime",
+    "sourceCount_other": "{{count}} kelime",
+    "tagLabel": "Etiket",
+    "sizeLegend": "Kaç kart?",
+    "size_one": "{{count}} kart",
+    "size_other": "{{count}} kart",
+    "practiceStart": "Pratiğe başla",
+    "practiceNone": "Pratik için önce birkaç kartı tekrar etmelisin.",
+    "aheadTitle": "Yarının kartları",
+    "aheadBody_one": "Yarın vadesi gelecek {{count}} kartı şimdi tekrar edebilirsin.",
+    "aheadBody_other": "Yarın vadesi gelecek {{count}} kartı şimdi tekrar edebilirsin.",
+    "aheadNote": "Normal bir tekrar sayılır ve takvime işlenir. Yarınki yükün azalır; erken bildiğin kartın sonraki aralığı biraz kısa olur.",
+    "aheadStart": "Şimdi tekrar et",
+    "aheadNone": "Yarın için bekleyen kart yok.",
+    "addFailed": "Yeni kartlar açılamadı; tekrar dene."
+  },
+  "practice": {
+    "title": "Pratik",
+    "badge": "Pratik · takvimin değişmez",
+    "dontKnow": "Bilemedim",
+    "know": "Bildim",
+    "group": "Bildin mi?",
+    "repeat": "Tekrar soruluyor",
+    "empty": "Bu seçimde pratik yapılacak kart yok.",
+    "backToMore": "Biraz daha çalış",
+    "summary": {
+      "title": "Pratik bitti",
+      "cards": "Kart",
+      "known": "İlk seferde",
+      "time": "Süre",
+      "hardest": "En çok zorlandıkların",
+      "allKnown": "Hepsini ilk seferde bildin.",
+      "scheduleSame": "Kartlarının takvimi değişmedi.",
+      "again": "Bir tur daha"
     }
   }
 }

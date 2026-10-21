@@ -15,3 +15,18 @@ criteria in `docs/plan-v0.1.md` → "Kapsam ve kabul ölçütleri" pass.
 | İP7 | Performance, a11y, polish, 14-day use | planned |
 
 Criterion 1 (14 consecutive days of real use) can only be confirmed by the user.
+
+## v0.2
+
+Work packages from `plan/v0.2-plan.md` (İP1–İP8).
+
+| WP | Content | Status |
+|----|---------|--------|
+| İP1 | Ekstra çalışma: +5/+10 new cards, practice rounds (`practice_logs`), tomorrow's reviews now, sync table registry | done (decision 0010; needs migration `20261021000900_practice.sql` deployed) |
+| İP2 | Word level data | planned |
+| İP3 | Level test and continuous update | planned |
+| İP4 | Smart extraction | planned |
+| İP5 | Example sentences | planned |
+| İP6 | Word family, roots, false friends, mnemonics | planned |
+| İP7 | Interests and profile | planned |
+| İP8 | Vocabulary inventory, decks, Anki | planned |
