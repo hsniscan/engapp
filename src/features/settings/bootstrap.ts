@@ -1,6 +1,13 @@
 // App startup: settings row, theme, error log, storage persistence, install prompt, integrity.
 import { liveQuery } from 'dexie';
-import { db, ensureSettings, getCurrentUserId, logError, repairListEntrySentences } from '@/data';
+import {
+  db,
+  ensureSettings,
+  getCurrentUserId,
+  logError,
+  repairDuplicateSenses,
+  repairListEntrySentences,
+} from '@/data';
 import i18n from '@/i18n';
 import { toast } from '@/ui';
 import { downloadBackup } from './backupActions';
@@ -59,7 +66,11 @@ function scheduleRepairs(isBusy: () => boolean, delayMs = 5000): void {
       setTimeout(attempt, 60_000);
       return;
     }
-    repairListEntrySentences().catch((e: unknown) => void logError(e, 'repair.listEntry'));
+    // In order: cutting list prefixes can make two senses' sentences equal.
+    void (async () => {
+      await repairListEntrySentences().catch((e: unknown) => void logError(e, 'repair.listEntry'));
+      await repairDuplicateSenses().catch((e: unknown) => void logError(e, 'repair.duplicateSenses'));
+    })();
   };
   setTimeout(attempt, delayMs);
 }

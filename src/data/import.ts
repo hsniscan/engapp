@@ -3,6 +3,7 @@
 // jobs with their chunk texts, the local chunk cache, candidates with their status against
 // the user's own notes, and the single-transaction confirm.
 import { stripListEntry } from '../../supabase/functions/_shared/listEntry';
+import { isDuplicateSense } from '../../supabase/functions/_shared/text';
 import { normalizeTerm } from '../domain/normalize';
 import type {
   CandidateUserStatus,
@@ -154,7 +155,8 @@ export async function getCachedChunk(hash: string, level: CefrLevel, promptVersi
 
 /**
  * "zaten var" / "yeni anlam olarak ekle" / "yeni" against the user's live notes. A sense of
- * the term with the same lexicon sense, the same meaning or the same example sentence
+ * the term with the same lexicon sense, the same meaning (or the same part of speech and an
+ * overlapping Turkish meaning: "davet" ~ "davetiye, davet") or the same example sentence
  * counts as existing: importing the same list again (a newer prompt may word a sense
  * differently) does not offer the words already added.
  */
@@ -163,6 +165,7 @@ export async function userStatusOf(
   lexiconSenseId: Id | null,
   meaning: string | null,
   sentence: string | null = null,
+  pos: string | null = null,
 ): Promise<CandidateUserStatus> {
   const norm = normalizeTerm(term);
   const notes = (await db.notes.where('term_norm').equals(norm).toArray()).filter((n) => n.deleted_at === null);
@@ -176,14 +179,34 @@ export async function userStatusOf(
     (s) =>
       (lexiconSenseId !== null && s.lexicon_sense_id === lexiconSenseId) ||
       (key !== null && normalizeTerm(s.meaning_tr_override?.trim() || s.meaning_tr) === key) ||
+      (meaning !== null && isDuplicateSense({ pos: s.pos, meaning_tr: s.meaning_tr_override?.trim() || s.meaning_tr }, { pos, meaning_tr: meaning })) ||
       (sentenceKey !== null && !!s.source_sentence && normalizeTerm(s.source_sentence) === sentenceKey),
   );
   return same ? 'exists' : 'add_sense';
 }
 
+function sentenceKeyOf(term: string, sentence: string): string {
+  return `${normalizeTerm(term)}|${normalizeTerm(sentence)}`;
+}
+
+/** Does the user already have this candidate's lexicon sense on a live note? */
+async function ownsSense(c: Pick<ImportCandidateRecord, 'lexicon_sense_id'>): Promise<boolean> {
+  if (!c.lexicon_sense_id) return false;
+  return (await db.senses.where('lexicon_sense_id').equals(c.lexicon_sense_id).filter((s) => s.deleted_at === null).count()) > 0;
+}
+
+/**
+ * Which of two candidates for the same term and sentence to keep: the sense the user
+ * already has, then a sense that was in the lexicon before (known_sense), then the higher
+ * confidence. A tie keeps the earlier one.
+ */
+function candidateRank(c: Pick<ImportCandidateRecord, 'match' | 'confidence'>, owned: boolean): number {
+  return (owned ? 4 : 0) + (c.match === 'known_sense' ? 2 : 0) + c.confidence;
+}
+
 /**
  * Store one processed chunk: candidates (deduplicated against earlier chunks of the job by
- * lexicon sense), the lexicon entries, the chunk cache row, and the job's progress — all in
+ * lexicon sense, and by term + sentence), the lexicon entries, the chunk cache row, and the job's progress — all in
  * one transaction, so a reload resumes at the next chunk.
  */
 export async function recordChunkResult(
@@ -206,7 +229,13 @@ export async function recordChunkResult(
     if (!job || job.chunk_done !== chunkIndex) return { added: 0 }; // processed already (another tab)
     const existing = await candidates().where('job_id').equals(jobId).toArray();
     const seen = new Set(existing.map((c) => c.lexicon_sense_id ?? `${normalizeTerm(c.term)}|${c.meaning_tr ?? ''}`));
+    // One candidate per term and sentence across the job: two senses of a word for the
+    // same sentence (the model gave a known sense and a reworded new one) are one.
+    const bySentence = new Map<string, ImportCandidateRecord>(
+      existing.flatMap((c) => (c.source_sentence ? [[sentenceKeyOf(c.term, c.source_sentence), c] as const] : [])),
+    );
     const rows: ImportCandidateRecord[] = [];
+    const replaced: Id[] = [];
     let i = 0;
     for (const c of result.candidates) {
       const key = c.lexicon.id;
@@ -217,8 +246,8 @@ export async function recordChunkResult(
       const clean = stripListEntry(c.source_sentence, c.term, c.span);
       const sentence = clean.span ? clean.sentence : c.source_sentence;
       const span = clean.span ?? c.span;
-      const status = await userStatusOf(c.term, c.lexicon.id, c.lexicon.meaning_tr, sentence);
-      rows.push({
+      const status = await userStatusOf(c.term, c.lexicon.id, c.lexicon.meaning_tr, sentence, c.lexicon.pos);
+      const row: ImportCandidateRecord = {
         id: uuidv7(now),
         job_id: jobId,
         term: c.term,
@@ -239,8 +268,21 @@ export async function recordChunkResult(
         user_status: status,
         meaning_tr_edit: null,
         order: chunkIndex * 1000 + i,
-      });
+      };
+      const sKey = sentenceKeyOf(c.term, sentence);
+      const twin = bySentence.get(sKey);
+      if (twin) {
+        if (candidateRank(row, await ownsSense(row)) <= candidateRank(twin, await ownsSense(twin))) continue;
+        // The better one takes the twin's place in the list.
+        row.order = twin.order;
+        const at = rows.indexOf(twin);
+        if (at >= 0) rows.splice(at, 1);
+        else replaced.push(twin.id);
+      }
+      bySentence.set(sKey, row);
+      rows.push(row);
     }
+    if (replaced.length) await candidates().bulkDelete(replaced);
     if (rows.length) await candidates().bulkAdd(rows);
     const lex = result.candidates.map((c) => c.lexicon);
     if (lex.length) await db.lexicon_cache.bulkPut(lex);
@@ -353,6 +395,7 @@ export async function confirmImport(
           ipa: group.find((c) => c.ipa)?.ipa ?? null,
           lexicon_term_id: first.lexicon_term_id,
           senses: valid,
+          one_sense_per_sentence: true,
         },
         now,
       );

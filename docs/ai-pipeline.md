@@ -27,8 +27,8 @@ copied here; `src/ai/docs-sync.test.ts` fails when this file and the code differ
 | Same chunk again on the same device                                   | Result from Dexie `chunk_cache` (key `hashChunk(text)`, same level and prompt version)                                      | client                   |
 | Same chunk again on another device (same user, level, prompt version) | Result from `ai_chunk_cache`, lexicon content joined fresh; `cache_hit: true`, no daily-limit charge                         | ai-extract               |
 | A term + sense in the chunk is already in the lexicon                 | The model only gets `{ref, term, pos, gloss}` lines and answers with the ref; no content is generated (`match: known_sense`) | ai-extract               |
-| The model rewrites an existing sense in other words                   | Same `gloss_key`, or same part of speech and near-identical gloss tokens: existing sense reused, nothing inserted            | ai-extract, ai-enrich    |
-| Two requests insert the same new sense at the same moment             | `UNIQUE (term_id, pos, gloss_key)` + `ON CONFLICT DO NOTHING`; the second request gets the first row's id                    | `lexicon_upsert()`       |
+| The model rewrites an existing sense in other words                   | Same part of speech and the same `gloss_key`, a near-identical gloss, or an overlapping Turkish meaning (`davet` ~ `davetiye, davet`): existing sense reused, nothing inserted | ai-extract, ai-enrich    |
+| Two requests insert the same new sense at the same moment             | `lexicon_upsert()` takes the lexicon lock, then reuses a sense with the same `gloss_key` or the same pos and an overlapping Turkish meaning; `UNIQUE (term_id, pos, gloss_key)` + `ON CONFLICT DO NOTHING` as the last guard | `lexicon_upsert()`       |
 | A term typed by hand exists in the lexicon                            | Its senses are returned, `ai_called: false`                                                                                  | ai-enrich                |
 | "Başka anlam ara"                                                     | Only then the model is called, with the existing glosses so it does not repeat them                                          | ai-enrich (`more: true`) |
 | Same word added by another user (v1.0)                                | Same lexicon rows                                                                                                            | lexicon                  |
@@ -112,7 +112,9 @@ Steps:
    (irregular verbs/plurals, -s/-ed/-ing/-er/-est rules) and 2–4 word sequences with the
    first word in each base form ("gave up" → "give up"), not crossing punctuation;
    look them up in `lexicon_terms.lemma_norm` (`lexicon_find`). Up to 300 existing
-   senses go into the prompt as `sN | term | pos | gloss`.
+   senses go into the prompt as `sN | term | pos | gloss`, chosen round robin (every
+   term's first sense before any term's second), so a long word-list chunk still offers
+   every term it knows.
 5. Daily limit: `ai_consume(user, AI_DAILY_LIMIT)` (atomic, UTC day). Refused → `daily_limit`.
 6. Model call (structured output, see below).
 7. Validation, per candidate (one bad item never sinks the others), with the reason
@@ -137,11 +139,20 @@ Steps:
    - Cleaning: gloss without final period; `meaning_tr` unquoted, at most two
      alternatives; IPA wrapped in slashes; part of speech mapped to the fixed list;
      confidence clamped to 0–1.
+   - One candidate per term and sentence (`duplicate`): a word has one meaning in one
+     sentence. A known ref wins over a new sense, then the higher confidence.
 8. Lexicon write: for each new sense, reuse an existing sense of the same term and part of
-   speech with the same `gloss_key` or a near-identical gloss (token Jaccard ≥ 0.8, or
-   one token set of ≥ 3 tokens contains the other); otherwise `lexicon_upsert`
-   (insert-or-get, race-safe). A new sense of a known term inherits the term's IPA if the
-   model gave none.
+   speech with the same `gloss_key`, a near-identical gloss (token Jaccard ≥ 0.8, or
+   one token set of ≥ 3 tokens contains the other) or an overlapping Turkish meaning
+   (the two `meaning_tr` share a whole alternative: `davet` ~ `davetiye, davet`, not
+   `banka` ~ `kıyı`; `isSameMeaningTr` in `_shared/text.ts`). Two senses like that would
+   make the same flashcard, whatever the glosses say, and the check costs no model call.
+   Otherwise `lexicon_upsert` (insert-or-get, race-safe): under the lexicon advisory lock
+   it repeats the meaning check against the committed senses, so a sense a concurrent
+   request created a moment ago is reused too (`lexicon_meaning_alts()`, migration
+   `20261021001000`). A new sense of a known term inherits the term's IPA if the model
+   gave none. Existing duplicate rows are not merged on the server; devices drop
+   unstudied duplicate senses from notes (`repairDuplicateSenses`).
 9. Store the validated result (lexicon ids only) in `ai_chunk_cache`; respond.
 
 ### gloss_key

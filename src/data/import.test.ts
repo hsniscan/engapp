@@ -28,7 +28,9 @@ const lex = (id: string, lemma: string, meaning: string) => ({
   updated_at: T,
 });
 
-function result(cands: { term: string; lexId: string; meaning: string; sentence?: string; conf?: number }[]): ChunkResult {
+function result(
+  cands: { term: string; lexId: string; meaning: string; sentence?: string; conf?: number; match?: 'known_sense' | 'new_sense' | 'new_term' }[],
+): ChunkResult {
   return {
     prompt_version: 'extract-v1',
     level: 'B1',
@@ -42,7 +44,7 @@ function result(cands: { term: string; lexId: string; meaning: string; sentence?
         source_sentence: sentence,
         span: [start, start + c.term.length] as [number, number],
         confidence: c.conf ?? 0.9,
-        match: 'new_term',
+        match: c.match ?? 'new_term',
         lexicon: lex(c.lexId, c.term, c.meaning),
       };
     }),
@@ -65,7 +67,7 @@ describe('import jobs', () => {
     const job = await createImportJob({ kind: 'text', title: 'T', chunks: ['a', 'b'], level: 'B1' }, T);
     const r1 = result([
       { term: 'bank', lexId: 'L-bank-1', meaning: 'kıyı' }, // exists
-      { term: 'bank', lexId: 'L-bank-2', meaning: 'banka' }, // add_sense
+      { term: 'bank', lexId: 'L-bank-2', meaning: 'banka', sentence: 'The bank lent us money.' }, // add_sense
       { term: 'cope', lexId: 'L-cope', meaning: 'başa çıkmak' }, // new
     ]);
     expect(await recordChunkResult(job.id, 0, 'h0', r1, { fromLocalCache: false, lexiconHits: 1 }, T)).toEqual({ added: 3 });
@@ -129,7 +131,7 @@ describe('confirmImport', () => {
       'h',
       result([
         { term: 'bank', lexId: 'L-bank-1', meaning: 'kıyı' },
-        { term: 'bank', lexId: 'L-bank-2', meaning: 'banka' },
+        { term: 'bank', lexId: 'L-bank-2', meaning: 'banka', sentence: 'The bank lent us money.' },
         { term: 'cope', lexId: 'L-cope', meaning: 'başa çıkmak' },
         { term: 'thrive', lexId: 'L-thrive', meaning: 'gelişmek' },
       ]),
@@ -206,5 +208,100 @@ describe('confirmImport', () => {
     expect(await db.notes.count()).toBe(notesBefore);
     expect(await db.outbox.count()).toBe(outboxBefore);
     expect((await getImportJob(job.id))!.status).toBe('ready');
+  });
+});
+
+describe('one sense per note and sentence ("invitation": "davetiye, davet" / "davet")', () => {
+  const S = 'Thank you very much for the invitation.';
+
+  it('keeps one candidate per term and sentence across chunks: known sense first, then confidence', async () => {
+    const job = await createImportJob({ kind: 'text', title: 'T', chunks: ['a', 'b'], level: 'B1' }, T);
+    await recordChunkResult(
+      job.id,
+      0,
+      'h0',
+      result([
+        { term: 'invitation', lexId: 'L-go', meaning: 'davet', sentence: S, conf: 0.99 },
+        { term: 'invitation', lexId: 'L-go2', meaning: 'çağrı', sentence: S, conf: 0.5 },
+        { term: 'party', lexId: 'L-party', meaning: 'parti', sentence: 'We had a party.' },
+      ]),
+      { fromLocalCache: true },
+      T,
+    );
+    expect((await listImportCandidates(job.id)).map((c) => c.lexicon_sense_id)).toEqual(['L-go', 'L-party']);
+    await recordChunkResult(
+      job.id,
+      1,
+      'h1',
+      result([{ term: 'invitation', lexId: 'L-attend', meaning: 'davetiye, davet', sentence: S, conf: 0.8, match: 'known_sense' }]),
+      { fromLocalCache: true },
+      T,
+    );
+    const cands = await listImportCandidates(job.id);
+    expect(cands.map((c) => c.lexicon_sense_id)).toEqual(['L-attend', 'L-party']); // in the twin's place
+    await confirmImport(job.id, { now: T + 1 });
+    const note = (await db.notes.where('term_norm').equals('invitation').first())!;
+    expect((await db.senses.where('note_id').equals(note.id).toArray()).map((s) => s.meaning_tr)).toEqual(['davetiye, davet']);
+  });
+
+  it('prefers the sense the user already has', async () => {
+    await addNoteWithSenses({ term: 'invitation', senses: [{ meaning_tr: 'davet', pos: 'noun', lexicon_sense_id: 'L-go', source_sentence: S }] }, T);
+    const job = await createImportJob({ kind: 'text', title: 'T', chunks: ['a'], level: 'B1' }, T);
+    await recordChunkResult(
+      job.id,
+      0,
+      'h0',
+      result([
+        { term: 'invitation', lexId: 'L-attend', meaning: 'davetiye, davet', sentence: S, conf: 0.99, match: 'known_sense' },
+        { term: 'invitation', lexId: 'L-go', meaning: 'davet', sentence: S, conf: 0.6 },
+      ]),
+      { fromLocalCache: true },
+      T,
+    );
+    expect((await listImportCandidates(job.id)).map((c) => [c.lexicon_sense_id, c.user_status])).toEqual([['L-go', 'exists']]);
+  });
+
+  it('a re-import never adds a second sense for the same sentence, even when the user selects it', async () => {
+    await addNoteWithSenses(
+      { term: 'invitation', senses: [{ meaning_tr: 'davetiye, davet', pos: 'noun', lexicon_sense_id: 'L-attend', source_sentence: S }] },
+      T,
+    );
+    const job = await createImportJob({ kind: 'text', title: 'T', chunks: ['a'], level: 'B1' }, T);
+    await recordChunkResult(job.id, 0, 'h0', result([{ term: 'invitation', lexId: 'L-go', meaning: 'çağrı', sentence: S }]), { fromLocalCache: true }, T);
+    const [cand] = await listImportCandidates(job.id);
+    expect(cand!.user_status).toBe('exists'); // same sentence
+    const res = await confirmImport(job.id, { choices: new Map([[cand!.id, { selected: true, meaning_tr_edit: null }]]), now: T + 1 });
+    expect(res).toMatchObject({ sensesAdded: 0, skipped: 1 });
+    expect(await db.senses.count()).toBe(1);
+  });
+
+  it('an overlapping Turkish meaning with the same part of speech counts as existing and is not added', async () => {
+    await addNoteWithSenses(
+      {
+        term: 'invitation',
+        senses: [{ meaning_tr: 'davetiye, davet', pos: 'noun', lexicon_sense_id: 'L-attend', source_sentence: 'I got an invitation.' }],
+      },
+      T,
+    );
+    const job = await createImportJob({ kind: 'text', title: 'T', chunks: ['a'], level: 'B1' }, T);
+    await recordChunkResult(
+      job.id,
+      0,
+      'h0',
+      result([
+        { term: 'invitation', lexId: 'L-go', meaning: 'davet', sentence: S },
+        { term: 'invitation', lexId: 'L-lure', meaning: 'teşvik', sentence: 'It was an invitation to thieves.' },
+      ]),
+      { fromLocalCache: true },
+      T,
+    );
+    const cands = await listImportCandidates(job.id);
+    expect(cands.map((c) => [c.lexicon_sense_id, c.user_status])).toEqual([
+      ['L-go', 'exists'],
+      ['L-lure', 'add_sense'],
+    ]);
+    const res = await confirmImport(job.id, { choices: new Map(cands.map((c) => [c.id, { selected: true, meaning_tr_edit: null }])), now: T + 1 });
+    expect(res).toMatchObject({ sensesAdded: 1, skipped: 1 });
+    expect((await db.senses.toArray()).map((s) => s.meaning_tr).sort()).toEqual(['davetiye, davet', 'teşvik']);
   });
 });

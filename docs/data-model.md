@@ -81,7 +81,8 @@ All actions take an optional trailing `now` (ms) for tests. They throw `ActionEr
 
 | Function | Purpose |
 | --- | --- |
-| `addNoteWithSenses(input)` | Adds a note, or new senses to the live note with the same `term_norm`. A soft-deleted note is reactivated. Senses that match by `lexicon_sense_id` or by normalized meaning are skipped. Cards are created per invariant 5. |
+| `addNoteWithSenses(input)` | Adds a note, or new senses to the live note with the same `term_norm`. A soft-deleted note is reactivated. Senses that match a live sense by `lexicon_sense_id`, by normalized meaning, or by the same part of speech and an overlapping Turkish meaning (`davet` ~ `davetiye, davet`) are skipped; with `one_sense_per_sentence` (imports) so is a sense whose sentence a live sense already has. Cards are created per invariant 5. |
+| `repairDuplicateSenses()` | One-off idle repair (`src/data/repairs.ts`): within a note, a duplicate sense (same pos and overlapping meaning, or two lexicon senses with the same sentence) whose cards have no effective review history is soft-deleted with its cards; the kept sense takes a richer meaning as `meaning_tr_override`. Studied senses are never deleted. `sense_no` is only a sort order and is not renumbered. |
 | `editNote(id, patch)` / `editSense(id, patch)` | Edit a note or sense. A rename checks for duplicates. Sentence and span changes create, revive or delete the cloze card. |
 | `setSuspended({card_ids} \| {note_id}, bool)` | Suspend or unsuspend cards. |
 | `softDeleteNote(id)` / `softDeleteSense(id)` | Soft-delete with the cascade from invariant 2. |

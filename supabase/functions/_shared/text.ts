@@ -244,3 +244,52 @@ export function isCleanLexiconText(s: string, kind: 'en' | 'tr' | 'ipa'): boolea
   if (kind === 'tr') return TR_TEXT.test(s);
   return true;
 }
+
+// ---------------------------------------------------------------------------
+// Turkish meaning overlap: the semantic duplicate guard for senses
+// ---------------------------------------------------------------------------
+
+/**
+ * The alternatives of a Turkish meaning ("davetiye, davet" -> ["davetiye", "davet"]):
+ * split on "," ";" "/", NFC, lower-case, whitespace collapsed, edge spaces and periods
+ * removed. The SQL twin is public.lexicon_meaning_alts() (migration 20261021001000).
+ */
+export function meaningAlternatives(meaning: string | null | undefined): string[] {
+  if (!meaning) return [];
+  const out = meaning
+    .normalize('NFC')
+    .toLowerCase()
+    .split(/[,;/]/)
+    .map((a) => a.replace(/\s+/gu, ' ').replace(/^[ .]+|[ .]+$/g, ''))
+    .filter(Boolean);
+  return [...new Set(out)];
+}
+
+/**
+ * Do two Turkish meanings name the same thing? True when they share a whole alternative:
+ * "davet" ~ "davetiye, davet", "kıyı" ~ "kıyı, sahil"; not "banka" ~ "kıyı" or
+ * "çalışmak" ~ "işlemek". Words inside an alternative are not compared on their own
+ * ("nehir kıyısı" is not "deniz kıyısı").
+ */
+export function isSameMeaningTr(
+  a: string | null | undefined,
+  b: string | null | undefined,
+): boolean {
+  const ta = meaningAlternatives(a);
+  if (ta.length === 0) return false;
+  const tb = new Set(meaningAlternatives(b));
+  return ta.some((x) => tb.has(x));
+}
+
+/**
+ * The semantic duplicate rule for two senses of one term: the same (known) part of speech
+ * and an overlapping Turkish meaning. Two such senses would make the same flashcard ("davet"),
+ * whatever their English glosses say. Free (no model call); applied before a new lexicon
+ * sense is inserted and before a sense is added to a user's note.
+ */
+export function isDuplicateSense(
+  a: { pos?: string | null; meaning_tr: string | null | undefined },
+  b: { pos?: string | null; meaning_tr: string | null | undefined },
+): boolean {
+  return !!a.pos && a.pos === b.pos && isSameMeaningTr(a.meaning_tr, b.meaning_tr);
+}

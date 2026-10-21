@@ -1,7 +1,9 @@
 // In-memory AiStore with the same semantics as the SQL functions (unique lemma_norm,
-// unique (term_id, pos, gloss_key), insert-or-get, atomic daily counter). Tests only.
+// unique (term_id, pos, gloss_key), insert-or-get with the Turkish-meaning re-check, atomic
+// daily counter). Tests only.
 
 import type { LexiconEntry } from '../contracts.ts';
+import { isSameMeaningTr } from '../text.ts';
 import type {
   AiStore,
   CachedChunk,
@@ -121,9 +123,12 @@ export class MemoryAiStore implements AiStore {
           term_created: termCreated,
           sense_created: false,
         };
-      let sense = [...this.senses.values()].find(
-        (s) => s.term_id === term!.id && s.pos === it.pos && s.gloss_key === it.gloss_key,
-      );
+      // Same as lexicon_upsert(): the same gloss_key, else (under the lexicon lock) an
+      // older sense with the same pos and an overlapping Turkish meaning.
+      const ofTerm = [...this.senses.values()].filter((s) => s.term_id === term!.id);
+      let sense =
+        ofTerm.find((s) => s.pos === it.pos && s.gloss_key === it.gloss_key) ??
+        ofTerm.find((s) => s.pos === it.pos && isSameMeaningTr(s.meaning_tr, it.meaning_tr));
       const senseCreated = !sense;
       if (!sense) {
         sense = {

@@ -5,7 +5,10 @@ import {
   cleanLemma,
   glossKey,
   glossSimilarity,
+  isDuplicateSense,
   isNearDuplicateGloss,
+  isSameMeaningTr,
+  meaningAlternatives,
   normalizeLemma,
   normalizePos,
 } from './text.ts';
@@ -90,5 +93,55 @@ describe('normalizePos', () => {
     expect(normalizePos('weird')).toBe('other');
     expect(normalizePos('')).toBeNull();
     expect(normalizePos(null)).toBeNull();
+  });
+});
+
+describe('Turkish meaning overlap (semantic duplicate senses)', () => {
+  it('splits a meaning into normalised alternatives', () => {
+    expect(meaningAlternatives('davetiye, davet')).toEqual(['davetiye', 'davet']);
+    expect(meaningAlternatives(' Nehir  kıyısı; sahil / kıyı. ')).toEqual([
+      'nehir kıyısı',
+      'sahil',
+      'kıyı',
+    ]);
+    expect(meaningAlternatives('')).toEqual([]);
+    expect(meaningAlternatives(null)).toEqual([]);
+  });
+
+  it('"davet" and "davetiye, davet" are the same meaning', () => {
+    expect(isSameMeaningTr('davet', 'davetiye, davet')).toBe(true);
+    expect(isSameMeaningTr('davetiye, davet', 'davet')).toBe(true);
+    expect(isSameMeaningTr('Davet', 'davet')).toBe(true);
+    expect(isSameMeaningTr('kıyı', 'kıyı, sahil')).toBe(true);
+  });
+
+  it('different meanings are not merged', () => {
+    expect(isSameMeaningTr('banka', 'kıyı')).toBe(false);
+    expect(isSameMeaningTr('çalışmak', 'işlemek')).toBe(false);
+    expect(isSameMeaningTr('davetiye', 'davet')).toBe(false); // a whole alternative must match
+    expect(isSameMeaningTr('nehir kıyısı', 'deniz kıyısı')).toBe(false); // words inside are not compared
+    expect(isSameMeaningTr('', '')).toBe(false);
+  });
+
+  it('a duplicate sense needs the same part of speech', () => {
+    const a = { pos: 'noun', meaning_tr: 'davetiye, davet' };
+    expect(isDuplicateSense(a, { pos: 'noun', meaning_tr: 'davet' })).toBe(true);
+    expect(isDuplicateSense(a, { pos: 'verb', meaning_tr: 'davet' })).toBe(false);
+    expect(
+      isDuplicateSense({ pos: 'noun', meaning_tr: 'banka' }, { pos: 'noun', meaning_tr: 'kıyı' }),
+    ).toBe(false);
+    expect(
+      isDuplicateSense(
+        { pos: 'verb', meaning_tr: 'çalışmak' },
+        { pos: 'verb', meaning_tr: 'işlemek' },
+      ),
+    ).toBe(false);
+    // Unknown part of speech (typed by hand): not merged on meaning overlap.
+    expect(
+      isDuplicateSense(
+        { pos: null, meaning_tr: 'davet' },
+        { pos: null, meaning_tr: 'davetiye, davet' },
+      ),
+    ).toBe(false);
   });
 });

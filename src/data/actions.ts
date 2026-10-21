@@ -4,6 +4,7 @@ import { dayKeyOf } from '../domain/day';
 import { LIMITS, overLimit, truncateCodePoints } from '../domain/limits';
 import { applyRating, emptyFsrs, fsrsEqual, pickFsrs } from '../domain/fsrs';
 import { normalizeTerm } from '../domain/normalize';
+import { isDuplicateSense } from '../../supabase/functions/_shared/text';
 import { canHaveCloze, isValidSpan } from '../domain/recognition';
 import { deriveUnlocked, effectiveLogs, recognitionUnlocks, replayCard } from '../domain/recompute';
 import { addAnswerToDay, emptyDay } from '../domain/streak';
@@ -143,6 +144,11 @@ export interface AddNoteInput {
   tags?: string[];
   lexicon_term_id?: Id | null;
   senses: SenseInput[];
+  /**
+   * Imports: a sense whose source sentence equals a live sense's sentence is skipped (the
+   * term has one meaning in one sentence).
+   */
+  one_sense_per_sentence?: boolean;
 }
 
 export interface AddNoteResult {
@@ -150,7 +156,11 @@ export interface AddNoteResult {
   /** created: new note; existing: senses added to a live note; reactivated: a soft-deleted note came back. */
   status: 'created' | 'existing' | 'reactivated';
   addedSenses: Sense[];
-  /** Inputs that matched a live sense (same lexicon_sense_id or same meaning) and were skipped. */
+  /**
+   * Inputs that matched a live sense and were skipped: same lexicon_sense_id, same meaning,
+   * same part of speech with an overlapping Turkish meaning, or (one_sense_per_sentence) the
+   * same sentence.
+   */
   skippedSenses: SenseInput[];
   createdCards: Card[];
 }
@@ -236,14 +246,23 @@ export async function addNoteWithSenses(input: AddNoteInput, now: Millis = Date.
     const skippedSenses: SenseInput[] = [];
 
     for (const inp of input.senses) {
-      const key = normalizeTerm(inp.meaning_tr_override?.trim() || inp.meaning_tr);
+      const meaning = inp.meaning_tr_override?.trim() || inp.meaning_tr;
+      const key = normalizeTerm(meaning);
+      const sentence = inp.source_sentence?.trim() ? inp.source_sentence : null;
+      const sentenceKey = input.one_sense_per_sentence && sentence ? normalizeTerm(sentence) : null;
       const matches = (s: Sense): boolean =>
         (!!inp.lexicon_sense_id && s.lexicon_sense_id === inp.lexicon_sense_id) || meaningKey(s) === key;
-      if (senses.some((s) => s.deleted_at === null && matches(s))) {
+      // A live sense that is the same meaning in other words ("davet" next to "davetiye,
+      // davet", same part of speech), or, for an import, the sense of the same sentence:
+      // reuse it instead of adding a second one.
+      const duplicates = (s: Sense): boolean =>
+        matches(s) ||
+        isDuplicateSense({ pos: s.pos, meaning_tr: s.meaning_tr_override?.trim() || s.meaning_tr }, { pos: inp.pos, meaning_tr: meaning }) ||
+        (sentenceKey !== null && !!s.source_sentence && normalizeTerm(s.source_sentence) === sentenceKey);
+      if (senses.some((s) => s.deleted_at === null && duplicates(s))) {
         skippedSenses.push(inp);
         continue;
       }
-      const sentence = inp.source_sentence?.trim() ? inp.source_sentence : null;
       const sentenceTr = (sentence && inp.source_sentence_tr?.trim()) || null;
       const fields = {
         lexicon_sense_id: inp.lexicon_sense_id ?? null,

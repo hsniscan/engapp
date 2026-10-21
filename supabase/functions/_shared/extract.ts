@@ -23,11 +23,12 @@ import {
   MAX_KNOWN_SENSES,
   type KnownSenseLine,
 } from './prompts.ts';
-import type { AiStore, LexiconUpsertItem, LexTerm } from './store.ts';
+import type { AiStore, LexiconUpsertItem, LexSense, LexTerm } from './store.ts';
 import {
   cleanLemma,
   glossKey,
   isCleanLexiconText,
+  isDuplicateSense,
   isNearDuplicateGloss,
   normalizeLemma,
   normalizePos,
@@ -223,6 +224,7 @@ export function validateExtractOutput(
 
   const out: ValidCandidate[] = [];
   const seen = new Set<string>();
+  const bySentence = new Map<string, number>();
 
   for (const item of top.data.candidates) {
     const p = extractModelCandidate.safeParse(item);
@@ -323,14 +325,9 @@ export function validateExtractOutput(
       drop('duplicate');
       continue;
     }
-    if (out.length >= MAX_CANDIDATES) {
-      drop('over_limit');
-      continue;
-    }
-    seen.add(dedupKey);
 
     const conf = Number.isFinite(c.confidence) ? Math.min(1, Math.max(0, c.confidence)) : 0.5;
-    out.push({
+    const candidate: ValidCandidate = {
       term,
       lemma_norm: lemmaNorm,
       term_type: inferTermType(c.term_type, term),
@@ -341,7 +338,34 @@ export function validateExtractOutput(
       confidence: Math.round(conf * 100) / 100,
       known,
       newSense,
-    });
+    };
+
+    // One sense per term and sentence: the same word in the same sentence has one meaning.
+    // A model that answers both with a known ref and with a reworded new sense ("a polite
+    // request to attend an event" / "... to go somewhere") must not add a second sense.
+    // The known sense wins (nothing is written), then the higher confidence.
+    const sentenceKey = `${lemmaNorm}|${sentence.text.replace(/\s+/g, ' ').trim()}`;
+    const twin = bySentence.get(sentenceKey);
+    if (twin !== undefined) {
+      const prev = out[twin]!;
+      const better =
+        (candidate.known !== null && prev.known === null) ||
+        ((candidate.known === null) === (prev.known === null) &&
+          candidate.confidence > prev.confidence);
+      drop('duplicate');
+      if (better) {
+        seen.add(dedupKey);
+        out[twin] = candidate;
+      }
+      continue;
+    }
+    if (out.length >= MAX_CANDIDATES) {
+      drop('over_limit');
+      continue;
+    }
+    seen.add(dedupKey);
+    bySentence.set(sentenceKey, out.length);
+    out.push(candidate);
   }
   return { candidates: out, dropped };
 }
@@ -362,10 +386,33 @@ export interface ResolvedSense {
   match: 'known_sense' | 'new_sense' | 'new_term';
 }
 
+interface SenseShape {
+  pos: string;
+  gloss_en: string;
+  gloss_key: string;
+  meaning_tr: string;
+}
+
+/**
+ * Is `b` a sense the term already has as `a`? Same part of speech, and the same or a
+ * nearly identical English gloss ('gloss'), or an overlapping Turkish meaning ('meaning':
+ * "davet" ~ "davetiye, davet", whatever the glosses say). Both when `by` is omitted.
+ */
+function isSameSense(a: SenseShape, b: SenseShape, by?: 'gloss' | 'meaning'): boolean {
+  if (a.pos !== b.pos) return false;
+  const gloss = a.gloss_key === b.gloss_key || isNearDuplicateGloss(a.gloss_en, b.gloss_en);
+  if (by === 'gloss') return gloss;
+  const meaning = isDuplicateSense(a, b);
+  return by === 'meaning' ? meaning : gloss || meaning;
+}
+
 /**
  * Turns new senses into lexicon ids: reuses an existing sense of the same term and part
- * of speech when the gloss is the same or nearly the same (no insert), otherwise
- * inserts (ON CONFLICT returns the existing row). Returns one result per input, in order.
+ * of speech when the gloss is the same or nearly the same, or when the Turkish meaning
+ * overlaps (no insert), otherwise inserts. lexicon_upsert() repeats the meaning check
+ * under the lexicon lock, so a sense created a moment ago by a concurrent request is
+ * reused too (ON CONFLICT returns the existing row for the same gloss_key). Returns one
+ * result per input, in order.
  */
 export async function resolveNewSenses(
   pending: PendingSense[],
@@ -383,11 +430,9 @@ export async function resolveNewSenses(
 
   pending.forEach((p, i) => {
     const term = termsByNorm.get(p.lemma_norm);
-    const existing = term?.senses.find(
-      (s) =>
-        s.pos === p.sense.pos &&
-        (s.gloss_key === p.sense.gloss_key || isNearDuplicateGloss(s.gloss_en, p.sense.gloss_en)),
-    );
+    const existing =
+      term?.senses.find((s) => isSameSense(s, p.sense, 'gloss')) ??
+      term?.senses.find((s) => isSameSense(s, p.sense, 'meaning'));
     if (existing) {
       results[i] = { senseId: existing.id, match: 'known_sense' };
       return;
@@ -395,9 +440,15 @@ export async function resolveNewSenses(
     const twin = toInsert.find(
       (t) =>
         t.item.lemma_norm === p.lemma_norm &&
-        t.item.pos === p.sense.pos &&
-        (t.item.gloss_key === p.sense.gloss_key ||
-          isNearDuplicateGloss(t.item.gloss_en!, p.sense.gloss_en)),
+        isSameSense(
+          {
+            pos: t.item.pos!,
+            gloss_en: t.item.gloss_en!,
+            gloss_key: t.item.gloss_key!,
+            meaning_tr: t.item.meaning_tr!,
+          },
+          p.sense,
+        ),
     );
     if (twin) {
       twin.idx.push(i);
@@ -513,6 +564,23 @@ function buildResponse(
   };
 }
 
+/**
+ * The known senses offered to the model, at most `max`: chosen round robin (each term's
+ * first sense, then each term's second, ...), listed grouped by term in the input order.
+ */
+export function pickKnownSenses(terms: LexTerm[], max: number): { t: LexTerm; s: LexSense }[] {
+  const picked = new Set<string>();
+  const depth = Math.max(0, ...terms.map((t) => t.senses.length));
+  for (let k = 0; k < depth && picked.size < max; k++) {
+    for (const t of terms) {
+      if (picked.size >= max) break;
+      const s = t.senses[k];
+      if (s) picked.add(s.id);
+    }
+  }
+  return terms.flatMap((t) => t.senses.filter((s) => picked.has(s.id)).map((s) => ({ t, s })));
+}
+
 export async function runExtract(body: unknown, deps: PipelineDeps): Promise<ExtractResponse> {
   const parsed = extractRequest.safeParse(body);
   if (!parsed.success)
@@ -545,13 +613,14 @@ export async function runExtract(body: unknown, deps: PipelineDeps): Promise<Ext
   const termsByNorm = new Map(terms.map((t) => [t.lemma_norm, t]));
   const known: KnownSenseLine[] = [];
   const knownByRef = new Map<string, KnownRef>();
-  for (const t of terms) {
-    for (const s of t.senses) {
-      if (known.length >= MAX_KNOWN_SENSES) break;
-      const ref = `s${known.length + 1}`;
-      known.push({ ref, lemma: t.lemma, pos: s.pos, gloss_en: s.gloss_en });
-      knownByRef.set(ref, { senseId: s.id, lemmaNorm: t.lemma_norm });
-    }
+  // Round robin (every term's first sense, then every second sense, ...): when the chunk
+  // knows more senses than the prompt can carry, every term is still offered, not just
+  // the alphabetically first ones. A term the model is not shown gets a reworded new
+  // sense, which resolveNewSenses then has to catch.
+  for (const { t, s } of pickKnownSenses(terms, MAX_KNOWN_SENSES)) {
+    const ref = `s${known.length + 1}`;
+    known.push({ ref, lemma: t.lemma, pos: s.pos, gloss_en: s.gloss_en });
+    knownByRef.set(ref, { senseId: s.id, lemmaNorm: t.lemma_norm });
   }
 
   // 3. Daily limit (only requests that call the model count).
