@@ -1,0 +1,215 @@
+// Sync transport: thin typed wrappers around the Postgres RPC functions
+// (supabase/migrations/20261021000400_sync.sql). The sync engine (outbox, cursors,
+// conflict handling, recompute) builds on these; see docs/sync-strategy.md.
+
+import { z } from 'zod';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { lexiconEntry } from '../../supabase/functions/_shared/contracts';
+import {
+  cardSchema,
+  noteSchema,
+  reviewLogSchema,
+  senseSchema,
+  settingsSchema,
+  sourceSchema,
+} from '@/domain/schemas';
+import type {
+  Card,
+  LexiconSense,
+  Note,
+  OutboxTable,
+  ReviewLog,
+  Sense,
+  Settings,
+  Source,
+} from '@/domain/types';
+import { supabase } from '@/lib/supabase';
+
+export const MAX_PUSH_BATCH = 100;
+export const MAX_PULL_PAGE = 500;
+
+export interface PushItem {
+  table: OutboxTable;
+  op: 'upsert' | 'delete';
+  /** The full row (user_id is ignored: the server uses the session's user). For a delete,
+   *  either the full row with deleted_at set or at least {id, hlc, deleted_at}. */
+  payload: unknown;
+}
+
+const pushResult = z.object({
+  acked: z.array(z.string()),
+  stale: z.array(z.string()),
+  rejected: z.array(
+    z.object({
+      table: z.string().nullable(),
+      id: z.string().nullable(),
+      code: z.string(),
+      message: z.string(),
+    }),
+  ),
+});
+export type PushResult = z.infer<typeof pushResult>;
+
+export interface RowByTable {
+  notes: Note;
+  senses: Sense;
+  cards: Card;
+  review_logs: ReviewLog;
+  sources: Source;
+  settings: Settings;
+}
+export type PulledRow = {
+  [T in OutboxTable]: { table: T; seq: number; row: RowByTable[T] };
+}[OutboxTable];
+
+const ROW_SCHEMAS: { [T in OutboxTable]: z.ZodType<RowByTable[T]> } = {
+  notes: noteSchema,
+  senses: senseSchema,
+  cards: cardSchema,
+  review_logs: reviewLogSchema,
+  sources: sourceSchema,
+  settings: settingsSchema,
+};
+
+const pullEnvelope = z.object({
+  rows: z.array(
+    z.object({ table: z.string(), seq: z.number(), row: z.record(z.string(), z.unknown()) }),
+  ),
+  next_seq: z.number(),
+  has_more: z.boolean(),
+  full_resync: z.boolean(),
+});
+
+export interface PullResult {
+  rows: PulledRow[];
+  /** Rows the client could not validate (logged; the cursor still moves past them). */
+  invalid: { table: string; seq: number; id: unknown; error: string }[];
+  next_seq: number;
+  has_more: boolean;
+  full_resync: boolean;
+}
+
+const lexiconPullEnvelope = z.object({
+  rows: z.array(lexiconEntry),
+  next_seq: z.number(),
+  has_more: z.boolean(),
+});
+export interface LexiconPullResult {
+  rows: LexiconSense[];
+  next_seq: number;
+  has_more: boolean;
+}
+
+export type SyncApiErrorKind =
+  'not_configured' | 'not_signed_in' | 'network' | 'server' | 'invalid_response';
+
+export class SyncApiError extends Error {
+  readonly kind: SyncApiErrorKind;
+  constructor(kind: SyncApiErrorKind, message: string) {
+    super(message);
+    this.name = 'SyncApiError';
+    this.kind = kind;
+  }
+}
+
+function client(c?: SupabaseClient | null): SupabaseClient {
+  const s = c === undefined ? supabase : c;
+  if (!s) throw new SyncApiError('not_configured', 'Supabase is not configured (guest mode)');
+  return s;
+}
+
+async function rpc<T>(
+  c: SupabaseClient,
+  fn: string,
+  args: Record<string, unknown>,
+  schema: z.ZodType<T>,
+): Promise<T> {
+  let res: { data: unknown; error: { code?: string; message: string } | null };
+  try {
+    res = await c.rpc(fn, args);
+  } catch (e) {
+    throw new SyncApiError('network', e instanceof Error ? e.message : String(e));
+  }
+  if (res.error) {
+    const { code, message } = res.error;
+    if (
+      code === '42501' ||
+      code === 'PGRST301' ||
+      code === 'PGRST303' ||
+      /jwt|unauthorized/i.test(message)
+    ) {
+      throw new SyncApiError('not_signed_in', message);
+    }
+    if (!code && /fetch|network|load failed/i.test(message))
+      throw new SyncApiError('network', message);
+    throw new SyncApiError('server', `${code ?? ''} ${message}`.trim());
+  }
+  const parsed = schema.safeParse(res.data);
+  if (!parsed.success) throw new SyncApiError('invalid_response', parsed.error.message);
+  return parsed.data;
+}
+
+/** Sends up to 100 outbox rows. Delete the outbox rows whose row_id is in `acked`. */
+export async function pushBatch(items: PushItem[], c?: SupabaseClient | null): Promise<PushResult> {
+  if (items.length > MAX_PUSH_BATCH)
+    throw new RangeError(`at most ${MAX_PUSH_BATCH} rows per push`);
+  if (items.length === 0) return { acked: [], stale: [], rejected: [] };
+  return rpc(client(c), 'sync_push', { p_batch: items }, pushResult);
+}
+
+/** Changes after `sinceSeq`, ordered by server sequence. Store next_seq with the rows. */
+export async function pullChanges(
+  sinceSeq: number,
+  limit = MAX_PULL_PAGE,
+  c?: SupabaseClient | null,
+): Promise<PullResult> {
+  const env = await rpc(
+    client(c),
+    'sync_pull',
+    { p_since: sinceSeq, p_limit: Math.min(limit, MAX_PULL_PAGE) },
+    pullEnvelope,
+  );
+  const rows: PulledRow[] = [];
+  const invalid: PullResult['invalid'] = [];
+  for (const r of env.rows) {
+    const schema = ROW_SCHEMAS[r.table as OutboxTable];
+    if (!schema) {
+      invalid.push({ table: r.table, seq: r.seq, id: r.row.id, error: 'unknown table' });
+      continue;
+    }
+    const p = schema.safeParse(r.row);
+    if (p.success) rows.push({ table: r.table, seq: r.seq, row: p.data } as PulledRow);
+    else invalid.push({ table: r.table, seq: r.seq, id: r.row.id, error: p.error.message });
+  }
+  return {
+    rows,
+    invalid,
+    next_seq: env.next_seq,
+    has_more: env.has_more,
+    full_resync: env.full_resync,
+  };
+}
+
+/** Lexicon senses referenced by the user's senses, changed after `sinceSeq` (lexicon_cursor). */
+export async function pullLexicon(
+  sinceSeq: number,
+  limit = MAX_PULL_PAGE,
+  c?: SupabaseClient | null,
+): Promise<LexiconPullResult> {
+  return rpc(
+    client(c),
+    'lexicon_pull',
+    { p_since: sinceSeq, p_limit: Math.min(limit, MAX_PULL_PAGE) },
+    lexiconPullEnvelope,
+  );
+}
+
+/** Lexicon senses by id (≤ 500): fills lexicon_cache gaps for senses synced from another device. */
+export async function getLexiconSenses(
+  ids: string[],
+  c?: SupabaseClient | null,
+): Promise<LexiconSense[]> {
+  if (ids.length === 0) return [];
+  if (ids.length > 500) throw new RangeError('at most 500 ids');
+  return rpc(client(c), 'lexicon_get', { p_ids: ids }, z.array(lexiconEntry));
+}

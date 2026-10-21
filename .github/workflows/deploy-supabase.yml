@@ -1,0 +1,116 @@
+# Tests the database (pgTAP) and the edge functions, then deploys the backend to the
+# Supabase project. Deploys only on pushes to main that touch supabase/** and on manual
+# runs; pull requests run the tests only. Setup: docs/setup-backend.md.
+#
+# Repository secrets (Settings > Secrets and variables > Actions > Secrets):
+#   SUPABASE_ACCESS_TOKEN   personal access token from supabase.com/dashboard/account/tokens
+#   SUPABASE_DB_PASSWORD    the database password of the project
+#   GEMINI_API_KEY          Google AI Studio API key
+# Repository variables (same page > Variables), all optional:
+#   GEMINI_MODEL, GEMINI_FALLBACK_MODEL, AI_DAILY_LIMIT, ALLOWED_ORIGINS
+name: Supabase
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/deploy-supabase.yml'
+  pull_request:
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/deploy-supabase.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: supabase-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  SUPABASE_PROJECT_REF: bikcjlomrjaxymifxogi
+  SUPABASE_CLI_VERSION: 2.121.0
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # config.toml enables Google sign-in; the local test stack only needs placeholders.
+      SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID: ci-placeholder
+      SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET: ci-placeholder
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check edge functions (Deno)
+        working-directory: supabase/functions
+        run: |
+          for fn in ai-extract ai-enrich; do (cd "$fn" && deno check index.ts); done
+      - name: Start local database
+        # Only Postgres + Auth are needed for the SQL tests.
+        run: supabase start -x studio,imgproxy,vector,logflare,storage-api,realtime,supavisor,mailpit,postgres-meta,edge-runtime,kong,postgrest
+      - name: SQL security tests (pgTAP)
+        run: supabase test db
+      - name: Stop
+        if: always()
+        run: supabase stop --no-backup
+
+  deploy:
+    needs: test
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+
+      - name: Check secrets
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          missing=0
+          for v in SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD GEMINI_API_KEY; do
+            if [ -z "${!v}" ]; then echo "::error::Repository secret $v is not set (see docs/setup-backend.md)"; missing=1; fi
+          done
+          exit $missing
+
+      - name: Link project
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Apply database migrations
+        run: supabase db push --linked --yes
+
+      - name: Set function secrets
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.8-flash' }}
+          GEMINI_FALLBACK_MODEL: ${{ vars.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite' }}
+          AI_DAILY_LIMIT: ${{ vars.AI_DAILY_LIMIT || '200' }}
+          ALLOWED_ORIGINS: ${{ vars.ALLOWED_ORIGINS || 'http://localhost:5173' }}
+        run: |
+          # Written to a temp file (not the command line) so values never show in logs.
+          umask 077
+          f="$(mktemp)"
+          {
+            echo "GEMINI_API_KEY=$GEMINI_API_KEY"
+            echo "GEMINI_MODEL=$GEMINI_MODEL"
+            echo "GEMINI_FALLBACK_MODEL=$GEMINI_FALLBACK_MODEL"
+            echo "AI_PROVIDER=gemini"
+            echo "AI_DAILY_LIMIT=$AI_DAILY_LIMIT"
+            echo "ALLOWED_ORIGINS=$ALLOWED_ORIGINS"
+          } > "$f"
+          supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" --env-file "$f"
+          rm -f "$f"
+
+      - name: Deploy edge functions
+        # verify_jwt = false comes from supabase/config.toml; the functions verify the JWT themselves.
+        run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF" --use-api
