@@ -12,6 +12,9 @@ import {
   getUserWordSets,
   loadRefFile,
   setPairNoteFeedback,
+  pairNoteFeedbackIds,
+  pairNoteTargetId,
+  FALSE_FRIEND_TARGET,
 } from './family';
 
 const T = Date.UTC(2026, 9, 21, 9);
@@ -105,13 +108,22 @@ describe('root/affix cards', () => {
 
 describe('false-friend feedback', () => {
   it('hides dismissed and reported warnings, and undo shows them again', async () => {
+    const ids = await pairNoteFeedbackIds(['actually|aktüel', 'jest|jest', 'table|tablo']);
     await setPairNoteFeedback('actually|aktüel', 'dismissed', T);
     await setPairNoteFeedback('jest|jest', 'reported', T);
-    expect(await getHiddenPairNotes()).toEqual(new Set(['actually|aktüel', 'jest|jest']));
-    expect(await db.pair_note_feedback.get('jest|jest')).toEqual({ key: 'jest|jest', verdict: 'reported', at: T, sent_at: null });
-    await clearPairNoteFeedback('actually|aktüel');
-    expect(await getHiddenPairNotes()).toEqual(new Set(['jest|jest']));
-    // Device-local: nothing is queued for sync.
-    expect(await db.outbox.count()).toBe(0);
+    expect(await getHiddenPairNotes(ids)).toEqual(new Set(['actually|aktüel', 'jest|jest']));
+    // One synced content_feedback row per warning: skip = hidden, reject = reported as wrong.
+    const rows = await db.content_feedback.toArray();
+    expect(rows.map((r) => [r.target_kind, r.target_id, r.verdict]).sort()).toEqual(
+      [
+        [FALSE_FRIEND_TARGET, await pairNoteTargetId('actually|aktüel'), 'skip'],
+        [FALSE_FRIEND_TARGET, await pairNoteTargetId('jest|jest'), 'reject'],
+      ].sort(),
+    );
+    expect(await db.outbox.where('table').equals('content_feedback').count()).toBe(2);
+    await clearPairNoteFeedback('actually|aktüel', T + 1);
+    expect(await getHiddenPairNotes(ids)).toEqual(new Set(['jest|jest']));
+    // Undo is a tombstone (synced), not a local delete.
+    expect((await db.content_feedback.toArray()).filter((r) => r.deleted_at === T + 1)).toHaveLength(1);
   });
 });

@@ -77,10 +77,17 @@ Owner rules:
    the service role writes to it. It is stamped from `lexicon_seq`, like the lexicon, so a later
    `lexicon_pull` can deliver it. An AI row must name its model and prompt version.
 
-7. **Feedback is device-local for now (deviation).** "Gizle" and "Hatalı" write to Dexie
-   `pair_note_feedback`, which is cleared on an account switch, so feedback never crosses
-   accounts. Rows have `sent_at = null` so they can be sent once İP5's `content_feedback`
-   exists. Nothing the user does changes the shared rows.
+7. **Feedback goes through İP5's `content_feedback` (changed in the v0.2 batch-1 merge).**
+   Built as a device-local Dexie table `pair_note_feedback` while İP5 was in progress. Now
+   "Gizle" and "Hatalı" write one synced, per-user `content_feedback` row each:
+   `target_kind = 'false_friend'`, `target_id` = UUID v8 of SHA-256 over
+   ("pair_note", "en-tr", `term_norm|tr_word`) — the server can derive the same id from a
+   `lexicon_pair_notes` row's `term_norm` and `content_key` — and `verdict` `skip` (hidden)
+   or `reject` (reported as wrong). "Geri al" is a tombstone. So a hidden warning stays
+   hidden on the user's other devices and after a restore (backups carry
+   `content_feedback`), and like all per-user feedback it never crosses Google accounts
+   (copying cards to another account does not copy it, decision 0009). Dexie v8 drops the
+   unreleased `pair_note_feedback` table. Nothing the user does changes the shared rows.
 
 8. **Root/affix cards.**
    - An affix card is a note with `term_type = 'affix'`. The server constraint is widened and
@@ -118,7 +125,8 @@ Owner rules:
     - Before the job has run, the app falls back to the short hand-written meaning in `inventory.ts`.
     - The prompt and schema are in `docs/ai-pipeline.md`, and a test keeps them in sync.
 
-12. **Dexie version 6.** Version 6 adds `ref_cache` and `pair_note_feedback`. It sits on top of
+12. **Dexie version 6.** Version 6 adds `ref_cache` and `pair_note_feedback` (the latter
+    dropped again in v8, see 7). It sits on top of
     version 3 (versions 4 and 5 belong to İP2 and İP5, and Dexie allows gaps). An older app version
     cannot read an affix note: its zod check rejects the note, logs it as `sync.pull invalid
     notes/…`, and moves the cursor past it. If the error log has such a row, the upgrade resets
@@ -132,7 +140,8 @@ Owner rules:
   loads `reference-data.sql` into Supabase with the service role. Nothing deploys itself.
 - The first word detail on a new device downloads about 87 KB. A device that has never opened one
   while online shows no family row offline; everything else works.
-- Backups do not include `pair_note_feedback`. A restored device shows hidden warnings again.
+- (Resolved in the batch-1 merge: hidden/reported warnings are `content_feedback` rows, so
+  backups and other devices have them.)
 - Follow-ups:
   - `lexicon_pull` should deliver `lexicon_pair_notes` to clients, because the curated list is
     currently read from the bundle;

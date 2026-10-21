@@ -9,7 +9,7 @@ describe('Dexie schema', () => {
     await d.open();
     expect(d.verno).toBe(8);
     expect(d.tables.map((t) => t.name).sort()).toEqual(
-      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'pair_note_feedback', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs', 'decks', 'theme_previews'].sort(),
+      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs', 'decks', 'theme_previews'].sort(),
     );
     const idx = (table: string) => d.table(table).schema.indexes.map((i) => i.name);
     expect(idx('decks')).toEqual(expect.arrayContaining(['sort', 'deleted_at']));
@@ -118,7 +118,7 @@ describe('Dexie schema', () => {
     await d.delete();
   });
 
-  it('v6 upgrade adds ref_cache and pair_note_feedback and keeps the sync cursor', async () => {
+  it('v6 upgrade adds ref_cache (pair_note_feedback is gone again in v8) and keeps the sync cursor', async () => {
     const name = 'upgrade-v6-test';
     const old = new Dexie(name);
     old.version(3).stores({ notes: 'id, term_norm', error_log: '++id, at', meta: 'key' });
@@ -134,7 +134,7 @@ describe('Dexie schema', () => {
     expect(await d.notes.get('n1')).toMatchObject({ term_norm: 'bank' });
     expect(await d.meta.get('sync_cursor')).toEqual({ key: 'sync_cursor', value: 420 });
     expect(await d.ref_cache.count()).toBe(0);
-    expect(await d.pair_note_feedback.count()).toBe(0);
+    expect(d.tables.map((t) => t.name)).not.toContain('pair_note_feedback');
     d.close();
     await d.delete();
   });

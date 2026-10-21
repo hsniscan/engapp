@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect, useState } from 'react';
-import { getDismissedMorphemes, getHiddenPairNotes, getUserWordSets } from '@/data';
+import { useCallback, useEffect, useState } from 'react';
+import { getDismissedMorphemes, getHiddenPairNotes, getUserWordSets, pairNoteFeedbackIds } from '@/data';
 import type { MorphologyIndex } from '@/domain/morphology';
 import type { FalseFriendNote } from '@/domain/pairNotes';
 import { loadFalseFriends, loadMorphology } from './loaders';
@@ -32,5 +32,14 @@ export const useFalseFriendIndex = (enabled = true): Map<string, FalseFriendNote
   useLoaded(loadFalseFriends, enabled);
 
 export const useUserWords = () => useLiveQuery(getUserWordSets, []);
-export const useHiddenPairNotes = () => useLiveQuery(getHiddenPairNotes, []);
+/**
+ * Which of these false-friend warnings the user hid or reported (synced content_feedback
+ * rows). The row ids are hashed once per key list, outside the live query.
+ */
+export function useHiddenPairNotes(keys: readonly string[]): Set<string> | undefined {
+  const joined = keys.join('\n');
+  const load = useCallback(() => pairNoteFeedbackIds(joined ? joined.split('\n') : []), [joined]);
+  const ids = useLoaded(load, true);
+  return useLiveQuery(async () => (ids ? getHiddenPairNotes(ids) : undefined), [ids]);
+}
 export const useDismissedMorphemes = () => useLiveQuery(getDismissedMorphemes, []);

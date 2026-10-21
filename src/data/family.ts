@@ -3,9 +3,11 @@
 // warnings and root/affix cards.
 import type { MorphemeEntry, UserWord } from '../domain/morphology';
 import { morphemeMeaning } from '../domain/morphology';
-import type { Millis, PairNoteFeedbackRow } from '../domain/types';
+import { contentRowId, feedbackRowId } from '../domain/examples';
+import type { Id, Millis } from '../domain/types';
 import { addNoteWithSenses, type AddNoteResult } from './actions';
 import { db } from './db';
+import { setContentFeedback } from './examples';
 import { getMeta, setMeta } from './meta';
 
 // ------------------------------------------------------------------ reference file cache
@@ -89,25 +91,57 @@ export function addMorphemeCard(m: MorphemeEntry, now: Millis = Date.now()): Pro
 }
 
 // ------------------------------------------------------------------ false-friend feedback
+//
+// "Gizle" / "Hatalı" on a false-friend warning is a content_feedback row (İP5's synced,
+// per-user feedback table): target_kind 'false_friend', target_id derived from the warning's
+// key, verdict 'skip' (hidden) or 'reject' (reported as wrong). So it syncs to the user's
+// other devices, is in backups, and never crosses Google accounts (decision 0009).
 
-/** Keys of the false-friend warnings this user hid or reported on this device. */
-export async function getHiddenPairNotes(): Promise<Set<string>> {
-  return new Set(await db.pair_note_feedback.toCollection().primaryKeys());
-}
+/** target_kind of feedback on a false-friend warning. */
+export const FALSE_FRIEND_TARGET = 'false_friend';
+
+export type PairNoteVerdict = 'dismissed' | 'reported';
 
 /**
- * Hide a false-friend warning ("Gizle") or report it as wrong ("Hatalı"). Local until the
- * shared feedback table exists; `sent_at` stays null so it can be sent later.
+ * Stable target id of a false-friend warning: UUID v8 of SHA-256 over
+ * ("pair_note", "en-tr", key), key = `${term_norm}|${tr_word}` (domain/pairNotes.ts). The
+ * server can derive the same id from lexicon_pair_notes (term_norm, content_key).
  */
-export async function setPairNoteFeedback(
-  key: string,
-  verdict: PairNoteFeedbackRow['verdict'],
-  now: Millis = Date.now(),
-): Promise<void> {
-  await db.pair_note_feedback.put({ key, verdict, at: now, sent_at: null });
+export const pairNoteTargetId = (key: string): Promise<Id> =>
+  contentRowId(['pair_note', 'en-tr', key]);
+
+/**
+ * content_feedback row ids of these warnings, mapped back to their keys. Async (hashing):
+ * compute it outside live queries and pass it to getHiddenPairNotes.
+ */
+export async function pairNoteFeedbackIds(keys: readonly string[]): Promise<Map<Id, string>> {
+  const out = new Map<Id, string>();
+  for (const key of new Set(keys)) out.set(await feedbackRowId(FALSE_FRIEND_TARGET, await pairNoteTargetId(key)), key);
+  return out;
 }
 
-/** Undo "Gizle" (the toast's "Geri al"). */
-export async function clearPairNoteFeedback(key: string): Promise<void> {
-  await db.pair_note_feedback.delete(key);
+/** Keys (of the given ones) whose warning this user hid or reported. Dexie reads only. */
+export async function getHiddenPairNotes(ids: ReadonlyMap<Id, string>): Promise<Set<string>> {
+  const rowIds = [...ids.keys()];
+  const rows = rowIds.length ? await db.content_feedback.bulkGet(rowIds) : [];
+  const out = new Set<string>();
+  rows.forEach((r, i) => {
+    if (r && r.deleted_at === null && r.target_kind === FALSE_FRIEND_TARGET) out.add(ids.get(rowIds[i]!)!);
+  });
+  return out;
+}
+
+/** Hide a false-friend warning ("Gizle") or report it as wrong ("Hatalı"). */
+export async function setPairNoteFeedback(
+  key: string,
+  verdict: PairNoteVerdict,
+  now: Millis = Date.now(),
+): Promise<void> {
+  const target = await pairNoteTargetId(key);
+  await setContentFeedback(FALSE_FRIEND_TARGET, target, verdict === 'dismissed' ? 'skip' : 'reject', now);
+}
+
+/** Undo "Gizle" / "Hatalı" (the toast's "Geri al"): the row becomes a tombstone. */
+export async function clearPairNoteFeedback(key: string, now: Millis = Date.now()): Promise<void> {
+  await setContentFeedback(FALSE_FRIEND_TARGET, await pairNoteTargetId(key), null, now);
 }

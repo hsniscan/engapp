@@ -114,12 +114,25 @@ export const exampleTables = () => [db.lexicon_examples, db.content_feedback, db
  * Like / skip / reject a shared sentence; null takes the verdict back. One row per sentence
  * (deterministic id), synced to the user's account only.
  */
-export async function setExampleVerdict(
+export function setExampleVerdict(
   exampleId: Id,
   verdict: FeedbackVerdict | null,
   now: Millis = Date.now(),
 ): Promise<void> {
-  const id = await feedbackRowId(EXAMPLE_TARGET, exampleId);
+  return setContentFeedback(EXAMPLE_TARGET, exampleId, verdict, now);
+}
+
+/**
+ * One synced content_feedback row per (target_kind, target_id) of this user; null takes
+ * the verdict back (tombstone). Used for example sentences and false-friend warnings.
+ */
+export async function setContentFeedback(
+  targetKind: string,
+  targetId: Id,
+  verdict: FeedbackVerdict | null,
+  now: Millis = Date.now(),
+): Promise<void> {
+  const id = await feedbackRowId(targetKind, targetId);
   await writeTx([db.content_feedback], now, async (w) => {
     const existing = await db.content_feedback.get(id);
     if (verdict === null) {
@@ -130,8 +143,8 @@ export async function setExampleVerdict(
     await w.put('content_feedback', {
       ...(existing ?? w.base(id)),
       user_id: existing?.user_id ?? w.userId,
-      target_kind: EXAMPLE_TARGET,
-      target_id: exampleId,
+      target_kind: targetKind,
+      target_id: targetId,
       verdict,
       deleted_at: null,
     });

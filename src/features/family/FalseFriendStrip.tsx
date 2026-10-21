@@ -10,9 +10,10 @@ import { useFalseFriendIndex, useHiddenPairNotes } from './hooks';
  */
 export function FalseFriendStrips({ term, className }: { term: string; className?: string }) {
   const index = useFalseFriendIndex();
-  const hidden = useHiddenPairNotes();
+  const all = index ? falseFriendsFor(term, index) : [];
+  const hidden = useHiddenPairNotes(all.map((n) => n.key));
   if (!index || !hidden) return null;
-  const notes = falseFriendsFor(term, index, hidden);
+  const notes = all.filter((n) => !hidden.has(n.key));
   if (!notes.length) return null;
   return (
     <div className={cn('flex w-full max-w-md flex-col gap-2', className)}>

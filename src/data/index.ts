@@ -73,9 +73,11 @@ export {
   dismissMorphemeSuggestion,
   getDismissedMorphemes,
   getHiddenPairNotes,
+  pairNoteFeedbackIds,
   getUserWordSets,
   loadRefFile,
   setPairNoteFeedback,
+  type PairNoteVerdict,
   type UserWordSets,
 } from './family';
 export {

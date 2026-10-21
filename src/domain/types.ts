@@ -390,15 +390,3 @@ export interface RefCacheRow {
   fetched_at: Millis;
 }
 
-/**
- * The user's feedback on a shared pair note (a false-friend warning): hidden either way;
- * `reported` also says it is wrong. Device-local for now, per account (cleared on account
- * switch); `sent_at` is set once it reaches the server.
- */
-export interface PairNoteFeedbackRow {
-  /** The note's key: `${term_norm}|${tr_word}` (see domain/pairNotes.ts). */
-  key: string;
-  verdict: 'dismissed' | 'reported';
-  at: Millis;
-  sent_at: Millis | null;
-}

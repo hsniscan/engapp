@@ -2,6 +2,8 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { morphologyFile } from '@/test/morphology';
 import { addMorphemeCard, addNoteWithSenses, db, ensureSettings, getCardView } from '@/data';
+import { pairNoteTargetId } from '@/data/family';
+import { feedbackRowId } from '@/domain/examples';
 import type { Note } from '@/domain/types';
 import { CardBack } from '@/features/review/CardFaces';
 import { resetDb } from '@/test/db';
@@ -42,7 +44,10 @@ describe('false-friend strip on the card back', () => {
     expect(strip.querySelector('svg')).not.toBeNull();
     fireEvent.click(within(strip).getByRole('button', { name: 'Gizle' }));
     await waitFor(() => expect(screen.queryByTestId('false-friend')).not.toBeInTheDocument());
-    expect(await db.pair_note_feedback.get('actually|aktüel')).toMatchObject({ verdict: 'dismissed' });
+    const hidden = await db.content_feedback.get(
+      await feedbackRowId('false_friend', await pairNoteTargetId('actually|aktüel')),
+    );
+    expect(hidden).toMatchObject({ target_kind: 'false_friend', verdict: 'skip', deleted_at: null });
   });
 
   it('"Hatalı" reports it; words without a pair get no strip', async () => {
@@ -51,7 +56,10 @@ describe('false-friend strip on the card back', () => {
     renderRoute(<CardBack view={await backOf(note)} isNew={false} speech={speech} />);
     fireEvent.click(await screen.findByRole('button', { name: 'Bu uyarı hatalı, bildir' }));
     await waitFor(() => expect(screen.queryByTestId('false-friend')).not.toBeInTheDocument());
-    expect(await db.pair_note_feedback.get('jest|jest')).toMatchObject({ verdict: 'reported' });
+    const reported = await db.content_feedback.get(
+      await feedbackRowId('false_friend', await pairNoteTargetId('jest|jest')),
+    );
+    expect(reported).toMatchObject({ verdict: 'reject' });
 
     renderRoute(<CardBack view={await backOf(other)} isNew={false} speech={speech} />);
     await screen.findAllByText('masa');

@@ -14,7 +14,6 @@ import type {
   MetaRow,
   Note,
   OutboxRow,
-  PairNoteFeedbackRow,
   PracticeLog,
   RefCacheRow,
   ReviewLog,
@@ -55,7 +54,6 @@ export class EngDb extends Dexie {
   user_content!: EntityTable<UserContent, 'id'>;
   example_jobs!: EntityTable<ExampleJob, 'key'>;
   ref_cache!: EntityTable<RefCacheRow, 'key'>;
-  pair_note_feedback!: EntityTable<PairNoteFeedbackRow, 'key'>;
 
   constructor(name = 'engapp') {
     super(name);
@@ -125,8 +123,8 @@ export class EngDb extends Dexie {
       })
       .upgrade((tx) => addPullBackfill(tx.table('meta'), ['content_feedback', 'user_content']));
     // v6 (v0.2 İP6, word families): ref_cache keeps the lazily
-    // fetched morphology file for offline use; pair_note_feedback holds the user's "gizle" /
-    // "bildir" on false-friend warnings. Notes may now have term_type 'affix'. An older app
+    // fetched morphology file for offline use; pair_note_feedback held the user's "gizle" /
+    // "bildir" on false-friend warnings (device-local; replaced in v8, see there). Notes may now have term_type 'affix'. An older app
     // version skipped such a pulled note as invalid and moved its cursor past it; if this
     // device logged one, pull again from the start so the note arrives (rows are merged by
     // HLC, so a repeated pull changes nothing else).
@@ -146,8 +144,11 @@ export class EngDb extends Dexie {
     // v8 (v0.2 İP8): decks (synced, mutable) and the local
     // theme-grouping preview. A device that has pulled before may have skipped deck rows
     // written by a newer device while it ran an older version: re-pull them once.
+    // Also (v0.2 batch 1): pair_note_feedback is dropped. False-friend "gizle" / "hatalı" are
+    // content_feedback rows now (synced, per account); v6 was never released, so no device
+    // has rows to carry over.
     this.version(8)
-      .stores({ decks: 'id, sort, deleted_at', theme_previews: 'id' })
+      .stores({ decks: 'id, sort, deleted_at', theme_previews: 'id', pair_note_feedback: null })
       .upgrade((tx) => addPullBackfill(tx.table('meta'), ['decks']));
   }
 }
