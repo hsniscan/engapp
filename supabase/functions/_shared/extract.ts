@@ -74,6 +74,8 @@ const PLACEHOLDERS = new Set([
 ]);
 
 export const MAX_SENTENCE_CHARS = 1000;
+/** Turkish runs longer than English; well under the 2000 of senses.source_sentence_tr. */
+export const MAX_SENTENCE_TR_CHARS = 1500;
 
 export interface PipelineDeps {
   userId: string;
@@ -107,6 +109,7 @@ export interface ValidCandidate {
   term_type: 'word' | 'phrase' | 'pattern';
   surface: string; // characters of the sentence at span
   source_sentence: string; // characters of the chunk
+  sentence_tr: string | null; // the user's sentence in Turkish (never goes to the lexicon)
   span: [number, number];
   confidence: number;
   known: KnownRef | null;
@@ -153,6 +156,24 @@ export function cleanMeaningTr(s: string): string {
     .map((a) => a.trim())
     .filter(Boolean);
   return [...new Set(alts)].slice(0, 2).join(', ');
+}
+
+/**
+ * Turkish translation of the user's sentence: whitespace collapsed, invisible characters and
+ * wrapping quotes removed. null when empty, too long, without letters or a mere copy of the
+ * English sentence. A bad translation never drops the candidate.
+ */
+export function cleanSentenceTr(s: string | null | undefined, sentence: string): string | null {
+  if (!s) return null;
+  const v = s
+    .replace(/[\p{Cc}\p{Cf}\p{Co}\p{Cn}]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/^["“”]+|["“”]+$/g, '')
+    .trim();
+  if (!v || v.length > MAX_SENTENCE_TR_CHARS || !/\p{L}/u.test(v)) return null;
+  if (v.toLowerCase() === sentence.replace(/\s+/g, ' ').trim().toLowerCase()) return null;
+  return v;
 }
 
 export function cleanIpa(s: string | null | undefined): string | null {
@@ -303,6 +324,7 @@ export function validateExtractOutput(
       term_type: inferTermType(c.term_type, term),
       surface: sentence.text.slice(span[0], span[1]),
       source_sentence: sentence.text,
+      sentence_tr: cleanSentenceTr(c.sentence_tr, sentence.text),
       span,
       confidence: Math.round(conf * 100) / 100,
       known,
@@ -412,6 +434,7 @@ interface CachedCandidate {
   surface: string;
   term_type: 'word' | 'phrase' | 'pattern';
   source_sentence: string;
+  sentence_tr?: string | null; // since extract-v2
   span: [number, number];
   confidence: number;
   sense_id: string;
@@ -451,6 +474,7 @@ function buildResponse(
       surface: c.surface,
       term_type: lex.term_type,
       source_sentence: c.source_sentence,
+      sentence_tr: c.sentence_tr ?? null,
       span: c.span,
       confidence: c.confidence,
       match: c.match,
@@ -592,6 +616,7 @@ export async function runExtract(body: unknown, deps: PipelineDeps): Promise<Ext
       surface: c.surface,
       term_type: c.term_type,
       source_sentence: c.source_sentence,
+      sentence_tr: c.sentence_tr,
       span: c.span,
       confidence: c.confidence,
       sense_id: id,

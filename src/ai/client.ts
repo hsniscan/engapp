@@ -175,6 +175,7 @@ export function toCandidateFields(
     meaning_tr: c.lexicon.meaning_tr,
     ipa: c.lexicon.ipa,
     source_sentence: c.source_sentence,
+    source_sentence_tr: c.sentence_tr,
     span: c.span,
     confidence: c.confidence,
   };

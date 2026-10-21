@@ -52,6 +52,7 @@ export function toChunkResult(res: ExtractResponse, level: CefrLevel): ChunkResu
       surface: c.surface,
       term_type: c.term_type,
       source_sentence: c.source_sentence,
+      sentence_tr: c.sentence_tr,
       span: c.span,
       confidence: c.confidence,
       match: c.match,

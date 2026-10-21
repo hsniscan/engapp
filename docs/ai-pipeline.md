@@ -5,7 +5,7 @@ Server side of "Kart oluşturma ve AI çıkarma hattı" in `plan-v0.1.md`. Code:
 two Deno entrypoints `supabase/functions/ai-extract/index.ts` and `ai-enrich/index.ts`.
 Client: `src/ai/client.ts`.
 
-Prompt versions: **`extract-v1`**, **`enrich-v1`** (`_shared/prompts.ts`). Any change to a
+Prompt versions: **`extract-v2`**, **`enrich-v1`** (`_shared/prompts.ts`). Any change to a
 prompt or a response schema bumps the version (the chunk cache is keyed by it) and is
 copied here; `src/ai/docs-sync.test.ts` fails when this file and the code differ.
 
@@ -54,7 +54,7 @@ Response (`extractResponse` in `_shared/contracts.ts`):
 
 ```json
 {
-  "prompt_version": "extract-v1",
+  "prompt_version": "extract-v2",
   "cache_hit": false,
   "ai_called": true,
   "model": "gemini-3.8-flash",
@@ -64,6 +64,7 @@ Response (`extractResponse` in `_shared/contracts.ts`):
       "surface": "gave up",
       "term_type": "phrase",
       "source_sentence": "After years of trying, Maria finally gave up smoking.",
+      "sentence_tr": "Yıllarca uğraştıktan sonra Maria sonunda sigarayı bıraktı.",
       "span": [37, 44],
       "confidence": 0.97,
       "match": "new_term",
@@ -225,7 +226,17 @@ responseMimeType:"application/json", responseJsonSchema, maxOutputTokens}}`
   INVALID_ARGUMENT for `maxItems: 30` on this schema (observed Oct 2026); the limits are
   in the prompts and enforced by the server.
 
-## Extract prompt (`extract-v1`)
+## Extract prompt (`extract-v2`)
+
+`extract-v2` added `sentence_tr`, a natural Turkish translation of `source_sentence`.
+It is the user's text: it is stored in the user's chunk cache and on the user's sense
+(`senses.source_sentence_tr`), never in the lexicon. Cleaning trims it, removes invisible
+characters and wrapping quotes, and turns it into `null` when it is empty, longer than
+1500 characters, has no letters or just repeats the English sentence; a bad translation
+never drops the candidate. Results without it (`extract-v1`, still in a device's
+`chunk_cache`, which is keyed by the chunk hash only) parse with `sentence_tr: null`.
+ai-enrich does not translate: it usually answers from the lexicon without a model call,
+so a translation would be there only sometimes; the user can type one in the add form.
 
 System instruction:
 
@@ -246,6 +257,7 @@ FIELDS OF EACH CANDIDATE
 - surface: the term exactly as it appears in source_sentence, as one contiguous stretch of characters with the same case and spelling: "gave up", "gave it up", "made up her mind". It must be a substring of source_sentence.
 - term_type: "word" for a single word; "phrase" for phrasal verbs, idioms, collocations and fixed expressions; "pattern" for grammar patterns with slots.
 - source_sentence: the complete sentence from TEXT that contains the term, copied character for character. Do not correct, shorten, re-punctuate or merge lines. If the sentence is longer than about 300 characters, copy only the clause containing the term, still verbatim.
+- sentence_tr: a natural, fluent Turkish translation of source_sentence as a good translator would write it, not word for word. Translate all of source_sentence and nothing more: no notes, no alternatives, no quotation marks around it.
 - confidence: 0 to 1, how sure you are that the term, its sense and the Turkish meaning are correct for this sentence.
 - known_sense: KNOWN_SENSES lists senses that already exist in the dictionary, one per line as "<ref> | <term> | <part of speech> | <English gloss>". If the term is listed there and its meaning in this sentence is one of the listed senses, set known_sense to that ref (for example "s3") and set pos, gloss_en, meaning_tr and ipa to null: that content exists already and must not be written again. A ref may only be used for the same term. Otherwise set known_sense to null and fill in the new sense:
 - pos: one of: noun, verb, adjective, adverb, phrasal verb, idiom, phrase, preposition, conjunction, pronoun, determiner, interjection.
@@ -300,6 +312,10 @@ Response schema (`responseJsonSchema`):
             "type": "string",
             "description": "verbatim sentence from TEXT"
           },
+          "sentence_tr": {
+            "type": "string",
+            "description": "natural Turkish translation of source_sentence"
+          },
           "confidence": {
             "type": "number",
             "minimum": 0,
@@ -331,6 +347,7 @@ Response schema (`responseJsonSchema`):
           "surface",
           "term_type",
           "source_sentence",
+          "sentence_tr",
           "confidence",
           "known_sense",
           "pos",

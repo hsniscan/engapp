@@ -7,7 +7,8 @@ import { cardSchema, noteSchema, reviewLogSchema, senseSchema, settingsSchema, s
 import type { Card, Millis, Note, ReviewLog, Sense, Settings, Source } from './types';
 
 export const BACKUP_FORMAT = 'engapp-backup';
-export const BACKUP_SCHEMA_VERSION = 1;
+// 2: senses.source_sentence_tr. Version 1 files (without it) are still accepted.
+export const BACKUP_SCHEMA_VERSION = 2;
 
 export interface BackupTables {
   notes: Note[];
@@ -126,8 +127,25 @@ export async function verifyBackup(input: unknown): Promise<VerifyResult> {
   const parsed = backupSchema.safeParse(data);
   if (!parsed.success) return { ok: false, error: 'invalid_format', detail: z.prettifyError(parsed.error) };
   const checksum = await backupChecksum(parsed.data.tables);
-  if (checksum !== parsed.data.checksum) return { ok: false, error: 'checksum_mismatch' };
+  if (checksum !== parsed.data.checksum && (await backupChecksum(legacyTables(parsed.data.tables))) !== parsed.data.checksum) {
+    return { ok: false, error: 'checksum_mismatch' };
+  }
   return { ok: true, backup: parsed.data, summary: summarizeBackup(parsed.data.tables) };
+}
+
+/**
+ * The tables as a version 1 file had them: parsing fills in `source_sentence_tr: null` for
+ * senses that predate the field, which the file's checksum did not cover.
+ */
+function legacyTables(t: BackupTables): BackupTables {
+  return {
+    ...t,
+    senses: t.senses.map((s) => {
+      if (s.source_sentence_tr !== null) return s;
+      const { source_sentence_tr: _, ...rest } = s;
+      return rest as Sense;
+    }),
+  };
 }
 
 // ---------------------------------------------------------------- CSV

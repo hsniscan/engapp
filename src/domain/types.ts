@@ -46,6 +46,8 @@ export interface Sense extends SyncedRow {
   meaning_tr: string; // Turkish meaning (from lexicon or typed)
   meaning_tr_override: string | null; // user's correction; wins over lexicon
   source_sentence: string | null;
+  /** The user's Turkish translation of source_sentence. Per user, never in the lexicon. */
+  source_sentence_tr: string | null;
   span: [number, number] | null; // [start, end) char offsets of the term in source_sentence
   source_id: Id | null;
 }
@@ -155,6 +157,7 @@ export interface ImportCandidate {
   meaning_tr: string | null;
   ipa: string | null;
   source_sentence: string;
+  source_sentence_tr: string | null; // AI translation of source_sentence (null on older results)
   span: [number, number];
   confidence: number;
   selected: boolean;

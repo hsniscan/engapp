@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { makeCard, makeLog, makeSense } from '../test/factories';
-import { buildBackup, buildNotesCsv, canonicalJson, csvCell, verifyBackup, type BackupTables } from './backup';
+import { backupChecksum, buildBackup, buildNotesCsv, canonicalJson, csvCell, verifyBackup, type BackupTables } from './backup';
 import type { Note, Settings } from './types';
 
 const note = (p: Partial<Note> & { id: string; term: string }): Note => ({
@@ -63,6 +63,35 @@ describe('backup file', () => {
     expect(await verifyBackup('{nope')).toMatchObject({ ok: false, error: 'invalid_json' });
     expect(await verifyBackup({ ...b, tables: { ...b.tables, cards: [{ id: 1 }] } })).toMatchObject({ ok: false, error: 'invalid_format' });
     expect(await verifyBackup({ ...b, schema_version: 99 })).toMatchObject({ ok: false, error: 'unsupported_version' });
+  });
+
+  it('accepts version 1 files whose senses have no source_sentence_tr', async () => {
+    const t = tables();
+    const legacy = {
+      ...t,
+      senses: t.senses.map((s) => {
+        const { source_sentence_tr: _, ...rest } = s;
+        return rest;
+      }),
+    };
+    const file = {
+      format: 'engapp-backup',
+      schema_version: 1,
+      exported_at: 1,
+      device_id: null,
+      tables: legacy,
+      checksum: await backupChecksum(legacy as BackupTables),
+    };
+    const r = await verifyBackup(JSON.stringify(file));
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.backup.tables.senses[0]!.source_sentence_tr).toBeNull();
+  });
+
+  it('keeps the sentence translation', async () => {
+    const t = tables();
+    t.senses[0] = { ...t.senses[0]!, source_sentence: 'I went to the bank.', source_sentence_tr: 'Bankaya gittim.' };
+    const r = await verifyBackup(JSON.stringify(await buildBackup(t, { exported_at: 1, device_id: null })));
+    expect(r.ok && r.backup.tables.senses[0]!.source_sentence_tr).toBe('Bankaya gittim.');
   });
 
   it('checksum does not depend on row or key order', async () => {

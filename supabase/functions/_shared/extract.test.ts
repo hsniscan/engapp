@@ -1,6 +1,12 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest';
-import { runExtract, sha256Hex, validateExtractOutput, type PipelineDeps } from './extract.ts';
+import {
+  cleanSentenceTr,
+  runExtract,
+  sha256Hex,
+  validateExtractOutput,
+  type PipelineDeps,
+} from './extract.ts';
 import {
   AiError,
   createGeminiProvider,
@@ -75,6 +81,11 @@ describe('runExtract', () => {
       meaning_tr: 'kıyı',
     });
     expect(store.senses.size).toBe(3);
+    expect(res.candidates.map((c) => c.sentence_tr)).toEqual([
+      'Yıllarca uğraştıktan sonra Maria sonunda sigarayı bıraktı.',
+      'Pazar günü nehir kıyısında oturup sürüklenen tekneleri izledi.',
+      'Müdür, geliri çok düşük olduğu için başvurusunu reddetti.', // quotes removed
+    ]);
   });
 
   it('never calls the model twice for the same chunk (server chunk cache)', async () => {
@@ -92,6 +103,9 @@ describe('runExtract', () => {
       first.candidates.map((c) => c.lexicon.id),
     );
     expect(second.candidates.every((c) => c.lexicon_hit)).toBe(true);
+    expect(second.candidates.map((c) => c.sentence_tr)).toEqual(
+      first.candidates.map((c) => c.sentence_tr),
+    );
   });
 
   it('a different level is a different cache entry', async () => {
@@ -218,7 +232,10 @@ describe('runExtract', () => {
     const { provider } = scripted(GOOD_EXTRACT);
     await runExtract(await body(), deps(store, provider));
     const lexiconText = JSON.stringify([...store.terms.values(), ...store.senses.values()]);
-    for (const c of GOOD_EXTRACT.candidates) expect(lexiconText).not.toContain(c.source_sentence);
+    for (const c of GOOD_EXTRACT.candidates) {
+      expect(lexiconText).not.toContain(c.source_sentence);
+      expect(lexiconText).not.toContain(cleanSentenceTr(c.sentence_tr, c.source_sentence));
+    }
     expect(lexiconText).not.toContain('Maria');
   });
 });
@@ -281,6 +298,26 @@ describe('validateExtractOutput', () => {
       known,
     );
     expect(wrongTerm.dropped).toEqual({ unknown_sense_ref: 1 });
+  });
+
+  it('cleans the sentence translation and never drops a candidate for it', () => {
+    const r = validateExtractOutput(
+      {
+        candidates: [
+          { ...base, sentence_tr: undefined },
+          { ...GOOD_EXTRACT.candidates[0]!, sentence_tr: GOOD_EXTRACT.candidates[0]!.source_sentence },
+          { ...GOOD_EXTRACT.candidates[2]!, sentence_tr: 'ç'.repeat(1501) },
+        ],
+      },
+      CHUNK,
+      known,
+    );
+    expect(r.candidates.map((c) => c.sentence_tr)).toEqual([null, null, null]);
+    expect(r.dropped).toEqual({});
+    expect(cleanSentenceTr('  "Bankaya\n gittim.\u200b" ', 'I went to the bank.')).toBe(
+      'Bankaya gittim.',
+    );
+    expect(cleanSentenceTr('…', 'x')).toBeNull();
   });
 
   it('widens a verb-only surface of a separable phrasal verb', () => {

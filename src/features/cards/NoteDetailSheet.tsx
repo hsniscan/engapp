@@ -38,7 +38,14 @@ import { TagInput } from './TagInput';
 interface SenseEdit {
   meaning: string;
   sentence: string;
+  sentenceTr: string;
 }
+
+const senseEdit = (s: Sense): SenseEdit => ({
+  meaning: senseText(s),
+  sentence: s.source_sentence ?? '',
+  sentenceTr: s.source_sentence_tr ?? '',
+});
 
 interface NewSense extends SenseEdit {
   key: string;
@@ -59,9 +66,7 @@ function draftFrom(d: NoteDetail): Draft {
     ipa: d.note.ipa ?? '',
     tags: d.note.tags,
     termType: d.note.term_type,
-    senses: Object.fromEntries(
-      d.senses.map((s) => [s.id, { meaning: senseText(s), sentence: s.source_sentence ?? '' }]),
-    ),
+    senses: Object.fromEntries(d.senses.map((s) => [s.id, senseEdit(s)])),
     added: [],
   };
 }
@@ -137,7 +142,7 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
       let changed = false;
       for (const s of senses) {
         if (!next[s.id]) {
-          next[s.id] = { meaning: senseText(s), sentence: s.source_sentence ?? '' };
+          next[s.id] = senseEdit(s);
           changed = true;
         }
       }
@@ -168,7 +173,8 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
       return (
         !!e &&
         (e.meaning.trim() !== senseText(s) ||
-          e.sentence.trim() !== (s.source_sentence ?? '').trim())
+          e.sentence.trim() !== (s.source_sentence ?? '').trim() ||
+          e.sentenceTr.trim() !== (s.source_sentence_tr ?? '').trim())
       );
     });
   }, [draft, note, senses]);
@@ -207,6 +213,7 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
         if (!e) continue;
         const meaning = e.meaning.trim();
         const sentence = e.sentence.trim();
+        const sentenceTr = e.sentenceTr.trim();
         const patch: Parameters<typeof editSense>[1] = {};
         if (meaning !== senseText(s)) {
           // A lexicon sense keeps the shared meaning and stores the user's wording as an override.
@@ -218,6 +225,8 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
           patch.source_sentence = sentence || null;
           patch.span = sentence ? locateTerm(sentence, newTerm) : null;
         }
+        if (patch.source_sentence !== undefined || sentenceTr !== (s.source_sentence_tr ?? '').trim())
+          patch.source_sentence_tr = sentenceTr || null;
         if (Object.keys(patch).length) await editSense(s.id, patch);
       }
       const added = draft.added.filter((a) => a.meaning.trim());
@@ -227,6 +236,7 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
           senses: added.map((a) => ({
             meaning_tr: a.meaning.trim(),
             source_sentence: a.sentence.trim() || null,
+            source_sentence_tr: a.sentenceTr.trim() || null,
             span: a.sentence.trim() ? locateTerm(a.sentence.trim(), newTerm) : null,
           })),
         });
@@ -320,10 +330,7 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
         </h3>
         <ol className="flex flex-col gap-3">
           {senses.map((s, i) => {
-            const e = draft.senses[s.id] ?? {
-              meaning: senseText(s),
-              sentence: s.source_sentence ?? '',
-            };
+            const e = draft.senses[s.id] ?? senseEdit(s);
             const sentence = e.sentence.trim();
             return (
               <li key={s.id}>
@@ -377,6 +384,22 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
                   />
                   {sentence && (
                     <SentencePreview sentence={sentence} span={locateTerm(sentence, term)} />
+                  )}
+                  {sentence && (
+                    <TextArea
+                      label={t('cards.add.sentenceTr')}
+                      optional
+                      rows={2}
+                      value={e.sentenceTr}
+                      lang="tr"
+                      className="min-h-16"
+                      onChange={(ev) =>
+                        setDraft((d) => ({
+                          ...d,
+                          senses: { ...d.senses, [s.id]: { ...e, sentenceTr: ev.target.value } },
+                        }))
+                      }
+                    />
                   )}
                 </Surface>
               </li>
@@ -438,6 +461,24 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
                     span={locateTerm(a.sentence.trim(), term)}
                   />
                 )}
+                {a.sentence.trim() && (
+                  <TextArea
+                    label={t('cards.add.sentenceTr')}
+                    optional
+                    rows={2}
+                    value={a.sentenceTr}
+                    lang="tr"
+                    className="min-h-16"
+                    onChange={(ev) =>
+                      setDraft((d) => ({
+                        ...d,
+                        added: d.added.map((x) =>
+                          x.key === a.key ? { ...x, sentenceTr: ev.target.value } : x,
+                        ),
+                      }))
+                    }
+                  />
+                )}
               </Surface>
             </li>
           ))}
@@ -448,7 +489,7 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
           className="self-start"
           onClick={() => {
             const key = `n${++newCounter}`;
-            setDraft((d) => ({ ...d, added: [...d.added, { key, meaning: '', sentence: '' }] }));
+            setDraft((d) => ({ ...d, added: [...d.added, { key, meaning: '', sentence: '', sentenceTr: '' }] }));
             requestAnimationFrame(() => document.getElementById(`${id}-${key}`)?.focus());
           }}
         >

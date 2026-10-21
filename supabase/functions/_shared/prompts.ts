@@ -5,7 +5,7 @@
 import { z } from 'zod';
 import { MAX_CANDIDATES } from './contracts.ts';
 
-export const EXTRACT_PROMPT_VERSION = 'extract-v1';
+export const EXTRACT_PROMPT_VERSION = 'extract-v2';
 export const ENRICH_PROMPT_VERSION = 'enrich-v1';
 
 /** Max existing senses offered to the model per extract request (prompt size bound). */
@@ -36,6 +36,7 @@ FIELDS OF EACH CANDIDATE
 - surface: the term exactly as it appears in source_sentence, as one contiguous stretch of characters with the same case and spelling: "gave up", "gave it up", "made up her mind". It must be a substring of source_sentence.
 - term_type: "word" for a single word; "phrase" for phrasal verbs, idioms, collocations and fixed expressions; "pattern" for grammar patterns with slots.
 - source_sentence: the complete sentence from TEXT that contains the term, copied character for character. Do not correct, shorten, re-punctuate or merge lines. If the sentence is longer than about 300 characters, copy only the clause containing the term, still verbatim.
+- sentence_tr: a natural, fluent Turkish translation of source_sentence as a good translator would write it, not word for word. Translate all of source_sentence and nothing more: no notes, no alternatives, no quotation marks around it.
 - confidence: 0 to 1, how sure you are that the term, its sense and the Turkish meaning are correct for this sentence.
 - known_sense: KNOWN_SENSES lists senses that already exist in the dictionary, one per line as "<ref> | <term> | <part of speech> | <English gloss>". If the term is listed there and its meaning in this sentence is one of the listed senses, set known_sense to that ref (for example "s3") and set pos, gloss_en, meaning_tr and ipa to null: that content exists already and must not be written again. A ref may only be used for the same term. Otherwise set known_sense to null and fill in the new sense:
 ${FIELD_RULES}
@@ -91,6 +92,7 @@ export const EXTRACT_RESPONSE_SCHEMA = {
           surface: { type: 'string', description: 'exact text in source_sentence, e.g. "gave up"' },
           term_type: { type: 'string', enum: ['word', 'phrase', 'pattern'] },
           source_sentence: { type: 'string', description: 'verbatim sentence from TEXT' },
+          sentence_tr: { type: 'string', description: 'natural Turkish translation of source_sentence' },
           confidence: { type: 'number', minimum: 0, maximum: 1 },
           known_sense: { ...nullableString, description: 'ref from KNOWN_SENSES or null' },
           pos: { ...nullableString, description: 'null when known_sense is set' },
@@ -103,6 +105,7 @@ export const EXTRACT_RESPONSE_SCHEMA = {
           'surface',
           'term_type',
           'source_sentence',
+          'sentence_tr',
           'confidence',
           'known_sense',
           'pos',
@@ -122,6 +125,7 @@ export const extractModelCandidate = z.object({
   surface: z.string(),
   term_type: z.string(),
   source_sentence: z.string(),
+  sentence_tr: z.string().nullish(),
   confidence: z.coerce.number(),
   known_sense: z.string().nullish(),
   pos: z.string().nullish(),

@@ -139,6 +139,23 @@ describe('confirmImport', () => {
     await expect(confirmImport(job.id)).rejects.toMatchObject({ code: 'invalid_input' });
   });
 
+  it('carries the sentence translation into the sense; older cached results give null', async () => {
+    const job = await createImportJob({ kind: 'text', title: 'T', chunks: ['a'], level: 'B1' }, T);
+    const r = result([
+      { term: 'cope', lexId: 'L-cope', meaning: 'başa çıkmak' },
+      { term: 'bank', lexId: 'L-bank', meaning: 'banka' },
+    ]);
+    r.candidates[0]!.sentence_tr = 'Bugün baş ettik.'; // the second has no sentence_tr (extract-v1 cache)
+    await recordChunkResult(job.id, 0, 'h0', r, { fromLocalCache: true }, T);
+    expect((await listImportCandidates(job.id)).map((c) => c.source_sentence_tr)).toEqual(['Bugün baş ettik.', null]);
+    await confirmImport(job.id, { now: T + 1 });
+    const senses = await db.senses.toArray();
+    expect(senses.map((s) => [s.meaning_tr, s.source_sentence_tr]).sort()).toEqual([
+      ['banka', null],
+      ['başa çıkmak', 'Bugün baş ettik.'],
+    ]);
+  });
+
   it('rolls everything back when a write fails', async () => {
     const job = await createImportJob({ kind: 'text', title: 'T', chunks: ['a'], level: 'B1' }, T);
     await recordChunkResult(

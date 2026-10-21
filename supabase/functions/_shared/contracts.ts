@@ -66,6 +66,8 @@ export const extractCandidate = z.object({
   surface: z.string(), // as written in source_sentence
   term_type: termType,
   source_sentence: z.string(), // verbatim from the chunk
+  /** Turkish translation of source_sentence; per user, never stored in the lexicon. Absent (null) in extract-v1 results. */
+  sentence_tr: z.string().nullable().default(null),
   span: z.tuple([z.number().int(), z.number().int()]), // [start, end) of surface in source_sentence
   confidence: z.number().min(0).max(1),
   /** relation to the shared lexicon before this request */

@@ -65,6 +65,8 @@ export interface ChunkCandidate {
   surface: string;
   term_type: ImportCandidate['term_type'];
   source_sentence: string;
+  /** Since extract-v2; results cached on this device before that have none (→ null). */
+  sentence_tr?: string | null;
   span: [number, number];
   confidence: number;
   match: ImportCandidate['match'];
@@ -213,6 +215,7 @@ export async function recordChunkResult(
         meaning_tr: c.lexicon.meaning_tr,
         ipa: c.lexicon.ipa,
         source_sentence: c.source_sentence,
+        source_sentence_tr: c.sentence_tr ?? null,
         span: c.span,
         confidence: c.confidence,
         selected: status !== 'exists',
@@ -318,6 +321,7 @@ export async function confirmImport(
           pos: c.pos,
           gloss_en: c.gloss_en,
           source_sentence: c.source_sentence,
+          source_sentence_tr: c.source_sentence_tr ?? null,
           span: c.span,
           source_id: job.source_id,
         };
