@@ -156,7 +156,7 @@ export async function applyPulledPage(batch: RemoteBatch, nextSeq: number, now: 
 }
 
 /** Tables whose rows a full resync may remove locally (review logs are never removed). */
-const RESYNC_TABLES = ['notes', 'senses', 'cards', 'sources', 'settings'] as const;
+const RESYNC_TABLES = ['notes', 'senses', 'cards', 'sources', 'settings', 'known_terms'] as const;
 export type ResyncTable = (typeof RESYNC_TABLES)[number];
 
 /**

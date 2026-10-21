@@ -181,6 +181,10 @@ export async function buildSeedBackup(cards: number, now = Date.now()): Promise<
     level: 'B1',
     fsrs_params: null,
     last_backup_at: null,
+    level_source: 'default',
+    level_updated_at: null,
+    level_locked: false,
+    level_change: null,
   };
   return buildBackup(
     { notes, senses, cards: cardRows, review_logs: logs, sources: [], settings: [settings] },

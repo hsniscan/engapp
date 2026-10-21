@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { makeCard, makeLog, makeSense } from '../test/factories';
-import { backupChecksum, buildBackup, buildNotesCsv, canonicalJson, csvCell, verifyBackup, type BackupTables } from './backup';
+import { BACKUP_SCHEMA_VERSION, backupChecksum, buildBackup, buildNotesCsv, canonicalJson, csvCell, verifyBackup, type BackupTables } from './backup';
 import type { Note, Settings } from './types';
 
 const note = (p: Partial<Note> & { id: string; term: string }): Note => ({
@@ -35,6 +35,10 @@ const settings: Settings = {
   level: 'B1',
   fsrs_params: null,
   last_backup_at: null,
+  level_source: 'default',
+  level_updated_at: null,
+  level_locked: false,
+  level_change: null,
 };
 
 function tables(): BackupTables {
@@ -109,7 +113,7 @@ describe('backup file', () => {
 
     t.notes[0] = { ...t.notes[0]!, level_override: 'C1' };
     const b = await buildBackup(t, { exported_at: 1, device_id: null });
-    expect(b.schema_version).toBe(4);
+    expect(b.schema_version).toBe(BACKUP_SCHEMA_VERSION);
     const v4 = await verifyBackup(JSON.stringify(b));
     expect(v4.ok && v4.backup.tables.notes[0]!.level_override).toBe('C1');
     // A changed override is caught by the checksum.
@@ -130,7 +134,7 @@ describe('backup file', () => {
       session_id: 's', duration_ms: 900, device_id: 'd', created_at: 7, hlc: 'h',
     };
     const b = await buildBackup({ ...t, practice_logs: [practice] }, { exported_at: 1, device_id: null });
-    expect(b.schema_version).toBe(4);
+    expect(b.schema_version).toBe(BACKUP_SCHEMA_VERSION);
     const v3 = await verifyBackup(JSON.stringify(b));
     expect(v3.ok && v3.backup.tables.practice_logs).toEqual([practice]);
     // Without practice logs the table is still written (empty).

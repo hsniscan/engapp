@@ -7,15 +7,17 @@ describe('Dexie schema', () => {
   it('opens with every table and the indexes the queries rely on', async () => {
     const d = new EngDb('schema-test');
     await d.open();
-    expect(d.verno).toBe(4);
+    expect(d.verno).toBe(9);
     expect(d.tables.map((t) => t.name).sort()).toEqual(
-      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'review_logs', 'senses', 'settings', 'sources'].sort(),
+      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'known_terms', 'level_tests', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'review_logs', 'senses', 'settings', 'sources'].sort(),
     );
     const idx = (table: string) => d.table(table).schema.indexes.map((i) => i.name);
     expect(idx('cards')).toEqual(expect.arrayContaining(['[state+due]', 'note_id', 'sense_id']));
     expect(idx('review_logs')).toEqual(expect.arrayContaining(['card_id', 'reviewed_at', 'undo_of']));
     expect(idx('practice_logs')).toEqual(expect.arrayContaining(['card_id', 'practiced_at', 'session_id']));
     expect(d.table('notes').schema.indexes.find((i) => i.name === 'term_norm')?.unique).toBeFalsy();
+    expect(idx('known_terms')).toEqual(expect.arrayContaining(['term_norm', 'deleted_at']));
+    expect(idx('level_tests')).toEqual(expect.arrayContaining(['taken_at']));
     d.close();
     await d.delete();
   });
@@ -55,7 +57,7 @@ describe('Dexie schema', () => {
 
     const d = new EngDb(name);
     await d.open();
-    expect(d.verno).toBe(4);
+    expect(d.verno).toBe(9);
     expect(await d.cards.get('c1')).toMatchObject({ state: 2, due: 5 });
     expect(await d.review_logs.count()).toBe(1);
     expect(await d.practice_logs.count()).toBe(0);
@@ -85,6 +87,42 @@ describe('Dexie schema', () => {
     expect(await d.notes.get('n1')).toMatchObject({ term: 'bank', level_override: null });
     expect(await d.lexicon_cache.get('l1')).toMatchObject({ lemma_norm: 'bank' });
     expect(await d.meta.get('lexicon_cursor')).toEqual({ key: 'lexicon_cursor', value: 0 });
+    expect(await d.outbox.count()).toBe(0);
+    d.close();
+    await d.delete();
+  });
+
+  it('v9 upgrade adds the level tables, fills the level fields and pulls again from 0', async () => {
+    const name = 'upgrade-v9-test';
+    const old = new Dexie(name);
+    old.version(1).stores({ notes: 'id, term_norm, lexicon_term_id, updated_at, deleted_at, *tags', settings: 'id', meta: 'key' });
+    old.version(4).stores({});
+    await old.open();
+    await old.table('settings').add({ id: 'settings', level: 'B2', theme: 'dark' });
+    await old.table('notes').add({ id: 'n1', term_norm: 'cope', tags: [], level_override: null });
+    await old.table('meta').bulkPut([
+      { key: 'sync_cursor', value: 1234 },
+      { key: 'lexicon_cursor', value: 99 },
+    ]);
+    old.close();
+
+    const d = new EngDb(name);
+    await d.open();
+    expect(d.verno).toBe(9);
+    expect(await d.settings.get('settings')).toMatchObject({
+      level: 'B2',
+      theme: 'dark',
+      // B2 was chosen by the user (the default is B1).
+      level_source: 'manual',
+      level_updated_at: null,
+      level_locked: false,
+      level_change: null,
+    });
+    expect(await d.notes.get('n1')).toMatchObject({ term_norm: 'cope' });
+    expect((await d.meta.get('sync_cursor'))?.value).toBe(0);
+    expect((await d.meta.get('lexicon_cursor'))?.value).toBe(99);
+    expect(await d.level_tests.count()).toBe(0);
+    expect(await d.known_terms.count()).toBe(0);
     expect(await d.outbox.count()).toBe(0);
     d.close();
     await d.delete();

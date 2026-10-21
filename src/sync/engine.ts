@@ -9,7 +9,8 @@
 //         missing from lexicon_cache.
 //   practice_logs wait in the outbox until a pull has been answered by sync_pull_v3 (the
 //         server has the table): a client deployed before the migration does not burn the
-//         rows' attempts on "unknown table" rejections.
+//         rows' attempts on "unknown table" rejections. Tables added later (REGISTRY_GATED)
+//         wait until the server's sync registry lists them.
 //
 // Triggers (startSyncEngine): app open, `online`, back to a visible tab, every 60 s while
 // visible, shortly after local changes, requestSync() (end of a review session) and the
@@ -39,6 +40,7 @@ import {
 import type { Id, Millis, OutboxTable } from '@/domain/types';
 import {
   getLexiconSenses,
+  listServerTables,
   MAX_PULL_PAGE,
   MAX_PUSH_BATCH,
   pullChanges,
@@ -68,6 +70,11 @@ export interface SyncTransport {
   pullChanges(since: number, limit?: number, from?: number): Promise<PullResult>;
   pullLexicon(since: number, limit?: number): Promise<LexiconPullResult>;
   getLexiconSenses(ids: Id[]): Promise<LexiconSense[]>;
+  /**
+   * Tables in the server's sync registry (null: no registry). Optional: a transport without
+   * it is assumed to store every table.
+   */
+  listServerTables?(): Promise<string[] | null>;
 }
 
 export const supabaseTransport: SyncTransport = {
@@ -75,7 +82,40 @@ export const supabaseTransport: SyncTransport = {
   pullChanges: (since, limit, from) => pullChanges(since, limit, undefined, from),
   pullLexicon: (since, limit) => pullLexicon(since, limit),
   getLexiconSenses: (ids) => getLexiconSenses(ids),
+  listServerTables: () => listServerTables(),
 };
+
+/**
+ * Synced tables added after the registry (v0.2 İP3 on): their rows are pushed only once the
+ * server's registry lists them. Later packages add their tables here.
+ */
+export const REGISTRY_GATED: readonly OutboxTable[] = ['level_tests', 'known_terms'];
+/** How often a device asks the registry again while rows of an unlisted table wait. */
+export const REGISTRY_RECHECK_MS = 10 * 60_000;
+
+/** Gated tables the server is not known to store; asks the registry when rows are waiting. */
+async function unlistedTables(t: SyncTransport, now: Millis): Promise<OutboxTable[]> {
+  if (!t.listServerTables) return [];
+  let listed = new Set((await getMeta<string[]>(META.serverTables)) ?? []);
+  let missing = REGISTRY_GATED.filter((x) => !listed.has(x));
+  if (!missing.length) return [];
+  const checkedAt = (await getMeta<number>(META.serverTablesCheckedAt)) ?? 0;
+  if (now - checkedAt < REGISTRY_RECHECK_MS) return missing;
+  const waiting = await db.outbox.filter((r) => missing.includes(r.table)).count();
+  if (!waiting) return missing;
+  try {
+    const names = await t.listServerTables();
+    listed = new Set(names ?? []);
+    await db.transaction('rw', db.meta, async () => {
+      await setMeta(META.serverTables, [...listed]);
+      await setMeta(META.serverTablesCheckedAt, now);
+    });
+    missing = REGISTRY_GATED.filter((x) => !listed.has(x));
+  } catch (e) {
+    if (classify(e).kind !== 'network') void logError(e, 'sync.registry');
+  }
+  return missing;
+}
 
 export type SyncErrorKind = 'network' | 'auth' | 'server';
 
@@ -133,6 +173,7 @@ export interface RunOptions {
 export async function pushOutbox(t: SyncTransport, report: SyncReport, opts: RunOptions = {}): Promise<void> {
   const now = opts.now ?? Date.now;
   const skipTables = new Set<OutboxTable>((await getMeta<boolean>(META.serverPractice)) ? [] : ['practice_logs']);
+  for (const table of await unlistedTables(t, now())) skipTables.add(table);
   // Rows that failed in this run are not sent again in the same run (a forced run would
   // otherwise resend them with every batch and burn through their attempts at once).
   const failedThisRun = new Set<string>();
@@ -205,6 +246,7 @@ async function fullResync(t: SyncTransport, report: SyncReport, now: () => Milli
     cards: new Set(),
     sources: new Set(),
     settings: new Set(),
+    known_terms: new Set(),
   });
   let seen = emptySeen();
   let cursor = 0;
@@ -221,7 +263,7 @@ async function fullResync(t: SyncTransport, report: SyncReport, now: () => Milli
       cursor = 0;
       continue;
     }
-    for (const r of page.rows) if (r.table !== 'review_logs' && r.table !== 'practice_logs') seen[r.table].add(r.row.id);
+    for (const r of page.rows) if (r.table in seen) seen[r.table as ResyncTable].add((r.row as { id: Id }).id);
     for (const bad of page.invalid) {
       // An invalid row still exists on the server: never delete it locally.
       if (bad.table in seen && typeof bad.id === 'string') seen[bad.table as ResyncTable].add(bad.id);
@@ -376,6 +418,7 @@ export class SyncEngine {
       pullChanges: async (since, limit, from) => (await check(), t.pullChanges(since, limit, from)),
       pullLexicon: async (since, limit) => (await check(), t.pullLexicon(since, limit)),
       getLexiconSenses: async (ids) => (await check(), t.getLexiconSenses(ids)),
+      ...(t.listServerTables ? { listServerTables: async () => (await check(), t.listServerTables!()) } : {}),
     };
   }
 

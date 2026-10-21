@@ -10,6 +10,9 @@ export const META = {
   lexiconCursor: 'lexicon_cursor',
   /** The server answered sync_pull_v3, so it stores practice_logs (see sync/engine.ts). */
   serverPractice: 'server_practice_logs',
+  /** Names in the server's sync registry (sync/engine.ts holds back rows of other tables). */
+  serverTables: 'server_sync_tables',
+  serverTablesCheckedAt: 'server_sync_tables_checked_at',
 } as const;
 
 /** Meta key of a day's extra new-card allowance ("+5 yeni kart"). Device-local, never synced. */

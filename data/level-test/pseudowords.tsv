@@ -1,0 +1,466 @@
+# Made-up words of the level test (honesty check). Built by scripts/build-level-test.ts pseudo:
+# letter-trigram chain on the word lists, length 5-9; not in wordfreq (English, Turkish), not in the
+# word lists, not one edit from the 30 000 most frequent English words, not an inflection of a real
+# word, no offensive string; then checked by the model (pseudo-check-v1) and reviewed by hand.
+# Columns: word, status (use | spare | rejected), reason. Only "use" rows go into the bank.
+ableake	use	
+ablecouse	use	
+ablenting	use	
+ackpary	use	
+acticall	use	
+acticaper	use	
+acticator	use	
+advernal	use	
+advight	use	
+advighty	use	
+afession	use	
+andence	use	
+apectiond	use	
+appary	use	
+applabler	use	
+apposider	use	
+aptiong	use	
+aptionse	use	
+artationy	use	
+assioner	use	
+astorther	use	
+astribly	use	
+aticary	use	
+ausively	use	
+austionly	use	
+bableste	use	
+baterve	use	
+bationde	use	
+bativern	use	
+bratern	use	
+bratic	use	
+broustor	use	
+buzzleve	use	
+callikey	use	
+catifter	use	
+cationg	use	
+cationk	use	
+chapposs	use	
+choustal	use	
+clistly	use	
+clogral	use	
+cloquit	use	
+coadve	use	
+cograng	use	
+colimple	use	
+colise	use	
+comantal	use	
+comously	use	
+comprodly	use	
+coningly	use	
+conize	use	
+consionve	use	
+corativel	use	
+cortably	use	
+cortionly	use	
+cousence	use	
+coustente	use	
+coutic	use	
+covele	use	
+cowbously	use	
+crativen	use	
+crouste	use	
+crughte	use	
+crughty	use	
+dantrate	use	
+dationfer	use	
+dationic	use	
+deastiont	use	
+decticalt	use	
+deful	use	
+defule	use	
+defulte	use	
+dembly	use	
+dementard	use	
+denciall	use	
+dentack	use	
+depron	use	
+deracce	use	
+dercher	use	
+dessivel	use	
+deticalle	use	
+dicallet	use	
+dicallige	use	
+dingfulty	use	
+dinvight	use	
+disize	use	
+distrigh	use	
+distry	use	
+diumbled	use	
+divele	use	
+domple	use	
+dratick	use	
+ectione	use	
+ementral	use	
+encessist	use	
+entiond	use	
+entivery	use	
+entress	use	
+equitage	use	
+exacce	use	
+exambily	use	
+exammage	use	
+exclial	use	
+exculson	use	
+exharly	use	
+exhilinal	use	
+exhinge	use	
+exiblest	use	
+exionall	use	
+expecous	use	
+explogge	use	
+explumed	use	
+extritive	use	
+extrouse	use	
+exubtfull	use	
+fablece	use	
+fablect	use	
+fablege	use	
+ficallest	use	
+ficallet	use	
+ficass	use	
+flatived	use	
+flutiver	use	
+forieve	use	
+formangly	use	
+fortione	use	
+fratice	use	
+frative	use	
+frestrant	use	
+frientle	use	
+grapplit	use	
+gratect	use	
+graticia	use	
+huncess	use	
+iminge	use	
+imitionve	use	
+imperact	use	
+implatict	use	
+imptionge	use	
+inatere	use	
+inatify	use	
+inatte	use	
+incial	use	
+inentle	use	
+inessage	use	
+inexpent	use	
+infulte	use	
+inglock	use	
+intander	use	
+intionant	use	
+intionde	use	
+jectionny	use	
+lationme	use	
+lationote	use	
+lisationy	use	
+lisoment	use	
+lograble	use	
+logral	use	
+magense	use	
+magmently	use	
+mallize	use	
+mancepred	use	
+mandeper	use	
+mationess	use	
+mationst	use	
+mativerve	use	
+mencon	use	
+milical	use	
+minglowly	use	
+mitioner	use	
+morticard	use	
+mousiond	use	
+mousiont	use	
+mughte	use	
+multher	use	
+nortionse	use	
+ophously	use	
+oventand	use	
+parientle	use	
+parreque	use	
+parribled	use	
+patersous	use	
+paticappy	use	
+pationa	use	
+pecticart	use	
+pecticave	use	
+pectionne	use	
+persouse	use	
+posionish	use	
+posperve	use	
+postort	use	
+prequit	use	
+prescate	use	
+priander	use	
+prignally	use	
+proaterse	use	
+procce	use	
+prourn	use	
+pubbleass	use	
+rantionst	use	
+rappron	use	
+reancesse	use	
+reastic	use	
+reatice	use	
+rectelly	use	
+rectick	use	
+rectivel	use	
+redisty	use	
+reemente	use	
+refuland	use	
+refulson	use	
+rencented	use	
+rentible	use	
+reptiater	use	
+requarly	use	
+requitch	use	
+ressfult	use	
+ressid	use	
+restatial	use	
+revelity	use	
+robally	use	
+rucculty	use	
+ruslation	use	
+sappron	use	
+sationan	use	
+scherse	use	
+scraver	use	
+sheaddly	use	
+shicalite	use	
+shicalle	use	
+shotional	use	
+skabled	use	
+skingly	use	
+solify	use	
+soloqual	use	
+somprest	use	
+spereeze	use	
+spernly	use	
+sposivern	use	
+statived	use	
+stfulate	use	
+stiondle	use	
+stionme	use	
+stionve	use	
+strabley	use	
+strever	use	
+stricard	use	
+sualical	use	
+sualise	use	
+subbleal	use	
+subtful	use	
+subtfulay	use	
+suffecon	use	
+sughte	use	
+suphight	use	
+suppity	use	
+supprous	use	
+surefule	use	
+surember	use	
+syclently	use	
+tallogy	use	
+tatimple	use	
+tationg	use	
+tationow	use	
+tertivery	use	
+tormly	use	
+torrience	use	
+traterly	use	
+tratert	use	
+trativend	use	
+triative	use	
+tribleve	use	
+turately	use	
+unalify	use	
+uncentick	use	
+uncentics	use	
+uncessiss	use	
+undefulte	use	
+undiss	use	
+unesper	use	
+unfordise	use	
+unfory	use	
+unific	use	
+unment	use	
+untionack	use	
+untionale	use	
+untiont	use	
+vatingle	use	
+vationy	use	
+vativery	use	
+ventionst	use	
+vicately	use	
+vionatice	use	
+watione	use	
+weaddly	use	
+weentaing	use	
+wheassing	use	
+worgerse	use	
+wormager	use	
+wortivele	use	
+dicale	spare	
+deressite	spare	
+fackly	rejected	model: Sounds rude in English
+undeter	rejected	model: English word: variant of undeterred
+preste	rejected	model: Italian word
+divelle	rejected	model: French or Italian root/word
+exclus	rejected	model: French word (exclus)
+tresse	rejected	model: French/English word (tresse)
+tortual	rejected	model: English word: tortual
+sperable	rejected	model: English word: sperable
+redistort	rejected	model: English word: redistort
+dialist	rejected	model: English word: dialist
+suffect	rejected	model: English word: suffect
+exturgant	rejected	model: English word: rare/obsolete
+brabler	rejected	model: English word: variant of brabbler
+clesse	rejected	model: French: cesse
+colist	rejected	model: English word: co-list
+fiente	rejected	model: French: fiente
+scrove	rejected	model: English word: dialect
+pristal	rejected	model: English word: medical/technical
+reverson	rejected	model: English word: reverson
+reverry	rejected	model: English word: variant of revery
+prappose	rejected	model: English word: archaic/obsolete
+requit	rejected	model: English word variant
+desside	rejected	model: Italian word: decide / similar to Turkish
+broust	rejected	model: Scots/English dialect word
+imated	rejected	model: English word form
+faccul	rejected	model: Similar to Turkish 'faks' or Latin roots
+mandish	rejected	model: English word: archaic or dialect
+accon	rejected	hand: reads as a name / "acorn"
+hology	rejected	hand: a suffix alone ("-ology")
+fology	rejected	hand: a suffix alone ("-ology")
+hical	rejected	hand: a suffix alone ("-ical")
+micity	rejected	hand: reads as "-micity" (seismicity)
+ingue	rejected	hand: a suffix alone ("-ingue")
+ingual	rejected	hand: reads as "lingual"
+pulty	rejected	hand: reads as "poultry" / "paltry"
+squily	rejected	hand: reads as "squiggly"
+reful	rejected	hand: reads as "refill" / "rueful"
+callike	rejected	hand: "call-like"
+callic	rejected	hand: reads as "Gallic"
+driensern	rejected	unlikely letters (-2.28)
+equatte	rejected	unlikely letters (-1.84)
+joballecs	rejected	unlikely letters (-2.43)
+saning	rejected	unlikely letters (-1.88)
+rusly	rejected	inflection of "rus"
+kinceadve	rejected	unlikely letters (-2.04)
+deadoreed	rejected	unlikely letters (-2.27)
+conory	rejected	unlikely letters (-1.82)
+instia	rejected	unlikely letters (-2.25)
+gainate	rejected	unlikely letters (-1.94)
+tralt	rejected	unlikely letters (-2.12)
+stakee	rejected	unlikely letters (-2.07)
+prochipt	rejected	unlikely letters (-2.09)
+restion	rejected	contains "rest+ion"
+prohend	rejected	unlikely letters (-2.16)
+loutarcy	rejected	unlikely letters (-2.60)
+driony	rejected	unlikely letters (-2.18)
+cumbeley	rejected	unlikely letters (-2.25)
+narrect	rejected	unlikely letters (-2.13)
+handurse	rejected	unlikely letters (-2.03)
+amandank	rejected	unlikely letters (-2.21)
+undequite	rejected	contains "quite"
+methessy	rejected	unlikely letters (-2.16)
+comannim	rejected	unlikely letters (-2.17)
+elograge	rejected	unlikely letters (-1.87)
+somanser	rejected	unlikely letters (-2.10)
+aunwaree	rejected	unlikely letters (-2.32)
+upsemiss	rejected	unlikely letters (-2.50)
+suplance	rejected	contains "lance"
+husly	rejected	inflection of "hus"
+hundist	rejected	unlikely letters (-1.88)
+hookilat	rejected	unlikely letters (-2.22)
+blify	rejected	unlikely letters (-2.01)
+downt	rejected	unlikely letters (-2.19)
+mesunbox	rejected	unlikely letters (-2.84)
+sistirce	rejected	unlikely letters (-2.18)
+arbalight	rejected	unlikely letters (-1.94)
+coodnate	rejected	unlikely letters (-2.12)
+quidama	rejected	unlikely letters (-2.59)
+inast	rejected	unlikely letters (-2.07)
+taleve	rejected	unlikely letters (-2.29)
+brenct	rejected	unlikely letters (-2.23)
+hansumpt	rejected	unlikely letters (-2.33)
+capeng	rejected	unlikely letters (-2.26)
+twisdal	rejected	unlikely letters (-2.38)
+foricy	rejected	unlikely letters (-2.15)
+operion	rejected	unlikely letters (-1.83)
+vaimen	rejected	unlikely letters (-2.48)
+judderate	rejected	unlikely letters (-1.99)
+arinwin	rejected	unlikely letters (-2.70)
+eceneolly	rejected	unlikely letters (-2.22)
+burtable	rejected	contains "table"
+grandner	rejected	unlikely letters (-1.91)
+rupwar	rejected	unlikely letters (-2.30)
+pashient	rejected	unlikely letters (-1.83)
+votion	rejected	one edit from "lotion"
+nolitace	rejected	unlikely letters (-2.17)
+foloprod	rejected	unlikely letters (-2.44)
+gonsel	rejected	unlikely letters (-2.47)
+colinave	rejected	unlikely letters (-1.96)
+ambity	rejected	unlikely letters (-1.89)
+anterel	rejected	unlikely letters (-2.19)
+numerred	rejected	unlikely letters (-2.36)
+necery	rejected	unlikely letters (-2.47)
+lustrave	rejected	unlikely letters (-1.94)
+ineoure	rejected	shape
+unturtalm	rejected	unlikely letters (-2.37)
+eadess	rejected	unlikely letters (-2.05)
+ageral	rejected	unlikely letters (-2.06)
+tiverally	rejected	contains "rally"
+granefor	rejected	unlikely letters (-2.21)
+incyntow	rejected	unlikely letters (-2.47)
+apiefulat	rejected	unlikely letters (-2.24)
+imetary	rejected	unlikely letters (-2.06)
+brialver	rejected	unlikely letters (-1.95)
+drurvital	rejected	unlikely letters (-2.39)
+joise	rejected	unlikely letters (-2.04)
+cutment	rejected	unlikely letters (-2.04)
+inespre	rejected	unlikely letters (-2.00)
+cless	rejected	one edit from "less"
+unstrop	rejected	shape
+renthmet	rejected	shape
+unkly	rejected	unlikely letters (-1.90)
+spail	rejected	unlikely letters (-2.21)
+humait	rejected	unlikely letters (-2.43)
+sious	rejected	shape
+ounselfic	rejected	unlikely letters (-2.24)
+spally	rejected	inflection of "spall"
+prous	rejected	one edit from "pious"
+qualisoul	rejected	unlikely letters (-2.26)
+golience	rejected	unlikely letters (-2.01)
+hilessate	rejected	unlikely letters (-1.97)
+calate	rejected	unlikely letters (-1.83)
+sheake	rejected	unlikely letters (-1.94)
+gorion	rejected	unlikely letters (-1.88)
+induity	rejected	unlikely letters (-1.98)
+weive	rejected	unlikely letters (-1.96)
+dabily	rejected	unlikely letters (-2.00)
+pectort	rejected	unlikely letters (-1.80)
+ganke	rejected	unlikely letters (-2.29)
+demalcoze	rejected	unlikely letters (-2.33)
+cialm	rejected	unlikely letters (-2.34)
+unrang	rejected	unlikely letters (-2.18)
+evorry	rejected	unlikely letters (-2.10)
+proar	rejected	unlikely letters (-1.89)
+bletily	rejected	unlikely letters (-2.09)
+oility	rejected	unlikely letters (-2.05)
+slationet	rejected	unlikely letters (-1.82)
+ecticien	rejected	unlikely letters (-1.95)
+buctomen	rejected	unlikely letters (-2.20)
+dadiark	rejected	unlikely letters (-2.59)
+hible	rejected	unlikely letters (-1.80)
+betwair	rejected	unlikely letters (-2.63)
+obilite	rejected	unlikely letters (-1.97)
+jeake	rejected	unlikely letters (-2.23)
+efeter	rejected	unlikely letters (-2.32)
+ailect	rejected	unlikely letters (-2.23)
+undra	rejected	unlikely letters (-2.42)
+sonted	rejected	unlikely letters (-2.04)
+ploninful	rejected	unlikely letters (-2.27)

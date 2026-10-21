@@ -17,6 +17,10 @@ export const DEFAULT_SETTINGS = {
   level: 'B1',
   fsrs_params: null,
   last_backup_at: null,
+  level_source: 'default',
+  level_updated_at: null,
+  level_locked: false,
+  level_change: null,
 } as const satisfies Partial<Settings>;
 
 /** Defaults; timezone comes from the device. Not persisted by itself. */
@@ -58,6 +62,7 @@ export const settingsPatchSchema = z
     level: z.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']),
     fsrs_params: z.array(z.number()).nullable(),
     last_backup_at: z.number().int().nullable(),
+    level_locked: z.boolean(),
   })
   .partial();
 
@@ -69,6 +74,14 @@ export async function updateSettings(patch: SettingsPatch, now: Millis = Date.no
   return writeTx([db.settings], now, async (w) => {
     const current = (await db.settings.get(SETTINGS_ID)) ?? defaultSettings(now, w.userId);
     const next: Settings = { ...current, ...clean };
+    // Choosing a level by hand: it is the user's own from now on (the weekly update waits two
+    // weeks before it looks at it again, docs/decisions/0017) and the last automatic change
+    // is no longer news.
+    if (clean.level !== undefined && clean.level !== current.level) {
+      next.level_source = 'manual';
+      next.level_updated_at = now;
+      next.level_change = null;
+    }
     createScheduler(next); // validates fsrs_params against ts-fsrs
     return w.put('settings', next);
   });

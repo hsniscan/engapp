@@ -37,3 +37,17 @@ export { getDeviceId, getCurrentUserId, getMeta, setMeta, META } from './meta';
 export { logError, listErrors, clearErrors, ERROR_LOG_LIMIT } from './errorLog';
 export { ActionError, type ActionErrorCode } from './errors';
 export * from './connected';
+export { getKnownTermKeys, listKnownTerms, markKnown, unmarkKnown } from './knownTerms';
+export {
+  BAND_SIZES,
+  countOutsideWords,
+  dismissLevelChange,
+  getLevelOverview,
+  listLevelTests,
+  runWeeklyLevelUpdate,
+  saveLevelTest,
+  undoLevelChange,
+  applyTestLevel,
+  type LevelOverview,
+  type SaveLevelTestInput,
+} from './levelModel';

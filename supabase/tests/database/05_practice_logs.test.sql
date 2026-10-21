@@ -8,10 +8,10 @@ select plan(28);
 -- ---------------------------------------------------------------- registry and RLS
 
 select has_table('public', 'practice_logs', 'practice_logs exists');
-select set_eq(
+select set_has(
   $$ select name from public.sync_tables $$,
-  array['notes', 'senses', 'cards', 'review_logs', 'sources', 'settings', 'practice_logs'],
-  'the registry lists the six v0.1 tables and practice_logs');
+  $$ values ('notes'), ('senses'), ('cards'), ('review_logs'), ('sources'), ('settings'), ('practice_logs') $$,
+  'the registry lists the six v0.1 tables and practice_logs (later packages add more)');
 
 select is_empty(
   $$ select st.name from public.sync_tables st join pg_class c on c.oid = format('public.%I', st.name)::regclass

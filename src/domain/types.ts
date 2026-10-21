@@ -114,6 +114,47 @@ export interface PracticeLog {
   hlc: string;
 }
 
+/** One answered word of a level test (domain/levelTest.ts TestItem). */
+export interface LevelTestItem {
+  w: string;
+  band: CefrLevel | null;
+  pseudo: boolean;
+  answer: 'yes' | 'no';
+  mc_ok?: boolean;
+}
+
+/** A finished level test. Insert-only; study history (never copied between accounts). */
+export interface LevelTest {
+  id: Id;
+  user_id: string | null;
+  taken_at: Millis;
+  result_level: CefrLevel;
+  vocab_estimate: number;
+  reliable: boolean;
+  false_alarm_rate: number;
+  /** Corrected share of known words per level (all six, untested ones inferred). */
+  ratios: Record<CefrLevel, number>;
+  items: LevelTestItem[];
+  bank_version: string;
+  /** The result was made the user's level. */
+  applied: boolean;
+  duration_ms: number;
+  device_id: string;
+  created_at: Millis;
+  hlc: string;
+}
+
+export type KnownTermSource = 'test' | 'preview' | 'manual' | 'auto';
+
+/** A word the user knows without a card ("Biliyorum"). Deleting it is a tombstone. */
+export interface KnownTerm extends SyncedRow {
+  /** Normalised dictionary form (normalizeTerm), the same key as notes.term_norm. */
+  term_norm: string;
+  source: KnownTermSource;
+  /** The word's level when it was marked (null: unknown). */
+  cefr_at_mark: CefrLevel | null;
+}
+
 export interface Source extends SyncedRow {
   kind: 'text' | 'pdf';
   title: string;
@@ -130,6 +171,25 @@ export type CefrLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
  */
 export type LevelSource = 'cefrj' | 'octanove' | 'ai' | 'freq' | 'words';
 
+/** Where the user's level comes from: never set, a level test, the weekly update, or by hand. */
+export type LevelSourceKind = 'default' | 'test' | 'auto' | 'manual';
+
+/** The last change the weekly update made to the level, with its reason (home "Neden?"). */
+export interface LevelChangeNote {
+  from: CefrLevel;
+  to: CefrLevel;
+  /** Week start the decision was made for. */
+  week: Millis;
+  /** The level whose share decided (the next level when moving up, the own level when down). */
+  band: CefrLevel;
+  ratio: number;
+  ratio_prev: number;
+  known: number;
+  unknown: number;
+  /** The user closed the note on the home screen. */
+  dismissed: boolean;
+}
+
 /** One settings row per user (id = 'settings'). */
 export interface Settings extends SyncedRow {
   daily_new_limit: number; // default 10
@@ -139,6 +199,14 @@ export interface Settings extends SyncedRow {
   theme: ThemePref;
   voice: 'en-US' | 'en-GB';
   level: CefrLevel; // self-estimated, default B1
+  /** v0.2 İP3: where `level` comes from; 'default' = never set. */
+  level_source: LevelSourceKind;
+  /** When `level` last changed (test, weekly update or by hand). */
+  level_updated_at: Millis | null;
+  /** The weekly update never changes a locked level. */
+  level_locked: boolean;
+  /** Last change made by the weekly update (null: none). */
+  level_change: LevelChangeNote | null;
   fsrs_params: number[] | null; // null = ts-fsrs defaults
   last_backup_at: Millis | null;
 }
@@ -212,11 +280,20 @@ export interface ChunkCacheRow {
 }
 
 export type OutboxTable =
-  'notes' | 'senses' | 'cards' | 'review_logs' | 'sources' | 'settings' | 'practice_logs';
+  | 'notes'
+  | 'senses'
+  | 'cards'
+  | 'review_logs'
+  | 'sources'
+  | 'settings'
+  | 'practice_logs'
+  | 'level_tests'
+  | 'known_terms';
 /** Synced tables whose rows are never changed or deleted. */
 export const INSERT_ONLY_TABLES = [
   'review_logs',
   'practice_logs',
+  'level_tests',
 ] as const satisfies readonly OutboxTable[];
 export type InsertOnlyTable = (typeof INSERT_ONLY_TABLES)[number];
 

@@ -6,6 +6,8 @@ import type {
   ErrorLogRow,
   ImportCandidate,
   ImportJob,
+  KnownTerm,
+  LevelTest,
   LexiconSense,
   MetaRow,
   Note,
@@ -29,6 +31,8 @@ export class EngDb extends Dexie {
   cards!: EntityTable<Card, 'id'>;
   review_logs!: EntityTable<ReviewLog, 'id'>;
   practice_logs!: EntityTable<PracticeLog, 'id'>;
+  level_tests!: EntityTable<LevelTest, 'id'>;
+  known_terms!: EntityTable<KnownTerm, 'id'>;
   sources!: EntityTable<Source, 'id'>;
   settings!: EntityTable<Settings, 'id'>;
   lexicon_cache!: EntityTable<LexiconSense, 'id'>;
@@ -93,6 +97,29 @@ export class EngDb extends Dexie {
             if (row.level_override === undefined) row.level_override = null;
           });
         await tx.table('meta').put({ key: 'lexicon_cursor', value: 0 });
+      });
+    // v9 (v0.2 İP3; 5–8 belong to other work packages): level_tests (insert-only) and
+    // known_terms (synced, tombstones), and the level fields of settings. A level other than
+    // the default B1 was chosen by the user, so it counts as 'manual' (a local fill-in, not
+    // stamped or queued; the server columns have the same defaults). The sync cursor goes back
+    // to 0 once: a server that already had these tables may have sent rows of them to this
+    // device before it knew them (they were skipped), and they would never come again.
+    this.version(9)
+      .stores({
+        level_tests: 'id, taken_at',
+        known_terms: 'id, term_norm, deleted_at',
+      })
+      .upgrade(async (tx) => {
+        await tx
+          .table('settings')
+          .toCollection()
+          .modify((row: Record<string, unknown>) => {
+            if (row.level_source === undefined) row.level_source = row.level !== 'B1' ? 'manual' : 'default';
+            if (row.level_updated_at === undefined) row.level_updated_at = null;
+            if (row.level_locked === undefined) row.level_locked = false;
+            if (row.level_change === undefined) row.level_change = null;
+          });
+        await tx.table('meta').put({ key: 'sync_cursor', value: 0 });
       });
   }
 }

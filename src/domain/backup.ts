@@ -5,6 +5,8 @@ import { type DayConfig, dayKeyOf } from './day';
 import { effectiveLogs } from './recompute';
 import {
   cardSchema,
+  knownTermSchema,
+  levelTestSchema,
   noteSchema,
   practiceLogSchema,
   reviewLogSchema,
@@ -12,13 +14,15 @@ import {
   settingsSchema,
   sourceSchema,
 } from './schemas';
-import type { Card, Millis, Note, PracticeLog, ReviewLog, Sense, Settings, Source } from './types';
+import type { Card, KnownTerm, LevelTest, Millis, Note, PracticeLog, ReviewLog, Sense, Settings, Source } from './types';
 
 export const BACKUP_FORMAT = 'engapp-backup';
 // 2: senses.source_sentence_tr. Version 1 files (without it) are still accepted.
 // 3: practice_logs. Older files have no such table (restored as none).
 // 4: notes.level_override. Older files have none (restored as null: the computed level).
-export const BACKUP_SCHEMA_VERSION = 4;
+// 9 (v0.2 İP3, numbered like its Dexie version): level_tests, known_terms and the level fields
+//   of settings. Older files have no such tables (restored as none) and default level fields.
+export const BACKUP_SCHEMA_VERSION = 9;
 
 export interface BackupTables {
   notes: Note[];
@@ -29,6 +33,9 @@ export interface BackupTables {
   settings: Settings[];
   /** Absent in files before schema_version 3; buildBackup always writes it. */
   practice_logs?: PracticeLog[];
+  /** Absent in files before schema_version 9; buildBackup always writes them. */
+  level_tests?: LevelTest[];
+  known_terms?: KnownTerm[];
 }
 
 export const backupTablesSchema = z.object({
@@ -40,6 +47,8 @@ export const backupTablesSchema = z.object({
   settings: z.array(settingsSchema).max(1),
   // Optional, not defaulted: a file without the key must keep the checksum it was written with.
   practice_logs: z.array(practiceLogSchema).optional(),
+  level_tests: z.array(levelTestSchema).optional(),
+  known_terms: z.array(knownTermSchema).optional(),
 });
 
 export const backupSchema = z.object({
@@ -77,6 +86,8 @@ export function sortTables(t: BackupTables): BackupTables {
     sources: byId(t.sources),
     settings: byId(t.settings),
     ...(t.practice_logs ? { practice_logs: byId(t.practice_logs) } : {}),
+    ...(t.level_tests ? { level_tests: byId(t.level_tests) } : {}),
+    ...(t.known_terms ? { known_terms: byId(t.known_terms) } : {}),
   };
 }
 
@@ -88,7 +99,12 @@ export async function buildBackup(
   tables: BackupTables,
   meta: { exported_at: Millis; device_id: string | null },
 ): Promise<BackupFile> {
-  const sorted = sortTables({ ...tables, practice_logs: tables.practice_logs ?? [] });
+  const sorted = sortTables({
+    ...tables,
+    practice_logs: tables.practice_logs ?? [],
+    level_tests: tables.level_tests ?? [],
+    known_terms: tables.known_terms ?? [],
+  });
   return {
     format: BACKUP_FORMAT,
     schema_version: BACKUP_SCHEMA_VERSION,
@@ -148,16 +164,30 @@ export async function verifyBackup(input: unknown): Promise<VerifyResult> {
 }
 
 /**
- * Parsing fills in fields that older files did not have (`notes.level_override` before
- * version 4, `senses.source_sentence_tr` before version 2) with null; the file's checksum
- * did not cover them. Tries the tables as they are, then as such older files had them.
+ * Parsing fills in fields that older files did not have (the level fields of settings before
+ * version 9, `notes.level_override` before version 4, `senses.source_sentence_tr` before
+ * version 2) with their defaults; the file's checksum did not cover them. Tries the tables
+ * as they are, then as such older files had them.
  */
 async function checksumMatches(t: BackupTables, checksum: string): Promise<boolean> {
-  if ((await backupChecksum(t)) === checksum) return true;
   const v3 = { ...t, notes: t.notes.map((n) => withoutNull(n, 'level_override')) };
-  if ((await backupChecksum(v3)) === checksum) return true;
   const v1 = { ...v3, senses: t.senses.map((s) => withoutNull(s, 'source_sentence_tr')) };
-  return (await backupChecksum(v1)) === checksum;
+  for (const tables of [t, v3, v1]) {
+    if ((await backupChecksum(tables)) === checksum) return true;
+    const pre9 = { ...tables, settings: tables.settings.map(withoutLevelDefaults) };
+    if ((await backupChecksum(pre9)) === checksum) return true;
+  }
+  return false;
+}
+
+/** Settings as a file before version 9 had them (the level fields at their defaults). */
+function withoutLevelDefaults(row: Settings): Settings {
+  const copy: Partial<Settings> = { ...row };
+  if (copy.level_source === 'default') delete copy.level_source;
+  if (copy.level_updated_at === null) delete copy.level_updated_at;
+  if (copy.level_locked === false) delete copy.level_locked;
+  if (copy.level_change === null) delete copy.level_change;
+  return copy as Settings;
 }
 
 function withoutNull<T extends object>(row: T, key: keyof T): T {
