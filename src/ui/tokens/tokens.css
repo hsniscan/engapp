@@ -1,0 +1,85 @@
+/*
+ * Engapp colour tokens — the single source of truth for both themes.
+ *
+ * Every colour is written once as light-dark(<light>, <dark>). The browser picks the
+ * branch from `color-scheme`, which follows the OS by default and is pinned by
+ * <html data-theme="light|dark">. `data-theme="system"` (or no attribute) follows the OS.
+ *
+ * scripts/check-contrast.mjs parses the `--name: light-dark(#a, #b);` lines below,
+ * so keep them on one line, solid 6-digit hex only.
+ */
+
+:root {
+  color-scheme: light dark;
+}
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+:root {
+  /* Surfaces: warm paper / warm charcoal */
+  --canvas: light-dark(#f5f2ec, #1a1917);
+  --surface: light-dark(#fdfcf9, #22201d);
+  --surface-raised: light-dark(#ffffff, #2a2825);
+  --surface-sunken: light-dark(#ede9e1, #161513);
+
+  /* Lines */
+  --border: light-dark(#e3ddd2, #34312d);
+  --border-strong: light-dark(#8c8476, #78726a);
+
+  /* Ink */
+  --fg: light-dark(#1f1d1a, #ece6dc);
+  --fg-muted: light-dark(#5e5850, #a79f93);
+  --fg-subtle: light-dark(#6f695f, #938c81);
+  --fg-inverse: light-dark(#fdfcf9, #1a1917);
+
+  /* The one accent: ink blue */
+  --accent: light-dark(#2a5a8c, #3b6c9e);
+  --accent-hover: light-dark(#224a74, #335f8c);
+  --accent-fg: light-dark(#ffffff, #ffffff);
+  --accent-text: light-dark(#2a5a8c, #9dbde3);
+  --accent-soft: light-dark(#e6edf5, #253244);
+  --focus: light-dark(#2a5a8c, #9dbde3);
+
+  /* Status */
+  --success: light-dark(#2e8c6a, #4fae8a);
+  --success-text: light-dark(#1b6a4e, #7fcdae);
+  --success-soft: light-dark(#e6f1eb, #1f3129);
+  --warn: light-dark(#b97f0e, #d6a03e);
+  --warn-text: light-dark(#7f5300, #e8c27a);
+  --warn-soft: light-dark(#f7efdc, #352c1c);
+  --danger: light-dark(#a63a2b, #b8493a);
+  --danger-hover: light-dark(#8e3123, #a53f31);
+  --danger-fg: light-dark(#ffffff, #ffffff);
+  --danger-text: light-dark(#a63a2b, #f0907e);
+  --danger-soft: light-dark(#f8e9e5, #3a2420);
+
+  /* Answer ratings (Okabe-Ito hues, muted). Graphic = bar/icon, text = label, soft = fill */
+  --rating-again: light-dark(#c8582a, #e07a50);
+  --rating-again-text: light-dark(#9c3f1b, #f0a585);
+  --rating-again-soft: light-dark(#f8ebe4, #3a2620);
+  --rating-hard: light-dark(#b97f0e, #d6a03e);
+  --rating-hard-text: light-dark(#7f5300, #e8c27a);
+  --rating-hard-soft: light-dark(#f7efdc, #352c1c);
+  --rating-good: light-dark(#2e8c6a, #4fae8a);
+  --rating-good-text: light-dark(#1b6a4e, #7fcdae);
+  --rating-good-soft: light-dark(#e6f1eb, #1f3129);
+  --rating-easy: light-dark(#3270a8, #5e9ad3);
+  --rating-easy-text: light-dark(#245a8c, #9cc3ea);
+  --rating-easy-soft: light-dark(#e5edf5, #1f2b38);
+
+  /* Continuity heatmap: one Okabe-Ito hue (bluish green), three steps */
+  --heat-empty: light-dark(#e6e1d7, #2c2a27);
+  --heat-active: light-dark(#9fcfb9, #2f6150);
+  --heat-completed: light-dark(#1f7556, #63c49f);
+
+  /* Brand: the stress tick on the logo tile (inverse of accent-text) */
+  --logo-tick: light-dark(#9dbde3, #2a5a8c);
+
+  /* Non-hex helpers (not contrast-checked) */
+  --scrim: light-dark(rgb(31 29 26 / 0.36), rgb(0 0 0 / 0.6));
+  --shadow-color: light-dark(rgb(60 48 30 / 0.1), rgb(0 0 0 / 0.45));
+}

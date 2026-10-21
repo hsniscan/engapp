@@ -1,0 +1,167 @@
+{
+  "app": {
+    "name": "Engapp",
+    "tagline": "English words, a little every day"
+  },
+  "nav": {
+    "home": "Home",
+    "add": "Add",
+    "library": "Cards",
+    "stats": "Stats",
+    "settings": "Settings",
+    "primary": "Main navigation",
+    "skipToContent": "Skip to content",
+    "backHome": "Back to home"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "delete": "Delete",
+    "edit": "Edit",
+    "undo": "Undo",
+    "confirm": "Confirm",
+    "continue": "Continue",
+    "back": "Back",
+    "next": "Next",
+    "search": "Search",
+    "filter": "Filter",
+    "more": "More options",
+    "loading": "Loading…",
+    "retry": "Try again",
+    "done": "Done",
+    "add": "Add",
+    "upload": "Upload file",
+    "suspend": "Suspend",
+    "listen": "Listen",
+    "optional": "Optional",
+    "required": "Required"
+  },
+  "rating": {
+    "group": "How well did you remember?",
+    "again": "Again",
+    "hard": "Hard",
+    "good": "Good",
+    "easy": "Easy",
+    "nextReview": ", next review:"
+  },
+  "sync": {
+    "label": "Sync status",
+    "synced": "Synced",
+    "syncing": "Syncing…",
+    "pending_one": "{{count}} change waiting",
+    "pending_other": "{{count}} changes waiting",
+    "offline": "Offline — your data is safe on this device",
+    "offlineShort": "Offline",
+    "error": "Sync failed — will retry",
+    "errorShort": "Sync error",
+    "syncNow": "Sync now"
+  },
+  "theme": {
+    "label": "Theme",
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "home": {
+    "title": "Today",
+    "streakLine": "Streak: {{streak}} days · Today: {{done}} / {{total}} cards · Longest: {{longest}}",
+    "due": "Due",
+    "new": "New",
+    "startReview": "Start review",
+    "addCard": "Add a card"
+  },
+  "review": {
+    "title": "Review",
+    "progress": "{{done}} / {{total}} cards",
+    "showAnswer": "Show answer",
+    "tapToFlip": "Tap the card to flip it",
+    "endSession": "End session",
+    "front": "Front",
+    "back": "Back",
+    "spaceKey": "Space",
+    "spaceToFlip": "Press Space to flip"
+  },
+  "add": {
+    "title": "Add a card"
+  },
+  "import": {
+    "title": "Preview"
+  },
+  "library": {
+    "title": "Cards",
+    "searchPlaceholder": "Search a word or meaning",
+    "empty": "No cards yet",
+    "emptyHint": "Add your first word; the review schedule sets itself up."
+  },
+  "stats": {
+    "title": "Stats"
+  },
+  "settings": {
+    "title": "Settings"
+  },
+  "auth": {
+    "title": "Sign in",
+    "google": "Continue with Google",
+    "guest": "Continue as guest",
+    "email": "Email",
+    "password": "Password"
+  },
+  "placeholder": {
+    "body": "This screen is still being built."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "The page you are looking for has moved or never existed."
+  },
+  "a11y": {
+    "notifications": "Notifications",
+    "dismiss": "Dismiss notification",
+    "progress": "Progress"
+  },
+  "dev": {
+    "title": "UI gallery",
+    "intro": "Every component, in both themes. For visual QA.",
+    "buttons": "Buttons",
+    "icons": "Icons",
+    "fields": "Form fields",
+    "controls": "Selection controls",
+    "feedback": "Status and feedback",
+    "overlays": "Dialogs and menus",
+    "flipCard": "Flip card",
+    "ratings": "Answer buttons",
+    "heatmap": "Heatmap steps",
+    "typography": "Type scale",
+    "colors": "Colour tokens",
+    "brand": "Logo",
+    "openDialog": "Open dialog",
+    "openSheet": "Open sheet",
+    "showToast": "Show toast",
+    "dialogTitle": "Delete card",
+    "dialogBody": "This card and its review history will be removed from this device and your account.",
+    "toastTitle": "Card saved",
+    "toastBody": "It will show up in tomorrow's first review.",
+    "sampleLabel": "Term",
+    "sampleHint": "An English word or phrase",
+    "sampleError": "This field can't be empty",
+    "sampleNote": "Note",
+    "dailyLimit": "New cards per day",
+    "retention": "Target retention",
+    "sound": "Play audio automatically",
+    "includeSuspended": "Include suspended cards",
+    "level": "Estimated level",
+    "tabManual": "Manual",
+    "tabPaste": "Paste text",
+    "tabPdf": "Upload PDF",
+    "tabPanel": "The {{tab}} tab content appears here.",
+    "badgeNew": "New",
+    "badgeLearning": "Learning",
+    "badgeReview": "Review",
+    "badgeSuspended": "Suspended",
+    "badgeLowConfidence": "Low confidence",
+    "flip": "Flip card",
+    "nextCard": "Next card",
+    "split": "Show side by side",
+    "splitTitle": "Light and dark themes side by side"
+  }
+}

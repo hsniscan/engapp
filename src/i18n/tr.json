@@ -1,0 +1,167 @@
+{
+  "app": {
+    "name": "Engapp",
+    "tagline": "İngilizce kelimeler, her gün biraz"
+  },
+  "nav": {
+    "home": "Ana",
+    "add": "Ekle",
+    "library": "Kartlar",
+    "stats": "İstatistik",
+    "settings": "Ayarlar",
+    "primary": "Ana gezinme",
+    "skipToContent": "İçeriğe geç",
+    "backHome": "Ana ekrana dön"
+  },
+  "common": {
+    "save": "Kaydet",
+    "cancel": "Vazgeç",
+    "close": "Kapat",
+    "delete": "Sil",
+    "edit": "Düzenle",
+    "undo": "Geri al",
+    "confirm": "Onayla",
+    "continue": "Devam et",
+    "back": "Geri",
+    "next": "İleri",
+    "search": "Ara",
+    "filter": "Süz",
+    "more": "Diğer seçenekler",
+    "loading": "Yükleniyor…",
+    "retry": "Tekrar dene",
+    "done": "Bitti",
+    "add": "Ekle",
+    "upload": "Dosya yükle",
+    "suspend": "Askıya al",
+    "listen": "Sesli dinle",
+    "optional": "İsteğe bağlı",
+    "required": "Zorunlu"
+  },
+  "rating": {
+    "group": "Ne kadar iyi hatırladın?",
+    "again": "Tekrar",
+    "hard": "Zor",
+    "good": "İyi",
+    "easy": "Kolay",
+    "nextReview": ", sonraki tekrar:"
+  },
+  "sync": {
+    "label": "Senkron durumu",
+    "synced": "Senkronlandı",
+    "syncing": "Senkronlanıyor…",
+    "pending_one": "{{count}} değişiklik bekliyor",
+    "pending_other": "{{count}} değişiklik bekliyor",
+    "offline": "Çevrimdışı — verilerin bu cihazda güvende",
+    "offlineShort": "Çevrimdışı",
+    "error": "Senkron başarısız — yeniden denenecek",
+    "errorShort": "Senkron hatası",
+    "syncNow": "Şimdi senkronla"
+  },
+  "theme": {
+    "label": "Tema",
+    "system": "Sistem",
+    "light": "Açık",
+    "dark": "Koyu"
+  },
+  "home": {
+    "title": "Bugün",
+    "streakLine": "Seri: {{streak}} gün · Bugün: {{done}} / {{total}} kart · En uzun: {{longest}}",
+    "due": "Vadesi gelen",
+    "new": "Yeni",
+    "startReview": "Tekrara başla",
+    "addCard": "Kart ekle"
+  },
+  "review": {
+    "title": "Tekrar",
+    "progress": "{{done}} / {{total}} kart",
+    "showAnswer": "Cevabı göster",
+    "tapToFlip": "Çevirmek için karta dokun",
+    "endSession": "Oturumu bitir",
+    "front": "Ön yüz",
+    "back": "Arka yüz",
+    "spaceKey": "Boşluk",
+    "spaceToFlip": "Çevirmek için Boşluk tuşuna bas"
+  },
+  "add": {
+    "title": "Kart ekle"
+  },
+  "import": {
+    "title": "Önizleme"
+  },
+  "library": {
+    "title": "Kartlar",
+    "searchPlaceholder": "Kelime ya da anlam ara",
+    "empty": "Henüz kart yok",
+    "emptyHint": "İlk kelimeni ekle; tekrar takvimi kendiliğinden kurulur."
+  },
+  "stats": {
+    "title": "İstatistik"
+  },
+  "settings": {
+    "title": "Ayarlar"
+  },
+  "auth": {
+    "title": "Giriş",
+    "google": "Google ile devam et",
+    "guest": "Misafir olarak devam et",
+    "email": "E-posta",
+    "password": "Şifre"
+  },
+  "placeholder": {
+    "body": "Bu ekran henüz yapım aşamasında."
+  },
+  "notFound": {
+    "title": "Sayfa bulunamadı",
+    "body": "Aradığın sayfa taşınmış ya da hiç olmamış olabilir."
+  },
+  "a11y": {
+    "notifications": "Bildirimler",
+    "dismiss": "Bildirimi kapat",
+    "progress": "İlerleme"
+  },
+  "dev": {
+    "title": "Arayüz galerisi",
+    "intro": "Her bileşen, iki temada. Görsel kontrol için.",
+    "buttons": "Butonlar",
+    "icons": "Simgeler",
+    "fields": "Form alanları",
+    "controls": "Seçim kontrolleri",
+    "feedback": "Durum ve geri bildirim",
+    "overlays": "Pencereler ve menüler",
+    "flipCard": "Kart çevirme",
+    "ratings": "Cevap butonları",
+    "heatmap": "Isı haritası tonları",
+    "typography": "Yazı ölçeği",
+    "colors": "Renk jetonları",
+    "brand": "Logo",
+    "openDialog": "Pencereyi aç",
+    "openSheet": "Alt sayfayı aç",
+    "showToast": "Bildirim göster",
+    "dialogTitle": "Kartı sil",
+    "dialogBody": "Bu kart ve tekrar geçmişi bu cihazdan ve hesabından silinecek.",
+    "toastTitle": "Kart kaydedildi",
+    "toastBody": "Yarın ilk tekrarında görünecek.",
+    "sampleLabel": "Terim",
+    "sampleHint": "İngilizce kelime ya da kalıp",
+    "sampleError": "Bu alan boş bırakılamaz",
+    "sampleNote": "Not",
+    "dailyLimit": "Günlük yeni kart",
+    "retention": "Hedef hatırlama oranı",
+    "sound": "Sesi otomatik çal",
+    "includeSuspended": "Askıdakileri de göster",
+    "level": "Tahmini seviye",
+    "tabManual": "Elle",
+    "tabPaste": "Metin yapıştır",
+    "tabPdf": "PDF yükle",
+    "tabPanel": "{{tab}} sekmesinin içeriği burada görünür.",
+    "badgeNew": "Yeni",
+    "badgeLearning": "Öğreniliyor",
+    "badgeReview": "Tekrarda",
+    "badgeSuspended": "Askıda",
+    "badgeLowConfidence": "Düşük güven",
+    "flip": "Kartı çevir",
+    "nextCard": "Sonraki kart",
+    "split": "Yan yana göster",
+    "splitTitle": "Açık ve koyu tema yan yana"
+  }
+}

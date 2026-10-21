@@ -1,10 +1,31 @@
 <!doctype html>
-<html lang="en">
+<html lang="tr" data-theme="system">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>engapp</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Engapp</title>
+    <meta name="description" content="İngilizce kelimeleri aralıklı tekrarla öğren. Çevrimdışı çalışır." />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f5f2ec" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1a1917" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon-180.png" />
+    <script>
+      // Apply the stored theme before first paint (no flash). Mirrors src/ui/theme/theme.ts.
+      (function () {
+        try {
+          var p = localStorage.getItem('engapp.theme');
+          if (p !== 'light' && p !== 'dark') p = 'system';
+          document.documentElement.dataset.theme = p;
+          if (p !== 'system') {
+            var c = p === 'dark' ? '#1a1917' : '#f5f2ec';
+            document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) {
+              m.content = c;
+            });
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

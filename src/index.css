@@ -1,1 +1,234 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+@import './ui/tokens/fonts.css';
+@import './ui/tokens/tokens.css';
+
+/*
+ * Dark variant for the rare case a component needs it (tokens already switch on their own).
+ * Matches an explicit data-theme="dark", or the OS preference when the theme is not pinned to light.
+ */
+@custom-variant dark {
+  &:where([data-theme='dark'], [data-theme='dark'] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme='light']), :root:not([data-theme='light']) *) {
+      @slot;
+    }
+  }
+}
+
+/* Only semantic colours exist; Tailwind's default palette is switched off on purpose. */
+@theme {
+  --color-*: initial;
+  --font-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-fg-inverse: var(--fg-inverse);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-text: var(--accent-text);
+  --color-accent-soft: var(--accent-soft);
+  --color-focus: var(--focus);
+  --color-success: var(--success);
+  --color-success-text: var(--success-text);
+  --color-success-soft: var(--success-soft);
+  --color-warn: var(--warn);
+  --color-warn-text: var(--warn-text);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-fg: var(--danger-fg);
+  --color-danger-text: var(--danger-text);
+  --color-danger-soft: var(--danger-soft);
+  --color-rating-again: var(--rating-again);
+  --color-rating-again-text: var(--rating-again-text);
+  --color-rating-again-soft: var(--rating-again-soft);
+  --color-rating-hard: var(--rating-hard);
+  --color-rating-hard-text: var(--rating-hard-text);
+  --color-rating-hard-soft: var(--rating-hard-soft);
+  --color-rating-good: var(--rating-good);
+  --color-rating-good-text: var(--rating-good-text);
+  --color-rating-good-soft: var(--rating-good-soft);
+  --color-rating-easy: var(--rating-easy);
+  --color-rating-easy-text: var(--rating-easy-text);
+  --color-rating-easy-soft: var(--rating-easy-soft);
+  --color-heat-empty: var(--heat-empty);
+  --color-heat-active: var(--heat-active);
+  --color-heat-completed: var(--heat-completed);
+  --color-scrim: var(--scrim);
+  /* Interaction overlays: ink at low alpha, so they read on any surface in both themes */
+  --color-hover: color-mix(in oklab, var(--fg) 6%, transparent);
+  --color-selected: color-mix(in oklab, var(--fg) 9%, transparent);
+  --color-surface-hover: color-mix(in oklab, var(--surface) 95%, var(--fg));
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  --shadow-raised: 0 1px 2px var(--shadow-color), 0 8px 24px -6px var(--shadow-color);
+  --shadow-overlay: 0 2px 4px var(--shadow-color), 0 24px 48px -12px var(--shadow-color);
+}
+
+@theme {
+  --font-sans:
+    system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', 'Noto Sans', Arial, sans-serif;
+  --font-serif: 'Source Serif 4', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Type: Tailwind's 12/14/16/18/20/24/30/36 scale plus a display size for the card term */
+  --text-display: 2.5rem;
+  --text-display--line-height: 1.15;
+  --text-display--letter-spacing: -0.01em;
+
+  /* Radii: crisp controls, softer containers */
+  --radius-sm: 4px;
+  --radius-control: 8px;
+  --radius-card: 12px;
+  --radius-sheet: 16px;
+  --radius-full: 9999px;
+
+  /* Motion tiers (keep in sync with src/ui/tokens/motion.ts) */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  --animate-fade-in: fade-in 280ms var(--ease-standard);
+  --animate-fade-out: fade-out 180ms var(--ease-exit);
+  --animate-sheet-in: sheet-in 300ms var(--ease-standard);
+  --animate-sheet-out: sheet-out 220ms var(--ease-exit);
+  --animate-pop-in: pop-in 150ms var(--ease-standard);
+  --animate-pop-out: fade-out 120ms var(--ease-exit);
+  --animate-toast-in: toast-in 280ms var(--ease-standard);
+  --animate-shimmer: shimmer 1.6s ease-in-out infinite;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes sheet-in {
+    from {
+      opacity: 0.6;
+      transform: translateY(var(--sheet-offset, 100%));
+    }
+  }
+  @keyframes sheet-out {
+    to {
+      opacity: 0;
+      transform: translateY(var(--sheet-offset, 100%));
+    }
+  }
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.97) translateY(-2px);
+    }
+  }
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+  @keyframes shimmer {
+    50% {
+      opacity: 0.55;
+    }
+  }
+}
+
+:root {
+  --duration-micro: 120ms;
+  --duration-medium: 280ms;
+  --duration-large: 520ms;
+  --nav-height: 64px;
+}
+
+@layer base {
+  html {
+    background-color: var(--canvas);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    background-color: var(--canvas);
+    min-height: 100dvh;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+  ::selection {
+    background-color: var(--accent-soft);
+    color: var(--fg);
+  }
+  /* The focus ring is never removed; keyboard focus always shows it. */
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  button,
+  [role='button'],
+  label[for],
+  summary {
+    cursor: pointer;
+  }
+  button:disabled,
+  [aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+}
+
+@layer utilities {
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Reduced motion: only short opacity fades remain. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --animate-sheet-in: fade-in 150ms linear;
+    --animate-sheet-out: fade-out 120ms linear;
+    --animate-pop-in: fade-in 120ms linear;
+    --animate-toast-in: fade-in 150ms linear;
+    --animate-shimmer: none;
+  }
+  *,
+  ::before,
+  ::after {
+    scroll-behavior: auto !important;
+  }
+}

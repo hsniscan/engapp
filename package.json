@@ -12,7 +12,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "icons": "node scripts/generate-icons.ts",
+    "contrast": "node scripts/check-contrast.ts",
+    "ui-qa": "node scripts/ui-qa.ts"
   },
   "dependencies": {
     "@fontsource/source-serif-4": "5.3.1",
