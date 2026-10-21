@@ -11,7 +11,12 @@ import { addExtraNew, getMoreStudyOverview } from './extraStudy';
 import { rebuildDailyActivity } from './dailyActivity';
 import { recomputeAllCards } from './maintenance';
 import { extraNewKey, getMeta, setMeta } from './meta';
-import { getPracticeCards, getPracticeSourceCounts, loadPracticeCandidates, recordPractice } from './practice';
+import {
+  getPracticeCards,
+  getPracticeSourceCounts,
+  loadPracticeCandidates,
+  recordPractice,
+} from './practice';
 import { getStreakSummary, getStudyQueue } from './queries';
 import { dayConfig, getSettings, updateSettings } from './settings';
 
@@ -30,18 +35,27 @@ beforeEach(async () => {
 async function addWords(n: number, at = T - 20 * DAY): Promise<string[]> {
   const ids: string[] = [];
   for (let i = 0; i < n; i++) {
-    const r = await addNoteWithSenses({ term: `word${String(i).padStart(2, '0')}`, senses: [{ meaning_tr: `anlam ${i}` }] }, at + i);
+    const r = await addNoteWithSenses(
+      { term: `word${String(i).padStart(2, '0')}`, senses: [{ meaning_tr: `anlam ${i}` }] },
+      at + i,
+    );
     ids.push(r.note.id);
   }
   return ids;
 }
 
 async function recognition(noteId: string): Promise<Card> {
-  return (await db.cards.where('note_id').equals(noteId).toArray()).find((c) => c.card_type === 'recognition')!;
+  return (await db.cards.where('note_id').equals(noteId).toArray()).find(
+    (c) => c.card_type === 'recognition',
+  )!;
 }
 
 /** Answer the whole queue at `now` (Easy by default: cards graduate at once); returns the answer count. */
-async function studyAll(now: number, rating: RatingValue = Rating.Easy, mode?: 'ahead'): Promise<number> {
+async function studyAll(
+  now: number,
+  rating: RatingValue = Rating.Easy,
+  mode?: 'ahead',
+): Promise<number> {
   let n = 0;
   for (let guard = 0; guard < 200; guard++) {
     const q = await getStudyQueue({ learnAheadMs: 0, ...(mode ? { mode } : {}) }, now + n * 1000);
@@ -139,7 +153,9 @@ describe("review ahead (tomorrow's cards)", () => {
 
     // The logs are the truth: a full recompute changes nothing.
     expect(await recomputeAllCards(now + MIN)).toBe(0);
-    expect(await getStudyQueue({ mode: 'ahead', learnAheadMs: 0 }, now + MIN)).toMatchObject({ items: [] });
+    expect(await getStudyQueue({ mode: 'ahead', learnAheadMs: 0 }, now + MIN)).toMatchObject({
+      items: [],
+    });
     const day = await db.daily_activity.get(dayKeyOf(now, dayConfig(await getSettings(now))));
     expect(day).toMatchObject({ reviews: 2, completed: true });
     expect((await rebuildDailyActivity(now)).find((d) => d.date === day!.date)).toEqual(day);
@@ -150,11 +166,20 @@ describe("review ahead (tomorrow's cards)", () => {
     const [a] = await addWords(1);
     const card = await reviewDueTomorrow(a!);
     const now = T + HOUR;
-    const res = await answerCard({ card_id: card.id, rating: Rating.Again, duration_ms: 2000 }, now);
+    const res = await answerCard(
+      { card_id: card.id, rating: Rating.Again, duration_ms: 2000 },
+      now,
+    );
     expect(res.card.state).toBe(CardState.Relearning);
-    expect((await getStudyQueue({ learnAheadMs: 0 }, now + 11 * MIN)).items.map((i) => i.card_id)).toEqual([card.id]);
+    expect(
+      (await getStudyQueue({ learnAheadMs: 0 }, now + 11 * MIN)).items.map((i) => i.card_id),
+    ).toEqual([card.id]);
     await undoAnswer(res.log.id, now + MIN);
-    expect(await db.cards.get(card.id)).toMatchObject({ state: CardState.Review, due: card.due, stability: card.stability });
+    expect(await db.cards.get(card.id)).toMatchObject({
+      state: CardState.Review,
+      due: card.due,
+      stability: card.stability,
+    });
   });
 });
 
@@ -176,41 +201,83 @@ describe('practice', () => {
 
     // An Again today makes c0 hard; an undone Again does not count.
     await answerCard({ card_id: c0.id, rating: Rating.Again, duration_ms: 1000 }, T);
-    const undone = await answerCard({ card_id: c1.id, rating: Rating.Again, duration_ms: 1000 }, T + 1);
+    const undone = await answerCard(
+      { card_id: c1.id, rating: Rating.Again, duration_ms: 1000 },
+      T + 1,
+    );
     await undoAnswer(undone.log.id, T + 2);
-    expect(await getPracticeCards({ source: 'hard' }, { size: 10, seed: 's' }, T + 3)).toEqual([c0.id]);
+    expect(await getPracticeCards({ source: 'hard' }, { size: 10, seed: 's' }, T + 3)).toEqual([
+      c0.id,
+    ]);
 
     // A practice miss makes c1 hard too.
-    await recordPractice({ card_id: c1.id, result: 'unknown', mode: 'recent', session_id: 'p1', duration_ms: 900 }, T + 4);
-    expect((await getPracticeCards({ source: 'hard' }, { size: 10, seed: 's' }, T + 5)).sort()).toEqual([c0.id, c1.id].sort());
+    await recordPractice(
+      { card_id: c1.id, result: 'unknown', mode: 'recent', session_id: 'p1', duration_ms: 900 },
+      T + 4,
+    );
+    expect(
+      (await getPracticeCards({ source: 'hard' }, { size: 10, seed: 's' }, T + 5)).sort(),
+    ).toEqual([c0.id, c1.id].sort());
     expect((await getPracticeSourceCounts(T + 5)).hard).toBe(2);
   });
 
   it('lists tags of studied notes', async () => {
-    const r = await addNoteWithSenses({ term: 'invoice', tags: ['iş'], senses: [{ meaning_tr: 'fatura' }] }, T - 5 * DAY);
-    await addNoteWithSenses({ term: 'unseen', tags: ['ev'], senses: [{ meaning_tr: 'görülmemiş' }] }, T - 5 * DAY);
+    const r = await addNoteWithSenses(
+      { term: 'invoice', tags: ['iş'], senses: [{ meaning_tr: 'fatura' }] },
+      T - 5 * DAY,
+    );
+    await addNoteWithSenses(
+      { term: 'unseen', tags: ['ev'], senses: [{ meaning_tr: 'görülmemiş' }] },
+      T - 5 * DAY,
+    );
     await reviewDueTomorrow(r.note.id);
     expect((await getPracticeSourceCounts(T)).tags).toEqual([{ tag: 'iş', count: 1 }]);
-    expect(await getPracticeCards({ source: 'tag', tag: 'iş' }, { size: 10, seed: 's' }, T)).toHaveLength(1);
+    expect(
+      await getPracticeCards({ source: 'tag', tag: 'iş' }, { size: 10, seed: 's' }, T),
+    ).toHaveLength(1);
   });
 
   it('recordPractice writes one practice log and its outbox row, nothing else', async () => {
     const [a] = await studiedDeck();
     const card = await recognition(a!);
     const outbox = await db.outbox.count();
-    const log = await recordPractice({ card_id: card.id, result: 'known', mode: 'hard', session_id: 's1', duration_ms: 99_000 }, T);
-    expect(log).toMatchObject({ card_id: card.id, result: 'known', practiced_at: T, duration_ms: 60_000, user_id: null });
+    const log = await recordPractice(
+      { card_id: card.id, result: 'known', mode: 'hard', session_id: 's1', duration_ms: 99_000 },
+      T,
+    );
+    expect(log).toMatchObject({
+      card_id: card.id,
+      result: 'known',
+      practiced_at: T,
+      duration_ms: 60_000,
+      user_id: null,
+    });
     expect(await db.practice_logs.toArray()).toEqual([log]);
     const queued = (await db.outbox.toArray()).slice(outbox);
-    expect(queued.map((o) => [o.table, o.row_id, o.op])).toEqual([['practice_logs', log.id, 'upsert']]);
-    await expect(recordPractice({ card_id: card.id, result: 'maybe' as 'known', mode: 'hard', session_id: 's1', duration_ms: 1 }, T)).rejects.toMatchObject({
+    expect(queued.map((o) => [o.table, o.row_id, o.op])).toEqual([
+      ['practice_logs', log.id, 'upsert'],
+    ]);
+    await expect(
+      recordPractice(
+        {
+          card_id: card.id,
+          result: 'maybe' as 'known',
+          mode: 'hard',
+          session_id: 's1',
+          duration_ms: 1,
+        },
+        T,
+      ),
+    ).rejects.toMatchObject({
       code: 'invalid_input',
     });
   });
 
   it('property: no practice sequence changes cards, review logs, daily activity or the streak', async () => {
     const notes = await studiedDeck();
-    const cardIds = (await db.cards.toArray()).filter((c) => notes.includes(c.note_id)).map((c) => c.id);
+    const cardIds = (await db.cards.toArray())
+      .filter((c) => notes.includes(c.note_id))
+      .map((c) => c.id);
     const snapshot = async () => ({
       cards: await db.cards.toArray(),
       logs: await db.review_logs.toArray(),
@@ -222,13 +289,23 @@ describe('practice', () => {
     await fc.assert(
       fc.asyncProperty(
         fc.array(
-          fc.record({ card: fc.constantFrom(...cardIds), known: fc.boolean(), dt: fc.integer({ min: 0, max: 3 * HOUR }) }),
+          fc.record({
+            card: fc.constantFrom(...cardIds),
+            known: fc.boolean(),
+            dt: fc.integer({ min: 0, max: 3 * HOUR }),
+          }),
           { minLength: 1, maxLength: 25 },
         ),
         async (answers) => {
           for (const x of answers) {
             await recordPractice(
-              { card_id: x.card, result: x.known ? 'known' : 'unknown', mode: 'recent', session_id: 'round', duration_ms: 1500 },
+              {
+                card_id: x.card,
+                result: x.known ? 'known' : 'unknown',
+                mode: 'recent',
+                session_id: 'round',
+                duration_ms: 1500,
+              },
               T + x.dt,
             );
           }
@@ -246,7 +323,13 @@ describe('overview', () => {
     await addWords(12);
     await studyAll(T);
     const o = await getMoreStudyOverview(T + HOUR);
-    expect(o).toMatchObject({ dueNow: 0, dailyNewLimit: 3, extraNewToday: 0, newWaiting: 9, aheadCount: 0 });
+    expect(o).toMatchObject({
+      dueNow: 0,
+      dailyNewLimit: 3,
+      extraNewToday: 0,
+      newWaiting: 9,
+      aheadCount: 0,
+    });
     expect(o.practice.recent).toBe(3);
     await addExtraNew(5, T + HOUR);
     expect(await getMoreStudyOverview(T + HOUR)).toMatchObject({ dueNow: 5, extraNewToday: 5 });
@@ -265,4 +348,3 @@ describe('overview', () => {
     expect(performance.now() - t0).toBeLessThan(1500);
   });
 });
-

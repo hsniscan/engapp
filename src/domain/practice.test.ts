@@ -20,7 +20,12 @@ const DAY = 86_400_000;
 
 function cand(
   id: string,
-  p: Partial<PracticeCandidate> & { note?: string; difficulty?: number; lapses?: number; state?: 0 | 1 | 2 | 3 } = {},
+  p: Partial<PracticeCandidate> & {
+    note?: string;
+    difficulty?: number;
+    lapses?: number;
+    state?: 0 | 1 | 2 | 3;
+  } = {},
 ): PracticeCandidate {
   return {
     card: makeCard({
@@ -54,23 +59,46 @@ describe('selectPracticeCards', () => {
   });
 
   it('"recent": the first answer is within the last 7 days', () => {
-    const cards = [cand('new1', { firstReviewAt: NOW - DAY }), cand('old', { firstReviewAt: null }), cand('week', { firstReviewAt: NOW - 8 * DAY })];
-    expect(selectPracticeCards(cards, { source: 'recent' }, { now: NOW, size: 10, seed: 's' })).toEqual(['new1']);
+    const cards = [
+      cand('new1', { firstReviewAt: NOW - DAY }),
+      cand('old', { firstReviewAt: null }),
+      cand('week', { firstReviewAt: NOW - 8 * DAY }),
+    ];
+    expect(
+      selectPracticeCards(cards, { source: 'recent' }, { now: NOW, size: 10, seed: 's' }),
+    ).toEqual(['new1']);
   });
 
   it('"tag": notes with the tag', () => {
-    const cards = [cand('a', { tags: ['iş'] }), cand('b', { tags: ['ev'] }), cand('c', { tags: ['iş', 'ev'] })];
-    expect(selectPracticeCards(cards, { source: 'tag', tag: 'iş' }, { now: NOW, size: 10, seed: 's' }).sort()).toEqual(['a', 'c']);
-    expect(selectPracticeCards(cards, { source: 'tag', tag: null }, { now: NOW, size: 10, seed: 's' })).toEqual([]);
+    const cards = [
+      cand('a', { tags: ['iş'] }),
+      cand('b', { tags: ['ev'] }),
+      cand('c', { tags: ['iş', 'ev'] }),
+    ];
+    expect(
+      selectPracticeCards(
+        cards,
+        { source: 'tag', tag: 'iş' },
+        { now: NOW, size: 10, seed: 's' },
+      ).sort(),
+    ).toEqual(['a', 'c']);
+    expect(
+      selectPracticeCards(cards, { source: 'tag', tag: null }, { now: NOW, size: 10, seed: 's' }),
+    ).toEqual([]);
   });
 
   it('skips new, suspended, locked and deleted cards', () => {
     const base = { lapses: 3 };
     const cards = [cand('ok', base), cand('new', { ...base, state: CardState.New })];
     cards.push({ ...cand('susp', base), card: { ...cand('susp', base).card, suspended: true } });
-    cards.push({ ...cand('locked', base), card: { ...cand('locked', base).card, unlocked: false } });
+    cards.push({
+      ...cand('locked', base),
+      card: { ...cand('locked', base).card, unlocked: false },
+    });
     cards.push({ ...cand('gone', base), card: { ...cand('gone', base).card, deleted_at: 1 } });
-    expect(selectPracticeCards(cards, { source: 'hard' }, { now: NOW, size: 10, seed: 's' })).toEqual(['ok']);
+    expect(
+      selectPracticeCards(cards, { source: 'hard' }, { now: NOW, size: 10, seed: 's' }),
+    ).toEqual(['ok']);
   });
 
   it('takes at most `size` cards and one card per note (the hardest of the note)', () => {
@@ -88,14 +116,24 @@ describe('selectPracticeCards', () => {
   it('shuffles random sources with the seed: same seed, same order', () => {
     const cards = Array.from({ length: 20 }, (_, i) => cand(`r${i}`, { firstReviewAt: NOW - DAY }));
     const a = selectPracticeCards(cards, { source: 'recent' }, { now: NOW, size: 10, seed: 'one' });
-    expect(selectPracticeCards([...cards].reverse(), { source: 'recent' }, { now: NOW, size: 10, seed: 'one' })).toEqual(a);
-    expect(selectPracticeCards(cards, { source: 'recent' }, { now: NOW, size: 10, seed: 'two' })).not.toEqual(a);
+    expect(
+      selectPracticeCards(
+        [...cards].reverse(),
+        { source: 'recent' },
+        { now: NOW, size: 10, seed: 'one' },
+      ),
+    ).toEqual(a);
+    expect(
+      selectPracticeCards(cards, { source: 'recent' }, { now: NOW, size: 10, seed: 'two' }),
+    ).not.toEqual(a);
   });
 
   it('seededShuffle is a permutation', () => {
     fc.assert(
       fc.property(fc.array(fc.integer(), { maxLength: 40 }), fc.string(), (xs, seed) => {
-        expect([...seededShuffle(xs, seed)].sort((a, b) => a - b)).toEqual([...xs].sort((a, b) => a - b));
+        expect([...seededShuffle(xs, seed)].sort((a, b) => a - b)).toEqual(
+          [...xs].sort((a, b) => a - b),
+        );
       }),
     );
   });
@@ -133,7 +171,16 @@ describe('practice round', () => {
 
   it('ranks the hardest words: missed twice before missed once, then round order', () => {
     let r = startRound(['a', 'b', 'c', 'd']);
-    for (const res of ['unknown', 'unknown', 'unknown', 'known', 'known', 'unknown', 'known'] as PracticeResult[]) r = answerRound(r, res);
+    for (const res of [
+      'unknown',
+      'unknown',
+      'unknown',
+      'known',
+      'known',
+      'unknown',
+      'known',
+    ] as PracticeResult[])
+      r = answerRound(r, res);
     // a ✗, b ✗, c ✗, d ✓, a ✓, b ✗, c ✓
     expect(isRoundDone(r)).toBe(true);
     expect(summarizeRound(r).hardest).toEqual(['b', 'a', 'c']);
@@ -147,7 +194,8 @@ describe('practice round', () => {
         (ids, answers) => {
           let r = startRound(ids);
           let i = 0;
-          while (!isRoundDone(r)) r = answerRound(r, answers[i++ % Math.max(1, answers.length)] ? 'known' : 'unknown');
+          while (!isRoundDone(r))
+            r = answerRound(r, answers[i++ % Math.max(1, answers.length)] ? 'known' : 'unknown');
           expect(r.answers.length).toBeLessThanOrEqual(ids.length * 2);
           const s = summarizeRound(r);
           expect(s.cards).toBe(ids.length);

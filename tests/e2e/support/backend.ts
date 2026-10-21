@@ -3,9 +3,11 @@
  *
  *  - Auth: a signed-in session is injected into localStorage under supabase-js' storage key
  *    (`signIn()`); /auth/v1/* answers for that user. Google OAuth itself is not exercised.
- *  - Sync: /rest/v1/rpc/sync_push|sync_pull|lexicon_pull|lexicon_get keep rows in memory with
- *    a server sequence, last-writer-wins on `hlc` and append-only review_logs (the contract of
- *    docs/sync-strategy.md, simplified to one user).
+ *  - Sync: /rest/v1/rpc/sync_push|sync_pull|sync_pull_v3|lexicon_pull|lexicon_get keep rows in
+ *    memory with a server sequence, last-writer-wins on `hlc` and append-only review_logs and
+ *    practice_logs (the contract of docs/sync-strategy.md, simplified to one user). sync_pull_v2
+ *    is not mocked: the client falls back from v3 to sync_pull exactly as against an old
+ *    backend.
  *  - AI: /functions/v1/ai-extract runs the REAL server pipeline (`runExtract` from
  *    supabase/functions/_shared/extract.ts: chunk cache, lexicon pre-match, validation, lexicon
  *    insert-or-get) on the in-memory store, with a scripted "model" that answers from the
@@ -257,7 +259,7 @@ export class FakeBackend {
           const cur = this.rows.get(key);
           const row: Row = { ...item.payload, user_id: TEST_USER.id };
           acked.push(item.payload.id);
-          if (item.table === 'review_logs') {
+          if (item.table === 'review_logs' || item.table === 'practice_logs') {
             if (!cur) this.rows.set(key, { table: item.table, seq: ++this.seq, row });
             continue;
           }
@@ -267,7 +269,8 @@ export class FakeBackend {
         }
         return this.json(route, 200, { acked, stale, rejected: [] });
       }
-      case 'sync_pull': {
+      case 'sync_pull':
+      case 'sync_pull_v3': {
         const since = Number(args.p_since ?? 0);
         const limit = Number(args.p_limit ?? 500);
         const all = [...this.rows.values()]

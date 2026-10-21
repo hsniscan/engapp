@@ -194,9 +194,13 @@ export interface ChunkCacheRow {
   created_at: Millis;
 }
 
-export type OutboxTable = 'notes' | 'senses' | 'cards' | 'review_logs' | 'sources' | 'settings' | 'practice_logs';
+export type OutboxTable =
+  'notes' | 'senses' | 'cards' | 'review_logs' | 'sources' | 'settings' | 'practice_logs';
 /** Synced tables whose rows are never changed or deleted. */
-export const INSERT_ONLY_TABLES = ['review_logs', 'practice_logs'] as const satisfies readonly OutboxTable[];
+export const INSERT_ONLY_TABLES = [
+  'review_logs',
+  'practice_logs',
+] as const satisfies readonly OutboxTable[];
 export type InsertOnlyTable = (typeof INSERT_ONLY_TABLES)[number];
 
 export interface OutboxRow {

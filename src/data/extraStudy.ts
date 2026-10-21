@@ -23,12 +23,15 @@ export const MAX_EXTRA_NEW_STEP = 100;
  * Allowances of other days are removed.
  */
 export async function addExtraNew(n: number, now: Millis = Date.now()): Promise<number> {
-  if (!Number.isInteger(n) || n < 1 || n > MAX_EXTRA_NEW_STEP) throw new ActionError('invalid_input', 'Invalid extra count');
+  if (!Number.isInteger(n) || n < 1 || n > MAX_EXTRA_NEW_STEP)
+    throw new ActionError('invalid_input', 'Invalid extra count');
   return db.transaction('rw', [db.meta, db.settings], async () => {
     const settings = await getSettings(now);
     const day = dayKeyOf(now, dayConfig(settings));
     const total = (await getExtraNewToday(day)) + n;
-    const stale = (await db.meta.where('key').startsWith(EXTRA_NEW_PREFIX).primaryKeys()).filter((k) => k !== extraNewKey(day));
+    const stale = (await db.meta.where('key').startsWith(EXTRA_NEW_PREFIX).primaryKeys()).filter(
+      (k) => k !== extraNewKey(day),
+    );
     await db.meta.bulkDelete(stale);
     await setMeta(extraNewKey(day), total);
     return total;

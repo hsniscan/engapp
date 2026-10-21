@@ -10,7 +10,14 @@ import {
   selectPracticeCards,
 } from '../domain/practice';
 import { effectiveLogs } from '../domain/recompute';
-import { type Card, type Id, type Millis, type PracticeLog, type PracticeResult, Rating } from '../domain/types';
+import {
+  type Card,
+  type Id,
+  type Millis,
+  type PracticeLog,
+  type PracticeResult,
+  Rating,
+} from '../domain/types';
 import { db } from './db';
 import { ActionError } from './errors';
 import { dueStudiedCards, logsByCard } from './history';
@@ -19,7 +26,9 @@ import { writeTx } from './writer';
 export const MAX_PRACTICE_DURATION_MS = 60_000;
 
 /** Every practicable card with the facts the selector needs (see PracticeCandidate). */
-export async function loadPracticeCandidates(now: Millis = Date.now()): Promise<PracticeCandidate[]> {
+export async function loadPracticeCandidates(
+  now: Millis = Date.now(),
+): Promise<PracticeCandidate[]> {
   return db.transaction('r', [db.cards, db.notes, db.review_logs, db.practice_logs], async () => {
     const cards = (await dueStudiedCards(Infinity)).filter(isPracticable);
     if (cards.length === 0) return [];
@@ -27,7 +36,11 @@ export async function loadPracticeCandidates(now: Millis = Date.now()): Promise<
     const [notes, recentLogs, misses] = await Promise.all([
       db.notes.bulkGet([...new Set(cards.map((c) => c.note_id))]),
       db.review_logs.where('reviewed_at').aboveOrEqual(since).toArray(),
-      db.practice_logs.where('practiced_at').aboveOrEqual(since).filter((p) => p.result === 'unknown').toArray(),
+      db.practice_logs
+        .where('practiced_at')
+        .aboveOrEqual(since)
+        .filter((p) => p.result === 'unknown')
+        .toArray(),
     ]);
     const tags = new Map<Id, string[]>();
     for (const n of notes) if (n && n.deleted_at === null) tags.set(n.id, n.tags);
@@ -40,10 +53,13 @@ export async function loadPracticeCandidates(now: Millis = Date.now()): Promise<
     for (const [cardId, logs] of touched) {
       const eff = effectiveLogs(logs);
       if (eff[0] && eff[0].reviewed_at >= since) first.set(cardId, eff[0].reviewed_at);
-      for (const l of eff) if (l.rating === Rating.Again && l.reviewed_at >= since) lastAgain.set(cardId, l.reviewed_at);
+      for (const l of eff)
+        if (l.rating === Rating.Again && l.reviewed_at >= since)
+          lastAgain.set(cardId, l.reviewed_at);
     }
     const lastMiss = new Map<Id, Millis>();
-    for (const p of misses) lastMiss.set(p.card_id, Math.max(lastMiss.get(p.card_id) ?? 0, p.practiced_at));
+    for (const p of misses)
+      lastMiss.set(p.card_id, Math.max(lastMiss.get(p.card_id) ?? 0, p.practiced_at));
 
     return cards
       .filter((c) => tags.has(c.note_id))
@@ -64,7 +80,9 @@ export interface PracticeSourceCounts {
   tags: { tag: string; count: number }[];
 }
 
-export async function getPracticeSourceCounts(now: Millis = Date.now()): Promise<PracticeSourceCounts> {
+export async function getPracticeSourceCounts(
+  now: Millis = Date.now(),
+): Promise<PracticeSourceCounts> {
   const c = countPracticeSources(await loadPracticeCandidates(now), now);
   const tags = [...c.tags]
     .map(([tag, count]) => ({ tag, count }))
@@ -78,7 +96,11 @@ export async function getPracticeCards(
   opts: { size: number; seed: string },
   now: Millis = Date.now(),
 ): Promise<Id[]> {
-  return selectPracticeCards(await loadPracticeCandidates(now), filter, { now, size: opts.size, seed: opts.seed });
+  return selectPracticeCards(await loadPracticeCandidates(now), filter, {
+    now,
+    size: opts.size,
+    seed: opts.seed,
+  });
 }
 
 export interface PracticeAnswerInput {
@@ -90,8 +112,12 @@ export interface PracticeAnswerInput {
 }
 
 /** Store one practice answer. Writes practice_logs only: the card's schedule never changes. */
-export async function recordPractice(input: PracticeAnswerInput, now: Millis = Date.now()): Promise<PracticeLog> {
-  if (input.result !== 'known' && input.result !== 'unknown') throw new ActionError('invalid_input', 'Invalid result');
+export async function recordPractice(
+  input: PracticeAnswerInput,
+  now: Millis = Date.now(),
+): Promise<PracticeLog> {
+  if (input.result !== 'known' && input.result !== 'unknown')
+    throw new ActionError('invalid_input', 'Invalid result');
   if (!input.mode || input.mode.length > 32) throw new ActionError('invalid_input', 'Invalid mode');
   return writeTx([db.practice_logs], now, async (w) => {
     const log: PracticeLog = {
@@ -102,7 +128,10 @@ export async function recordPractice(input: PracticeAnswerInput, now: Millis = D
       result: input.result,
       mode: input.mode,
       session_id: input.session_id,
-      duration_ms: Math.min(MAX_PRACTICE_DURATION_MS, Math.max(0, Math.round(input.duration_ms || 0))),
+      duration_ms: Math.min(
+        MAX_PRACTICE_DURATION_MS,
+        Math.max(0, Math.round(input.duration_ms || 0)),
+      ),
       device_id: w.deviceId,
       created_at: now,
       hlc: w.nextHlc(),

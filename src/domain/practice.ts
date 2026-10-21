@@ -21,7 +21,15 @@ export const HARD_MIN_DIFFICULTY = 7;
 
 export type PracticeCard = Pick<
   Card,
-  'id' | 'note_id' | 'state' | 'suspended' | 'deleted_at' | 'unlocked' | 'difficulty' | 'lapses' | 'reps'
+  | 'id'
+  | 'note_id'
+  | 'state'
+  | 'suspended'
+  | 'deleted_at'
+  | 'unlocked'
+  | 'difficulty'
+  | 'lapses'
+  | 'reps'
 >;
 
 /** What the selector needs to know about one candidate card, gathered by the data layer. */
@@ -45,7 +53,9 @@ export interface PracticeFilter {
 
 /** Studied (has at least one answer), live, unsuspended and unlocked. */
 export function isPracticable(c: PracticeCard): boolean {
-  return c.deleted_at === null && !c.suspended && c.unlocked && c.state !== CardState.New && c.reps > 0;
+  return (
+    c.deleted_at === null && !c.suspended && c.unlocked && c.state !== CardState.New && c.reps > 0
+  );
 }
 
 export function isHard(x: PracticeCandidate, now: Millis): boolean {
@@ -78,7 +88,8 @@ export function matchesFilter(x: PracticeCandidate, f: PracticeFilter, now: Mill
 function hardness(x: PracticeCandidate, now: Millis): number {
   const since = now - HARD_WINDOW_MS;
   const recentMiss =
-    (x.lastAgainAt !== null && x.lastAgainAt >= since) || (x.lastPracticeMissAt !== null && x.lastPracticeMissAt >= since);
+    (x.lastAgainAt !== null && x.lastAgainAt >= since) ||
+    (x.lastPracticeMissAt !== null && x.lastPracticeMissAt >= since);
   return (recentMiss ? 100 : 0) + x.card.lapses * 2 + x.card.difficulty;
 }
 
@@ -125,7 +136,8 @@ export function selectPracticeCards(
   opts: { now: Millis; size: number; seed: string },
 ): Id[] {
   const matching = [...candidates].filter((x) => matchesFilter(x, filter, opts.now));
-  const byId = (a: PracticeCandidate, b: PracticeCandidate) => (a.card.id < b.card.id ? -1 : a.card.id > b.card.id ? 1 : 0);
+  const byId = (a: PracticeCandidate, b: PracticeCandidate) =>
+    a.card.id < b.card.id ? -1 : a.card.id > b.card.id ? 1 : 0;
   const ordered =
     filter.source === 'hard'
       ? matching.sort((a, b) => hardness(b, opts.now) - hardness(a, opts.now) || byId(a, b))
@@ -159,7 +171,11 @@ export function countPracticeSources(
       set.add(x.card.note_id);
     }
   }
-  return { hard: hard.size, recent: recent.size, tags: new Map([...tags].map(([t, s]) => [t, s.size])) };
+  return {
+    hard: hard.size,
+    recent: recent.size,
+    tags: new Map([...tags].map(([t, s]) => [t, s.size])),
+  };
 }
 
 // ------------------------------------------------------------------ round
@@ -180,7 +196,11 @@ export interface PracticeRound {
 }
 
 export function startRound(cardIds: readonly Id[]): PracticeRound {
-  return { queue: cardIds.map((card_id) => ({ card_id, repeat: false })), answers: [], cards: [...cardIds] };
+  return {
+    queue: cardIds.map((card_id) => ({ card_id, repeat: false })),
+    answers: [],
+    cards: [...cardIds],
+  };
 }
 
 export function currentCard(r: PracticeRound): { card_id: Id; repeat: boolean } | null {
@@ -193,7 +213,11 @@ export function answerRound(r: PracticeRound, result: PracticeResult): PracticeR
   if (!cur) return r;
   const queue = r.queue.slice(1);
   if (result === 'unknown' && !cur.repeat) queue.push({ card_id: cur.card_id, repeat: true });
-  return { ...r, queue, answers: [...r.answers, { card_id: cur.card_id, result, repeat: cur.repeat }] };
+  return {
+    ...r,
+    queue,
+    answers: [...r.answers, { card_id: cur.card_id, result, repeat: cur.repeat }],
+  };
 }
 
 export function isRoundDone(r: PracticeRound): boolean {

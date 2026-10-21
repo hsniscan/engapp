@@ -14,7 +14,7 @@ import {
   undoAnswer,
   type CardView,
 } from '@/data';
-import type { QueueItem, QueueKind } from '@/domain/queue';
+import type { QueueItem, QueueKind, QueueMode } from '@/domain/queue';
 import type { Id, RatingValue } from '@/domain/types';
 
 export const MAX_ANSWER_MS = 60_000;
@@ -54,7 +54,7 @@ export interface SessionStart {
 
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
-export function useReviewSession() {
+export function useReviewSession(mode: QueueMode = 'normal') {
   const [state, setState] = useState<SessionState>({
     phase: 'loading',
     current: null,
@@ -150,7 +150,7 @@ export function useReviewSession() {
   /** Rebuild the queue; applied only if nothing newer happened in the meantime. */
   const rebuild = useCallback(
     async (mySeq: number) => {
-      const q = await getStudyQueue({ session: { ...counts.current } });
+      const q = await getStudyQueue({ session: { ...counts.current }, mode });
       if (mySeq !== seq.current || !alive.current) return;
       const currentId = stateRef.current.current?.view.card.id;
       upcoming.current = q.items
@@ -164,7 +164,7 @@ export function useReviewSession() {
         prefetch();
       }
     },
-    [advance, finish, patch, prefetch],
+    [advance, finish, patch, prefetch, mode],
   );
 
   const enqueue = useCallback((job: () => Promise<void>) => {
@@ -179,7 +179,7 @@ export function useReviewSession() {
     alive.current = true;
     let cancelled = false;
     void (async () => {
-      const [q, streak] = await Promise.all([getStudyQueue(), getStreakSummary()]);
+      const [q, streak] = await Promise.all([getStudyQueue({ mode }), getStreakSummary()]);
       if (cancelled) return;
       setStart({ todayActive: streak.todayActive, streak: streak.currentStreak });
       upcoming.current = q.items.map(({ card_id, note_id, kind }) => ({ card_id, note_id, kind }));
@@ -189,7 +189,7 @@ export function useReviewSession() {
       cancelled = true;
       alive.current = false;
     };
-  }, [advance, finish]);
+  }, [advance, finish, mode]);
 
   const flip = useCallback(() => {
     const s = stateRef.current;

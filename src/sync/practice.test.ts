@@ -34,7 +34,9 @@ async function newDevice(deviceId: string, userId: string | null = USER): Promis
 }
 
 async function recognition(noteId: string): Promise<Card> {
-  return (await db.cards.where('note_id').equals(noteId).toArray()).find((c) => c.card_type === 'recognition')!;
+  return (await db.cards.where('note_id').equals(noteId).toArray()).find(
+    (c) => c.card_type === 'recognition',
+  )!;
 }
 
 /** A device with one studied card and two practice answers on it. */
@@ -43,8 +45,14 @@ async function practisedDevice(deviceId: string): Promise<{ img: DeviceImage; ca
   const r = await addNoteWithSenses({ term: 'cope', senses: [{ meaning_tr: 'başa çıkmak' }] }, T);
   const card = await recognition(r.note.id);
   await answerCard({ card_id: card.id, rating: Rating.Easy, duration_ms: 1000 }, T + MIN);
-  await recordPractice({ card_id: card.id, result: 'unknown', mode: 'recent', session_id: 's1', duration_ms: 800 }, T + 2 * MIN);
-  await recordPractice({ card_id: card.id, result: 'known', mode: 'recent', session_id: 's1', duration_ms: 700 }, T + 3 * MIN);
+  await recordPractice(
+    { card_id: card.id, result: 'unknown', mode: 'recent', session_id: 's1', duration_ms: 800 },
+    T + 2 * MIN,
+  );
+  await recordPractice(
+    { card_id: card.id, result: 'known', mode: 'recent', session_id: 's1', duration_ms: 700 },
+    T + 3 * MIN,
+  );
   return { img: await saveDevice(), cardId: card.id };
 }
 
@@ -63,7 +71,12 @@ describe('practice_logs sync', () => {
       await sync(server, T + 5 * MIN);
       expect(await db.outbox.count()).toBe(0);
     });
-    expect(server.rowsOf('practice_logs').map((r) => r.result).sort()).toEqual(['known', 'unknown']);
+    expect(
+      server
+        .rowsOf('practice_logs')
+        .map((r) => r.result)
+        .sort(),
+    ).toEqual(['known', 'unknown']);
     expect(server.rowsOf('practice_logs').every((r) => r.user_id === USER)).toBe(true);
 
     const b = await newDevice('dev-b');
@@ -86,9 +99,20 @@ describe('practice_logs sync', () => {
       const queued = (await db.outbox.toArray()).filter((o) => o.table === 'practice_logs');
       await setMeta(META.serverPractice, true);
       await server.pushBatch(queued.map((o) => ({ table: o.table, op: o.op, payload: o.payload })));
-      await server.pushBatch(queued.map((o) => ({ table: o.table, op: o.op, payload: { ...(o.payload as object), result: 'known' } })));
+      await server.pushBatch(
+        queued.map((o) => ({
+          table: o.table,
+          op: o.op,
+          payload: { ...(o.payload as object), result: 'known' },
+        })),
+      );
     });
-    expect(server.rowsOf('practice_logs').map((r) => r.result).sort()).toEqual(['known', 'unknown']);
+    expect(
+      server
+        .rowsOf('practice_logs')
+        .map((r) => r.result)
+        .sort(),
+    ).toEqual(['known', 'unknown']);
   });
 
   it('wait in the outbox, without failed attempts, until the server has the table', async () => {
@@ -130,7 +154,10 @@ describe('practice_logs sync', () => {
     const r = await addNoteWithSenses({ term: 'cope', senses: [{ meaning_tr: 'başa çıkmak' }] }, T);
     const card = await recognition(r.note.id);
     await answerCard({ card_id: card.id, rating: Rating.Easy, duration_ms: 1000 }, T + MIN);
-    await recordPractice({ card_id: card.id, result: 'known', mode: 'hard', session_id: 's', duration_ms: 500 }, T + 2 * MIN);
+    await recordPractice(
+      { card_id: card.id, result: 'known', mode: 'hard', session_id: 's', duration_ms: 500 },
+      T + 2 * MIN,
+    );
     await db.outbox.clear(); // a guest never pushes; only adoption queues rows
     await adoptGuestData(USER, T + 3 * MIN);
     expect((await db.outbox.toArray()).filter((o) => o.table === 'practice_logs')).toHaveLength(1);
@@ -152,7 +179,9 @@ describe('practice_logs in backups', () => {
     await newDevice('dev-r');
     const res = await restoreBackup(JSON.parse(JSON.stringify(backup)), 'merge', T + 11 * MIN);
     expect(res.logsAdded).toBe(1);
-    expect((await db.practice_logs.toArray()).map((p) => p.id).sort()).toEqual(backup.tables.practice_logs!.map((p) => p.id).sort());
+    expect((await db.practice_logs.toArray()).map((p) => p.id).sort()).toEqual(
+      backup.tables.practice_logs!.map((p) => p.id).sort(),
+    );
     // Restored logs are queued for the account.
     expect((await db.outbox.toArray()).filter((o) => o.table === 'practice_logs')).toHaveLength(2);
     // Restoring again adds nothing.

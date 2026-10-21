@@ -17,6 +17,8 @@ const styles: Record<Rating, { bar: string; soft: string; text: string }> = {
 
 export interface RatingButtonProps extends Omit<ComponentPropsWithRef<'button'>, 'children'> {
   rating: Rating;
+  /** Overrides the rating's own label (practice rounds: "Bilemedim" / "Bildim"). */
+  label?: string;
   /** Next interval preview, e.g. "10 dk", "3 g". Always shown: meaning never relies on colour. */
   interval?: string;
   /** Keyboard shortcut hint (1–4), shown on devices with a keyboard. */
@@ -29,6 +31,7 @@ export interface RatingButtonProps extends Omit<ComponentPropsWithRef<'button'>,
  */
 export function RatingButton({
   rating,
+  label: labelOverride,
   interval,
   shortcut,
   className,
@@ -36,7 +39,7 @@ export function RatingButton({
 }: RatingButtonProps) {
   const { t } = useTranslation();
   const s = styles[rating];
-  const label = t(`rating.${rating}`);
+  const label = labelOverride ?? t(`rating.${rating}`);
   return (
     <button
       type="button"

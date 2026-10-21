@@ -112,7 +112,8 @@
     "emptyStep1": "Add an English word or phrase with its Turkish meaning and an example sentence.",
     "emptyStep2": "Review a few minutes a day; cards return just before you would forget them.",
     "emptyStep3": "Track your streak here; every day you review extends it.",
-    "emptyAction": "Add your first word"
+    "emptyAction": "Add your first word",
+    "moreStudy": "Study a bit more"
   },
   "review": {
     "title": "Review",
@@ -166,7 +167,10 @@
       "ratings": "Answer breakdown",
       "streakExtended": "Today was added to your streak.",
       "streakKept": "Today's reviews are saved."
-    }
+    },
+    "moreStudy": "Study a bit more",
+    "aheadBadge": "Tomorrow's cards",
+    "aheadEmptyTitle": "Tomorrow's cards are done"
   },
   "add": {
     "title": "Add a card"
@@ -856,6 +860,66 @@
       "signIn": "Sign in to fill this in with AI.",
       "noSenses": "No meanings found for this word in the dictionary or from AI.",
       "noMore": "No other common meanings found."
+    }
+  },
+  "more": {
+    "title": "Study a bit more",
+    "descDone": "Today's reviews are done. Keep going if you like.",
+    "descPending_one": "{{count}} more card is waiting today.",
+    "descPending_other": "{{count}} more cards are waiting today.",
+    "startReview": "Start review",
+    "newTitle": "New cards",
+    "newBody": "On top of your daily limit, for today only.",
+    "newWaiting_one": "New cards waiting: {{count}}",
+    "newWaiting_other": "New cards waiting: {{count}}",
+    "newExtraToday_one": "You opened {{count}} extra card today.",
+    "newExtraToday_other": "You opened {{count}} extra cards today.",
+    "newAdd": "+{{count}} new cards",
+    "newNone": "No new cards waiting.",
+    "addCards": "Add cards",
+    "practiceTitle": "Practice round",
+    "practiceBody": "Not scored; your cards' schedule does not change.",
+    "sourceLegend": "Which cards?",
+    "sourceHard": "Cards I struggle with",
+    "sourceHardHint": "Often forgotten, or missed in the last two weeks",
+    "sourceRecent": "Learned in the last 7 days",
+    "sourceRecentHint": "Words you studied for the first time this week",
+    "sourceTag": "A tag",
+    "sourceTagHint": "Words with the tag you choose",
+    "sourceCount_one": "{{count}} word",
+    "sourceCount_other": "{{count}} words",
+    "tagLabel": "Tag",
+    "sizeLegend": "How many cards?",
+    "size_one": "{{count}} card",
+    "size_other": "{{count}} cards",
+    "practiceStart": "Start practice",
+    "practiceNone": "Review a few cards first to practise them.",
+    "aheadTitle": "Tomorrow's cards",
+    "aheadBody_one": "You can review the {{count}} card due tomorrow now.",
+    "aheadBody_other": "You can review the {{count}} cards due tomorrow now.",
+    "aheadNote": "This is a normal review and updates the schedule. Tomorrow gets lighter; a card you know early gets a slightly shorter next interval.",
+    "aheadStart": "Review now",
+    "aheadNone": "No cards are due tomorrow.",
+    "addFailed": "Could not open new cards; try again."
+  },
+  "practice": {
+    "title": "Practice",
+    "badge": "Practice · schedule unchanged",
+    "dontKnow": "Didn't know",
+    "know": "Knew it",
+    "group": "Did you know it?",
+    "repeat": "Asked again",
+    "empty": "No cards to practise in this selection.",
+    "backToMore": "Study a bit more",
+    "summary": {
+      "title": "Practice done",
+      "cards": "Cards",
+      "known": "First try",
+      "time": "Time",
+      "hardest": "Hardest for you",
+      "allKnown": "You knew them all on the first try.",
+      "scheduleSame": "Your cards' schedule did not change.",
+      "again": "Another round"
     }
   }
 }
