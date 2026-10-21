@@ -7,6 +7,9 @@
 //         re-pull from 0, drop local rows the server no longer has.
 //   lexicon: lexicon_pull from meta.lexicon_cursor, then lexicon_get for referenced senses
 //         missing from lexicon_cache.
+//   examples: lexicon_examples_pull from meta.lexicon_examples_cursor (shared example
+//         sentences of the user's lexicon senses). content_feedback / user_content wait in
+//         the outbox until that function has answered once (the server has the tables).
 //   practice_logs wait in the outbox until a pull has been answered by sync_pull_v3 (the
 //         server has the table): a client deployed before the migration does not burn the
 //         rows' attempts on "unknown table" rejections.
@@ -16,6 +19,7 @@
 // "Şimdi senkronla" button (syncNow). One tab runs it at a time (src/sync/lock.ts).
 import {
   ackOutboxItems,
+  applyLexiconExamples,
   applyLexiconPage,
   applyPulledPage,
   db,
@@ -43,6 +47,7 @@ import {
   MAX_PUSH_BATCH,
   pullChanges,
   pullLexicon,
+  pullLexiconExamples,
   pushBatch,
   SyncApiError,
   type PulledRow,
@@ -50,6 +55,7 @@ import {
   type PushItem,
   type PushResult,
   type LexiconPullResult,
+  type LexiconExamplesPullResult,
 } from './api';
 import type { LexiconSense } from '@/domain/types';
 
@@ -68,6 +74,9 @@ export interface SyncTransport {
   pullChanges(since: number, limit?: number, from?: number): Promise<PullResult>;
   pullLexicon(since: number, limit?: number): Promise<LexiconPullResult>;
   getLexiconSenses(ids: Id[]): Promise<LexiconSense[]>;
+  /** Shared example sentences (İP5). null: the backend does not have them yet. Optional so
+   *  transports without examples (older tests) keep working: they count as "not yet". */
+  pullLexiconExamples?(since: number, limit?: number): Promise<LexiconExamplesPullResult | null>;
 }
 
 export const supabaseTransport: SyncTransport = {
@@ -75,6 +84,7 @@ export const supabaseTransport: SyncTransport = {
   pullChanges: (since, limit, from) => pullChanges(since, limit, undefined, from),
   pullLexicon: (since, limit) => pullLexicon(since, limit),
   getLexiconSenses: (ids) => getLexiconSenses(ids),
+  pullLexiconExamples: (since, limit) => pullLexiconExamples(since, limit),
 };
 
 export type SyncErrorKind = 'network' | 'auth' | 'server';
@@ -133,6 +143,10 @@ export interface RunOptions {
 export async function pushOutbox(t: SyncTransport, report: SyncReport, opts: RunOptions = {}): Promise<void> {
   const now = opts.now ?? Date.now;
   const skipTables = new Set<OutboxTable>((await getMeta<boolean>(META.serverPractice)) ? [] : ['practice_logs']);
+  if (!(await getMeta<boolean>(META.serverExamples))) {
+    skipTables.add('content_feedback');
+    skipTables.add('user_content');
+  }
   // Rows that failed in this run are not sent again in the same run (a forced run would
   // otherwise resend them with every batch and burn through their attempts at once).
   const failedThisRun = new Set<string>();
@@ -205,6 +219,8 @@ async function fullResync(t: SyncTransport, report: SyncReport, now: () => Milli
     cards: new Set(),
     sources: new Set(),
     settings: new Set(),
+    content_feedback: new Set(),
+    user_content: new Set(),
   });
   let seen = emptySeen();
   let cursor = 0;
@@ -221,7 +237,7 @@ async function fullResync(t: SyncTransport, report: SyncReport, now: () => Milli
       cursor = 0;
       continue;
     }
-    for (const r of page.rows) if (r.table !== 'review_logs' && r.table !== 'practice_logs') seen[r.table].add(r.row.id);
+    for (const r of page.rows) if (r.table in seen) seen[r.table as ResyncTable].add(r.row.id);
     for (const bad of page.invalid) {
       // An invalid row still exists on the server: never delete it locally.
       if (bad.table in seen && typeof bad.id === 'string') seen[bad.table as ResyncTable].add(bad.id);
@@ -254,6 +270,27 @@ async function pullLexiconCache(t: SyncTransport, report: SyncReport): Promise<v
 }
 
 /**
+ * Example sentences of the user's lexicon senses (lexicon_examples_pull). The first answer
+ * also tells us the server stores content_feedback / user_content (META.serverExamples).
+ */
+async function pullExamplesCache(t: SyncTransport): Promise<void> {
+  if (!t.pullLexiconExamples) return;
+  let cursor = await getCursor(META.lexiconExamplesCursor);
+  for (let round = 0; round < MAX_ROUNDS; round++) {
+    const page = await t.pullLexiconExamples(cursor, MAX_PULL_PAGE);
+    const supported = page !== null;
+    if (((await getMeta<boolean>(META.serverExamples)) ?? false) !== supported) {
+      await db.transaction('rw', db.meta, () => setMeta(META.serverExamples, supported));
+    }
+    if (!page) return;
+    if (page.invalid) void logError(`${page.invalid} invalid rows`, 'sync.examples');
+    await applyLexiconExamples(page.rows, page.next_seq);
+    cursor = page.next_seq;
+    if (!page.has_more) return;
+  }
+}
+
+/**
  * One complete sync round for the linked account. Exported for tests and for the account
  * linking flow; the app uses the SyncEngine below (locking, triggers, status).
  */
@@ -266,7 +303,14 @@ export async function runSync(t: SyncTransport, opts: RunOptions = {}): Promise<
     await pushOutbox(t, report, opts);
     if (await pullAll(t, report, now)) await fullResync(t, report, now);
   }
-  // Rows pulled between our push and pull may have triggered recomputes (queued): push them.
+  try {
+    await pullExamplesCache(t);
+  } catch (e) {
+    // Example sentences are extras; user data is already in sync.
+    void logError(e, 'sync.examples');
+  }
+  // Rows pulled between our push and pull may have triggered recomputes (queued), and
+  // feedback rows wait for the first examples pull: push them.
   if ((await db.outbox.count()) > 0) await pushOutbox(t, report, { ...opts, force: false });
   try {
     await pullLexiconCache(t, report);
@@ -376,6 +420,9 @@ export class SyncEngine {
       pullChanges: async (since, limit, from) => (await check(), t.pullChanges(since, limit, from)),
       pullLexicon: async (since, limit) => (await check(), t.pullLexicon(since, limit)),
       getLexiconSenses: async (ids) => (await check(), t.getLexiconSenses(ids)),
+      ...(t.pullLexiconExamples
+        ? { pullLexiconExamples: async (since: number, limit?: number) => (await check(), t.pullLexiconExamples!(since, limit)) }
+        : {}),
     };
   }
 

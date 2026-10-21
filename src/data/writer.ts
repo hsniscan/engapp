@@ -5,6 +5,7 @@ import { decodeHlc, encodeHlc, type Hlc, isHlc, receive, tick } from '../domain/
 import { uuidv7 } from '../domain/ids';
 import type {
   Card,
+  ContentFeedback,
   Id,
   Millis,
   Note,
@@ -16,6 +17,7 @@ import type {
   Settings,
   Source,
   SyncedRow,
+  UserContent,
 } from '../domain/types';
 import { db } from './db';
 import { getDeviceId, getMeta, META, setMeta } from './meta';
@@ -26,6 +28,8 @@ export interface MutableRows {
   cards: Card;
   sources: Source;
   settings: Settings;
+  content_feedback: ContentFeedback;
+  user_content: UserContent;
 }
 export type MutableTable = keyof MutableRows;
 

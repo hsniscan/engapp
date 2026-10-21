@@ -10,11 +10,19 @@ export const META = {
   lexiconCursor: 'lexicon_cursor',
   /** The server answered sync_pull_v3, so it stores practice_logs (see sync/engine.ts). */
   serverPractice: 'server_practice_logs',
+  /** Cursor of lexicon_examples_pull (example sentences of the user's senses). */
+  lexiconExamplesCursor: 'lexicon_examples_cursor',
+  /** The server has lexicon_examples_pull, so it stores content_feedback / user_content. */
+  serverExamples: 'server_examples',
 } as const;
 
 /** Meta key of a day's extra new-card allowance ("+5 yeni kart"). Device-local, never synced. */
 export const EXTRA_NEW_PREFIX = 'extra_new:';
 export const extraNewKey = (day: string): string => `${EXTRA_NEW_PREFIX}${day}`;
+
+/** Meta key counting a day's background ai-examples calls (soft cap). Device-local. */
+export const EXAMPLE_CALLS_PREFIX = 'example_calls:';
+export const exampleCallsKey = (day: string): string => `${EXAMPLE_CALLS_PREFIX}${day}`;
 
 export async function getMeta<T>(key: string): Promise<T | undefined> {
   return (await db.meta.get(key))?.value as T | undefined;

@@ -164,3 +164,25 @@ build asset fetched the first time a screen needs levels (`src/data/levelData.ts
 by the service worker (CacheFirst, decision 0012); until it has loaded, only stored levels
 show.
 
+## Example sentences (v0.2 İP5, decision 0013)
+
+| Table (Dexie v5)   | Synced                      | Indexes                                              | Notes |
+| ------------------ | --------------------------- | ---------------------------------------------------- | ----- |
+| `lexicon_examples` | pulled only (shared cache)  | `id`, `sense_id`, `[sense_id+level_band]`, `updated_at` | Shared sentences of a lexicon sense: `context`, `level_band` (A2/B1/B2/C1), `text_en`, `span`, `translations` (`{"tr": …}`), `status`. Never user text; written only by `ai-examples`. Retired rows are removed locally. |
+| `content_feedback` | yes (per user, LWW)         | `id`, `[target_kind+target_id]`, `deleted_at`         | One row per target (`target_kind` `example` now; `mnemonic` etc. later), `verdict` `like`/`skip`/`reject`. The id is derived from the target (UUID v8 of SHA-256), so two devices write the same row. Taking a verdict back is a tombstone. |
+| `user_content`     | yes (per user, LWW)         | `id`, `kind`, `lexicon_sense_id`, `replaces_id`, `deleted_at` | The user's own text: `kind` `example_sentence` (an edited sentence, `replaces_id` = the shared sentence, id derived from it) and later mnemonics (İP6). Private to the account; never written to a shared table. |
+| `example_jobs`     | no (device-local queue)     | `key` (`<lexicon sense id>\|<band>`), `status`, `next_attempt_at` | Background preparation: `contexts` asked, `priority` (2 open on screen, 1 new card, 0 backfill), `attempts`, `error`. |
+
+Settings: `example_tr_visible` (null/false: the translation of an example sentence shows on
+tap) and `example_contexts` (2–4 context keys; null: `daily`, `conversation`, `work`,
+`formal`). Meta: `lexicon_examples_cursor`, `server_examples` (the server has the content
+tables), `examples_since`, `examples_backfill`, `example_calls:<YYYY-MM-DD>`.
+
+`getCardView` adds `sentence`: the source sentence and the non-skipped example sentences of
+the selected contexts take turns (index `card.reps`), so the front of a recognition card
+and the blank of a cloze card change after every answer (a cloze card only uses sentences
+where the term is located). The back repeats that sentence.
+
+Backups (`schema_version` 5) carry `content_feedback` and `user_content`; files without them
+restore as before, and an overwrite restore of such a file leaves the local rows alone.
+Copying cards to another account does not copy them (decision 0009).

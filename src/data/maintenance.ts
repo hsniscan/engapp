@@ -14,12 +14,14 @@ import { checkIntegrity, type IntegrityReport } from '../domain/integrity';
 import { deriveUnlocked, effectiveLogs, replayCard } from '../domain/recompute';
 import {
   cardSchema,
+  contentFeedbackSchema,
   noteSchema,
   practiceLogSchema,
   reviewLogSchema,
   senseSchema,
   settingsSchema,
   sourceSchema,
+  userContentSchema,
 } from '../domain/schemas';
 import {
   type Card,
@@ -39,8 +41,18 @@ import { getDeviceId, META, setMeta } from './meta';
 import { dayConfig, getSettings, schedulerFor, updateSettings } from './settings';
 import { type MutableRows, type MutableTable, type SyncWriter, writeTx } from './writer';
 
-const MUTABLE: MutableTable[] = ['notes', 'senses', 'cards', 'sources', 'settings'];
+const MUTABLE: MutableTable[] = [
+  'notes',
+  'senses',
+  'cards',
+  'sources',
+  'settings',
+  'content_feedback',
+  'user_content',
+];
 const allSyncedTables = () => [
+  db.content_feedback,
+  db.user_content,
   db.notes,
   db.senses,
   db.cards,
@@ -202,6 +214,8 @@ const rowSchemas = {
   settings: settingsSchema,
   review_logs: reviewLogSchema,
   practice_logs: practiceLogSchema,
+  content_feedback: contentFeedbackSchema,
+  user_content: userContentSchema,
 } satisfies Record<MutableTable | 'review_logs' | 'practice_logs', z.ZodType>;
 
 /**
@@ -298,6 +312,8 @@ async function readTables(): Promise<BackupTables> {
     sources: await db.sources.toArray(),
     settings: await db.settings.toArray(),
     practice_logs: await db.practice_logs.toArray(),
+    content_feedback: await db.content_feedback.toArray(),
+    user_content: await db.user_content.toArray(),
   }));
 }
 
@@ -372,7 +388,10 @@ export async function restoreBackup(
   await writeTx(allSyncedTables(), now, async (w) => {
     const terms = new Set<string>();
     for (const table of MUTABLE) {
-      const incoming = tables[table] as MutableRows[MutableTable][];
+      // content_feedback / user_content are absent in files before schema_version 5: such a
+      // file says nothing about them, so overwrite leaves the local rows alone.
+      const fromFile = tables[table] as MutableRows[MutableTable][] | undefined;
+      const incoming = fromFile ?? [];
       const ids = new Set(incoming.map((r) => r.id));
       // One bulkGet instead of a get per row: 10,000 cards restore minutes → seconds.
       const existing = (await db.table(table).bulkGet(incoming.map((r) => r.id))) as (
@@ -396,7 +415,7 @@ export async function restoreBackup(
         }
         if (table === 'notes') terms.add((row as Note).term_norm);
       }
-      if (mode === 'overwrite') {
+      if (mode === 'overwrite' && fromFile) {
         const locals = (await db.table(table).toArray()) as MutableRows[MutableTable][];
         for (const local of locals) {
           if (ids.has(local.id) || local.deleted_at !== null) continue;

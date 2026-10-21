@@ -1,11 +1,13 @@
-import { memo, type ReactNode } from 'react';
+import { memo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CardView } from '@/data';
+import type { CardSentence } from '@/domain/examples';
 import { findSpan, isValidSpan } from '@/domain/recognition';
 import type { Sense } from '@/domain/types';
 import { posLabel } from '@/features/cards/labels';
 import { LevelDialogButton } from '@/features/levels/LevelDetails';
 import { useCardLevel } from '@/features/levels/useWordLevel';
+import { CardExamples } from '@/features/examples/ExamplesPanel';
 import { Badge, cn, IconButton } from '@/ui';
 
 const meaningOf = (s: Pick<Sense, 'meaning_tr' | 'meaning_tr_override'>) =>
@@ -74,42 +76,55 @@ export function SpeakButton({
 }
 
 /**
- * The example sentence on the back of a card: a button that reads it aloud, and the user's
- * Turkish translation under it, when there is one.
+ * The sentence on the back of a card (the one the front showed): a button that reads it
+ * aloud, and its Turkish translation under it, when there is one. An example sentence's
+ * translation waits for a tap unless the user turned that off.
  */
 function BackSentence({
-  sense,
+  sentence,
   term,
   speech,
   className,
 }: {
-  sense: Sense;
+  sentence: CardSentence;
   term: string;
   speech: SpeakProps;
   className?: string;
 }) {
   const { t } = useTranslation();
-  const sentence = sense.source_sentence;
-  if (!sentence) return null;
+  const [trShown, setTrShown] = useState(false);
   const { speakText } = speech;
+  const text = sentence.text;
   return (
     <div className="flex w-full max-w-md flex-col items-center gap-1.5">
       <div className="flex items-start justify-center gap-1">
-        <Sentence sentence={sentence} span={sense.span} term={term} className={cn('min-w-0', className)} />
+        <Sentence sentence={text} span={sentence.span} term={term} className={cn('min-w-0', className)} />
         {speakText && (
           <SpeakButton
             available={speech.available}
-            onSpeak={() => speakText(sentence)}
+            onSpeak={() => speakText(text)}
             label={t('review.speakSentence')}
             className="shrink-0"
           />
         )}
       </div>
-      {sense.source_sentence_tr && (
-        <p lang="tr" className="text-[0.9375rem] leading-relaxed text-fg-muted">
-          {sense.source_sentence_tr}
-        </p>
-      )}
+      {sentence.tr &&
+        (sentence.trOnTap && !trShown ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setTrShown(true);
+            }}
+            className="min-h-9 text-sm font-medium text-accent-text underline-offset-2 hover:underline"
+          >
+            {t('examples.showTr')}
+          </button>
+        ) : (
+          <p lang="tr" className="text-[0.9375rem] leading-relaxed text-fg-muted">
+            {sentence.tr}
+          </p>
+        ))}
     </div>
   );
 }
@@ -243,10 +258,10 @@ export const CardFront = memo(function CardFront({ view, isNew, speech }: FacePr
     <Face prompt={prompt} isNew={isNew}>
       <Term term={note.term} />
       <SpeakButton {...speech} />
-      {sense?.source_sentence && (
+      {view.sentence && (
         <Sentence
-          sentence={sense.source_sentence}
-          span={sense.span}
+          sentence={view.sentence.text}
+          span={view.sentence.span}
           term={note.term}
           className="mt-3 max-w-md"
         />
@@ -327,13 +342,25 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
   const prompt = t(promptKey[card.card_type]);
   const level = useCardLevel(view);
   const aside = level ? <LevelDialogButton level={level} term={note.term} /> : null;
-  const sentence = sense?.source_sentence ? (
+  const sentence = view.sentence ? (
     <BackSentence
-      sense={sense}
+      // A new sentence starts with its translation hidden again.
+      key={view.sentence.text}
+      sentence={view.sentence}
       term={note.term}
       speech={speech}
       className="text-[1.0625rem] text-fg-muted"
     />
+  ) : null;
+  const examples = view.senses.some((s) => s.lexicon_sense_id) ? (
+    <div className="flex w-full max-w-md justify-center border-t border-border pt-2">
+      <CardExamples
+        term={note.term}
+        senses={view.senses}
+        initialSenseId={sense?.id ?? null}
+        speech={speech.speakText ? { available: speech.available, speak: speech.speakText } : undefined}
+      />
+    </div>
   ) : null;
 
   if (card.card_type === 'recognition' || !sense) {
@@ -354,15 +381,17 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
             {sentence}
           </div>
         )}
+        {examples}
       </Face>
     );
   }
 
   return (
     <Face prompt={prompt} isNew={isNew} aside={aside} className="gap-4">
-      {card.card_type === 'cloze' && view.cloze ? (
+      {card.card_type === 'cloze' && view.cloze && view.sentence ? (
         <BackSentence
-          sense={sense}
+          key={view.sentence.text}
+          sentence={view.sentence}
           term={note.term}
           speech={speech}
           className="text-xl sm:text-2xl"
@@ -390,6 +419,7 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
         )}
       </div>
       {card.card_type === 'production' && sentence}
+      {examples}
     </Face>
   );
 });

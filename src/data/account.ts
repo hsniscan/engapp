@@ -14,7 +14,15 @@ import { getMeta, META, setMeta } from './meta';
 import { SETTINGS_ID } from './settings';
 import { type MutableRows, type MutableTable, writeTx } from './writer';
 
-const MUTABLE: MutableTable[] = ['notes', 'senses', 'cards', 'sources', 'settings'];
+const MUTABLE: MutableTable[] = [
+  'notes',
+  'senses',
+  'cards',
+  'sources',
+  'settings',
+  'content_feedback',
+  'user_content',
+];
 
 /** Data the user created on this device (settings alone do not count). */
 export async function hasLocalUserData(): Promise<boolean> {
@@ -40,6 +48,7 @@ export async function claimLocalData(userId: string, now: Millis = Date.now()): 
   await db.transaction('rw', db.meta, async () => {
     await setMeta(META.syncCursor, 0);
     await setMeta(META.lexiconCursor, 0);
+    await setMeta(META.lexiconExamplesCursor, 0);
   });
   return adoptGuestData(userId, now);
 }
@@ -65,6 +74,7 @@ export async function discardLocalData(userId: string): Promise<void> {
     await setMeta(META.userId, userId);
     await setMeta(META.syncCursor, 0);
     await setMeta(META.lexiconCursor, 0);
+    await setMeta(META.lexiconExamplesCursor, 0);
   });
 }
 
@@ -83,7 +93,7 @@ export interface RemoteSnapshot {
  */
 export async function discardAccountData(userId: string, snapshot: RemoteSnapshot, now: Millis = Date.now()): Promise<number> {
   await claimLocalData(userId, now);
-  const n = await writeTx([db.notes, db.senses, db.cards, db.sources, db.settings], now, async (w) => {
+  const n = await writeTx([db.notes, db.senses, db.cards, db.sources, db.settings, db.content_feedback, db.user_content], now, async (w) => {
     let count = 0;
     for (const { table, row } of snapshot.rows) {
       if (!(MUTABLE as string[]).includes(table)) continue;
@@ -104,7 +114,9 @@ export async function discardAccountData(userId: string, snapshot: RemoteSnapsho
 }
 
 /** Device-level caches that do not belong to an account and survive a copy. */
-const KEEP_ON_COPY = new Set(['meta', 'chunk_cache', 'lexicon_cache', 'error_log']);
+// lexicon_examples is the shared sentence cache; the other account's likes, rejections and
+// edits (content_feedback, user_content) are personal and are NOT copied (ADR 0009).
+const KEEP_ON_COPY = new Set(['meta', 'chunk_cache', 'lexicon_cache', 'lexicon_examples', 'error_log']);
 
 /** The user's own content of a live note, as input for the normal add path. */
 function copyInput(note: Note, senses: Sense[], sourceIds: Map<Id, Id>): AddNoteInput {
@@ -161,6 +173,7 @@ export async function copyCardsFromOtherAccount(userId: string, snapshot: Remote
     await setMeta(META.userId, userId);
     await setMeta(META.syncCursor, snapshot.nextSeq);
     await setMeta(META.lexiconCursor, 0);
+    await setMeta(META.lexiconExamplesCursor, 0);
 
     const batch: RemoteBatch = {};
     for (const { table, row } of snapshot.rows) (batch[table as keyof RemoteBatch] ??= []).push(row);

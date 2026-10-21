@@ -3,6 +3,7 @@ export { db } from './db';
 export { loadLevelData, levelDataNow } from './levelData';
 export * from './actions';
 export * from './queries';
+export * from './examples';
 export { addExtraNew, getMoreStudyOverview, MAX_EXTRA_NEW_STEP, type MoreStudyOverview } from './extraStudy';
 export {
   getPracticeCards,

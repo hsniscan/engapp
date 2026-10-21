@@ -189,3 +189,17 @@ to them (decision 0009).
 - `supabase/tests/integration/stack.test.ts`: the same through PostgREST with
   `src/sync/api.ts`.
 - `src/sync/api.test.ts`: response validation and error classification.
+
+## Example sentences (v0.2 İP5, migration 20261022000100)
+
+- `content_feedback` and `user_content` are registered in `public.sync_tables` with
+  `conflict_key (user_id, id)` and go through the same `sync_push` / `sync_pull_v3` path
+  (LWW by HLC, tombstones, purge). Their ids are derived from what they are about, so the
+  primary key includes `user_id`.
+- `lexicon_examples` is shared and read-only: `lexicon_examples_pull(since, limit)` returns
+  the sentences of the lexicon senses the user's senses reference, by `server_seq`
+  (cursor `lexicon_examples_cursor`, reset with the lexicon cursor on account changes).
+  It runs after the lexicon pull; a failure there never fails the sync.
+- Until `lexicon_examples_pull` has answered once (`server_examples`), content rows wait in
+  the outbox without spending attempts, like `practice_logs` before `sync_pull_v3`.
+- Tests: `src/sync/examples.test.ts` (two devices, deterministic ids, gating, retired rows).

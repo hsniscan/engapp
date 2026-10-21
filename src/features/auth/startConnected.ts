@@ -1,6 +1,7 @@
 // Startup of the connected features: auth session, account linking, sync engine triggers
-// and the AI import queue. Idempotent; call once from main.tsx (it is also called by the
+// the AI import queue and the example sentence preparation. Idempotent; call once from main.tsx (it is also called by the
 // sync indicator as a safety net).
+import { kickExampleQueue, startExampleQueue } from '@/features/examples/queue';
 import { kickImportQueue, startImportQueue } from '@/features/import/queue';
 import { isBackendConfigured } from '@/lib/supabase';
 import { startSyncEngine } from '@/sync';
@@ -20,6 +21,7 @@ export function startConnectedFeatures(): void {
     if (user) {
       void linkAccount(user.id);
       kickImportQueue();
+      kickExampleQueue();
     } else {
       void engine.isActive();
     }
@@ -27,4 +29,5 @@ export function startConnectedFeatures(): void {
   startAuth();
   startSyncEngine();
   startImportQueue();
+  startExampleQueue();
 }

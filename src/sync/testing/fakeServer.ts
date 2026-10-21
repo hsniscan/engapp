@@ -2,10 +2,10 @@
 // rules as supabase/migrations/20261021000400_sync.sql (LWW by HLC, append-only logs,
 // server_seq cursor, tombstone purge → full_resync) and 20261021000900_practice.sql
 // (practice_logs: insert-only, pulled only by sync_pull_v3). Test-only.
-import type { Id, LexiconSense, OutboxTable } from '@/domain/types';
+import type { Id, LexiconExample, LexiconSense, OutboxTable } from '@/domain/types';
 import { db } from '@/data';
 import type { SyncTransport } from '../engine';
-import { SyncApiError, type PulledRow, type PullResult, type PushItem, type PushResult } from '../api';
+import { SyncApiError, type LexiconExamplesPullResult, type PulledRow, type PullResult, type PushItem, type PushResult } from '../api';
 
 interface Stored {
   table: OutboxTable;
@@ -20,7 +20,9 @@ export class FakeServer implements SyncTransport {
   readonly lexicon = new Map<Id, { row: LexiconSense; seq: number }>();
   private lexSeq = 0;
   /** Calls made, for assertions. */
-  readonly calls = { push: 0, pull: 0, lexiconPull: 0, lexiconGet: 0 };
+  readonly calls = { push: 0, pull: 0, lexiconPull: 0, lexiconGet: 0, examplesPull: 0 };
+  readonly examples = new Map<Id, { row: LexiconExample; seq: number }>();
+  private exSeq = 0;
   /** Fault injection. */
   faults: {
     /** Throw a network error before the server applies the batch (n times). */
@@ -38,6 +40,12 @@ export class FakeServer implements SyncTransport {
    * as an unknown table and pulls answer like sync_pull_v2 (version 2, no practice rows).
    */
   practiceSupported = true;
+
+  /**
+   * false = a backend from before migration 20261022000100: no lexicon_examples_pull, and
+   * sync_push rejects content_feedback / user_content as unknown tables.
+   */
+  examplesSupported = true;
 
   readonly userId: string;
   constructor(userId = 'user-1') {
@@ -65,6 +73,10 @@ export class FakeServer implements SyncTransport {
         continue;
       }
       if (it.table === 'practice_logs' && !this.practiceSupported) {
+        res.rejected.push({ table: it.table, id: p.id, code: '22023', message: 'unknown table' });
+        continue;
+      }
+      if ((it.table === 'content_feedback' || it.table === 'user_content') && !this.examplesSupported) {
         res.rejected.push({ table: it.table, id: p.id, code: '22023', message: 'unknown table' });
         continue;
       }
@@ -157,6 +169,28 @@ export class FakeServer implements SyncTransport {
   async getLexiconSenses(ids: Id[]) {
     this.calls.lexiconGet++;
     return ids.map((id) => this.lexicon.get(id)?.row).filter((x): x is LexiconSense => !!x);
+  }
+
+  /** Add or change a shared example sentence (server-side write, e.g. by ai-examples). */
+  addExample(row: LexiconExample): void {
+    this.examples.set(row.id, { row, seq: ++this.exSeq });
+  }
+
+  async pullLexiconExamples(since: number, limit = 500): Promise<LexiconExamplesPullResult | null> {
+    this.calls.examplesPull++;
+    if (this.faults.offline) throw new SyncApiError('network', 'offline');
+    if (!this.examplesSupported) return null;
+    const ref = this.referenced();
+    const all = [...this.examples.values()]
+      .filter((e) => e.seq > since && ref.has(e.row.sense_id))
+      .sort((a, b) => a.seq - b.seq);
+    const page = all.slice(0, limit);
+    return {
+      rows: page.map((p) => structuredClone(p.row)),
+      invalid: 0,
+      next_seq: page.length ? page[page.length - 1]!.seq : since,
+      has_more: all.length > page.length,
+    };
   }
 
   rowsOf(table: OutboxTable) {
