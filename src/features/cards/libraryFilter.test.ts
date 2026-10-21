@@ -41,6 +41,7 @@ const sense = (id: string, note_id: string, meaning: string): Sense => ({
   meaning_tr: meaning,
   meaning_tr_override: null,
   source_sentence: null,
+  source_sentence_tr: null,
   span: null,
   source_id: null,
 });

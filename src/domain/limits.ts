@@ -10,6 +10,7 @@ export const LIMITS = {
   gloss_en: 300,
   meaning_tr: 500,
   source_sentence: 2000,
+  source_sentence_tr: 2000,
   source_title: 500,
   file_name: 500,
 } as const;

@@ -169,6 +169,7 @@ export function ReviewScreen() {
   const speak = {
     available: speech.available,
     onSpeak: () => current && speech.speak(current.view.note.term),
+    speakText: speech.speak,
   };
   const isNew = current?.kind === 'new';
 

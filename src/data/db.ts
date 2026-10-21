@@ -59,6 +59,21 @@ export class EngDb extends Dexie {
       error_log: '++id, at',
       meta: 'key',
     });
+    // v2: senses.source_sentence_tr and import_candidates.source_sentence_tr (not indexed).
+    // Existing rows get null so the type holds; this is a local fill-in, not an edit, so it
+    // is not stamped or queued (the server column defaults to null as well).
+    this.version(2)
+      .stores({})
+      .upgrade(async (tx) => {
+        for (const table of ['senses', 'import_candidates']) {
+          await tx
+            .table(table)
+            .toCollection()
+            .modify((row: { source_sentence_tr?: string | null }) => {
+              if (row.source_sentence_tr === undefined) row.source_sentence_tr = null;
+            });
+        }
+      });
   }
 }
 

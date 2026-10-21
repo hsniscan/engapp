@@ -133,6 +133,7 @@
     "hint": "Hint",
     "shownSense": "meaning in the sentence",
     "noVoice": "No speech: this device has no English voice",
+    "speakSentence": "Play sentence",
     "menu": "Card options",
     "undoLast": "Undo last answer",
     "undoLastKey": "Undo last answer (Z)",
@@ -499,7 +500,10 @@
       "preposition": "preposition",
       "conjunction": "conjunction",
       "pronoun": "pronoun",
-      "interjection": "interjection"
+      "interjection": "interjection",
+      "phrase": "phrase",
+      "determiner": "determiner",
+      "other": "other"
     },
     "tags": {
       "label": "Tags",
@@ -531,6 +535,8 @@
       "meaningRequired": "Type the Turkish meaning.",
       "sentence": "Example sentence",
       "sentenceHint": "A sentence that uses the term; it also creates a cloze card.",
+      "sentenceTr": "Turkish translation",
+      "sentenceTrHint": "The sentence in Turkish; shown under it on the back of the card.",
       "moreDetails": "English gloss and part of speech",
       "gloss": "Short English gloss",
       "glossHint": "Tells meanings apart: “the land beside a river”.",

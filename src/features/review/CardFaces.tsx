@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { CardView } from '@/data';
 import { findSpan, isValidSpan } from '@/domain/recognition';
 import type { Sense } from '@/domain/types';
+import { posLabel } from '@/features/cards/labels';
 import { Badge, cn, IconButton } from '@/ui';
 
 const meaningOf = (s: Pick<Sense, 'meaning_tr' | 'meaning_tr_override'>) =>
@@ -40,22 +41,74 @@ export function Sentence({
 
 export interface SpeakProps {
   available: boolean;
+  /** Speaks the term. */
   onSpeak: () => void;
+  /** Speaks any English text (the example sentence on the back). */
+  speakText?: (text: string) => void;
 }
 
-export function SpeakButton({ available, onSpeak }: SpeakProps) {
+export function SpeakButton({
+  available,
+  onSpeak,
+  label,
+  className,
+}: Pick<SpeakProps, 'available' | 'onSpeak'> & { label?: string; className?: string }) {
   const { t } = useTranslation();
   return (
     <IconButton
       icon="speaker"
-      label={available ? t('common.listen') : t('review.noVoice')}
+      label={available ? (label ?? t('common.listen')) : t('review.noVoice')}
       aria-disabled={!available || undefined}
-      className={cn(!available && 'opacity-45 hover:bg-transparent hover:text-fg-muted')}
+      className={cn(
+        className,
+        !available && 'opacity-45 hover:bg-transparent hover:text-fg-muted',
+      )}
       onClick={(e) => {
         e.stopPropagation();
         if (available) onSpeak();
       }}
     />
+  );
+}
+
+/**
+ * The example sentence on the back of a card: a button that reads it aloud, and the user's
+ * Turkish translation under it, when there is one.
+ */
+function BackSentence({
+  sense,
+  term,
+  speech,
+  className,
+}: {
+  sense: Sense;
+  term: string;
+  speech: SpeakProps;
+  className?: string;
+}) {
+  const { t } = useTranslation();
+  const sentence = sense.source_sentence;
+  if (!sentence) return null;
+  const { speakText } = speech;
+  return (
+    <div className="flex w-full max-w-md flex-col items-center gap-1.5">
+      <div className="flex items-start justify-center gap-1">
+        <Sentence sentence={sentence} span={sense.span} term={term} className={cn('min-w-0', className)} />
+        {speakText && (
+          <SpeakButton
+            available={speech.available}
+            onSpeak={() => speakText(sentence)}
+            label={t('review.speakSentence')}
+            className="shrink-0"
+          />
+        )}
+      </div>
+      {sense.source_sentence_tr && (
+        <p lang="tr" className="text-[0.9375rem] leading-relaxed text-fg-muted">
+          {sense.source_sentence_tr}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -204,9 +257,9 @@ function SenseList({ view }: { view: CardView }) {
       <div className="flex flex-col items-center gap-1.5">
         <p className="font-serif text-3xl leading-snug font-semibold text-fg">{meaningOf(only)}</p>
         {only.gloss_en && (
-          <p lang="en" className="text-[0.9375rem] text-fg-muted">
-            {only.pos && <span className="italic">{only.pos} · </span>}
-            {only.gloss_en}
+          <p className="text-[0.9375rem] text-fg-muted">
+            {only.pos && <span className="italic">{posLabel(t, only.pos)} · </span>}
+            <span lang="en">{only.gloss_en}</span>
           </p>
         )}
       </div>
@@ -239,9 +292,9 @@ function SenseList({ view }: { view: CardView }) {
               {(s.gloss_en || shown) && (
                 <p className="text-sm text-fg-muted">
                   {s.gloss_en && (
-                    <span lang="en">
-                      {s.pos && <span className="italic">{s.pos} · </span>}
-                      {s.gloss_en}
+                    <span>
+                      {s.pos && <span className="italic">{posLabel(t, s.pos)} · </span>}
+                      <span lang="en">{s.gloss_en}</span>
                     </span>
                   )}
                   {shown && (
@@ -265,11 +318,11 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
   const { card, note, sense } = view;
   const prompt = t(promptKey[card.card_type]);
   const sentence = sense?.source_sentence ? (
-    <Sentence
-      sentence={sense.source_sentence}
-      span={sense.span}
+    <BackSentence
+      sense={sense}
       term={note.term}
-      className="max-w-md text-[1.0625rem] text-fg-muted"
+      speech={speech}
+      className="text-[1.0625rem] text-fg-muted"
     />
   ) : null;
 
@@ -286,7 +339,11 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
           <Ipa ipa={note.ipa} />
         </div>
         <SenseList view={view} />
-        {sentence && <div className="w-full max-w-md border-t border-border pt-4">{sentence}</div>}
+        {sentence && (
+          <div className="flex w-full max-w-md justify-center border-t border-border pt-4">
+            {sentence}
+          </div>
+        )}
       </Face>
     );
   }
@@ -294,11 +351,11 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
   return (
     <Face prompt={prompt} isNew={isNew} className="gap-4">
       {card.card_type === 'cloze' && view.cloze ? (
-        <Sentence
-          sentence={sense.source_sentence!}
-          span={sense.span}
+        <BackSentence
+          sense={sense}
           term={note.term}
-          className="max-w-md text-xl sm:text-2xl"
+          speech={speech}
+          className="text-xl sm:text-2xl"
         />
       ) : (
         <Term term={note.term} />

@@ -5,7 +5,7 @@ Server side of "Kart oluşturma ve AI çıkarma hattı" in `plan-v0.1.md`. Code:
 two Deno entrypoints `supabase/functions/ai-extract/index.ts` and `ai-enrich/index.ts`.
 Client: `src/ai/client.ts`.
 
-Prompt versions: **`extract-v1`**, **`enrich-v1`** (`_shared/prompts.ts`). Any change to a
+Prompt versions: **`extract-v2`**, **`enrich-v1`** (`_shared/prompts.ts`). Any change to a
 prompt or a response schema bumps the version (the chunk cache is keyed by it) and is
 copied here; `src/ai/docs-sync.test.ts` fails when this file and the code differ.
 
@@ -24,7 +24,7 @@ copied here; `src/ai/docs-sync.test.ts` fails when this file and the code differ
 
 | Situation                                                             | What happens                                                                                                                 | Where                    |
 | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| Same chunk again on the same device                                   | Result from Dexie `chunk_cache` (key `hashChunk(text)`)                                                                      | client                   |
+| Same chunk again on the same device                                   | Result from Dexie `chunk_cache` (key `hashChunk(text)`, same level and prompt version)                                      | client                   |
 | Same chunk again on another device (same user, level, prompt version) | Result from `ai_chunk_cache`, lexicon content joined fresh; `cache_hit: true`, no daily-limit charge                         | ai-extract               |
 | A term + sense in the chunk is already in the lexicon                 | The model only gets `{ref, term, pos, gloss}` lines and answers with the ref; no content is generated (`match: known_sense`) | ai-extract               |
 | The model rewrites an existing sense in other words                   | Same `gloss_key`, or same part of speech and near-identical gloss tokens: existing sense reused, nothing inserted            | ai-extract, ai-enrich    |
@@ -44,7 +44,7 @@ Request:
 
 ```json
 {
-  "text": "<one chunk, whole sentences, ≤ 8000 chars (client aims for ~6000), NFC>",
+  "text": "<one chunk, whole sentences, ≤ 8000 chars (client aims for ~6000, ~3000 for a vocabulary list), NFC>",
   "chunk_hash": "<lower-case hex SHA-256 of text, UTF-8>",
   "level": "B1"
 }
@@ -54,7 +54,7 @@ Response (`extractResponse` in `_shared/contracts.ts`):
 
 ```json
 {
-  "prompt_version": "extract-v1",
+  "prompt_version": "extract-v2",
   "cache_hit": false,
   "ai_called": true,
   "model": "gemini-3.8-flash",
@@ -64,6 +64,7 @@ Response (`extractResponse` in `_shared/contracts.ts`):
       "surface": "gave up",
       "term_type": "phrase",
       "source_sentence": "After years of trying, Maria finally gave up smoking.",
+      "sentence_tr": "Yıllarca uğraştıktan sonra Maria sonunda sigarayı bıraktı.",
       "span": [37, 44],
       "confidence": 0.97,
       "match": "new_term",
@@ -129,7 +130,10 @@ Steps:
      separable phrasal verb is widened ("turned" → "turned her application down");
    - `unknown_sense_ref` / `incomplete_new_sense`: a ref not offered (or for another
      term) without new-sense fields, or new-sense fields missing;
-   - `duplicate`, `over_limit` (max 30).
+   - `duplicate`, `over_limit` (max 150: a vocabulary list returns every entry; prose
+     is asked for at most 30);
+   - `truncated` (counted once): the answer hit `maxOutputTokens`; the complete items
+     before the cut are kept (see Model calls).
    - Cleaning: gloss without final period; `meaning_tr` unquoted, at most two
      alternatives; IPA wrapped in slashes; part of speech mapped to the fixed list;
      confidence clamped to 0–1.
@@ -215,17 +219,41 @@ All errors: `{ "error": { "code": "...", "message": "...", "retry_after_s"?: n }
 responseMimeType:"application/json", responseJsonSchema, maxOutputTokens}}`
   (optional `thinkingConfig.thinkingLevel` from `GEMINI_THINKING_LEVEL`). Parts marked
   `thought: true` are ignored.
-- 30 s timeout per attempt; up to 3 attempts per model; backoff 1 s, 2 s (+ jitter, at
+- 30 s timeout per attempt (ai-extract: 60 s, `maxOutputTokens` 32768, so a full list
+  chunk fits; ai-enrich: 2048); up to 3 attempts per model; backoff 1 s, 2 s (+ jitter, at
   least the server's `RetryInfo`/`Retry-After`, at most 8 s); 120 s total budget.
 - Retried: 429/RESOURCE_EXHAUSTED, 503/UNAVAILABLE ("high demand"), other 5xx/408,
-  timeouts, network errors, non-JSON text (e.g. cut off by MAX_TOKENS), JSON that fails
-  the top-level shape. After the primary's attempts → the same on `GEMINI_FALLBACK_MODEL`.
+  timeouts, network errors, non-JSON text, JSON that fails the top-level shape. Text cut
+  off by MAX_TOKENS is repaired instead when at least one list item was complete
+  (`salvageTruncatedJson`: the complete items are kept, `truncated: true`); a retry would
+  be cut at the same place. After the primary's attempts → the same on `GEMINI_FALLBACK_MODEL`.
   404 (unknown model) → fallback at once. 400/401/403 and blocked prompts: no retry.
 - `maxItems` is deliberately absent from the schemas: Gemini answered HTTP 400
   INVALID_ARGUMENT for `maxItems: 30` on this schema (observed Oct 2026); the limits are
   in the prompts and enforced by the server.
 
-## Extract prompt (`extract-v1`)
+## Extract prompt (`extract-v2`)
+
+`extract-v2` added `sentence_tr`, a natural Turkish translation of `source_sentence`.
+It is the user's text: it is stored in the user's chunk cache and on the user's sense
+(`senses.source_sentence_tr`), never in the lexicon. Cleaning trims it, removes invisible
+characters and wrapping quotes, and turns it into `null` when it is empty, longer than
+1500 characters, has no letters or just repeats the English sentence; a bad translation
+never drops the candidate. Results without it (`extract-v1`, still in a device's
+`chunk_cache`) parse with `sentence_tr: null`.
+
+It also returns every entry of a **vocabulary list** (numbered or bulleted entries, e.g.
+the EnglishClass101 "CORE 2000" PDF: "12 bad Be careful of bad people."), easy ones
+included, in list order, with the list's own example sentence; prose keeps the selective
+behaviour (≤ 30). The client chunks text that looks like a list
+(`looksLikeVocabularyList` in `src/domain/chunking.ts`) into ~3000-char chunks cut
+between entries (~50 entries, ~6k output tokens per call). The local `chunk_cache` is
+checked with the prompt version (`EXTRACT_PROMPT_VERSION`, in `_shared/contracts.ts`), so
+after a bump the same text is extracted again; preview rows whose term already has a
+sense with the same lexicon sense, meaning or example sentence are marked "zaten var"
+and not selected.
+ai-enrich does not translate: it usually answers from the lexicon without a model call,
+so a translation would be there only sometimes; the user can type one in the add form.
 
 System instruction:
 
@@ -234,6 +262,9 @@ You are an expert lexicographer who builds English-to-Turkish vocabulary flashca
 
 TASK
 Read TEXT and select the words and multi-word expressions that are most worth learning for a learner at CEFR level LEVEL. Return them in "candidates" as defined by the response schema: at most 30, the most useful first. Return fewer, or none, when TEXT has few useful items.
+
+VOCABULARY LISTS
+If TEXT is a vocabulary list or glossary (numbered or bulleted entries, each usually a term followed by an example sentence, e.g. "12 bad Be careful of bad people."), the learner chose these words: return EVERY entry, in the order of the list, including easy entries and entries below LEVEL, at most 150. The selection rules below do not apply to a list, except that proper nouns are skipped. Use the entry's own example sentence as source_sentence; if an entry has no example sentence, use the entry's text as it stands in TEXT. Skip headings, page numbers and other lines that are not entries.
 
 WHAT TO SELECT
 - Words at or above LEVEL that are useful in general English. Skip words below LEVEL (for B1 skip e.g. "house", "go", "because", "very", "big"; select e.g. "reluctant", "cope", "subsidy").
@@ -246,6 +277,7 @@ FIELDS OF EACH CANDIDATE
 - surface: the term exactly as it appears in source_sentence, as one contiguous stretch of characters with the same case and spelling: "gave up", "gave it up", "made up her mind". It must be a substring of source_sentence.
 - term_type: "word" for a single word; "phrase" for phrasal verbs, idioms, collocations and fixed expressions; "pattern" for grammar patterns with slots.
 - source_sentence: the complete sentence from TEXT that contains the term, copied character for character. Do not correct, shorten, re-punctuate or merge lines. If the sentence is longer than about 300 characters, copy only the clause containing the term, still verbatim.
+- sentence_tr: a natural, fluent Turkish translation of source_sentence as a good translator would write it, not word for word. Translate all of source_sentence and nothing more: no notes, no alternatives, no quotation marks around it.
 - confidence: 0 to 1, how sure you are that the term, its sense and the Turkish meaning are correct for this sentence.
 - known_sense: KNOWN_SENSES lists senses that already exist in the dictionary, one per line as "<ref> | <term> | <part of speech> | <English gloss>". If the term is listed there and its meaning in this sentence is one of the listed senses, set known_sense to that ref (for example "s3") and set pos, gloss_en, meaning_tr and ipa to null: that content exists already and must not be written again. A ref may only be used for the same term. Otherwise set known_sense to null and fill in the new sense:
 - pos: one of: noun, verb, adjective, adverb, phrasal verb, idiom, phrase, preposition, conjunction, pronoun, determiner, interjection.
@@ -300,6 +332,10 @@ Response schema (`responseJsonSchema`):
             "type": "string",
             "description": "verbatim sentence from TEXT"
           },
+          "sentence_tr": {
+            "type": "string",
+            "description": "natural Turkish translation of source_sentence"
+          },
           "confidence": {
             "type": "number",
             "minimum": 0,
@@ -331,6 +367,7 @@ Response schema (`responseJsonSchema`):
           "surface",
           "term_type",
           "source_sentence",
+          "sentence_tr",
           "confidence",
           "known_sense",
           "pos",

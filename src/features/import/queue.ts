@@ -3,7 +3,7 @@
 // starts at least gapMs after the previous one); results are always recorded in chunk order,
 // so progress, resume and candidate order are the same as one by one. Offline: the job waits
 // ("sırada") and resumes on the `online` event. One tab runs it.
-import { AiClientError, extractChunk, type ExtractResponse } from '@/ai/client';
+import { AiClientError, EXTRACT_PROMPT_VERSION, extractChunk, type ExtractResponse } from '@/ai/client';
 import {
   getCachedChunk,
   listPendingImportJobs,
@@ -62,6 +62,7 @@ export function toChunkResult(res: ExtractResponse, level: CefrLevel): ChunkResu
       surface: c.surface,
       term_type: c.term_type,
       source_sentence: c.source_sentence,
+      sentence_tr: c.sentence_tr,
       span: c.span,
       confidence: c.confidence,
       match: c.match,
@@ -172,7 +173,7 @@ async function processJob(
       const text = (job.chunks[j] ?? '').normalize('NFC');
       const hash = await hashChunk(text);
       keyOf.set(j, aheadKey(hash, job.level));
-      if (await getCachedChunk(hash, job.level)) continue;
+      if (await getCachedChunk(hash, job.level, EXTRACT_PROMPT_VERSION)) continue;
       void start(text, aheadKey(hash, job.level));
     }
   };
@@ -181,7 +182,8 @@ async function processJob(
   for (let index = job.chunk_done; index < job.chunk_total;) {
     const text = (job.chunks[index] ?? '').normalize('NFC');
     const hash = await hashChunk(text);
-    const cached = await getCachedChunk(hash, job.level);
+    // A result of an older prompt version is not reused: the new prompt may find more.
+    const cached = await getCachedChunk(hash, job.level, EXTRACT_PROMPT_VERSION);
     if (cached) {
       await recordChunkResult(job.id, index, hash, cached, { fromLocalCache: true }, deps.now());
       index++;

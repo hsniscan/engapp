@@ -29,6 +29,7 @@ const okExtract = {
       surface: 'gave up',
       term_type: 'phrase',
       source_sentence: 'She gave up.',
+      sentence_tr: 'Vazgeçti.',
       span: [4, 11],
       confidence: 0.9,
       match: 'new_term',
@@ -87,6 +88,7 @@ describe('ai client', () => {
       lexicon_sense_id: 's1',
       match: 'new_term',
       span: [4, 11],
+      source_sentence_tr: 'Vazgeçti.',
     });
   });
 

@@ -1,13 +1,19 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest';
-import { runExtract, sha256Hex, validateExtractOutput, type PipelineDeps } from './extract.ts';
+import {
+  cleanSentenceTr,
+  runExtract,
+  sha256Hex,
+  validateExtractOutput,
+  type PipelineDeps,
+} from './extract.ts';
 import {
   AiError,
   createGeminiProvider,
   type AiProvider,
   type GenerateJsonRequest,
 } from './ai-provider.ts';
-import { extractResponse } from './contracts.ts';
+import { EXTRACT_PROMPT_VERSION, extractResponse, MAX_CANDIDATES } from './contracts.ts';
 import { ApiError } from './errors.ts';
 import { MemoryAiStore } from './testing/memory-store.ts';
 import {
@@ -75,6 +81,11 @@ describe('runExtract', () => {
       meaning_tr: 'kıyı',
     });
     expect(store.senses.size).toBe(3);
+    expect(res.candidates.map((c) => c.sentence_tr)).toEqual([
+      'Yıllarca uğraştıktan sonra Maria sonunda sigarayı bıraktı.',
+      'Pazar günü nehir kıyısında oturup sürüklenen tekneleri izledi.',
+      'Müdür, geliri çok düşük olduğu için başvurusunu reddetti.', // quotes removed
+    ]);
   });
 
   it('never calls the model twice for the same chunk (server chunk cache)', async () => {
@@ -92,6 +103,9 @@ describe('runExtract', () => {
       first.candidates.map((c) => c.lexicon.id),
     );
     expect(second.candidates.every((c) => c.lexicon_hit)).toBe(true);
+    expect(second.candidates.map((c) => c.sentence_tr)).toEqual(
+      first.candidates.map((c) => c.sentence_tr),
+    );
   });
 
   it('a different level is a different cache entry', async () => {
@@ -213,12 +227,72 @@ describe('runExtract', () => {
     ).rejects.toMatchObject({ code: 'invalid_input' });
   });
 
+  it('returns every entry of a vocabulary-list chunk (more than 30)', async () => {
+    const words = LIST_WORDS;
+    const text = words
+      .map((w, i) => `${i + 1} ${w} I think ${w === 'I' ? 'I' : `the ${w}`} matters here.`)
+      .join(' ');
+    const out = {
+      candidates: words.map((w) => ({
+        term: w,
+        surface: w,
+        term_type: 'word',
+        source_sentence: `I think ${w === 'I' ? 'I' : `the ${w}`} matters here.`,
+        sentence_tr: 'Bence önemli.',
+        confidence: 0.9,
+        known_sense: null,
+        pos: 'noun',
+        gloss_en: `a common thing called ${w}`,
+        meaning_tr: 'şey',
+        ipa: null,
+      })),
+    };
+    const { provider, requests } = scripted(out);
+    const res = await runExtract(await body(text), deps(new MemoryAiStore(), provider));
+    expect(() => extractResponse.parse(res)).not.toThrow();
+    expect(res.candidates.length).toBe(words.length);
+    expect(res.candidates.length).toBeGreaterThan(30);
+    expect(res.candidates.map((c) => c.term)).toEqual(words); // list order kept; "I" is no name
+    expect(res.counts.dropped).toEqual({});
+    expect(requests[0]!.maxOutputTokens).toBeGreaterThanOrEqual(32_768);
+    expect(requests[0]!.system).toContain('return EVERY entry');
+  });
+
+  it('a result cached under an older prompt version is not reused', async () => {
+    const store = new MemoryAiStore();
+    const b = await body();
+    await store.putChunkCache('user-1', b.chunk_hash, 'extract-v1', 'B1', { v: 1, candidates: [], dropped: {} }, 'm');
+    const { provider } = scripted(GOOD_EXTRACT);
+    const res = await runExtract(b, deps(store, provider));
+    expect(provider.generateJson).toHaveBeenCalledTimes(1);
+    expect(res).toMatchObject({ cache_hit: false, prompt_version: EXTRACT_PROMPT_VERSION });
+    expect(EXTRACT_PROMPT_VERSION).not.toBe('extract-v1');
+    expect(await store.getChunkCache('user-1', b.chunk_hash, EXTRACT_PROMPT_VERSION, 'B1')).not.toBeNull();
+  });
+
+  it('keeps the items of an answer cut off by MAX_TOKENS and says so', async () => {
+    const { provider } = scripted(GOOD_EXTRACT);
+    (provider.generateJson as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      data: { candidates: GOOD_EXTRACT.candidates.slice(0, 2) },
+      model: 'fake-model',
+      attempts: 1,
+      usage: null,
+      truncated: true,
+    });
+    const res = await runExtract(await body(), deps(new MemoryAiStore(), provider));
+    expect(res.candidates).toHaveLength(2);
+    expect(res.counts.dropped).toEqual({ truncated: 1 });
+  });
+
   it('never writes user sentences into the lexicon', async () => {
     const store = new MemoryAiStore();
     const { provider } = scripted(GOOD_EXTRACT);
     await runExtract(await body(), deps(store, provider));
     const lexiconText = JSON.stringify([...store.terms.values(), ...store.senses.values()]);
-    for (const c of GOOD_EXTRACT.candidates) expect(lexiconText).not.toContain(c.source_sentence);
+    for (const c of GOOD_EXTRACT.candidates) {
+      expect(lexiconText).not.toContain(c.source_sentence);
+      expect(lexiconText).not.toContain(cleanSentenceTr(c.sentence_tr, c.source_sentence));
+    }
     expect(lexiconText).not.toContain('Maria');
   });
 });
@@ -227,13 +301,13 @@ describe('validateExtractOutput', () => {
   const known = new Map([['s1', { senseId: 'sense-river', lemmaNorm: 'bank' }]]);
   const base = GOOD_EXTRACT.candidates[1]!;
 
-  it('caps at 30 candidates and removes duplicates', () => {
-    const many = Array.from({ length: 40 }, (_, i) => ({
+  it('caps at MAX_CANDIDATES and removes duplicates', () => {
+    const many = Array.from({ length: MAX_CANDIDATES + 10 }, (_, i) => ({
       ...base,
       gloss_en: `meaning number ${i} unique${i}`,
     }));
     const r = validateExtractOutput({ candidates: [base, base, ...many] }, CHUNK, known);
-    expect(r.candidates).toHaveLength(30);
+    expect(r.candidates).toHaveLength(MAX_CANDIDATES);
     expect(r.dropped.duplicate).toBe(1);
     expect(r.dropped.over_limit).toBe(11);
   });
@@ -281,6 +355,26 @@ describe('validateExtractOutput', () => {
       known,
     );
     expect(wrongTerm.dropped).toEqual({ unknown_sense_ref: 1 });
+  });
+
+  it('cleans the sentence translation and never drops a candidate for it', () => {
+    const r = validateExtractOutput(
+      {
+        candidates: [
+          { ...base, sentence_tr: undefined },
+          { ...GOOD_EXTRACT.candidates[0]!, sentence_tr: GOOD_EXTRACT.candidates[0]!.source_sentence },
+          { ...GOOD_EXTRACT.candidates[2]!, sentence_tr: 'ç'.repeat(1501) },
+        ],
+      },
+      CHUNK,
+      known,
+    );
+    expect(r.candidates.map((c) => c.sentence_tr)).toEqual([null, null, null]);
+    expect(r.dropped).toEqual({});
+    expect(cleanSentenceTr('  "Bankaya\n gittim.\u200b" ', 'I went to the bank.')).toBe(
+      'Bankaya gittim.',
+    );
+    expect(cleanSentenceTr('…', 'x')).toBeNull();
   });
 
   it('widens a verb-only surface of a separable phrasal verb', () => {
@@ -332,3 +426,11 @@ describe('validateExtractOutput', () => {
     });
   });
 });
+
+const LIST_WORDS = [
+  'I', 'ability', 'absence', 'accent', 'account', 'action', 'advice', 'airport', 'amount',
+  'animal', 'answer', 'apple', 'area', 'army', 'article', 'artist', 'attempt', 'author',
+  'baby', 'bag', 'balance', 'ball', 'band', 'basket', 'beach', 'bean', 'bear', 'bed',
+  'bell', 'bench', 'bicycle', 'bird', 'blanket', 'boat', 'bone', 'book', 'bottle', 'box',
+  'brain', 'bread', 'bridge', 'brother', 'bucket', 'building', 'butter', 'button',
+];

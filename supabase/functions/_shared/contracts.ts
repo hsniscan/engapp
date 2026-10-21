@@ -10,7 +10,18 @@ export const termType = z.enum(['word', 'phrase', 'pattern']);
 
 /** Max characters of one chunk. The client aims for ~6000 and never splits a sentence. */
 export const MAX_CHUNK_CHARS = 8000;
-export const MAX_CANDIDATES = 30;
+/**
+ * Candidates per chunk. A vocabulary list returns every entry (a 6000-char chunk of a
+ * numbered word list holds ~100); ordinary prose is asked for at most MAX_PROSE_CANDIDATES.
+ */
+export const MAX_CANDIDATES = 150;
+export const MAX_PROSE_CANDIDATES = 30;
+
+/**
+ * Version of the extract prompt and response schema; it keys the server chunk cache and
+ * the client's local chunk cache. Bump it with every prompt or schema change (prompts.ts).
+ */
+export const EXTRACT_PROMPT_VERSION = 'extract-v2';
 
 export const ERROR_CODES = [
   'unauthorized', // no/invalid/expired session, or an anonymous session
@@ -66,6 +77,8 @@ export const extractCandidate = z.object({
   surface: z.string(), // as written in source_sentence
   term_type: termType,
   source_sentence: z.string(), // verbatim from the chunk
+  /** Turkish translation of source_sentence; per user, never stored in the lexicon. Absent (null) in extract-v1 results. */
+  sentence_tr: z.string().nullable().default(null),
   span: z.tuple([z.number().int(), z.number().int()]), // [start, end) of surface in source_sentence
   confidence: z.number().min(0).max(1),
   /** relation to the shared lexicon before this request */

@@ -3,9 +3,10 @@
 //
 // Gemini: REST generateContent (v1beta) with structured output
 // (responseMimeType application/json + responseJsonSchema), temperature 0.2,
-// 30 s timeout per attempt, up to 3 attempts per model with exponential backoff on
-// 429/503/5xx/timeouts, then the same on GEMINI_FALLBACK_MODEL. Model names come only
-// from configuration.
+// 30 s timeout per attempt (a request may ask for more), up to 3 attempts per model with
+// exponential backoff on 429/503/5xx/timeouts, then the same on GEMINI_FALLBACK_MODEL.
+// An answer cut off by MAX_TOKENS keeps its complete list items (salvageTruncatedJson).
+// Model names come only from configuration.
 
 export type AiErrorCode = 'quota_exceeded' | 'ai_failed';
 
@@ -28,6 +29,8 @@ export interface GenerateJsonRequest {
   /** Return null if the parsed JSON is acceptable, else a reason; a reason triggers a retry. */
   validate?: (data: unknown) => string | null;
   maxOutputTokens?: number;
+  /** Per-attempt timeout for this request; default GeminiConfig.timeoutMs. */
+  timeoutMs?: number;
 }
 
 export interface GenerateJsonResult {
@@ -35,6 +38,8 @@ export interface GenerateJsonResult {
   model: string;
   attempts: number;
   usage: { input_tokens: number; output_tokens: number; thinking_tokens: number } | null;
+  /** The answer hit MAX_TOKENS; `data` holds only the list items that were complete. */
+  truncated?: boolean;
 }
 
 export interface AiProvider {
@@ -114,8 +119,9 @@ export function createGeminiProvider(cfg: GeminiConfig): AiProvider {
       generationConfig,
     };
 
+    const attemptTimeoutMs = req.timeoutMs ?? timeoutMs;
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    const timer = setTimeout(() => ctrl.abort(), attemptTimeoutMs);
     let res: Response;
     try {
       res = await doFetch(`${apiBase}/models/${encodeURIComponent(model)}:generateContent`, {
@@ -131,7 +137,9 @@ export function createGeminiProvider(cfg: GeminiConfig): AiProvider {
         fail: {
           kind: 'retry',
           quota: false,
-          message: aborted ? `timeout after ${timeoutMs} ms` : `network error: ${String(e)}`,
+          message: aborted
+            ? `timeout after ${attemptTimeoutMs} ms`
+            : `network error: ${String(e)}`,
         },
       };
     }
@@ -176,9 +184,19 @@ export function createGeminiProvider(cfg: GeminiConfig): AiProvider {
       };
     }
     let data: unknown;
+    let truncated = false;
     try {
       data = JSON.parse(text);
     } catch {
+      // A long list cut off by the token limit: keep the items that were complete. A
+      // retry would most likely be cut at the same place.
+      const salvaged = cand?.finishReason === 'MAX_TOKENS' ? salvageTruncatedJson(text) : null;
+      if (salvaged !== null && !req.validate?.(salvaged)) {
+        data = salvaged;
+        truncated = true;
+      }
+    }
+    if (data === undefined) {
       return {
         fail: {
           kind: 'retry',
@@ -197,6 +215,7 @@ export function createGeminiProvider(cfg: GeminiConfig): AiProvider {
         data,
         model,
         attempts: 0,
+        ...(truncated ? { truncated } : {}),
         usage: u
           ? {
               input_tokens: u.promptTokenCount ?? 0,
@@ -250,6 +269,39 @@ export function createGeminiProvider(cfg: GeminiConfig): AiProvider {
       throw new AiError('ai_failed', lastMessage);
     },
   };
+}
+
+/**
+ * Repairs JSON cut off inside the array of a top-level object ({"candidates": [{...},
+ * {...}, {"te): keeps the array items that were complete and closes the array and the
+ * object. Returns null when no item was complete or the text has another shape.
+ */
+export function salvageTruncatedJson(text: string): unknown {
+  const stack: string[] = [];
+  let inString = false;
+  let escaped = false;
+  let lastItemEnd = -1;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === '\\') escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') inString = true;
+    else if (ch === '{' || ch === '[') stack.push(ch);
+    else if (ch === '}' || ch === ']') {
+      stack.pop();
+      if (stack.length === 2 && stack[0] === '{' && stack[1] === '[') lastItemEnd = i + 1;
+    }
+  }
+  if (lastItemEnd < 0) return null;
+  try {
+    return JSON.parse(`${text.slice(0, lastItemEnd)}]}`);
+  } catch {
+    return null;
+  }
 }
 
 export function classifyHttpError(

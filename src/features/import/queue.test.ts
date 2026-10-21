@@ -85,6 +85,22 @@ describe('import queue', () => {
     expect(await listImportCandidates(again.id)).toHaveLength(FAKE_SPECS.length);
   });
 
+  it('a chunk cached by an older prompt version is extracted again', async () => {
+    const h = harness();
+    const chunks = chunkText(fakeText(), 1500);
+    for (const c of chunks) {
+      const old = { ...fakeExtractResponse(c), prompt_version: 'extract-v1' };
+      await db.chunk_cache.put({
+        chunk_hash: await hashChunk(c),
+        result: { prompt_version: old.prompt_version, level: 'B1', candidates: old.candidates },
+        created_at: 0,
+      });
+    }
+    await createImportJob({ kind: 'text', title: 'again', chunks, level: 'B1' });
+    expect(await processImportQueue(h.deps)).toBe('idle');
+    expect(h.calls).toEqual(chunks);
+  });
+
   it('waits while offline and resumes where it stopped', async () => {
     const h = harness();
     const chunks = chunkText(fakeText(), 1000);

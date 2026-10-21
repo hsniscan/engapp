@@ -6,6 +6,7 @@ import {
   enrichRequest,
   enrichResponse,
   errorBody,
+  EXTRACT_PROMPT_VERSION,
   extractRequest,
   extractResponse,
   type EnrichRequest,
@@ -20,6 +21,8 @@ import type { CefrLevel, ImportCandidate, LexiconSense } from '@/domain/types';
 import { backendConfig, getAccessToken } from '@/lib/supabase';
 
 export type { EnrichResponse, ExtractCandidate, ExtractResponse, LexiconEntry };
+/** Prompt version the deployed ai-extract is expected to answer with (local chunk cache key). */
+export { EXTRACT_PROMPT_VERSION };
 
 export type AiClientErrorCode =
   | ErrorCode // from the server: daily_limit, quota_exceeded, ai_failed, ...
@@ -175,6 +178,7 @@ export function toCandidateFields(
     meaning_tr: c.lexicon.meaning_tr,
     ipa: c.lexicon.ipa,
     source_sentence: c.source_sentence,
+    source_sentence_tr: c.sentence_tr,
     span: c.span,
     confidence: c.confidence,
   };

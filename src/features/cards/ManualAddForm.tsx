@@ -34,6 +34,7 @@ interface SenseDraft {
   gloss: string;
   pos: string;
   sentence: string;
+  sentenceTr: string;
   /** Set when the sense came from the lexicon / AI suggestions. */
   lexicon_sense_id: string | null;
   showDetails: boolean;
@@ -46,6 +47,7 @@ const blankSense = (): SenseDraft => ({
   gloss: '',
   pos: '',
   sentence: '',
+  sentenceTr: '',
   lexicon_sense_id: null,
   showDetails: false,
 });
@@ -56,6 +58,7 @@ const fromSuggestion = (s: LexiconSuggestion): SenseDraft => ({
   gloss: s.gloss_en ?? '',
   pos: s.pos ?? '',
   sentence: '',
+  sentenceTr: '',
   lexicon_sense_id: s.lexicon_sense_id,
   showDetails: false,
 });
@@ -164,6 +167,7 @@ export function ManualAddForm() {
           gloss_en: s.gloss.trim() || null,
           pos: s.pos || null,
           source_sentence: s.sentence.trim() || null,
+          source_sentence_tr: s.sentenceTr.trim() || null,
           span: s.sentence.trim() ? locateTerm(s.sentence.trim(), term) : null,
           lexicon_sense_id: s.lexicon_sense_id,
         })),
@@ -432,6 +436,18 @@ function SenseEditor({
           className="min-h-16 font-serif"
         />
         {sentence && <SentencePreview sentence={sentence} span={span} />}
+        {sentence && (
+          <TextArea
+            label={t('cards.add.sentenceTr')}
+            hint={t('cards.add.sentenceTrHint')}
+            optional
+            rows={2}
+            value={draft.sentenceTr}
+            onChange={(e) => onChange({ sentenceTr: e.target.value })}
+            lang="tr"
+            className="min-h-16"
+          />
+        )}
 
         <div>
           <button

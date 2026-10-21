@@ -14,6 +14,7 @@ import {
   type ImportJobRecord,
 } from '@/data';
 import type { TermType } from '@/domain/types';
+import { posLabel } from '@/features/cards/labels';
 import { requestSync } from '@/sync';
 import {
   Badge,
@@ -451,7 +452,7 @@ const CandidateRow = memo(function CandidateRow({
               {c.ipa}
             </span>
           )}
-          {c.pos && <span className="text-sm text-fg-muted italic">{c.pos}</span>}
+          {c.pos && <span className="text-sm text-fg-muted italic">{posLabel(t, c.pos)}</span>}
           <span className="flex flex-wrap items-center gap-1.5 self-center sm:ml-auto">
             {low && (
               <Badge tone="warn" title={t('importer.preview.lowConfidenceHint', { pct })}>
@@ -470,6 +471,11 @@ const CandidateRow = memo(function CandidateRow({
         <p lang="en" className="font-serif text-[1.0625rem] leading-relaxed text-fg-muted italic">
           <HighlightedSentence sentence={c.source_sentence} span={c.span} surface={c.surface} />
         </p>
+        {c.source_sentence_tr && (
+          <p lang="tr" className="-mt-1 text-[0.9375rem] leading-relaxed text-fg-muted">
+            {c.source_sentence_tr}
+          </p>
+        )}
 
         <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
           <label className="sr-only" htmlFor={`m-${c.id}`}>

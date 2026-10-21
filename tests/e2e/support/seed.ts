@@ -108,6 +108,7 @@ export async function buildSeedBackup(cards: number, now = Date.now()): Promise<
       meaning_tr: spec?.tr ?? `anlam ${i}`,
       meaning_tr_override: null,
       source_sentence: sentence,
+      source_sentence_tr: null,
       span: [at, at + surface.length],
       source_id: null,
     });

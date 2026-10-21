@@ -1,8 +1,9 @@
 // Realistic fake AI output (pure data, no app imports): used by unit tests, the dev-only
 // /dev/import page (through fakeData.ts) and the Playwright mock backend (tests/e2e).
-import type {
-  ExtractCandidate,
-  ExtractResponse,
+import {
+  EXTRACT_PROMPT_VERSION,
+  type ExtractCandidate,
+  type ExtractResponse,
 } from '../../../../supabase/functions/_shared/contracts';
 import type { TermType } from '../../../domain/types';
 
@@ -474,7 +475,7 @@ export function fakeExtractResponse(
     text.includes(s.sentence) ? fakeCandidate(i) : null,
   ).filter((c): c is ExtractCandidate => c !== null);
   return {
-    prompt_version: 'extract-v1',
+    prompt_version: EXTRACT_PROMPT_VERSION,
     cache_hit: opts.cacheHit ?? false,
     ai_called: !opts.cacheHit,
     model: opts.cacheHit ? null : 'fake-model',

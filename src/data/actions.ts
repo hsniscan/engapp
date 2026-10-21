@@ -64,7 +64,7 @@ function assertNoteFits(n: Pick<Note, 'term' | 'term_norm' | 'ipa' | 'tags'>): v
 }
 
 function assertSenseFits(
-  s: Pick<Sense, 'pos' | 'gloss_en' | 'meaning_tr' | 'meaning_tr_override' | 'source_sentence'>,
+  s: Pick<Sense, 'pos' | 'gloss_en' | 'meaning_tr' | 'meaning_tr_override' | 'source_sentence' | 'source_sentence_tr'>,
 ): void {
   const bad = overLimit({
     pos: { value: s.pos, max: LIMITS.pos },
@@ -72,6 +72,7 @@ function assertSenseFits(
     meaning_tr: { value: s.meaning_tr, max: LIMITS.meaning_tr },
     meaning_tr_override: { value: s.meaning_tr_override, max: LIMITS.meaning_tr },
     source_sentence: { value: s.source_sentence, max: LIMITS.source_sentence },
+    source_sentence_tr: { value: s.source_sentence_tr, max: LIMITS.source_sentence_tr },
   });
   if (bad) throw new ActionError('invalid_input', `${bad} is too long`);
 }
@@ -128,6 +129,8 @@ export interface SenseInput {
   gloss_en?: string | null;
   meaning_tr_override?: string | null;
   source_sentence?: string | null;
+  /** Turkish translation of source_sentence; dropped when there is no sentence. */
+  source_sentence_tr?: string | null;
   /** [start, end) of the term in source_sentence. An invalid span is dropped (no cloze card). */
   span?: [number, number] | null;
   source_id?: Id | null;
@@ -173,6 +176,7 @@ export async function addNoteWithSenses(input: AddNoteInput, now: Millis = Date.
       meaning_tr: s.meaning_tr.trim(),
       meaning_tr_override: s.meaning_tr_override?.trim() || null,
       source_sentence: s.source_sentence ?? null,
+      source_sentence_tr: s.source_sentence_tr?.trim() || null,
     });
   }
 
@@ -240,6 +244,7 @@ export async function addNoteWithSenses(input: AddNoteInput, now: Millis = Date.
         continue;
       }
       const sentence = inp.source_sentence?.trim() ? inp.source_sentence : null;
+      const sentenceTr = (sentence && inp.source_sentence_tr?.trim()) || null;
       const fields = {
         lexicon_sense_id: inp.lexicon_sense_id ?? null,
         pos: inp.pos ?? null,
@@ -247,6 +252,7 @@ export async function addNoteWithSenses(input: AddNoteInput, now: Millis = Date.
         meaning_tr: inp.meaning_tr.trim(),
         meaning_tr_override: inp.meaning_tr_override?.trim() || null,
         source_sentence: sentence,
+        source_sentence_tr: sentenceTr,
         span: cleanSpan(sentence, inp.span),
         source_id: inp.source_id ?? null,
       };
@@ -256,7 +262,9 @@ export async function addNoteWithSenses(input: AddNoteInput, now: Millis = Date.
             ...old,
             deleted_at: null,
             sense_no: nextNo++,
-            ...(fields.source_sentence ? { source_sentence: fields.source_sentence, span: fields.span } : {}),
+            ...(fields.source_sentence
+              ? { source_sentence: fields.source_sentence, source_sentence_tr: fields.source_sentence_tr, span: fields.span }
+              : {}),
           })
         : await w.put('senses', { ...w.base(), note_id: note.id, sense_no: nextNo++, ...fields });
       senses.push(sense);
@@ -298,12 +306,15 @@ export async function editNote(noteId: Id, patch: NotePatch, now: Millis = Date.
 }
 
 export type SensePatch = Partial<
-  Pick<Sense, 'meaning_tr' | 'meaning_tr_override' | 'gloss_en' | 'pos' | 'source_sentence' | 'span' | 'lexicon_sense_id' | 'sense_no'>
+  Pick<
+    Sense,
+    'meaning_tr' | 'meaning_tr_override' | 'gloss_en' | 'pos' | 'source_sentence' | 'source_sentence_tr' | 'span' | 'lexicon_sense_id' | 'sense_no'
+  >
 >;
 
 /**
  * Edit a sense. Adding a sentence + span creates (or revives) its cloze card; removing
- * them soft-deletes it.
+ * them soft-deletes it. A new sentence without a new translation drops the old one.
  * @throws ActionError('invalid_input') for an empty meaning or a span outside the sentence.
  */
 export async function editSense(senseId: Id, patch: SensePatch, now: Millis = Date.now()): Promise<Sense> {
@@ -318,6 +329,8 @@ export async function editSense(senseId: Id, patch: SensePatch, now: Millis = Da
       next.span = null; // sentence changed under an old span
     }
     if (!next.source_sentence) next.span = null;
+    if (patch.source_sentence_tr === undefined && next.source_sentence !== sense.source_sentence) next.source_sentence_tr = null;
+    next.source_sentence_tr = (next.source_sentence && next.source_sentence_tr?.trim()) || null;
     assertSenseFits(next);
     const saved = await w.put('senses', next);
     if (saved.deleted_at === null) {
