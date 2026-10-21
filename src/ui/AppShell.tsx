@@ -4,7 +4,7 @@ import { Link, NavLink, useLocation, useMatch, useOutlet } from 'react-router';
 import { Logo } from './brand/Logo';
 import { cn } from './cn';
 import { Icon } from './Icon';
-import { navItems } from './nav';
+import { navAlsoActive, navItems } from './nav';
 import { Tooltip } from './Tooltip';
 
 export interface AppShellProps {
@@ -89,16 +89,17 @@ export function AppShell({ syncSlot, immersive = false, children }: AppShellProp
                   <NavLink
                     to={item.to}
                     end={item.end}
-                    className={({ isActive }) =>
-                      cn(
+                    className={({ isActive: routeActive }) => {
+                      const isActive = routeActive || navAlsoActive(item, location.pathname);
+                      return cn(
                         'group flex min-h-14 flex-col items-center justify-center gap-1 rounded-control px-2 text-xs font-medium',
                         'lg:min-h-11 lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-[0.9375rem]',
                         'transition-colors duration-(--duration-micro)',
                         isActive
                           ? 'bg-selected text-fg'
                           : 'text-fg-muted hover:bg-hover hover:text-fg',
-                      )
-                    }
+                      );
+                    }}
                   >
                     <Icon name={item.icon} size={22} />
                     <span>{t(item.labelKey)}</span>
@@ -160,27 +161,32 @@ export function AppShell({ syncSlot, immersive = false, children }: AppShellProp
                 <NavLink
                   to={item.to}
                   end={item.end}
-                  className={({ isActive }) =>
+                  className={({ isActive: routeActive }) =>
                     cn(
                       'relative flex flex-1 flex-col items-center justify-center gap-1 text-[0.75rem] font-medium',
                       'transition-colors duration-(--duration-micro) focus-visible:outline-offset-[-4px]',
-                      isActive ? 'text-fg' : 'text-fg-muted',
+                      routeActive || navAlsoActive(item, location.pathname)
+                        ? 'text-fg'
+                        : 'text-fg-muted',
                     )
                   }
                 >
-                  {({ isActive }) => (
-                    <>
-                      <span
-                        aria-hidden="true"
-                        className={cn(
-                          'absolute top-0 h-0.5 w-8 rounded-b-full bg-accent transition-opacity duration-(--duration-micro)',
-                          isActive ? 'opacity-100' : 'opacity-0',
-                        )}
-                      />
-                      <Icon name={item.icon} size={24} strokeWidth={isActive ? 1.8 : 1.6} />
-                      <span>{t(item.labelKey)}</span>
-                    </>
-                  )}
+                  {({ isActive: routeActive }) => {
+                    const isActive = routeActive || navAlsoActive(item, location.pathname);
+                    return (
+                      <>
+                        <span
+                          aria-hidden="true"
+                          className={cn(
+                            'absolute top-0 h-0.5 w-8 rounded-b-full bg-accent transition-opacity duration-(--duration-micro)',
+                            isActive ? 'opacity-100' : 'opacity-0',
+                          )}
+                        />
+                        <Icon name={item.icon} size={24} strokeWidth={isActive ? 1.8 : 1.6} />
+                        <span>{t(item.labelKey)}</span>
+                      </>
+                    );
+                  }}
                 </NavLink>
               </li>
             ))}

@@ -184,6 +184,14 @@ function PracticeSection({ data }: { data: MoreStudyOverview }) {
       count: practice.decks.reduce((a, x) => Math.max(a, x.count), 0),
     });
   }
+  if (practice.interests > 0) {
+    options.push({
+      value: 'interests',
+      label: t('more.sourceInterests'),
+      hint: t('more.sourceInterestsHint'),
+      count: practice.interests,
+    });
+  }
   const firstAvailable = options.find((o) => o.count > 0)?.value ?? 'hard';
   const [picked, setPicked] = useState<PracticeSource | null>(null);
   const source =

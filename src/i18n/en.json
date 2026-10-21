@@ -1028,6 +1028,8 @@
     "addFailed": "Could not open new cards; try again.",
     "sourceDeck": "Deck",
     "sourceDeckHint": "Words in one of your saved decks",
+    "sourceInterests": "From my interests",
+    "sourceInterestsHint": "Words from texts about the topics you care about most",
     "deckLabel": "Deck"
   },
   "practice": {

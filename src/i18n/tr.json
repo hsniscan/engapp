@@ -1028,6 +1028,8 @@
     "addFailed": "Yeni kartlar açılamadı; tekrar dene.",
     "sourceDeck": "Deste",
     "sourceDeckHint": "Kaydettiğin bir destedeki kelimeler",
+    "sourceInterests": "İlgi alanlarımdan",
+    "sourceInterestsHint": "En çok ilgilendiğin konulardaki metinlerden kelimeler",
     "deckLabel": "Deste"
   },
   "practice": {

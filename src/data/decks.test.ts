@@ -220,6 +220,40 @@ describe('practice from a deck', () => {
       await getPracticeCards({ source: 'deck', deckId: 'gone' }, { size: 20, seed: 's' }, T),
     ).toEqual([]);
   });
+
+  it('"İlgi alanlarımdan" draws from texts about the top topics, not muted ones', async () => {
+    const ids = [await word('server'), await word('cache'), await word('bread'), await word('sea')];
+    for (const id of ids) {
+      for (const c of await db.cards.where('note_id').equals(id).toArray())
+        await answerCard({ card_id: c.id, rating: Rating.Easy, duration_ms: 2000 }, T - 10 * DAY);
+    }
+    expect((await getPracticeSourceCounts(T)).interests).toBe(0);
+    const src = (id: string, topics: string[]) => ({
+      id,
+      user_id: null,
+      created_at: T - 5 * DAY,
+      updated_at: T - 5 * DAY,
+      deleted_at: null,
+      hlc: '0',
+      kind: 'text' as const,
+      title: id,
+      file_name: null,
+      page_count: null,
+      topics,
+    });
+    await db.sources.bulkPut([src('s-tech', ['technology']), src('s-food', ['food'])]);
+    const senseOf = async (noteId: string) =>
+      (await db.senses.where('note_id').equals(noteId).first())!.id;
+    await db.senses.update(await senseOf(ids[0]!), { source_id: 's-tech' });
+    await db.senses.update(await senseOf(ids[1]!), { source_id: 's-tech' });
+    await db.senses.update(await senseOf(ids[2]!), { source_id: 's-food' });
+    await updateSettings({ interests: ['technology'], muted_topics: ['food'] }, T - DAY);
+
+    expect((await getPracticeSourceCounts(T)).interests).toBe(2);
+    const cards = await getPracticeCards({ source: 'interests' }, { size: 20, seed: 's' }, T);
+    const notes = new Set((await db.cards.bulkGet(cards)).map((c) => c!.note_id));
+    expect([...notes].sort()).toEqual([ids[0], ids[1]].sort());
+  });
 });
 
 describe('Dexie v8 upgrade', () => {

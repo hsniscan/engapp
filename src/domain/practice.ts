@@ -6,7 +6,7 @@ import { type Card, CardState, type Id, type Millis, type PracticeResult } from 
 
 export type { PracticeResult };
 
-export const PRACTICE_SOURCES = ['hard', 'recent', 'tag', 'deck'] as const;
+export const PRACTICE_SOURCES = ['hard', 'recent', 'tag', 'deck', 'interests'] as const;
 export type PracticeSource = (typeof PRACTICE_SOURCES)[number];
 export const PRACTICE_SIZES = [10, 20] as const;
 export type PracticeSize = (typeof PRACTICE_SIZES)[number];
@@ -51,7 +51,11 @@ export interface PracticeFilter {
   tag?: string | null;
   /** Source 'deck': the deck (resolved to `noteIds` by the data layer). */
   deckId?: Id | null;
-  /** Source 'deck': the deck's notes (domain/deckFilter.ts). */
+  /**
+   * Source 'deck': the deck's notes (domain/deckFilter.ts). Source 'interests' ("İlgi
+   * alanlarımdan", İP7): notes from texts about the user's top topics. Resolved by the data
+   * layer.
+   */
   noteIds?: ReadonlySet<Id> | null;
 }
 
@@ -86,6 +90,7 @@ export function matchesFilter(x: PracticeCandidate, f: PracticeFilter, now: Mill
     case 'tag':
       return !!f.tag && x.tags.includes(f.tag);
     case 'deck':
+    case 'interests':
       return !!f.noteIds && f.noteIds.has(x.card.note_id);
   }
 }

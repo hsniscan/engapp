@@ -73,6 +73,8 @@ wired yet; the rule takes them as inputs.
   verdict whose sentence is not cached is left out), and `getSenseExamples` orders the
   selected context tabs with `getOrderedContexts` (the card rotation keeps the settings
   order; a tab the user picked last still wins).
-- Practice "ilgi alanımdan" (mode `topic`) selects notes whose senses' `source_id` has one
-  of `rankedTopics`.
+- Done in the batch-1 merge: practice "İlgi alanlarımdan" (source `interests`,
+  `getInterestNoteIds`) draws from live notes with a live sense from a live text tagged with
+  one of the user's 3 heaviest topics (`sources.*topics` index); the option shows only when
+  there is something to practise. Smart decks (İP8) filter by the same source topics.
 - No manual way to set a text's topics; the extract call is the only source for now.
