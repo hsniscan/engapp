@@ -26,12 +26,13 @@ import type { AiStore, LexiconUpsertItem, LexTerm } from './store.ts';
 import {
   cleanLemma,
   glossKey,
+  isCleanLexiconText,
   isNearDuplicateGloss,
   normalizeLemma,
   normalizePos,
   type Pos,
 } from './text.ts';
-import { lemmaForms, prematchForms, termForms } from './tokenize.ts';
+import { FUNCTION_WORDS, lemmaForms, prematchForms, termForms, tokenize } from './tokenize.ts';
 
 /** Two word forms that share a base form ("talked" ~ "talk"). */
 function sameLemma(a: string, b: string): boolean {
@@ -39,6 +40,38 @@ function sameLemma(a: string, b: string): boolean {
   const fb = new Set(lemmaForms(b));
   return lemmaForms(a).some((f) => fb.has(f));
 }
+
+/**
+ * Does the dictionary form belong to the words found in the text? At least one content
+ * word of the term (all words, for a term made only of function words) must share a base
+ * form with a word of the surface. Stops a model (or an injected instruction in the text)
+ * from attaching a sense of an unrelated term to any word of the chunk.
+ */
+export function termMatchesSurface(term: string, surface: string): boolean {
+  const surf = tokenize(surface).map((t) => t.norm);
+  if (surf.length === 0) return false;
+  const words = tokenize(term).map((t) => t.norm);
+  const content = words.filter((w) => !FUNCTION_WORDS.has(w) && !PLACEHOLDERS.has(w));
+  const occurs = (w: string) => surf.some((s) => sameLemma(w, s));
+  return content.length > 0 ? content.some(occurs) : words.length > 0 && words.every(occurs);
+}
+
+/** Pattern placeholders that never appear literally in the text. */
+const PLACEHOLDERS = new Set([
+  "one's",
+  'oneself',
+  'someone',
+  "someone's",
+  'somebody',
+  "somebody's",
+  'something',
+  'sb',
+  "sb's",
+  'sth',
+  'smb',
+  'smth',
+  'doing',
+]);
 
 export const MAX_SENTENCE_CHARS = 1000;
 
@@ -90,7 +123,9 @@ export type DropReason =
   | 'unknown_sense_ref'
   | 'incomplete_new_sense'
   | 'duplicate'
-  | 'over_limit';
+  | 'over_limit'
+  | 'term_not_in_text'
+  | 'unsafe_text';
 
 export interface ValidationResult {
   candidates: ValidCandidate[];
@@ -206,6 +241,10 @@ export function validateExtractOutput(
       drop('surface_not_in_sentence');
       continue;
     }
+    if (!termMatchesSurface(term, sentence.text.slice(span[0], span[1]))) {
+      drop('term_not_in_text');
+      continue;
+    }
 
     let known: KnownRef | null = null;
     const ref = c.known_sense?.trim();
@@ -221,12 +260,22 @@ export function validateExtractOutput(
       const key = gloss ? glossKey(gloss) : null;
       const meaning = c.meaning_tr ? cleanMeaningTr(c.meaning_tr) : '';
       if (pos && gloss && gloss.length <= 200 && key && meaning && meaning.length <= 120) {
+        const ipa = cleanIpa(c.ipa);
+        if (
+          !isCleanLexiconText(term, 'en') ||
+          !isCleanLexiconText(gloss, 'en') ||
+          !isCleanLexiconText(meaning, 'tr') ||
+          (ipa !== null && !isCleanLexiconText(ipa, 'ipa'))
+        ) {
+          drop('unsafe_text');
+          continue;
+        }
         newSense = {
           pos,
           gloss_en: gloss,
           gloss_key: key,
           meaning_tr: meaning,
-          ipa: cleanIpa(c.ipa),
+          ipa,
         };
       } else {
         drop(ref ? 'unknown_sense_ref' : 'incomplete_new_sense');

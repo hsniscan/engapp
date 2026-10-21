@@ -153,6 +153,17 @@ describe('account linking', () => {
     expect((await db.notes.toArray()).every((n) => n.user_id === USER)).toBe(true);
   });
 
+  it("another account's data is never copied silently into an empty account", async () => {
+    await guestDevice();
+    await db.transaction('rw', db.meta, () =>
+      db.meta.put({ key: 'user_id', value: 'someone-else' }),
+    );
+    configureLink({ transport: server, engine: engine() });
+    await linkAccount(USER); // the server account is empty
+    expect(getLinkState()).toMatchObject({ phase: 'choose', otherAccount: true });
+    expect(server.rowsOf('notes')).toHaveLength(0);
+  });
+
   it('a failed check (offline) shows an error that can be retried', async () => {
     await guestDevice();
     server.faults.offline = true;

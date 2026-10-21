@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chunkText, cleanPdfText, hashChunk, joinHyphenatedLines, removeRepeatedHeaders, splitSentences } from './chunking';
+import { chunkText, cleanPdfText, hashChunk, joinHyphenatedLines, removeRepeatedHeaders, splitSentences, MAX_CHUNK_HARD } from './chunking';
 
 describe('chunking', () => {
   it('splits sentences', () => {
@@ -59,5 +59,18 @@ describe('pdf cleanup', () => {
   it('cleanPdfText produces flowing paragraphs', () => {
     const pages = ['Header\nThe quick brown fox jum-\nped over the\nlazy dog.\n\nNew para-\ngraph starts', 'Header\nhere and ends.'];
     expect(cleanPdfText(pages)).toBe('The quick brown fox jumped over the lazy dog.\n\nNew paragraph starts here and ends.');
+  });
+});
+
+describe('chunk size limit of ai-extract', () => {
+  it('splits a "sentence" longer than the server accepts at spaces, so no chunk is ever rejected', async () => {
+    const { MAX_CHUNK_CHARS } = await import('../../supabase/functions/_shared/contracts');
+    expect(MAX_CHUNK_HARD).toBe(MAX_CHUNK_CHARS);
+    // A PDF table / word list: no sentence punctuation at all.
+    const text = `Intro. ${Array.from({ length: 3000 }, (_, i) => `item${i}`).join(' ')}`;
+    const chunks = chunkText(text);
+    expect(chunks.length).toBeGreaterThan(2);
+    for (const c of chunks) expect(c.length).toBeLessThanOrEqual(MAX_CHUNK_HARD);
+    expect(chunks.join(' ').replace(/\s+/g, ' ')).toBe(text);
   });
 });

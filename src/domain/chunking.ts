@@ -2,6 +2,12 @@
 // sentence, PDF text cleanup, and chunk hashing for chunk_cache.
 
 export const DEFAULT_CHUNK_SIZE = 6000;
+/**
+ * Longest chunk ai-extract accepts (MAX_CHUNK_CHARS in supabase/functions/_shared/
+ * contracts.ts; a test keeps them equal). A "sentence" longer than this (a PDF table,
+ * a word list without punctuation) is cut at spaces, or the job would fail on it forever.
+ */
+export const MAX_CHUNK_HARD = 8000;
 
 export function splitSentences(text: string): string[] {
   const seg = new Intl.Segmenter('en', { granularity: 'sentence' });
@@ -14,13 +20,13 @@ export function splitSentences(text: string): string[] {
 
 /**
  * Group sentences into chunks of at most `size` characters (a single longer sentence
- * becomes its own chunk). Chunks are trimmed; every sentence appears verbatim in exactly
+ * becomes its own chunk; one over MAX_CHUNK_HARD is cut at spaces). Chunks are trimmed; every sentence appears verbatim in exactly
  * one chunk, so "source sentence must occur in the chunk" checks hold.
  */
 export function chunkText(text: string, size = DEFAULT_CHUNK_SIZE): string[] {
   const chunks: string[] = [];
   let current = '';
-  for (const sentence of splitSentences(text)) {
+  for (const sentence of splitSentences(text).flatMap((x) => splitLong(x, Math.min(size, MAX_CHUNK_HARD)))) {
     if (current !== '' && current.length + sentence.length > size) {
       chunks.push(current.trim());
       current = '';
@@ -29,6 +35,24 @@ export function chunkText(text: string, size = DEFAULT_CHUNK_SIZE): string[] {
   }
   if (current.trim() !== '') chunks.push(current.trim());
   return chunks;
+}
+
+/** Cut a segment longer than MAX_CHUNK_HARD into pieces of at most `max`, at whitespace. */
+function splitLong(segment: string, max: number): string[] {
+  if (segment.length <= MAX_CHUNK_HARD) return [segment];
+  const out: string[] = [];
+  let rest = segment;
+  while (rest.length > max) {
+    let cut = rest.lastIndexOf(' ', max);
+    if (cut <= 0) {
+      cut = max; // no space at all: cut hard, but never inside a surrogate pair
+      if (/[\uD800-\uDBFF]/.test(rest[cut - 1] ?? '')) cut--;
+    }
+    out.push(rest.slice(0, cut));
+    rest = rest.slice(cut);
+  }
+  if (rest) out.push(rest);
+  return out;
 }
 
 /** Join "exam-\nple" → "example" across line breaks. */

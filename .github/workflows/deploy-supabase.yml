@@ -123,8 +123,10 @@ jobs:
           ALLOWED_ORIGINS: ${{ format('{0},https://engapp-65y.pages.dev,http://localhost:5173', vars.ALLOWED_ORIGINS) }}
         run: |
           # Written to a temp file (not the command line) so values never show in logs.
+          set -euo pipefail
           umask 077
           f="$(mktemp)"
+          trap 'rm -f "$f"' EXIT # also when `secrets set` fails
           {
             echo "GEMINI_API_KEY=$GEMINI_API_KEY"
             echo "GEMINI_MODEL=$GEMINI_MODEL"
@@ -134,7 +136,6 @@ jobs:
             echo "ALLOWED_ORIGINS=$ALLOWED_ORIGINS"
           } > "$f"
           supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" --env-file "$f"
-          rm -f "$f"
 
       - name: Deploy edge functions
         # verify_jwt = false comes from supabase/config.toml; the functions verify the JWT themselves.

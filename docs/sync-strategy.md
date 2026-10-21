@@ -81,6 +81,13 @@ reject the row (send full rows).
 `sync_pull(p_since bigint, p_limit int ≤ 500)` →
 `{rows: [{table, seq, row}], next_seq, has_more, full_resync}`.
 
+The client calls `sync_pull_v2(p_since, p_limit, p_from)` (migration
+`20261021000600_sync_pull_from.sql`; same page, `sync_pull` stays for older clients and is
+the fallback when v2 is not deployed yet). `p_from` is the cursor the current run of pages
+started at, 0 for a full pull. The horizon check uses `p_from`: with `sync_pull`, page 2 of
+any pull that started at 0 answered `full_resync` once a tombstone above page 1 had been
+purged, so a new device or a full resync could never get past its first page.
+
 - Rows of all six tables with `server_seq > p_since`, merged in `server_seq` order.
 - Store `next_seq` as `meta.sync_cursor` **in the same Dexie transaction** as the rows;
   a repeated pull then gives the same result. Repeat while `has_more`.
@@ -93,8 +100,8 @@ reject the row (send full rows).
 `purge_tombstones(30)` (daily at 03:17 UTC via pg_cron) deletes tombstones whose
 `server_updated_at` is older than 30 days and records, per user, the highest purged
 `server_seq` in `sync_horizon.purged_through_seq`. `sync_pull` answers
-`full_resync: true` (no rows) when `0 < p_since < purged_through_seq`, i.e. exactly when
-the device could have missed a deletion; a device that was offline for 31 days but whose
+`full_resync: true` (no rows) when `0 < p_from < purged_through_seq` (`sync_pull`:
+`p_since`), i.e. exactly when the device could have missed a deletion; a device that was offline for 31 days but whose
 deletions were not purged yet just pulls normally. On `full_resync`: push the outbox,
 then pull from 0 and delete local synced rows (not in the outbox) that the full pull
 did not return.

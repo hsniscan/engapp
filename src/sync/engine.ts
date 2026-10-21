@@ -24,6 +24,7 @@ import {
   logError,
   META,
   missingLexiconSenseIds,
+  outboxKey,
   putLexiconSenses,
   removeRowsMissingOnServer,
   setMeta,
@@ -55,17 +56,20 @@ export const CHANGE_DEBOUNCE_MS = 4_000;
 export const LAST_SYNC_KEY = 'last_sync_at';
 export const FULL_RESYNC_KEY = 'full_resync_pending';
 const MAX_ROUNDS = 10_000; // guards against a server that keeps answering has_more
+/** A purge can land between two pages of a full pull; start over at most this often. */
+const MAX_FULL_PULL_RESTARTS = 3;
 
 export interface SyncTransport {
   pushBatch(items: PushItem[]): Promise<PushResult>;
-  pullChanges(since: number, limit?: number): Promise<PullResult>;
+  /** `from`: the cursor this run of pages started at (see api.pullChanges). */
+  pullChanges(since: number, limit?: number, from?: number): Promise<PullResult>;
   pullLexicon(since: number, limit?: number): Promise<LexiconPullResult>;
   getLexiconSenses(ids: Id[]): Promise<LexiconSense[]>;
 }
 
 export const supabaseTransport: SyncTransport = {
   pushBatch: (items) => pushBatch(items),
-  pullChanges: (since, limit) => pullChanges(since, limit),
+  pullChanges: (since, limit, from) => pullChanges(since, limit, undefined, from),
   pullLexicon: (since, limit) => pullLexicon(since, limit),
   getLexiconSenses: (ids) => getLexiconSenses(ids),
 };
@@ -125,8 +129,11 @@ export interface RunOptions {
  */
 export async function pushOutbox(t: SyncTransport, report: SyncReport, opts: RunOptions = {}): Promise<void> {
   const now = opts.now ?? Date.now;
+  // Rows that failed in this run are not sent again in the same run (a forced run would
+  // otherwise resend them with every batch and burn through their attempts at once).
+  const failedThisRun = new Set<string>();
   for (let round = 0; round < MAX_ROUNDS; round++) {
-    const items = await takeOutboxItems(MAX_PUSH_BATCH, now(), opts.force);
+    const items = await takeOutboxItems(MAX_PUSH_BATCH, now(), opts.force, failedThisRun);
     if (items.length === 0) return;
     let res: PushResult;
     try {
@@ -143,6 +150,7 @@ export async function pushOutbox(t: SyncTransport, report: SyncReport, opts: Run
     for (const it of items) (acked.has(it.row_id) && !rejected.has(it.row_id) ? ok : failed).push(it);
     await ackOutboxItems(ok);
     await failOutboxItems(failed, now());
+    for (const it of failed) failedThisRun.add(outboxKey(it));
     report.pushed += ok.length;
     report.stale += res.stale.length;
     report.rejected += failed.length;
@@ -154,9 +162,10 @@ export async function pushOutbox(t: SyncTransport, report: SyncReport, opts: Run
 
 /** Incremental pull. Returns true when the server asked for a full resync. */
 async function pullAll(t: SyncTransport, report: SyncReport, now: () => Millis): Promise<boolean> {
-  let cursor = await getCursor(META.syncCursor);
+  const start = await getCursor(META.syncCursor);
+  let cursor = start;
   for (let round = 0; round < MAX_ROUNDS; round++) {
-    const page = await t.pullChanges(cursor, MAX_PULL_PAGE);
+    const page = await t.pullChanges(cursor, MAX_PULL_PAGE, start);
     if (page.full_resync) return true;
     for (const bad of page.invalid) void logError(bad.error, `sync.pull invalid ${bad.table}/${String(bad.id)}`);
     await applyPulledPage(toBatch(page.rows), page.next_seq, now());
@@ -177,16 +186,27 @@ async function fullResync(t: SyncTransport, report: SyncReport, now: () => Milli
   await db.transaction('rw', db.meta, () => setMeta(FULL_RESYNC_KEY, true));
   // Rows the server keeps rejecting stay in the outbox; the cleanup below never removes them.
   await pushOutbox(t, report, { force: true, now });
-  const seen: Record<ResyncTable, Set<Id>> = {
+  const emptySeen = (): Record<ResyncTable, Set<Id>> => ({
     notes: new Set(),
     senses: new Set(),
     cards: new Set(),
     sources: new Set(),
     settings: new Set(),
-  };
+  });
+  let seen = emptySeen();
   let cursor = 0;
+  let restarts = 0;
   for (let round = 0; round < MAX_ROUNDS; round++) {
-    const page = await t.pullChanges(cursor, MAX_PULL_PAGE);
+    const page = await t.pullChanges(cursor, MAX_PULL_PAGE, 0);
+    if (page.full_resync) {
+      // Tombstones were purged past our cursor while we were paging: the pages we have are
+      // fine, but `seen` would miss every row of the pages not pulled yet, and removing
+      // "missing" rows would wipe them locally. Start the full pull over.
+      if (++restarts > MAX_FULL_PULL_RESTARTS) throw new SyncFailure('server', 'full resync kept restarting');
+      seen = emptySeen();
+      cursor = 0;
+      continue;
+    }
     for (const r of page.rows) if (r.table !== 'review_logs') seen[r.table].add(r.row.id);
     for (const bad of page.invalid) {
       // An invalid row still exists on the server: never delete it locally.
@@ -325,6 +345,26 @@ export class SyncEngine {
     return this.inflight;
   }
 
+  /**
+   * The transport for one run, bound to the account the run started with: before every
+   * request the session must still be that account and the device still linked to it. A
+   * sign-out / sign-in as someone else (e.g. in another tab) during a run would otherwise
+   * send this device's rows with the new account's token.
+   */
+  private guardedTransport(userId: string): SyncTransport {
+    const t = this.deps.transport;
+    const check = async () => {
+      const [session, linked] = await Promise.all([this.deps.getSessionUserId(), getCurrentUserId()]);
+      if (session !== userId || linked !== userId) throw new SyncFailure('auth', 'The signed-in account changed during sync');
+    };
+    return {
+      pushBatch: async (items) => (await check(), t.pushBatch(items)),
+      pullChanges: async (since, limit, from) => (await check(), t.pullChanges(since, limit, from)),
+      pullLexicon: async (since, limit) => (await check(), t.pullLexicon(since, limit)),
+      getLexiconSenses: async (ids) => (await check(), t.getLexiconSenses(ids)),
+    };
+  }
+
   private async runGuarded(opts: Omit<RunOptions, 'now'>): Promise<SyncOutcome> {
     const online = this.deps.isOnline();
     this.setState({ online });
@@ -335,10 +375,11 @@ export class SyncEngine {
     }
     if (!(await this.isActive())) return { ok: false, reason: 'not_linked' };
     if (!online) return { ok: false, reason: 'offline' };
+    const transport = this.guardedTransport(session);
     const work = async (): Promise<SyncOutcome> => {
       this.setState({ running: true });
       try {
-        const report = await runSync(this.deps.transport, { ...opts, now: this.deps.now });
+        const report = await runSync(transport, { ...opts, now: this.deps.now });
         this.setState({ running: false, error: null, errorMessage: null });
         return { ok: true, report };
       } catch (e) {

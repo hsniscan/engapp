@@ -316,3 +316,37 @@ describe('study queue from the database', () => {
     expect(elapsed).toBeLessThan(1000);
   });
 });
+
+describe('server column limits (a longer value would be rejected by sync_push forever)', () => {
+  const long = (n: number) => 'a'.repeat(n);
+  it('refuses a term, meaning, sentence or tag list the server cannot store, and writes nothing', async () => {
+    await expect(addNoteWithSenses({ term: long(201), senses: [{ meaning_tr: 'x' }] }, T)).rejects.toMatchObject({ code: 'invalid_input' });
+    await expect(addNoteWithSenses({ term: 'ok', senses: [{ meaning_tr: long(501) }] }, T)).rejects.toMatchObject({ code: 'invalid_input' });
+    await expect(
+      addNoteWithSenses({ term: 'ok', senses: [{ meaning_tr: 'x', source_sentence: `ok ${long(2000)}` }] }, T),
+    ).rejects.toMatchObject({ code: 'invalid_input' });
+    await expect(
+      addNoteWithSenses({ term: 'ok', tags: Array.from({ length: 51 }, (_, i) => `t${i}`), senses: [{ meaning_tr: 'x' }] }, T),
+    ).rejects.toMatchObject({ code: 'invalid_input' });
+    expect(await db.notes.count()).toBe(0);
+    expect(await db.outbox.filter((r) => r.table !== 'settings').count()).toBe(0);
+    // Exactly at the limit is fine.
+    await addNoteWithSenses({ term: long(200), senses: [{ meaning_tr: long(500) }] }, T);
+  });
+
+  it('checks edits too', async () => {
+    const r = await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] }, T);
+    await expect(editNote(r.note.id, { term: long(201) }, T)).rejects.toBeInstanceOf(ActionError);
+    await expect(editSense(r.addedSenses[0]!.id, { meaning_tr_override: long(501) }, T)).rejects.toMatchObject({ code: 'invalid_input' });
+    await expect(editSense(r.addedSenses[0]!.id, { gloss_en: long(301) }, T)).rejects.toMatchObject({ code: 'invalid_input' });
+  });
+});
+
+describe('createSource', () => {
+  it('cuts an over-long title / file name to the server limit instead of failing', async () => {
+    const { createSource } = await import('./actions');
+    const s = await createSource({ kind: 'pdf', title: 'ş'.repeat(600), file_name: `${'x'.repeat(600)}.pdf` }, T);
+    expect([...s.title].length).toBe(500);
+    expect(s.file_name!.length).toBe(500);
+  });
+});

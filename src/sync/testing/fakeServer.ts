@@ -84,10 +84,12 @@ export class FakeServer implements SyncTransport {
     return res;
   }
 
-  async pullChanges(since: number, limit = 500): Promise<PullResult> {
+  /** `from` as in sync_pull_v2 (the cursor the pull started at); omitted = old sync_pull. */
+  async pullChanges(since: number, limit = 500, from?: number): Promise<PullResult> {
     this.calls.pull++;
     if (this.faults.offline) throw new SyncApiError('network', 'offline');
-    if (since > 0 && since < this.purgedThrough) {
+    const start = from === undefined ? since : Math.min(Math.max(from, 0), since);
+    if (start > 0 && start < this.purgedThrough) {
       return { rows: [], invalid: [], next_seq: since, has_more: false, full_resync: true };
     }
     const all = [...this.rows.values()].filter((r) => r.seq > since).sort((a, b) => a.seq - b.seq);

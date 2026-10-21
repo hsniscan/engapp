@@ -48,7 +48,7 @@ function transportFor(userId: string): SyncTransport {
   });
   return {
     pushBatch: (items) => pushBatch(items, client),
-    pullChanges: (since, limit) => pullChanges(since, limit, client),
+    pullChanges: (since, limit, from) => pullChanges(since, limit, client, from),
     pullLexicon: (since, limit) => pullLexicon(since, limit, client),
     getLexiconSenses: (ids) => getLexiconSenses(ids, client),
   };

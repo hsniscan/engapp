@@ -219,3 +219,28 @@ export function isNearDuplicateGloss(a: string, b: string): boolean {
   const smaller = Math.min(ta.size, tb.size);
   return smaller >= 3 && inter === smaller;
 }
+
+// ---------------------------------------------------------------------------
+// Shared-lexicon content guard
+// ---------------------------------------------------------------------------
+
+// Links, e-mail addresses, markup and code-ish characters never belong in a dictionary
+// entry; they are what a prompt-injected model would write to reach other users.
+const LINKISH =
+  /https?:|www\.|:\/\/|@|[<>{}`\\|[\]]|\b[a-z0-9-]{2,}\.(?:com|net|org|io|ru|xyz|info|biz|co|me|app|dev|link|site|top|tr)\b/iu;
+const INVISIBLE = /[\p{Cc}\p{Cf}\p{Co}\p{Cn}]/u;
+// English glosses: Latin letters, digits, spaces and ordinary punctuation.
+const EN_TEXT = /^[\p{Script=Latin}\p{M}\p{N} '’",;:.()\-/!?&]+$/u;
+// Turkish meanings: Latin letters (incl. Turkish ones), spaces and light punctuation.
+const TR_TEXT = /^[\p{Script=Latin}\p{M} '’,;:.()\-/]+$/u;
+
+/**
+ * Is this text fit for the shared lexicon (lemma or gloss_en: 'en'; meaning_tr: 'tr';
+ * ipa: 'ipa' — IPA symbols are not limited to Latin script, only links/markup are refused)?
+ */
+export function isCleanLexiconText(s: string, kind: 'en' | 'tr' | 'ipa'): boolean {
+  if (!s || INVISIBLE.test(s.replace(/[‍]/g, '')) || LINKISH.test(s)) return false;
+  if (kind === 'en') return EN_TEXT.test(s);
+  if (kind === 'tr') return TR_TEXT.test(s);
+  return true;
+}

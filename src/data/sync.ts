@@ -30,12 +30,20 @@ export interface OutboxItem {
 }
 
 const rowKey = (table: string, id: string) => `${table}\u0000${id}`;
+/** Key of an outbox row's target (table + row id), e.g. for takeOutboxItems' `skip`. */
+export const outboxKey = (item: Pick<OutboxItem, 'table' | 'row_id'>): string => rowKey(item.table, item.row_id);
 
 /**
  * Coalesced, due outbox items in outbox order (oldest first), at most `limit`.
- * `force` ignores next_attempt_at (manual "Şimdi senkronla").
+ * `force` ignores next_attempt_at (manual "Şimdi senkronla"). `skip` (outboxKey values)
+ * leaves out rows already tried in the current run.
  */
-export async function takeOutboxItems(limit: number, now: Millis, force = false): Promise<OutboxItem[]> {
+export async function takeOutboxItems(
+  limit: number,
+  now: Millis,
+  force = false,
+  skip?: ReadonlySet<string>,
+): Promise<OutboxItem[]> {
   const rows = await db.outbox.orderBy('seq').toArray();
   const groups = new Map<string, { first: number; item: OutboxItem; due: Millis }>();
   for (const r of rows) {
@@ -55,6 +63,7 @@ export async function takeOutboxItems(limit: number, now: Millis, force = false)
   const out: OutboxItem[] = [];
   for (const g of [...groups.values()].sort((a, b) => a.first - b.first)) {
     if (!force && g.due > now) continue;
+    if (skip?.has(outboxKey(g.item))) continue;
     out.push(g.item);
     if (out.length >= limit) break;
   }
@@ -145,9 +154,11 @@ export type ResyncTable = (typeof RESYNC_TABLES)[number];
  * daily_activity. Returns the number of rows removed.
  */
 export async function removeRowsMissingOnServer(seen: Record<ResyncTable, Set<Id>>, now: Millis = Date.now()): Promise<number> {
-  const pending = await outboxRowIds();
   let removed = 0;
   await db.transaction('rw', db.tables, async () => {
+    // Read the outbox inside the transaction: a row written between a read outside it and
+    // this transaction would not count as pending and would be wiped.
+    const pending = await outboxRowIds();
     for (const table of RESYNC_TABLES) {
       const ids = (await db.table(table).toCollection().primaryKeys()) as Id[];
       const gone = ids.filter((id) => !seen[table].has(id) && !pending.has(rowKey(table, id)));

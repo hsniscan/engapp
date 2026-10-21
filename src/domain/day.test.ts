@@ -58,3 +58,22 @@ describe('day keys', () => {
     expect(dayRange('2026-12-30', '2027-01-02')).toEqual(['2026-12-30', '2026-12-31', '2027-01-01', '2027-01-02']);
   });
 });
+
+describe('repeated wall hour (DST fall-back) as the day start', () => {
+  it('starts the day at the first occurrence, so bounds and dayKeyOf agree', () => {
+    const zones: [string, number][] = [
+      ['Europe/Berlin', 2], // 2026-10-25 02:00–03:00 happens twice
+      ['Asia/Beirut', 23],
+      ['America/New_York', 1],
+      ['Europe/Istanbul', 4],
+    ];
+    for (const [timezone, day_start_hour] of zones) {
+      const cfg = { timezone, day_start_hour };
+      for (let k = '2026-01-01'; k <= '2026-12-31'; k = addDays(k, 1)) {
+        const start = dayStartMs(k, cfg);
+        const end = dayEndMs(k, cfg);
+        expect([dayKeyOf(start, cfg), dayKeyOf(end - 1, cfg)], `${timezone} ${k}`).toEqual([k, k]);
+      }
+    }
+  });
+});

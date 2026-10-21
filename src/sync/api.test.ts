@@ -105,4 +105,23 @@ describe('sync api', () => {
     expect(await getLexiconSenses(['s'], client)).toEqual([e]);
     expect(calls[0]!.fn).toBe('lexicon_get');
   });
+
+  it('with a start cursor pulls through sync_pull_v2 and falls back to sync_pull on an older backend', async () => {
+    const page = { rows: [], next_seq: 9, has_more: false, full_resync: false };
+    const v2 = fakeClient({ data: page });
+    await pullChanges(9, 500, v2.client, 0);
+    expect(v2.calls).toEqual([{ fn: 'sync_pull_v2', args: { p_since: 9, p_limit: 500, p_from: 0 } }]);
+
+    const calls: string[] = [];
+    const old = {
+      rpc: async (fn: string) => {
+        calls.push(fn);
+        return fn === 'sync_pull_v2'
+          ? { data: null, error: { code: 'PGRST202', message: 'Could not find the function public.sync_pull_v2' } }
+          : { data: page, error: null };
+      },
+    } as unknown as SupabaseClient;
+    expect((await pullChanges(9, 500, old, 0)).next_seq).toBe(9);
+    expect(calls).toEqual(['sync_pull_v2', 'sync_pull']);
+  });
 });

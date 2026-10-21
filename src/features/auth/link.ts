@@ -58,7 +58,7 @@ function need(): LinkDeps {
 }
 
 async function serverHasData(t: SyncTransport): Promise<boolean> {
-  const page = await t.pullChanges(0, 1);
+  const page = await t.pullChanges(0, 1, 0);
   return page.rows.length > 0 || page.invalid.length > 0;
 }
 
@@ -82,7 +82,8 @@ export async function linkAccount(userId: string): Promise<void> {
   set({ phase: 'checking', userId });
   try {
     const [local, remote] = await Promise.all([hasLocalUserData(), serverHasData(transport)]);
-    if (local && remote) {
+    // Another account's data on this device must never be copied silently into this one.
+    if (local && (remote || (linked !== null && linked !== userId))) {
       set({ phase: 'choose', userId, otherAccount: linked !== null });
       return;
     }
@@ -100,7 +101,8 @@ async function snapshotAccount(t: SyncTransport): Promise<RemoteSnapshot> {
   const rows: RemoteSnapshot['rows'] = [];
   let cursor = 0;
   for (;;) {
-    const page = await t.pullChanges(cursor, MAX_PULL_PAGE);
+    const page = await t.pullChanges(cursor, MAX_PULL_PAGE, 0);
+    if (page.full_resync) throw new Error('Account snapshot interrupted by a purge; try again');
     for (const r of page.rows) rows.push({ table: r.table, row: r.row });
     cursor = page.next_seq;
     if (!page.has_more) break;

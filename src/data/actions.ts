@@ -1,6 +1,7 @@
 // High-level write operations the UI calls. Each one is a single Dexie transaction; every
 // synced row it touches is stamped (updated_at + hlc) and queued in the outbox inside it.
 import { dayKeyOf } from '../domain/day';
+import { LIMITS, overLimit, truncateCodePoints } from '../domain/limits';
 import { applyRating, emptyFsrs, fsrsEqual, pickFsrs } from '../domain/fsrs';
 import { normalizeTerm } from '../domain/normalize';
 import { canHaveCloze, isValidSpan } from '../domain/recognition';
@@ -50,6 +51,29 @@ function uniqueTags(tags: Iterable<string>): string[] {
 
 function cleanSpan(sentence: string | null, span: [number, number] | null | undefined): [number, number] | null {
   return sentence && isValidSpan(sentence, span) ? [span[0], span[1]] : null;
+}
+
+function assertNoteFits(n: Pick<Note, 'term' | 'term_norm' | 'ipa' | 'tags'>): void {
+  const bad = overLimit({
+    term: { value: n.term, max: LIMITS.term },
+    term_norm: { value: n.term_norm, max: LIMITS.term },
+    ipa: { value: n.ipa, max: LIMITS.ipa },
+  });
+  if (bad) throw new ActionError('invalid_input', `${bad} is too long`);
+  if (n.tags.length > LIMITS.tags) throw new ActionError('invalid_input', 'Too many tags');
+}
+
+function assertSenseFits(
+  s: Pick<Sense, 'pos' | 'gloss_en' | 'meaning_tr' | 'meaning_tr_override' | 'source_sentence'>,
+): void {
+  const bad = overLimit({
+    pos: { value: s.pos, max: LIMITS.pos },
+    gloss_en: { value: s.gloss_en, max: LIMITS.gloss_en },
+    meaning_tr: { value: s.meaning_tr, max: LIMITS.meaning_tr },
+    meaning_tr_override: { value: s.meaning_tr_override, max: LIMITS.meaning_tr },
+    source_sentence: { value: s.source_sentence, max: LIMITS.source_sentence },
+  });
+  if (bad) throw new ActionError('invalid_input', `${bad} is too long`);
 }
 
 function meaningKey(s: Pick<Sense, 'meaning_tr' | 'meaning_tr_override'>): string {
@@ -141,6 +165,16 @@ export async function addNoteWithSenses(input: AddNoteInput, now: Millis = Date.
   const termNorm = normalizeTerm(term);
   if (!termNorm) throw new ActionError('invalid_input', 'Empty term');
   for (const s of input.senses) if (!s.meaning_tr.trim()) throw new ActionError('invalid_input', 'Empty meaning');
+  assertNoteFits({ term, term_norm: termNorm, ipa: input.ipa ?? null, tags: uniqueTags(input.tags ?? []) });
+  for (const s of input.senses) {
+    assertSenseFits({
+      pos: s.pos ?? null,
+      gloss_en: s.gloss_en ?? null,
+      meaning_tr: s.meaning_tr.trim(),
+      meaning_tr_override: s.meaning_tr_override?.trim() || null,
+      source_sentence: s.source_sentence ?? null,
+    });
+  }
 
   return writeTx([db.notes, db.senses, db.cards], now, async (w) => {
     const sameTerm = await db.notes.where('term_norm').equals(termNorm).toArray();
@@ -150,12 +184,16 @@ export async function addNoteWithSenses(input: AddNoteInput, now: Millis = Date.
     let status: AddNoteResult['status'];
     let note: Note;
 
-    const merged = (n: Note): Note => ({
-      ...n,
-      tags: uniqueTags([...n.tags, ...(input.tags ?? [])]),
-      ipa: n.ipa ?? input.ipa ?? null,
-      lexicon_term_id: n.lexicon_term_id ?? input.lexicon_term_id ?? null,
-    });
+    const merged = (n: Note): Note => {
+      const m = {
+        ...n,
+        tags: uniqueTags([...n.tags, ...(input.tags ?? [])]),
+        ipa: n.ipa ?? input.ipa ?? null,
+        lexicon_term_id: n.lexicon_term_id ?? input.lexicon_term_id ?? null,
+      };
+      assertNoteFits(m);
+      return m;
+    };
 
     if (live) {
       status = 'existing';
@@ -254,6 +292,7 @@ export async function editNote(noteId: Id, patch: NotePatch, now: Millis = Date.
       const clash = await db.notes.where('term_norm').equals(next.term_norm).filter((n) => n.id !== noteId && n.deleted_at === null).count();
       if (clash) throw new ActionError('duplicate_term');
     }
+    assertNoteFits(next);
     return w.put('notes', next);
   });
 }
@@ -279,6 +318,7 @@ export async function editSense(senseId: Id, patch: SensePatch, now: Millis = Da
       next.span = null; // sentence changed under an old span
     }
     if (!next.source_sentence) next.span = null;
+    assertSenseFits(next);
     const saved = await w.put('senses', next);
     if (saved.deleted_at === null) {
       const rec = await recognitionOf(saved.note_id);
@@ -342,12 +382,13 @@ export async function createSource(
   input: Pick<Source, 'kind' | 'title'> & Partial<Pick<Source, 'file_name' | 'page_count'>>,
   now: Millis = Date.now(),
 ): Promise<Source> {
+  // Metadata only: cut to the server's limits instead of failing the import.
   return writeTx([db.sources], now, (w) =>
     w.put('sources', {
       ...w.base(),
       kind: input.kind,
-      title: input.title,
-      file_name: input.file_name ?? null,
+      title: truncateCodePoints(input.title, LIMITS.source_title),
+      file_name: input.file_name == null ? null : truncateCodePoints(input.file_name, LIMITS.file_name),
       page_count: input.page_count ?? null,
     }),
   );

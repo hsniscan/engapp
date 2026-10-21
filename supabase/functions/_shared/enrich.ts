@@ -23,7 +23,7 @@ import {
   type PipelineDeps,
 } from './extract.ts';
 import type { LexTerm } from './store.ts';
-import { cleanLemma, glossKey, normalizeLemma, normalizePos } from './text.ts';
+import { cleanLemma, glossKey, isCleanLexiconText, normalizeLemma, normalizePos } from './text.ts';
 import { lemmaForms, termForms } from './tokenize.ts';
 
 function entriesOf(t: LexTerm): LexiconEntry[] {
@@ -173,6 +173,16 @@ export async function runEnrich(body: unknown, deps: PipelineDeps): Promise<Enri
     const key = glossKey(gloss);
     const meaning = cleanMeaningTr(p.data.meaning_tr);
     if (!pos || !gloss || gloss.length > 200 || !key || !meaning || meaning.length > 120) continue;
+    const ipa = cleanIpa(p.data.ipa);
+    // Shared with every user: no links, markup or foreign scripts (prompt injection via
+    // the typed term or sentence), and a new term must itself look like an English term.
+    if (
+      (!term && !isCleanLexiconText(lemma, 'en')) ||
+      !isCleanLexiconText(gloss, 'en') ||
+      !isCleanLexiconText(meaning, 'tr') ||
+      (ipa !== null && !isCleanLexiconText(ipa, 'ipa'))
+    )
+      continue;
     pending.push({
       lemma,
       lemma_norm: lemmaNorm,
@@ -182,7 +192,7 @@ export async function runEnrich(body: unknown, deps: PipelineDeps): Promise<Enri
         gloss_en: gloss,
         gloss_key: key,
         meaning_tr: meaning,
-        ipa: cleanIpa(p.data.ipa),
+        ipa,
       },
     });
     usedInSentence.push(p.data.used_in_sentence === true);

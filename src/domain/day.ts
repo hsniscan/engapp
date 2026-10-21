@@ -130,8 +130,11 @@ export function zonedTimeToUtc(key: DayKey, hour: number, tz: string): Millis {
     const w = wallClock(t, tz);
     return w.year === year && w.month === month && w.day === day && w.hour === hour;
   };
-  if (matches(t2)) return t2;
-  if (matches(t1)) return t1;
+  // A repeated wall time (DST fall-back) has two instants: take the first one, so the whole
+  // repeated hour belongs to the day that starts at it (as dayKeyOf says). The offsets half
+  // a day before and after cover both sides of any transition near this wall time.
+  const hits = [t1, t2, wall - tzOffsetMs(wall - 43_200_000, tz), wall - tzOffsetMs(wall + 43_200_000, tz)].filter(matches);
+  if (hits.length) return Math.min(...hits);
   // The wall time falls into a DST gap: the later candidate is the first instant after it.
   return Math.max(t1, t2);
 }

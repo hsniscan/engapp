@@ -157,18 +157,37 @@ export async function pushBatch(items: PushItem[], c?: SupabaseClient | null): P
   return rpc(client(c), 'sync_push', { p_batch: items }, pushResult);
 }
 
-/** Changes after `sinceSeq`, ordered by server sequence. Store next_seq with the rows. */
+/** sync_pull_v2 is not deployed yet (older backend): PostgREST / Postgres "no such function". */
+function isMissingFunction(e: unknown): boolean {
+  return e instanceof SyncApiError && e.kind === 'server' && /^(PGRST202|42883)\b/.test(e.message);
+}
+
+/**
+ * Changes after `sinceSeq`, ordered by server sequence. Store next_seq with the rows.
+ * `fromSeq` is the cursor this run of pages started at (0 for a full pull): the server
+ * decides `full_resync` from it, so the pages of a full pull are never cut short by an
+ * old tombstone purge (sync_pull_v2, migration 20261021000600). Without it the old
+ * sync_pull is used.
+ */
 export async function pullChanges(
   sinceSeq: number,
   limit = MAX_PULL_PAGE,
   c?: SupabaseClient | null,
+  fromSeq?: number,
 ): Promise<PullResult> {
-  const env = await rpc(
-    client(c),
-    'sync_pull',
-    { p_since: sinceSeq, p_limit: Math.min(limit, MAX_PULL_PAGE) },
-    pullEnvelope,
-  );
+  const cl = client(c);
+  const p_limit = Math.min(limit, MAX_PULL_PAGE);
+  let env: z.infer<typeof pullEnvelope>;
+  if (fromSeq === undefined) {
+    env = await rpc(cl, 'sync_pull', { p_since: sinceSeq, p_limit }, pullEnvelope);
+  } else {
+    try {
+      env = await rpc(cl, 'sync_pull_v2', { p_since: sinceSeq, p_limit, p_from: fromSeq }, pullEnvelope);
+    } catch (e) {
+      if (!isMissingFunction(e)) throw e;
+      env = await rpc(cl, 'sync_pull', { p_since: sinceSeq, p_limit }, pullEnvelope);
+    }
+  }
   const rows: PulledRow[] = [];
   const invalid: PullResult['invalid'] = [];
   for (const r of env.rows) {

@@ -371,3 +371,78 @@ describe('deriveSyncState', () => {
     expect(deriveSyncState(base)).toBe('synced');
   });
 });
+
+describe('review regressions', () => {
+  it('a purge during a full resync does not drop the rows of later pages', async () => {
+    let a = await newDevice('dev-a');
+    let doomed = '';
+    a = await onDevice(a, async () => {
+      for (let i = 0; i < 180; i++) await addNoteWithSenses({ term: `w${i}`, senses: [{ meaning_tr: `m${i}` }] }, T);
+      doomed = (await addNoteWithSenses({ term: 'doomed', senses: [{ meaning_tr: 'x' }] }, T)).note.id;
+      await sync(server, T + MIN);
+      await softDeleteNote(doomed, T + 2 * MIN);
+      await sync(server, T + 3 * MIN);
+    });
+    let b = await newDevice('dev-b');
+    b = await onDevice(b, () => sync(server, T + 4 * MIN).then(() => {}));
+    await loadDevice(b);
+    expect(await db.notes.filter((n) => n.deleted_at === null).count()).toBe(180);
+    await db.transaction('rw', db.meta, () => setMeta(FULL_RESYNC_KEY, true));
+    // The daily purge runs right after the first page of the full pull.
+    const orig = server.pullChanges.bind(server);
+    let calls = 0;
+    server.pullChanges = async (since, limit, from) => {
+      const page = await orig(since, limit, from);
+      if (++calls === 1) server.purgeTombstones();
+      return page;
+    };
+    await sync(server, T + 31 * DAY);
+    expect(await db.notes.filter((n) => n.deleted_at === null).count()).toBe(180);
+    expect(await db.notes.get(doomed)).toBeUndefined();
+    expect((await db.meta.get(FULL_RESYNC_KEY))?.value).toBe(false);
+  });
+
+  it('a new device pulls an account with > 500 rows after a tombstone purge (no full_resync on page 2)', async () => {
+    let a = await newDevice('dev-a');
+    a = await onDevice(a, async () => {
+      for (let i = 0; i < 180; i++) await addNoteWithSenses({ term: `w${i}`, senses: [{ meaning_tr: `m${i}` }] }, T);
+      const gone = await addNoteWithSenses({ term: 'gone', senses: [{ meaning_tr: 'x' }] }, T);
+      await softDeleteNote(gone.note.id, T + MIN);
+      await sync(server, T + 2 * MIN);
+    });
+    expect(server.purgeTombstones()).toBeGreaterThan(0);
+    await newDevice('dev-b');
+    const report = await sync(server, T + 40 * DAY);
+    expect(report.fullResync).toBe(false);
+    expect(await db.notes.count()).toBe(180);
+    expect(await db.cards.count()).toBe(server.rowsOf('cards').length);
+  });
+
+  it('stops when the signed-in session changes during a run (no push into another account)', async () => {
+    await newDevice('dev-a');
+    for (let i = 0; i < 60; i++) await addNoteWithSenses({ term: `w${i}`, senses: [{ meaning_tr: `m${i}` }] }, T);
+    let session: string | null = USER;
+    const orig = server.pushBatch.bind(server);
+    server.pushBatch = async (items) => {
+      const res = await orig(items);
+      session = 'user-b'; // another account signs in (e.g. in another tab) mid-run
+      return res;
+    };
+    const e = new SyncEngine({ transport: server, getSessionUserId: async () => session, isOnline: () => true, now: () => T + MIN });
+    const out = await e.sync();
+    expect(out).toMatchObject({ ok: false, reason: 'error', error: 'auth' });
+    expect(server.calls.push).toBe(1);
+    expect(server.calls.pull).toBe(0);
+    expect(await db.outbox.count()).toBeGreaterThan(0);
+  });
+
+  it('a forced run tries a rejected row once, not once per batch', async () => {
+    await newDevice('dev-a');
+    const bad = await addNoteWithSenses({ term: 'bad', senses: [{ meaning_tr: 'kötü' }] }, T);
+    for (let i = 0; i < 60; i++) await addNoteWithSenses({ term: `w${i}`, senses: [{ meaning_tr: `m${i}` }] }, T);
+    server.faults.rejectIds = new Set([bad.note.id]);
+    await sync(server, T + MIN, true);
+    const rows = await db.outbox.where('[table+row_id]').equals(['notes', bad.note.id]).toArray();
+    expect(rows.every((r) => r.attempts === 1)).toBe(true);
+  });
+});
