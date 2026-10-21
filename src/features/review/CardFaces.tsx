@@ -4,6 +4,7 @@ import type { CardView } from '@/data';
 import { findSpan, isValidSpan } from '@/domain/recognition';
 import type { Sense } from '@/domain/types';
 import { posLabel } from '@/features/cards/labels';
+import { CardBackExtras } from '@/features/family/CardBackExtras';
 import { Badge, cn, IconButton } from '@/ui';
 
 const meaningOf = (s: Pick<Sense, 'meaning_tr' | 'meaning_tr_override'>) =>
@@ -234,7 +235,7 @@ export const CardFront = memo(function CardFront({ view, isNew, speech }: FacePr
   return (
     <Face prompt={prompt} isNew={isNew}>
       <Term term={note.term} />
-      <SpeakButton {...speech} />
+      {note.term_type !== 'affix' && <SpeakButton {...speech} />}
       {sense?.source_sentence && (
         <Sentence
           sentence={sense.source_sentence}
@@ -334,7 +335,7 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
             <p lang="en" className="font-serif text-2xl font-semibold text-fg">
               {note.term}
             </p>
-            <SpeakButton {...speech} />
+            {note.term_type !== 'affix' && <SpeakButton {...speech} />}
           </div>
           <Ipa ipa={note.ipa} />
         </div>
@@ -344,6 +345,7 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
             {sentence}
           </div>
         )}
+        <CardBackExtras note={note} />
       </Face>
     );
   }
@@ -380,6 +382,7 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
         )}
       </div>
       {card.card_type === 'production' && sentence}
+      <CardBackExtras note={note} />
     </Face>
   );
 });

@@ -10,7 +10,9 @@ import type {
   MetaRow,
   Note,
   OutboxRow,
+  PairNoteFeedbackRow,
   PracticeLog,
+  RefCacheRow,
   ReviewLog,
   Sense,
   Settings,
@@ -39,6 +41,8 @@ export class EngDb extends Dexie {
   daily_activity!: EntityTable<DailyActivity, 'date'>;
   error_log!: EntityTable<ErrorLogRow, 'id'>;
   meta!: EntityTable<MetaRow, 'key'>;
+  ref_cache!: EntityTable<RefCacheRow, 'key'>;
+  pair_note_feedback!: EntityTable<PairNoteFeedbackRow, 'key'>;
 
   constructor(name = 'engapp') {
     super(name);
@@ -79,6 +83,21 @@ export class EngDb extends Dexie {
     // v3 (v0.2 İP1): practice_logs, insert-only and synced. Practice answers never feed FSRS.
     // Meta keys `extra_new:<day>` hold today's extra new-card allowance (no schema change).
     this.version(3).stores({ practice_logs: 'id, card_id, practiced_at, session_id' });
+    // v6 (v0.2 İP6, word families; v4/v5 belong to İP2/İP5): ref_cache keeps the lazily
+    // fetched morphology file for offline use; pair_note_feedback holds the user's "gizle" /
+    // "bildir" on false-friend warnings. Notes may now have term_type 'affix'. An older app
+    // version skipped such a pulled note as invalid and moved its cursor past it; if this
+    // device logged one, pull again from the start so the note arrives (rows are merged by
+    // HLC, so a repeated pull changes nothing else).
+    this.version(6)
+      .stores({ ref_cache: 'key', pair_note_feedback: 'key, verdict' })
+      .upgrade(async (tx) => {
+        const skippedNote = await tx
+          .table('error_log')
+          .filter((r: { context?: string | null }) => !!r.context?.startsWith('sync.pull invalid notes/'))
+          .count();
+        if (skippedNote > 0) await tx.table('meta').put({ key: 'sync_cursor', value: 0 });
+      });
   }
 }
 

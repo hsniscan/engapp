@@ -19,8 +19,8 @@ import type {
   RatingValue,
   ReviewLog,
   Sense,
+  NoteTermType,
   Source,
-  TermType,
 } from '../domain/types';
 import { isRating } from '../domain/fsrs';
 import { db } from './db';
@@ -102,11 +102,19 @@ async function syncUnlocked(w: SyncWriter, noteId: Id, recognitionState: CardSta
   return changed;
 }
 
-/** Make sure a live sense has its production card and (when possible) its cloze card. */
-async function ensureSenseCards(w: SyncWriter, sense: Sense, recognitionState: CardStateValue | null): Promise<Card[]> {
+/**
+ * Make sure a live sense has its production card and (when possible) its cloze card. A root
+ * or affix note ("-spect-") is recognition only: nothing to produce or fill in.
+ */
+async function ensureSenseCards(
+  w: SyncWriter,
+  sense: Sense,
+  recognitionState: CardStateValue | null,
+  termType: NoteTermType,
+): Promise<Card[]> {
   const existing = await db.cards.where('sense_id').equals(sense.id).toArray();
   const out: Card[] = [];
-  const wanted: CardType[] = canHaveCloze(sense) ? ['production', 'cloze'] : ['production'];
+  const wanted: CardType[] = termType === 'affix' ? [] : canHaveCloze(sense) ? ['production', 'cloze'] : ['production'];
   for (const type of ['production', 'cloze'] as const) {
     const card = existing.find((c) => c.card_type === type);
     const want = wanted.includes(type);
@@ -139,7 +147,7 @@ export interface SenseInput {
 
 export interface AddNoteInput {
   term: string;
-  term_type?: TermType;
+  term_type?: NoteTermType;
   ipa?: string | null;
   tags?: string[];
   lexicon_term_id?: Id | null;
@@ -288,7 +296,7 @@ export async function addNoteWithSenses(input: AddNoteInput, now: Millis = Date.
         : await w.put('senses', { ...w.base(), note_id: note.id, sense_no: nextNo++, ...fields });
       senses.push(sense);
       addedSenses.push(sense);
-      createdCards.push(...(await ensureSenseCards(w, sense, recState)));
+      createdCards.push(...(await ensureSenseCards(w, sense, recState, note.term_type)));
     }
     return { note, status, addedSenses, skippedSenses, createdCards };
   });
@@ -296,7 +304,7 @@ export async function addNoteWithSenses(input: AddNoteInput, now: Millis = Date.
 
 export interface NotePatch {
   term?: string;
-  term_type?: TermType;
+  term_type?: NoteTermType;
   ipa?: string | null;
   tags?: string[];
   lexicon_term_id?: Id | null;
@@ -307,7 +315,7 @@ export interface NotePatch {
  * @throws ActionError('duplicate_term') if another live note already has the new term.
  */
 export async function editNote(noteId: Id, patch: NotePatch, now: Millis = Date.now()): Promise<Note> {
-  return writeTx([db.notes], now, async (w) => {
+  return writeTx([db.notes, db.senses, db.cards], now, async (w) => {
     const note = await db.notes.get(noteId);
     if (!note) throw new ActionError('not_found');
     const next: Note = { ...note, ...patch };
@@ -320,7 +328,14 @@ export async function editNote(noteId: Id, patch: NotePatch, now: Millis = Date.
       if (clash) throw new ActionError('duplicate_term');
     }
     assertNoteFits(next);
-    return w.put('notes', next);
+    const saved = await w.put('notes', next);
+    if ((note.term_type === 'affix') !== (saved.term_type === 'affix')) {
+      // Becoming (or no longer being) a root/affix card changes which cards a sense has.
+      const rec = await recognitionOf(noteId);
+      for (const s of await db.senses.where('note_id').equals(noteId).toArray())
+        if (s.deleted_at === null) await ensureSenseCards(w, s, rec?.state ?? null, saved.term_type);
+    }
+    return saved;
   });
 }
 
@@ -337,7 +352,7 @@ export type SensePatch = Partial<
  * @throws ActionError('invalid_input') for an empty meaning or a span outside the sentence.
  */
 export async function editSense(senseId: Id, patch: SensePatch, now: Millis = Date.now()): Promise<Sense> {
-  return writeTx([db.senses, db.cards], now, async (w) => {
+  return writeTx([db.notes, db.senses, db.cards], now, async (w) => {
     const sense = await db.senses.get(senseId);
     if (!sense) throw new ActionError('not_found');
     const next: Sense = { ...sense, ...patch };
@@ -354,7 +369,8 @@ export async function editSense(senseId: Id, patch: SensePatch, now: Millis = Da
     const saved = await w.put('senses', next);
     if (saved.deleted_at === null) {
       const rec = await recognitionOf(saved.note_id);
-      await ensureSenseCards(w, saved, rec?.state ?? null);
+      const termType = (await db.notes.get(saved.note_id))?.term_type ?? 'word';
+      await ensureSenseCards(w, saved, rec?.state ?? null, termType);
     }
     return saved;
   });

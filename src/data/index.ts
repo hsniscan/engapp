@@ -36,3 +36,14 @@ export { getDeviceId, getCurrentUserId, getMeta, setMeta, META } from './meta';
 export { logError, listErrors, clearErrors, ERROR_LOG_LIMIT } from './errorLog';
 export { ActionError, type ActionErrorCode } from './errors';
 export * from './connected';
+export {
+  addMorphemeCard,
+  clearPairNoteFeedback,
+  dismissMorphemeSuggestion,
+  getDismissedMorphemes,
+  getHiddenPairNotes,
+  getUserWordSets,
+  loadRefFile,
+  setPairNoteFeedback,
+  type UserWordSets,
+} from './family';

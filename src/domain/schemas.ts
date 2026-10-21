@@ -14,7 +14,7 @@ const synced = {
   hlc: z.string().min(1),
 };
 
-const termType = z.enum(['word', 'phrase', 'pattern']);
+const termType = z.enum(['word', 'phrase', 'pattern', 'affix']);
 const cardState = z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]);
 const rating = z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]);
 

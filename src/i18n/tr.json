@@ -478,7 +478,8 @@
     "termType": {
       "word": "Kelime",
       "phrase": "Söz öbeği",
-      "pattern": "Kalıp"
+      "pattern": "Kalıp",
+      "affix": "Kök/ek"
     },
     "cardType": {
       "recognition": "Tanıma",
@@ -507,7 +508,10 @@
       "interjection": "ünlem",
       "phrase": "kalıp ifade",
       "determiner": "belirteç",
-      "other": "diğer"
+      "other": "diğer",
+      "root": "kök",
+      "prefix": "ön ek",
+      "suffix": "son ek"
     },
     "tags": {
       "label": "Etiketler",
@@ -920,6 +924,53 @@
       "allKnown": "Hepsini ilk seferde bildin.",
       "scheduleSame": "Kartlarının takvimi değişmedi.",
       "again": "Bir tur daha"
+    }
+  },
+  "family": {
+    "title": "Aile",
+    "hint": "Koyu olanlar kartlarında var. Diğerlerini tek dokunuşla ekleyebilirsin.",
+    "addWord": "{{word}} kelimesini ekle",
+    "adding": "{{word}} ekleniyor…",
+    "added": "{{word}} eklendi",
+    "addedBody": "Anlamı: {{meaning}}",
+    "addFailed": "{{word}} eklenemedi",
+    "showMore_one": "{{count}} kelime daha",
+    "showMore_other": "{{count}} kelime daha",
+    "showLess": "Daha az göster",
+    "parts": "Kök ve ekler",
+    "kind": {
+      "root": "kök",
+      "prefix": "ön ek",
+      "suffix": "son ek"
+    },
+    "kindOf": {
+      "root": "kökü",
+      "prefix": "ön eki",
+      "suffix": "son eki"
+    },
+    "suggest_one": "{{form}} {{kind}} {{count}} kelimende geçiyor: {{words}}.",
+    "suggest_other": "{{form}} {{kind}} {{count}} kelimende geçiyor: {{words}}.",
+    "suggestWhy": "Anlamını bir kez öğrenince bu kelimeleri ve yenilerini daha kolay çözersin.",
+    "addRootCard": "Kök kartı ekle",
+    "addAffixCard": "Ek kartı ekle",
+    "dismissSuggestion": "Bu öneriyi gösterme",
+    "morphemeAdded": "{{form}} kartı eklendi",
+    "morphemeAddedBody": "Yalnızca tanıma kartı: önde {{form}}, arkada anlamı ve kelimelerin.",
+    "yourWords": "Kelimelerinde",
+    "otherWords": "Başka örnekler",
+    "noYourWords": "Henüz bu {{kind}} geçen kelimen yok.",
+    "source": "Kaynak: Wiktionary, MorphyNet, wordfreq (CC BY-SA 4.0)",
+    "falseFriend": {
+      "label": "Yanıltıcı benzer",
+      "full": "Anlamları farklı",
+      "partial": "Anlamları kısmen örtüşür",
+      "trEn": "İng. {{en}}",
+      "hide": "Gizle",
+      "report": "Hatalı",
+      "reportLabel": "Bu uyarı hatalı, bildir",
+      "hidden": "Uyarı gizlendi",
+      "reported": "Bildirdin, teşekkürler",
+      "reportedBody": "Bu uyarıyı artık göstermeyeceğiz."
     }
   }
 }

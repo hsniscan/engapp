@@ -15,6 +15,8 @@ export interface SyncedRow {
 }
 
 export type TermType = 'word' | 'phrase' | 'pattern';
+/** A note can also be a root or affix card ("-spect-", "re-"): recognition card only. */
+export type NoteTermType = TermType | 'affix';
 export type CardType = 'recognition' | 'production' | 'cloze';
 
 /** FSRS card states (numeric values match ts-fsrs State enum). */
@@ -29,7 +31,7 @@ export type RatingValue = (typeof Rating)[keyof typeof Rating];
 export interface Note extends SyncedRow {
   term: string; // display form, dictionary form ("give up")
   term_norm: string; // lower-case normalized form, unique per user
-  term_type: TermType;
+  term_type: NoteTermType;
   lexicon_term_id: Id | null;
   ipa: string | null; // copied from lexicon or entered by hand
   tags: string[];
@@ -236,4 +238,26 @@ export interface ErrorLogRow {
 export interface MetaRow {
   key: string;
   value: unknown;
+}
+
+/** Device cache of a static reference file (the morphology data), keyed by name. */
+export interface RefCacheRow {
+  key: string;
+  /** SHA-256 of the cached file; a new build has a new checksum. */
+  sha256: string;
+  data: unknown;
+  fetched_at: Millis;
+}
+
+/**
+ * The user's feedback on a shared pair note (a false-friend warning): hidden either way;
+ * `reported` also says it is wrong. Device-local for now, per account (cleared on account
+ * switch); `sent_at` is set once it reaches the server.
+ */
+export interface PairNoteFeedbackRow {
+  /** The note's key: `${term_norm}|${tr_word}` (see domain/pairNotes.ts). */
+  key: string;
+  verdict: 'dismissed' | 'reported';
+  at: Millis;
+  sent_at: Millis | null;
 }

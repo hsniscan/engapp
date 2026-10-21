@@ -72,6 +72,25 @@ describe('sync api', () => {
     expect(res.next_seq).toBe(7);
   });
 
+  it('accepts a root/affix note and still rejects an unknown term type', async () => {
+    const affix = { ...note, id: '0190a000-0000-7000-8000-000000000002', term: '-spect-', term_norm: '-spect-', term_type: 'affix' };
+    const bogus = { ...note, id: '0190a000-0000-7000-8000-000000000003', term_type: 'bogus' };
+    const { client } = fakeClient({
+      data: {
+        rows: [
+          { table: 'notes', seq: 1, row: affix },
+          { table: 'notes', seq: 2, row: bogus },
+        ],
+        next_seq: 2,
+        has_more: false,
+        full_resync: false,
+      },
+    });
+    const res = await pullChanges(0, 500, client);
+    expect(res.rows.map((r) => r.row)).toEqual([affix]);
+    expect(res.invalid.map((i) => i.seq)).toEqual([2]);
+  });
+
   it('classifies errors', async () => {
     await expect(
       pushBatch(

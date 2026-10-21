@@ -58,7 +58,7 @@ export function morphemeUserMessage(items: MorphemeJobItem[]): string {
   return JSON.stringify({ items });
 }
 
-const TURKISH_TEXT = /^[\p{L}\p{N}\s.,;:()'"’“”!?/→\-–]+$/u;
+const TURKISH_TEXT = /^[\p{L}\p{N}\s.,;:()'"’“”!?/→=+\-–]+$/u;
 
 /**
  * Validates a model answer against the request. Returns the accepted meanings by id and the
