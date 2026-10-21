@@ -61,23 +61,37 @@ export async function getTopicProfile(now: Millis = Date.now()): Promise<TopicPr
  * The given example-sentence contexts, the user's most interesting first; equal ones keep
  * the given order. İP5 calls this to pick the tab that opens first.
  */
-export async function getOrderedContexts<C extends string>(contexts: readonly C[], now: Millis = Date.now()): Promise<C[]> {
+export async function getOrderedContexts<C extends string>(
+  contexts: readonly C[],
+  now: Millis = Date.now(),
+): Promise<C[]> {
   return orderContexts(contexts, (await getTopicProfile(now)).weights);
 }
 
 type ProfileLists = Pick<Settings, 'interests' | 'muted_topics'>;
 
 /** Read-modify-write of the two lists in one transaction (one outbox row). */
-async function updateLists(change: (s: ProfileLists) => ProfileLists, now: Millis): Promise<Settings> {
+async function updateLists(
+  change: (s: ProfileLists) => ProfileLists,
+  now: Millis,
+): Promise<Settings> {
   return writeTx([db.settings], now, async (w) => {
     const current = (await db.settings.get(SETTINGS_ID)) ?? defaultSettings(now, w.userId);
     const next = change(current);
-    return w.put('settings', { ...current, interests: next.interests, muted_topics: next.muted_topics });
+    return w.put('settings', {
+      ...current,
+      interests: next.interests,
+      muted_topics: next.muted_topics,
+    });
   });
 }
 
 /** Pick or unpick a topic. Picking a topic that was turned off turns it back on. */
-export function setInterest(topic: TopicKey, on: boolean, now: Millis = Date.now()): Promise<Settings> {
+export function setInterest(
+  topic: TopicKey,
+  on: boolean,
+  now: Millis = Date.now(),
+): Promise<Settings> {
   return updateLists(
     (s) => ({
       interests: toggleInList(s.interests, topic, on),
@@ -88,7 +102,10 @@ export function setInterest(topic: TopicKey, on: boolean, now: Millis = Date.now
 }
 
 /** Replace the picked topics at once (first-run choice). Picked topics are turned back on. */
-export function saveInterests(topics: readonly TopicKey[], now: Millis = Date.now()): Promise<Settings> {
+export function saveInterests(
+  topics: readonly TopicKey[],
+  now: Millis = Date.now(),
+): Promise<Settings> {
   const picked = new Set<string>(topics);
   return updateLists(
     (s) => ({
@@ -104,7 +121,11 @@ export function saveInterests(topics: readonly TopicKey[], now: Millis = Date.no
  * Turn a topic off (it weighs 0 whatever the user imports) or back on. Turning it off also
  * unpicks it; turning it on does not pick it again.
  */
-export function setTopicMuted(topic: TopicKey, muted: boolean, now: Millis = Date.now()): Promise<Settings> {
+export function setTopicMuted(
+  topic: TopicKey,
+  muted: boolean,
+  now: Millis = Date.now(),
+): Promise<Settings> {
   return updateLists(
     (s) => ({
       interests: muted ? toggleInList(s.interests, topic, false) : (s.interests ?? []),
@@ -116,19 +137,29 @@ export function setTopicMuted(topic: TopicKey, muted: boolean, now: Millis = Dat
 
 /** "Şimdi değil": the question is answered with nothing picked, on every device. */
 export function dismissInterestPrompt(now: Millis = Date.now()): Promise<Settings> {
-  return updateLists((s) => ({ interests: s.interests ?? [], muted_topics: s.muted_topics ?? [] }), now);
+  return updateLists(
+    (s) => ({ interests: s.interests ?? [], muted_topics: s.muted_topics ?? [] }),
+    now,
+  );
 }
 
 /**
  * Store a text's topics (from the extract call: pass the chunk topics through
  * aggregateTopics first). Unknown keys are dropped; at most 3.
  */
-export async function setSourceTopics(sourceId: Id, topics: readonly string[], now: Millis = Date.now()): Promise<void> {
+export async function setSourceTopics(
+  sourceId: Id,
+  topics: readonly string[],
+  now: Millis = Date.now(),
+): Promise<void> {
   const clean = parseTopics(topics, 3);
   await writeTx([db.sources], now, async (w) => {
     const source = await db.sources.get(sourceId);
     if (!source) throw new ActionError('not_found');
-    const same = source.topics != null && source.topics.length === clean.length && source.topics.every((t, i) => t === clean[i]);
+    const same =
+      source.topics != null &&
+      source.topics.length === clean.length &&
+      source.topics.every((t, i) => t === clean[i]);
     if (!same) await w.put('sources', { ...source, topics: clean });
   });
 }

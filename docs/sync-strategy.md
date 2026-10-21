@@ -62,6 +62,15 @@ registry but cannot write it. pgTAP checks that every registered table has RLS w
 select and insert policies, that mutable tables have an update policy, and that insert-only
 tables can be neither updated nor deleted.
 
+### Columns older clients do not know (v0.2 İP7)
+
+A client that predates a column pushes rows without it, and `jsonb_populate_record` makes it
+null, so normally its edit clears the column (accepted for `senses.source_sentence_tr`). For
+`settings.interests`, `settings.muted_topics` and `sources.topics` a `keep_profile_fields`
+BEFORE UPDATE trigger keeps the stored value when the incoming one is null, and
+`applyRemoteRows` does the same locally (`keepProfileFields`). A list is cleared with `[]`,
+never with null (decision 0015).
+
 ## Push
 
 `sync_push(p_batch jsonb)`; `p_batch` = up to 100 items `{table, op, payload}`:

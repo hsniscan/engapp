@@ -121,6 +121,16 @@ for (const width of [360, 1280]) {
         page.getByRole('heading', { name: 'Ayarlar', level: 1, exact: true }),
       ).toBeVisible();
       await check(page, 'settings', tag);
+
+      await page.goto('/settings/profile');
+      const pick = page.getByRole('region', { name: 'İlgi alanların' });
+      await pick.getByRole('button', { name: 'Teknoloji' }).click();
+      await pick.getByRole('button', { name: 'Bilim' }).click();
+      await pick.getByRole('button', { name: 'Seyahat' }).click();
+      await page.getByRole('button', { name: 'Seyahat konusunu kapat' }).click();
+      await expect(page.getByRole('region', { name: 'Kapalı konular' })).toBeVisible();
+      await page.getByText('Nasıl hesaplanır?').click();
+      await check(page, 'profile', tag);
     });
   }
 }

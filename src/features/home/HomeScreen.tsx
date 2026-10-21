@@ -12,6 +12,7 @@ import {
 } from '@/features/stats/format';
 import { heatLabel } from '@/features/stats/heatLabel';
 import { buttonClasses, cn, Icon, Page, Skeleton, Surface } from '@/ui';
+import { InterestsPrompt } from '@/features/profile/InterestsPrompt';
 import { nextDueText } from './nextDueText';
 import { getHomeDashboard, type ForecastDay, type HomeDashboard } from './queries';
 
@@ -35,6 +36,7 @@ function Dashboard({ data }: { data: HomeDashboard }) {
     <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-start lg:gap-5">
       <div className="contents lg:flex lg:flex-col lg:gap-5">
         <TodayCard data={data} className="order-2 lg:order-none" />
+        <InterestsPrompt className="order-2 lg:order-none" />
         <ActivityStrip cells={data.strip} className="order-3 lg:order-none" />
         <RecentWords data={data} className="order-6 lg:order-none" />
       </div>

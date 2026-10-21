@@ -21,7 +21,11 @@ export const PROFILE_RULE = {
 const DAY_MS = 86_400_000;
 
 /** 1 now, 0.5 after one half-life, …; a future timestamp counts as now. */
-export function decayFactor(at: Millis, now: Millis, halfLifeDays: number = PROFILE_RULE.halfLifeDays): number {
+export function decayFactor(
+  at: Millis,
+  now: Millis,
+  halfLifeDays: number = PROFILE_RULE.halfLifeDays,
+): number {
   const ageDays = Math.max(0, now - at) / DAY_MS;
   return 0.5 ** (ageDays / halfLifeDays);
 }
@@ -125,7 +129,10 @@ export function topicWeights(input: ProfileInput): TopicWeight[] {
 
 /** Topics with a positive weight, heaviest first ("ilgi alanımdan" practice, theme names). */
 export function rankedTopics(weights: readonly TopicWeight[]): TopicKey[] {
-  return [...weights].filter((w) => w.weight > 0).sort((a, b) => b.weight - a.weight).map((w) => w.topic);
+  return [...weights]
+    .filter((w) => w.weight > 0)
+    .sort((a, b) => b.weight - a.weight)
+    .map((w) => w.topic);
 }
 
 /**
@@ -135,7 +142,10 @@ export function rankedTopics(weights: readonly TopicWeight[]): TopicKey[] {
  * Contexts with equal scores — including everything when the profile is empty — keep the
  * order they were given in, so the caller's default order is the fallback.
  */
-export function orderContexts<C extends string>(contexts: readonly C[], weights: readonly TopicWeight[]): C[] {
+export function orderContexts<C extends string>(
+  contexts: readonly C[],
+  weights: readonly TopicWeight[],
+): C[] {
   const score = (c: string): number => {
     let s = 0;
     for (const w of weights) if (w.topic === c || TOPIC_CONTEXT[w.topic] === c) s += w.weight;
@@ -159,7 +169,11 @@ const PROFILE_FIELDS: Readonly<Record<string, readonly string[]>> = {
  * (null). Like the server's `keep_profile_fields` trigger, keep the local values then: a
  * missing list means "unknown", an empty list means "none".
  */
-export function keepProfileFields<T extends object>(table: string, incoming: T, local: object | undefined): T {
+export function keepProfileFields<T extends object>(
+  table: string,
+  incoming: T,
+  local: object | undefined,
+): T {
   const fields = PROFILE_FIELDS[table];
   if (!fields || !local) return incoming;
   let out = incoming;
@@ -175,7 +189,11 @@ export function keepProfileFields<T extends object>(table: string, incoming: T, 
  * Adds or removes `topic` from a stored list, keeping keys this version does not know (a newer
  * device may have written them).
  */
-export function toggleInList(list: readonly string[] | null | undefined, topic: TopicKey, on: boolean): string[] {
+export function toggleInList(
+  list: readonly string[] | null | undefined,
+  topic: TopicKey,
+  on: boolean,
+): string[] {
   const rest = (list ?? []).filter((t) => t !== topic);
   return on ? [...rest, topic] : rest;
 }

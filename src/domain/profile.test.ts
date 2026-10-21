@@ -25,7 +25,8 @@ const fb = (context: string, verdict: FeedbackSignal['verdict'], daysAgo = 0): F
   verdict,
   at: NOW - daysAgo * DAY,
 });
-const weightOf = (ws: ReturnType<typeof topicWeights>, t: TopicKey) => ws.find((w) => w.topic === t)!;
+const weightOf = (ws: ReturnType<typeof topicWeights>, t: TopicKey) =>
+  ws.find((w) => w.topic === t)!;
 
 describe('decayFactor', () => {
   it('halves every 60 days and treats the future as now', () => {
@@ -60,7 +61,11 @@ describe('topicWeights (fixed scenarios)', () => {
   it('ignores deleted texts, unknown keys and a topic listed twice on one text', () => {
     const ws = topicWeights({
       now: NOW,
-      sources: [src(['science'], 0, true), src(['astrology', 'food', 'food']), { created_at: NOW, deleted_at: null }],
+      sources: [
+        src(['science'], 0, true),
+        src(['astrology', 'food', 'food']),
+        { created_at: NOW, deleted_at: null },
+      ],
     });
     expect(weightOf(ws, 'science').weight).toBe(0);
     expect(weightOf(ws, 'food')).toMatchObject({ weight: 1, texts: 1 });
@@ -70,7 +75,13 @@ describe('topicWeights (fixed scenarios)', () => {
     const ws = topicWeights({
       now: NOW,
       interests: ['travel'],
-      feedback: [fb('travel', 'like'), fb('travel', 'like'), fb('travel', 'skip'), fb('technical', 'skip'), fb('daily', 'reject')],
+      feedback: [
+        fb('travel', 'like'),
+        fb('travel', 'like'),
+        fb('travel', 'skip'),
+        fb('technical', 'skip'),
+        fb('daily', 'reject'),
+      ],
     });
     expect(weightOf(ws, 'travel')).toMatchObject({ weight: 3.75, likes: 2, skips: 1 });
     expect(weightOf(ws, 'technology')).toMatchObject({ weight: 0, skips: 1 });
@@ -94,7 +105,11 @@ describe('topicWeights (fixed scenarios)', () => {
   });
 
   it('sorts heaviest first, ties in list order', () => {
-    const ws = topicWeights({ now: NOW, interests: ['law', 'technology'], sources: [src(['food'])] });
+    const ws = topicWeights({
+      now: NOW,
+      interests: ['law', 'technology'],
+      sources: [src(['food'])],
+    });
     expect(rankedTopics(ws)).toEqual(['technology', 'law', 'food']);
   });
 
@@ -105,7 +120,13 @@ describe('topicWeights (fixed scenarios)', () => {
         fc.array(topic),
         fc.array(topic),
         fc.array(fc.record({ topics: fc.array(topic, { maxLength: 3 }), days: fc.nat(400) })),
-        fc.array(fc.record({ context: fc.constantFrom(...BASE_CONTEXTS, ...TOPIC_KEYS), verdict: fc.constantFrom('like' as const, 'skip' as const, 'reject' as const), days: fc.nat(400) })),
+        fc.array(
+          fc.record({
+            context: fc.constantFrom(...BASE_CONTEXTS, ...TOPIC_KEYS),
+            verdict: fc.constantFrom('like' as const, 'skip' as const, 'reject' as const),
+            days: fc.nat(400),
+          }),
+        ),
         topic,
         (interests, muted, sources, feedback, extra) => {
           const input = {
@@ -121,7 +142,10 @@ describe('topicWeights (fixed scenarios)', () => {
             if (w.muted) expect(w.weight).toBe(0);
           }
           const before = weightOf(ws, extra).weight;
-          const after = weightOf(topicWeights({ ...input, interests: [...interests, extra] }), extra).weight;
+          const after = weightOf(
+            topicWeights({ ...input, interests: [...interests, extra] }),
+            extra,
+          ).weight;
           expect(after).toBeGreaterThanOrEqual(before);
         },
       ),
@@ -137,14 +161,27 @@ describe('orderContexts', () => {
   });
 
   it('opens "technical" first for a user who imported 3 technology texts (plan acceptance)', () => {
-    const ws = topicWeights({ now: NOW, sources: [src(['technology']), src(['technology']), src(['technology'])] });
+    const ws = topicWeights({
+      now: NOW,
+      sources: [src(['technology']), src(['technology']), src(['technology'])],
+    });
     expect(orderContexts(contexts, ws)[0]).toBe('technical');
   });
 
   it('sums the topics under a base context and puts an interest context by its own topic', () => {
-    const ws = topicWeights({ now: NOW, interests: ['law', 'politics', 'travel'], sources: [src(['business']), src(['business'])] });
+    const ws = topicWeights({
+      now: NOW,
+      interests: ['law', 'politics', 'travel'],
+      sources: [src(['business']), src(['business'])],
+    });
     // formal = law 3 + politics 3 = 6; daily = travel 3; business = 2; travel = 3 (own key) + 0.
-    expect(orderContexts([...contexts, 'travel'], ws)).toEqual(['formal', 'daily', 'travel', 'business', 'technical']);
+    expect(orderContexts([...contexts, 'travel'], ws)).toEqual([
+      'formal',
+      'daily',
+      'travel',
+      'business',
+      'technical',
+    ]);
   });
 });
 
@@ -156,11 +193,16 @@ describe('keepProfileFields', () => {
       interests: ['travel'],
       muted_topics: [],
     });
-    expect(keepProfileFields('sources', { id: 's' }, { id: 's', topics: ['law'] })).toEqual({ id: 's', topics: ['law'] });
+    expect(keepProfileFields('sources', { id: 's' }, { id: 's', topics: ['law'] })).toEqual({
+      id: 's',
+      topics: ['law'],
+    });
   });
 
   it('lets an empty list through and ignores other tables', () => {
-    expect(keepProfileFields('settings', { interests: [] }, { interests: ['travel'] })).toEqual({ interests: [] });
+    expect(keepProfileFields('settings', { interests: [] }, { interests: ['travel'] })).toEqual({
+      interests: [],
+    });
     expect(keepProfileFields('notes', { tags: null }, { tags: ['x'] })).toEqual({ tags: null });
     expect(keepProfileFields('sources', { topics: null }, undefined)).toEqual({ topics: null });
   });

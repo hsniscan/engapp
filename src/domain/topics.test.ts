@@ -23,7 +23,23 @@ describe('topic list', () => {
   });
 
   it('keeps the keys that are already stored (keys are never renamed)', () => {
-    for (const k of ['technology', 'business', 'science', 'health', 'sports', 'travel', 'arts', 'politics', 'law', 'education', 'nature', 'food', 'games', 'film', 'daily_life']) {
+    for (const k of [
+      'technology',
+      'business',
+      'science',
+      'health',
+      'sports',
+      'travel',
+      'arts',
+      'politics',
+      'law',
+      'education',
+      'nature',
+      'food',
+      'games',
+      'film',
+      'daily_life',
+    ]) {
       expect(isTopicKey(k)).toBe(true);
     }
   });
@@ -35,7 +51,10 @@ describe('topic list', () => {
 
 describe('parseTopics', () => {
   it('drops unknown values, normalizes spelling, dedupes and caps', () => {
-    expect(parseTopics(['Technology', 'daily-life', 'cooking', 'technology', 5, 'law'])).toEqual(['technology', 'daily_life']);
+    expect(parseTopics(['Technology', 'daily-life', 'cooking', 'technology', 5, 'law'])).toEqual([
+      'technology',
+      'daily_life',
+    ]);
     expect(parseTopics([' Daily life '], 3)).toEqual(['daily_life']);
     expect(parseTopics('technology')).toEqual([]);
     expect(parseTopics(null)).toEqual([]);
@@ -59,12 +78,23 @@ describe('aggregateTopics', () => {
   });
 
   it('drops topics named by fewer than a quarter of the chunks, most frequent first', () => {
-    const chunks = [['technology'], ['technology', 'science'], ['science'], ['technology'], ['health'], ['technology'], ['science'], ['law']];
+    const chunks = [
+      ['technology'],
+      ['technology', 'science'],
+      ['science'],
+      ['technology'],
+      ['health'],
+      ['technology'],
+      ['science'],
+      ['law'],
+    ];
     expect(aggregateTopics(chunks)).toEqual(['technology', 'science']);
   });
 
   it('caps the result and ignores junk', () => {
-    expect(aggregateTopics([['food', 'travel'], ['travel', 'x'], ['sports', 'food'], [42]], 2)).toEqual(['travel', 'food']);
+    expect(
+      aggregateTopics([['food', 'travel'], ['travel', 'x'], ['sports', 'food'], [42]], 2),
+    ).toEqual(['travel', 'food']);
     expect(aggregateTopics([])).toEqual([]);
   });
 });

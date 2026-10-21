@@ -26,7 +26,8 @@ beforeEach(async () => {
   await updateSettings({ timezone: 'Europe/Istanbul' }, T - DAY);
 });
 
-const outboxFor = async (table: string) => (await db.outbox.toArray()).filter((r) => r.table === table);
+const outboxFor = async (table: string) =>
+  (await db.outbox.toArray()).filter((r) => r.table === table);
 
 describe('interests', () => {
   it('starts unasked; "Şimdi değil" answers it with nothing picked and syncs', async () => {
@@ -75,14 +76,19 @@ describe('interests', () => {
   it('does not change other settings', async () => {
     await updateSettings({ daily_new_limit: 17, level: 'B2' }, T);
     await setInterest('science', true, T + 1);
-    expect(await getSettings(T)).toMatchObject({ daily_new_limit: 17, level: 'B2', interests: ['science'] });
+    expect(await getSettings(T)).toMatchObject({
+      daily_new_limit: 17,
+      level: 'B2',
+      interests: ['science'],
+    });
   });
 });
 
 describe('source topics', () => {
   it('stores clean topics once and feeds the profile', async () => {
     const ids: string[] = [];
-    for (let i = 0; i < 3; i++) ids.push((await createSource({ kind: 'text', title: `t${i}` }, T)).id);
+    for (let i = 0; i < 3; i++)
+      ids.push((await createSource({ kind: 'text', title: `t${i}` }, T)).id);
     for (const id of ids) await setSourceTopics(id, ['Technology', 'astrology'], T);
     const before = (await outboxFor('sources')).length;
     await setSourceTopics(ids[0]!, ['technology'], T); // unchanged: no write
@@ -93,7 +99,9 @@ describe('source topics', () => {
     const p = await getTopicProfile(T);
     expect(p.weights[0]).toMatchObject({ topic: 'technology', texts: 3, weight: 3 });
     // Plan acceptance: three technology texts → the "technical" tab opens first.
-    expect((await getOrderedContexts(['daily', 'business', 'technical', 'formal'], T))[0]).toBe('technical');
+    expect((await getOrderedContexts(['daily', 'business', 'technical', 'formal'], T))[0]).toBe(
+      'technical',
+    );
   });
 
   it('a deleted text no longer counts', async () => {
@@ -111,15 +119,25 @@ describe('sync merge', () => {
     await saveInterests(['travel'], T);
     const local = (await db.settings.get('settings'))!;
     const { interests: _i, muted_topics: _m, ...older } = local;
-    const res = await applyRemoteRows({ settings: [{ ...older, theme: 'dark', hlc: remoteHlc(T + DAY) }] }, T + DAY);
+    const res = await applyRemoteRows(
+      { settings: [{ ...older, theme: 'dark', hlc: remoteHlc(T + DAY) }] },
+      T + DAY,
+    );
     expect(res.applied).toBe(1);
-    expect(await db.settings.get('settings')).toMatchObject({ theme: 'dark', interests: ['travel'], muted_topics: [] });
+    expect(await db.settings.get('settings')).toMatchObject({
+      theme: 'dark',
+      interests: ['travel'],
+      muted_topics: [],
+    });
   });
 
   it('a pulled empty list wins (it means "none", not "unknown")', async () => {
     await saveInterests(['travel'], T);
     const local = (await db.settings.get('settings'))!;
-    await applyRemoteRows({ settings: [{ ...local, interests: [], hlc: remoteHlc(T + DAY) }] }, T + DAY);
+    await applyRemoteRows(
+      { settings: [{ ...local, interests: [], hlc: remoteHlc(T + DAY) }] },
+      T + DAY,
+    );
     expect((await db.settings.get('settings'))!.interests).toEqual([]);
   });
 
@@ -127,9 +145,17 @@ describe('sync merge', () => {
     const s = await createSource({ kind: 'text', title: 'a' }, T);
     await setSourceTopics(s.id, ['food'], T);
     const local = (await db.sources.get(s.id))!;
-    await applyRemoteRows({ sources: [{ ...local, title: 'b', topics: null, hlc: remoteHlc(T + DAY) }] }, T + DAY);
+    await applyRemoteRows(
+      { sources: [{ ...local, title: 'b', topics: null, hlc: remoteHlc(T + DAY) }] },
+      T + DAY,
+    );
     expect(await db.sources.get(s.id)).toMatchObject({ title: 'b', topics: ['food'] });
-    const fresh: Source = { ...local, id: '01999999-0000-7000-8000-0000000000aa', topics: ['law'], hlc: remoteHlc(T + DAY) };
+    const fresh: Source = {
+      ...local,
+      id: '01999999-0000-7000-8000-0000000000aa',
+      topics: ['law'],
+      hlc: remoteHlc(T + DAY),
+    };
     await applyRemoteRows({ sources: [fresh] }, T + DAY);
     expect((await db.sources.get(fresh.id))!.topics).toEqual(['law']);
   });
