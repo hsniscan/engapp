@@ -2,11 +2,14 @@
 // unique (term_id, pos, gloss_key), insert-or-get with the Turkish-meaning re-check, atomic
 // daily counter). Tests only.
 
+import type { Cefr, LevelSource } from '../cefr.ts';
 import type { LexiconEntry } from '../contracts.ts';
+import type { WordRefs } from '../level.ts';
 import { isSameMeaningTr } from '../text.ts';
 import type {
   AiStore,
   CachedChunk,
+  LevelRefs,
   LexiconUpsertItem,
   LexiconUpsertResult,
   LexTerm,
@@ -18,6 +21,7 @@ interface Term {
   lemma: string;
   lemma_norm: string;
   term_type: 'word' | 'phrase' | 'pattern';
+  zipf: number | null;
 }
 interface Sense {
   id: string;
@@ -29,6 +33,11 @@ interface Sense {
   ipa: string | null;
   model: string | null;
   updated_at: number;
+  cefr: Cefr | null;
+  cefr_source: LevelSource | null;
+  cefr_list: Cefr | null;
+  cefr_reason_tr: string | null;
+  cefr_guess: Cefr | null;
 }
 
 export class MemoryAiStore implements AiStore {
@@ -36,6 +45,10 @@ export class MemoryAiStore implements AiStore {
   senses = new Map<string, Sense>();
   cache = new Map<string, CachedChunk>();
   usage = new Map<string, number>();
+  /** Reference data served by getLevelRefs (ref_word_levels / ref_word_freq). */
+  refs = new Map<string, WordRefs>();
+  /** ref_sources.coverage_min_zipf of the frequency data; null = none loaded. */
+  refMinZipf: number | null = null;
   calls: string[] = [];
   private seq = 0;
 
@@ -82,6 +95,7 @@ export class MemoryAiStore implements AiStore {
         lemma: t.lemma,
         lemma_norm: t.lemma_norm,
         term_type: t.term_type,
+        zipf: t.zipf,
         senses: [...this.senses.values()]
           .filter((s) => s.term_id === t.id)
           .map((s) => ({
@@ -92,6 +106,10 @@ export class MemoryAiStore implements AiStore {
             meaning_tr: s.meaning_tr,
             ipa: s.ipa,
             updated_at: s.updated_at,
+            cefr: s.cefr,
+            cefr_source: s.cefr_source,
+            cefr_list: s.cefr_list,
+            cefr_reason_tr: s.cefr_reason_tr,
           })),
       }));
   }
@@ -113,8 +131,11 @@ export class MemoryAiStore implements AiStore {
           lemma: it.lemma,
           lemma_norm: it.lemma_norm,
           term_type: it.term_type,
+          zipf: it.zipf ?? null,
         };
         this.terms.set(term.id, term);
+      } else if (term.zipf === null && it.zipf != null) {
+        term.zipf = it.zipf;
       }
       if (!it.gloss_key)
         return {
@@ -141,6 +162,11 @@ export class MemoryAiStore implements AiStore {
           ipa: it.ipa ?? null,
           model: it.model ?? null,
           updated_at: 1_761_000_000_000 + this.seq,
+          cefr: it.cefr ?? null,
+          cefr_source: it.cefr ? (it.cefr_source ?? null) : null,
+          cefr_list: it.cefr_list ?? null,
+          cefr_reason_tr: it.cefr_reason_tr ?? null,
+          cefr_guess: it.cefr_guess ?? null,
         };
         this.senses.set(sense.id, sense);
       }
@@ -171,8 +197,21 @@ export class MemoryAiStore implements AiStore {
           meaning_tr: s.meaning_tr,
           ipa: s.ipa,
           updated_at: s.updated_at,
+          cefr: s.cefr,
+          cefr_source: s.cefr_source,
+          cefr_list: s.cefr_list,
+          cefr_reason_tr: s.cefr_reason_tr,
+          zipf: t.zipf,
         };
       });
+  }
+
+  async getLevelRefs(lemmas: string[]): Promise<LevelRefs> {
+    this.calls.push('getLevelRefs');
+    const rows = [...new Set(lemmas)]
+      .filter((l) => this.refs.has(l))
+      .map((l) => ({ lemma_norm: l, ...structuredClone(this.refs.get(l)!) }));
+    return { min_zipf: this.refMinZipf, rows };
   }
 
   /** Seeds a sense directly (test setup). */

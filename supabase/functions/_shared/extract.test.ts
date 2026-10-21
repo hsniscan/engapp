@@ -88,6 +88,40 @@ describe('runExtract', () => {
     ]);
   });
 
+  it('stores the level of new senses: list level first, phrases by guess or hardest word', async () => {
+    const store = new MemoryAiStore();
+    store.refMinZipf = 3;
+    store.refs.set('bank', { refs: [{ pos: 'noun', cefr: 'A2', source: 'cefrj' }], zipf: 5.1 });
+    store.refs.set('give', { refs: [{ pos: 'verb', cefr: 'A1', source: 'cefrj' }], zipf: 6.0 });
+    store.refs.set('turn', { refs: [{ pos: 'verb', cefr: 'A1', source: 'cefrj' }], zipf: 5.6 });
+    store.refs.set('up', { refs: [], zipf: 6.5 });
+    store.refs.set('down', { refs: [], zipf: 6.0 });
+    store.refs.set('application', { refs: [{ pos: 'noun', cefr: 'B1', source: 'cefrj' }], zipf: 4.6 });
+    const { provider, requests } = scripted(GOOD_EXTRACT);
+    const res = await runExtract(await body(), deps(store, provider));
+    expect(requests[0]!.system).toContain('cefr_guess');
+    expect(
+      res.candidates.map((c) => [c.term, c.lexicon.cefr, c.lexicon.cefr_source, c.lexicon.zipf]),
+    ).toEqual([
+      ['give up', 'B1', 'ai', null], // guess B1 above its words (A1)
+      ['bank', 'A2', 'cefrj', 5.1], // the list beats the guess (B2)
+      ['turn down', 'B2', 'ai', null], // "b2" read as B2
+    ]);
+    const guesses = [...store.senses.values()].map((s) => s.cefr_guess);
+    expect(guesses).toEqual(['B1', 'B2', 'B2']);
+  });
+
+  it('a failing level lookup never fails the request', async () => {
+    const store = new MemoryAiStore();
+    store.getLevelRefs = () => Promise.reject(new Error('down'));
+    const log = vi.fn();
+    const { provider } = scripted(GOOD_EXTRACT);
+    const res = await runExtract(await body(), deps(store, provider, { log }));
+    expect(res.candidates).toHaveLength(3);
+    expect(res.candidates.every((c) => c.lexicon.cefr === null)).toBe(true);
+    expect(log).toHaveBeenCalledWith('level lookup failed', { error: 'Error: down' });
+  });
+
   it('never calls the model twice for the same chunk (server chunk cache)', async () => {
     const store = new MemoryAiStore();
     const { provider } = scripted(GOOD_EXTRACT);

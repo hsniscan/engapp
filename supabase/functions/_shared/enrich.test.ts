@@ -64,6 +64,24 @@ describe('runEnrich', () => {
     expect(JSON.stringify([...store.senses.values()])).not.toContain('I went to the bank');
   });
 
+  it('stores and returns the level of new senses (an invalid guess falls back to frequency)', async () => {
+    const store = new MemoryAiStore();
+    store.refMinZipf = 3;
+    store.refs.set('bank', { refs: [], zipf: 5.1 });
+    const { provider, requests } = scripted(ENRICH_BANK);
+    const res = await runEnrich({ term: 'bank' }, deps(store, provider));
+    expect(requests[0]!.system).toContain('cefr_guess');
+    expect(res.senses.map((s) => [s.meaning_tr, s.cefr, s.cefr_source, s.zipf])).toEqual([
+      ['banka', 'A1', 'ai', 5.1],
+      ['kıyı', 'B1', 'ai', 5.1], // B2 capped: Zipf >= 5 is at most B1
+      ['bankaya yatırmak', 'A2', 'freq', 5.1], // "Z9" ignored
+    ]);
+    // The lexicon answer carries the stored levels too.
+    const again = await runEnrich({ term: 'bank' }, deps(store, provider));
+    expect(again.ai_called).toBe(false);
+    expect(again.senses.map((s) => s.cefr)).toEqual(['A1', 'B1', 'A2']);
+  });
+
   it('returns no term for something that is not English', async () => {
     const store = new MemoryAiStore();
     const { provider } = scripted(ENRICH_INVALID);

@@ -34,6 +34,8 @@ export interface Note extends SyncedRow {
   ipa: string | null; // copied from lexicon or entered by hand
   tags: string[];
   possible_duplicate: boolean; // set when an account merge finds two notes with same term
+  /** The user's own level for this word; null = the computed one (src/domain/level.ts). */
+  level_override: CefrLevel | null;
 }
 
 /** One meaning of a note ("1. banka", "2. kıyı"). */
@@ -121,6 +123,12 @@ export interface Source extends SyncedRow {
 
 export type ThemePref = 'system' | 'light' | 'dark';
 export type CefrLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
+/**
+ * Where a word's level comes from (supabase/functions/_shared/level.ts): a word list
+ * (CEFR-J, Octanove C1/C2), the AI's guess, word frequency, or the hardest word of a
+ * multi-word expression.
+ */
+export type LevelSource = 'cefrj' | 'octanove' | 'ai' | 'freq' | 'words';
 
 /** One settings row per user (id = 'settings'). */
 export interface Settings extends SyncedRow {
@@ -147,6 +155,15 @@ export interface LexiconSense {
   meaning_tr: string;
   ipa: string | null;
   updated_at: Millis;
+  /** v0.2 level of the sense; absent on rows cached before it (re-pulled by the Dexie v4 upgrade). */
+  cefr?: CefrLevel | null;
+  cefr_source?: LevelSource | null;
+  /** List level before the Turkish-learner correction. */
+  cefr_list?: CefrLevel | null;
+  /** Short Turkish reason of the correction. */
+  cefr_reason_tr?: string | null;
+  /** Word frequency of the term (Zipf scale, wordfreq). */
+  zipf?: number | null;
 }
 
 export type ImportJobStatus = 'queued' | 'processing' | 'ready' | 'failed' | 'done';

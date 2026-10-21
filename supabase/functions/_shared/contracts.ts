@@ -2,8 +2,9 @@
 // and by the web client (src/ai/), so both sides validate against the same schemas.
 
 import { z } from 'zod';
+import { CEFR, LEVEL_SOURCES } from './cefr.ts';
 
-export const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
+export const CEFR_LEVELS = CEFR;
 export const cefrLevel = z.enum(CEFR_LEVELS);
 
 export const termType = z.enum(['word', 'phrase', 'pattern']);
@@ -21,7 +22,7 @@ export const MAX_PROSE_CANDIDATES = 30;
  * Version of the extract prompt and response schema; it keys the server chunk cache and
  * the client's local chunk cache. Bump it with every prompt or schema change (prompts.ts).
  */
-export const EXTRACT_PROMPT_VERSION = 'extract-v2';
+export const EXTRACT_PROMPT_VERSION = 'extract-v3';
 
 export const ERROR_CODES = [
   'unauthorized', // no/invalid/expired session, or an anonymous session
@@ -43,6 +44,12 @@ export const errorBody = z.object({
 });
 export type ErrorBody = z.infer<typeof errorBody>;
 
+/**
+ * A field added after v0.1: absent (older server or cached row) or unexpected (a newer
+ * server) becomes null instead of failing the whole lexicon page.
+ */
+const lenient = <T extends z.ZodType>(t: T) => t.nullable().default(null).catch(null);
+
 /** Shape of src/domain/types.ts LexiconSense (updated_at in epoch ms). */
 export const lexiconEntry = z.object({
   id: z.string(),
@@ -55,6 +62,14 @@ export const lexiconEntry = z.object({
   meaning_tr: z.string(),
   ipa: z.string().nullable(),
   updated_at: z.number(),
+  // v0.2 İP2: level of the sense (supabase/functions/_shared/level.ts) and the term's Zipf.
+  cefr: lenient(cefrLevel),
+  cefr_source: lenient(z.enum(LEVEL_SOURCES)),
+  /** List level before the Turkish-learner correction (list sources only). */
+  cefr_list: lenient(cefrLevel),
+  /** Short Turkish reason of the correction ("Türkçede 'televizyon'"). */
+  cefr_reason_tr: lenient(z.string().max(120)),
+  zipf: lenient(z.number().min(0).max(9)),
 });
 export type LexiconEntry = z.infer<typeof lexiconEntry>;
 

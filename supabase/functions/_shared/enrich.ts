@@ -4,6 +4,7 @@
 import { enrichRequest, type EnrichResponse, type LexiconEntry } from './contracts.ts';
 import { ApiError } from './errors.ts';
 import { AiError } from './ai-provider.ts';
+import { parseCefr } from './cefr.ts';
 import {
   buildEnrichUserPrompt,
   ENRICH_PROMPT_VERSION,
@@ -38,6 +39,11 @@ function entriesOf(t: LexTerm): LexiconEntry[] {
     meaning_tr: s.meaning_tr,
     ipa: s.ipa,
     updated_at: s.updated_at,
+    cefr: s.cefr ?? null,
+    cefr_source: s.cefr_source ?? null,
+    cefr_list: s.cefr_list ?? null,
+    cefr_reason_tr: s.cefr_reason_tr ?? null,
+    zipf: t.zipf ?? null,
   }));
 }
 
@@ -193,13 +199,20 @@ export async function runEnrich(body: unknown, deps: PipelineDeps): Promise<Enri
         gloss_key: key,
         meaning_tr: meaning,
         ipa,
+        cefr_guess: parseCefr(p.data.cefr_guess),
       },
     });
     usedInSentence.push(p.data.used_in_sentence === true);
   }
 
   const termsByNorm = new Map<string, LexTerm>(term ? [[term.lemma_norm, term]] : []);
-  const resolved = await resolveNewSenses(pending, termsByNorm, deps.store, result.model);
+  const resolved = await resolveNewSenses(
+    pending,
+    termsByNorm,
+    deps.store,
+    result.model,
+    deps.log,
+  );
 
   const existingIds = new Set(existing.map((e) => e.id));
   const newIds: string[] = [];

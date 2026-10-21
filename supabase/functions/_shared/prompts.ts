@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { EXTRACT_PROMPT_VERSION, MAX_CANDIDATES, MAX_PROSE_CANDIDATES } from './contracts.ts';
 
 export { EXTRACT_PROMPT_VERSION };
-export const ENRICH_PROMPT_VERSION = 'enrich-v1';
+export const ENRICH_PROMPT_VERSION = 'enrich-v2';
 
 /** Max existing senses offered to the model per extract request (prompt size bound). */
 export const MAX_KNOWN_SENSES = 300;
@@ -19,7 +19,8 @@ const POS_LIST =
 const FIELD_RULES = `- pos: one of: ${POS_LIST}.
 - gloss_en: a short English definition (3-10 words, no final period) in learner's-dictionary style that tells this sense apart from the term's other senses, e.g. "the land beside a river", "an organization that keeps and lends money". Use simple, common words (B1 vocabulary) and do not use the term itself in the gloss.
 - meaning_tr: the Turkish equivalent as a good bilingual dictionary gives it: short (1-4 words; at most two alternatives separated by ", "), natural, accurate, lower-case except proper nouns, and the same part of speech as the English (verbs as infinitives: "vazgeçmek", "karşılaşmak"; adjectives as adjectives: "isteksiz"; nouns as nouns: "kıyı"). Translate this specific sense, not the most frequent meaning of the word. No explanations, no parentheses, no English, no quotation marks.
-- ipa: IPA transcription of the whole term between slashes, General American, e.g. "/rɪˈlʌktənt/", "/ɡɪv ˈʌp/". Use null if you are not sure.`;
+- ipa: IPA transcription of the whole term between slashes, General American, e.g. "/rɪˈlʌktənt/", "/ɡɪv ˈʌp/". Use null if you are not sure.
+- cefr_guess: the CEFR level (A1, A2, B1, B2, C1 or C2) at which a typical Turkish-speaking learner of English meets and learns this sense. Rate this sense, not the word's most common one. A word Turkish has borrowed with the same meaning ("television" ~ televizyon) is easier; a word that looks like a Turkish word with another meaning ("actually" ~ aktüel) is harder.`;
 
 export const EXTRACT_SYSTEM_PROMPT = `You are an expert lexicographer who builds English-to-Turkish vocabulary flashcards for a Turkish-speaking learner of English.
 
@@ -42,7 +43,7 @@ FIELDS OF EACH CANDIDATE
 - source_sentence: the complete sentence from TEXT that contains the term, copied character for character. Do not correct, shorten, re-punctuate or merge lines. If the sentence is longer than about 300 characters, copy only the clause containing the term, still verbatim.
 - sentence_tr: a natural, fluent Turkish translation of source_sentence as a good translator would write it, not word for word. Translate all of source_sentence and nothing more: no notes, no alternatives, no quotation marks around it.
 - confidence: 0 to 1, how sure you are that the term, its sense and the Turkish meaning are correct for this sentence.
-- known_sense: KNOWN_SENSES lists senses that already exist in the dictionary, one per line as "<ref> | <term> | <part of speech> | <English gloss>". If the term is listed there and its meaning in this sentence is one of the listed senses, set known_sense to that ref (for example "s3") and set pos, gloss_en, meaning_tr and ipa to null: that content exists already and must not be written again. A ref may only be used for the same term. Otherwise set known_sense to null and fill in the new sense:
+- known_sense: KNOWN_SENSES lists senses that already exist in the dictionary, one per line as "<ref> | <term> | <part of speech> | <English gloss>". If the term is listed there and its meaning in this sentence is one of the listed senses, set known_sense to that ref (for example "s3") and set pos, gloss_en, meaning_tr, ipa and cefr_guess to null: that content exists already and must not be written again. A ref may only be used for the same term. Otherwise set known_sense to null and fill in the new sense:
 ${FIELD_RULES}
   If the term itself appears in KNOWN_SENSES (with other senses), set ipa to null.
 
@@ -103,6 +104,10 @@ export const EXTRACT_RESPONSE_SCHEMA = {
           gloss_en: { ...nullableString, description: 'null when known_sense is set' },
           meaning_tr: { ...nullableString, description: 'null when known_sense is set' },
           ipa: { ...nullableString, description: 'null when known_sense is set or unsure' },
+          cefr_guess: {
+            ...nullableString,
+            description: 'A1, A2, B1, B2, C1 or C2; null when known_sense is set',
+          },
         },
         required: [
           'term',
@@ -116,6 +121,7 @@ export const EXTRACT_RESPONSE_SCHEMA = {
           'gloss_en',
           'meaning_tr',
           'ipa',
+          'cefr_guess',
         ],
       },
     },
@@ -136,6 +142,8 @@ export const extractModelCandidate = z.object({
   gloss_en: z.string().nullish(),
   meaning_tr: z.string().nullish(),
   ipa: z.string().nullish(),
+  /** extract-v3; checked by the server (parseCefr), a bad value only drops the guess. */
+  cefr_guess: z.unknown().optional(),
 });
 export type ExtractModelCandidate = z.infer<typeof extractModelCandidate>;
 
@@ -205,9 +213,10 @@ export const ENRICH_RESPONSE_SCHEMA = {
           gloss_en: { type: 'string' },
           meaning_tr: { type: 'string' },
           ipa: nullableString,
+          cefr_guess: { type: 'string', description: 'A1, A2, B1, B2, C1 or C2' },
           used_in_sentence: { type: 'boolean' },
         },
-        required: ['pos', 'gloss_en', 'meaning_tr', 'ipa', 'used_in_sentence'],
+        required: ['pos', 'gloss_en', 'meaning_tr', 'ipa', 'cefr_guess', 'used_in_sentence'],
       },
     },
     sentence_known_sense: nullableString,
@@ -220,6 +229,7 @@ export const enrichModelSense = z.object({
   gloss_en: z.string(),
   meaning_tr: z.string(),
   ipa: z.string().nullish(),
+  cefr_guess: z.unknown().optional(),
   used_in_sentence: z.boolean().optional().default(false),
 });
 

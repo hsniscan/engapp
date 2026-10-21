@@ -227,6 +227,7 @@ export async function addNoteWithSenses(input: AddNoteInput, now: Millis = Date.
         ipa: input.ipa ?? null,
         tags: uniqueTags(input.tags ?? []),
         possible_duplicate: false,
+        level_override: null,
       });
     }
 

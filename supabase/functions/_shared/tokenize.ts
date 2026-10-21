@@ -103,8 +103,9 @@ export const FUNCTION_WORDS = new Set([
 ]);
 
 // Irregular forms -> base form (verbs, plurals, comparatives). Not exhaustive: a miss
-// only means the model generates the sense instead of reusing it.
-const IRREGULAR: Record<string, string[]> = {
+// only means the model generates the sense instead of reusing it. Null prototype: a text
+// word like "constructor" or "toString" must not find Object.prototype members.
+const IRREGULAR: Record<string, string[]> = Object.assign(Object.create(null) as Record<string, string[]>, {
   arose: ['arise'],
   arisen: ['arise'],
   awoke: ['awake'],
@@ -330,7 +331,7 @@ const IRREGULAR: Record<string, string[]> = {
   less: ['little', 'less'],
   least: ['little'],
   "one's": ["one's"],
-};
+});
 
 const VOWEL = /[aeiou]/;
 

@@ -11,6 +11,8 @@ import {
 } from './contracts.ts';
 import { ApiError } from './errors.ts';
 import { AiError, type AiProvider } from './ai-provider.ts';
+import { parseCefr, type Cefr } from './cefr.ts';
+import { lemmasNeeded, resolveLevel, type RefLookup } from './level.ts';
 import { stripListEntryPrefix } from './listEntry.ts';
 import { findGappedSpan, findSentence, findSpan } from './locate.ts';
 import {
@@ -111,6 +113,8 @@ export interface NewSense {
   gloss_key: string;
   meaning_tr: string;
   ipa: string | null;
+  /** The model's level guess (extract-v3 / enrich-v2); null when missing or invalid. */
+  cefr_guess: Cefr | null;
 }
 
 export interface ValidCandidate {
@@ -311,6 +315,7 @@ export function validateExtractOutput(
           gloss_key: key,
           meaning_tr: meaning,
           ipa,
+          cefr_guess: parseCefr(c.cefr_guess),
         };
       } else {
         drop(ref ? 'unknown_sense_ref' : 'incomplete_new_sense');
@@ -419,6 +424,7 @@ export async function resolveNewSenses(
   termsByNorm: Map<string, LexTerm>,
   store: AiStore,
   model: string | null,
+  log?: PipelineDeps['log'],
 ): Promise<ResolvedSense[]> {
   const missing = [...new Set(pending.map((p) => p.lemma_norm))].filter((n) => !termsByNorm.has(n));
   if (missing.length > 0) {
@@ -467,11 +473,18 @@ export async function resolveNewSenses(
         // A known term keeps its pronunciation unless the model gave one for this sense.
         ipa: p.sense.ipa ?? term?.senses.find((s) => s.ipa)?.ipa ?? null,
         model,
+        // The key (even null) tells lexicon_upsert that the model was asked for a guess.
+        cefr_guess: p.sense.cefr_guess,
       },
     });
   });
 
   if (toInsert.length > 0) {
+    await attachLevels(
+      toInsert.map((t) => t.item),
+      store,
+      log,
+    );
     const upserted = await store.upsertLexicon(toInsert.map((t) => t.item));
     toInsert.forEach((t, k) => {
       const r = upserted[k];
@@ -481,6 +494,46 @@ export async function resolveNewSenses(
     });
   }
   return results.map((r) => r ?? { senseId: '', match: 'known_sense' });
+}
+
+/**
+ * Sets the level (level.ts resolveLevel) of new senses and the term's Zipf value from the
+ * reference data. Never fails the request: without reference data the senses are stored
+ * without a level and the level job (scripts/system-jobs.ts) resolves them later.
+ */
+export async function attachLevels(
+  items: LexiconUpsertItem[],
+  store: AiStore,
+  log?: PipelineDeps['log'],
+): Promise<void> {
+  if (items.length === 0) return;
+  try {
+    const lemmas = [...new Set(items.flatMap((it) => lemmasNeeded(it.lemma_norm)))];
+    const refs = await store.getLevelRefs(lemmas.slice(0, 2000));
+    const byLemma = new Map(refs.rows.map((r) => [r.lemma_norm, r]));
+    const lookup: RefLookup = (l) => byLemma.get(l);
+    for (const it of items) {
+      it.zipf = byLemma.get(it.lemma_norm)?.zipf ?? null;
+      if (!it.gloss_key) continue;
+      const level = resolveLevel(
+        {
+          lemma_norm: it.lemma_norm,
+          term_type: it.term_type,
+          pos: it.pos ?? null,
+          cefr_guess: it.cefr_guess ?? null,
+        },
+        lookup,
+        { minZipf: refs.min_zipf },
+      );
+      if (!level) continue;
+      it.cefr = level.cefr;
+      it.cefr_source = level.source;
+      it.cefr_list = level.list_cefr;
+      it.cefr_reason_tr = level.reason_tr;
+    }
+  } catch (e) {
+    log?.('level lookup failed', { error: String(e) });
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -672,7 +725,13 @@ export async function runExtract(body: unknown, deps: PipelineDeps): Promise<Ext
       });
     }
   });
-  const resolved = await resolveNewSenses(pending, termsByNorm, deps.store, result.model);
+  const resolved = await resolveNewSenses(
+    pending,
+    termsByNorm,
+    deps.store,
+    result.model,
+    deps.log,
+  );
   const senseIdOf: string[] = v.candidates.map((c) => c.known?.senseId ?? '');
   const matchOf: ('known_sense' | 'new_sense' | 'new_term')[] = v.candidates.map(
     () => 'known_sense',

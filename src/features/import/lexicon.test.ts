@@ -38,7 +38,14 @@ function enrichReply(
           term_type: 'word',
         }
       : null,
-    senses,
+    senses: senses.map((s) => ({
+      ...s,
+      cefr: s.cefr ?? null,
+      cefr_source: s.cefr_source ?? null,
+      cefr_list: s.cefr_list ?? null,
+      cefr_reason_tr: s.cefr_reason_tr ?? null,
+      zipf: s.zipf ?? null,
+    })),
     new_sense_ids: newIds,
     suggested_sense_id: null,
     usage: null,

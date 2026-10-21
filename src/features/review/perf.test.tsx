@@ -44,6 +44,7 @@ beforeAll(async () => {
       ipa: null,
       tags: [],
       possible_duplicate: false,
+      level_override: null,
     });
     senses.push({
       ...base(id('s'), t),

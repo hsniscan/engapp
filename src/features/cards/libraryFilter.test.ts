@@ -24,6 +24,7 @@ const note = (id: string, term: string, extra: Partial<Note> = {}): Note => ({
   ipa: null,
   tags: [],
   possible_duplicate: false,
+  level_override: null,
   ...extra,
 });
 const sense = (id: string, note_id: string, meaning: string): Sense => ({

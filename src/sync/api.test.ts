@@ -26,6 +26,7 @@ const note = {
   ipa: null,
   tags: [],
   possible_duplicate: false,
+  level_override: 'B2',
   created_at: 1,
   updated_at: 1,
   deleted_at: null,
@@ -102,8 +103,44 @@ describe('sync api', () => {
       updated_at: 1,
     };
     const { client, calls } = fakeClient({ data: [e] });
-    expect(await getLexiconSenses(['s'], client)).toEqual([e]);
+    // An older server has no level columns: they read as null.
+    expect(await getLexiconSenses(['s'], client)).toEqual([
+      { ...e, cefr: null, cefr_source: null, cefr_list: null, cefr_reason_tr: null, zipf: null },
+    ]);
     expect(calls[0]!.fn).toBe('lexicon_get');
+  });
+
+  it('keeps the level columns of lexicon senses, and drops an unknown level value', async () => {
+    const e = {
+      id: 's',
+      term_id: 't',
+      lemma: 'television',
+      lemma_norm: 'television',
+      term_type: 'word',
+      pos: 'noun',
+      gloss_en: 'g',
+      meaning_tr: 'televizyon',
+      ipa: null,
+      updated_at: 1,
+      cefr: 'A1',
+      cefr_source: 'cefrj',
+      cefr_list: 'A2',
+      cefr_reason_tr: "Türkçede 'televizyon'",
+      zipf: 4.62,
+    };
+    const { client } = fakeClient({ data: [e, { ...e, id: 's2', cefr: 'X9', cefr_source: 'oracle' }] });
+    const [a, b] = await getLexiconSenses(['s', 's2'], client);
+    expect(a).toEqual(e);
+    expect(b).toMatchObject({ id: 's2', cefr: null, cefr_source: null, cefr_list: 'A2' });
+  });
+
+  it('reads a pulled note without level_override (older server) as null', async () => {
+    const { level_override: _omit, ...old } = note;
+    const { client } = fakeClient({
+      data: { rows: [{ table: 'notes', seq: 5, row: old }], next_seq: 5, has_more: false, full_resync: false },
+    });
+    const res = await pullChanges(0, 500, client);
+    expect(res.rows).toEqual([{ table: 'notes', seq: 5, row: { ...note, level_override: null } }]);
   });
 
   it('with a start cursor pulls through sync_pull_v3 and falls back to v2, then sync_pull, on an older backend', async () => {

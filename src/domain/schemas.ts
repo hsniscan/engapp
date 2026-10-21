@@ -27,6 +27,8 @@ export const noteSchema: z.ZodType<Note> = z.object({
   ipa: z.string().nullable(),
   tags: z.array(z.string()),
   possible_duplicate: z.boolean(),
+  // v0.2 İP2; absent in older backups and from older servers.
+  level_override: z.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']).nullable().default(null),
 });
 
 export const senseSchema: z.ZodType<Sense> = z.object({

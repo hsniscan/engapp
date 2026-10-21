@@ -15,6 +15,7 @@ const note = (p: Partial<Note> & { id: string; term: string }): Note => ({
   ipa: null,
   tags: [],
   possible_duplicate: false,
+  level_override: null,
   ...p,
 });
 

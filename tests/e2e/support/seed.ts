@@ -93,6 +93,7 @@ export async function buildSeedBackup(cards: number, now = Date.now()): Promise<
       ipa: spec?.ipa ?? null,
       tags: i % 7 === 0 ? ['iş'] : [],
       possible_duplicate: false,
+      level_override: null,
     });
     const sentence = spec?.sentence ?? `People say the word ${term} is useful in daily life.`;
     const surface = spec?.surface ?? term;
