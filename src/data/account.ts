@@ -171,8 +171,9 @@ export async function copyCardsFromOtherAccount(userId: string, snapshot: Remote
     const sourceIds = await writeTx([db.sources], now, async (w) => {
       const map = new Map<Id, Id>();
       for (const id of used) {
-        const { kind, title, file_name, page_count } = sources.get(id)!;
-        map.set(id, (await w.put('sources', { ...w.base(), kind, title, file_name, page_count })).id);
+        const { kind, title, file_name, page_count, topics } = sources.get(id)!;
+        const copy = { ...w.base(), kind, title, file_name, page_count, ...(topics ? { topics } : {}) };
+        map.set(id, (await w.put('sources', copy)).id);
       }
       return map;
     });

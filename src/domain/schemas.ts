@@ -14,6 +14,10 @@ const synced = {
   hlc: z.string().min(1),
 };
 
+// Topic key lists (İP7). Free strings, not an enum: a newer device may know more topics.
+// Optional, not defaulted: a backup without the key keeps the checksum it was written with.
+const topicList = z.array(z.string().min(1).max(40)).max(40).nullable().optional();
+
 const termType = z.enum(['word', 'phrase', 'pattern']);
 const cardState = z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]);
 const rating = z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]);
@@ -98,6 +102,7 @@ export const sourceSchema: z.ZodType<Source> = z.object({
   title: z.string(),
   file_name: z.string().nullable(),
   page_count: z.number().int().nullable(),
+  topics: topicList,
 });
 
 export const settingsSchema: z.ZodType<Settings> = z.object({
@@ -111,4 +116,6 @@ export const settingsSchema: z.ZodType<Settings> = z.object({
   level: z.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']),
   fsrs_params: z.array(z.number()).nullable(),
   last_backup_at: millis.nullable(),
+  interests: topicList,
+  muted_topics: topicList,
 });

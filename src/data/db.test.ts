@@ -7,7 +7,7 @@ describe('Dexie schema', () => {
   it('opens with every table and the indexes the queries rely on', async () => {
     const d = new EngDb('schema-test');
     await d.open();
-    expect(d.verno).toBe(3);
+    expect(d.verno).toBeGreaterThanOrEqual(7);
     expect(d.tables.map((t) => t.name).sort()).toEqual(
       ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'review_logs', 'senses', 'settings', 'sources'].sort(),
     );
@@ -55,7 +55,7 @@ describe('Dexie schema', () => {
 
     const d = new EngDb(name);
     await d.open();
-    expect(d.verno).toBe(3);
+    expect(d.verno).toBeGreaterThanOrEqual(3);
     expect(await d.cards.get('c1')).toMatchObject({ state: 2, due: 5 });
     expect(await d.review_logs.count()).toBe(1);
     expect(await d.practice_logs.count()).toBe(0);

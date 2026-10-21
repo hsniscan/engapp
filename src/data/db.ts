@@ -79,6 +79,10 @@ export class EngDb extends Dexie {
     // v3 (v0.2 İP1): practice_logs, insert-only and synced. Practice answers never feed FSRS.
     // Meta keys `extra_new:<day>` hold today's extra new-card allowance (no schema change).
     this.version(3).stores({ practice_logs: 'id, card_id, practiced_at, session_id' });
+    // v7 (v0.2 İP7): sources.topics (multi-entry index, for "texts about this topic") and
+    // settings.interests / settings.muted_topics (not indexed). All optional: an absent list
+    // means "unknown", so existing rows need no upgrade. Versions 4–6 belong to other packages.
+    this.version(7).stores({ sources: 'id, created_at, *topics' });
   }
 }
 

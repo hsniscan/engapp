@@ -17,7 +17,8 @@ import type { Card, Millis, Note, PracticeLog, ReviewLog, Sense, Settings, Sourc
 export const BACKUP_FORMAT = 'engapp-backup';
 // 2: senses.source_sentence_tr. Version 1 files (without it) are still accepted.
 // 3: practice_logs. Older files have no such table (restored as none).
-export const BACKUP_SCHEMA_VERSION = 3;
+// 4: settings.interests, settings.muted_topics, sources.topics (optional; older files restore).
+export const BACKUP_SCHEMA_VERSION = 4;
 
 export interface BackupTables {
   notes: Note[];

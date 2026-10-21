@@ -58,6 +58,8 @@ export const settingsPatchSchema = z
     level: z.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']),
     fsrs_params: z.array(z.number()).nullable(),
     last_backup_at: z.number().int().nullable(),
+    interests: z.array(z.string().min(1).max(40)).max(40),
+    muted_topics: z.array(z.string().min(1).max(40)).max(40),
   })
   .partial();
 
