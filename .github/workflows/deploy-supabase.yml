@@ -28,6 +28,7 @@ concurrency:
 
 env:
   SUPABASE_PROJECT_REF: bikcjlomrjaxymifxogi
+  SUPABASE_REGION: eu-west-1
   SUPABASE_CLI_VERSION: 2.121.0
 
 jobs:
@@ -91,19 +92,27 @@ jobs:
       - name: Apply database migrations
         run: |
           set -euo pipefail
+          pass=$(jq -rn --arg p "$SUPABASE_DB_PASSWORD" '$p|@uri')
+          echo "::add-mask::$pass"
           status=$(curl -sS -o pooler.json -w '%{http_code}' \
             -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
             "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/config/database/pooler")
-          if [ "$status" != "200" ]; then
-            echo "::error::Could not read the connection pooler config (HTTP $status). Give the SUPABASE_ACCESS_TOKEN the 'Connection Pooling: Read' permission."
-            exit 1
+          if [ "$status" = "200" ]; then
+            host=$(jq -r '[.[] | select(.database_type == "PRIMARY")][0].db_host' pooler.json)
+            user=$(jq -r '[.[] | select(.database_type == "PRIMARY")][0].db_user' pooler.json)
+            name=$(jq -r '[.[] | select(.database_type == "PRIMARY")][0].db_name' pooler.json)
+            supabase db push --db-url "postgresql://$user:$pass@$host:5432/$name" --yes
+            exit 0
           fi
-          host=$(jq -r '[.[] | select(.database_type == "PRIMARY")][0].db_host' pooler.json)
-          user=$(jq -r '[.[] | select(.database_type == "PRIMARY")][0].db_user' pooler.json)
-          name=$(jq -r '[.[] | select(.database_type == "PRIMARY")][0].db_name' pooler.json)
-          pass=$(jq -rn --arg p "$SUPABASE_DB_PASSWORD" '$p|@uri')
-          echo "::add-mask::$pass"
-          supabase db push --db-url "postgresql://$user:$pass@$host:5432/$name" --yes
+          # Token without 'Connection Pooling: Read': try the regional pooler hosts directly.
+          echo "::warning::Pooler config not readable (HTTP $status); trying regional pooler hosts."
+          for host in aws-0-$SUPABASE_REGION.pooler.supabase.com aws-1-$SUPABASE_REGION.pooler.supabase.com; do
+            if supabase db push --db-url "postgresql://postgres.$SUPABASE_PROJECT_REF:$pass@$host:5432/postgres" --yes; then
+              exit 0
+            fi
+          done
+          echo "::error::Could not reach the database pooler. Give the SUPABASE_ACCESS_TOKEN the 'Connection Pooling: Read' permission."
+          exit 1
 
       - name: Set function secrets
         env:

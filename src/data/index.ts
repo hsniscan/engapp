@@ -22,3 +22,4 @@ export { rebuildDailyActivity, listDailyActivity } from './dailyActivity';
 export { getDeviceId, getCurrentUserId, getMeta, setMeta, META } from './meta';
 export { logError, listErrors, clearErrors, ERROR_LOG_LIMIT } from './errorLog';
 export { ActionError, type ActionErrorCode } from './errors';
+export * from './connected';
