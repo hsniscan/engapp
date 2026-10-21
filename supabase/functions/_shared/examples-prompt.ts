@@ -1,5 +1,5 @@
 // Prompt and response schema of ai-examples (`examples-v1`). Any change bumps
-// EXAMPLES_PROMPT_VERSION (examples-contracts.ts) and is copied into docs/ai-pipeline.md
+// EXAMPLES_PROMPT_VERSION (examples-contracts.ts) and is copied into docs/ai-examples.md
 // (src/ai/examples-docs-sync.test.ts compares them).
 //
 // The model only ever sees dictionary data: the term, its part of speech, the short English

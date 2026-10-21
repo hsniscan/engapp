@@ -2,10 +2,13 @@ import Dexie, { type EntityTable } from 'dexie';
 import type {
   Card,
   ChunkCacheRow,
+  ContentFeedback,
   DailyActivity,
   ErrorLogRow,
+  ExampleJob,
   ImportCandidate,
   ImportJob,
+  LexiconExample,
   LexiconSense,
   MetaRow,
   Note,
@@ -15,6 +18,7 @@ import type {
   Sense,
   Settings,
   Source,
+  UserContent,
 } from '../domain/types';
 
 /**
@@ -39,6 +43,10 @@ export class EngDb extends Dexie {
   daily_activity!: EntityTable<DailyActivity, 'date'>;
   error_log!: EntityTable<ErrorLogRow, 'id'>;
   meta!: EntityTable<MetaRow, 'key'>;
+  lexicon_examples!: EntityTable<LexiconExample, 'id'>;
+  content_feedback!: EntityTable<ContentFeedback, 'id'>;
+  user_content!: EntityTable<UserContent, 'id'>;
+  example_jobs!: EntityTable<ExampleJob, 'key'>;
 
   constructor(name = 'engapp') {
     super(name);
@@ -79,6 +87,16 @@ export class EngDb extends Dexie {
     // v3 (v0.2 İP1): practice_logs, insert-only and synced. Practice answers never feed FSRS.
     // Meta keys `extra_new:<day>` hold today's extra new-card allowance (no schema change).
     this.version(3).stores({ practice_logs: 'id, card_id, practiced_at, session_id' });
+    // (v4 belongs to v0.2 İP2.)
+    // v5 (v0.2 İP5): example sentences. lexicon_examples is a read-only cache of the shared
+    // table (like lexicon_cache); content_feedback and user_content are synced, per user;
+    // example_jobs is the device-local preparation queue. New tables only: no upgrade().
+    this.version(5).stores({
+      lexicon_examples: 'id, sense_id, [sense_id+level_band], updated_at',
+      content_feedback: 'id, [target_kind+target_id], deleted_at',
+      user_content: 'id, kind, lexicon_sense_id, replaces_id, deleted_at',
+      example_jobs: 'key, status, next_attempt_at',
+    });
   }
 }
 

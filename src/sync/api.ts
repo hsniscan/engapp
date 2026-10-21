@@ -7,15 +7,20 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { lexiconEntry } from '../../supabase/functions/_shared/contracts';
 import {
   cardSchema,
+  contentFeedbackSchema,
+  lexiconExampleSchema,
   noteSchema,
   practiceLogSchema,
   reviewLogSchema,
   senseSchema,
   settingsSchema,
   sourceSchema,
+  userContentSchema,
 } from '@/domain/schemas';
 import type {
   Card,
+  ContentFeedback,
+  LexiconExample,
   LexiconSense,
   Note,
   OutboxTable,
@@ -24,6 +29,7 @@ import type {
   Sense,
   Settings,
   Source,
+  UserContent,
 } from '@/domain/types';
 import { supabase } from '@/lib/supabase';
 
@@ -60,6 +66,8 @@ export interface RowByTable {
   sources: Source;
   settings: Settings;
   practice_logs: PracticeLog;
+  content_feedback: ContentFeedback;
+  user_content: UserContent;
 }
 export type PulledRow = {
   [T in OutboxTable]: { table: T; seq: number; row: RowByTable[T] };
@@ -73,6 +81,8 @@ const ROW_SCHEMAS: { [T in OutboxTable]: z.ZodType<RowByTable[T]> } = {
   sources: sourceSchema,
   settings: settingsSchema,
   practice_logs: practiceLogSchema,
+  content_feedback: contentFeedbackSchema,
+  user_content: userContentSchema,
 };
 
 const pullEnvelope = z.object({
@@ -246,4 +256,50 @@ export async function getLexiconSenses(
   if (ids.length === 0) return [];
   if (ids.length > 500) throw new RangeError('at most 500 ids');
   return rpc(client(c), 'lexicon_get', { p_ids: ids }, z.array(lexiconEntry));
+}
+
+const examplesPullEnvelope = z.object({
+  rows: z.array(z.unknown()),
+  next_seq: z.number(),
+  has_more: z.boolean(),
+});
+export interface LexiconExamplesPullResult {
+  /** Active and retired rows (a retired row removes the sentence from the local cache). */
+  rows: LexiconExample[];
+  /** Rows that did not validate (skipped; the cursor still moves past them). */
+  invalid: number;
+  next_seq: number;
+  has_more: boolean;
+}
+
+/**
+ * Shared example sentences of the lexicon senses the user has, changed after `sinceSeq`
+ * (lexicon_examples_cursor). null when the backend does not have lexicon_examples_pull yet
+ * (migration 20261022000100 not deployed): the client then treats examples as unavailable.
+ */
+export async function pullLexiconExamples(
+  sinceSeq: number,
+  limit = MAX_PULL_PAGE,
+  c?: SupabaseClient | null,
+): Promise<LexiconExamplesPullResult | null> {
+  let env: z.infer<typeof examplesPullEnvelope>;
+  try {
+    env = await rpc(
+      client(c),
+      'lexicon_examples_pull',
+      { p_since: sinceSeq, p_limit: Math.min(limit, MAX_PULL_PAGE) },
+      examplesPullEnvelope,
+    );
+  } catch (e) {
+    if (isMissingFunction(e)) return null;
+    throw e;
+  }
+  const rows: LexiconExample[] = [];
+  let invalid = 0;
+  for (const raw of env.rows) {
+    const p = lexiconExampleSchema.safeParse(raw);
+    if (p.success) rows.push(p.data);
+    else invalid++;
+  }
+  return { rows, invalid, next_seq: env.next_seq, has_more: env.has_more };
 }

@@ -29,6 +29,9 @@ import {
   TextField,
   toast,
 } from '@/ui';
+import { ExamplesSection } from '@/features/examples/ExamplesPanel';
+import { useAppSettings } from '@/features/settings/useAppSettings';
+import { useSpeech } from '@/features/review/useSpeech';
 import { ConfirmDialog } from './ConfirmDialog';
 import { cardTypeLabel, posLabel, stateKey } from './labels';
 import { senseText } from './libraryFilter';
@@ -125,6 +128,7 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
   const { t } = useTranslation();
   const id = useId();
   const { note, senses, cards } = detail;
+  const speech = useSpeech(useAppSettings().settings?.voice ?? 'en-US');
   const [draft, setDraft] = useState<Draft>(() => draftFrom(detail));
   const [termError, setTermError] = useState<string>();
   const [senseErrors, setSenseErrors] = useState<Record<string, string>>({});
@@ -503,6 +507,15 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
           {t('cards.add.addSense')}
         </Button>
       </section>
+
+      {senses.some((s) => s.lexicon_sense_id) && (
+        <ExamplesSection
+          term={note.term}
+          senses={senses}
+          headingId={`${id}-examples`}
+          speech={{ available: speech.available, speak: speech.speak }}
+        />
+      )}
 
       <section aria-labelledby={`${id}-cards`} className="flex flex-col gap-2">
         <h3 id={`${id}-cards`} className="font-serif text-lg font-semibold text-fg">

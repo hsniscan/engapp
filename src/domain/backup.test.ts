@@ -99,11 +99,45 @@ describe('backup file', () => {
       session_id: 's', duration_ms: 900, device_id: 'd', created_at: 7, hlc: 'h',
     };
     const b = await buildBackup({ ...t, practice_logs: [practice] }, { exported_at: 1, device_id: null });
-    expect(b.schema_version).toBe(3);
+    expect(b.schema_version).toBeGreaterThanOrEqual(3);
     const v3 = await verifyBackup(JSON.stringify(b));
     expect(v3.ok && v3.backup.tables.practice_logs).toEqual([practice]);
     // Without practice logs the table is still written (empty).
     expect((await buildBackup(t, { exported_at: 1, device_id: null })).tables.practice_logs).toEqual([]);
+  });
+
+  it('accepts version 3 files without content tables and writes them from version 5 on', async () => {
+    const t = { ...tables(), practice_logs: [] };
+    const file = { format: 'engapp-backup', schema_version: 3, exported_at: 1, device_id: null, tables: t, checksum: await backupChecksum(t) };
+    const r = await verifyBackup(JSON.stringify(file));
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.backup.tables.content_feedback).toBeUndefined();
+      expect(r.backup.tables.user_content).toBeUndefined();
+    }
+
+    const feedback = {
+      id: 'f1', user_id: null, created_at: 1, updated_at: 1, deleted_at: null, hlc: 'h',
+      target_kind: 'example', target_id: 'e1', verdict: 'reject' as const,
+    };
+    const edit = {
+      id: 'u1', user_id: null, created_at: 1, updated_at: 1, deleted_at: null, hlc: 'h',
+      kind: 'example_sentence', lexicon_sense_id: 'ls1', sense_id: null, context: 'work', replaces_id: 'e2',
+      text: 'We need to cope with the change.', translations: null, span: [11, 15] as [number, number], selected: null,
+    };
+    const b = await buildBackup({ ...t, content_feedback: [feedback], user_content: [edit] }, { exported_at: 1, device_id: null });
+    expect(b.schema_version).toBe(5);
+    const v5 = await verifyBackup(JSON.stringify(b));
+    expect(v5.ok && v5.backup.tables.content_feedback).toEqual([feedback]);
+    expect(v5.ok && v5.backup.tables.user_content).toEqual([edit]);
+    expect((await buildBackup(t, { exported_at: 1, device_id: null })).tables.user_content).toEqual([]);
+  });
+
+  it('keeps settings without the example fields byte-identical', async () => {
+    const t = tables();
+    const b = await buildBackup(t, { exported_at: 1, device_id: null });
+    const r = await verifyBackup(JSON.stringify(b));
+    expect(r.ok && Object.keys(r.backup.tables.settings[0] ?? {})).not.toContain('example_contexts');
   });
 
   it('keeps the sentence translation', async () => {

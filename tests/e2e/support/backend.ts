@@ -14,12 +14,18 @@
  *    fake corpus in src/features/import/testing/fakeSpecs.ts. So the client sees exactly what
  *    the deployed function would send, and the test can count model calls.
  *
+ *  - Example sentences: /functions/v1/ai-examples runs the real `runExamples` (cache first,
+ *    validation, insert-or-skip) on an in-memory example store with a scripted model;
+ *    rpc lexicon_examples_pull pages that store for the senses the user has synced.
+ *
  * Service workers are blocked in these tests (playwright.config.ts): routes then see every
  * request the page makes. The PWA test enables the worker and needs no backend.
  */
 import type { BrowserContext, Route } from '@playwright/test';
 import { runExtract } from '../../../supabase/functions/_shared/extract.ts';
 import { runEnrich } from '../../../supabase/functions/_shared/enrich.ts';
+import { runExamples } from '../../../supabase/functions/_shared/examples.ts';
+import { MemoryExampleStore } from '../../../supabase/functions/_shared/testing/memory-example-store.ts';
 import { ApiError } from '../../../supabase/functions/_shared/errors.ts';
 import type { AiProvider } from '../../../supabase/functions/_shared/ai-provider.ts';
 import { MemoryAiStore } from '../../../supabase/functions/_shared/testing/memory-store.ts';
@@ -126,6 +132,67 @@ function fakeModel(counter: { calls: number }): AiProvider {
   };
 }
 
+/** Natural sentences for the terms the E2E tests use; anything else gets a plain template. */
+const EXAMPLE_SENTENCES: Record<string, Record<string, [string, string][]>> = {
+  reluctant: {
+    daily: [
+      ['My brother was reluctant to wash the dishes after dinner.', 'Kardeşim akşam yemeğinden sonra bulaşıkları yıkamaya isteksizdi.'],
+      ['The children were reluctant to go to bed early.', 'Çocuklar erken yatmaya isteksizdi.'],
+      ['I was reluctant to lend him my new bike.', 'Ona yeni bisikletimi ödünç vermeye gönülsüzdüm.'],
+    ],
+    conversation: [
+      ["Honestly, I'm a bit reluctant to call her again.", 'Açıkçası onu tekrar aramaya biraz gönülsüzüm.'],
+    ],
+    work: [
+      ['Our manager was reluctant to change the meeting time.', 'Müdürümüz toplantı saatini değiştirmeye isteksizdi.'],
+    ],
+    formal: [
+      ['The council is reluctant to raise local taxes this year.', 'Belediye meclisi bu yıl yerel vergileri artırmaya isteksiz.'],
+    ],
+    travel: [
+      ['Many tourists are reluctant to drive on the left.', 'Pek çok turist soldan araç kullanmaya isteksizdir.'],
+    ],
+  },
+};
+
+/** Scripted examples model: one sentence per requested (ref, context), a new one per call. */
+function fakeExamplesModel(counter: { calls: number }): AiProvider {
+  return {
+    name: 'fake',
+    async generateJson(req) {
+      counter.calls++;
+      const avoid = new Set(
+        req.user
+          .slice(req.user.indexOf('AVOID:'))
+          .split('\n')
+          .map((l) => l.split(' | ')[2])
+          .filter((x): x is string => !!x),
+      );
+      const examples: Record<string, string>[] = [];
+      for (const line of req.user.split('\n')) {
+        const m = /^(r\d+) \| (.+?) \| (.+?) \| (.+?) \| contexts: (.+)$/.exec(line);
+        if (!m) continue;
+        const [, ref, lemma] = m as unknown as [string, string, string];
+        for (const context of m[5]!.split(', ')) {
+          const pool = EXAMPLE_SENTENCES[lemma]?.[context] ?? [];
+          const pick = pool.find(([en]) => !avoid.has(en));
+          const [text_en, text_tr] = pick ?? [
+            `People often say ${lemma} in this ${context} situation number ${counter.calls}.`,
+            `İnsanlar bu durumda sık sık bunu söyler ${counter.calls}.`,
+          ];
+          examples.push({ ref, context, text_en, surface: lemma, text_tr });
+        }
+      }
+      return {
+        data: { examples },
+        model: 'fake-model',
+        attempts: 1,
+        usage: { input_tokens: 500, output_tokens: 200, thinking_tokens: 0 },
+      };
+    },
+  };
+}
+
 export interface BackendOptions {
   /** Artificial latency of ai-extract (ms). */
   extractDelayMs?: number;
@@ -136,6 +203,8 @@ export class FakeBackend {
   private seq = 0;
   readonly store = new MemoryAiStore();
   readonly model = { calls: 0 };
+  readonly examples = new MemoryExampleStore();
+  readonly examplesModel = { calls: 0 };
   /** Every RPC / function call, in order: { name, body }. */
   readonly calls: { name: string; body: unknown; at: number }[] = [];
   /** When true every backend request fails like a dropped connection. */
@@ -215,6 +284,25 @@ export class FakeBackend {
     }
     if (path.startsWith('/rest/v1/rpc/'))
       return this.rpc(route, name, body as Record<string, unknown>);
+    if (path === '/functions/v1/ai-examples') {
+      const deps = {
+        userId: TEST_USER.id,
+        store: this.store,
+        examples: this.examples,
+        provider: () => fakeExamplesModel(this.examplesModel),
+        dailyLimit: 200,
+      };
+      try {
+        return this.json(route, 200, await runExamples(body, deps));
+      } catch (e) {
+        if (e instanceof ApiError) {
+          return this.json(route, e.status, {
+            error: { code: e.code, message: e.message, retry_after_s: e.retryAfterS },
+          });
+        }
+        return this.json(route, 500, { error: { code: 'internal', message: String(e) } });
+      }
+    }
     if (path === '/functions/v1/ai-extract' || path === '/functions/v1/ai-enrich') {
       if (this.opts.extractDelayMs)
         await new Promise((r) => setTimeout(r, this.opts.extractDelayMs));
@@ -290,6 +378,15 @@ export class FakeBackend {
           next_seq: Number(args.p_since ?? 0),
           has_more: false,
         });
+      case 'lexicon_examples_pull': {
+        const mine = new Set(
+          [...this.rows.values()]
+            .filter((r) => r.table === 'senses' && r.row.lexicon_sense_id)
+            .map((r) => String(r.row.lexicon_sense_id)),
+        );
+        const page = this.examples.pull(Number(args.p_since ?? 0), Number(args.p_limit ?? 500));
+        return this.json(route, 200, { ...page, rows: page.rows.filter((r) => mine.has(r.sense_id)) });
+      }
       case 'lexicon_get':
         return this.store
           .getEntries((args.p_ids ?? []) as string[])

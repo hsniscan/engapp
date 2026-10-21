@@ -4,6 +4,7 @@ import { Page, cn } from '@/ui';
 import { AdvancedSection } from './AdvancedSection';
 import { AppSection } from './AppSection';
 import { DataSection } from './DataSection';
+import { ExamplesSettingsSection } from './ExamplesSettings';
 import { SECTION_IDS, type SectionId } from './sections';
 import { SettingsSection } from './SettingsLayout';
 import { settingsSlots } from './slots';
@@ -72,6 +73,7 @@ export function SettingsPage() {
             <Sync />
           </SettingsSection>
           <StudySection />
+          <ExamplesSettingsSection />
           <AppearanceSection />
           <VoiceSection />
           <DataSection />

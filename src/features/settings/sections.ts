@@ -2,6 +2,7 @@ export const SECTION_IDS = [
   'hesap',
   'senkron',
   'calisma',
+  'ornekler',
   'gorunum',
   'ses',
   'veri',

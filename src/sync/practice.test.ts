@@ -173,7 +173,7 @@ describe('practice_logs in backups', () => {
     await onDevice(img, async () => {
       backup = await exportBackup(T + 10 * MIN);
     });
-    expect(backup.schema_version).toBe(3);
+    expect(backup.schema_version).toBeGreaterThanOrEqual(3);
     expect(backup.tables.practice_logs).toHaveLength(2);
 
     await newDevice('dev-r');

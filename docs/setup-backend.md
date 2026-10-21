@@ -111,7 +111,7 @@ call AI unless added here.
    - `supabase db push --linked --yes` (applies `supabase/migrations/*.sql` once each)
    - `supabase secrets set` for `GEMINI_API_KEY`, `GEMINI_MODEL`,
      `GEMINI_FALLBACK_MODEL`, `AI_PROVIDER=gemini`, `AI_DAILY_LIMIT`, `ALLOWED_ORIGINS`
-   - `supabase functions deploy` (`ai-extract`, `ai-enrich`; JWT is verified inside the
+   - `supabase functions deploy` (`ai-extract`, `ai-enrich`, `ai-examples`; JWT is verified inside the
      functions, so `verify_jwt = false` from `supabase/config.toml` is expected)
 3. Both jobs must end green. If "Check secrets" fails, a secret from step 4 is missing.
 
@@ -123,7 +123,7 @@ dashboard auth settings from step 3 with the local-development `config.toml`).
 1. **Table Editor**: tables `profiles`, `notes`, `senses`, `cards`, `review_logs`,
    `sources`, `settings`, `lexicon_terms`, `lexicon_senses`, `ai_usage`,
    `ai_chunk_cache`, `sync_horizon`; none shows "RLS disabled".
-2. **Edge Functions**: `ai-extract` and `ai-enrich` are listed. **Secrets**
+2. **Edge Functions**: `ai-extract`, `ai-enrich` and `ai-examples` are listed. **Secrets**
    (Edge Functions → Secrets) lists the variables from step 5.2.
 3. **Integrations → Cron** (or **Database → Cron Jobs**): job
    `engapp-purge-tombstones`, schedule `17 3 * * *`. If it is missing (pg_cron was not

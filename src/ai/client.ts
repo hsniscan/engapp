@@ -65,8 +65,9 @@ export interface AiClientDeps {
   timeoutMs?: number; // default 150 s (server retries + fallback model fit inside)
 }
 
-async function call<T>(
-  fn: 'ai-extract' | 'ai-enrich',
+/** POST to an AI edge function with the session token; `parse` validates the answer. */
+export async function call<T>(
+  fn: 'ai-extract' | 'ai-enrich' | 'ai-examples',
   body: unknown,
   parse: (x: unknown) => T,
   deps: AiClientDeps,

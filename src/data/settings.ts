@@ -1,4 +1,9 @@
 import { z } from 'zod';
+import {
+  EXAMPLE_CONTEXT_KEYS,
+  MAX_EXAMPLE_CONTEXTS,
+  MIN_SELECTED_CONTEXTS,
+} from '../../supabase/functions/_shared/examples-contracts';
 import { type DayConfig, deviceTimeZone, isValidTimeZone } from '../domain/day';
 import { createScheduler, RETENTION_MAX, RETENTION_MIN, type Scheduler } from '../domain/fsrs';
 import { HLC_ZERO } from '../domain/hlc';
@@ -58,6 +63,13 @@ export const settingsPatchSchema = z
     level: z.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']),
     fsrs_params: z.array(z.number()).nullable(),
     last_backup_at: z.number().int().nullable(),
+    // v0.2 İP5: show sentence translations without a tap; contexts prepared in the background.
+    example_tr_visible: z.boolean(),
+    example_contexts: z
+      .array(z.enum(EXAMPLE_CONTEXT_KEYS as [string, ...string[]]))
+      .min(MIN_SELECTED_CONTEXTS)
+      .max(MAX_EXAMPLE_CONTEXTS)
+      .refine((a) => new Set(a).size === a.length, 'Duplicate context'),
   })
   .partial();
 

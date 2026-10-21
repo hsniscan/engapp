@@ -172,6 +172,68 @@
     "aheadBadge": "Tomorrow's cards",
     "aheadEmptyTitle": "Tomorrow's cards are done"
   },
+  "examples": {
+    "title": "Example sentences",
+    "count": "{{count}} sentences",
+    "contextsLabel": "Contexts",
+    "contexts": {
+      "daily": "Everyday",
+      "conversation": "Conversation",
+      "work": "Work",
+      "formal": "Formal",
+      "academic": "Academic",
+      "technology": "Technology",
+      "travel": "Travel",
+      "health": "Health",
+      "money": "Money",
+      "culture": "Culture",
+      "sports": "Sports",
+      "nature": "Nature"
+    },
+    "senseLabel": "Sentences for meaning",
+    "showTr": "Show Turkish",
+    "hideTr": "Hide Turkish",
+    "noTr": "Your edited sentence has no translation.",
+    "like": "Like",
+    "liked": "Liked",
+    "skip": "Skip",
+    "skipHint": "Don't show this sentence on the card front; go to the next one",
+    "regenerate": "Write a new one",
+    "actions": "More actions for this sentence",
+    "edit": "Edit",
+    "reject": "Reject",
+    "undoEdit": "Back to the original sentence",
+    "edited": "Edited",
+    "skipped": "Skipped",
+    "original": "Original sentence",
+    "previous": "Previous sentence",
+    "next": "Next sentence",
+    "position": "{{n}} / {{total}}",
+    "rejected": "Sentence rejected; it won't be shown again.",
+    "addContext": "Add context",
+    "addContextTitle": "Ask for a sentence in another context",
+    "empty": "No sentence in this context yet.",
+    "emptyAsked": "No natural sentence could be written for this context; the word may be rare here.",
+    "preparing": "Preparing sentences…",
+    "waitingOffline": "Will be prepared when you're back online.",
+    "guest": "Sign in with Google for example sentences.",
+    "noLexicon": "This meaning is not in the shared dictionary, so no sentences can be prepared.",
+    "dailyLimit": "Today's AI limit is used up; try again tomorrow.",
+    "failed": "Sentences could not be prepared.",
+    "busy": "The server is busy; try again in a moment.",
+    "generating": "Writing a new sentence…",
+    "noneNew": "No new sentence could be written; you can try again.",
+    "added": "New sentence added.",
+    "speak": "Listen to the sentence",
+    "editTitle": "Edit sentence",
+    "editHint": "Your edit stays in your account only; it is never written to the shared dictionary.",
+    "editLabel": "Sentence",
+    "termMissing": "“{{term}}” is not in the sentence; it won't be highlighted or used for fill-in-the-blank cards.",
+    "tooLong": "At most {{max}} characters.",
+    "emptyText": "The sentence cannot be empty.",
+    "saved": "Sentence saved.",
+    "saveFailed": "Could not save. Try again."
+  },
   "add": {
     "title": "Add a card"
   },
@@ -305,7 +367,8 @@
       "ses": "Sound",
       "veri": "Data",
       "uygulama": "App",
-      "gelismis": "Advanced"
+      "gelismis": "Advanced",
+      "ornekler": "Example sentences"
     },
     "saveFailed": "The setting could not be saved.",
     "account": {
@@ -358,7 +421,21 @@
     "data": {
       "description": "Your data is on this device. Back up regularly and keep the file somewhere else."
     },
-    "version": "Version"
+    "version": "Version",
+    "examples": {
+      "description": "Sentences on the back of a card and in word details, written for your level.",
+      "contexts": "Contexts to prepare",
+      "contextsHint": "Pick 2–4. Ask for others on a card with “Add context”.",
+      "contextsLimit": "Pick {{min}}–{{max}} contexts.",
+      "showTr": "Show Turkish right away",
+      "showTrHint": "When off, the translation appears on tap, so you try to understand the sentence first.",
+      "prepareAll": "Prepare for all my cards",
+      "prepareAllHint": "New cards get sentences automatically. Older cards are prepared with at most 50 requests a day, spread over a few days.",
+      "prepareStarted": "Preparation started; it continues in the background while online.",
+      "status": "{{ready}} / {{total}} meanings ready",
+      "statusQueued": "{{count}} meanings queued",
+      "guest": "Example sentences need a Google account."
+    }
   },
   "auth": {
     "title": "Sign in",

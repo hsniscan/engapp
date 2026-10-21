@@ -1,6 +1,17 @@
 // zod schemas for synced rows. Used to validate backup files and (later) sync payloads.
 import { z } from 'zod';
-import type { Card, Note, PracticeLog, ReviewLog, Sense, Settings, Source } from './types';
+import type {
+  Card,
+  ContentFeedback,
+  LexiconExample,
+  Note,
+  PracticeLog,
+  ReviewLog,
+  Sense,
+  Settings,
+  Source,
+  UserContent,
+} from './types';
 
 const millis = z.number().int();
 const id = z.string().min(1);
@@ -13,6 +24,9 @@ const synced = {
   deleted_at: millis.nullable(),
   hlc: z.string().min(1),
 };
+
+const contextKey = z.string().regex(/^[a-z][a-z_]{1,31}$/);
+const span = z.tuple([z.number().int(), z.number().int()]);
 
 const termType = z.enum(['word', 'phrase', 'pattern']);
 const cardState = z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]);
@@ -111,4 +125,40 @@ export const settingsSchema: z.ZodType<Settings> = z.object({
   level: z.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']),
   fsrs_params: z.array(z.number()).nullable(),
   last_backup_at: millis.nullable(),
+  // v0.2 İP5. Optional and without a default (older backups and server rows lack them;
+  // a default would change the backup checksum of rows that never had the key).
+  example_tr_visible: z.boolean().nullish(),
+  example_contexts: z.array(contextKey).max(12).nullish(),
+});
+
+export const contentFeedbackSchema: z.ZodType<ContentFeedback> = z.object({
+  ...synced,
+  target_kind: contextKey,
+  target_id: id,
+  verdict: z.enum(['like', 'skip', 'reject']),
+});
+
+export const userContentSchema: z.ZodType<UserContent> = z.object({
+  ...synced,
+  kind: contextKey,
+  lexicon_sense_id: id.nullable(),
+  sense_id: id.nullable(),
+  context: contextKey.nullable(),
+  replaces_id: id.nullable(),
+  text: z.string().min(1).max(1000),
+  translations: z.record(z.string(), z.string()).nullable(),
+  span: span.nullable(),
+  selected: z.boolean().nullable(),
+});
+
+export const lexiconExampleSchema: z.ZodType<LexiconExample> = z.object({
+  id,
+  sense_id: id,
+  context: contextKey,
+  level_band: z.enum(['A2', 'B1', 'B2', 'C1']),
+  text_en: z.string().min(1).max(300),
+  span,
+  translations: z.record(z.string(), z.string()),
+  status: z.enum(['active', 'retired']),
+  updated_at: millis,
 });
