@@ -33,12 +33,15 @@ import {
 } from '@/ui';
 import { ConfirmDialog } from '@/features/cards/ConfirmDialog';
 import { practiceHref } from '@/features/extra/links';
+import { useLevelData } from '@/features/levels/useLevelData';
 import { DeckEditorDialog } from './DeckEditorDialog';
 import { describeDeckFilter } from './describe';
 
 export function DecksPage() {
   const { t } = useTranslation();
-  const decks = useLiveQuery(() => getDeckSummaries(), []);
+  // Counts of level decks change once the level file has loaded.
+  const levelData = useLevelData();
+  const decks = useLiveQuery(() => getDeckSummaries(), [levelData]);
   const [editing, setEditing] = useState<{ deck: Deck | null } | null>(null);
 
   return (

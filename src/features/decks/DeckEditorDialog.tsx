@@ -1,11 +1,12 @@
-// Create or edit a smart deck: a name and a few toggles (status, tags, when added) with a
-// live count of the words the deck holds right now.
+// Create or edit a smart deck: a name and a few toggles (status, tags, level, topic, when
+// added) with a live count of the words the deck holds right now.
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActionError, countDeckFilter, createDeck, listTags, logError, updateDeck } from '@/data';
 import {
   ADDED_WITHIN_CHOICES,
+  CEFR_ORDER,
   DECK_STATES,
   type DeckFilter,
   type DeckState,
@@ -14,7 +15,9 @@ import {
   parseDeckFilter,
 } from '@/domain/deckFilter';
 import { hasTag, sameTag } from '@/domain/tags';
-import type { Deck } from '@/domain/types';
+import { TOPIC_KEYS } from '@/domain/topics';
+import type { CefrLevel, Deck } from '@/domain/types';
+import { useLevelData } from '@/features/levels/useLevelData';
 import { Button, Dialog, DialogClose, SegmentedControl, TextField, toast } from '@/ui';
 import { Chip } from './Chip';
 
@@ -69,6 +72,8 @@ function EditorBody({ deck, onDone }: { deck: Deck | null; onDone: (d: Deck) => 
   const [states, setStates] = useState<DeckState[]>(original?.states ?? []);
   const [tags, setTags] = useState<string[]>(original?.tags ?? []);
   const [tagMode, setTagMode] = useState<'any' | 'all'>(original?.tagMode ?? 'any');
+  const [levels, setLevels] = useState<CefrLevel[]>(original?.levels ?? []);
+  const [topics, setTopics] = useState<string[]>(original?.topics ?? []);
   const [added, setAdded] = useState<Added>(
     original?.addedWithinDays &&
       (ADDED_WITHIN_CHOICES as readonly number[]).includes(original.addedWithinDays)
@@ -97,23 +102,39 @@ function EditorBody({ deck, onDone }: { deck: Deck | null; onDone: (d: Deck) => 
       unsupported
         ? null
         : normalizeDeckFilter({
-            // Keys this editor has no controls for yet (levels, topics) are kept as they were.
+            // Keys this editor has no controls for are kept as they were.
             ...original,
             states,
             tags,
             tagMode,
+            levels,
+            topics,
             addedWithinDays: added === 'any' ? undefined : Number(added),
           }),
-    [unsupported, original, states, tags, tagMode, added],
+    [unsupported, original, states, tags, tagMode, levels, topics, added],
   );
   const filterKey = JSON.stringify(filter);
+  // Levels from the client level file count once it has loaded: count again then.
+  const levelData = useLevelData();
   const count = useLiveQuery(
     () => (filter ? countDeckFilter(filter) : Promise.resolve(null)),
-    [filterKey],
+    [filterKey, levelData],
+  );
+  // Topic chips: every known topic, plus keys of the filter this version does not know.
+  const topicOptions = useMemo(
+    () => [
+      ...TOPIC_KEYS,
+      ...(original?.topics ?? []).filter((k) => !(TOPIC_KEYS as readonly string[]).includes(k)),
+    ],
+    [original?.topics],
   );
 
   const toggleState = (s: DeckState) =>
     setStates((cur) => (cur.includes(s) ? cur.filter((x) => x !== s) : [...cur, s]));
+  const toggleLevel = (l: CefrLevel) =>
+    setLevels((cur) => (cur.includes(l) ? cur.filter((x) => x !== l) : [...cur, l]));
+  const toggleTopic = (k: string) =>
+    setTopics((cur) => (cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k]));
   const toggleTag = (tag: string) =>
     setTags((cur) => (hasTag(cur, tag) ? cur.filter((x) => !sameTag(x, tag)) : [...cur, tag]));
 
@@ -211,6 +232,30 @@ function EditorBody({ deck, onDone }: { deck: Deck | null; onDone: (d: Deck) => 
                 className="mt-2"
               />
             )}
+          </fieldset>
+
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-1 text-sm font-medium text-fg">{t('decks.editor.levels')}</legend>
+            <div className="flex flex-wrap gap-2">
+              {CEFR_ORDER.map((l) => (
+                <Chip key={l} pressed={levels.includes(l)} onClick={() => toggleLevel(l)}>
+                  {l}
+                </Chip>
+              ))}
+            </div>
+            <p className="text-sm text-fg-muted">{t('decks.editor.levelsHint')}</p>
+          </fieldset>
+
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-1 text-sm font-medium text-fg">{t('decks.editor.topics')}</legend>
+            <div className="flex max-h-48 flex-wrap gap-2 overflow-y-auto p-0.5">
+              {topicOptions.map((k) => (
+                <Chip key={k} pressed={topics.includes(k)} onClick={() => toggleTopic(k)}>
+                  {t(`topics.${k}` as 'topics.travel', { defaultValue: k })}
+                </Chip>
+              ))}
+            </div>
+            <p className="text-sm text-fg-muted">{t('decks.editor.topicsHint')}</p>
           </fieldset>
 
           <SegmentedControl<Added>

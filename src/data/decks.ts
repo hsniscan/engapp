@@ -21,21 +21,75 @@ import {
   withoutTags,
   withTags,
 } from '../domain/tags';
-import { type Card, type Deck, type Id, type Millis, type Note, Rating } from '../domain/types';
+import { type LevelData, noteLevel } from '../domain/level';
+import {
+  type Card,
+  type CefrLevel,
+  type Deck,
+  type Id,
+  type LexiconSense,
+  type Millis,
+  type Note,
+  Rating,
+  type Sense,
+} from '../domain/types';
 import { db } from './db';
 import { ActionError } from './errors';
 import { logsByCard } from './history';
+import { levelDataNow } from './levelData';
 import { writeTx } from './writer';
 
 // ------------------------------------------------------------------ evaluation context
 
 /**
- * Resolvers for the reserved filter keys. After İP2 / İP7 are merged, add `levelOf` (resolved
- * CEFR level of the note) and `topicsOf` (topic keys of the note's sources) here; decks using
- * `levels` / `topics` then evaluate everywhere (Cards screen, practice) with no other change.
+ * Resolvers for the reserved filter keys:
+ *   - `levelOf`: the note's level as the app shows it (İP2 noteLevel: the user's own level,
+ *     else the first sense with a stored or computed level). The client level file is used
+ *     when it is already loaded (`levelData`, default levelDataNow()); before that only
+ *     stored levels and overrides count, and screens re-run when it arrives.
+ *   - `topicsOf`: topic keys (İP7) of the live sources the note's live senses came from.
  */
-export async function deckContext(now: Millis): Promise<DeckContext> {
-  return { now };
+export async function deckContext(
+  now: Millis,
+  levelData: LevelData | null = levelDataNow(),
+): Promise<DeckContext> {
+  const notes = await db.notes.filter((n) => n.deleted_at === null).toArray();
+  const senses = await db.senses.filter((s) => s.deleted_at === null).toArray();
+  const sources = await db.sources.filter((s) => s.deleted_at === null).toArray();
+  const lexIds = [...new Set(senses.map((s) => s.lexicon_sense_id).filter((x): x is Id => !!x))];
+  const lexRows = lexIds.length ? await db.lexicon_cache.bulkGet(lexIds) : [];
+  const lexicon = new Map(lexRows.filter((r): r is LexiconSense => !!r).map((r) => [r.id, r]));
+
+  const notesById = new Map(notes.map((n) => [n.id, n]));
+  const sensesByNote = new Map<Id, Sense[]>();
+  for (const s of senses) {
+    const list = sensesByNote.get(s.note_id);
+    if (list) list.push(s);
+    else sensesByNote.set(s.note_id, [s]);
+  }
+  for (const list of sensesByNote.values()) list.sort((a, b) => a.sense_no - b.sense_no);
+  const topicsBySource = new Map(sources.map((s) => [s.id, s.topics ?? []]));
+
+  const levels = new Map<Id, CefrLevel | null>();
+  return {
+    now,
+    levelOf: (noteId) => {
+      if (levels.has(noteId)) return levels.get(noteId)!;
+      const note = notesById.get(noteId);
+      const level = note
+        ? (noteLevel(note, sensesByNote.get(noteId) ?? [], (id) => lexicon.get(id), levelData)?.cefr ?? null)
+        : null;
+      levels.set(noteId, level);
+      return level;
+    },
+    topicsOf: (noteId) => {
+      const out = new Set<string>();
+      for (const s of sensesByNote.get(noteId) ?? []) {
+        for (const t of (s.source_id && topicsBySource.get(s.source_id)) || []) out.add(t);
+      }
+      return [...out];
+    },
+  };
 }
 
 /** Every live note with its live cards and recent misses (one pass, ~10 ms for 1,000 notes). */

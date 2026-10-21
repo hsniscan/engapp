@@ -93,10 +93,12 @@ export function LibraryPage() {
   const rows = useLibraryRows();
   // Smart decks (v0.2 İP8): chips above the list; ?deck=<id> narrows the list to the deck.
   const deckId = params.get('deck');
-  const decks = useLiveQuery(() => getDeckSummaries(), []);
+  // Deck counts use levels from the level file once it has loaded (levelData).
+  const levelData = useLevelData();
+  const decks = useLiveQuery(() => getDeckSummaries(), [levelData]);
   const deckIds = useLiveQuery(
     async () => ({ id: deckId, ids: deckId ? await getDeckNoteIds(deckId) : null }),
-    [deckId],
+    [deckId, levelData],
   );
   const activeDeck = decks?.find((d) => d.deck.id === deckId) ?? null;
   const [editDeck, setEditDeck] = useState(false);

@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { LIMITS } from '../domain/limits';
 import { Rating } from '../domain/types';
 import { resetDb } from '../test/db';
-import { addNoteWithSenses, answerCard, setSuspended } from './actions';
+import { addNoteWithSenses, answerCard, setLevelOverride, setSuspended } from './actions';
 import { PULL_BACKFILL_KEY } from './backfill';
 import { db, EngDb } from './db';
 import {
@@ -109,6 +109,41 @@ describe('decks', () => {
     expect(await countDeckFilter({ v: 1, addedWithinDays: 7 }, T)).toBe(0);
     const d = await createDeck({ name: 'İş', filter: { v: 1, tags: ['İŞ'] } }, T);
     expect(await getDeckNoteIds(d.id, T)).toEqual(new Set([office, both]));
+  });
+
+  it('filters by level (the user override wins) and by the topics of the source texts', async () => {
+    const a = await word('desk');
+    const b = await word('ticket');
+    const c = await word('apple');
+    await setLevelOverride(a, 'B2', T - DAY);
+    await setLevelOverride(b, 'A1', T - DAY);
+    const src = (id: string, topics: string[] | null, deleted_at: number | null = null) => ({
+      id,
+      user_id: null,
+      created_at: T - 10 * DAY,
+      updated_at: T - 10 * DAY,
+      deleted_at,
+      hlc: '0',
+      kind: 'text' as const,
+      title: id,
+      file_name: null,
+      page_count: null,
+      topics,
+    });
+    await db.sources.bulkPut([src('s-biz', ['business', 'travel']), src('s-gone', ['food'], T - DAY)]);
+    const senseOf = async (noteId: string) => (await db.senses.where('note_id').equals(noteId).first())!.id;
+    await db.senses.update(await senseOf(a), { source_id: 's-biz' });
+    await db.senses.update(await senseOf(c), { source_id: 's-gone' });
+
+    expect(await countDeckFilter({ v: 1, levels: ['B2'] }, T)).toBe(1);
+    expect(await countDeckFilter({ v: 1, levels: ['A1', 'B2'] }, T)).toBe(2);
+    expect(await countDeckFilter({ v: 1, topics: ['travel'] }, T)).toBe(1);
+    // A deleted text gives no topics.
+    expect(await countDeckFilter({ v: 1, topics: ['food'] }, T)).toBe(0);
+    const d = await createDeck({ name: 'İş', filter: { v: 1, topics: ['business'] } }, T);
+    expect(await getDeckNoteIds(d.id, T)).toEqual(new Set([a]));
+    await setLevelOverride(a, null, T);
+    expect(await countDeckFilter({ v: 1, levels: ['B2'] }, T)).toBe(0);
   });
 });
 
