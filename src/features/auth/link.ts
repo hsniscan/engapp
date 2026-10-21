@@ -14,6 +14,7 @@ import {
   logError,
   type RemoteSnapshot,
 } from '@/data';
+import { signOut as supabaseSignOut } from '@/lib/supabase';
 import { MAX_PULL_PAGE } from '@/sync/api';
 import type { SyncEngine, SyncTransport } from '@/sync/engine';
 
@@ -134,6 +135,19 @@ export async function resolveLink(choice: LinkChoice): Promise<void> {
 export function retryLink(): void {
   const s = state;
   if (s.phase === 'error') void linkAccount(s.userId);
+}
+
+/**
+ * Give up on linking for now: sign out and keep using the app as a guest. Nothing local is
+ * touched; the next sign-in runs the linking flow again.
+ */
+export async function continueAsGuest(): Promise<void> {
+  set({ phase: 'idle' });
+  try {
+    await supabaseSignOut();
+  } catch (e) {
+    void logError(e, 'auth.continueAsGuest');
+  }
 }
 
 export function dismissLinkResult(): void {

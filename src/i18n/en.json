@@ -677,7 +677,8 @@
     "apply": "Continue",
     "applying": "Applying…",
     "errorTitle": "Couldn't connect your account",
-    "errorBody": "Check your connection and try again. Your data is safe on this device.",
+    "errorBody": "Check your connection and try again, or continue as a guest for now. Your data is safe on this device.",
+    "continueAsGuest": "Continue as guest",
     "done": "Connected to your account",
     "doneDuplicates": "{{count}} words were marked “possible duplicate”; you can review them in Cards."
   },

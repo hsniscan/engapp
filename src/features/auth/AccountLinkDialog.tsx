@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Dialog, cn, toast } from '@/ui';
-import { dismissLinkResult, resolveLink, retryLink, useLinkState, type LinkChoice } from './link';
+import {
+  continueAsGuest,
+  dismissLinkResult,
+  resolveLink,
+  retryLink,
+  useLinkState,
+  type LinkChoice,
+} from './link';
 
 const OPTIONS: {
   value: LinkChoice;
@@ -44,7 +51,14 @@ export function AccountLinkDialog() {
         hideClose
         title={t('account.errorTitle')}
         description={t('account.errorBody')}
-        footer={<Button onClick={retryLink}>{t('common.retry')}</Button>}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => void continueAsGuest()}>
+              {t('account.continueAsGuest')}
+            </Button>
+            <Button onClick={retryLink}>{t('common.retry')}</Button>
+          </>
+        }
       />
     );
   }

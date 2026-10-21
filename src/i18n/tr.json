@@ -677,7 +677,8 @@
     "apply": "Devam et",
     "applying": "Uygulanıyor…",
     "errorTitle": "Hesap bağlanamadı",
-    "errorBody": "Bağlantını kontrol edip tekrar dene. Verilerin bu cihazda güvende.",
+    "errorBody": "Bağlantını kontrol edip tekrar dene ya da şimdilik misafir olarak devam et. Verilerin bu cihazda güvende.",
+    "continueAsGuest": "Misafir olarak devam et",
     "done": "Hesabına bağlandın",
     "doneDuplicates": "{{count}} kelime “olası kopya” olarak işaretlendi; Kartlar'da gözden geçirebilirsin."
   },
