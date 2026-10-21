@@ -2,6 +2,13 @@
 // cards, with 1 new card after every 5 reviews. Pure: the data layer passes in cards and
 // today's facts, and rebuilds the queue after every answer, which is how learning cards
 // that become due during the session re-enter.
+//
+// Modes ("Biraz daha çalış", docs/decisions/0010-extra-study.md):
+//   normal  today's work; the new-card limit is the daily limit plus today's extra allowance.
+//   ahead   "Yarının kartlarını şimdi tekrar et": reviews due before the end of tomorrow,
+//           no new cards. Answers are ordinary FSRS reviews (ts-fsrs uses the real elapsed
+//           time, so an early answer gets a shorter interval than an on-time one).
+// Practice rounds never use this queue (domain/practice.ts).
 import { type Card, CardState, type Id, type Millis } from './types';
 
 export type QueueCard = Pick<
@@ -12,11 +19,19 @@ export type QueueCard = Pick<
 export const NEW_EVERY_N_REVIEWS = 5;
 export const DEFAULT_LEARN_AHEAD_MS = 20 * 60_000;
 
+export type QueueMode = 'normal' | 'ahead';
+
 export interface QueueContext {
   now: Millis;
   /** Exclusive end of the current local day; reviews due before it are due today. */
   dayEnd: Millis;
   dailyNewLimit: number;
+  /** Extra new cards allowed today on top of dailyNewLimit ("+5 yeni kart"). Default 0. */
+  extraNewToday?: number;
+  /** Default 'normal'. */
+  mode?: QueueMode;
+  /** 'ahead' mode: exclusive end of tomorrow's local day. Reviews due before it are shown. */
+  aheadEnd?: Millis;
   /** Cards whose first (non-undone) answer falls on the current local day. */
   newIntroducedToday: number;
   /** Cards answered today (non-undone logs) and their notes, for sibling burying. */
@@ -75,6 +90,8 @@ const byCreated = (a: QueueCard, b: QueueCard): number =>
 
 export function buildQueue(cards: Iterable<QueueCard>, ctx: QueueContext): QueueResult {
   const learnAhead = ctx.learnAheadMs ?? DEFAULT_LEARN_AHEAD_MS;
+  const ahead = ctx.mode === 'ahead';
+  const reviewEnd = ahead ? Math.max(ctx.dayEnd, ctx.aheadEnd ?? ctx.dayEnd) : ctx.dayEnd;
   const learningDue: QueueCard[] = [];
   const learningSoon: QueueCard[] = [];
   const reviews: QueueCard[] = [];
@@ -88,7 +105,7 @@ export function buildQueue(cards: Iterable<QueueCard>, ctx: QueueContext): Queue
       else if (c.due <= ctx.now + learnAhead) learningSoon.push(c);
       else if (c.due < ctx.dayEnd && (nextLearningDue === null || c.due < nextLearningDue)) nextLearningDue = c.due;
     } else if (c.state === CardState.Review) {
-      if (c.due < ctx.dayEnd) reviews.push(c);
+      if (c.due < reviewEnd) reviews.push(c);
     } else if (c.state === CardState.New) {
       fresh.push(c);
     }
@@ -110,7 +127,7 @@ export function buildQueue(cards: Iterable<QueueCard>, ctx: QueueContext): Queue
     }
     return out;
   };
-  const newAllowed = Math.max(0, ctx.dailyNewLimit - ctx.newIntroducedToday);
+  const newAllowed = ahead ? 0 : newCardsAllowed(ctx);
   const learnNow = take(learningDue);
   const rev = take(reviews);
   const nw = take(fresh, newAllowed);
@@ -143,6 +160,13 @@ export function buildQueue(cards: Iterable<QueueCard>, ctx: QueueContext): Queue
     },
     nextLearningDue,
   };
+}
+
+/** New cards today's limit still allows: daily limit + today's extra allowance − introduced today. */
+export function newCardsAllowed(
+  ctx: Pick<QueueContext, 'dailyNewLimit' | 'extraNewToday' | 'newIntroducedToday'>,
+): number {
+  return Math.max(0, ctx.dailyNewLimit + Math.max(0, ctx.extraNewToday ?? 0) - ctx.newIntroducedToday);
 }
 
 function item(c: QueueCard, kind: QueueKind): QueueItem {

@@ -1,6 +1,6 @@
 // zod schemas for synced rows. Used to validate backup files and (later) sync payloads.
 import { z } from 'zod';
-import type { Card, Note, ReviewLog, Sense, Settings, Source } from './types';
+import type { Card, Note, PracticeLog, ReviewLog, Sense, Settings, Source } from './types';
 
 const millis = z.number().int();
 const id = z.string().min(1);
@@ -74,6 +74,20 @@ export const reviewLogSchema: z.ZodType<ReviewLog> = z.object({
   device_id: z.string(),
   undo_of: id.nullable(),
   shown_sense_id: id.nullable(),
+  created_at: millis,
+  hlc: z.string().min(1),
+});
+
+export const practiceLogSchema: z.ZodType<PracticeLog> = z.object({
+  id,
+  user_id: z.string().nullable(),
+  card_id: id,
+  practiced_at: millis,
+  result: z.enum(['known', 'unknown']),
+  mode: z.string().min(1).max(32),
+  session_id: id,
+  duration_ms: z.number().int().min(0).max(60_000),
+  device_id: z.string(),
   created_at: millis,
   hlc: z.string().min(1),
 });

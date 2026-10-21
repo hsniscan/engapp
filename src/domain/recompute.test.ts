@@ -108,3 +108,53 @@ describe('deriveUnlocked', () => {
     expect(deriveUnlocked({ card_type: 'cloze', state: CardState.Learning, reps: 1 }, CardState.Learning)).toBe(true);
   });
 });
+
+describe('early review ("Yarının kartlarını şimdi tekrar et")', () => {
+  const DAY = 86_400_000;
+
+  /** Graduate a card to Review, then answer the next reviews `early` ms before they are due. */
+  function live(early: number[], ratings: RatingValue[]) {
+    let f = emptyFsrs(card.created_at);
+    const logs: ReviewLog[] = [];
+    let t = T;
+    const answer = (rating: RatingValue) => {
+      f = applyRating(sched, { id: card.id, ...f }, rating, t);
+      logs.push(makeLog({ card_id: card.id, reviewed_at: t, rating }));
+    };
+    answer(3);
+    t += 10 * 60_000;
+    answer(3);
+    for (const [i, rating] of ratings.entries()) {
+      t = Math.max(t + 60_000, f.due - (early[i] ?? 0));
+      answer(rating);
+    }
+    return { fsrs: f, logs };
+  }
+
+  it('an early answer replays to exactly the state the live answer wrote', () => {
+    const { fsrs, logs } = live([DAY, DAY / 2, 0, DAY], [3, 3, 1, 3]);
+    expect(replayCard(sched, card, logs).fsrs).toEqual(fsrs);
+  });
+
+  it('answering a day early grows stability less than answering on time (so the next interval is shorter)', () => {
+    const onTime = live([0, 0], [3, 3]).fsrs;
+    const early = live([0, DAY], [3, 3]).fsrs;
+    expect(early.stability).toBeLessThan(onTime.stability);
+  });
+
+  it('property: any mix of early and on-time answers replays to the live state, in any log order', () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.integer({ min: 0, max: DAY }), { minLength: 1, maxLength: 12 }),
+        fc.array(fc.constantFrom<RatingValue>(1, 2, 3, 4), { minLength: 1, maxLength: 12 }),
+        fc.integer(),
+        (early, ratings, seed) => {
+          const { fsrs, logs } = live(early, ratings);
+          const shuffled = [...logs].sort((a, b) => ((a.id.charCodeAt(a.id.length - 1) ^ seed) & 7) - ((b.id.charCodeAt(b.id.length - 1) ^ seed) & 7));
+          expect(replayCard(sched, card, shuffled).fsrs).toEqual(fsrs);
+        },
+      ),
+      { numRuns: 150 },
+    );
+  });
+});

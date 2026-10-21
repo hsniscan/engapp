@@ -39,7 +39,8 @@ const OUTBOX_PAGE = 500;
 /**
  * Coalesced, due outbox items in outbox order (oldest first), at most `limit`.
  * `force` ignores next_attempt_at (manual "Şimdi senkronla"). `skip` (outboxKey values)
- * leaves out rows already tried in the current run.
+ * leaves out rows already tried in the current run; `skipTables` leaves out whole tables
+ * (practice_logs until the server is known to store them).
  *
  * Reads the outbox page by page and stops once `limit` items are found, so pushing a large
  * outbox (e.g. a history reset: thousands of rows) costs one page per batch instead of a
@@ -50,6 +51,7 @@ export async function takeOutboxItems(
   now: Millis,
   force = false,
   skip?: ReadonlySet<string>,
+  skipTables?: ReadonlySet<OutboxTable>,
 ): Promise<OutboxItem[]> {
   const out: OutboxItem[] = [];
   const seen = new Set<string>();
@@ -62,7 +64,7 @@ export async function takeOutboxItems(
       seen.add(key);
       // A row's entries share their backoff (failOutboxItems), and newer entries are due
       // when written: if the oldest one is not due, the item is not due.
-      if (skip?.has(key) || (!force && r.next_attempt_at > now)) continue;
+      if (skip?.has(key) || skipTables?.has(r.table) || (!force && r.next_attempt_at > now)) continue;
       const entries = await db.outbox.where('[table+row_id]').equals([r.table, r.row_id]).sortBy('seq');
       const newest = entries.at(-1) ?? r;
       const due = Math.max(...entries.map((e) => e.next_attempt_at));

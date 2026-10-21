@@ -249,13 +249,10 @@ function TodayCard({ data, className }: { data: HomeDashboard; className?: strin
       <div className="mt-6 flex flex-col gap-2">
         {finished ? (
           <>
-            <button
-              type="button"
-              disabled
-              className={buttonClasses({ size: 'lg', fullWidth: true })}
-            >
-              {t('home.startReview')}
-            </button>
+            <Link to="/more" className={buttonClasses({ size: 'lg', fullWidth: true })}>
+              {t('home.moreStudy')}
+              <Icon name="chevron-right" size={20} />
+            </Link>
             <p className="text-center text-sm text-fg-muted" role="status">
               {nextDueText(t, data.next, data.now, data.timezone)}
             </p>

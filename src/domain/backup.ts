@@ -3,12 +3,21 @@ import { z } from 'zod';
 import { sha256Hex } from './chunking';
 import { type DayConfig, dayKeyOf } from './day';
 import { effectiveLogs } from './recompute';
-import { cardSchema, noteSchema, reviewLogSchema, senseSchema, settingsSchema, sourceSchema } from './schemas';
-import type { Card, Millis, Note, ReviewLog, Sense, Settings, Source } from './types';
+import {
+  cardSchema,
+  noteSchema,
+  practiceLogSchema,
+  reviewLogSchema,
+  senseSchema,
+  settingsSchema,
+  sourceSchema,
+} from './schemas';
+import type { Card, Millis, Note, PracticeLog, ReviewLog, Sense, Settings, Source } from './types';
 
 export const BACKUP_FORMAT = 'engapp-backup';
 // 2: senses.source_sentence_tr. Version 1 files (without it) are still accepted.
-export const BACKUP_SCHEMA_VERSION = 2;
+// 3: practice_logs. Older files have no such table (restored as none).
+export const BACKUP_SCHEMA_VERSION = 3;
 
 export interface BackupTables {
   notes: Note[];
@@ -17,6 +26,8 @@ export interface BackupTables {
   review_logs: ReviewLog[];
   sources: Source[];
   settings: Settings[];
+  /** Absent in files before schema_version 3; buildBackup always writes it. */
+  practice_logs?: PracticeLog[];
 }
 
 export const backupTablesSchema = z.object({
@@ -26,6 +37,8 @@ export const backupTablesSchema = z.object({
   review_logs: z.array(reviewLogSchema),
   sources: z.array(sourceSchema),
   settings: z.array(settingsSchema).max(1),
+  // Optional, not defaulted: a file without the key must keep the checksum it was written with.
+  practice_logs: z.array(practiceLogSchema).optional(),
 });
 
 export const backupSchema = z.object({
@@ -62,6 +75,7 @@ export function sortTables(t: BackupTables): BackupTables {
     review_logs: byId(t.review_logs),
     sources: byId(t.sources),
     settings: byId(t.settings),
+    ...(t.practice_logs ? { practice_logs: byId(t.practice_logs) } : {}),
   };
 }
 
@@ -73,7 +87,7 @@ export async function buildBackup(
   tables: BackupTables,
   meta: { exported_at: Millis; device_id: string | null },
 ): Promise<BackupFile> {
-  const sorted = sortTables(tables);
+  const sorted = sortTables({ ...tables, practice_logs: tables.practice_logs ?? [] });
   return {
     format: BACKUP_FORMAT,
     schema_version: BACKUP_SCHEMA_VERSION,

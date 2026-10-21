@@ -1,4 +1,4 @@
-# Data model (v0.1)
+# Data model (v0.2)
 
 The device's IndexedDB (Dexie, `src/data/db.ts`) is the source of truth. Business rules are
 pure functions in `src/domain/`; `src/data/` wraps them in Dexie transactions. Screens import
@@ -12,11 +12,12 @@ only from `@/data` (`src/data/index.ts`).
 | senses | yes | `id`, `note_id`, `[note_id+lexicon_sense_id]`, `lexicon_sense_id`, `deleted_at` | `sense_no` is the display order. `meaning_tr_override` beats `meaning_tr`. `span` is `[start, end)` in `source_sentence`. `source_sentence_tr` is the user's Turkish translation of that sentence (AI or typed; null when none, dropped with its sentence; never in the shared lexicon; Dexie v2 filled null on old rows). |
 | cards | yes | `id`, `note_id`, `sense_id`, `[state+due]`, `due`, `card_type`, `deleted_at` | FSRS fields in UTC ms. `unlocked`, `suspended`. |
 | review_logs | yes, insert-only | `id`, `card_id`, `reviewed_at`, `undo_of` | Never updated or deleted. An undo is a new row with `undo_of`. |
+| practice_logs | yes, insert-only | `id`, `card_id`, `practiced_at`, `session_id` | One row per answer in a practice round: `result` (`known`/`unknown`), `mode` (the source: `hard`, `recent`, `tag`; free text, 1–32 chars), `session_id`, `duration_ms` (≤ 60 s), `device_id`. Never read by scheduling, `daily_activity` or the streak (Dexie v3, decision 0010). |
 | sources | metadata | `id`, `created_at` | |
 | settings | yes | `id = 'settings'` | Defaults: `daily_new_limit 10`, `request_retention 0.9`, `timezone` from the device, `day_start_hour 4`, `theme 'system'`, `voice 'en-US'`, `level 'B1'`. |
 | outbox | no | `++seq`, `[table+row_id]`, `next_attempt_at` | Rows waiting to be pushed. |
 | daily_activity | no (derived) | `date` (local `YYYY-MM-DD`) | `reviews`, `new_cards`, `time_ms`, `review_answers`, `review_passed`, `completed`. |
-| meta | no | `key` | `device_id`, `user_id`, `hlc`, `sync_cursor`, `lexicon_cursor`. |
+| meta | no | `key` | `device_id`, `user_id`, `hlc`, `sync_cursor`, `lexicon_cursor`, `server_practice_logs` (the server answered with `sync_pull_v3`), `extra_new:<YYYY-MM-DD>` (extra new cards allowed that day, this device only). |
 | error_log | no | `++id`, `at` | Newest 200 rows are kept. |
 | lexicon_cache, chunk_cache, import_jobs, import_candidates | no | | Owned by the AI and sync layers. |
 
@@ -59,6 +60,11 @@ Every synced mutable row has `id` (UUID v7), `user_id` (null in guest mode), `cr
 
 ## Queue rules (`domain/queue.ts`)
 
+`getStudyQueue({ mode })` has two modes. `normal` is today's session. `ahead` ("Yarının
+kartlarını şimdi tekrar et") takes Review-state cards due before the end of tomorrow's local
+day. Learning steps keep their normal timing, and no new cards are added. Sibling burial still applies, and answers are
+ordinary `answerCard` calls.
+
 The queue is built in this order:
 1. Due (re)learning steps.
 2. Reviews due before the end of the day, oldest due first.
@@ -66,12 +72,29 @@ The queue is built in this order:
    across rebuilds through the session counts.
 
 Rules:
-- New cards are limited to `daily_new_limit` minus the cards first answered today.
+- New cards are limited to `daily_new_limit + extra_new:<today>` minus the cards first
+  answered today (`newCardsAllowed`). The extra allowance is per device; the cards answered
+  today come from the logs, so nothing is counted twice across devices.
 - Only one card per note is shown per day. If a note had any card answered today, its
   other cards are buried until tomorrow.
 - Suspended, deleted and locked cards are excluded.
 - When nothing else is left, learning cards due within 20 minutes are shown early. Rebuild
   the queue after every answer.
+
+## Practice rounds (`domain/practice.ts`)
+
+Practice is not a queue mode, and it never changes a card. `getPracticeCards(filter)` takes
+live, unsuspended, unlocked cards with at least one review that still counts:
+
+- `hard`: `lapses ≥ 2`, `difficulty ≥ 7`, or an Again (review) or "Bilemedim" (practice) in
+  the last 14 days. Most recent miss first, then lapses and difficulty.
+- `recent`: first review within the last 7 days.
+- `tag`: notes with that tag.
+
+Each round has one card per note and 10 or 20 cards, shuffled with the session id as seed
+(except `hard`). A card answered `unknown` the first time comes back once at the end.
+`recordPractice` writes a `practice_logs` row and nothing else. A property test checks that
+cards, review logs, `daily_activity`, the streak and the queue are unchanged.
 
 ## Actions API (`@/data`)
 
@@ -89,12 +112,16 @@ All actions take an optional trailing `now` (ms) for tests. They throw `ActionEr
 | `createSource(input)` | Saves import source metadata. |
 | `answerCard({card_id, rating, duration_ms, shown_sense_id})` | Writes the log, updates the card, unlocks siblings and updates `daily_activity`. All of this is one transaction. |
 | `getLastUndoableAnswer()` / `undoAnswer(logId)` | Undo adds a row, recomputes the card, re-locks siblings and recounts the day. |
-| `getStudyQueue({session, learnAheadMs})` | Returns the ordered items, each with its card, plus counts, `nextLearningDue` and today's totals. |
+| `getStudyQueue({session, learnAheadMs, mode})` | Returns the ordered items, each with its card, plus counts, `nextLearningDue`, today's totals, `extraNewToday` and `dayEnd`. |
+| `addExtraNew(n)` / `getExtraNewToday()` | "Biraz daha çalış → +n yeni kart": raises today's new-card allowance on this device (1–100). |
+| `getMoreStudyOverview()` | The `/more` page: due now, daily limit, extra today, new cards waiting, tomorrow's count and practice source counts. |
+| `getPracticeSourceCounts()` / `getPracticeCards(filter, {size, seed})` | Practice selection (see "Practice rounds"). |
+| `recordPractice({card_id, result, mode, session_id, duration_ms})` | One practice answer → one `practice_logs` row. |
 | `getCardView(cardId)` | Returns the note, senses, the sense to show, cloze/hint and the 4 interval previews. |
 | `getHomeSummary()` / `getStreakSummary()` / `getHeatmap()` | Feed the home line, the stats metrics and the 26-week heatmap. |
 | `getNoteDetail`, `findNoteByTerm`, `listNotes`, `listSources`, `pendingChangesCount` | Read helpers. |
 | `getSettings` / `ensureSettings` / `updateSettings(patch)` | Settings. `updateSettings` validates with zod and with ts-fsrs. Call `ensureSettings()` at startup. |
-| `exportBackup()` → `BackupFile` | Builds the backup (`schema_version` 2; version 1 files without `source_sentence_tr` still restore) and records `last_backup_at`. |
+| `exportBackup()` → `BackupFile` | Builds the backup (`schema_version` 3 with `practice_logs`; version 1 and 2 files still restore) and records `last_backup_at`. |
 | `restoreBackup(fileOrJson, 'merge' \| 'overwrite')` | Verifies the zod schema and checksum, restores, then recomputes all cards and `daily_activity`. |
 | `exportCsv(headers)` | CSV export. |
 | `runIntegrityCheck()` / `repairIntegrity()` | Startup check and the "Veri onarımı" repair. |
@@ -112,7 +139,8 @@ All actions take an optional trailing `now` (ms) for tests. They throw `ActionEr
   `possible_duplicate`.
 - **overwrite**: The backup's mutable rows replace the local ones and are restamped. Live
   local rows that are absent from the file are soft-deleted.
-- **Both modes**: Logs are insert-only, so missing logs are added and none are removed.
+- **Both modes**: Logs (review and practice) are insert-only, so missing logs are added and
+  none are removed.
 
 Restoring into an empty database and exporting again gives identical tables and checksum.
 A property test checks this.

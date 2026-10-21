@@ -1,6 +1,7 @@
 // In-memory stand-in for sync_push / sync_pull / lexicon_pull / lexicon_get with the same
 // rules as supabase/migrations/20261021000400_sync.sql (LWW by HLC, append-only logs,
-// server_seq cursor, tombstone purge → full_resync). Test-only.
+// server_seq cursor, tombstone purge → full_resync) and 20261021000900_practice.sql
+// (practice_logs: insert-only, pulled only by sync_pull_v3). Test-only.
 import type { Id, LexiconSense, OutboxTable } from '@/domain/types';
 import { db } from '@/data';
 import type { SyncTransport } from '../engine';
@@ -32,6 +33,12 @@ export class FakeServer implements SyncTransport {
     offline?: boolean;
   } = {};
 
+  /**
+   * false = a backend from before migration 20261021000900: sync_push rejects practice_logs
+   * as an unknown table and pulls answer like sync_pull_v2 (version 2, no practice rows).
+   */
+  practiceSupported = true;
+
   readonly userId: string;
   constructor(userId = 'user-1') {
     this.userId = userId;
@@ -57,14 +64,19 @@ export class FakeServer implements SyncTransport {
         res.rejected.push({ table: it.table, id: p.id, code: '23502', message: 'not-null violation' });
         continue;
       }
-      if (it.table === 'review_logs' && it.op === 'delete') {
+      if (it.table === 'practice_logs' && !this.practiceSupported) {
+        res.rejected.push({ table: it.table, id: p.id, code: '22023', message: 'unknown table' });
+        continue;
+      }
+      const insertOnly = it.table === 'review_logs' || it.table === 'practice_logs';
+      if (insertOnly && it.op === 'delete') {
         res.rejected.push({ table: it.table, id: p.id, code: '42501', message: 'logs are append-only' });
         continue;
       }
       const k = this.key(it.table, p.id);
       const cur = this.rows.get(k);
       p.user_id = this.userId;
-      if (it.table === 'review_logs') {
+      if (insertOnly) {
         if (!cur) this.rows.set(k, { table: it.table, row: p, seq: ++this.seq });
         res.acked.push(p.id);
         continue;
@@ -84,15 +96,21 @@ export class FakeServer implements SyncTransport {
     return res;
   }
 
-  /** `from` as in sync_pull_v2 (the cursor the pull started at); omitted = old sync_pull. */
+  /**
+   * `from` as in sync_pull_v2/v3 (the cursor the pull started at); omitted = old sync_pull.
+   * Answers as sync_pull_v3 (with practice_logs) when practiceSupported, else as v2/v1.
+   */
   async pullChanges(since: number, limit = 500, from?: number): Promise<PullResult> {
     this.calls.pull++;
     if (this.faults.offline) throw new SyncApiError('network', 'offline');
+    const version: PullResult['version'] = from === undefined ? 1 : this.practiceSupported ? 3 : 2;
     const start = from === undefined ? since : Math.min(Math.max(from, 0), since);
     if (start > 0 && start < this.purgedThrough) {
-      return { rows: [], invalid: [], next_seq: since, has_more: false, full_resync: true };
+      return { rows: [], invalid: [], next_seq: since, has_more: false, full_resync: true, version };
     }
-    const all = [...this.rows.values()].filter((r) => r.seq > since).sort((a, b) => a.seq - b.seq);
+    const all = [...this.rows.values()]
+      .filter((r) => r.seq > since && (version === 3 || r.table !== 'practice_logs'))
+      .sort((a, b) => a.seq - b.seq);
     const page = all.slice(0, Math.min(limit, 500));
     return {
       rows: page.map((r) => ({ table: r.table, seq: r.seq, row: structuredClone(r.row) }) as unknown as PulledRow),
@@ -100,6 +118,7 @@ export class FakeServer implements SyncTransport {
       next_seq: page.length ? page[page.length - 1]!.seq : since,
       has_more: all.length > page.length,
       full_resync: false,
+      version,
     };
   }
 
@@ -107,7 +126,7 @@ export class FakeServer implements SyncTransport {
   purgeTombstones(): number {
     let n = 0;
     for (const [k, r] of this.rows) {
-      if (r.table !== 'review_logs' && r.row.deleted_at != null) {
+      if (r.table !== 'review_logs' && r.table !== 'practice_logs' && r.row.deleted_at != null) {
         this.purgedThrough = Math.max(this.purgedThrough, r.seq);
         this.rows.delete(k);
         n++;

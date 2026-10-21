@@ -171,6 +171,9 @@ export function SessionSummary({ answers, start, settled, canUndo, onUndo }: Ses
         <Link to="/" className={buttonClasses({ size: 'lg', fullWidth: true })}>
           {t('review.backHome')}
         </Link>
+        <Link to="/more" className={buttonClasses({ variant: 'secondary', fullWidth: true })}>
+          {t('review.moreStudy')}
+        </Link>
         {canUndo && (
           <Button variant="ghost" leadingIcon="undo" onClick={onUndo}>
             {t('review.undoLast')}

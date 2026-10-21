@@ -8,6 +8,7 @@ import { lexiconEntry } from '../../supabase/functions/_shared/contracts';
 import {
   cardSchema,
   noteSchema,
+  practiceLogSchema,
   reviewLogSchema,
   senseSchema,
   settingsSchema,
@@ -18,6 +19,7 @@ import type {
   LexiconSense,
   Note,
   OutboxTable,
+  PracticeLog,
   ReviewLog,
   Sense,
   Settings,
@@ -57,6 +59,7 @@ export interface RowByTable {
   review_logs: ReviewLog;
   sources: Source;
   settings: Settings;
+  practice_logs: PracticeLog;
 }
 export type PulledRow = {
   [T in OutboxTable]: { table: T; seq: number; row: RowByTable[T] };
@@ -69,6 +72,7 @@ const ROW_SCHEMAS: { [T in OutboxTable]: z.ZodType<RowByTable[T]> } = {
   review_logs: reviewLogSchema,
   sources: sourceSchema,
   settings: settingsSchema,
+  practice_logs: practiceLogSchema,
 };
 
 const pullEnvelope = z.object({
@@ -87,6 +91,11 @@ export interface PullResult {
   next_seq: number;
   has_more: boolean;
   full_resync: boolean;
+  /**
+   * The pull function that answered: 3 = sync_pull_v3 (the server stores practice_logs),
+   * 2 = sync_pull_v2, 1 = sync_pull. Older backends are used until the migrations land.
+   */
+  version: 1 | 2 | 3;
 }
 
 const lexiconPullEnvelope = z.object({
@@ -166,8 +175,10 @@ function isMissingFunction(e: unknown): boolean {
  * Changes after `sinceSeq`, ordered by server sequence. Store next_seq with the rows.
  * `fromSeq` is the cursor this run of pages started at (0 for a full pull): the server
  * decides `full_resync` from it, so the pages of a full pull are never cut short by an
- * old tombstone purge (sync_pull_v2, migration 20261021000600). Without it the old
- * sync_pull is used.
+ * old tombstone purge. With it the newest pull function is tried first and an older one
+ * answers when the backend does not have it yet: sync_pull_v3 (all registered tables,
+ * practice_logs included; migration 20261021000900) → sync_pull_v2 (the six v0.1 tables;
+ * 20261021000600) → sync_pull. Without `fromSeq` the old sync_pull is used.
  */
 export async function pullChanges(
   sinceSeq: number,
@@ -177,17 +188,20 @@ export async function pullChanges(
 ): Promise<PullResult> {
   const cl = client(c);
   const p_limit = Math.min(limit, MAX_PULL_PAGE);
-  let env: z.infer<typeof pullEnvelope>;
-  if (fromSeq === undefined) {
-    env = await rpc(cl, 'sync_pull', { p_since: sinceSeq, p_limit }, pullEnvelope);
-  } else {
-    try {
-      env = await rpc(cl, 'sync_pull_v2', { p_since: sinceSeq, p_limit, p_from: fromSeq }, pullEnvelope);
-    } catch (e) {
-      if (!isMissingFunction(e)) throw e;
-      env = await rpc(cl, 'sync_pull', { p_since: sinceSeq, p_limit }, pullEnvelope);
+  let env: z.infer<typeof pullEnvelope> | null = null;
+  let version: PullResult['version'] = 1;
+  if (fromSeq !== undefined) {
+    for (const [fn, v] of [['sync_pull_v3', 3], ['sync_pull_v2', 2]] as const) {
+      try {
+        env = await rpc(cl, fn, { p_since: sinceSeq, p_limit, p_from: fromSeq }, pullEnvelope);
+        version = v;
+        break;
+      } catch (e) {
+        if (!isMissingFunction(e)) throw e;
+      }
     }
   }
+  env ??= await rpc(cl, 'sync_pull', { p_since: sinceSeq, p_limit }, pullEnvelope);
   const rows: PulledRow[] = [];
   const invalid: PullResult['invalid'] = [];
   for (const r of env.rows) {
@@ -206,6 +220,7 @@ export async function pullChanges(
     next_seq: env.next_seq,
     has_more: env.has_more,
     full_resync: env.full_resync,
+    version,
   };
 }
 

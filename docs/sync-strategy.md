@@ -24,8 +24,8 @@ Client wrappers: `pushBatch`, `pullChanges`, `pullLexicon`, `getLexiconSenses` i
 
 ## Server tables
 
-`notes`, `senses`, `cards`, `review_logs`, `sources`, `settings` mirror
-`src/domain/types.ts` column for column (timestamps are epoch ms `bigint`). Extra
+`notes`, `senses`, `cards`, `review_logs`, `sources`, `settings` and (v0.2)
+`practice_logs` mirror `src/domain/types.ts` column for column (timestamps are epoch ms `bigint`). Extra
 server-only columns, removed from pull output:
 
 - `server_seq bigint`: from one global sequence `sync_seq`, set by a trigger on every
@@ -49,7 +49,18 @@ Deliberately not enforced on the server:
   tombstones are purged independently. Integrity is the client's integrity check.
 
 RLS on every table: `user_id = auth.uid()` for select/insert/update. No client has
-DELETE (deletion is a tombstone). `review_logs`: SELECT and INSERT only.
+DELETE (deletion is a tombstone). `review_logs` and `practice_logs`: SELECT and INSERT only.
+
+### Table registry (v0.2)
+
+`public.sync_tables(name, insert_only, conflict_key)` lists the synced user tables
+(migration `20261021000900_practice.sql`). `sync_push`, `_sync_upsert`, `sync_pull_v3` and
+`purge_tombstones` build their statements from it with `format('%I')`, so the registry is
+also the whitelist of table names. A later package adds a synced table by creating it (with
+the stamp trigger and the standard RLS) and inserting one registry row. Clients can read the
+registry but cannot write it. pgTAP checks that every registered table has RLS with
+select and insert policies, that mutable tables have an update policy, and that insert-only
+tables can be neither updated nor deleted.
 
 ## Push
 
@@ -61,6 +72,9 @@ DELETE (deletion is a tombstone). `review_logs`: SELECT and INSERT only.
 | `delete`                  | the full row with `deleted_at`, or at least `{id, hlc, deleted_at?}` | tombstone with the same last-writer-wins rule; a missing row is acked (nothing to delete)                    |
 | `upsert` on `review_logs` | the full row                                                         | `INSERT … ON CONFLICT (id) DO NOTHING` (append-only, idempotent)                                             |
 | `delete` on `review_logs` | —                                                                    | rejected                                                                                                     |
+
+`practice_logs` (and any other `insert_only` table in the registry) behaves like
+`review_logs`.
 
 Response: `{acked: [id], stale: [id], rejected: [{table, id, code, message}]}`
 
@@ -96,6 +110,22 @@ purged, so a new device or a full resync could never get past its first page.
 - Incoming row vs local: if a local outbox entry for the row has a higher HLC, keep the
   local row; otherwise overwrite. Merge the remote HLC into the local clock (`receive`).
 - New `review_logs` for a card → recompute that card from all its logs.
+
+**v3 (v0.2).** The client tries `sync_pull_v3(p_since, p_limit, p_from)` first. It has the
+same envelope and horizon rule as v2, but returns every table in the registry, so it
+includes `practice_logs`. If it is missing (`PGRST202`/`42883`), the client uses v2, then
+`sync_pull`. `sync_pull` and `sync_pull_v2` are unchanged and keep returning the six v0.1
+tables, so a v0.1 client never sees a table it does not know.
+
+`PullResult.version` says which function answered. The engine stores
+`meta.server_practice_logs = (version === 3)`. Until it is true, `practice_logs` outbox rows
+are skipped by push. This way a new client against a backend without the migration does
+not burn attempts on rows the server would reject, and the order of deploys does not
+matter. Practice logs are inserted if new and never trigger a recompute. A full resync does
+not delete local insert-only rows that the pull did not return.
+
+Known gap: a v0.1 client pulls with v2 and moves its cursor past practice rows written by
+another device. After it updates, it does not get them (decision 0010).
 
 ### Tombstones and full resync
 
@@ -135,7 +165,11 @@ on the user's sense always wins over the lexicon.
 
 - `supabase/tests/database/*.test.sql` (pgTAP, `supabase test db`): RLS on every table,
   cross-user read/write denial, push validation/idempotency/LWW/tombstones, review log
-  immutability, pagination, purge → `full_resync`.
+  immutability, pagination, purge → `full_resync`. `05_practice_logs.test.sql`: the
+  registry, insert-only practice logs, v3 pull pages and horizon, and v1/v2 not returning
+  them.
+- `src/sync/practice.test.ts` (FakeServer): practice logs wait for a v3 server, then sync
+  insert-only between devices without touching cards.
 - `supabase/tests/integration/stack.test.ts`: the same through PostgREST with
   `src/sync/api.ts`.
 - `src/sync/api.test.ts`: response validation and error classification.

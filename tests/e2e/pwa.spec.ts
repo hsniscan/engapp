@@ -38,6 +38,7 @@ test.describe('PWA', () => {
       ['/add', 'Kart ekle'],
       ['/stats', 'İstatistik'],
       ['/settings', 'Ayarlar'],
+      ['/more', 'Biraz daha çalış'],
     ] as const) {
       await page.goto(path);
       await expect(
@@ -45,6 +46,12 @@ test.describe('PWA', () => {
       ).toBeVisible();
     }
     await page.goto('/review');
+    await expect(page.getByRole('button', { name: 'Cevabı göster' })).toBeEnabled();
+    // Extra study works in airplane mode too: answer the card, then practice it.
+    await page.locator('body').press('Space');
+    await page.locator('body').press('4');
+    await expect(page.getByRole('heading', { name: 'Oturum tamamlandı' })).toBeVisible();
+    await page.goto('/practice?source=recent&size=10');
     await expect(page.getByRole('button', { name: 'Cevabı göster' })).toBeEnabled();
     await context.setOffline(false);
   });

@@ -3,7 +3,20 @@
 import type { Table } from 'dexie';
 import { decodeHlc, encodeHlc, type Hlc, isHlc, receive, tick } from '../domain/hlc';
 import { uuidv7 } from '../domain/ids';
-import type { Card, Id, Millis, Note, OutboxRow, OutboxTable, ReviewLog, Sense, Settings, Source, SyncedRow } from '../domain/types';
+import type {
+  Card,
+  Id,
+  Millis,
+  Note,
+  OutboxRow,
+  OutboxTable,
+  PracticeLog,
+  ReviewLog,
+  Sense,
+  Settings,
+  Source,
+  SyncedRow,
+} from '../domain/types';
 import { db } from './db';
 import { getDeviceId, getMeta, META, setMeta } from './meta';
 
@@ -75,6 +88,12 @@ export class SyncWriter {
     if (logs.length === 0) return;
     await db.review_logs.bulkAdd(logs);
     for (const log of logs) this.enqueue('review_logs', log.id, 'upsert', log);
+  }
+
+  /** practice_logs are insert-only too, and never touch cards or review_logs. */
+  async insertPracticeLog(log: PracticeLog): Promise<void> {
+    await db.practice_logs.add(log);
+    this.enqueue('practice_logs', log.id, 'upsert', log);
   }
 
   enqueue(table: OutboxTable, rowId: Id, op: OutboxRow['op'], payload: unknown): void {

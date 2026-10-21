@@ -2,6 +2,15 @@
 export { db } from './db';
 export * from './actions';
 export * from './queries';
+export { addExtraNew, getMoreStudyOverview, MAX_EXTRA_NEW_STEP, type MoreStudyOverview } from './extraStudy';
+export {
+  getPracticeCards,
+  getPracticeSourceCounts,
+  loadPracticeCandidates,
+  recordPractice,
+  type PracticeAnswerInput,
+  type PracticeSourceCounts,
+} from './practice';
 export {
   recomputeAllCards,
   applyRemoteRows,

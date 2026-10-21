@@ -8,7 +8,8 @@ test('sign-in succeeds but the sync backend fails → "Misafir olarak devam et" 
   context,
   backend,
 }) => {
-  for (const fn of ['sync_pull', 'sync_push', 'lexicon_pull']) backend.brokenRpcs.add(fn);
+  for (const fn of ['sync_pull', 'sync_pull_v3', 'sync_push', 'lexicon_pull'])
+    backend.brokenRpcs.add(fn);
   await FakeBackend.signIn(context);
   await page.goto('/');
 

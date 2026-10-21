@@ -22,7 +22,22 @@ const children: RouteObject[] = [
     path: 'review',
     handle: { immersive: true } satisfies RouteHandle,
     HydrateFallback: () => null,
-    lazy: async () => ({ Component: (await loadReview()).ReviewScreen }),
+    lazy: async () => ({ Component: (await loadReview()).ReviewRoute }),
+  },
+  {
+    path: 'more',
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/extra/MoreStudyPage')).MoreStudyPage,
+    }),
+  },
+  {
+    path: 'practice',
+    handle: { immersive: true } satisfies RouteHandle,
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/practice/PracticeScreen')).PracticeRoute,
+    }),
   },
   {
     path: 'add',

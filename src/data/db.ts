@@ -10,6 +10,7 @@ import type {
   MetaRow,
   Note,
   OutboxRow,
+  PracticeLog,
   ReviewLog,
   Sense,
   Settings,
@@ -27,6 +28,7 @@ export class EngDb extends Dexie {
   senses!: EntityTable<Sense, 'id'>;
   cards!: EntityTable<Card, 'id'>;
   review_logs!: EntityTable<ReviewLog, 'id'>;
+  practice_logs!: EntityTable<PracticeLog, 'id'>;
   sources!: EntityTable<Source, 'id'>;
   settings!: EntityTable<Settings, 'id'>;
   lexicon_cache!: EntityTable<LexiconSense, 'id'>;
@@ -74,6 +76,9 @@ export class EngDb extends Dexie {
             });
         }
       });
+    // v3 (v0.2 İP1): practice_logs, insert-only and synced. Practice answers never feed FSRS.
+    // Meta keys `extra_new:<day>` hold today's extra new-card allowance (no schema change).
+    this.version(3).stores({ practice_logs: 'id, card_id, practiced_at, session_id' });
   }
 }
 

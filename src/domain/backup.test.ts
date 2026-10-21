@@ -87,6 +87,25 @@ describe('backup file', () => {
     if (r.ok) expect(r.backup.tables.senses[0]!.source_sentence_tr).toBeNull();
   });
 
+  it('accepts version 2 files without practice_logs and writes them from version 3 on', async () => {
+    const t = tables();
+    const file = { format: 'engapp-backup', schema_version: 2, exported_at: 1, device_id: null, tables: t, checksum: await backupChecksum(t) };
+    const r = await verifyBackup(JSON.stringify(file));
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.backup.tables.practice_logs).toBeUndefined();
+
+    const practice = {
+      id: 'p1', user_id: null, card_id: 'c1', practiced_at: 7, result: 'unknown' as const, mode: 'hard',
+      session_id: 's', duration_ms: 900, device_id: 'd', created_at: 7, hlc: 'h',
+    };
+    const b = await buildBackup({ ...t, practice_logs: [practice] }, { exported_at: 1, device_id: null });
+    expect(b.schema_version).toBe(3);
+    const v3 = await verifyBackup(JSON.stringify(b));
+    expect(v3.ok && v3.backup.tables.practice_logs).toEqual([practice]);
+    // Without practice logs the table is still written (empty).
+    expect((await buildBackup(t, { exported_at: 1, device_id: null })).tables.practice_logs).toEqual([]);
+  });
+
   it('keeps the sentence translation', async () => {
     const t = tables();
     t.senses[0] = { ...t.senses[0]!, source_sentence: 'I went to the bank.', source_sentence_tr: 'Bankaya gittim.' };
