@@ -24,6 +24,9 @@ import { ApiError } from '../../../supabase/functions/_shared/errors.ts';
 import type { AiProvider } from '../../../supabase/functions/_shared/ai-provider.ts';
 import { MemoryAiStore } from '../../../supabase/functions/_shared/testing/memory-store.ts';
 import { FAKE_SPECS } from '../../../src/features/import/testing/fakeSpecs.ts';
+import { readFileSync } from 'node:fs';
+import { parseClientLevels } from '../../../src/domain/level.ts';
+import { lemmasNeeded } from '../../../supabase/functions/_shared/level.ts';
 
 export const SUPABASE_URL = 'https://bikcjlomrjaxymifxogi.supabase.co';
 const STORAGE_KEY = 'sb-bikcjlomrjaxymifxogi-auth-token';
@@ -89,6 +92,35 @@ export function fakeSession() {
   };
 }
 
+/** The model's level guess per corpus term (extract-v3 `cefr_guess`). */
+const GUESS: Record<string, string> = {
+  'give up': 'A2',
+  reluctant: 'B1',
+  cope: 'B2',
+  'cut corners': 'C1',
+  'by and large': 'C1',
+  subsidy: 'C1',
+  backfire: 'B2',
+};
+
+/**
+ * The real reference data (the client level file holds the same list levels and frequencies
+ * as ref_word_levels / ref_word_freq) for the corpus terms, so the server pipeline resolves
+ * levels as in production.
+ */
+let levelData: ReturnType<typeof parseClientLevels> | undefined;
+function loadLevelRefs(store: MemoryAiStore): void {
+  const data = (levelData ??= parseClientLevels(
+    readFileSync('data/levels/client-levels.tsv', 'utf8'),
+  ));
+  store.refMinZipf = data.minZipf;
+  for (const spec of FAKE_SPECS)
+    for (const lemma of lemmasNeeded(spec.term.toLowerCase())) {
+      const refs = data.lookup(lemma);
+      if (refs) store.refs.set(lemma, refs);
+    }
+}
+
 /** Scripted model: answers with every corpus sentence that occurs in the chunk. */
 function fakeModel(counter: { calls: number }): AiProvider {
   return {
@@ -114,6 +146,7 @@ function fakeModel(counter: { calls: number }): AiProvider {
           gloss_en: ref ? null : s.gloss,
           meaning_tr: ref ? null : s.tr,
           ipa: ref ? null : s.ipa,
+          cefr_guess: ref ? null : (GUESS[s.term] ?? null),
         };
       });
       return {
@@ -145,6 +178,7 @@ export class FakeBackend {
   private readonly opts: BackendOptions;
   constructor(opts: BackendOptions = {}) {
     this.opts = opts;
+    loadLevelRefs(this.store);
   }
 
   count(name: string): number {

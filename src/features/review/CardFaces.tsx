@@ -4,6 +4,8 @@ import type { CardView } from '@/data';
 import { findSpan, isValidSpan } from '@/domain/recognition';
 import type { Sense } from '@/domain/types';
 import { posLabel } from '@/features/cards/labels';
+import { LevelDialogButton } from '@/features/levels/LevelDetails';
+import { useCardLevel } from '@/features/levels/useWordLevel';
 import { Badge, cn, IconButton } from '@/ui';
 
 const meaningOf = (s: Pick<Sense, 'meaning_tr' | 'meaning_tr_override'>) =>
@@ -115,11 +117,14 @@ function BackSentence({
 function Face({
   prompt,
   isNew,
+  aside,
   children,
   className,
 }: {
   prompt: string;
   isNew: boolean;
+  /** Extra items at the end of the header row (the level badge on the back). */
+  aside?: ReactNode;
   children: ReactNode;
   className?: string;
 }) {
@@ -128,7 +133,10 @@ function Face({
     <div className="flex flex-1 flex-col px-5 pt-4 pb-8 sm:px-8">
       <div className="flex min-h-6 items-center justify-between gap-3">
         <span className="text-sm text-fg-muted">{prompt}</span>
-        {isNew && <Badge tone="accent">{t('review.newCard')}</Badge>}
+        <span className="flex items-center gap-2">
+          {isNew && <Badge tone="accent">{t('review.newCard')}</Badge>}
+          {aside}
+        </span>
       </div>
       <div
         className={cn(
@@ -317,6 +325,8 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
   const { t } = useTranslation();
   const { card, note, sense } = view;
   const prompt = t(promptKey[card.card_type]);
+  const level = useCardLevel(view);
+  const aside = level ? <LevelDialogButton level={level} term={note.term} /> : null;
   const sentence = sense?.source_sentence ? (
     <BackSentence
       sense={sense}
@@ -328,7 +338,7 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
 
   if (card.card_type === 'recognition' || !sense) {
     return (
-      <Face prompt={prompt} isNew={isNew} className="gap-5">
+      <Face prompt={prompt} isNew={isNew} aside={aside} className="gap-5">
         <div className="flex flex-col items-center gap-0.5">
           <div className="flex items-center gap-1">
             <p lang="en" className="font-serif text-2xl font-semibold text-fg">
@@ -349,7 +359,7 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
   }
 
   return (
-    <Face prompt={prompt} isNew={isNew} className="gap-4">
+    <Face prompt={prompt} isNew={isNew} aside={aside} className="gap-4">
       {card.card_type === 'cloze' && view.cloze ? (
         <BackSentence
           sense={sense}

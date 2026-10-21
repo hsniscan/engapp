@@ -215,7 +215,12 @@
       "dupOnly": "Possible duplicates only",
       "dupHint": "Notes that arrived with the same term in an account merge.",
       "reset": "Reset filters",
-      "activeSr": "{{count}} filters active"
+      "activeSr": "{{count}} filters active",
+      "level": "Level",
+      "allLevels": "All levels",
+      "levelUnknown": "Unknown level",
+      "sortLevel": "Level: easy to hard",
+      "sortLevelDesc": "Level: hard to easy"
     },
     "bulk": {
       "label": "Actions for selected notes",
@@ -305,7 +310,8 @@
       "ses": "Sound",
       "veri": "Data",
       "uygulama": "App",
-      "gelismis": "Advanced"
+      "gelismis": "Advanced",
+      "hakkinda": "About"
     },
     "saveFailed": "The setting could not be saved.",
     "account": {
@@ -358,7 +364,11 @@
     "data": {
       "description": "Your data is on this device. Back up regularly and keep the file somewhere else."
     },
-    "version": "Version"
+    "version": "Version",
+    "about": {
+      "sources": "Sources",
+      "sourcesHint": "The word lists and data behind word levels, and their licences."
+    }
   },
   "auth": {
     "title": "Sign in",
@@ -921,5 +931,70 @@
       "scheduleSame": "Your cards' schedule did not change.",
       "again": "Another round"
     }
+  },
+  "wordLevel": {
+    "section": "Level",
+    "badgeLabel": "Level {{level}}, {{source}}",
+    "explainButton": "{{label}}. Show explanation",
+    "source": {
+      "cefrj": "CEFR-J list",
+      "octanove": "Octanove list",
+      "ai": "AI estimate",
+      "freq": "Frequency data",
+      "words": "Words in it",
+      "user": "Your choice"
+    },
+    "sourceHint": {
+      "cefrj": "The word has this level in the CEFR-J word list.",
+      "octanove": "The word has this level in the advanced Octanove C1/C2 list.",
+      "ai": "Not in the lists. The AI estimated the level, bounded by how common the word is.",
+      "freq": "Not in the lists. The level comes from how common the word is in English.",
+      "words": "Not in the lists. The level of the hardest word in the expression.",
+      "user": "You chose this level; it applies only to you."
+    },
+    "correction": "{{list}}: {{from}} → {{to}} for Turkish learners",
+    "correction_reason": "{{list}}: {{from}} → {{to}} for Turkish learners (AI: {{reason}})",
+    "autoWas": "Automatic level: {{level}} ({{source}}).",
+    "autoUnknown": "The automatic level of this word is not known.",
+    "unknown": "Level not known yet.",
+    "changeHint": "You can change the level in the word's details.",
+    "sourcesLink": "Sources",
+    "override": "Level of this word",
+    "overrideAuto": "Automatic ({{level}})",
+    "overrideAutoUnknown": "Automatic",
+    "overrideHint": "A level you choose is visible only to you and syncs between your devices.",
+    "overrideFailed": "The level could not be saved. Try again."
+  },
+  "sources": {
+    "title": "Sources",
+    "back": "Settings",
+    "intro": "Engapp sets the A1–C2 level of words with the open data below. A word in a list gets the list level; for a word that is clearly easier or harder for Turkish speakers it moves by at most one step. For words outside the lists, an AI estimate and the word's frequency in English decide.",
+    "license": "Licence",
+    "link": "Go to source",
+    "cefrj": {
+      "name": "CEFR-J Wordlist 1.5",
+      "what": "About 7,800 words at levels A1–B2. © Tono Laboratory, Tokyo University of Foreign Studies (TUFS).",
+      "license": "Free for research and commercial use with citation.",
+      "cite": "The CEFR-J Wordlist Version 1.5. Compiled by Yukio Tono, Tokyo University of Foreign Studies. Via Open Language Profiles."
+    },
+    "octanove": {
+      "name": "Octanove Vocabulary Profile C1/C2 1.0",
+      "what": "About 2,100 words at levels C1 and C2. © Octanove Labs.",
+      "license": "CC BY-SA 4.0",
+      "cite": "Octanove Vocabulary Profile C1/C2 (ver 1.0), Octanove Labs."
+    },
+    "wordfreq": {
+      "name": "wordfreq 3.1.1",
+      "what": "How often English words are used (Zipf scale). Robyn Speer; includes SUBTLEX data (Brysbaert et al.).",
+      "license": "Data CC BY-SA 4.0, code Apache 2.0.",
+      "cite": "Robyn Speer (2022). rspeer/wordfreq v3. Zenodo, doi:10.5281/zenodo.7199437."
+    },
+    "derived": {
+      "name": "Engapp level data",
+      "what": "Level files derived from these sources and the corrections for Turkish learners.",
+      "license": "CC BY-SA 4.0 (derived data, shared alike)."
+    },
+    "aiTitle": "AI estimates",
+    "aiBody": "Levels of words outside the lists and the corrections for Turkish learners are made with Google Gemini. They are estimates: a correction moves a list level by at most one step, and an estimate is bounded by the word's frequency. You can always change a word's level yourself."
   }
 }

@@ -136,7 +136,7 @@ function skeleton(word: string): string {
     .replace(/[çc]/g, 'c')
     .replace(/ş/g, 's')
     .replace(/ğ/g, 'g')
-    .replace(/[ıi̇]/g, 'i')
+    .replace(/ı/g, 'i')
     .replace(/ph/g, 'f')
     .replace(/[^a-z]/g, '')
     .replace(/[aeiouyhw]/g, '')

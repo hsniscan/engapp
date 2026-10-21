@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { makeCard } from '@/test/factories';
-import type { Note, Sense } from '@/domain/types';
+import type { WordLevel } from '@/domain/level';
+import type { CefrLevel, Note, Sense } from '@/domain/types';
 import {
+  activeFilterCount,
   buildRows,
   EMPTY_FILTERS,
   filterRows,
   filtersFromParams,
   foldForSearch,
   writeFilters,
+  type LibraryFilters,
 } from './libraryFilter';
 
 const note = (id: string, term: string, extra: Partial<Note> = {}): Note => ({
@@ -91,5 +94,25 @@ describe('libraryFilter', () => {
     expect(filtersFromParams(writeFilters(new URLSearchParams(), f))).toEqual(f);
     expect(writeFilters(new URLSearchParams(), EMPTY_FILTERS).toString()).toBe('');
     expect(filtersFromParams(new URLSearchParams('state=bogus&type=x'))).toEqual(EMPTY_FILTERS);
+    const byLevel = { ...EMPTY_FILTERS, level: 'B2' as const, sort: 'level_desc' as const };
+    expect(writeFilters(new URLSearchParams(), byLevel).toString()).toBe('level=B2&sort=level_desc');
+    expect(filtersFromParams(writeFilters(new URLSearchParams(), byLevel))).toEqual(byLevel);
+    expect(filtersFromParams(new URLSearchParams('level=none'))).toMatchObject({ level: 'none' });
+    expect(filtersFromParams(new URLSearchParams('level=Z9&sort=x'))).toEqual(EMPTY_FILTERS);
+  });
+
+  it('filters and sorts by level; unknown levels last', () => {
+    const lv = (cefr: CefrLevel | null): WordLevel | null =>
+      cefr ? { cefr, source: 'cefrj', list_cefr: cefr, reason_tr: null, auto: null } : null;
+    const levels: Record<string, CefrLevel | null> = { cope: 'B2', bank: 'A1', abate: 'C2', zorbly: null, agile: 'B2' };
+    const notes = Object.keys(levels).map((term, i) => note(`n${i + 1}`, term));
+    const rows = buildRows(notes, [], [], (n) => lv(levels[n.term]!));
+    expect(rows.map((r) => r.level?.cefr ?? null)).toEqual(['B2', 'A1', 'C2', null, 'B2']);
+    const terms = (f: Partial<LibraryFilters>) => filterRows(rows, { ...EMPTY_FILTERS, ...f }).map((r) => r.note.term);
+    expect(terms({ level: 'B2', sort: 'az' })).toEqual(['agile', 'cope']);
+    expect(terms({ level: 'none' })).toEqual(['zorbly']);
+    expect(terms({ sort: 'level' })).toEqual(['bank', 'agile', 'cope', 'abate', 'zorbly']);
+    expect(terms({ sort: 'level_desc' })).toEqual(['abate', 'agile', 'cope', 'bank', 'zorbly']);
+    expect(activeFilterCount({ ...EMPTY_FILTERS, level: 'A1' })).toBe(1);
   });
 });

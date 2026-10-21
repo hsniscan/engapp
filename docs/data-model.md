@@ -8,7 +8,7 @@ only from `@/data` (`src/data/index.ts`).
 
 | Table | Synced | Key / indexes | Notes |
 | --- | --- | --- | --- |
-| notes | yes | `id`, `term_norm`, `lexicon_term_id`, `updated_at`, `deleted_at`, `*tags` | One live note per `term_norm` (enforced in actions, not by a unique index, so account merges can keep duplicates flagged `possible_duplicate`). |
+| notes | yes | `id`, `term_norm`, `lexicon_term_id`, `updated_at`, `deleted_at`, `*tags` | One live note per `term_norm` (enforced in actions, not by a unique index, so account merges can keep duplicates flagged `possible_duplicate`). `level_override` (A1–C2 or null) is the user's own level for the word; null = the computed one (Dexie v4 filled null on old rows). |
 | senses | yes | `id`, `note_id`, `[note_id+lexicon_sense_id]`, `lexicon_sense_id`, `deleted_at` | `sense_no` is the display order. `meaning_tr_override` beats `meaning_tr`. `span` is `[start, end)` in `source_sentence`. `source_sentence_tr` is the user's Turkish translation of that sentence (AI or typed; null when none, dropped with its sentence; never in the shared lexicon; Dexie v2 filled null on old rows). |
 | cards | yes | `id`, `note_id`, `sense_id`, `[state+due]`, `due`, `card_type`, `deleted_at` | FSRS fields in UTC ms. `unlocked`, `suspended`. |
 | review_logs | yes, insert-only | `id`, `card_id`, `reviewed_at`, `undo_of` | Never updated or deleted. An undo is a new row with `undo_of`. |
@@ -19,7 +19,8 @@ only from `@/data` (`src/data/index.ts`).
 | daily_activity | no (derived) | `date` (local `YYYY-MM-DD`) | `reviews`, `new_cards`, `time_ms`, `review_answers`, `review_passed`, `completed`. |
 | meta | no | `key` | `device_id`, `user_id`, `hlc`, `sync_cursor`, `lexicon_cursor`, `server_practice_logs` (the server answered with `sync_pull_v3`), `extra_new:<YYYY-MM-DD>` (extra new cards allowed that day, this device only). |
 | error_log | no | `++id`, `at` | Newest 200 rows are kept. |
-| lexicon_cache, chunk_cache, import_jobs, import_candidates | no | | Owned by the AI and sync layers. |
+| lexicon_cache | no | `id`, `term_id`, `lemma_norm`, `updated_at` | Shared lexicon senses the user's senses reference (sync layer). Since Dexie v4 also `cefr`, `cefr_source`, `cefr_list`, `cefr_reason_tr`, `zipf` (word level, see "Word levels"); the v4 upgrade set `lexicon_cursor` back to 0 so they are pulled again with levels. |
+| chunk_cache, import_jobs, import_candidates | no | | Owned by the AI layer. |
 
 Every synced mutable row has `id` (UUID v7), `user_id` (null in guest mode), `created_at`,
 `updated_at`, `deleted_at` and `hlc`.
@@ -108,6 +109,7 @@ All actions take an optional trailing `now` (ms) for tests. They throw `ActionEr
 | `repairDuplicateSenses()` | One-off idle repair (`src/data/repairs.ts`): within a note, a duplicate sense (same pos and overlapping meaning, or two lexicon senses with the same sentence) whose cards have no effective review history is soft-deleted with its cards; the kept sense takes a richer meaning as `meaning_tr_override`. Studied senses are never deleted. `sense_no` is only a sort order and is not renumbered. |
 | `editNote(id, patch)` / `editSense(id, patch)` | Edit a note or sense. A rename checks for duplicates. Sentence and span changes create, revive or delete the cloze card. |
 | `setSuspended({card_ids} \| {note_id}, bool)` | Suspend or unsuspend cards. |
+| `setLevelOverride(noteId, level \| null)` | The user's own level for a word (null = computed). Synced like any note edit; only this user sees it. |
 | `softDeleteNote(id)` / `softDeleteSense(id)` | Soft-delete with the cascade from invariant 2. |
 | `createSource(input)` | Saves import source metadata. |
 | `answerCard({card_id, rating, duration_ms, shown_sense_id})` | Writes the log, updates the card, unlocks siblings and updates `daily_activity`. All of this is one transaction. |
@@ -117,11 +119,11 @@ All actions take an optional trailing `now` (ms) for tests. They throw `ActionEr
 | `getMoreStudyOverview()` | The `/more` page: due now, daily limit, extra today, new cards waiting, tomorrow's count and practice source counts. |
 | `getPracticeSourceCounts()` / `getPracticeCards(filter, {size, seed})` | Practice selection (see "Practice rounds"). |
 | `recordPractice({card_id, result, mode, session_id, duration_ms})` | One practice answer → one `practice_logs` row. |
-| `getCardView(cardId)` | Returns the note, senses, the sense to show, cloze/hint and the 4 interval previews. |
+| `getCardView(cardId)` | Returns the note, senses, the sense to show, cloze/hint, the 4 interval previews and the cached lexicon rows of the senses (their levels). |
 | `getHomeSummary()` / `getStreakSummary()` / `getHeatmap()` | Feed the home line, the stats metrics and the 26-week heatmap. |
 | `getNoteDetail`, `findNoteByTerm`, `listNotes`, `listSources`, `pendingChangesCount` | Read helpers. |
 | `getSettings` / `ensureSettings` / `updateSettings(patch)` | Settings. `updateSettings` validates with zod and with ts-fsrs. Call `ensureSettings()` at startup. |
-| `exportBackup()` → `BackupFile` | Builds the backup (`schema_version` 3 with `practice_logs`; version 1 and 2 files still restore) and records `last_backup_at`. |
+| `exportBackup()` → `BackupFile` | Builds the backup (`schema_version` 4: `practice_logs` since 3, `notes.level_override` since 4; version 1–3 files still restore, the override as null) and records `last_backup_at`. |
 | `restoreBackup(fileOrJson, 'merge' \| 'overwrite')` | Verifies the zod schema and checksum, restores, then recomputes all cards and `daily_activity`. |
 | `exportCsv(headers)` | CSV export. |
 | `runIntegrityCheck()` / `repairIntegrity()` | Startup check and the "Veri onarımı" repair. |
@@ -144,3 +146,21 @@ All actions take an optional trailing `now` (ms) for tests. They throw `ActionEr
 
 Restoring into an empty database and exporting again gives identical tables and checksum.
 A property test checks this.
+
+## Word levels (`domain/level.ts`)
+
+A word's level (A1–C2) shown on cards and in the library comes from, best first:
+
+1. `notes.level_override`, the user's own level (synced, this user only);
+2. the level stored with the shared lexicon sense (`lexicon_cache.cefr`, resolved on the
+   server with the AI guess and the Turkish-learner correction: docs/ai-pipeline.md);
+3. the same rule (`resolveLevel`, shared with the server) on the client level file
+   `data/levels/client-levels.tsv` (word lists and frequency, ~30 500 lemmas): guests,
+   offline, senses added by hand, senses the server has not rated yet.
+
+A note's level is that of its first sense with a level (the meaning the word was added
+for); a production or cloze card shows its own sense's level. The client file is a hashed
+build asset fetched the first time a screen needs levels (`src/data/levelData.ts`) and kept
+by the service worker (CacheFirst, decision 0012); until it has loaded, only stored levels
+show.
+

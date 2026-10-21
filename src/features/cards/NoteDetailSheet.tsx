@@ -29,6 +29,7 @@ import {
   TextField,
   toast,
 } from '@/ui';
+import { LevelSection } from '@/features/levels/LevelSection';
 import { ConfirmDialog } from './ConfirmDialog';
 import { cardTypeLabel, posLabel, stateKey } from './labels';
 import { senseText } from './libraryFilter';
@@ -326,6 +327,8 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
         value={draft.tags}
         onChange={(tags) => setDraft((d) => ({ ...d, tags }))}
       />
+
+      <LevelSection detail={detail} />
 
       <section aria-labelledby={`${id}-senses`} className="flex flex-col gap-3">
         <h3 id={`${id}-senses`} className="font-serif text-lg font-semibold text-fg">

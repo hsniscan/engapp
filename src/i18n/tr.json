@@ -215,7 +215,12 @@
       "dupOnly": "Yalnızca olası kopyalar",
       "dupHint": "Hesap birleştirmede aynı terimle gelen notlar.",
       "reset": "Süzgeçleri sıfırla",
-      "activeSr": "{{count}} süzgeç etkin"
+      "activeSr": "{{count}} süzgeç etkin",
+      "level": "Seviye",
+      "allLevels": "Tüm seviyeler",
+      "levelUnknown": "Seviyesi bilinmeyenler",
+      "sortLevel": "Seviye: kolaydan zora",
+      "sortLevelDesc": "Seviye: zordan kolaya"
     },
     "bulk": {
       "label": "Seçili notlar için işlemler",
@@ -305,7 +310,8 @@
       "ses": "Ses",
       "veri": "Veri",
       "uygulama": "Uygulama",
-      "gelismis": "Gelişmiş"
+      "gelismis": "Gelişmiş",
+      "hakkinda": "Hakkında"
     },
     "saveFailed": "Ayar kaydedilemedi.",
     "account": {
@@ -358,7 +364,11 @@
     "data": {
       "description": "Verilerin bu cihazda. Düzenli yedek al; dosyayı başka bir yerde sakla."
     },
-    "version": "Sürüm"
+    "version": "Sürüm",
+    "about": {
+      "sources": "Kaynaklar",
+      "sourcesHint": "Kelime seviyelerinin dayandığı listeler, veriler ve lisansları."
+    }
   },
   "auth": {
     "title": "Giriş",
@@ -921,5 +931,70 @@
       "scheduleSame": "Kartlarının takvimi değişmedi.",
       "again": "Bir tur daha"
     }
+  },
+  "wordLevel": {
+    "section": "Seviye",
+    "badgeLabel": "Seviye {{level}}, {{source}}",
+    "explainButton": "{{label}}. Açıklamayı göster",
+    "source": {
+      "cefrj": "CEFR-J listesi",
+      "octanove": "Octanove listesi",
+      "ai": "AI tahmini",
+      "freq": "Sıklık verisi",
+      "words": "İçindeki kelimeler",
+      "user": "Senin seçimin"
+    },
+    "sourceHint": {
+      "cefrj": "Kelime, CEFR-J kelime listesinde bu seviyede.",
+      "octanove": "Kelime, ileri seviye Octanove C1/C2 listesinde bu seviyede.",
+      "ai": "Listelerde yok. Seviyeyi AI tahmin etti; kelimenin ne kadar sık kullanıldığına göre sınırlandı.",
+      "freq": "Listelerde yok. Seviye, kelimenin İngilizcede ne kadar sık geçtiğinden hesaplandı.",
+      "words": "Listelerde yok. İfadedeki en zor kelimenin seviyesi.",
+      "user": "Bu seviyeyi sen seçtin; yalnızca sende geçerli."
+    },
+    "correction": "{{list}}: {{from}} → Türk öğrenci için {{to}}",
+    "correction_reason": "{{list}}: {{from}} → Türk öğrenci için {{to}} (AI: {{reason}})",
+    "autoWas": "Otomatik seviye: {{level}} ({{source}}).",
+    "autoUnknown": "Bu kelimenin otomatik seviyesi bilinmiyor.",
+    "unknown": "Seviye henüz bilinmiyor.",
+    "changeHint": "Seviyeyi kelimenin ayrıntılarından değiştirebilirsin.",
+    "sourcesLink": "Kaynaklar",
+    "override": "Bu kelimenin seviyesi",
+    "overrideAuto": "Otomatik ({{level}})",
+    "overrideAutoUnknown": "Otomatik",
+    "overrideHint": "Kendi seçtiğin seviye yalnızca sende görünür ve cihazların arasında senkronlanır.",
+    "overrideFailed": "Seviye kaydedilemedi. Tekrar dene."
+  },
+  "sources": {
+    "title": "Kaynaklar",
+    "back": "Ayarlar",
+    "intro": "Engapp, kelimelerin A1–C2 seviyesini aşağıdaki açık verilerle belirler. Kelime bir listede varsa liste seviyesi kullanılır; Türkçe konuşanlar için belirgin biçimde daha kolay ya da daha zor bir kelimede bu seviye en fazla bir basamak kaydırılır. Listede olmayan kelimelerde seviyeyi AI tahmini ve kelimenin İngilizcedeki sıklığı belirler.",
+    "license": "Lisans",
+    "link": "Kaynağa git",
+    "cefrj": {
+      "name": "CEFR-J Wordlist 1.5",
+      "what": "A1–B2 seviyelerinde yaklaşık 7.800 kelime. © Tono Laboratuvarı, Tokyo Yabancı Diller Üniversitesi (TUFS).",
+      "license": "Kaynak gösterilerek araştırma ve ticari amaçla ücretsiz kullanılabilir.",
+      "cite": "The CEFR-J Wordlist Version 1.5. Compiled by Yukio Tono, Tokyo University of Foreign Studies. Open Language Profiles aracılığıyla."
+    },
+    "octanove": {
+      "name": "Octanove Vocabulary Profile C1/C2 1.0",
+      "what": "C1 ve C2 seviyelerinde yaklaşık 2.100 kelime. © Octanove Labs.",
+      "license": "CC BY-SA 4.0",
+      "cite": "Octanove Vocabulary Profile C1/C2 (ver 1.0), Octanove Labs."
+    },
+    "wordfreq": {
+      "name": "wordfreq 3.1.1",
+      "what": "İngilizce kelimelerin kullanım sıklığı (Zipf ölçeği). Robyn Speer; SUBTLEX verisini de içerir (Brysbaert ve ark.).",
+      "license": "Veri CC BY-SA 4.0, kod Apache 2.0.",
+      "cite": "Robyn Speer (2022). rspeer/wordfreq v3. Zenodo, doi:10.5281/zenodo.7199437."
+    },
+    "derived": {
+      "name": "Engapp seviye verisi",
+      "what": "Bu kaynaklardan türetilen seviye dosyaları ve Türk öğrenciler için yapılan düzeltmeler.",
+      "license": "CC BY-SA 4.0 (türetilmiş veri, aynı lisansla paylaşılır)."
+    },
+    "aiTitle": "AI tahminleri",
+    "aiBody": "Listede olmayan kelimelerin seviyesi ve Türk öğrenci düzeltmeleri Google Gemini ile üretilir. Bunlar tahmindir: düzeltme liste seviyesini en fazla bir basamak değiştirir, tahmin de kelimenin sıklığıyla sınırlanır. Bir kelimenin seviyesini her zaman kendin değiştirebilirsin."
   }
 }

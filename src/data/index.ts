@@ -1,5 +1,6 @@
 // Public data API for the UI. Screens import from '@/data' only.
 export { db } from './db';
+export { loadLevelData, levelDataNow } from './levelData';
 export * from './actions';
 export * from './queries';
 export { addExtraNew, getMoreStudyOverview, MAX_EXTRA_NEW_STEP, type MoreStudyOverview } from './extraStudy';

@@ -14,6 +14,7 @@ import {
   stuckOutboxCount,
   updateSettings,
 } from '@/data';
+import { BACKUP_SCHEMA_VERSION } from '@/domain/backup';
 import { Rating, type Card } from '@/domain/types';
 import { resetDb } from '@/test/db';
 import { runSync } from './engine';
@@ -173,7 +174,7 @@ describe('practice_logs in backups', () => {
     await onDevice(img, async () => {
       backup = await exportBackup(T + 10 * MIN);
     });
-    expect(backup.schema_version).toBe(3);
+    expect(backup.schema_version).toBe(BACKUP_SCHEMA_VERSION);
     expect(backup.tables.practice_logs).toHaveLength(2);
 
     await newDevice('dev-r');

@@ -17,7 +17,8 @@ import type { Card, Millis, Note, PracticeLog, ReviewLog, Sense, Settings, Sourc
 export const BACKUP_FORMAT = 'engapp-backup';
 // 2: senses.source_sentence_tr. Version 1 files (without it) are still accepted.
 // 3: practice_logs. Older files have no such table (restored as none).
-export const BACKUP_SCHEMA_VERSION = 3;
+// 4: notes.level_override. Older files have none (restored as null: the computed level).
+export const BACKUP_SCHEMA_VERSION = 4;
 
 export interface BackupTables {
   notes: Note[];
@@ -140,26 +141,30 @@ export async function verifyBackup(input: unknown): Promise<VerifyResult> {
   }
   const parsed = backupSchema.safeParse(data);
   if (!parsed.success) return { ok: false, error: 'invalid_format', detail: z.prettifyError(parsed.error) };
-  const checksum = await backupChecksum(parsed.data.tables);
-  if (checksum !== parsed.data.checksum && (await backupChecksum(legacyTables(parsed.data.tables))) !== parsed.data.checksum) {
+  if (!(await checksumMatches(parsed.data.tables, parsed.data.checksum))) {
     return { ok: false, error: 'checksum_mismatch' };
   }
   return { ok: true, backup: parsed.data, summary: summarizeBackup(parsed.data.tables) };
 }
 
 /**
- * The tables as a version 1 file had them: parsing fills in `source_sentence_tr: null` for
- * senses that predate the field, which the file's checksum did not cover.
+ * Parsing fills in fields that older files did not have (`notes.level_override` before
+ * version 4, `senses.source_sentence_tr` before version 2) with null; the file's checksum
+ * did not cover them. Tries the tables as they are, then as such older files had them.
  */
-function legacyTables(t: BackupTables): BackupTables {
-  return {
-    ...t,
-    senses: t.senses.map((s) => {
-      if (s.source_sentence_tr !== null) return s;
-      const { source_sentence_tr: _, ...rest } = s;
-      return rest as Sense;
-    }),
-  };
+async function checksumMatches(t: BackupTables, checksum: string): Promise<boolean> {
+  if ((await backupChecksum(t)) === checksum) return true;
+  const v3 = { ...t, notes: t.notes.map((n) => withoutNull(n, 'level_override')) };
+  if ((await backupChecksum(v3)) === checksum) return true;
+  const v1 = { ...v3, senses: t.senses.map((s) => withoutNull(s, 'source_sentence_tr')) };
+  return (await backupChecksum(v1)) === checksum;
+}
+
+function withoutNull<T extends object>(row: T, key: keyof T): T {
+  if (row[key] !== null) return row;
+  const copy = { ...row };
+  delete copy[key];
+  return copy;
 }
 
 // ---------------------------------------------------------------- CSV

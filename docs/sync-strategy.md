@@ -92,6 +92,13 @@ Payload columns the server does not know are ignored; server columns
 (`server_seq`, `server_updated_at`, `user_id`) are overwritten. Missing NOT NULL columns
 reject the row (send full rows).
 
+**Columns the payload leaves out (v0.2 İP2).** When an upsert updates an existing row, a
+column whose key is not in the payload keeps its server value; a key sent as `null`
+clears it (`_sync_upsert`, migration `20261021001100_word_levels.sql`). An app version
+that does not know a newer column (one without `notes.level_override`) therefore cannot
+clear it by editing the note's tags on another device. Inserts are unchanged: a missing
+key is null.
+
 ## Pull
 
 `sync_pull(p_since bigint, p_limit int ≤ 500)` →
@@ -147,6 +154,15 @@ sense older than the cursor that becomes referenced later (e.g. a note synced fr
 another device) is not in that feed: after a pull, look for `lexicon_sense_id`s missing
 from `lexicon_cache` and fetch them with `lexicon_get(ids)` (≤ 500). `meaning_tr_override`
 on the user's sense always wins over the lexicon.
+
+**Word levels (v0.2 İP2).** Lexicon rows carry `cefr`, `cefr_source`, `cefr_list`,
+`cefr_reason_tr` and `zipf` (the term's frequency) at the end of `lexicon_entries`; the raw
+AI guess stays on the server. The level job writes them with `lexicon_set_levels()`, and
+every changed row gets a new lexicon `server_seq`, so devices pull it like a correction.
+Dexie v4 sets `meta.lexicon_cursor` to 0 once, so a device updated from v0.1 pulls its
+senses again with the level columns. The user's own level is not in the lexicon: it is
+`notes.level_override`, a synced column of their note (null = automatic), and applies only
+to them (decision 0009).
 
 ## Edge cases (plan table) and where they are handled
 

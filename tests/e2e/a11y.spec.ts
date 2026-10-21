@@ -53,6 +53,15 @@ for (const width of [360, 1280]) {
       await page.locator('body').press('Space');
       await expect(page.getByRole('group', { name: 'Ne kadar iyi hatırladın?' })).toBeVisible();
       await check(page, 'review-back', tag);
+      // The word-level badge on the card back opens its explanation.
+      const levelBadge = page.getByRole('button', { name: /^Seviye .*Açıklamayı göster$/ });
+      if (await levelBadge.count()) {
+        await levelBadge.first().click();
+        await expect(page.getByTestId('level-explanation')).toBeVisible();
+        await check(page, 'level-dialog', tag);
+        await page.keyboard.press('Escape');
+        await expect(page.getByTestId('level-explanation')).toBeHidden();
+      }
 
       for (const [tab, label] of [
         ['manual', 'Elle'],
@@ -67,6 +76,19 @@ for (const width of [360, 1280]) {
       await page.goto('/library');
       await expect(page.getByRole('list', { name: /./ }).first()).toBeVisible();
       await check(page, 'library', tag);
+      // Note details, with the "Seviye" section.
+      await page
+        .getByRole('list', { name: 'Notlar' })
+        .getByRole('listitem')
+        .first()
+        .getByRole('button')
+        .first()
+        .click();
+      await expect(page.getByTestId('level-section')).toBeVisible();
+      await page.getByTestId('level-section').scrollIntoViewIfNeeded();
+      await check(page, 'note-detail', tag);
+      await page.keyboard.press('Escape');
+      await expect(page.getByTestId('level-section')).toBeHidden();
       // Selected state: the bulk bar must not cover anything that can be tapped.
       await page
         .getByRole('checkbox', { name: /notunu seç$/ })
@@ -121,6 +143,12 @@ for (const width of [360, 1280]) {
         page.getByRole('heading', { name: 'Ayarlar', level: 1, exact: true }),
       ).toBeVisible();
       await check(page, 'settings', tag);
+
+      await page.goto('/settings/kaynaklar');
+      await expect(
+        page.getByRole('heading', { name: 'Kaynaklar', level: 1, exact: true }),
+      ).toBeVisible();
+      await check(page, 'sources', tag);
     });
   }
 }

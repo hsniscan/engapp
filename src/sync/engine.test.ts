@@ -5,6 +5,7 @@ import {
   db,
   editNote,
   getCursor,
+  setLevelOverride,
   META,
   setMeta,
   softDeleteNote,
@@ -185,6 +186,26 @@ describe('two devices', () => {
     expect(pickFsrs(server.rowsOf('cards').find((c) => c.id === cardId) as unknown as Card)).toEqual(ra.card);
   });
 
+  it('a level override set on one device reaches the other; clearing it does too', async () => {
+    let { a, b, noteId } = await twoDevices();
+    a = await onDevice(a, async () => {
+      await setLevelOverride(noteId, 'C1', T + DAY);
+      await sync(server, T + DAY + MIN);
+    });
+    expect(server.rowsOf('notes')[0]).toMatchObject({ level_override: 'C1' });
+    b = await onDevice(b, async () => {
+      await sync(server, T + DAY + 2 * MIN);
+      expect((await db.notes.get(noteId))!.level_override).toBe('C1');
+      await setLevelOverride(noteId, null, T + DAY + 3 * MIN);
+      await sync(server, T + DAY + 4 * MIN);
+    });
+    a = await onDevice(a, async () => {
+      await sync(server, T + DAY + 5 * MIN);
+      expect((await db.notes.get(noteId))!.level_override).toBeNull();
+    });
+    expect(server.rowsOf('notes')[0]).toMatchObject({ level_override: null });
+  });
+
   it('delete vs edit race: the later change wins on both devices (a later edit undeletes)', async () => {
     let { a, b, noteId } = await twoDevices();
     a = await onDevice(a, () => softDeleteNote(noteId, T + DAY));
@@ -308,6 +329,39 @@ describe('pull', () => {
     expect(r.lexicon).toBeGreaterThan(0);
     expect(await db.lexicon_cache.get('lex-1')).toMatchObject({ meaning_tr: 'kıyı' });
     expect(await getCursor(META.lexiconCursor)).toBe(1);
+  });
+
+  it('caches the level of lexicon senses and pulls a changed level (level job) by the cursor', async () => {
+    await newDevice('dev-a');
+    const lex: LexiconSense = {
+      id: 'lex-1',
+      term_id: 'term-1',
+      lemma: 'abandon',
+      lemma_norm: 'abandon',
+      term_type: 'word',
+      pos: 'verb',
+      gloss_en: 'leave someone or something',
+      meaning_tr: 'terk etmek',
+      ipa: null,
+      updated_at: T,
+      cefr: 'B1',
+      cefr_source: 'cefrj',
+      cefr_list: 'B1',
+      cefr_reason_tr: null,
+      zipf: 3.9,
+    };
+    server.addLexicon(lex);
+    await addNoteWithSenses({ term: 'abandon', senses: [{ meaning_tr: 'terk etmek', lexicon_sense_id: 'lex-1' }] }, T);
+    await sync(server, T + MIN);
+    expect(await db.lexicon_cache.get('lex-1')).toMatchObject({ cefr: 'B1', cefr_source: 'cefrj', zipf: 3.9 });
+    // The nightly job adds the Turkish-learner correction: the row moves the cursor.
+    server.addLexicon({ ...lex, cefr: 'B2', cefr_reason_tr: 'Türkçede soyut', updated_at: T + DAY });
+    await sync(server, T + DAY + MIN);
+    expect(await db.lexicon_cache.get('lex-1')).toMatchObject({
+      cefr: 'B2',
+      cefr_list: 'B1',
+      cefr_reason_tr: 'Türkçede soyut',
+    });
   });
 });
 

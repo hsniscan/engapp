@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Page, cn } from '@/ui';
+import { AboutSection } from './AboutSection';
 import { AdvancedSection } from './AdvancedSection';
 import { AppSection } from './AppSection';
 import { DataSection } from './DataSection';
@@ -77,6 +78,7 @@ export function SettingsPage() {
           <DataSection />
           <AppSection />
           <AdvancedSection />
+          <AboutSection />
         </div>
       </div>
     </Page>

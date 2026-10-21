@@ -79,6 +79,21 @@ export class EngDb extends Dexie {
     // v3 (v0.2 İP1): practice_logs, insert-only and synced. Practice answers never feed FSRS.
     // Meta keys `extra_new:<day>` hold today's extra new-card allowance (no schema change).
     this.version(3).stores({ practice_logs: 'id, card_id, practiced_at, session_id' });
+    // v4 (v0.2 İP2): notes.level_override (null = the computed level) and level columns on
+    // lexicon_cache rows (not indexed). Notes get null so the type holds (a local fill-in, not
+    // stamped or queued; the server column defaults to null). The lexicon cursor goes back
+    // to 0 so the next sync pulls the cached senses again, now with their levels.
+    this.version(4)
+      .stores({})
+      .upgrade(async (tx) => {
+        await tx
+          .table('notes')
+          .toCollection()
+          .modify((row: { level_override?: string | null }) => {
+            if (row.level_override === undefined) row.level_override = null;
+          });
+        await tx.table('meta').put({ key: 'lexicon_cursor', value: 0 });
+      });
   }
 }
 

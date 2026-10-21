@@ -10,6 +10,7 @@ import { deriveUnlocked, effectiveLogs, recognitionUnlocks, replayCard } from '.
 import { addAnswerToDay, emptyDay } from '../domain/streak';
 import type {
   Card,
+  CefrLevel,
   CardStateValue,
   CardType,
   DailyActivity,
@@ -301,6 +302,8 @@ export interface NotePatch {
   ipa?: string | null;
   tags?: string[];
   lexicon_term_id?: Id | null;
+  /** The user's own level; null = the computed one. */
+  level_override?: CefrLevel | null;
 }
 
 /**
@@ -323,6 +326,20 @@ export async function editNote(noteId: Id, patch: NotePatch, now: Millis = Date.
     assertNoteFits(next);
     return w.put('notes', next);
   });
+}
+
+const LEVELS: readonly CefrLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+
+/**
+ * Set (or with null, clear) the user's own level of a note. Synced; only this user sees it.
+ * @throws ActionError('invalid_input') for anything but A1–C2 or null.
+ */
+export async function setLevelOverride(noteId: Id, level: CefrLevel | null, now: Millis = Date.now()): Promise<Note> {
+  if (level !== null && !LEVELS.includes(level)) throw new ActionError('invalid_input', 'Unknown level');
+  const note = await db.notes.get(noteId);
+  if (!note) throw new ActionError('not_found');
+  if ((note.level_override ?? null) === level) return note;
+  return editNote(noteId, { level_override: level }, now);
 }
 
 export type SensePatch = Partial<

@@ -5,7 +5,7 @@ import { normalizeTerm } from '../domain/normalize';
 import { buildQueue, type QueueCounts, type QueueItem, type QueueMode } from '../domain/queue';
 import { type Cloze, firstLetterHint, lastShownSenseId, makeCloze, nextRecognitionSense } from '../domain/recognition';
 import { buildHeatmap, computeStreakSummary, type HeatmapCell, type StreakSummary } from '../domain/streak';
-import { type Card, CardState, type Id, type Millis, type Note, type RatingValue, type Sense } from '../domain/types';
+import { type Card, CardState, type Id, type LexiconSense, type Millis, type Note, type RatingValue, type Sense } from '../domain/types';
 import { db } from './db';
 import { dueStudiedCards, loadTodayFacts, newCards } from './history';
 import { extraNewKey, getMeta } from './meta';
@@ -97,11 +97,20 @@ export interface CardView {
   hint: string | null;
   /** Interval labels for the four buttons. */
   previews: Record<RatingValue, IntervalPreview>;
+  /** Cached lexicon rows of the senses (their levels), by lexicon_sense_id. */
+  lexicon: Map<Id, LexiconSense>;
+}
+
+/** Cached lexicon rows of these senses, by id (missing rows are left out). */
+async function lexiconOf(senses: Sense[]): Promise<Map<Id, LexiconSense>> {
+  const ids = [...new Set(senses.map((s) => s.lexicon_sense_id).filter((x): x is Id => !!x))];
+  const rows = ids.length ? await db.lexicon_cache.bulkGet(ids) : [];
+  return new Map(rows.filter((r): r is LexiconSense => !!r).map((r) => [r.id, r]));
 }
 
 /** Everything a review screen needs to render one card. */
 export async function getCardView(cardId: Id, now: Millis = Date.now()): Promise<CardView | null> {
-  return db.transaction('r', [db.cards, db.notes, db.senses, db.review_logs, db.settings], async () => {
+  return db.transaction('r', [db.cards, db.notes, db.senses, db.review_logs, db.settings, db.lexicon_cache], async () => {
     const card = await db.cards.get(cardId);
     if (!card) return null;
     const note = await db.notes.get(card.note_id);
@@ -123,7 +132,16 @@ export async function getCardView(cardId: Id, now: Millis = Date.now()): Promise
       if (card.card_type === 'production') hint = firstLetterHint(note.term);
     }
     const settings = await getSettings(now);
-    return { card, note, senses, sense, cloze, hint, previews: previewIntervals(schedulerFor(settings), card, now) };
+    return {
+      card,
+      note,
+      senses,
+      sense,
+      cloze,
+      hint,
+      previews: previewIntervals(schedulerFor(settings), card, now),
+      lexicon: await lexiconOf(senses),
+    };
   });
 }
 
@@ -165,17 +183,19 @@ export interface NoteDetail {
   note: Note;
   senses: Sense[];
   cards: Card[];
+  /** Cached lexicon rows of the senses (their levels), by lexicon_sense_id. */
+  lexicon: Map<Id, LexiconSense>;
 }
 
 export async function getNoteDetail(noteId: Id): Promise<NoteDetail | null> {
-  return db.transaction('r', [db.notes, db.senses, db.cards], async () => {
+  return db.transaction('r', [db.notes, db.senses, db.cards, db.lexicon_cache], async () => {
     const note = await db.notes.get(noteId);
     if (!note) return null;
     const senses = (await db.senses.where('note_id').equals(noteId).toArray())
       .filter((s) => s.deleted_at === null)
       .sort((a, b) => a.sense_no - b.sense_no);
     const cards = (await db.cards.where('note_id').equals(noteId).toArray()).filter((c) => c.deleted_at === null);
-    return { note, senses, cards };
+    return { note, senses, cards, lexicon: await lexiconOf(senses) };
   });
 }
 

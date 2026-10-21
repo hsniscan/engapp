@@ -82,11 +82,12 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 
 **Secrets** tab → **New repository secret** (name exactly as written):
 
-| Name                    | Value                                                                                                                        |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `SUPABASE_ACCESS_TOKEN` | `https://supabase.com/dashboard/account/tokens` → **Generate new token** → name `github-actions` → copy (starts with `sbp_`) |
-| `SUPABASE_DB_PASSWORD`  | the database password from step 3.6                                                                                          |
-| `GEMINI_API_KEY`        | the key from step 1                                                                                                          |
+| Name                        | Value                                                                                                                                                                                                                               |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SUPABASE_ACCESS_TOKEN`     | `https://supabase.com/dashboard/account/tokens` → **Generate new token** → name `github-actions` → copy (starts with `sbp_`)                                                                                                        |
+| `SUPABASE_DB_PASSWORD`      | the database password from step 3.6                                                                                                                                                                                                 |
+| `GEMINI_API_KEY`            | the key from step 1                                                                                                                                                                                                                 |
+| `SUPABASE_SERVICE_ROLE_KEY` | optional, for the level job (step 9): **Project Settings → API Keys** → the `service_role` key or a secret key (`sb_secret_…`). Without it the job reads the key with `SUPABASE_ACCESS_TOKEN`, which then needs API key read access |
 
 **Variables** tab → **New repository variable** (all optional; defaults in brackets):
 
@@ -96,6 +97,7 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 | `GEMINI_MODEL`          | [`gemini-3.8-flash`]                                                                                      |
 | `GEMINI_FALLBACK_MODEL` | [`gemini-3.5-flash-lite`]                                                                                 |
 | `AI_DAILY_LIMIT`        | AI calls per user per UTC day [`200`]                                                                     |
+| `AI_SYSTEM_DAILY_LIMIT` | model calls per UTC day for system jobs (the level job), separate from users' budgets [`100`]             |
 
 `ALLOWED_ORIGINS` is the list of web origins allowed to call the AI functions
 (comma-separated, exact, no trailing slash). Preview deploys on other origins cannot
@@ -156,6 +158,30 @@ Locally: create `.env.local` in the repository root with the same two lines
 4. Paste the same text again: no new `ai_usage` call.
 5. **Edge Functions → ai-extract → Logs**: one `ai-extract model call` line per real model
    call, with the model used (`gemini-3.8-flash` or the fallback).
+
+## 9. Word-level job (v0.2)
+
+`.github/workflows/level-jobs.yml` ("Level job") runs every night at 02:30 UTC and can be
+started by hand (**Actions → Level job → Run workflow**; `dry_run` reports counts without
+writing or calling the model, `max_calls` caps the run). It stores the level of every
+lexicon sense, asks the model for level guesses of older senses and runs the
+Turkish-learner check of the word lists, about 100 model calls per night from the system
+budget (`AI_SYSTEM_DAILY_LIMIT`), never from a user's. The first nights work through the
+word lists (roughly 100 calls); after that a night needs only a few calls. Details:
+docs/ai-pipeline.md ("Level job").
+
+It needs `GEMINI_API_KEY` and the project's service-role key: set the
+`SUPABASE_SERVICE_ROLE_KEY` secret (step 4), or let the job read it through the
+Management API with `SUPABASE_ACCESS_TOKEN` (a personal token has this access; a scoped
+token needs "API keys: read"). The key is masked in the log and never stored.
+
+Check after the first run: the job ends green and its log prints the counts; in **SQL
+Editor**, `select count(*) from public.ref_word_levels where tr_checked_at is not null;`
+grows each night.
+
+To give guests and offline devices the corrections too (they use the level file shipped
+with the app): `SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… node scripts/system-jobs.ts
+export-tr`, then `node scripts/build-levels.ts`, and commit `data/levels/`.
 
 ## Manual deploy without GitHub (alternative)
 

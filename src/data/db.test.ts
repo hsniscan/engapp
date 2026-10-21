@@ -7,7 +7,7 @@ describe('Dexie schema', () => {
   it('opens with every table and the indexes the queries rely on', async () => {
     const d = new EngDb('schema-test');
     await d.open();
-    expect(d.verno).toBe(3);
+    expect(d.verno).toBe(4);
     expect(d.tables.map((t) => t.name).sort()).toEqual(
       ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'review_logs', 'senses', 'settings', 'sources'].sort(),
     );
@@ -55,10 +55,37 @@ describe('Dexie schema', () => {
 
     const d = new EngDb(name);
     await d.open();
-    expect(d.verno).toBe(3);
+    expect(d.verno).toBe(4);
     expect(await d.cards.get('c1')).toMatchObject({ state: 2, due: 5 });
     expect(await d.review_logs.count()).toBe(1);
     expect(await d.practice_logs.count()).toBe(0);
+    d.close();
+    await d.delete();
+  });
+
+  it('v4 upgrade fills level_override = null on notes and re-pulls the lexicon cache', async () => {
+    const name = 'upgrade-v4-test';
+    // A database as v0.2 İP1 left it (version 3).
+    const old = new Dexie(name);
+    old.version(1).stores({
+      notes: 'id, term_norm, lexicon_term_id, updated_at, deleted_at, *tags',
+      lexicon_cache: 'id, term_id, lemma_norm, updated_at',
+      meta: 'key',
+    });
+    old.version(2).stores({});
+    old.version(3).stores({ practice_logs: 'id, card_id, practiced_at, session_id' });
+    await old.open();
+    await old.table('notes').add({ id: 'n1', term: 'bank', term_norm: 'bank', tags: [], deleted_at: null });
+    await old.table('lexicon_cache').add({ id: 'l1', term_id: 't1', lemma_norm: 'bank', updated_at: 1 });
+    await old.table('meta').put({ key: 'lexicon_cursor', value: 1234 });
+    old.close();
+
+    const d = new EngDb(name);
+    await d.open();
+    expect(await d.notes.get('n1')).toMatchObject({ term: 'bank', level_override: null });
+    expect(await d.lexicon_cache.get('l1')).toMatchObject({ lemma_norm: 'bank' });
+    expect(await d.meta.get('lexicon_cursor')).toEqual({ key: 'lexicon_cursor', value: 0 });
+    expect(await d.outbox.count()).toBe(0);
     d.close();
     await d.delete();
   });

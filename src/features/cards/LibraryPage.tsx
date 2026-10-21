@@ -3,7 +3,10 @@ import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useSta
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router';
 import { db, logError, setSuspended, softDeleteNote } from '@/data';
+import { CEFR, noteLevel } from '@/domain/level';
 import type { CardType } from '@/domain/types';
+import { LevelBadge } from '@/features/levels/LevelBadge';
+import { useLevelData } from '@/features/levels/useLevelData';
 import {
   Badge,
   Button,
@@ -33,6 +36,7 @@ import {
   filtersFromParams,
   senseText,
   writeFilters,
+  type LevelFilter,
   type LibraryFilters,
   type LibraryRow,
   type SortOrder,
@@ -43,16 +47,29 @@ import { useNow } from '@/features/settings/useNow';
 
 const PAGE_SIZE = 60;
 
-/** Live notes with their senses and cards, grouped. One pass over three tables (~5 ms for 1,000 notes). */
+/**
+ * Live notes with their senses, cards and levels, grouped. One pass over three tables plus the
+ * cached lexicon rows (~5 ms for 1,000 notes); levels fill in once the level file has loaded.
+ */
 function useLibraryRows(): LibraryRow[] | undefined {
-  return useLiveQuery(async () => {
+  const raw = useLiveQuery(async () => {
     const [notes, senses, cards] = await Promise.all([
       db.notes.filter((n) => n.deleted_at === null).toArray(),
       db.senses.filter((s) => s.deleted_at === null).toArray(),
       db.cards.filter((c) => c.deleted_at === null).toArray(),
     ]);
-    return buildRows(notes, senses, cards);
+    const ids = [...new Set(senses.map((s) => s.lexicon_sense_id).filter((x): x is string => !!x))];
+    const lex = (await db.lexicon_cache.bulkGet(ids)).filter((r) => !!r);
+    return { notes, senses, cards, lexicon: new Map(lex.map((r) => [r.id, r])) };
   }, []);
+  const levelData = useLevelData();
+  return useMemo(() => {
+    if (!raw) return undefined;
+    const lexOf = (id: string) => raw.lexicon.get(id);
+    return buildRows(raw.notes, raw.senses, raw.cards, (note, ss) =>
+      noteLevel(note, ss, lexOf, levelData),
+    );
+  }, [raw, levelData]);
 }
 
 export function LibraryPage() {
@@ -212,7 +229,7 @@ export function LibraryPage() {
               count={filterCount}
             />
           </div>
-          <div className="hidden gap-3 md:grid md:grid-cols-5">
+          <div className="hidden gap-3 md:grid md:grid-cols-3 2xl:grid-cols-6">
             <FilterSelects filters={filters} tags={tags} onChange={setFilters} />
             <SortSelect filters={filters} onChange={setFilters} />
           </div>
@@ -379,6 +396,7 @@ const NoteRow = memo(function NoteRow({
             >
               {note.term}
             </span>
+            {row.level && <LevelBadge level={row.level} className="self-center" />}
             {note.ipa && <span className="font-serif text-sm text-fg-muted">{note.ipa}</span>}
           </span>
           <span
@@ -469,6 +487,16 @@ function FilterSelects({ filters, tags, onChange }: FilterProps) {
         ]}
       />
       <Select
+        label={t('library.filter.level')}
+        value={filters.level}
+        onValueChange={(v) => onChange({ level: v as LevelFilter })}
+        options={[
+          { value: 'all', label: t('library.filter.allLevels') },
+          ...CEFR.map((l) => ({ value: l, label: `${l} · ${t(`settings.levels.${l}`)}` })),
+          { value: 'none', label: t('library.filter.levelUnknown') },
+        ]}
+      />
+      <Select
         label={t('library.filter.tag')}
         value={filters.tag || ANY_TAG}
         onValueChange={(v) => onChange({ tag: v === ANY_TAG ? '' : v })}
@@ -492,6 +520,8 @@ function SortSelect({ filters, onChange }: Pick<FilterProps, 'filters' | 'onChan
       options={[
         { value: 'new', label: t('library.filter.sortNew') },
         { value: 'az', label: t('library.filter.sortAz') },
+        { value: 'level', label: t('library.filter.sortLevel') },
+        { value: 'level_desc', label: t('library.filter.sortLevelDesc') },
       ]}
     />
   );
@@ -534,7 +564,7 @@ function FilterSheet({
             variant="ghost"
             disabled={count === 0}
             onClick={() =>
-              onChange({ type: 'all', state: 'all', suspended: 'all', tag: '', dup: false })
+              onChange({ type: 'all', state: 'all', suspended: 'all', tag: '', dup: false, level: 'all' })
             }
           >
             {t('library.filter.reset')}

@@ -70,6 +70,10 @@ describe('backup file', () => {
     const t = tables();
     const legacy = {
       ...t,
+      notes: t.notes.map((n) => {
+        const { level_override: _, ...rest } = n;
+        return rest;
+      }),
       senses: t.senses.map((s) => {
         const { source_sentence_tr: _, ...rest } = s;
         return rest;
@@ -86,6 +90,32 @@ describe('backup file', () => {
     const r = await verifyBackup(JSON.stringify(file));
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.backup.tables.senses[0]!.source_sentence_tr).toBeNull();
+    if (r.ok) expect(r.backup.tables.notes[0]!.level_override).toBeNull();
+  });
+
+  it('accepts version 3 files whose notes have no level_override, and keeps an override from version 4 on', async () => {
+    const t = tables();
+    const v3 = {
+      ...t,
+      notes: t.notes.map((n) => {
+        const { level_override: _, ...rest } = n;
+        return rest;
+      }),
+    };
+    const file = { format: 'engapp-backup', schema_version: 3, exported_at: 1, device_id: null, tables: v3, checksum: await backupChecksum(v3 as BackupTables) };
+    const r = await verifyBackup(JSON.stringify(file));
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.backup.tables.notes.every((n) => n.level_override === null)).toBe(true);
+
+    t.notes[0] = { ...t.notes[0]!, level_override: 'C1' };
+    const b = await buildBackup(t, { exported_at: 1, device_id: null });
+    expect(b.schema_version).toBe(4);
+    const v4 = await verifyBackup(JSON.stringify(b));
+    expect(v4.ok && v4.backup.tables.notes[0]!.level_override).toBe('C1');
+    // A changed override is caught by the checksum.
+    const tampered = structuredClone(b);
+    tampered.tables.notes[0]!.level_override = 'A1';
+    expect(await verifyBackup(tampered)).toMatchObject({ ok: false, error: 'checksum_mismatch' });
   });
 
   it('accepts version 2 files without practice_logs and writes them from version 3 on', async () => {
@@ -100,7 +130,7 @@ describe('backup file', () => {
       session_id: 's', duration_ms: 900, device_id: 'd', created_at: 7, hlc: 'h',
     };
     const b = await buildBackup({ ...t, practice_logs: [practice] }, { exported_at: 1, device_id: null });
-    expect(b.schema_version).toBe(3);
+    expect(b.schema_version).toBe(4);
     const v3 = await verifyBackup(JSON.stringify(b));
     expect(v3.ok && v3.backup.tables.practice_logs).toEqual([practice]);
     // Without practice logs the table is still written (empty).
