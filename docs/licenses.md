@@ -68,6 +68,10 @@ AI-built lexicon, and carries its own licence notice:
   attribution above.
 - The Turkish-learner corrections (`ref_word_levels.tr_*`, prompt `level-tr-v1`) are an
   adaptation of the list and are shared under the same licence.
+- The level-test bank (`data/level-test/bank.json`, `meanings.tsv`, `band-sizes.json`;
+  v0.2 İP3) selects words and levels from CEFR-J and Octanove, and `pseudowords.tsv` was
+  filtered with wordfreq: CC BY-SA 4.0, stated in the files' headers (`note` in the JSON).
+  The app loads the bank as its own lazy chunk.
 
 Share-alike applies to these data files and their adaptations, not to the application code
 that reads them.

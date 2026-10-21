@@ -78,7 +78,17 @@ async function loadModel(now: Millis): Promise<LoadedModel> {
   const data = await levelDataOrNull();
   return db.transaction(
     'r',
-    [db.settings, db.notes, db.senses, db.cards, db.review_logs, db.practice_logs, db.known_terms, db.level_tests, db.lexicon_cache],
+    [
+      db.settings,
+      db.notes,
+      db.senses,
+      db.cards,
+      db.review_logs,
+      db.practice_logs,
+      db.known_terms,
+      db.level_tests,
+      db.lexicon_cache,
+    ],
     async () => {
       const settings = await getSettings(now);
       const [notes, senses, cards, tests, known] = await Promise.all([
@@ -88,8 +98,12 @@ async function loadModel(now: Millis): Promise<LoadedModel> {
         db.level_tests.toArray(),
         db.known_terms.filter((k) => k.deleted_at === null).toArray(),
       ]);
-      const lexIds = [...new Set(senses.map((s) => s.lexicon_sense_id).filter((x): x is Id => !!x))];
-      const lex = new Map((await db.lexicon_cache.bulkGet(lexIds)).filter((x) => !!x).map((x) => [x!.id, x!]));
+      const lexIds = [
+        ...new Set(senses.map((s) => s.lexicon_sense_id).filter((x): x is Id => !!x)),
+      ];
+      const lex = new Map(
+        (await db.lexicon_cache.bulkGet(lexIds)).filter((x) => !!x).map((x) => [x!.id, x!]),
+      );
       const sensesByNote = new Map<Id, typeof senses>();
       for (const s of senses) push(sensesByNote, s.note_id, s);
       const recognition = new Map<Id, (typeof cards)[number]>();
@@ -99,7 +113,9 @@ async function loadModel(now: Millis): Promise<LoadedModel> {
         if (c.card_type === 'recognition') recognition.set(c.note_id, c);
       }
       const recIds = [...recognition.values()].map((c) => c.id);
-      const logs = recIds.length ? await db.review_logs.where('card_id').anyOf(recIds).toArray() : [];
+      const logs = recIds.length
+        ? await db.review_logs.where('card_id').anyOf(recIds).toArray()
+        : [];
       const logsByCard = new Map<Id, ReviewLog[]>();
       for (const l of logs) push(logsByCard, l.card_id, l);
       const practiceByNote = new Map<Id, PracticeLog[]>();
@@ -116,7 +132,13 @@ async function loadModel(now: Millis): Promise<LoadedModel> {
         const rec = recognition.get(n.id);
         const own = (sensesByNote.get(n.id) ?? []).sort((a, b) => a.sense_no - b.sense_no);
         const level = noteLevel(n, own, (id) => lex.get(id), data);
-        if (data && !inList(n.term_norm) && rec && (rec.state === CardState.Review || rec.state === CardState.Relearning)) outside++;
+        if (
+          data &&
+          !inList(n.term_norm) &&
+          rec &&
+          (rec.state === CardState.Review || rec.state === CardState.Relearning)
+        )
+          outside++;
         return {
           id: n.id,
           term_norm: n.term_norm,
@@ -133,14 +155,30 @@ async function loadModel(now: Millis): Promise<LoadedModel> {
         let band = k.cefr_at_mark;
         if (!band && data) {
           const type = k.term_norm.includes(' ') ? 'phrase' : 'word';
-          band = noteLevel({ term_norm: k.term_norm, term_type: type, level_override: null }, [], () => undefined, data)?.cefr ?? null;
+          band =
+            noteLevel(
+              { term_norm: k.term_norm, term_type: type, level_override: null },
+              [],
+              () => undefined,
+              data,
+            )?.cefr ?? null;
         }
         if (data && !inList(k.term_norm) && !noteTerms.has(k.term_norm)) outside++;
-        knownTerms.push({ term_norm: k.term_norm, source: k.source, created_at: k.created_at, band });
+        knownTerms.push({
+          term_norm: k.term_norm,
+          source: k.source,
+          created_at: k.created_at,
+          band,
+        });
       }
       return {
         settings,
-        input: { level: settings.level, tests: tests.map(testRecord), notes: evidenceNotes, knownTerms },
+        input: {
+          level: settings.level,
+          tests: tests.map(testRecord),
+          notes: evidenceNotes,
+          knownTerms,
+        },
         outside,
         tests: tests.sort((a, b) => b.taken_at - a.taken_at),
       };
@@ -168,7 +206,10 @@ export interface LevelOverview {
 export async function getLevelOverview(now: Millis = Date.now()): Promise<LevelOverview> {
   const m = await loadModel(now);
   const ratios = ratiosAt(m.input, now);
-  const flat = Object.fromEntries(LEVELS.map((b) => [b, ratios[b].ratio])) as Record<CefrLevel, number>;
+  const flat = Object.fromEntries(LEVELS.map((b) => [b, ratios[b].ratio])) as Record<
+    CefrLevel,
+    number
+  >;
   return {
     level: m.settings.level,
     source: m.settings.level_source,
@@ -207,7 +248,10 @@ export interface SaveLevelTestInput {
  * "Biliyorum" words that were not caught by a meaning question become known terms (source
  * 'test'). An unreliable result changes nothing but is kept in the history.
  */
-export async function saveLevelTest(input: SaveLevelTestInput, now: Millis = Date.now()): Promise<LevelTest> {
+export async function saveLevelTest(
+  input: SaveLevelTestInput,
+  now: Millis = Date.now(),
+): Promise<LevelTest> {
   return writeTx([db.level_tests, db.settings, db.known_terms, db.notes], now, async (w) => {
     const test: LevelTest = {
       id: w.newId(),
@@ -229,22 +273,39 @@ export async function saveLevelTest(input: SaveLevelTestInput, now: Millis = Dat
     await w.insertLevelTest(test);
     if (!input.reliable) return test;
     const current = (await db.settings.get(SETTINGS_ID)) ?? defaultSettings(now, w.userId);
-    await w.put('settings', { ...current, level: input.level, level_source: 'test', level_updated_at: now, level_change: null });
-    const noteTerms = new Set((await db.notes.toArray()).filter((n) => n.deleted_at === null).map((n) => n.term_norm));
+    await w.put('settings', {
+      ...current,
+      level: input.level,
+      level_source: 'test',
+      level_updated_at: now,
+      level_change: null,
+    });
+    const noteTerms = new Set(
+      (await db.notes.toArray()).filter((n) => n.deleted_at === null).map((n) => n.term_norm),
+    );
     for (const item of input.items) {
       if (item.pseudo || item.answer !== 'yes' || item.mc_ok === false) continue;
       if (noteTerms.has(item.w)) continue;
-      await markKnownIn(w, item.w, 'test');
+      await markKnownIn(w, item.w, 'test', item.band);
     }
     return test;
   });
 }
 
 /** "Sonucu yine de kullan": make an unreliable result the level anyway (not a prior). */
-export async function applyTestLevel(level: CefrLevel, now: Millis = Date.now()): Promise<Settings> {
+export async function applyTestLevel(
+  level: CefrLevel,
+  now: Millis = Date.now(),
+): Promise<Settings> {
   return writeTx([db.settings], now, async (w) => {
     const current = (await db.settings.get(SETTINGS_ID)) ?? defaultSettings(now, w.userId);
-    return w.put('settings', { ...current, level, level_source: 'test', level_updated_at: now, level_change: null });
+    return w.put('settings', {
+      ...current,
+      level,
+      level_source: 'test',
+      level_updated_at: now,
+      level_change: null,
+    });
   });
 }
 
@@ -262,7 +323,10 @@ const weekKey = async () => `level_week:${(await getCurrentUserId()) ?? 'guest'}
  * data, so two devices reach the same decision; the settings row's level_updated_at stops a
  * second step in the same week.
  */
-export async function runWeeklyLevelUpdate(now: Millis = Date.now(), force = false): Promise<WeeklyOutcome | null> {
+export async function runWeeklyLevelUpdate(
+  now: Millis = Date.now(),
+  force = false,
+): Promise<WeeklyOutcome | null> {
   const settings = await getSettings(now);
   const cfg: DayConfig = dayConfig(settings);
   const week = weekStartMs(now, cfg);
@@ -281,7 +345,10 @@ export async function runWeeklyLevelUpdate(now: Millis = Date.now(), force = fal
     if (outcome.status === 'changed') {
       const current = (await db.settings.get(SETTINGS_ID)) ?? m.settings;
       // Another device (or tab) may have changed the level meanwhile: then leave it.
-      if (current.level === outcome.change.from && current.level_updated_at === m.settings.level_updated_at) {
+      if (
+        current.level === outcome.change.from &&
+        current.level_updated_at === m.settings.level_updated_at
+      ) {
         await w.put('settings', {
           ...current,
           level: outcome.change.to,
@@ -301,7 +368,10 @@ export async function dismissLevelChange(now: Millis = Date.now()): Promise<void
   await writeTx([db.settings], now, async (w) => {
     const current = await db.settings.get(SETTINGS_ID);
     if (!current?.level_change || current.level_change.dismissed) return;
-    await w.put('settings', { ...current, level_change: { ...current.level_change, dismissed: true } });
+    await w.put('settings', {
+      ...current,
+      level_change: { ...current.level_change, dismissed: true },
+    });
   });
 }
 
@@ -311,6 +381,12 @@ export async function undoLevelChange(now: Millis = Date.now()): Promise<void> {
     const current = await db.settings.get(SETTINGS_ID);
     const change = current?.level_change;
     if (!current || !change || current.level !== change.to) return;
-    await w.put('settings', { ...current, level: change.from, level_source: 'manual', level_updated_at: now, level_change: null });
+    await w.put('settings', {
+      ...current,
+      level: change.from,
+      level_source: 'manual',
+      level_updated_at: now,
+      level_change: null,
+    });
   });
 }

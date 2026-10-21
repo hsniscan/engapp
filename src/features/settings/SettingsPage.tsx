@@ -9,6 +9,7 @@ import { SECTION_IDS, type SectionId } from './sections';
 import { SettingsSection } from './SettingsLayout';
 import { settingsSlots } from './slots';
 import { AppearanceSection, StudySection, VoiceSection } from './StudySections';
+import { LevelSettingsSection } from '@/features/leveltest/LevelSettingsSection';
 
 function SectionNav() {
   const { t } = useTranslation();
@@ -73,6 +74,7 @@ export function SettingsPage() {
             <Sync />
           </SettingsSection>
           <StudySection />
+          <LevelSettingsSection />
           <AppearanceSection />
           <VoiceSection />
           <DataSection />

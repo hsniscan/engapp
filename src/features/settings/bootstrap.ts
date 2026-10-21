@@ -10,6 +10,7 @@ import {
 } from '@/data';
 import i18n from '@/i18n';
 import { toast } from '@/ui';
+import { scheduleWeeklyLevelUpdate } from '@/features/leveltest/schedule';
 import { downloadBackup } from './backupActions';
 import { scheduleStartupIntegrityCheck } from './integrity';
 import { captureInstallPrompt, flags, refreshStorageInfo, requestPersistence } from './platform';
@@ -93,5 +94,6 @@ export function bootstrap(): void {
     const inReview = () => /^\/review(\/|$)/.test(window.location.pathname);
     scheduleStartupIntegrityCheck(inReview);
     scheduleRepairs(inReview);
+    scheduleWeeklyLevelUpdate(inReview);
   })();
 }

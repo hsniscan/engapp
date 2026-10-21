@@ -695,6 +695,25 @@ easier as loanwords; "calendar" A2 → A1 slipped through by quoting "kalender" 
 check cannot catch every bad reason). `try-guess` rated "bank" (river) B1 vs "bank"
 (money) A1, "give up" A2, "take advantage of sth" B2, "cut corners" C1, "subsidy" C1.
 
+## Level test bank (one-off, `bank-tr-v1`, `bank-check-v1`, `pseudo-check-v1`)
+
+The level test's question bank (`data/level-test/bank.json`, decision 0017) was built once
+by `scripts/build-level-test.ts` with the local Gemini key; the app never calls a model for
+it and no user quota is used. Prompts (in the script, versioned there):
+
+- `bank-tr-v1` (`meanings`): for each list word and part of speech the Turkish meaning a
+  learner would pick, up to three alternatives, `cognate` (Turkish uses the same word) and
+  `ok` (a clear, single everyday meaning). Output in `data/level-test/meanings.tsv`.
+- `bank-check-v1` (`bank`): every 4-choice question answered blind; returns every option a
+  dictionary would accept and a doubt note. Questions whose answer is not accepted or that
+  have a second right option get new distractors (up to four rounds), then are dropped.
+- `pseudo-check-v1` (`pseudo --ai`): flags made-up words that read as real English words,
+  names or brands.
+
+Models: `gemini-3.6-flash`, `gemini-3.5-flash`, `gemini-3-flash-preview`, and
+`gemini-3.5-flash-lite` after the others ran out of quota (October 2026); C1/C2 meanings were
+read by hand afterwards (`HAND_MEANINGS`).
+
 ## Tests
 
 - `supabase/functions/_shared/*.test.ts` (vitest, no network): recorded Gemini envelopes

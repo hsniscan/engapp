@@ -13,11 +13,13 @@ only from `@/data` (`src/data/index.ts`).
 | cards | yes | `id`, `note_id`, `sense_id`, `[state+due]`, `due`, `card_type`, `deleted_at` | FSRS fields in UTC ms. `unlocked`, `suspended`. |
 | review_logs | yes, insert-only | `id`, `card_id`, `reviewed_at`, `undo_of` | Never updated or deleted. An undo is a new row with `undo_of`. |
 | practice_logs | yes, insert-only | `id`, `card_id`, `practiced_at`, `session_id` | One row per answer in a practice round: `result` (`known`/`unknown`), `mode` (the source: `hard`, `recent`, `tag`; free text, 1–32 chars), `session_id`, `duration_ms` (≤ 60 s), `device_id`. Never read by scheduling, `daily_activity` or the streak (Dexie v3, decision 0010). |
+| level_tests | yes, insert-only | `id`, `taken_at` | One finished level test: `result_level`, `vocab_estimate`, `reliable`, `false_alarm_rate`, `ratios` (corrected share known per level), `items` (`{w, band, pseudo, answer, mc_ok?}`), `bank_version`, `applied` (false: unreliable and not used), `duration_ms`, `device_id` (Dexie v9, decision 0017). |
+| known_terms | yes | `id`, `term_norm`, `deleted_at` | Words the user knows without a card: `term_norm` (same key as `notes.term_norm`), `source` (`test`/`preview`/`manual`/`auto`), `cefr_at_mark`. One live row per `term_norm`; removing is a tombstone, marking again revives the row. |
 | sources | metadata | `id`, `created_at` | |
-| settings | yes | `id = 'settings'` | Defaults: `daily_new_limit 10`, `request_retention 0.9`, `timezone` from the device, `day_start_hour 4`, `theme 'system'`, `voice 'en-US'`, `level 'B1'`. |
+| settings | yes | `id = 'settings'` | Defaults: `daily_new_limit 10`, `request_retention 0.9`, `timezone` from the device, `day_start_hour 4`, `theme 'system'`, `voice 'en-US'`, `level 'B1'`. Level (decision 0017): `level_source` (`default`/`test`/`auto`/`manual`), `level_updated_at`, `level_locked`, `level_change` (the last automatic change and its reason, with `dismissed`). Dexie v9 set `level_source` to `manual` when the level was not B1. |
 | outbox | no | `++seq`, `[table+row_id]`, `next_attempt_at` | Rows waiting to be pushed. |
 | daily_activity | no (derived) | `date` (local `YYYY-MM-DD`) | `reviews`, `new_cards`, `time_ms`, `review_answers`, `review_passed`, `completed`. |
-| meta | no | `key` | `device_id`, `user_id`, `hlc`, `sync_cursor`, `lexicon_cursor`, `server_practice_logs` (the server answered with `sync_pull_v3`), `extra_new:<YYYY-MM-DD>` (extra new cards allowed that day, this device only). |
+| meta | no | `key` | `device_id`, `user_id`, `hlc`, `sync_cursor`, `lexicon_cursor`, `server_practice_logs` (the server answered with `sync_pull_v3`), `extra_new:<YYYY-MM-DD>` (extra new cards allowed that day, this device only), `server_sync_tables` / `server_sync_tables_checked_at` (the server's sync registry, decision 0017), `level_week:<user or guest>` (the week the weekly level update last ran), `level_test_offer_dismissed`. |
 | error_log | no | `++id`, `at` | Newest 200 rows are kept. |
 | lexicon_cache | no | `id`, `term_id`, `lemma_norm`, `updated_at` | Shared lexicon senses the user's senses reference (sync layer). Since Dexie v4 also `cefr`, `cefr_source`, `cefr_list`, `cefr_reason_tr`, `zipf` (word level, see "Word levels"); the v4 upgrade set `lexicon_cursor` back to 0 so they are pulled again with levels. |
 | chunk_cache, import_jobs, import_candidates | no | | Owned by the AI layer. |
@@ -123,7 +125,10 @@ All actions take an optional trailing `now` (ms) for tests. They throw `ActionEr
 | `getHomeSummary()` / `getStreakSummary()` / `getHeatmap()` | Feed the home line, the stats metrics and the 26-week heatmap. |
 | `getNoteDetail`, `findNoteByTerm`, `listNotes`, `listSources`, `pendingChangesCount` | Read helpers. |
 | `getSettings` / `ensureSettings` / `updateSettings(patch)` | Settings. `updateSettings` validates with zod and with ts-fsrs. Call `ensureSettings()` at startup. |
-| `exportBackup()` → `BackupFile` | Builds the backup (`schema_version` 4: `practice_logs` since 3, `notes.level_override` since 4; version 1–3 files still restore, the override as null) and records `last_backup_at`. |
+| `exportBackup()` → `BackupFile` | Builds the backup (`schema_version` 9: `practice_logs` since 3, `notes.level_override` since 4, `level_tests`, `known_terms` and the settings level fields since 9; older files still restore, without those tables (local ones are kept) and with default level fields) and records `last_backup_at`. |
+| `saveLevelTest(input)` / `applyTestLevel(level)` | Store a finished level test; a reliable one sets the level (`test`) and marks its "Biliyorum" words known. `applyTestLevel` uses an unreliable result anyway. |
+| `getKnownTermKeys()` / `markKnown(term, source)` / `unmarkKnown(term)` / `listKnownTerms()` | Known words (stable API for İP4). |
+| `getLevelOverview()` / `runWeeklyLevelUpdate()` / `dismissLevelChange()` / `undoLevelChange()` | The level model, vocabulary counter and weekly update (`domain/levelUpdate.ts`, `domain/vocabSize.ts`). |
 | `restoreBackup(fileOrJson, 'merge' \| 'overwrite')` | Verifies the zod schema and checksum, restores, then recomputes all cards and `daily_activity`. |
 | `exportCsv(headers)` | CSV export. |
 | `runIntegrityCheck()` / `repairIntegrity()` | Startup check and the "Veri onarımı" repair. |

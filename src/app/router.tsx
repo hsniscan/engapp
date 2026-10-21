@@ -69,6 +69,21 @@ const children: RouteObject[] = [
     }),
   },
   {
+    path: 'level-test',
+    handle: { immersive: true } satisfies RouteHandle,
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/leveltest/LevelTestScreen')).LevelTestRoute,
+    }),
+  },
+  {
+    path: 'settings/bilinen-kelimeler',
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/leveltest/KnownWordsPage')).KnownWordsPage,
+    }),
+  },
+  {
     path: 'settings/kaynaklar',
     HydrateFallback: () => null,
     lazy: async () => ({

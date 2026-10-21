@@ -1,5 +1,6 @@
 # Turkish meanings of the level-test candidate words. Prompt bank-tr-v1, models gemini-3.6-flash, gemini-3.5-flash, gemini-3-flash-preview, gemini-3.5-flash-lite.
-# Written by scripts/build-level-test.ts meanings; corrected by hand where noted in the commit.
+# Written by scripts/build-level-test.ts meanings; hand corrections are applied in the bank step (HAND_MEANINGS).
+# Words and levels from the CEFR-J Wordlist 1.5 (Tono Laboratory, TUFS) and the Octanove Vocabulary Profile C1/C2 1.0; CC BY-SA 4.0.
 # Columns: lemma, pos, cefr, zipf, tr (shown as the right answer), alt (";"), cognate (1/0), ok (1/0).
 above	adverb	A1	5.2	yukarıda	yukarıya;yukarı	0	1
 actor	noun	A1	4.65	aktör	oyuncu;erkek oyuncu	1	1

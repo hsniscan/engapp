@@ -62,6 +62,16 @@ registry but cannot write it. pgTAP checks that every registered table has RLS w
 select and insert policies, that mutable tables have an update policy, and that insert-only
 tables can be neither updated nor deleted.
 
+**Tables that wait for the registry (decision 0017).** `level_tests` (insert-only) and
+`known_terms` (mutable, tombstoned) are in the registry since `20261022000500_level_test.sql`.
+The client (`REGISTRY_GATED` in `src/sync/engine.ts`) pushes their rows only after it has
+read them in `public.sync_tables` (PostgREST select, stored in `meta.server_sync_tables`,
+asked again every 10 minutes while such rows wait). Until then they stay in the outbox
+without failed attempts, so the app can ship before the migration. Dexie v9 reset
+`sync_cursor` to 0 once, because earlier v0.2 clients skipped these rows during a v3 pull.
+Settings rows from older clients lack the level columns: a trigger fills their defaults on
+insert, and `_sync_upsert` leaves them alone on update.
+
 ## Push
 
 `sync_push(p_batch jsonb)`; `p_batch` = up to 100 items `{table, op, payload}`:
@@ -183,7 +193,11 @@ to them (decision 0009).
   cross-user read/write denial, push validation/idempotency/LWW/tombstones, review log
   immutability, pagination, purge → `full_resync`. `05_practice_logs.test.sql`: the
   registry, insert-only practice logs, v3 pull pages and horizon, and v1/v2 not returning
-  them.
+  them. `08_level_test.test.sql`: level tests insert-only, known-word tombstones and purge,
+  isolation, v1/v2 not returning them, and settings pushed by an old client.
+- `src/sync/levelTables.test.ts` (FakeServer): level tests and known words between devices,
+  the registry wait, guest adoption, copying cards from another account (they stay
+  behind) and backups.
 - `src/sync/practice.test.ts` (FakeServer): practice logs wait for a v3 server, then sync
   insert-only between devices without touching cards.
 - `supabase/tests/integration/stack.test.ts`: the same through PostgREST with

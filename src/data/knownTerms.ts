@@ -35,16 +35,24 @@ function levelOf(termNorm: string): CefrLevel | null {
   return senseLevel({ term_norm: termNorm, term_type: termType }, null, undefined, data)?.cefr ?? null;
 }
 
-/** Inside writeTx: mark one key, or return the live row that already has it. */
-export async function markKnownIn(w: SyncWriter, termNorm: string, source: KnownTermSource): Promise<KnownTerm> {
+/**
+ * Inside writeTx: mark one key, or return the live row that already has it. `cefr`: the level
+ * the caller knows (a test word's level); otherwise the client level file's, when loaded.
+ */
+export async function markKnownIn(
+  w: SyncWriter,
+  termNorm: string,
+  source: KnownTermSource,
+  cefr: CefrLevel | null = null,
+): Promise<KnownTerm> {
   const rows = await db.known_terms.where('term_norm').equals(termNorm).toArray();
   const live = rows.find((r) => r.deleted_at === null);
   if (live) return live;
   // A word marked before and removed again comes back as the same row (no duplicate rows).
   const old = rows.sort((a, b) => b.updated_at - a.updated_at)[0];
   const row: KnownTerm = old
-    ? { ...old, deleted_at: null, source, cefr_at_mark: old.cefr_at_mark ?? levelOf(termNorm) }
-    : { ...w.base(), term_norm: termNorm, source, cefr_at_mark: levelOf(termNorm) };
+    ? { ...old, deleted_at: null, source, cefr_at_mark: old.cefr_at_mark ?? cefr ?? levelOf(termNorm) }
+    : { ...w.base(), term_norm: termNorm, source, cefr_at_mark: cefr ?? levelOf(termNorm) };
   return w.put('known_terms', row);
 }
 

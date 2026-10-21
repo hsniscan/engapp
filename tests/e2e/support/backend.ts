@@ -44,6 +44,9 @@ const CORS = {
   'access-control-expose-headers': '*',
 };
 
+const SYNC_TABLES = ['notes', 'senses', 'cards', 'review_logs', 'sources', 'settings', 'practice_logs', 'level_tests', 'known_terms'];
+const INSERT_ONLY = new Set(['review_logs', 'practice_logs', 'level_tests']);
+
 type Row = Record<string, unknown> & { id: string };
 interface Stored {
   table: string;
@@ -271,6 +274,8 @@ export class FakeBackend {
         return this.json(route, 500, { error: { code: 'internal', message: String(e) } });
       }
     }
+    // The sync registry (public.sync_tables), read through PostgREST.
+    if (path === '/rest/v1/sync_tables') return this.json(route, 200, SYNC_TABLES.map((name) => ({ name })));
     return this.json(route, 404, { message: `unmocked ${path}` });
   }
 
@@ -293,7 +298,7 @@ export class FakeBackend {
           const cur = this.rows.get(key);
           const row: Row = { ...item.payload, user_id: TEST_USER.id };
           acked.push(item.payload.id);
-          if (item.table === 'review_logs' || item.table === 'practice_logs') {
+          if (INSERT_ONLY.has(item.table)) {
             if (!cur) this.rows.set(key, { table: item.table, seq: ++this.seq, row });
             continue;
           }

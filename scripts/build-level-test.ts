@@ -363,6 +363,7 @@ async function buildPseudowords(withAi: boolean): Promise<void> {
       '# letter-trigram chain on the word lists, length 5-9; not in wordfreq (English, Turkish), not in the',
       '# word lists, not one edit from the 30 000 most frequent English words, not an inflection of a real',
       '# word, no offensive string; then checked by the model (pseudo-check-v1) and reviewed by hand.',
+      '# Trained on CEFR-J / Octanove lemmas and filtered with wordfreq 3.1.1 data; CC BY-SA 4.0.',
       '# Columns: word, status (use | spare | rejected), reason. Only "use" rows go into the bank.',
       ...chosen.map((w) => `${w}\tuse\t`),
       ...extra.map((w) => `${w}\tspare\t`),
@@ -495,7 +496,8 @@ function writeMeanings(m: Map<string, Meaning & Candidate>, model: string): void
     MEANINGS_FILE,
     [
       `# Turkish meanings of the level-test candidate words. Prompt ${BANK_TR_PROMPT_VERSION}, ${named.length > 1 ? 'models' : 'model'} ${named.join(', ')}.`,
-      '# Written by scripts/build-level-test.ts meanings; corrected by hand where noted in the commit.',
+      '# Written by scripts/build-level-test.ts meanings; hand corrections are applied in the bank step (HAND_MEANINGS).',
+      '# Words and levels from the CEFR-J Wordlist 1.5 (Tono Laboratory, TUFS) and the Octanove Vocabulary Profile C1/C2 1.0; CC BY-SA 4.0.',
       '# Columns: lemma, pos, cefr, zipf, tr (shown as the right answer), alt (";"), cognate (1/0), ok (1/0).',
       ...rows.map((r) =>
         [r.lemma, r.pos, r.cefr, r.zipf ?? '', r.tr, r.alt.join(';'), r.cognate ? 1 : 0, r.ok ? 1 : 0].join('\t'),
