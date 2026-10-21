@@ -1,13 +1,14 @@
 // Read-side API for screens. Safe to wrap in dexie-react-hooks' useLiveQuery.
-import { type DayKey, dayKeyOf } from '../domain/day';
+import { addDays, type DayKey, dayEndMs, dayKeyOf } from '../domain/day';
 import { previewIntervals, type IntervalPreview } from '../domain/fsrs';
 import { normalizeTerm } from '../domain/normalize';
-import { buildQueue, type QueueCounts, type QueueItem } from '../domain/queue';
+import { buildQueue, type QueueCounts, type QueueItem, type QueueMode } from '../domain/queue';
 import { type Cloze, firstLetterHint, lastShownSenseId, makeCloze, nextRecognitionSense } from '../domain/recognition';
 import { buildHeatmap, computeStreakSummary, type HeatmapCell, type StreakSummary } from '../domain/streak';
 import { type Card, CardState, type Id, type Millis, type Note, type RatingValue, type Sense } from '../domain/types';
 import { db } from './db';
 import { dueStudiedCards, loadTodayFacts, newCards } from './history';
+import { extraNewKey, getMeta } from './meta';
 import { dayConfig, getSettings, schedulerFor } from './settings';
 
 export interface StudyQueue {
@@ -17,26 +18,52 @@ export interface StudyQueue {
   /** Non-undone answers given today, and how many of them introduced a new card. */
   doneToday: number;
   newToday: number;
+  /** Today's extra new-card allowance on this device ("+5 yeni kart"). */
+  extraNewToday: number;
   day: DayKey;
+  /** Exclusive end of today; in 'ahead' mode, items with `card.due >= dayEnd` are tomorrow's. */
+  dayEnd: Millis;
+}
+
+/** Today's extra new-card allowance (meta `extra_new:<day>`, this device only). */
+export async function getExtraNewToday(day: DayKey): Promise<number> {
+  const v = await getMeta<number>(extraNewKey(day));
+  return typeof v === 'number' && Number.isFinite(v) && v > 0 ? Math.floor(v) : 0;
+}
+
+export interface StudyQueueOptions {
+  session?: { reviews: number; new: number };
+  learnAheadMs?: number;
+  /** 'ahead': tomorrow's reviews now ("Yarının kartlarını şimdi tekrar et"). Default 'normal'. */
+  mode?: QueueMode;
 }
 
 /**
  * The current session queue. Rebuild it after every answer (learning cards re-enter when
  * due). Pass the session's own answer counts to keep the "1 new after 5 reviews" rhythm.
+ * The new-card limit is the daily limit plus today's extra allowance (addExtraNew); cards
+ * introduced today count against it from the logs, so other devices never double count.
  */
-export async function getStudyQueue(
-  opts: { session?: { reviews: number; new: number }; learnAheadMs?: number } = {},
-  now: Millis = Date.now(),
-): Promise<StudyQueue> {
-  return db.transaction('r', [db.cards, db.review_logs, db.settings], async () => {
+export async function getStudyQueue(opts: StudyQueueOptions = {}, now: Millis = Date.now()): Promise<StudyQueue> {
+  return db.transaction('r', [db.cards, db.review_logs, db.settings, db.meta], async () => {
     const settings = await getSettings(now);
-    const facts = await loadTodayFacts(dayConfig(settings), now);
-    const [studied, fresh] = await Promise.all([dueStudiedCards(facts.bounds.end), newCards()]);
+    const cfg = dayConfig(settings);
+    const facts = await loadTodayFacts(cfg, now);
+    const ahead = opts.mode === 'ahead';
+    const aheadEnd = dayEndMs(addDays(facts.bounds.key, 1), cfg);
+    const [studied, fresh, extraNewToday] = await Promise.all([
+      dueStudiedCards(ahead ? aheadEnd : facts.bounds.end),
+      ahead ? Promise.resolve([]) : newCards(),
+      getExtraNewToday(facts.bounds.key),
+    ]);
     const cards = [...studied, ...fresh];
     const q = buildQueue(cards, {
       now,
       dayEnd: facts.bounds.end,
+      mode: opts.mode ?? 'normal',
+      aheadEnd,
       dailyNewLimit: settings.daily_new_limit,
+      extraNewToday,
       newIntroducedToday: facts.newIntroducedToday,
       reviewedTodayCardIds: facts.reviewedCardIds,
       reviewedTodayNoteIds: facts.reviewedNoteIds,
@@ -50,7 +77,9 @@ export async function getStudyQueue(
       nextLearningDue: q.nextLearningDue,
       doneToday: facts.answers.length,
       newToday: facts.newIntroducedToday,
+      extraNewToday,
       day: facts.bounds.key,
+      dayEnd: facts.bounds.end,
     };
   });
 }

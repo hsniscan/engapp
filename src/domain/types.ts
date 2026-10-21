@@ -89,6 +89,29 @@ export interface ReviewLog {
   hlc: string;
 }
 
+/** "Bildim" / "Bilemedim" in a practice round. */
+export type PracticeResult = 'known' | 'unknown';
+
+/**
+ * One answer in a practice round ("Pratik turu"). Insert-only like review logs, but it NEVER
+ * feeds FSRS, the queue, daily_activity or the streak; only practice selection and stats.
+ */
+export interface PracticeLog {
+  id: Id;
+  user_id: string | null;
+  card_id: Id;
+  practiced_at: Millis;
+  result: PracticeResult;
+  /** Where the round's cards came from: 'hard' | 'recent' | 'tag' (newer clients may add more). */
+  mode: string;
+  /** One id per round. */
+  session_id: Id;
+  duration_ms: number; // capped at 60 000
+  device_id: string;
+  created_at: Millis;
+  hlc: string;
+}
+
 export interface Source extends SyncedRow {
   kind: 'text' | 'pdf';
   title: string;
@@ -171,7 +194,10 @@ export interface ChunkCacheRow {
   created_at: Millis;
 }
 
-export type OutboxTable = 'notes' | 'senses' | 'cards' | 'review_logs' | 'sources' | 'settings';
+export type OutboxTable = 'notes' | 'senses' | 'cards' | 'review_logs' | 'sources' | 'settings' | 'practice_logs';
+/** Synced tables whose rows are never changed or deleted. */
+export const INSERT_ONLY_TABLES = ['review_logs', 'practice_logs'] as const satisfies readonly OutboxTable[];
+export type InsertOnlyTable = (typeof INSERT_ONLY_TABLES)[number];
 
 export interface OutboxRow {
   seq?: number; // auto-increment key

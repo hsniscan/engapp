@@ -15,6 +15,7 @@ import { deriveUnlocked, effectiveLogs, replayCard } from '../domain/recompute';
 import {
   cardSchema,
   noteSchema,
+  practiceLogSchema,
   reviewLogSchema,
   senseSchema,
   settingsSchema,
@@ -26,6 +27,7 @@ import {
   type Id,
   type Millis,
   type Note,
+  type PracticeLog,
   type ReviewLog,
 } from '../domain/types';
 import { emptyFsrs } from '../domain/fsrs';
@@ -45,6 +47,7 @@ const allSyncedTables = () => [
   db.review_logs,
   db.sources,
   db.settings,
+  db.practice_logs,
 ];
 
 // ------------------------------------------------------------------ recompute
@@ -182,7 +185,7 @@ export async function resetStudyHistory(now: Millis = Date.now(), chunkNotes = R
 
 // ------------------------------------------------------------------ sync hook
 
-export type RemoteBatch = Partial<Record<MutableTable | 'review_logs', unknown[]>>;
+export type RemoteBatch = Partial<Record<MutableTable | 'review_logs' | 'practice_logs', unknown[]>>;
 
 export interface ApplyRemoteResult {
   applied: number;
@@ -198,11 +201,13 @@ const rowSchemas = {
   sources: sourceSchema,
   settings: settingsSchema,
   review_logs: reviewLogSchema,
-} satisfies Record<MutableTable | 'review_logs', z.ZodType>;
+  practice_logs: practiceLogSchema,
+} satisfies Record<MutableTable | 'review_logs' | 'practice_logs', z.ZodType>;
 
 /**
  * Hook for the sync engine's pull. Rows are validated; mutable rows win when their hlc is
- * greater than the local row's (last writer wins), review logs are inserted if new. Pulled
+ * greater than the local row's (last writer wins), review and practice logs are inserted if
+ * new (practice logs touch nothing else: no recompute, no daily_activity). Pulled
  * rows are NOT queued in the outbox. Afterwards cards whose logs or rows changed are
  * recomputed (changes are queued), possible duplicate notes are flagged, and daily_activity
  * is rebuilt when logs arrived.
@@ -216,11 +221,21 @@ export async function applyRemoteRows(
   await writeTx(allSyncedTables(), now, async (w) => {
     const touchedCards = new Set<Id>();
     const touchedTerms = new Set<string>();
-    for (const table of [...MUTABLE, 'review_logs'] as const) {
+    for (const table of [...MUTABLE, 'review_logs', 'practice_logs'] as const) {
       for (const raw of batch[table] ?? []) {
         const parsed = rowSchemas[table].safeParse(raw);
         if (!parsed.success) {
           result.invalid++;
+          continue;
+        }
+        if (table === 'practice_logs') {
+          const p = parsed.data as PracticeLog;
+          w.observe(p.hlc);
+          if (await db.practice_logs.get(p.id)) result.skipped++;
+          else {
+            await db.practice_logs.add(p);
+            result.applied++;
+          }
           continue;
         }
         const row = parsed.data as MutableRows[MutableTable] | ReviewLog;
@@ -282,6 +297,7 @@ async function readTables(): Promise<BackupTables> {
     review_logs: await db.review_logs.toArray(),
     sources: await db.sources.toArray(),
     settings: await db.settings.toArray(),
+    practice_logs: await db.practice_logs.toArray(),
   }));
 }
 
@@ -332,7 +348,7 @@ function sameRow(a: unknown, b: unknown): boolean {
  *   with the greater hlc; notes with the same term are flagged possible_duplicate.
  * - overwrite: the backup's notes/senses/cards/sources/settings replace local ones; local
  *   rows absent from the backup are soft-deleted (so the deletion syncs).
- * Review logs are insert-only in both modes: missing ones are added, none are removed.
+ * Review and practice logs are insert-only in both modes: missing ones are added, none are removed.
  * Afterwards all cards are recomputed and daily_activity is rebuilt.
  * @throws ActionError('invalid_backup') with the verify error as message.
  */
@@ -396,6 +412,13 @@ export async function restoreBackup(
       w.observe(log.hlc);
       await w.insertLog(log);
       res.logsAdded++;
+    }
+    const practice = tables.practice_logs ?? [];
+    const knownPractice = await db.practice_logs.bulkGet(practice.map((l) => l.id));
+    for (const [i, log] of practice.entries()) {
+      if (knownPractice[i]) continue;
+      w.observe(log.hlc);
+      await w.insertPracticeLog(log);
     }
     if (mode === 'merge') await flagDuplicates(w, terms);
     res.recomputedCards = await recomputeCardsIn(w, 'all');
@@ -488,6 +511,10 @@ export async function adoptGuestData(userId: string, now: Millis = Date.now()): 
     }
     for (const log of await db.review_logs.toArray()) {
       w.enqueue('review_logs', log.id, 'upsert', log);
+      n++;
+    }
+    for (const log of await db.practice_logs.toArray()) {
+      w.enqueue('practice_logs', log.id, 'upsert', log);
       n++;
     }
     return n;

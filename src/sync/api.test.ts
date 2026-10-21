@@ -106,22 +106,49 @@ describe('sync api', () => {
     expect(calls[0]!.fn).toBe('lexicon_get');
   });
 
-  it('with a start cursor pulls through sync_pull_v2 and falls back to sync_pull on an older backend', async () => {
+  it('with a start cursor pulls through sync_pull_v3 and falls back to v2, then sync_pull, on an older backend', async () => {
     const page = { rows: [], next_seq: 9, has_more: false, full_resync: false };
-    const v2 = fakeClient({ data: page });
-    await pullChanges(9, 500, v2.client, 0);
-    expect(v2.calls).toEqual([{ fn: 'sync_pull_v2', args: { p_since: 9, p_limit: 500, p_from: 0 } }]);
+    const v3 = fakeClient({ data: page });
+    expect((await pullChanges(9, 500, v3.client, 0)).version).toBe(3);
+    expect(v3.calls).toEqual([{ fn: 'sync_pull_v3', args: { p_since: 9, p_limit: 500, p_from: 0 } }]);
 
-    const calls: string[] = [];
-    const old = {
-      rpc: async (fn: string) => {
-        calls.push(fn);
-        return fn === 'sync_pull_v2'
-          ? { data: null, error: { code: 'PGRST202', message: 'Could not find the function public.sync_pull_v2' } }
-          : { data: page, error: null };
-      },
-    } as unknown as SupabaseClient;
-    expect((await pullChanges(9, 500, old, 0)).next_seq).toBe(9);
-    expect(calls).toEqual(['sync_pull_v2', 'sync_pull']);
+    const backend = (missing: string[]) => {
+      const calls: string[] = [];
+      const client = {
+        rpc: async (fn: string) => {
+          calls.push(fn);
+          return missing.includes(fn)
+            ? { data: null, error: { code: 'PGRST202', message: `Could not find the function public.${fn}` } }
+            : { data: page, error: null };
+        },
+      } as unknown as SupabaseClient;
+      return { calls, client };
+    };
+    const v2 = backend(['sync_pull_v3']);
+    expect((await pullChanges(9, 500, v2.client, 0)).version).toBe(2);
+    expect(v2.calls).toEqual(['sync_pull_v3', 'sync_pull_v2']);
+
+    const old = backend(['sync_pull_v3', 'sync_pull_v2']);
+    const res = await pullChanges(9, 500, old.client, 0);
+    expect(res.next_seq).toBe(9);
+    expect(res.version).toBe(1);
+    expect(old.calls).toEqual(['sync_pull_v3', 'sync_pull_v2', 'sync_pull']);
+  });
+
+  it('validates practice_logs rows from sync_pull_v3', async () => {
+    const log = {
+      id: 'p1', user_id: 'u', card_id: 'c1', practiced_at: 5, result: 'unknown', mode: 'hard',
+      session_id: 's1', duration_ms: 1200, device_id: 'd', created_at: 5, hlc: '000000000000005:00000:d',
+    };
+    const page = {
+      rows: [
+        { table: 'practice_logs', seq: 1, row: log },
+        { table: 'practice_logs', seq: 2, row: { ...log, id: 'p2', result: 'maybe' } },
+      ],
+      next_seq: 2, has_more: false, full_resync: false,
+    };
+    const res = await pullChanges(0, 500, fakeClient({ data: page }).client, 0);
+    expect(res.rows).toEqual([{ table: 'practice_logs', seq: 1, row: log }]);
+    expect(res.invalid.map((i) => i.id)).toEqual(['p2']);
   });
 });

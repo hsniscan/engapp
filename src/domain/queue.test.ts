@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { makeCard } from '../test/factories';
-import { buildQueue, isDayComplete, type QueueContext } from './queue';
+import { buildQueue, isDayComplete, newCardsAllowed, type QueueContext } from './queue';
 import { type Card, CardState } from './types';
 
 const NOW = Date.UTC(2026, 9, 21, 9);
@@ -132,5 +132,72 @@ describe('isDayComplete', () => {
   it('excuses buried siblings and suspended cards', () => {
     const cards = [review('r', NOW - MIN, 'X'), makeCard({ id: 's', note_id: 'Y', state: 2, due: 0, suspended: true })];
     expect(isDayComplete(cards, ctx({ reviewedTodayNoteIds: new Set(['X']), reviewedTodayCardIds: new Set(['other']) }))).toBe(true);
+  });
+});
+
+describe('extra new cards ("+5 yeni kart")', () => {
+  const cards = Array.from({ length: 30 }, (_, i) => fresh(`n${String(i).padStart(2, '0')}`, i));
+
+  it('adds exactly the allowance on top of the daily limit, minus what today already introduced', () => {
+    // The daily 10 are done: only the extra 5 come.
+    expect(buildQueue(cards, ctx({ newIntroducedToday: 10, extraNewToday: 5 })).counts.new).toBe(5);
+    expect(buildQueue(cards, ctx({ newIntroducedToday: 10, extraNewToday: 15 })).counts.new).toBe(15);
+    // Part of the allowance used: the rest is left, never more.
+    expect(buildQueue(cards, ctx({ newIntroducedToday: 13, extraNewToday: 5 })).counts.new).toBe(2);
+    expect(buildQueue(cards, ctx({ newIntroducedToday: 15, extraNewToday: 5 })).counts.new).toBe(0);
+    // Not enough new cards: all that exist.
+    expect(buildQueue(cards.slice(0, 3), ctx({ newIntroducedToday: 10, extraNewToday: 5 })).counts.new).toBe(3);
+  });
+
+  it('takes the next cards in creation order and ignores negative allowances', () => {
+    const q = buildQueue(cards, ctx({ newIntroducedToday: 10, extraNewToday: 5 }));
+    expect(q.items.map((i) => i.card_id)).toEqual(['n00', 'n01', 'n02', 'n03', 'n04']);
+    expect(q.counts.new_allowed).toBe(5);
+    expect(newCardsAllowed({ dailyNewLimit: 10, extraNewToday: -4, newIntroducedToday: 3 })).toBe(7);
+  });
+});
+
+describe("review ahead (tomorrow's cards)", () => {
+  const TOMORROW_END = DAY_END + 86_400_000;
+
+  it('shows reviews due before the end of tomorrow, oldest due first, and no new cards', () => {
+    const cards = [
+      review('today', NOW - MIN),
+      review('t2', DAY_END + 5 * MIN),
+      review('t1', DAY_END + MIN),
+      review('later', TOMORROW_END),
+      fresh('n1', 1),
+    ];
+    const q = buildQueue(cards, ctx({ mode: 'ahead', aheadEnd: TOMORROW_END }));
+    expect(q.items.map((i) => [i.card_id, i.kind])).toEqual([
+      ['today', 'review'],
+      ['t1', 'review'],
+      ['t2', 'review'],
+    ]);
+    expect(q.counts.new).toBe(0);
+    // The normal queue is unchanged by the same cards.
+    expect(buildQueue(cards, ctx({ aheadEnd: TOMORROW_END })).items.map((i) => i.card_id)).toEqual(['today', 'n1']);
+  });
+
+  it('buries siblings of cards answered today and shows one card per note', () => {
+    const cards = [review('a1', DAY_END + MIN, 'A'), review('a2', DAY_END + 2 * MIN, 'A'), review('b1', DAY_END + MIN, 'B')];
+    const q = buildQueue(
+      cards,
+      ctx({ mode: 'ahead', aheadEnd: TOMORROW_END, reviewedTodayNoteIds: new Set(['B']), reviewedTodayCardIds: new Set(['x']) }),
+    );
+    expect(q.items.map((i) => i.card_id)).toEqual(['a1']);
+  });
+
+  it('keeps learning steps from an early Again in the session', () => {
+    const cards = [learning('l', NOW + 5 * MIN), review('t1', DAY_END + MIN)];
+    const q = buildQueue(cards, ctx({ mode: 'ahead', aheadEnd: TOMORROW_END, learnAheadMs: 20 * MIN }));
+    expect(q.items.map((i) => [i.card_id, i.kind])).toEqual([
+      ['t1', 'review'],
+      ['l', 'learning'],
+    ]);
+  });
+
+  it('does not change what counts as a completed day', () => {
+    expect(isDayComplete([review('t1', DAY_END + MIN)], ctx())).toBe(true);
   });
 });
