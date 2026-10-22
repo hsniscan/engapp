@@ -344,11 +344,15 @@ Migration `20261025000200_images.sql`. No Dexie change in İP2 (the device cache
 - `image_requests` (one row per sense: `source` auto/user, `priority`, `requesters`, `state`
   queued/submitted/done/skipped, `batch_id`, `attempt` 1–2, `problem`, `hold_id`,
   `last_error`) and `image_request_users` (who asked). Service role only; users go through
-  `image_request(p_sense_id)`.
+  `image_request(p_sense_id)`. Auto-queue order (İP9, decision 0037): `image_auto_priority()`
+  / `image_sense_priorities()` in `20261026001010_image_priority.sql`.
 - `image_budget` (month, `cap_usd`, `spent_usd`, `reserved_usd`) and `image_budget_holds`
   (one per in-flight call, `purpose` instant/batch/check/visual/pilot). Service role only.
-- `image_usage` (user, UTC day, count) for `IMAGE_DAILY_LIMIT`; `image_feedback` (the review
+- `image_usage` (user, UTC day, count) for `IMAGE_DAILY_LIMIT`, purged after 90 days with
+  `tts_usage` by `purge_usage_counters()` (decision 0037); `image_feedback` (the review
   screen's decisions: approve / reject / redraw with the reason).
+- `job_runs` (`job` pk, `status`, `last_run_at`, `last_ok_at`, `runs`, `details` counters):
+  heartbeats of the nightly jobs (decision 0037). Service role only, no user data.
 - `app_admins` (`user_id`): who may use the review screen (`is_app_admin()`,
   `image_review_queue`, `image_review_decide`). Filled by the deploy workflow from
   `APP_ADMIN_USER_ID`, never seeded in a migration.

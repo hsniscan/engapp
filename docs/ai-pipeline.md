@@ -713,8 +713,10 @@ Its report, `docs/quality/golden-extract.md`, is a file snapshot (`pnpm vitest r
 **system AI budget** (`ai_system_consume()`, `AI_SYSTEM_DAILY_LIMIT`, default 100 calls per
 UTC day, table `ai_system_usage`), never a user's `ai_usage`. About 100 items per call.
 
-1. **Resolve** every lexicon sense with the rule (no AI); only changed rows are written
-   (`lexicon_set_levels()`), and each write moves the row's lexicon cursor, so devices pull it.
+1. **Resolve** every lexicon sense with the rule, and every term's `zipf` from the reference
+   data (no AI; runs on every run, also without `GEMINI_API_KEY`); only changed rows are
+   written (`lexicon_set_levels()`), and each write moves the row's lexicon cursor, so devices
+   pull it.
 2. **Guess** (`level-guess-v1`) for senses outside the lists that were never asked
    (`cefr_guess_at` is null: senses from before `extract-v3`).
 3. **Turkish-learner check** (`level-tr-v1`) of the list entries, words the lexicon has
@@ -728,10 +730,14 @@ UTC day, table `ai_system_usage`), never a user's `ai_usage`. About 100 items pe
    (`clampTrCorrection()`, again in `listLevel()`, and by a CHECK on
    `ref_word_levels`). Results are stored once per list entry (`tr_*` columns), for the
    list level they were made for (`tr_base_cefr`); a new list version ignores them.
-4. **Resolve** again, so the corrections reach the lexicon at once.
+4. **Resolve** again, so the corrections reach the lexicon at once (also after an AI error).
 
-The run stops calling the model when the budget is used up, the provider answers with a
-quota error, or a call fails; the next run continues. `--dry-run` reports counts without
+Steps 2–3 are skipped with a warning when `GEMINI_API_KEY` is missing (or `--no-ai`). The run
+stops calling the model when the budget is used up, the provider answers with a quota error, a
+call fails, or `--max-minutes` (40 in the workflow) has passed; the next run continues. An
+unexpected error in steps 2–3 still runs step 4, then ends the run red. Orchestration and
+tests: `scripts/lib/level-run.ts`; every run ends with a heartbeat (`public.job_runs`,
+decision 0037). `--dry-run` reports counts without
 writing or calling the model. `node scripts/system-jobs.ts export-tr` writes the stored
 corrections to `data/levels/level-tr.tsv`; `node scripts/build-levels.ts` then adds them to
 the client level file (guests and offline see them after the next app release).

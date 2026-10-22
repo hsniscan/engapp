@@ -1251,6 +1251,7 @@
       "settings": "Ayarların, hedeflerin ve destelerin",
       "reports": "Haftalık raporların",
       "notifications": "Bildirim kayıtların ve bu cihazdaki bildirim aboneliği",
+      "pictures": "Görsel isteklerin, görsellere verdiğin cevaplar ve günlük görsel sayacın",
       "account": "Hesabın: Google ile girişin, adın, e-postan ve profil fotoğrafı bağlantın"
     },
     "device": "Bu cihazdaki kopya da silinir ve oturumun kapanır.",
@@ -2284,6 +2285,7 @@
     }
   },
   "imageReview": {
+    "close": "Görsel onayından çık",
     "title": "Görsel onayı",
     "intro": "Sağa kaydır: onayla. Sola: reddet. Aşağı: yeniden çizdir.",
     "shortcuts": "Klavyeyle: → onayla, ← reddet, ↓ yeniden çizdir, Z geri al.",

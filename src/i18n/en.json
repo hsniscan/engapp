@@ -1251,6 +1251,7 @@
       "settings": "Your settings, goals and decks",
       "reports": "Your weekly reports",
       "notifications": "Your notification records and this device's notification subscription",
+      "pictures": "Your picture requests, your answers about pictures and your daily picture counter",
       "account": "Your account: Google sign-in, name, e-mail and profile photo link"
     },
     "device": "The copy on this device is deleted too and you are signed out.",
@@ -2284,6 +2285,7 @@
     }
   },
   "imageReview": {
+    "close": "Leave picture review",
     "title": "Picture review",
     "intro": "Swipe right: approve. Left: reject. Down: redraw.",
     "shortcuts": "Keyboard: → approve, ← reject, ↓ redraw, Z undo.",
