@@ -249,6 +249,16 @@ export class EngDb extends Dexie {
     this.version(17)
       .stores({})
       .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
+    // v19 (v0.3 İP6, leeches and contrast cards; 12–20 belong to the v0.3 packages): notes may
+    // now have term_type 'contrast' ("affect ↔ effect", recognition card only). An older app
+    // version skipped such a pulled note as invalid and moved its cursor past it: re-pull
+    // notes once (equal HLC rows merge without change, domain/syncMerge.ts). Reported and
+    // hidden confusable pairs and a contrast card's difference line are user_content rows
+    // (kinds 'confusion' and 'contrast', already synced); shared contrast content is cached
+    // in lexicon_pair_notes (kind 'contrast'): no new table or index.
+    this.version(19)
+      .stores({})
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['notes']));
   }
 }
 

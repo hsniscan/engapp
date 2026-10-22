@@ -5,7 +5,7 @@ import { PULL_BACKFILL_KEY } from './backfill';
 import { EngDb } from './db';
 
 /** The current schema version; bump with every new Dexie version. */
-const LATEST = 17;
+const LATEST = 19;
 
 describe('Dexie schema', () => {
   it('opens with every table and the indexes the queries rely on', async () => {
@@ -421,8 +421,9 @@ describe('Dexie schema', () => {
 
   it('v17 upgrade re-pulls settings once for the reminder setting, only on devices that pulled', async () => {
     for (const [name, cursor, expected] of [
-      // 'sources' comes from v12 (Anki import), which also runs on this v11 database.
-      ['upgrade-v17-synced', 77, ['sources', 'settings']],
+      // 'sources' comes from v12 (Anki import) and 'notes' from v19 (contrast cards), which
+      // also run on this v11 database.
+      ['upgrade-v17-synced', 77, ['sources', 'settings', 'notes']],
       ['upgrade-v17-fresh', 0, undefined],
     ] as const) {
       const old = new Dexie(name);
@@ -439,6 +440,30 @@ describe('Dexie schema', () => {
       expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
       // The row itself is untouched: no notify key means "off".
       expect(await d.settings.get('settings')).toEqual({ id: 'settings', theme: 'dark' });
+      expect(await d.outbox.count()).toBe(0);
+      d.close();
+      await d.delete();
+    }
+  });
+
+  it('v19 upgrade re-pulls notes once for contrast cards, only on devices that pulled', async () => {
+    for (const [name, cursor, expected] of [
+      ['upgrade-v19-synced', 77, ['notes']],
+      ['upgrade-v19-fresh', 0, undefined],
+    ] as const) {
+      const old = new Dexie(name);
+      old.version(1).stores({ notes: 'id, term_norm', settings: 'id', meta: 'key' });
+      old.version(17).stores({});
+      await old.open();
+      await old.table('notes').add({ id: 'n1', term: 'affect', term_norm: 'affect', term_type: 'word' });
+      await old.table('meta').put({ key: 'sync_cursor', value: cursor });
+      old.close();
+
+      const d = new EngDb(name);
+      await d.open();
+      expect(d.verno).toBe(LATEST);
+      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
+      expect(await d.notes.get('n1')).toEqual({ id: 'n1', term: 'affect', term_norm: 'affect', term_type: 'word' });
       expect(await d.outbox.count()).toBe(0);
       d.close();
       await d.delete();

@@ -94,8 +94,11 @@ async function recognitionOf(noteId: Id): Promise<Card | undefined> {
   return primaryRecognition(await db.cards.where('note_id').equals(noteId).toArray());
 }
 
-/** After an answer or undo on a recognition card: unlock or re-lock from the primary one. */
-async function syncFromPrimary(w: SyncWriter, noteId: Id): Promise<Id[]> {
+/**
+ * After an answer or undo on a recognition card (or a split/reset, data/leech.ts): unlock or
+ * re-lock the note's production/cloze cards from its primary recognition card.
+ */
+export async function syncFromPrimary(w: SyncWriter, noteId: Id): Promise<Id[]> {
   const primary = await recognitionOf(noteId);
   return syncUnlocked(w, noteId, primary?.state ?? null);
 }
