@@ -23,7 +23,7 @@ on:
       job:
         description: 'Which job to run'
         type: choice
-        options: [pilot, visualize, submit, collect]
+        options: [pilot, visualize, submit, collect, report]
         default: collect
       count:
         description: 'pilot: number of senses (default 50); visualize: at most this many; submit: batch size'
@@ -84,7 +84,7 @@ jobs:
           IMAGE_BULK: ${{ vars.IMAGE_BULK }}
         run: |
           set -euo pipefail
-          case "$JOB" in nightly|pilot|visualize|submit|collect) ;; *) echo "::error::Unknown job"; exit 1 ;; esac
+          case "$JOB" in nightly|pilot|visualize|submit|collect|report) ;; *) echo "::error::Unknown job"; exit 1 ;; esac
           if [ -n "$COUNT" ] && ! [[ "$COUNT" =~ ^[0-9]{1,5}$ ]]; then echo "::error::count must be a whole number"; exit 1; fi
           key="$SERVICE_KEY_SECRET"
           if [ -z "$key" ]; then
@@ -130,6 +130,9 @@ jobs:
               ;;
             collect)
               node scripts/img-batch.ts collect
+              ;;
+            report)
+              node scripts/img-report.ts
               ;;
           esac
 
