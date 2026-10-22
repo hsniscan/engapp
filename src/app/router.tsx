@@ -130,6 +130,30 @@ const routes: RouteObject[] = [
   },
 ];
 
+// Public pages outside the shell (v0.4 İP7, ADR 0035): readable without an account, linked
+// from Google Play. Static paths rank above the shell's "*", so they win on any host.
+const loadLegal = () => import('@/features/legal/pages');
+routes.unshift(
+  {
+    path: '/gizlilik',
+    errorElement: <RouteErrorPage />,
+    HydrateFallback: () => null,
+    lazy: async () => ({ Component: (await loadLegal()).PrivacyTrRoute }),
+  },
+  {
+    path: '/privacy',
+    errorElement: <RouteErrorPage />,
+    HydrateFallback: () => null,
+    lazy: async () => ({ Component: (await loadLegal()).PrivacyEnRoute }),
+  },
+  {
+    path: '/hesap-sil',
+    errorElement: <RouteErrorPage />,
+    HydrateFallback: () => null,
+    lazy: async () => ({ Component: (await loadLegal()).DeleteAccountPage }),
+  },
+);
+
 // Dev-only component gallery, outside the shell. Tree-shaken from production builds.
 if (import.meta.env.DEV) {
   // Import panels outside the Add page (inside the shell), until the Add tabs mount them.

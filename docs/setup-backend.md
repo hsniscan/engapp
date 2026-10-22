@@ -115,7 +115,7 @@ call AI unless added here.
      `GEMINI_FALLBACK_MODEL`, `AI_PROVIDER=gemini`, `AI_DAILY_LIMIT`, `ALLOWED_ORIGINS`
    - on the first run only: a Web Push (VAPID) key pair, stored as the function secrets
      `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` (see step 10; nothing to do)
-   - `supabase functions deploy` (`ai-extract`, `ai-enrich`, `ai-examples`, `ai-themes`, `ai-mnemonic`, `ai-report`, `ai-contrast`, `push-send`; JWT is verified inside the
+   - `supabase functions deploy` (`ai-extract`, `ai-enrich`, `ai-examples`, `ai-themes`, `ai-mnemonic`, `ai-report`, `ai-contrast`, `push-send`, `tts`, `account-delete`; JWT is verified inside the
      functions, so `verify_jwt = false` from `supabase/config.toml` is expected)
    - `select public.push_configure(<push-send URL>)`, which turns on the 15-minute reminder job
 3. Both jobs must end green. If "Check secrets" fails, a secret from step 4 is missing.
@@ -145,6 +145,7 @@ Secrets**, for **Production** and **Preview**, then redeploy:
 | ------------------------------- | ------------------------------------------ |
 | `VITE_SUPABASE_URL`             | `https://bikcjlomrjaxymifxogi.supabase.co` |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | the publishable key from step 3.5          |
+| `VITE_CONTACT_EMAIL`            | the contact address shown in the privacy policy and on `/hesap-sil` (v0.4) |
 
 Locally: create `.env.local` in the repository root with the same two lines
 (`*.local` is git-ignored). Without these variables the app runs in guest mode only.
@@ -203,6 +204,27 @@ Bildirim → turn on, then "Deneme bildirimi gönder". `push_log` gets one row p
 a reminder was sent. If the cron job is missing (pg_cron or pg_net not enabled), enable both
 under **Database → Extensions** and run
 `select cron.schedule('engapp-push-send', '*/15 * * * *', 'select public.push_cron_tick()');`.
+
+## 11. Account deletion and Google Play (v0.4)
+
+Nothing to set up on the server: the `account-delete` function and `delete_user_data()` come with
+the normal deploy (step 5). It needs no secret beyond the service role key every function has.
+
+1. Set `VITE_CONTACT_EMAIL` (step 7) and redeploy the web app. Until it is set, `/gizlilik`,
+   `/privacy` and `/hesap-sil` show "(iletişim adresi henüz eklenmedi)" instead of an address.
+2. Check, signed out, that `<APP_URL>/gizlilik`, `<APP_URL>/privacy` and `<APP_URL>/hesap-sil`
+   open directly (Cloudflare Pages serves `index.html` for every path).
+3. Smoke test with a throwaway Google account: sign in, add a card, sync, then **Ayarlar → Hesap →
+   Hesabımı ve verilerimi sil**. The account disappears from **Authentication → Users**,
+   `select count(*) from public.notes where user_id = '<id>'` is 0, and **Edge Functions →
+   account-delete → Logs** shows one `account deleted` line with row counts (no content).
+4. Play Console (docs/play-store/):
+   - **Privacy policy URL:** `<APP_URL>/gizlilik`;
+   - **Data safety → Delete account URL:** `<APP_URL>/hesap-sil`; the rest of the form from
+     `data-safety.md`;
+   - **Content rating, Target audience (18+), Ads, App access:** `content-rating.md`;
+   - **Store listing:** `listing-tr.md`, `listing-en.md`, images from `screenshots/` and `graphics/`;
+   - **Closed test:** `testers-message-tr.md`.
 
 ## Manual deploy without GitHub (alternative)
 
