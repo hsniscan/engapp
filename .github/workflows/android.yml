@@ -69,6 +69,10 @@ jobs:
           java-version: '21'
           cache: gradle
       - uses: android-actions/setup-android@v3
+        with:
+          # The default list asks for the retired 'tools' package, which no longer exists. Gradle
+          # fetches the platform and build tools it needs (licences are accepted by this step).
+          packages: platform-tools
 
       - run: pnpm install --frozen-lockfile
 
