@@ -12,6 +12,7 @@ import {
   getCurrentUserId,
   getStreakSummary,
   META,
+  reconcileImageCards,
   setGoals,
   setImageHidden,
   setImageVerdict,
@@ -420,6 +421,44 @@ describe('account linking', () => {
     expect(copiedApple.id).not.toBe(appleSense.id);
     expect((await cardImageOf(copiedApple))?.id).toBe(P0);
     expect((await cardImageOf(copiedBridge))?.id).toBe(P2);
+  });
+
+  it('v0.4 İP8: picture cards are not copied with their history; the copy gets a new one, New and locked', async () => {
+    const LEX = '0199f0a0-0000-7000-8000-00000000a001';
+    await resetDb();
+    await db.transaction('rw', db.meta, () => setMeta(META.userId, OTHER));
+    await addNoteWithSenses({ term: 'apple', senses: [{ meaning_tr: 'elma', lexicon_sense_id: LEX }] }, T);
+    await storeImage({
+      id: '0199f0a0-0000-7000-8000-0000000b0000',
+      sense_id: LEX,
+      variant: 0,
+      svg: SAMPLE_PICTURES.apple.svg,
+      alt_tr: 'Kırmızı bir elma',
+      status: 'approved',
+      created_at: '2026-10-25T01:30:00Z',
+      fetched_at: T,
+    });
+    await reconcileImageCards({}, T);
+    const rec = (await db.cards.toArray()).find((c) => c.card_type === 'recognition')!;
+    await answerCard({ card_id: rec.id, rating: Rating.Easy, duration_ms: 1000 }, T);
+    const old = (await db.cards.toArray()).find((c) => c.card_type === 'image')!;
+    await answerCard({ card_id: old.id, rating: Rating.Good, duration_ms: 1000 }, T + 1000);
+    const img = await saveDevice();
+
+    await accountWithData();
+    await loadDevice(img);
+    configureLink({ transport: server, engine: engine() });
+    await linkAccount(USER);
+    await resolveLink('copy_cards');
+    expect(getLinkState()).toMatchObject({ phase: 'done' });
+    await reconcileImageCards({}, T + 2000);
+
+    const pictureCards = (await db.cards.toArray()).filter((c) => c.card_type === 'image' && c.deleted_at === null);
+    expect(pictureCards).toHaveLength(1);
+    expect(pictureCards[0]).toMatchObject({ state: CardState.New, reps: 0, unlocked: false, user_id: USER });
+    expect(pictureCards[0]!.id).not.toBe(old.id);
+    const logs = await db.review_logs.toArray();
+    expect(logs.filter((l) => l.card_id === old.id || l.card_id === pictureCards[0]!.id)).toEqual([]);
   });
 
   it('"bu hesabın verisiyle başla" keeps only the account on this device', async () => {
