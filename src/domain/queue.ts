@@ -12,7 +12,13 @@
 //
 // Catch-up (v0.3 İP3, domain/catchup.ts): with `reviewCap` set, at most that many reviews are
 // taken, the most overdue relative to their interval first. The cap never changes a card.
+//
+// New-card order (v0.4, docs/decisions/0039): with `newOrder` set, today's new cards are chosen
+// by domain/newOrder.ts (level fit, frequency, the user's own signals, no confusable pair on
+// one day, a per-user daily jitter); without it, by insertion order ("Eklenme sırası"). The
+// limit, the 1-per-note rule and the 5:1 rhythm are the same either way.
 import { relativeOverdueness } from './catchup';
+import { type NewOrderInput, type NewReason, selectNewCards } from './newOrder';
 import { type Card, CardState, type Id, type Millis } from './types';
 
 export type QueueCard = Pick<
@@ -54,6 +60,8 @@ export interface QueueContext {
    * overdueness instead of due date. Absent/null = no cap. Ignored in 'ahead' mode.
    */
   reviewCap?: number | null;
+  /** Smart new-card order (domain/newOrder.ts); absent/null = insertion order. */
+  newOrder?: NewOrderInput | null;
 }
 
 export type QueueKind = 'learning' | 'review' | 'new';
@@ -78,6 +86,8 @@ export interface QueueResult {
   counts: QueueCounts;
   /** Earliest later-today learning step not in the queue (for "1 kart 25 dk sonra"). */
   nextLearningDue: Millis | null;
+  /** Smart order only: why each new card in the queue came today. */
+  newReasons?: Map<Id, NewReason>;
 }
 
 /** Card can be studied at all (ignores due date and burying). */
@@ -144,7 +154,15 @@ export function buildQueue(cards: Iterable<QueueCard>, ctx: QueueContext): Queue
   const newAllowed = ahead ? 0 : newCardsAllowed(ctx);
   const learnNow = take(learningDue);
   const rev = take(reviews, capped ? Math.max(0, ctx.reviewCap!) : Infinity);
-  const nw = take(fresh, newAllowed);
+  let nw: QueueCard[];
+  let newReasons: Map<Id, NewReason> | undefined;
+  if (ctx.newOrder && !ahead) {
+    const blocked = (c: QueueCard) => notesInQueue.has(c.note_id) && !ctx.reviewedTodayCardIds.has(c.id);
+    const sel = selectNewCards(fresh, newAllowed, blocked, ctx.newOrder);
+    nw = sel.cards;
+    newReasons = sel.reasons;
+    for (const c of nw) notesInQueue.add(c.note_id);
+  } else nw = take(fresh, newAllowed);
   const soon = take(learningSoon);
 
   const items: QueueItem[] = learnNow.map((c) => item(c, 'learning'));
@@ -173,6 +191,7 @@ export function buildQueue(cards: Iterable<QueueCard>, ctx: QueueContext): Queue
       new_allowed: newAllowed,
     },
     nextLearningDue,
+    ...(newReasons ? { newReasons } : {}),
   };
 }
 
