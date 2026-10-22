@@ -371,6 +371,7 @@
       "addedBody": "Yeni kartlarınla birlikte tekrarına gelecek.",
       "emptyText": "Fark boş olamaz.",
       "tooLong": "En fazla {{max}} karakter olabilir.",
+      "termTooLong": "Bu iki kelime birlikte fark kartı için fazla uzun.",
       "hide": "Önerme",
       "hidden": "Bu ikili bir daha önerilmeyecek.",
       "make": "Fark kartı yap",

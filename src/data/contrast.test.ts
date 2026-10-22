@@ -149,6 +149,29 @@ describe('contrast cards', () => {
     expect((await runIntegrityCheck()).ok).toBe(true);
   });
 
+  it('refuses a pair whose "a ↔ b" term is over the server limit, and writes nothing', async () => {
+    // Each term fits (200 code points); together with " ↔ " they do not.
+    const add = async (term: string) => (await addNoteWithSenses({ term, senses: [{ meaning_tr: 'x' }] }, T)).note;
+    const a = await add('a'.repeat(100));
+    const b = await add('b'.repeat(100));
+    const [sA, sB] = await Promise.all([a, b].map(async (n) => (await db.senses.where('note_id').equals(n.id).first())!));
+    const before = await db.notes.count();
+    const input = (x: typeof a, y: typeof b, sx: typeof sA, sy: typeof sB) => ({
+      a: { note_id: x.id, sense_id: sx!.id, sentence: null, sentence_tr: null },
+      b: { note_id: y.id, sense_id: sy!.id, sentence: null, sentence_tr: null },
+      difference: 'a ve b farklı',
+      shared_id: null,
+    });
+    // 100 + 3 + 100 = 203 code points.
+    await expect(createContrastCard(input(a, b, sA, sB), T + 10)).rejects.toMatchObject({ code: 'invalid_input' });
+    expect(await db.notes.count()).toBe(before);
+    // Exactly at the limit is fine: 98 + 3 + 99 = 200.
+    const c = await add('c'.repeat(98));
+    const d = await add('d'.repeat(99));
+    const [sC, sD] = await Promise.all([c, d].map(async (n) => (await db.senses.where('note_id').equals(n.id).first())!));
+    expect((await createContrastCard(input(c, d, sC, sD), T + 20)).term).toHaveLength(200);
+  });
+
   it('two words with the same Turkish meaning keep both senses; an empty difference is refused', async () => {
     const { affect, influence } = await words();
     const sA = (await db.senses.where('note_id').equals(affect.id).first())!;

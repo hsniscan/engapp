@@ -32,6 +32,7 @@ import {
   suggestedPairs,
 } from '../domain/confusables';
 import { emptyFsrs } from '../domain/fsrs';
+import { LIMITS, overLimit } from '../domain/limits';
 import { normalizeTerm } from '../domain/normalize';
 import { uuidv7 } from '../domain/ids';
 import { findSpan } from '../domain/recognition';
@@ -403,6 +404,19 @@ export async function createContrastCard(input: ContrastCardInput, now: Millis =
   if (first.note.term_norm === second.note.term_norm) throw new ActionError('invalid_input', 'same term');
   const term = contrastTerm(first.note.term, second.note.term);
   const termNorm = normalizeTerm(term);
+  // "a ↔ b" of two long terms can pass the server's term limit; sync_push would then reject
+  // the note on every attempt (domain/limits.ts).
+  const bad = overLimit({
+    term: { value: term, max: LIMITS.term },
+    term_norm: { value: termNorm, max: LIMITS.term },
+    ...Object.fromEntries(
+      [first, second].flatMap((s, i) => [
+        [`source_sentence_${i + 1}`, { value: s.sentence, max: LIMITS.source_sentence }],
+        [`source_sentence_tr_${i + 1}`, { value: s.sentence_tr, max: LIMITS.source_sentence_tr }],
+      ]),
+    ),
+  });
+  if (bad) throw new ActionError('invalid_input', `${bad} is too long`);
   // Ids are made before the transaction: hashing (crypto.subtle) inside it would end it.
   const noteId = uuidv7(now);
   const textId = await contrastTextRowId(noteId);

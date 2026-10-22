@@ -371,6 +371,7 @@
       "addedBody": "It comes up with your new cards.",
       "emptyText": "The difference can’t be empty.",
       "tooLong": "At most {{max}} characters.",
+      "termTooLong": "These two words together are too long for a contrast card.",
       "hide": "Don’t suggest",
       "hidden": "This pair won’t be suggested again.",
       "make": "Make a contrast card",

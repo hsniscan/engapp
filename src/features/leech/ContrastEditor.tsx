@@ -94,7 +94,9 @@ export function ContrastEditor({ pair, onAdded, requestDeps = defaultContrastDep
       onAdded?.(created.id);
     } catch (e) {
       if (!(e instanceof ActionError)) void logError(e, 'leech.contrast.add');
-      toast({ title: t('leech.contrast.saveFailed'), tone: 'danger' });
+      // invalid_input here: "a ↔ b" or a sentence is over a server limit; trying again won't help.
+      if (e instanceof ActionError && e.code === 'invalid_input') setError(t('leech.contrast.termTooLong'));
+      else toast({ title: t('leech.contrast.saveFailed'), tone: 'danger' });
     } finally {
       setSaving(false);
     }
