@@ -150,6 +150,9 @@ merged so the functions (AI import, audio) accept requests from the app. No secr
    If it offers to send the app for scanning, either answer is fine.
 5. Open **Engapp**, sign in with Google (or continue as guest). Allow notifications when you turn
    on the reminder in Settings → Bildirim.
+6. Go through the short phone check in Turkish, [real-device-checklist.md](real-device-checklist.md)
+   (install, sign-in, offline review, read-aloud, notification, share, pictures, dark mode,
+   account deletion with a throwaway account), once per new build.
 
 Updating: download the newer `engapp-apk` and install it the same way; Android replaces the app
 and keeps its data (same key, higher versionCode). If Android says "App not installed" /
