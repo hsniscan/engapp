@@ -174,6 +174,8 @@ export const settingsSchema: z.ZodType<Settings> = z.object({
     .catch(null),
   // v0.2 İP4; absent in older rows and backups (= false).
   show_easy_candidates: z.boolean().nullish(),
+  // v0.4 İP3 (absent = off).
+  show_image_front: z.boolean().nullish(),
   // v0.3 İP3 load management; absent in older rows and backups (= the defaults). Malformed
   // values (a newer client, a hand-edited backup) fall back to "unset" instead of rejecting
   // the whole settings row.

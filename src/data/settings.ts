@@ -90,6 +90,8 @@ export const settingsPatchSchema = z
     muted_topics: z.array(z.string().min(1).max(40)).max(40),
     level_locked: z.boolean(),
     show_easy_candidates: z.boolean(),
+    // v0.4 İP3: the picture on the front of the card too.
+    show_image_front: z.boolean(),
     // v0.3 İP3 load management (domain/capacity.ts, catchup.ts, vacation.ts).
     daily_capacity_min: z.number().int().min(CAPACITY_MIN_LIMITS.min).max(CAPACITY_MIN_LIMITS.max),
     catchup_auto: z.boolean(),

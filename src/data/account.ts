@@ -128,8 +128,10 @@ export async function discardAccountData(userId: string, snapshot: RemoteSnapsho
 
 /** Device-level caches that do not belong to an account and survive a copy. */
 // lexicon_examples is the shared sentence cache; the other account's likes, rejections and
-// edits (content_feedback, user_content) are personal and are NOT copied (ADR 0009).
-const KEEP_ON_COPY = new Set(['meta', 'chunk_cache', 'lexicon_cache', 'lexicon_examples', 'lexicon_pair_notes', 'error_log', 'ref_cache']);
+// edits (content_feedback, user_content) are personal and are NOT copied (ADR 0009). v0.4:
+// `images` is the shared picture cache and stays; the other account's picture choices, hide
+// flags and verdicts are user_content / content_feedback rows and stay behind (ADR 0031).
+const KEEP_ON_COPY = new Set(['meta', 'chunk_cache', 'lexicon_cache', 'lexicon_examples', 'lexicon_pair_notes', 'error_log', 'ref_cache', 'images']);
 
 /** The user's own content of a live note, as input for the normal add path. */
 function copyInput(note: Note, senses: Sense[], sourceIds: Map<Id, Id>): AddNoteInput {

@@ -5,7 +5,7 @@ import { PULL_BACKFILL_KEY } from './backfill';
 import { EngDb } from './db';
 
 /** The current schema version; bump with every new Dexie version. */
-const LATEST = 20;
+const LATEST = 21;
 
 describe('Dexie schema', () => {
   it('opens with every table and the indexes the queries rely on', async () => {
@@ -13,7 +13,7 @@ describe('Dexie schema', () => {
     await d.open();
     expect(d.verno).toBe(LATEST);
     expect(d.tables.map((t) => t.name).sort()).toEqual(
-      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs', 'decks', 'theme_previews', 'level_tests', 'known_terms', 'anki_imports', 'lexicon_pair_notes', 'weekly_reports', 'report_drafts'].sort(),
+      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs', 'decks', 'theme_previews', 'level_tests', 'known_terms', 'anki_imports', 'lexicon_pair_notes', 'weekly_reports', 'report_drafts', 'images'].sort(),
     );
     const idx = (table: string) => d.table(table).schema.indexes.map((i) => i.name);
     expect(idx('decks')).toEqual(expect.arrayContaining(['sort', 'deleted_at']));
@@ -23,6 +23,7 @@ describe('Dexie schema', () => {
     expect(d.table('notes').schema.indexes.find((i) => i.name === 'term_norm')?.unique).toBeFalsy();
     expect(idx('known_terms')).toEqual(expect.arrayContaining(['term_norm', 'deleted_at']));
     expect(idx('level_tests')).toEqual(expect.arrayContaining(['taken_at']));
+    expect(idx('images')).toEqual(expect.arrayContaining(['sense_id', 'fetched_at']));
     d.close();
     await d.delete();
   });
@@ -495,6 +496,37 @@ describe('Dexie schema', () => {
       expect(await d.report_drafts.count()).toBe(0);
       expect(d.weekly_reports.schema.indexes.map((i) => i.name)).toContain('week');
       expect(d.report_drafts.schema.primKey.name).toBe('week');
+      expect(await d.outbox.count()).toBe(0);
+      d.close();
+      await d.delete();
+    }
+  });
+  it('v21 upgrade adds the picture cache, keeps settings and user content, and re-pulls settings once', async () => {
+    for (const [name, cursor, expected] of [
+      ['upgrade-v21-synced', 93, ['settings']],
+      ['upgrade-v21-fresh', 0, undefined],
+    ] as const) {
+      // A database as v0.3 left it (version 20), with every earlier backfill done.
+      const old = new Dexie(name);
+      old.version(1).stores({ settings: 'id', meta: 'key' });
+      old.version(5).stores({ user_content: 'id, kind, lexicon_sense_id, replaces_id, deleted_at' });
+      old.version(20).stores({});
+      await old.open();
+      await old.table('settings').add({ id: 'settings', theme: 'dark', goals: null });
+      await old.table('user_content').add({ id: 'u1', kind: 'mnemonic', text: 'x', deleted_at: null });
+      await old.table('meta').put({ key: 'sync_cursor', value: cursor });
+      old.close();
+
+      const d = new EngDb(name);
+      await d.open();
+      expect(d.verno).toBe(LATEST);
+      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
+      // No show_image_front key means "off"; the rows are untouched.
+      expect(await d.settings.get('settings')).toEqual({ id: 'settings', theme: 'dark', goals: null });
+      expect(await d.user_content.get('u1')).toEqual({ id: 'u1', kind: 'mnemonic', text: 'x', deleted_at: null });
+      expect(await d.images.count()).toBe(0);
+      expect(d.images.schema.primKey.name).toBe('id');
+      expect(d.images.schema.indexes.map((i) => i.name)).toEqual(expect.arrayContaining(['sense_id', 'fetched_at']));
       expect(await d.outbox.count()).toBe(0);
       d.close();
       await d.delete();
