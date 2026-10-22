@@ -3,7 +3,14 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { adoptFsrsParams, db, loadOptimizerLogs, logError, markFsrsOptRun, revertFsrsParams } from '@/data';
+import {
+  adoptFsrsParams,
+  db,
+  loadOptimizerLogs,
+  logError,
+  markFsrsOptRun,
+  revertFsrsParams,
+} from '@/data';
 import { MIN_REVIEWS, normalizeParams, type OptimizeResult } from '@/domain/fsrsOptimizer';
 import { CardState, type Settings } from '@/domain/types';
 import { changePct, expectedDailyReviews, RETENTION_CHOICES } from '@/domain/workload';
@@ -90,7 +97,10 @@ export function FsrsOptimizerRow() {
             value={counts.total}
             max={MIN_REVIEWS}
             label={t('fsrsOpt.title')}
-            valueText={t('fsrsOpt.progressText', { count: nf.format(counts.total), min: nf.format(MIN_REVIEWS) })}
+            valueText={t('fsrsOpt.progressText', {
+              count: nf.format(counts.total),
+              min: nf.format(MIN_REVIEWS),
+            })}
           />
           <p className="text-sm text-fg-muted">
             {t('fsrsOpt.needMore', { min: nf.format(MIN_REVIEWS), count: nf.format(counts.total) })}
@@ -120,7 +130,8 @@ export function FsrsOptimizerRow() {
                 size="md"
               />
               <p className="text-sm text-fg-muted">
-                {t('fsrsOpt.running', { pct: Math.round(run.progress * 100) })} {t('fsrsOpt.runningHint')}
+                {t('fsrsOpt.running', { pct: Math.round(run.progress * 100) })}{' '}
+                {t('fsrsOpt.runningHint')}
               </p>
             </div>
           )}
@@ -230,7 +241,9 @@ export function RetentionHelper({ settings }: { settings: Settings }) {
                 <span className="font-serif text-lg font-semibold text-fg tabular-nums">
                   {t('fsrsOpt.helper.reviews', { count: nf.format(n) })}
                 </span>
-                {active && <span className="text-xs text-accent-text">{t('fsrsOpt.helper.current')}</span>}
+                {active && (
+                  <span className="text-xs text-accent-text">{t('fsrsOpt.helper.current')}</span>
+                )}
               </li>
             );
           })}

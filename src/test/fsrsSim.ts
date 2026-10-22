@@ -1,6 +1,12 @@
 // Synthetic review histories for optimizer tests: cards answered by a simulated learner whose
 // memory follows FSRS with `trueW`, scheduled by a scheduler that uses `schedW`.
-import { type DatasetLog, type MemoryState, nextMemoryState, prng, recallProbability } from '../domain/fsrsOptimizer';
+import {
+  type DatasetLog,
+  type MemoryState,
+  nextMemoryState,
+  prng,
+  recallProbability,
+} from '../domain/fsrsOptimizer';
 import { intervalDays } from '../domain/workload';
 
 const DAY = 86_400_000;

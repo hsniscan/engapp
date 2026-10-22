@@ -27,7 +27,9 @@ export interface ReviewCounts {
   sinceLastRun: number;
 }
 
-export async function countOptimizerReviews(lastRunAt: Millis | null | undefined): Promise<ReviewCounts> {
+export async function countOptimizerReviews(
+  lastRunAt: Millis | null | undefined,
+): Promise<ReviewCounts> {
   const logs = effectiveLogs(await db.review_logs.toArray());
   const since = lastRunAt ?? -Infinity;
   return { total: logs.length, sinceLastRun: logs.filter((l) => l.reviewed_at > since).length };

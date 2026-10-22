@@ -16,7 +16,10 @@ export function FsrsOptOffer({ className }: { className?: string }) {
   const { t } = useTranslation();
   const now = useNow();
   const status = useOptimizerStatus();
-  const dismissedAt = useLiveQuery(async () => (await getMeta<number>(FSRS_OFFER_DISMISSED_KEY)) ?? null, []);
+  const dismissedAt = useLiveQuery(
+    async () => (await getMeta<number>(FSRS_OFFER_DISMISSED_KEY)) ?? null,
+    [],
+  );
   if (!status?.suggested || dismissedAt === undefined) return null;
   if (dismissedAt !== null && now - dismissedAt < REOPTIMIZE_AFTER_MS) return null;
   const first = status.settings.fsrs_opt_at == null;

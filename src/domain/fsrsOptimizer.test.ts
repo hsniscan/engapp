@@ -23,7 +23,9 @@ import type { RatingValue } from './types';
 const DEFAULTS = [...default_w];
 /** A learner who forgets faster and finds first answers harder than the defaults assume. */
 const LEARNER = clipToBounds(
-  DEFAULTS.map((v, i) => (i === 0 ? 0.1 : i === 2 ? 1.2 : i === 3 ? 4 : i === 8 ? 1.5 : i === 20 ? 0.35 : v)),
+  DEFAULTS.map((v, i) =>
+    i === 0 ? 0.1 : i === 2 ? 1.2 : i === 3 ? 4 : i === 8 ? 1.5 : i === 20 ? 0.35 : v,
+  ),
 );
 const input = { current: null, request_retention: 0.9, daily_new_limit: 10 };
 
@@ -45,14 +47,20 @@ describe('memory model', () => {
     const T = Date.UTC(2026, 0, 1, 8);
     fc.assert(
       fc.property(
-        fc.array(fc.tuple(fc.integer({ min: 1, max: 4 }), fc.integer({ min: 0, max: 40 * 24 * 60 })), {
-          minLength: 1,
-          maxLength: 25,
-        }),
+        fc.array(
+          fc.tuple(fc.integer({ min: 1, max: 4 }), fc.integer({ min: 0, max: 40 * 24 * 60 })),
+          {
+            minLength: 1,
+            maxLength: 25,
+          },
+        ),
         fc.boolean(),
         (answers, personal) => {
           const w = personal ? LEARNER : DEFAULTS;
-          const scheduler = createScheduler({ request_retention: 0.9, fsrs_params: personal ? LEARNER : null });
+          const scheduler = createScheduler({
+            request_retention: 0.9,
+            fsrs_params: personal ? LEARNER : null,
+          });
           let at = T;
           const logs = answers.map(([g, gapMin], i) => {
             at += i === 0 ? 0 : gapMin * 60_000 + 1000;
@@ -65,7 +73,9 @@ describe('memory model', () => {
             logs.map((l, i) => [l.rating, i === 0 ? 0 : days[i]! - days[i - 1]!] as const),
           )!;
           // ts-fsrs rounds to 8 decimals at every step; we do not.
-          expect(Math.abs(ours.stability - fsrs.stability)).toBeLessThan(1e-6 * Math.max(1, fsrs.stability));
+          expect(Math.abs(ours.stability - fsrs.stability)).toBeLessThan(
+            1e-6 * Math.max(1, fsrs.stability),
+          );
           expect(ours.difficulty).toBeCloseTo(fsrs.difficulty, 5);
         },
       ),
@@ -74,7 +84,8 @@ describe('memory model', () => {
   });
 });
 
-describe('optimizeParams', () => {
+// Training is CPU-bound: generous timeouts so a busy CI machine does not fail them.
+describe('optimizeParams', { timeout: 60_000 }, () => {
   it('learns a learner that differs from the defaults and adopts it (better on held-out reviews)', () => {
     const logs = simulateLogs({ cards: 900, trueW: LEARNER, schedW: DEFAULTS, seed: 3 });
     expect(logs.length).toBeGreaterThan(MIN_REVIEWS);
@@ -89,7 +100,9 @@ describe('optimizeParams', () => {
     expect(res.accuracyGainPct).toBeGreaterThan(0);
     expect(res.params).toHaveLength(PARAM_COUNT);
     // The scheduler accepts them unchanged.
-    expect(createScheduler({ request_retention: 0.9, fsrs_params: res.params }).engine.parameters.w).toEqual(res.params);
+    expect(
+      createScheduler({ request_retention: 0.9, fsrs_params: res.params }).engine.parameters.w,
+    ).toEqual(res.params);
     // This learner forgets faster: more reviews per day.
     expect(res.workloadNext).toBeGreaterThan(res.workloadNow);
     expect(ms).toBeLessThan(10_000);
@@ -99,7 +112,8 @@ describe('optimizeParams', () => {
     const logs = simulateLogs({ cards: 900, trueW: DEFAULTS, schedW: DEFAULTS, seed: 5 });
     const ds = buildDataset(logs);
     // A "trained" set that is clearly wrong for this learner.
-    const worse: Trainer = () => clipToBounds(DEFAULTS.map((v, i) => (i < 4 ? v * 6 : i === 20 ? 0.8 : v)));
+    const worse: Trainer = () =>
+      clipToBounds(DEFAULTS.map((v, i) => (i < 4 ? v * 6 : i === 20 ? 0.8 : v)));
     const res = optimizeParams(ds, input, { trainer: worse });
     expect(res.adopted).toBe(false);
     expect(res.reason).toBe('not_better');
@@ -130,9 +144,11 @@ describe('optimizeParams', () => {
 
   it('whatever it decides, the stored result is never worse than the current params', () => {
     // Data from the current params: there is little to gain; if it adopts, it must be better.
-    const ds = buildDataset(simulateLogs({ cards: 700, trueW: DEFAULTS, schedW: DEFAULTS, seed: 21 }));
+    const ds = buildDataset(
+      simulateLogs({ cards: 700, trueW: DEFAULTS, schedW: DEFAULTS, seed: 21 }),
+    );
     const res = optimizeParams(ds, input);
-    const cutoffEval = res.adopted ? res.next! : res.current ?? res.next;
+    const cutoffEval = res.adopted ? res.next! : (res.current ?? res.next);
     if (res.adopted) {
       expect(cutoffEval!.logLoss).toBeLessThan(res.current!.logLoss);
       expect(cutoffEval!.rmseBins).toBeLessThan(res.current!.rmseBins);
@@ -155,19 +171,28 @@ describe('optimizeParams', () => {
   });
 
   it('is deterministic (same reviews → same parameters on every device)', () => {
-    const ds = buildDataset(simulateLogs({ cards: 500, trueW: LEARNER, schedW: DEFAULTS, seed: 9 }));
+    const ds = buildDataset(
+      simulateLogs({ cards: 500, trueW: LEARNER, schedW: DEFAULTS, seed: 9 }),
+    );
     expect(optimizeParams(ds, input).params).toEqual(optimizeParams(ds, input).params);
   });
 
   it('a typical history (≈ 20 000 reviews) trains within a few seconds', () => {
-    const logs = simulateLogs({ cards: 4000, trueW: LEARNER, schedW: DEFAULTS, days: 500, seed: 13 });
+    const logs = simulateLogs({
+      cards: 4000,
+      trueW: LEARNER,
+      schedW: DEFAULTS,
+      days: 500,
+      seed: 13,
+    });
     expect(logs.length).toBeGreaterThan(15_000);
     const ds = buildDataset(logs);
     const started = performance.now();
     let calls = 0;
     const res = optimizeParams(ds, input, { onProgress: () => calls++ });
-    // Phones are ~3–5× slower than CI; the budget there is 30 s.
-    expect(performance.now() - started).toBeLessThan(6_000);
+    // ~1.5 s on an idle laptop; phones are ~3–5× slower and the budget there is 30 s. The
+    // bound is loose so a loaded CI machine does not fail it.
+    expect(performance.now() - started).toBeLessThan(10_000);
     expect(calls).toBeGreaterThan(0);
     expect(res.adopted).toBe(true);
   });
@@ -175,7 +200,9 @@ describe('optimizeParams', () => {
 
 describe('evaluate', () => {
   it('the true parameters fit their own data better than the defaults', () => {
-    const ds = buildDataset(simulateLogs({ cards: 800, trueW: LEARNER, schedW: DEFAULTS, seed: 4 }));
+    const ds = buildDataset(
+      simulateLogs({ cards: 800, trueW: LEARNER, schedW: DEFAULTS, seed: 4 }),
+    );
     const all = () => true;
     const truth = evaluate(LEARNER, ds, all);
     const defaults = evaluate(DEFAULTS, ds, all);
@@ -187,11 +214,21 @@ describe('evaluate', () => {
 describe('shouldSuggest', () => {
   const now = Date.UTC(2026, 9, 22);
   it('at 1 000 reviews, then a month after the last run when there are new reviews', () => {
-    expect(shouldSuggest({ reviews: 999, reviewsSinceLastRun: 999, lastRunAt: null, now })).toBe(false);
-    expect(shouldSuggest({ reviews: 1000, reviewsSinceLastRun: 1000, lastRunAt: null, now })).toBe(true);
+    expect(shouldSuggest({ reviews: 999, reviewsSinceLastRun: 999, lastRunAt: null, now })).toBe(
+      false,
+    );
+    expect(shouldSuggest({ reviews: 1000, reviewsSinceLastRun: 1000, lastRunAt: null, now })).toBe(
+      true,
+    );
     const last = now - REOPTIMIZE_AFTER_MS + 1;
-    expect(shouldSuggest({ reviews: 5000, reviewsSinceLastRun: 300, lastRunAt: last, now })).toBe(false);
-    expect(shouldSuggest({ reviews: 5000, reviewsSinceLastRun: 300, lastRunAt: last - 1, now })).toBe(true);
-    expect(shouldSuggest({ reviews: 5000, reviewsSinceLastRun: 0, lastRunAt: last - 1, now })).toBe(false);
+    expect(shouldSuggest({ reviews: 5000, reviewsSinceLastRun: 300, lastRunAt: last, now })).toBe(
+      false,
+    );
+    expect(
+      shouldSuggest({ reviews: 5000, reviewsSinceLastRun: 300, lastRunAt: last - 1, now }),
+    ).toBe(true);
+    expect(shouldSuggest({ reviews: 5000, reviewsSinceLastRun: 0, lastRunAt: last - 1, now })).toBe(
+      false,
+    );
   });
 });

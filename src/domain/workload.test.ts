@@ -16,7 +16,10 @@ describe('intervalDays', () => {
     for (const r of [0.85, 0.95]) {
       const engine = createScheduler({ request_retention: r, fsrs_params: null }).engine;
       for (const s of [3, 12.5, 40, 300]) {
-        const expected = Math.min(Math.max(1, Math.round(s * (Reflect.get(engine, 'intervalModifier') as number))), 36500);
+        const expected = Math.min(
+          Math.max(1, Math.round(s * (Reflect.get(engine, 'intervalModifier') as number))),
+          36500,
+        );
         expect(intervalDays(W, s, r)).toBe(expected);
       }
     }

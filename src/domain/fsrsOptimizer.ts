@@ -154,7 +154,14 @@ function step(m: Model, prev: MemoryState | null, t: number, g: number): MemoryS
       const hard = g === 2 ? w[15]! : 1;
       const easy = g === 4 ? w[16]! : 1;
       ns = clamp(
-        s * (1 + Math.exp(w[8]!) * (11 - d) * Math.pow(s, -w[9]!) * (Math.exp((1 - r) * w[10]!) - 1) * hard * easy),
+        s *
+          (1 +
+            Math.exp(w[8]!) *
+              (11 - d) *
+              Math.pow(s, -w[9]!) *
+              (Math.exp((1 - r) * w[10]!) - 1) *
+              hard *
+              easy),
         S_MIN,
         S_MAX,
       );
@@ -166,7 +173,12 @@ function step(m: Model, prev: MemoryState | null, t: number, g: number): MemoryS
 }
 
 /** One answer under these weights (exported for simulations and tests). */
-export function nextMemoryState(w: readonly number[], prev: MemoryState | null, t: number, g: number): MemoryState {
+export function nextMemoryState(
+  w: readonly number[],
+  prev: MemoryState | null,
+  t: number,
+  g: number,
+): MemoryState {
   return step(model(w), prev, t, g);
 }
 
@@ -176,21 +188,36 @@ export function recallProbability(w: readonly number[], t: number, s: number): n
 }
 
 /** Memory state after a sequence of answers ([rating, days since the previous answer]). */
-export function memoryStateOf(w: readonly number[], answers: readonly (readonly [number, number])[]): MemoryState | null {
+export function memoryStateOf(
+  w: readonly number[],
+  answers: readonly (readonly [number, number])[],
+): MemoryState | null {
   const m = model(w);
   let st: MemoryState | null = null;
   for (const [g, t] of answers) st = step(m, st, t, g);
   return st;
 }
 
-type Visit = (index: number, p: number, recalled: boolean, t: number, reviewsBefore: number, lapsesBefore: number) => void;
+type Visit = (
+  index: number,
+  p: number,
+  recalled: boolean,
+  t: number,
+  reviewsBefore: number,
+  lapsesBefore: number,
+) => void;
 
 /**
  * Walk one card's history; `visit` gets the predicted recall of every answer that comes on a
  * later day than the previous one (same-day answers only update the state, as in fsrs-rs).
  * Returns the final memory state.
  */
-function walkCard(m: Model, ds: ReviewDataset, card: number, visit: Visit | null): MemoryState | null {
+function walkCard(
+  m: Model,
+  ds: ReviewDataset,
+  card: number,
+  visit: Visit | null,
+): MemoryState | null {
   const start = ds.cardStart[card]!;
   const end = ds.cardStart[card + 1]!;
   let st: MemoryState | null = null;
@@ -220,10 +247,15 @@ function bce(p: number, y: boolean): number {
   return y ? -Math.log(q) : -Math.log(1 - q);
 }
 
-const logBin = (x: number, base: number) => (x <= 1 ? x : 1 + Math.round(Math.log(x) / Math.log(base)));
+const logBin = (x: number, base: number) =>
+  x <= 1 ? x : 1 + Math.round(Math.log(x) / Math.log(base));
 
 /** Log-loss and RMSE (bins) of the predictions on the reviews `include` accepts (by time). */
-export function evaluate(w: readonly number[], ds: ReviewDataset, include: (at: number) => boolean): Metrics {
+export function evaluate(
+  w: readonly number[],
+  ds: ReviewDataset,
+  include: (at: number) => boolean,
+): Metrics {
   const m = model(w);
   let loss = 0;
   let n = 0;
@@ -290,7 +322,11 @@ const RANGE = (() => {
  * that best explains how often it was remembered, pulled towards the current value when there
  * are few cards, and kept in order (Again ≤ Hard ≤ Good ≤ Easy).
  */
-export function pretrainInitialStability(w: readonly number[], ds: ReviewDataset, include: (at: number) => boolean): number[] {
+export function pretrainInitialStability(
+  w: readonly number[],
+  ds: ReviewDataset,
+  include: (at: number) => boolean,
+): number[] {
   const m = model(w);
   const groups: [number, boolean][][] = [[], [], [], []];
   for (let c = 0; c < cardCount(ds); c++) {
@@ -546,7 +582,8 @@ export function optimizeParams(
 
   const trainer = opts.trainer ?? defaultTrainer;
   const raw = trainer(ds, currentW, isTrain, opts);
-  const candidate = raw.length === PARAM_COUNT && raw.every(Number.isFinite) ? clipToBounds(raw) : null;
+  const candidate =
+    raw.length === PARAM_COUNT && raw.every(Number.isFinite) ? clipToBounds(raw) : null;
   const current = evaluate(currentW, ds, isTest);
   if (!candidate) return keep('not_better', { current });
   const next = evaluate(candidate, ds, isTest);
@@ -560,7 +597,8 @@ export function optimizeParams(
     candidate,
     current,
     next,
-    accuracyGainPct: current.rmseBins > 0 ? ((current.rmseBins - next.rmseBins) / current.rmseBins) * 100 : 0,
+    accuracyGainPct:
+      current.rmseBins > 0 ? ((current.rmseBins - next.rmseBins) / current.rmseBins) * 100 : 0,
     workloadNow,
     workloadNext: workloadFor(ds, candidate, input),
     reviews,
@@ -581,7 +619,12 @@ export function finalStabilities(w: readonly number[], ds: ReviewDataset): numbe
 }
 
 function workloadFor(ds: ReviewDataset, w: readonly number[], input: OptimizeInput): number {
-  return expectedDailyReviews(finalStabilities(w, ds), w, input.request_retention, input.daily_new_limit);
+  return expectedDailyReviews(
+    finalStabilities(w, ds),
+    w,
+    input.request_retention,
+    input.daily_new_limit,
+  );
 }
 
 /** Whether to suggest a (new) run: enough reviews, and a month since the last one with new reviews since. */
