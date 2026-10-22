@@ -13,6 +13,13 @@ import type {
   PendingWord,
   WordBankStore,
 } from './word-bank-jobs.ts';
+import type {
+  ReviewApplyRow,
+  ReviewBatchRow,
+  ReviewJobRow,
+  ReviewPending,
+  ReviewStore,
+} from './word-bank-review.ts';
 
 function check<T>(r: { data: T | null; error: { message: string } | null }, what: string): T {
   if (r.error) throw new Error(`${what}: ${r.error.message}`);
@@ -155,5 +162,88 @@ export class SupabaseWordBankStore implements WordBankStore {
 
   async budgetStatus(): Promise<Record<string, unknown>> {
     return check(await this.db.rpc('image_budget_status'), 'image_budget_status');
+  }
+}
+
+/** The review pass (decision 0040): 20261026001300_word_bank_review.sql plus the above. */
+export class SupabaseWordBankReviewStore extends SupabaseWordBankStore implements ReviewStore {
+  async reviewPending(limit: number): Promise<ReviewPending[]> {
+    const rows = check(
+      await this.db.rpc('word_bank_review_pending', { p_limit: limit }),
+      'word_bank_review_pending',
+    ) as ReviewPending[];
+    return rows.map((r) => ({ ...r, zipf: r.zipf == null ? null : Number(r.zipf) }));
+  }
+
+  async upsertReviews(rows: ReviewJobRow[]): Promise<void> {
+    if (rows.length === 0) return;
+    check(
+      await this.db.from('word_bank_review').upsert(
+        rows.map((r) => ({ ...r, updated_at: new Date().toISOString() })),
+        { onConflict: 'lemma_norm,pos' },
+      ),
+      'word_bank_review upsert',
+    );
+  }
+
+  async reviewsOfBatch(batchId: string): Promise<ReviewJobRow[]> {
+    const out: ReviewJobRow[] = [];
+    for (let from = 0; ; from += 1000) {
+      const page = check(
+        await this.db
+          .from('word_bank_review')
+          .select('lemma_norm, pos, state, attempt, batch_id, custom_id, last_error, input')
+          .eq('batch_id', batchId)
+          .order('lemma_norm')
+          .order('pos')
+          .range(from, from + 999),
+        'word_bank_review read',
+      ) as ReviewJobRow[];
+      out.push(...page);
+      if (page.length < 1000) return out;
+    }
+  }
+
+  async insertReviewBatch(row: ReviewBatchRow): Promise<void> {
+    check(
+      await this.db.from('word_bank_review_batches').insert(row),
+      'word_bank_review_batches insert',
+    );
+  }
+
+  async openReviewBatches(): Promise<ReviewBatchRow[]> {
+    const rows = check(
+      await this.db
+        .from('word_bank_review_batches')
+        .select('*')
+        .eq('state', 'submitted')
+        .order('created_at'),
+      'word_bank_review_batches read',
+    ) as (ReviewBatchRow & { reserved_usd: number | string; cost_usd: number | string | null })[];
+    return rows.map((r) => ({
+      ...r,
+      reserved_usd: Number(r.reserved_usd),
+      cost_usd: r.cost_usd == null ? null : Number(r.cost_usd),
+    }));
+  }
+
+  async closeReviewBatch(id: string, costUsd: number): Promise<void> {
+    check(
+      await this.db
+        .from('word_bank_review_batches')
+        .update({ state: 'collected', cost_usd: costUsd, collected_at: new Date().toISOString() })
+        .eq('id', id),
+      'word_bank_review_batches update',
+    );
+  }
+
+  async applyReviews(
+    rows: ReviewApplyRow[],
+  ): Promise<{ changed: number; retired: number; stale: number }> {
+    if (rows.length === 0) return { changed: 0, retired: 0, stale: 0 };
+    return check(
+      await this.db.rpc('word_bank_review_apply', { p_rows: rows }),
+      'word_bank_review_apply',
+    ) as { changed: number; retired: number; stale: number };
   }
 }

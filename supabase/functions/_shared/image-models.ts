@@ -6,6 +6,11 @@ type Env = (key: string) => string | undefined;
 
 export const DEFAULT_IMAGE_MODEL = 'claude-opus-5-5';
 export const DEFAULT_CHECK_MODEL = 'claude-haiku-5-5';
+/**
+ * Reviews the Kelime Bankası rows (decision 0040, CLAUDE_WORDBANK_REVIEW_MODEL): a stronger
+ * model than the one that wrote them, still about $1-2 for the whole bank at batch price.
+ */
+export const DEFAULT_WORDBANK_REVIEW_MODEL = 'claude-sonnet-5-5';
 
 export interface ImageModels {
   /** Draws the pictures (image-v1). */
