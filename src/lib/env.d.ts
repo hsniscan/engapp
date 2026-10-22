@@ -7,6 +7,8 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_PUBLISHABLE_KEY?: string;
   /** legacy name, accepted as a fallback for the publishable / anon key */
   readonly VITE_SUPABASE_ANON_KEY?: string;
+  /** Google OAuth *web* client id (…apps.googleusercontent.com): native sign-in in the Android app */
+  readonly VITE_GOOGLE_WEB_CLIENT_ID?: string;
 }
 
 interface ImportMeta {

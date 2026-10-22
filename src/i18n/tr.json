@@ -1163,6 +1163,49 @@
     "reloadAlt": "Sayfayı yenileyip yeni sürümü aç",
     "offlineReady": "Engapp artık internetsiz de çalışır"
   },
+  "native": {
+    "signIn": {
+      "not_configured": "Bu sürümde Google girişi ayarlanmamış. Misafir olarak her şey bu telefonda çalışır.",
+      "no_account": "Telefonda Google hesabı bulunamadı. Android Ayarlar → Hesaplar'dan bir Google hesabı ekleyip tekrar dene.",
+      "play_services": "Google Play Hizmetleri eksik ya da güncel değil. Play Store'dan güncelleyip tekrar dene."
+    },
+    "app": {
+      "installed": "Engapp bu telefonda Android uygulaması olarak yüklü. Verilerin telefonda durur, internetsiz de çalışır."
+    },
+    "reminders": {
+      "description": "Günde en fazla bir kez kısa bir hatırlatma. Telefonda hesaplanır; internet ve hesap gerekmez.",
+      "daily": "Günlük hatırlatma",
+      "perDevice": "Bu ayar yalnızca bu telefon için geçerli.",
+      "enabled": "Hatırlatma açıldı. Bu telefona gelir.",
+      "disabled": "Hatırlatma kapatıldı.",
+      "webRemoved_one": "Bu hesabın tarayıcı bildirimi kapatıldı ({{count}} cihaz), böylece hatırlatma iki kez gelmez.",
+      "webRemoved_other": "Bu hesabın tarayıcı bildirimleri kapatıldı ({{count}} cihaz), böylece hatırlatma iki kez gelmez.",
+      "webRemoveFailed": "Tarayıcı bildirimleri şimdi kapatılamadı (internet yok). Bağlanınca yeniden denenecek.",
+      "denied": "Bildirim izni kapalı. Android Ayarlar → Uygulamalar → Engapp → Bildirimler'den izin verip tekrar aç.",
+      "next": "Sıradaki hatırlatma: {{when}}",
+      "nextNone": "Şu an planlanmış hatırlatma yok: bugün çalıştın, bekleyen kartın yok ya da tatildesin.",
+      "failed": "Hatırlatma ayarlanamadı. Tekrar dene.",
+      "channelName": "Günlük hatırlatma",
+      "channelDescription": "Tekrar zamanı gelince günde en fazla bir kez."
+    }
+  },
+  "share": {
+    "title": "Paylaşılan",
+    "emptyTitle": "Paylaşılan bir metin yok",
+    "emptyBody": "Başka bir uygulamada bir kelime ya da cümle seç, Paylaş'a dokun ve Engapp'i seç.",
+    "textTitle": "Metinden kelime çıkar",
+    "textLead": "Bu metindeki kelimeler aranıyor. Bulunanlar önizlemede, geçtikleri cümleyle birlikte görünür.",
+    "textStart": "Kelimeleri bul",
+    "textStarting": "Başlatılıyor…",
+    "textFailed": "Kelime çıkarma başlatılamadı. Tekrar dene.",
+    "defaultTitle": "Paylaşılan metin",
+    "linkTitle": "Paylaşılan bağlantı",
+    "linkLead": "Şimdilik bağlantıdan yalnızca sayfanın başlığı alınır. Makalenin tamamını içe aktarma sonraki sürümde gelecek.",
+    "linkNoTitle": "Bu bağlantının başlığı gelmedi; aşağıda adresi görüyorsun. Makalenin tamamını içe aktarma sonraki sürümde gelecek.",
+    "linkFromTitle": "Başlıktaki kelimeleri bul",
+    "linkTermFromTitle": "Başlığı kart olarak ekle",
+    "toHome": "Ana sayfaya dön"
+  },
   "account": {
     "checking": "Hesabın hazırlanıyor…",
     "chooseTitle": "Bu hesapta zaten kartların var",

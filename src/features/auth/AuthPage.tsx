@@ -42,6 +42,9 @@ export function AuthPage() {
     setRedirecting(true);
     try {
       await auth.signIn();
+      // The web flow leaves the page; the Android app's native sheet returns here (signed in,
+      // closed or refused), so the button must not keep spinning.
+      setRedirecting(false);
     } catch (e) {
       void logError(e, 'auth.signIn');
       setRedirecting(false);
