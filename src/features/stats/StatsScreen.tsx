@@ -4,14 +4,25 @@ import { useSearchParams } from 'react-router';
 import { getHeatmap, getStreakSummary } from '@/data';
 import { VocabTile } from '@/features/leveltest/VocabTile';
 import { WorkloadSection } from '@/features/load/WorkloadChart';
+import { GoalsSection } from '@/features/report/GoalsSection';
+import { REPORT_TAB_PARAM } from '@/features/report/links';
+import { ReportPanel } from '@/features/report/ReportPanel';
 import type { HeatmapCell, StreakSummary } from '@/domain/streak';
 import { cn, Page, Skeleton, Surface, Tabs } from '@/ui';
 import { formatDuration, formatNumber, formatPercent } from './format';
 import { Heatmap } from './Heatmap';
 import { ProgressPanel } from './ProgressPanel';
 
-/** ?tab=gelisim opens the progress tab (v0.3 İP5); other values open the continuity tab. */
+/**
+ * ?tab=gelisim opens the progress tab (v0.3 İP5), ?tab=rapor the weekly report (İP7); other
+ * values open the continuity tab.
+ */
 export const PROGRESS_TAB_PARAM = 'gelisim';
+export { REPORT_TAB_PARAM };
+const TAB_BY_PARAM: Record<string, 'progress' | 'report'> = {
+  [PROGRESS_TAB_PARAM]: 'progress',
+  [REPORT_TAB_PARAM]: 'report',
+};
 
 export function StatsScreen() {
   const { t } = useTranslation();
@@ -21,7 +32,7 @@ export function StatsScreen() {
   }, []);
 
   const [search, setSearch] = useSearchParams();
-  const tab = search.get('tab') === PROGRESS_TAB_PARAM ? 'progress' : 'continuity';
+  const tab = TAB_BY_PARAM[search.get('tab') ?? ''] ?? 'continuity';
 
   const continuity = !data ? (
     <div aria-busy="true" className="flex flex-col gap-5">
@@ -46,11 +57,19 @@ export function StatsScreen() {
         label={t('stats.tabsLabel')}
         value={tab}
         onValueChange={(v) =>
-          setSearch(v === 'progress' ? { tab: PROGRESS_TAB_PARAM } : {}, { replace: true })
+          setSearch(
+            v === 'progress'
+              ? { tab: PROGRESS_TAB_PARAM }
+              : v === 'report'
+                ? { tab: REPORT_TAB_PARAM }
+                : {},
+            { replace: true },
+          )
         }
         items={[
           { value: 'continuity', label: t('stats.tabContinuity'), content: continuity },
           { value: 'progress', label: t('stats.tabProgress'), content: <ProgressPanel /> },
+          { value: 'report', label: t('stats.tabReport'), content: <ReportPanel /> },
         ]}
       />
     </Page>
@@ -63,49 +82,51 @@ function StatsBody({ weeks, streak: s }: { weeks: HeatmapCell[][]; streak: Strea
   const active = flat.filter((c) => c.level > 0).length;
   const completed = flat.filter((c) => c.level === 2).length;
 
-  const metrics: { label: string; value: string; detail: string; hint?: string; hero?: boolean }[] = [
-    {
-      label: t('stats.currentStreak'),
-      value: formatNumber(s.currentStreak),
-      detail: s.todayActive ? t('stats.currentStreakToday') : t('stats.currentStreakPending'),
-      hero: true,
-    },
-    {
-      label: t('stats.longestStreak'),
-      value: formatNumber(s.longestStreak),
-      detail: t('stats.daysUnit', { count: s.longestStreak }),
-    },
-    {
-      label: t('stats.totalActiveDays'),
-      value: formatNumber(s.totalActiveDays),
-      detail: t('stats.totalActiveDetail'),
-    },
-    {
-      label: t('stats.last30'),
-      value: formatPercent(s.last30Ratio),
-      detail: t('stats.last30Detail', { count: s.last30ActiveDays }),
-    },
-    {
-      label: t('stats.avgTime'),
-      value: s.avgDailyTimeMs ? formatDuration(s.avgDailyTimeMs) : '—',
-      detail: t('stats.avgTimeDetail'),
-    },
-    {
-      label: t('stats.retention'),
-      value: s.retentionRate === null ? '—' : formatPercent(s.retentionRate),
-      detail: s.retentionRate === null ? t('stats.retentionNone') : t('stats.retentionDetail'),
-      hint: t('stats.retentionHint'),
-    },
-    {
-      label: t('stats.learned'),
-      value: formatNumber(s.learnedCards),
-      detail: t('stats.learnedDetail'),
-    },
-  ];
+  const metrics: { label: string; value: string; detail: string; hint?: string; hero?: boolean }[] =
+    [
+      {
+        label: t('stats.currentStreak'),
+        value: formatNumber(s.currentStreak),
+        detail: s.todayActive ? t('stats.currentStreakToday') : t('stats.currentStreakPending'),
+        hero: true,
+      },
+      {
+        label: t('stats.longestStreak'),
+        value: formatNumber(s.longestStreak),
+        detail: t('stats.daysUnit', { count: s.longestStreak }),
+      },
+      {
+        label: t('stats.totalActiveDays'),
+        value: formatNumber(s.totalActiveDays),
+        detail: t('stats.totalActiveDetail'),
+      },
+      {
+        label: t('stats.last30'),
+        value: formatPercent(s.last30Ratio),
+        detail: t('stats.last30Detail', { count: s.last30ActiveDays }),
+      },
+      {
+        label: t('stats.avgTime'),
+        value: s.avgDailyTimeMs ? formatDuration(s.avgDailyTimeMs) : '—',
+        detail: t('stats.avgTimeDetail'),
+      },
+      {
+        label: t('stats.retention'),
+        value: s.retentionRate === null ? '—' : formatPercent(s.retentionRate),
+        detail: s.retentionRate === null ? t('stats.retentionNone') : t('stats.retentionDetail'),
+        hint: t('stats.retentionHint'),
+      },
+      {
+        label: t('stats.learned'),
+        value: formatNumber(s.learnedCards),
+        detail: t('stats.learnedDetail'),
+      },
+    ];
 
   return (
     <div className="flex flex-col gap-5">
       <VocabTile wide />
+      <GoalsSection />
       <Surface as="section" aria-labelledby="heatmap-title" padding="lg">
         <div className="mb-5 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <h2 id="heatmap-title" className="font-serif text-xl font-semibold">

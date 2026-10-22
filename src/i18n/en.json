@@ -450,7 +450,8 @@
     "tabsLabel": "Statistics sections",
     "tabContinuity": "Consistency",
     "tabProgress": "Progress",
-    "retentionHint": "Retention on the Progress tab is a different measure: there only the first answer of the day to each card counts, over 90 days."
+    "retentionHint": "Retention on the Progress tab is a different measure: there only the first answer of the day to each card counts, over 90 days.",
+    "tabReport": "Weekly report"
   },
   "progress": {
     "loading": "Calculating progress…",
@@ -1890,5 +1891,98 @@
       "words_one": "{{n}} word",
       "words_other": "{{n}} words"
     }
+  },
+  "report": {
+    "title": "Last week's report",
+    "weekRange": "{{from}} – {{to}}",
+    "loading": "Preparing the report…",
+    "empty": "Your first report will be here on the Monday after the week you start studying.",
+    "numbersLabel": "The week in numbers",
+    "activeDays": "Days studied",
+    "activeDaysValue": "{{count}} / 7",
+    "reviews": "Reviews",
+    "minutes": "Time",
+    "minutesValue": "{{count}} min",
+    "newLearned": "New words learned",
+    "retention": "Cards remembered",
+    "retentionFew": "too little data",
+    "retentionHint": "For cards in review, the first answer of each card per day counts. Shown from 20 answers.",
+    "streak": "Streak",
+    "streakValue_one": "{{count}} day",
+    "streakValue_other": "{{count}} days",
+    "strongest": "Remembered best: {{group}}, {{rate}}",
+    "weakest": "Hardest for you: {{group}}, {{rate}}",
+    "noGroups": "A category needs at least 20 answers to show your strongest and weakest side.",
+    "groups28": "This week had few answers, so the last 28 days were used.",
+    "groupName": "{{name}} ({{dimension}})",
+    "goalsTitle": "Your goals",
+    "goalLine": "{{label}}: {{value}} / {{target}}",
+    "commentTitle": "Comment",
+    "commentPending": "The comment will be added once you are online. The numbers are ready.",
+    "commentNone": "No comment for this week.",
+    "commentNote": "The comment was written by AI; the numbers were computed by the app.",
+    "focusTitle": "Our suggestion this week",
+    "focus": {
+      "lower_new_limit": "Your reviews will grow in the coming days. Setting the daily new-card limit to {{value}} eases the load.",
+      "come_back": "You studied little last week. A short review is the easiest way back.",
+      "practice_weakest": "Do a short practice round with the words that were hardest for you.",
+      "practice_gap": "You recognise some words but find it hard to produce the English. Practise them briefly.",
+      "mnemonic_hard": "You often forget a few words. Writing a memory hint for them helps.",
+      "add_words": "No new cards are waiting. Add new words you want to learn.",
+      "keep_going": "Everything is on track. Keep going."
+    },
+    "action": {
+      "lower_new_limit": "Set the limit to {{value}}",
+      "lower_new_limitDone": "Your daily new-card limit is now {{value}}.",
+      "come_back": "Start reviewing",
+      "practice_weakest_one": "Practise {{count}} word",
+      "practice_weakest_other": "Practise {{count}} words",
+      "practice_gap_one": "Practise {{count}} word",
+      "practice_gap_other": "Practise {{count}} words",
+      "mnemonic_hard": "Open the first word",
+      "add_words": "Add words",
+      "keep_going": "Start reviewing"
+    },
+    "pastTitle": "Earlier reports",
+    "pastEmpty": "No earlier reports yet.",
+    "pastSummary": "{{days}} days · {{reviews}} reviews · {{learned}} new words",
+    "homeNote": "Last week's report is ready.",
+    "homeOpen": "Open the report"
+  },
+  "goals": {
+    "title": "Your goals",
+    "intro": "Set yourself a goal and follow your progress here.",
+    "set": "Set a goal",
+    "change": "Change goals",
+    "dialogTitle": "Your goals",
+    "dialogDescription": "Fill in the goals you want and leave the others empty. Suggestions come from your recent weeks.",
+    "week_active_days": "Study days per week",
+    "week_minutes": "Study time per week (minutes)",
+    "month_new_terms": "New words per month",
+    "short": {
+      "week_active_days": "Days studied this week",
+      "week_minutes": "Study time this week",
+      "month_new_terms": "Words learned this month"
+    },
+    "unit": {
+      "week_active_days_one": "{{count}} day",
+      "week_active_days_other": "{{count}} days",
+      "week_minutes_one": "{{count}} min",
+      "week_minutes_other": "{{count}} min",
+      "month_new_terms_one": "{{count}} word",
+      "month_new_terms_other": "{{count}} words"
+    },
+    "ringLabel": "{{label}}: {{value}} of {{target}}",
+    "met": "Done",
+    "suggestion": "Suggested: {{value}}",
+    "suggestionHistory_one": "Based on your good days in the last {{count}} week.",
+    "suggestionHistory_other": "Based on your good days in the last {{count}} weeks.",
+    "suggestionDefault": "A starting suggestion, as there is not enough history yet.",
+    "useSuggestion": "Use the suggestion",
+    "range": "Enter a number from {{min}} to {{max}}.",
+    "rangeStep": "Enter a multiple of {{step}} from {{min}} to {{max}}.",
+    "saved": "Your goals are saved.",
+    "cleared": "Your goals are removed.",
+    "clearAll": "Remove goals"
   }
 }
