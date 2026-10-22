@@ -36,8 +36,11 @@ Every synced mutable row has `id` (UUID v7), `user_id` (null in guest mode), `cr
 1. **Outbox in the same transaction.** Every write to a synced table goes through
    `writeTx` / `SyncWriter` (`src/data/writer.ts`). The writer stamps `updated_at` and a fresh
    HLC, then adds an outbox row (`op: 'upsert'`, or `'delete'` when `deleted_at` is set;
-   `payload` is the full row). Outbox rows are append-only on our side. The sync engine
-   deletes a row only after the server acknowledges it.
+   `payload` is the full row). The sync engine deletes a row only after the server
+   acknowledges it. The only other removal is compaction (decision 0025,
+   `src/data/outbox.ts`): entries covered by a newer entry of the same row are dropped (push
+   sends only the newest one anyway), and on a never-linked guest device log entries are
+   dropped too, because the first sign-in queues every log again.
 2. **Soft delete only.** Deleting a note soft-deletes its senses and cards. Deleting a sense
    soft-deletes its cards. Tombstones sync like any other change.
 3. **Logs are the truth for scheduling.** A card's FSRS state must equal
@@ -163,13 +166,14 @@ All actions take an optional trailing `now` (ms) for tests. They throw `ActionEr
 | `saveLevelTest(input)` / `applyTestLevel(level)` | Store a finished level test; a reliable one sets the level (`test`) and marks its "Biliyorum" words known. `applyTestLevel` uses an unreliable result anyway. |
 | `getKnownTermKeys()` / `markKnown(term, source)` / `unmarkKnown(term)` / `listKnownTerms()` | Known words (stable API for İP4). |
 | `getLevelOverview()` / `runWeeklyLevelUpdate()` / `dismissLevelChange()` / `undoLevelChange()` | The level model, vocabulary counter and weekly update (`domain/levelUpdate.ts`, `domain/vocabSize.ts`). |
-| `restoreBackup(fileOrJson, 'merge' \| 'overwrite')` | Verifies the zod schema and checksum, restores, then recomputes all cards and `daily_activity`. |
+| `restoreBackup(fileOrJson, 'merge' \| 'overwrite')` | Verifies the zod schema and checksum, restores in transactions of `RESTORE_CHUNK` (500) rows with bulk reads and writes, then recomputes all cards and `daily_activity` and compacts a guest's outbox (decision 0025). |
 | `exportCsv(headers)` | CSV export. |
 | `importAnkiPlan(plan, fileName, {onProgress})` | Anki import (decision 0019): writes a `planAnkiImport()` plan (`domain/anki.ts`). New terms get notes, cards and their history (logs `origin = 'anki'`, cards = replay) in transactions of 500 notes; terms the library has get only missing meanings, no history. Re-importing the same file adds nothing. Rebuilds `daily_activity`. |
 | `startAnkiEnrich(id)` / `nextAnkiEnrichItems` / `applyAnkiEnrichResult` / `pauseAnkiEnrich` | "Sözlükle eşleştir" queue of an Anki import (runner: `src/features/anki/enrichQueue.ts`). A sense is linked only to a lexicon sense with the same Turkish meaning. |
 | `runIntegrityCheck()` / `repairIntegrity()` | Startup check and the "Veri onarımı" repair. |
 | `applyRemoteRows(batch)` | Sync pull hook. Mutable rows use last-writer-wins by HLC (an equal HLC only fills columns an older version dropped, `domain/syncMerge.ts`); logs are inserted if new. Pulled rows are not queued. Touched cards are recomputed (and queued if changed; every card when the pulled settings change `fsrs_params`), duplicates are flagged, and `daily_activity` is rebuilt when logs arrive. |
-| `adoptGuestData(userId)` | Moves guest data to an account: sets `meta.user_id`, stamps guest rows and queues everything, including logs. |
+| `adoptGuestData(userId)` | Moves guest data to an account: sets `meta.user_id`, stamps guest rows and queues everything, including logs, then compacts the outbox (one entry per row). |
+| `compactOutbox()` / `compactGuestOutbox()` | Outbox compaction (decision 0025): one entry per row; a guest also drops log entries. Runs after a restore, at the first sign-in and with the daily startup check. |
 | `copyCardsFromOtherAccount(userId, snapshot)` | Another account's data on this device: copies its live notes, senses and referenced sources into `userId` as new rows (new ids, cards New), applies the account's snapshot and drops the other account's rows, logs, settings and import jobs locally. No history crosses accounts (decision 0008). |
 | `resetStudyHistory()` | "Çalışma geçmişini sıfırla": an undo row for every answer that still counts, all cards recomputed (New, re-locked), `daily_activity` rebuilt. Syncs as ordinary log and card rows. |
 | `rebuildDailyActivity()`, `recomputeAllCards()` | Maintenance. |
@@ -183,7 +187,11 @@ All actions take an optional trailing `now` (ms) for tests. They throw `ActionEr
 - **overwrite**: The backup's mutable rows replace the local ones and are restamped. Live
   local rows that are absent from the file are soft-deleted.
 - **Both modes**: Logs (review and practice) are insert-only, so missing logs are added and
-  none are removed.
+  none are removed. A guest's restored logs are not queued (the first sign-in queues them).
+- **Chunks**: each transaction covers `RESTORE_CHUNK` rows and their outbox entries, so an
+  interrupted restore leaves part of the file applied; running it again finishes it (rows
+  already restored compare equal, known logs are skipped). Tests check that every chunk size
+  gives the same result and that a failed chunk is finished by a second run.
 
 Restoring into an empty database and exporting again gives identical tables and checksum.
 A property test checks this.

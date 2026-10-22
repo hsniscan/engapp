@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { logError, repairIntegrity, runIntegrityCheck } from '@/data';
+import { compactGuestOutbox, logError, repairIntegrity, runIntegrityCheck } from '@/data';
 import type { IntegrityReport } from '@/domain/integrity';
 import { flags } from './platform';
 
@@ -37,7 +37,7 @@ const LAST_CHECK_FLAG = 'integrityCheckedAt';
 const CHECK_EVERY_MS = 24 * 3600_000;
 
 /**
- * The startup check reads every note, card and review log, which costs seconds of main-thread
+ * The startup check (with guest outbox compaction) reads every note, card and review log, which costs seconds of main-thread
  * work on a large collection (10,000 cards: ~3 s). It runs at most once a day, when the
  * browser is idle, and never while a review session is open (it would stall card switches).
  */
@@ -55,7 +55,10 @@ export function scheduleStartupIntegrityCheck(isBusy: () => boolean, delayMs = 8
         return;
       }
       flags.set(LAST_CHECK_FLAG, String(Date.now()));
-      void checkIntegrityNow();
+      // A guest's outbox keeps every write until the first sign-in; keep one entry per row.
+      void compactGuestOutbox()
+        .catch((e: unknown) => logError(e, 'outbox.compact'))
+        .then(() => checkIntegrityNow());
     });
   setTimeout(attempt, delayMs);
 }

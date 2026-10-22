@@ -97,12 +97,15 @@ findings on the library at 360 px are gone.
 
 - Guest outbox grows without bound (every write is queued until a first sign-in; a 10,000-card
   restore queues ~65,000 rows). Harmless for speed now, but it is storage and a long first push.
+  *v0.3 İP9: compacted (one entry per row, no log entries for guests; decision 0025).*
 - Restoring 10,000 cards takes ~80 s (one awaited write per row in the restore path).
+  *v0.3 İP9: bulk writes in 500-row transactions (decision 0025, `tests/e2e/restore-perf.spec.ts`).*
 - A headless browser denies persistent storage, so the persistent-storage notice shows;
   on a real phone the result depends on the browser.
 - At 360 px toasts can cover the lower part of a form for their 5 s.
 - Real-device checks still open: airplane mode on a phone, install prompt on Android, review
   speed on a mid-range phone, Gemini latency against the real quota, the 14-day use.
+  *v0.3 İP9: a Turkish step-by-step guide for the owner, `docs/gercek-cihaz-kontrolu.md`.*
 - Not in this report: features merged on `origin/main` after 655f1e1 (source sentence
   translation, Turkish part-of-speech labels, sentence speak button, vocabulary-list extraction,
   Dexie schema v2). After the merge, run `pnpm e2e`; selectors that may need updating are form

@@ -61,6 +61,7 @@ export {
   exportBackup,
   exportCsv,
   restoreBackup,
+  RESTORE_CHUNK,
   runIntegrityCheck,
   repairIntegrity,
   adoptGuestData,
@@ -73,6 +74,7 @@ export {
   type RestoreResult,
   type RepairResult,
 } from './maintenance';
+export { compactOutbox, compactGuestOutbox } from './outbox';
 export { getSettings, ensureSettings, updateSettings, defaultSettings, DEFAULT_SETTINGS, type SettingsPatch } from './settings';
 export { rebuildDailyActivity, listDailyActivity } from './dailyActivity';
 export {
