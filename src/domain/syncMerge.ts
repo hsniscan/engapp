@@ -41,6 +41,8 @@ const LATE_COLUMNS: Readonly<Record<string, Readonly<Record<string, unknown>>>> 
     goals: null,
     // v0.4 İP3
     show_image_front: null,
+    // v0.4 new-card order (decision 0039)
+    new_card_order: null,
   },
 };
 

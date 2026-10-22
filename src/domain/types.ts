@@ -389,7 +389,12 @@ export interface Settings extends SyncedRow {
     week_minutes?: number | null;
   } | null;  /** v0.4 İP3: show the sense's picture on the front of the card too (absent/null = off). */
   show_image_front?: boolean | null;
+  /** v0.4: order of new cards (docs/decisions/0039); absent/null = 'smart'. */
+  new_card_order?: NewCardOrder | null;
 }
+
+/** "Yeni kelime sırası": smart (level, frequency, own signals, interference) or as added. */
+export type NewCardOrder = 'smart' | 'added';
 
 /** settings.notify (domain/notify.ts). */
 export interface NotifySetting {

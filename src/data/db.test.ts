@@ -5,7 +5,7 @@ import { PULL_BACKFILL_KEY } from './backfill';
 import { EngDb } from './db';
 
 /** The current schema version; bump with every new Dexie version. */
-const LATEST = 21;
+const LATEST = 25;
 
 describe('Dexie schema', () => {
   it('opens with every table and the indexes the queries rely on', async () => {
@@ -527,6 +527,32 @@ describe('Dexie schema', () => {
       expect(await d.images.count()).toBe(0);
       expect(d.images.schema.primKey.name).toBe('id');
       expect(d.images.schema.indexes.map((i) => i.name)).toEqual(expect.arrayContaining(['sense_id', 'fetched_at']));
+      expect(await d.outbox.count()).toBe(0);
+      d.close();
+      await d.delete();
+    }
+  });
+
+  it('v25 upgrade keeps settings and re-pulls them once for new_card_order', async () => {
+    for (const [name, cursor, expected] of [
+      ['upgrade-v25-synced', 95, ['settings']],
+      ['upgrade-v25-fresh', 0, undefined],
+    ] as const) {
+      // A database as v0.4 İP3 left it (version 21), with every earlier backfill done.
+      const old = new Dexie(name);
+      old.version(1).stores({ settings: 'id', meta: 'key' });
+      old.version(21).stores({});
+      await old.open();
+      await old.table('settings').add({ id: 'settings', theme: 'dark', show_image_front: true });
+      await old.table('meta').put({ key: 'sync_cursor', value: cursor });
+      old.close();
+
+      const d = new EngDb(name);
+      await d.open();
+      expect(d.verno).toBe(LATEST);
+      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
+      // No new_card_order key means "smart"; the row is untouched.
+      expect(await d.settings.get('settings')).toEqual({ id: 'settings', theme: 'dark', show_image_front: true });
       expect(await d.outbox.count()).toBe(0);
       d.close();
       await d.delete();

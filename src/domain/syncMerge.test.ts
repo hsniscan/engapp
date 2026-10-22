@@ -64,6 +64,15 @@ describe('fillLateColumns (same HLC: take columns an older version dropped)', ()
     });
   });
 
+  it('restores the new-card order (v0.4) the server has', () => {
+    const local = { id: 'settings', level: 'B1' };
+    expect(fillLateColumns('settings', { ...local, new_card_order: 'added' }, local)).toEqual({ ...local, new_card_order: 'added' });
+    expect(fillLateColumns('settings', { ...local, new_card_order: null }, { ...local, new_card_order: 'added' })).toEqual({
+      ...local,
+      new_card_order: 'added',
+    });
+  });
+
   it('returns the local row itself when there is nothing to take, and ignores other tables', () => {
     const local = { id: 's1', topics: ['science'] };
     expect(fillLateColumns('sources', { id: 's1', topics: ['science'] }, local)).toBe(local);

@@ -284,6 +284,13 @@ export class EngDb extends Dexie {
     this.version(21)
       .stores({ images: 'id, sense_id, fetched_at' })
       .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
+    // v25 (v0.4 smart new-card order, docs/decisions/0039; 22–24 belong to other v0.4
+    // packages): the settings row gains new_card_order (optional, absent = 'smart'). A device
+    // that pulled settings while it ran an older version dropped it: re-pull settings once
+    // (equal HLC → the server's set value, domain/syncMerge.ts). No new table or index.
+    this.version(25)
+      .stores({})
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
   }
 }
 
