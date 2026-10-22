@@ -561,7 +561,8 @@ create table public.image_feedback (
   id uuid primary key default gen_random_uuid(),
   image_id uuid not null references public.lexicon_images (id) on delete cascade,
   sense_id uuid not null,
-  user_id uuid references auth.users (id) on delete set null,
+  -- null = the automatic check; a reviewer's rows go with their account (ADR 0035).
+  user_id uuid references auth.users (id) on delete cascade,
   decision text not null check (decision in ('approve', 'reject', 'redraw', 'check_failed')),
   reason text check (char_length(reason) <= 200),
   created_at timestamptz not null default now()

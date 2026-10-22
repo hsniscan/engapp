@@ -37,6 +37,19 @@ insert into auth.users (id, email, aud, role, raw_user_meta_data) values
   ('35353535-3535-4535-8535-353535353502', 'keep@test.local', 'authenticated', 'authenticated',
    '{"full_name": "Kalan Kişi"}');
 
+-- A shared picture (lexicon sense, image, request) for the picture tables of the seed.
+set local role service_role;
+create temporary table pic_lex as select public.lexicon_upsert('[
+  {"lemma":"Delpic","lemma_norm":"delpic","term_type":"word","pos":"noun","gloss_en":"a test picture word","gloss_key":"picture test word","meaning_tr":"resim","ipa":null,"model":"test"}
+]'::jsonb) as res;
+create temporary table pic as
+  select (res -> 0 ->> 'sense_id')::uuid as sense_id from pic_lex;
+alter table pic add column image_id uuid;
+update pic set image_id = (public.image_insert(jsonb_build_object('sense_id', sense_id, 'svg', '<svg/>',
+  'alt_tr', 'Bir resim', 'status', 'review', 'model', 'm', 'prompt_version', 'image-v1')) ->> 'id')::uuid;
+insert into public.image_requests (sense_id, source) select sense_id, 'user' from pic;
+reset role;
+
 create function pg_temp.seed(u uuid) returns void language plpgsql as $f$
 declare
   h text := '001761000000000:00000:dev1';
@@ -78,6 +91,11 @@ begin
     values (u, 'https://fcm.googleapis.com/fcm/send/' || u::text, repeat('B', 87), repeat('A', 22));
   insert into public.push_log (user_id, day) values (u, '2026-10-22');
   insert into public.tts_usage (user_id, day) values (u, current_date);
+  insert into public.image_usage (user_id, day) values (u, current_date);
+  insert into public.image_request_users (sense_id, user_id) select sense_id, u from pic;
+  insert into public.image_feedback (image_id, sense_id, user_id, decision)
+    select image_id, sense_id, u, 'approve' from pic;
+  insert into public.app_admins (user_id) values (u);
 end;
 $f$;
 
@@ -125,7 +143,8 @@ create temporary table lex_before as
   select (select count(*) from public.lexicon_terms) as terms,
          (select count(*) from public.lexicon_senses) as senses,
          (select count(*) from public.lexicon_examples) as examples,
-         (select count(*) from public.lexicon_pair_notes) as pair_notes;
+         (select count(*) from public.lexicon_pair_notes) as pair_notes,
+         (select count(*) from public.lexicon_images) as images;
 
 -- ---------------------------------------------------------------- clients cannot call it
 set local request.jwt.claims to '{"sub":"35353535-3535-4535-8535-353535353501","role":"authenticated"}';
@@ -159,8 +178,9 @@ select is_empty($$ select * from pg_temp.empty_tables('35353535-3535-4535-8535-3
 select ok((select terms = (select count(*) from public.lexicon_terms)
                   and senses = (select count(*) from public.lexicon_senses)
                   and examples = (select count(*) from public.lexicon_examples)
-                  and pair_notes = (select count(*) from public.lexicon_pair_notes) from lex_before),
-  'the shared lexicon is untouched');
+                  and pair_notes = (select count(*) from public.lexicon_pair_notes)
+                  and images = (select count(*) from public.lexicon_images) from lex_before),
+  'the shared lexicon and its pictures are untouched');
 
 -- ---------------------------------------------------------------- the auth cascade alone
 -- The Admin API deletes the auth.users row; even without delete_user_data() first, the
