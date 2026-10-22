@@ -1,5 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type {
+  AnkiImportRecord,
   Card,
   ChunkCacheRow,
   ContentFeedback,
@@ -58,6 +59,7 @@ export class EngDb extends Dexie {
   user_content!: EntityTable<UserContent, 'id'>;
   example_jobs!: EntityTable<ExampleJob, 'key'>;
   ref_cache!: EntityTable<RefCacheRow, 'key'>;
+  anki_imports!: EntityTable<AnkiImportRecord, 'id'>;
 
   constructor(name = 'engapp') {
     super(name);
@@ -205,6 +207,15 @@ export class EngDb extends Dexie {
     this.version(11)
       .stores({})
       .upgrade((tx) => addPullBackfill(tx.table('meta'), ['notes', 'settings', 'sources']));
+    // v12 (v0.3 İP1, Anki import; versions 13–20 belong to the other v0.3 packages):
+    // anki_imports keeps each import's counts and its "Sözlükle eşleştir" queue (local only).
+    // review_logs.origin ('anki' for imported answers) is optional and not indexed: absent
+    // means 'app', so existing logs need no fill-in (and logs are never rewritten). sources
+    // may now have kind 'anki': an older app version dropped such a pulled source as invalid,
+    // so re-pull sources once.
+    this.version(12)
+      .stores({ anki_imports: 'id, created_at' })
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['sources']));
   }
 }
 

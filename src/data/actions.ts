@@ -522,11 +522,11 @@ export async function answerCard(input: AnswerInput, now: Millis = Date.now()): 
   });
 }
 
-/** The latest answer of the current day that can still be undone, if any. */
+/** The latest answer of the current day that can still be undone, if any (never one imported from Anki). */
 export async function getLastUndoableAnswer(now: Millis = Date.now()): Promise<ReviewLog | null> {
   const settings = await getSettings(now);
   const facts = await loadTodayFacts(dayConfig(settings), now);
-  return facts.answers.at(-1) ?? null;
+  return facts.answers.filter((l) => l.origin !== 'anki').at(-1) ?? null;
 }
 
 /**
