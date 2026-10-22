@@ -4,6 +4,8 @@ import type {
   Card,
   ContentFeedback,
   Deck,
+  KnownTerm,
+  LevelTest,
   LexiconExample,
   Note,
   PracticeLog,
@@ -34,6 +36,7 @@ const span = z.tuple([z.number().int(), z.number().int()]);
 const topicList = z.array(z.string().min(1).max(40)).max(40).nullable().optional();
 
 const termType = z.enum(['word', 'phrase', 'pattern', 'affix']);
+const cefr = z.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']);
 const cardState = z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]);
 const rating = z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]);
 
@@ -139,6 +142,26 @@ export const settingsSchema: z.ZodType<Settings> = z.object({
   example_contexts: z.array(contextKey).max(12).nullish(),
   interests: topicList,
   muted_topics: topicList,
+  // v0.2 İP3; absent in older backups and from older servers.
+  level_source: z.enum(['default', 'test', 'auto', 'manual']).default('default'),
+  level_updated_at: millis.nullable().default(null),
+  level_locked: z.boolean().default(false),
+  level_change: z
+    .object({
+      from: cefr,
+      to: cefr,
+      week: millis,
+      band: cefr,
+      ratio: z.number(),
+      ratio_prev: z.number(),
+      known: z.number(),
+      unknown: z.number(),
+      dismissed: z.boolean().default(false),
+    })
+    .nullable()
+    .default(null)
+    // A malformed note (newer client, hand-edited backup) must not reject the whole row.
+    .catch(null),
 });
 
 export const contentFeedbackSchema: z.ZodType<ContentFeedback> = z.object({
@@ -179,4 +202,37 @@ export const deckSchema: z.ZodType<Deck> = z.object({
   name: z.string().min(1).max(200),
   filter: z.record(z.string(), z.unknown()),
   sort: z.number().int(),
+});
+
+export const levelTestItemSchema = z.object({
+  w: z.string().min(1).max(64),
+  band: cefr.nullable(),
+  pseudo: z.boolean(),
+  answer: z.enum(['yes', 'no']),
+  mc_ok: z.boolean().optional(),
+});
+
+export const levelTestSchema: z.ZodType<LevelTest> = z.object({
+  id,
+  user_id: z.string().nullable(),
+  taken_at: millis,
+  result_level: cefr,
+  vocab_estimate: z.number().int().min(0),
+  reliable: z.boolean(),
+  false_alarm_rate: z.number().min(0).max(1),
+  ratios: z.object({ A1: z.number(), A2: z.number(), B1: z.number(), B2: z.number(), C1: z.number(), C2: z.number() }),
+  items: z.array(levelTestItemSchema).max(200),
+  bank_version: z.string().min(1).max(64),
+  applied: z.boolean(),
+  duration_ms: z.number().int().min(0),
+  device_id: z.string(),
+  created_at: millis,
+  hlc: z.string().min(1),
+});
+
+export const knownTermSchema: z.ZodType<KnownTerm> = z.object({
+  ...synced,
+  term_norm: z.string().min(1).max(200),
+  source: z.enum(['test', 'preview', 'manual', 'auto']),
+  cefr_at_mark: cefr.nullable().default(null),
 });

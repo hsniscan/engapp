@@ -12,8 +12,9 @@
 //         the outbox until that function has answered once (the server has the tables).
 //   practice_logs wait in the outbox until a pull has been answered by sync_pull_v3 (the
 //         server has the table): a client deployed before the migration does not burn the
-//         rows' attempts on "unknown table" rejections. Tables added later (LATE_SYNC_TABLES,
-//         e.g. decks) wait until the server's table registry lists them.
+//         rows' attempts on "unknown table" rejections. Tables added later (LATE_SYNC_TABLES:
+//         İP5 feedback, decks, level tests, known words) wait until the server's table
+//         registry lists them.
 //   backfill: a table this device learned about in an app update is pulled once more from
 //         the start (data/backfill.ts), since an older version skipped its rows.
 //
@@ -83,16 +84,28 @@ export interface SyncTransport {
   /** Shared example sentences (İP5). null: the backend does not have them yet. Optional so
    *  transports without examples (older tests) keep working: they count as "not yet". */
   pullLexiconExamples?(since: number, limit?: number): Promise<LexiconExamplesPullResult | null>;
-  /** Names in the server's sync table registry; absent on transports that predate it. */
-  listSyncTables?(): Promise<string[]>;
+  /**
+   * Names in the server's sync table registry (null: the backend has no registry yet).
+   * Absent on transports that predate it: they are assumed to store every table.
+   */
+  listSyncTables?(): Promise<string[] | null>;
 }
 
 /**
  * Synced tables added after the registry (v0.2 İP1). Their rows stay in the outbox until the
  * server's registry lists the table, so a new client against an older backend never burns
- * push attempts on "unknown table" rejections.
+ * push attempts on "unknown table" rejections. Every package that adds a synced table adds
+ * it here (and records a one-time re-pull in its Dexie upgrade, data/backfill.ts).
  */
-export const LATE_SYNC_TABLES: readonly OutboxTable[] = ['content_feedback', 'user_content', 'decks'];
+export const LATE_SYNC_TABLES: readonly OutboxTable[] = [
+  'content_feedback',
+  'user_content',
+  'decks',
+  'level_tests',
+  'known_terms',
+];
+/** While rows of an unconfirmed table wait, the registry is asked at most this often. */
+export const REGISTRY_RECHECK_MS = 10 * 60_000;
 
 export const supabaseTransport: SyncTransport = {
   pushBatch: (items) => pushBatch(items),
@@ -165,7 +178,7 @@ export async function pushOutbox(t: SyncTransport, report: SyncReport, opts: Run
   }
   // The registry is asked at most once per sync run (a run pushes twice: before and after its pull).
   let lacking = lackingByRun.get(report);
-  if (!lacking) lackingByRun.set(report, (lacking = await tablesServerLacks(t)));
+  if (!lacking) lackingByRun.set(report, (lacking = await tablesServerLacks(t, now())));
   for (const table of lacking) skipTables.add(table);
   // Rows that failed in this run are not sent again in the same run (a forced run would
   // otherwise resend them with every batch and burn through their attempts at once).
@@ -203,9 +216,12 @@ const lackingByRun = new WeakMap<SyncReport, OutboxTable[]>();
 
 /**
  * LATE_SYNC_TABLES with queued rows that the server has not confirmed yet. Asks the registry
- * only while such rows wait; a confirmed table is remembered and never asked about again.
+ * only while such rows wait, at most every REGISTRY_RECHECK_MS; a confirmed table is
+ * remembered and never asked about again. A transport without a registry call (tests, older
+ * fakes) is assumed to store every table.
  */
-async function tablesServerLacks(t: SyncTransport): Promise<OutboxTable[]> {
+async function tablesServerLacks(t: SyncTransport, now: Millis): Promise<OutboxTable[]> {
+  if (!t.listSyncTables) return [];
   const known = (await getMeta<string[]>(META.serverTables)) ?? [];
   const pending: OutboxTable[] = [];
   for (const table of LATE_SYNC_TABLES) {
@@ -213,20 +229,25 @@ async function tablesServerLacks(t: SyncTransport): Promise<OutboxTable[]> {
     const queued = await db.outbox.where('[table+row_id]').between([table, ''], [table, '\uffff']).count();
     if (queued > 0) pending.push(table);
   }
-  if (pending.length === 0 || !t.listSyncTables) return pending;
-  let registry: string[];
+  if (pending.length === 0) return pending;
+  const checkedAt = (await getMeta<number>(META.serverTablesCheckedAt)) ?? 0;
+  if (now - checkedAt >= 0 && now - checkedAt < REGISTRY_RECHECK_MS) return pending;
+  let registry: string[] | null;
   try {
     registry = await t.listSyncTables();
   } catch (e) {
     const f = classify(e);
     if (f.kind !== 'server') throw f;
-    return pending; // no registry yet (older backend): keep waiting
+    void logError(e, 'sync.registry');
+    registry = null;
   }
-  const confirmed = pending.filter((x) => registry.includes(x));
-  if (confirmed.length) {
-    await db.transaction('rw', db.meta, () => setMeta(META.serverTables, [...known, ...confirmed]));
-  }
-  return pending.filter((x) => !registry.includes(x));
+  const listed = registry ?? []; // null: no registry yet (older backend), keep waiting
+  const confirmed = pending.filter((x) => listed.includes(x));
+  await db.transaction('rw', db.meta, async () => {
+    await setMeta(META.serverTablesCheckedAt, now);
+    if (confirmed.length) await setMeta(META.serverTables, [...known, ...confirmed]);
+  });
+  return pending.filter((x) => !listed.includes(x));
 }
 
 /**
@@ -298,6 +319,7 @@ async function fullResync(t: SyncTransport, report: SyncReport, now: () => Milli
     content_feedback: new Set(),
     user_content: new Set(),
     decks: new Set(),
+    known_terms: new Set(),
   });
   let seen = emptySeen();
   let cursor = 0;
@@ -314,7 +336,7 @@ async function fullResync(t: SyncTransport, report: SyncReport, now: () => Milli
       cursor = 0;
       continue;
     }
-    for (const r of page.rows) if (r.table in seen) seen[r.table as ResyncTable].add(r.row.id);
+    for (const r of page.rows) if (r.table in seen) seen[r.table as ResyncTable].add((r.row as { id: Id }).id);
     for (const bad of page.invalid) {
       // An invalid row still exists on the server: never delete it locally.
       if (bad.table in seen && typeof bad.id === 'string') seen[bad.table as ResyncTable].add(bad.id);

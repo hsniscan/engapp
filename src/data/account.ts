@@ -23,6 +23,7 @@ const MUTABLE: MutableTable[] = [
   'content_feedback',
   'user_content',
   'decks',
+  'known_terms',
 ];
 
 /** Data the user created on this device (settings alone do not count). */
@@ -94,7 +95,17 @@ export interface RemoteSnapshot {
  */
 export async function discardAccountData(userId: string, snapshot: RemoteSnapshot, now: Millis = Date.now()): Promise<number> {
   await claimLocalData(userId, now);
-  const tables = [db.notes, db.senses, db.cards, db.sources, db.settings, db.content_feedback, db.user_content, db.decks];
+  const tables = [
+    db.notes,
+    db.senses,
+    db.cards,
+    db.sources,
+    db.settings,
+    db.content_feedback,
+    db.user_content,
+    db.decks,
+    db.known_terms,
+  ];
   const n = await writeTx(tables, now, async (w) => {
     let count = 0;
     for (const { table, row } of snapshot.rows) {

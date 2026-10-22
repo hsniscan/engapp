@@ -21,7 +21,7 @@ import {
   setNoteTags,
   updateDeck,
 } from './decks';
-import { backupChecksum } from '../domain/backup';
+import { BACKUP_SCHEMA_VERSION, backupChecksum } from '../domain/backup';
 import { ActionError } from './errors';
 import { exportBackup, restoreBackup } from './maintenance';
 import { getPracticeCards, getPracticeSourceCounts } from './practice';
@@ -269,7 +269,8 @@ describe('Dexie v8 upgrade', () => {
     await v7('bf-pulled', 42);
     const d = new EngDb('bf-pulled');
     await d.open();
-    expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(['decks']);
+    // v9 (level tables) adds its own tables to the same list.
+    expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(['decks', 'level_tests', 'known_terms']);
     d.close();
     await d.delete();
 
@@ -282,12 +283,12 @@ describe('Dexie v8 upgrade', () => {
   });
 });
 
-describe('backups (format 7)', () => {
+describe('backups (decks since format 7)', () => {
   it('carry decks and restore them; an older file without decks keeps the local ones', async () => {
     await word('desk', ['iş']);
     const d = await createDeck({ name: 'İş', filter: { v: 1, tags: ['iş'] } }, T);
     const file = await exportBackup(T + 1);
-    expect(file.schema_version).toBe(7);
+    expect(file.schema_version).toBe(BACKUP_SCHEMA_VERSION);
     expect(file.tables.decks).toHaveLength(1);
 
     await resetDb();

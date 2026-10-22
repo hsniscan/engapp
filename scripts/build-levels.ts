@@ -90,7 +90,7 @@ export const SOURCES = {
 
 const sha256 = (b: Uint8Array | string) => createHash('sha256').update(b).digest('hex');
 
-async function fetchPinned(url: string, expected: string): Promise<Buffer> {
+export async function fetchPinned(url: string, expected: string): Promise<Buffer> {
   mkdirSync(CACHE, { recursive: true });
   const file = join(CACHE, expected);
   if (existsSync(file)) {
@@ -107,7 +107,7 @@ async function fetchPinned(url: string, expected: string): Promise<Buffer> {
 }
 
 /** One member of a zip archive (stored or deflated). */
-function unzipMember(zip: Buffer, name: string): Buffer {
+export function unzipMember(zip: Buffer, name: string): Buffer {
   let eocd = -1;
   for (let i = zip.length - 22; i >= Math.max(0, zip.length - 65_557); i--) {
     if (zip.readUInt32LE(i) === 0x06054b50) {
@@ -142,7 +142,7 @@ function unzipMember(zip: Buffer, name: string): Buffer {
 }
 
 /** Minimal msgpack decoder: nil, bool, ints, floats, str, bin, array, map. */
-function decodeMsgpack(buf: Buffer): unknown {
+export function decodeMsgpack(buf: Buffer): unknown {
   let i = 0;
   const str = (n: number) => {
     const s = buf.toString('utf8', i, i + n);
@@ -316,7 +316,7 @@ function dedupeRefs(rows: RefRow[]): RefRow[] {
 const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
 /** wordfreq cB list: [header, bin0, bin1, ...]; words in bin i have Zipf 9 - i/100. */
-function parseWordfreq(gz: Buffer): Map<string, number> {
+export function parseWordfreq(gz: Buffer): Map<string, number> {
   const data = decodeMsgpack(gunzipSync(gz)) as unknown[];
   const header = data[0] as { format?: string; version?: number };
   if (header?.format !== 'cB' || header.version !== 1) throw new Error('unexpected wordfreq header');

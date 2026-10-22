@@ -71,6 +71,15 @@ BEFORE UPDATE trigger keeps the stored value when the incoming one is null, and
 `applyRemoteRows` does the same locally (`keepProfileFields`). A list is cleared with `[]`,
 never with null (decision 0015).
 
+**Level tables (decision 0017).** `level_tests` (insert-only) and `known_terms` (mutable,
+tombstoned) are in the registry since `20261022000500_level_test.sql`. They are
+`LATE_SYNC_TABLES` like the İP5 tables and decks (see "Tables added after v3" below): their
+rows are pushed only after the registry lists them, and Dexie v9 records them for the
+one-time re-pull. (İP3 was built with its own copy of both mechanisms, a separate registry
+list and a one-time `sync_cursor` reset; they were unified when the packages merged.)
+Settings rows from older clients lack the level columns: a trigger fills their defaults on
+insert, and `_sync_upsert` leaves them alone on update.
+
 ## Push
 
 `sync_push(p_batch jsonb)`; `p_batch` = up to 100 items `{table, op, payload}`:
@@ -218,7 +227,11 @@ to them (decision 0009).
   cross-user read/write denial, push validation/idempotency/LWW/tombstones, review log
   immutability, pagination, purge → `full_resync`. `05_practice_logs.test.sql`: the
   registry, insert-only practice logs, v3 pull pages and horizon, and v1/v2 not returning
-  them.
+  them. `12_level_test.test.sql`: level tests insert-only, known-word tombstones and purge,
+  isolation, v1/v2 not returning them, and settings pushed by an old client.
+- `src/sync/levelTables.test.ts` (FakeServer): level tests and known words between devices,
+  the registry wait, guest adoption, copying cards from another account (they stay
+  behind) and backups.
 - `src/sync/practice.test.ts` (FakeServer): practice logs wait for a v3 server, then sync
   insert-only between devices without touching cards.
 - `src/sync/decks.test.ts` (FakeServer): decks between two devices, waiting without

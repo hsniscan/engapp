@@ -158,6 +158,37 @@ for (const width of [360, 1280]) {
       await expect(page.getByRole('region', { name: 'Kapalı konular' })).toBeVisible();
       await page.getByText('Nasıl hesaplanır?').click();
       await check(page, 'profile', tag);
+
+      // Level test: intro, a word, a meaning question, the result; the known words.
+      await page.goto('/level-test');
+      await expect(page.getByRole('button', { name: 'Teste başla', disabled: false })).toBeVisible();
+      await check(page, 'level-intro', tag);
+      await page.getByRole('button', { name: 'Teste başla' }).click();
+      await expect(page.getByTestId('level-word')).toBeVisible();
+      await check(page, 'level-word', tag);
+      const result = page.getByTestId('level-result');
+      let meaningChecked = false;
+      for (let i = 0; i < 90; i++) {
+        const q = page.getByTestId('level-question');
+        await expect(q.or(result)).toBeVisible();
+        if (await result.isVisible()) break;
+        const step = await q.getAttribute('data-step');
+        if ((await q.getAttribute('data-kind')) === 'meaning') {
+          if (!meaningChecked) await check(page, 'level-meaning', tag);
+          meaningChecked = true;
+          await page.getByRole('button', { name: 'Emin değilim' }).click();
+        } else {
+          await page.getByRole('button', { name: 'Biliyorum', exact: true }).click();
+        }
+        await expect(page.locator(`[data-testid="level-question"][data-step="${step}"]`)).toHaveCount(0);
+      }
+      await expect(result).toBeVisible();
+      await check(page, 'level-result', tag);
+      await page.goto('/settings/bilinen-kelimeler');
+      await expect(
+        page.getByRole('heading', { name: 'Bildiğim kelimeler', level: 1, exact: true }),
+      ).toBeVisible();
+      await check(page, 'known-words', tag);
     });
   }
 }

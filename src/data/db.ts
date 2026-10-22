@@ -10,6 +10,8 @@ import type {
   ImportCandidate,
   ImportJob,
   LexiconExample,
+  KnownTerm,
+  LevelTest,
   LexiconSense,
   MetaRow,
   Note,
@@ -39,6 +41,8 @@ export class EngDb extends Dexie {
   practice_logs!: EntityTable<PracticeLog, 'id'>;
   decks!: EntityTable<Deck, 'id'>;
   theme_previews!: EntityTable<ThemePreview, 'id'>;
+  level_tests!: EntityTable<LevelTest, 'id'>;
+  known_terms!: EntityTable<KnownTerm, 'id'>;
   sources!: EntityTable<Source, 'id'>;
   settings!: EntityTable<Settings, 'id'>;
   lexicon_cache!: EntityTable<LexiconSense, 'id'>;
@@ -150,6 +154,30 @@ export class EngDb extends Dexie {
     this.version(8)
       .stores({ decks: 'id, sort, deleted_at', theme_previews: 'id', pair_note_feedback: null })
       .upgrade((tx) => addPullBackfill(tx.table('meta'), ['decks']));
+    // v9 (v0.2 İP3): level_tests (insert-only) and known_terms (synced, tombstones), and the
+    // level fields of settings. A level other than the default B1 was chosen by the user, so
+    // it counts as 'manual' (a local fill-in, not stamped or queued; the server columns have
+    // the same defaults). A device that has pulled before may have skipped rows of the two
+    // tables while it ran an older version: re-pull them once (data/backfill.ts, the same
+    // mechanism as v5 and v8; built as a one-time sync-cursor reset, unified when merged).
+    this.version(9)
+      .stores({
+        level_tests: 'id, taken_at',
+        known_terms: 'id, term_norm, deleted_at',
+      })
+      .upgrade(async (tx) => {
+        await tx
+          .table('settings')
+          .toCollection()
+          .modify((row: Record<string, unknown>) => {
+            if (row.level_source === undefined)
+              row.level_source = row.level !== undefined && row.level !== 'B1' ? 'manual' : 'default';
+            if (row.level_updated_at === undefined) row.level_updated_at = null;
+            if (row.level_locked === undefined) row.level_locked = false;
+            if (row.level_change === undefined) row.level_change = null;
+          });
+        await addPullBackfill(tx.table('meta'), ['level_tests', 'known_terms']);
+      });
   }
 }
 

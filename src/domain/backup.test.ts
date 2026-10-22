@@ -35,6 +35,10 @@ const settings: Settings = {
   level: 'B1',
   fsrs_params: null,
   last_backup_at: null,
+  level_source: 'default',
+  level_updated_at: null,
+  level_locked: false,
+  level_change: null,
 };
 
 function tables(): BackupTables {
@@ -130,7 +134,7 @@ describe('backup file', () => {
       session_id: 's', duration_ms: 900, device_id: 'd', created_at: 7, hlc: 'h',
     };
     const b = await buildBackup({ ...t, practice_logs: [practice] }, { exported_at: 1, device_id: null });
-    expect(b.schema_version).toBeGreaterThanOrEqual(3);
+    expect(b.schema_version).toBe(BACKUP_SCHEMA_VERSION);
     const v3 = await verifyBackup(JSON.stringify(b));
     expect(v3.ok && v3.backup.tables.practice_logs).toEqual([practice]);
     // Without practice logs the table is still written (empty).

@@ -17,6 +17,8 @@ import {
   cardSchema,
   contentFeedbackSchema,
   deckSchema,
+  knownTermSchema,
+  levelTestSchema,
   noteSchema,
   practiceLogSchema,
   reviewLogSchema,
@@ -29,6 +31,7 @@ import {
   type Card,
   type CardStateValue,
   type Id,
+  type LevelTest,
   type Millis,
   type Note,
   type PracticeLog,
@@ -52,10 +55,13 @@ const MUTABLE: MutableTable[] = [
   'content_feedback',
   'user_content',
   'decks',
+  'known_terms',
 ];
 const allSyncedTables = () => [
   db.content_feedback,
   db.user_content,
+  db.level_tests,
+  db.known_terms,
   db.notes,
   db.senses,
   db.cards,
@@ -201,7 +207,7 @@ export async function resetStudyHistory(now: Millis = Date.now(), chunkNotes = R
 
 // ------------------------------------------------------------------ sync hook
 
-export type RemoteBatch = Partial<Record<MutableTable | 'review_logs' | 'practice_logs', unknown[]>>;
+export type RemoteBatch = Partial<Record<MutableTable | 'review_logs' | 'practice_logs' | 'level_tests', unknown[]>>;
 
 export interface ApplyRemoteResult {
   applied: number;
@@ -221,7 +227,9 @@ const rowSchemas = {
   content_feedback: contentFeedbackSchema,
   user_content: userContentSchema,
   decks: deckSchema,
-} satisfies Record<MutableTable | 'review_logs' | 'practice_logs', z.ZodType>;
+  known_terms: knownTermSchema,
+  level_tests: levelTestSchema,
+} satisfies Record<MutableTable | 'review_logs' | 'practice_logs' | 'level_tests', z.ZodType>;
 
 /**
  * Hook for the sync engine's pull. Rows are validated; mutable rows win when their hlc is
@@ -240,7 +248,7 @@ export async function applyRemoteRows(
   await writeTx(allSyncedTables(), now, async (w) => {
     const touchedCards = new Set<Id>();
     const touchedTerms = new Set<string>();
-    for (const table of [...MUTABLE, 'review_logs', 'practice_logs'] as const) {
+    for (const table of [...MUTABLE, 'review_logs', 'practice_logs', 'level_tests'] as const) {
       for (const raw of batch[table] ?? []) {
         const parsed = rowSchemas[table].safeParse(raw);
         if (!parsed.success) {
@@ -253,6 +261,17 @@ export async function applyRemoteRows(
           if (await db.practice_logs.get(p.id)) result.skipped++;
           else {
             await db.practice_logs.add(p);
+            result.applied++;
+          }
+          continue;
+        }
+        if (table === 'level_tests') {
+          // Insert-only study history: never replayed into cards.
+          const t = parsed.data as LevelTest;
+          w.observe(t.hlc);
+          if (await db.level_tests.get(t.id)) result.skipped++;
+          else {
+            await db.level_tests.add(t);
             result.applied++;
           }
           continue;
@@ -320,6 +339,8 @@ async function readTables(): Promise<BackupTables> {
     content_feedback: await db.content_feedback.toArray(),
     user_content: await db.user_content.toArray(),
     decks: await db.decks.toArray(),
+    level_tests: await db.level_tests.toArray(),
+    known_terms: await db.known_terms.toArray(),
   }));
 }
 
@@ -394,9 +415,9 @@ export async function restoreBackup(
   await writeTx(allSyncedTables(), now, async (w) => {
     const terms = new Set<string>();
     for (const table of MUTABLE) {
-      // content_feedback / user_content (before schema_version 5) and decks (before 7) are
-      // absent in older files: such a file says nothing about them, so overwrite leaves the
-      // local rows alone.
+      // content_feedback / user_content (before schema_version 5), decks (before 7) and
+      // known_terms (before 8) are absent in older files: such a file says nothing about
+      // them, so overwrite leaves the local rows alone.
       const fromFile = tables[table] as MutableRows[MutableTable][] | undefined;
       const incoming = fromFile ?? [];
       const ids = new Set(incoming.map((r) => r.id));
@@ -445,6 +466,13 @@ export async function restoreBackup(
       if (knownPractice[i]) continue;
       w.observe(log.hlc);
       await w.insertPracticeLog(log);
+    }
+    const tests = tables.level_tests ?? [];
+    const knownTests = await db.level_tests.bulkGet(tests.map((t) => t.id));
+    for (const [i, test] of tests.entries()) {
+      if (knownTests[i]) continue;
+      w.observe(test.hlc);
+      await w.insertLevelTest(test);
     }
     if (mode === 'merge') await flagDuplicates(w, terms);
     res.recomputedCards = await recomputeCardsIn(w, 'all');
@@ -541,6 +569,10 @@ export async function adoptGuestData(userId: string, now: Millis = Date.now()): 
     }
     for (const log of await db.practice_logs.toArray()) {
       w.enqueue('practice_logs', log.id, 'upsert', log);
+      n++;
+    }
+    for (const test of await db.level_tests.toArray()) {
+      w.enqueue('level_tests', test.id, 'upsert', test);
       n++;
     }
     return n;

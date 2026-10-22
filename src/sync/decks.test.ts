@@ -16,7 +16,7 @@ import {
   updateSettings,
 } from '@/data';
 import { resetDb } from '@/test/db';
-import { runSync } from './engine';
+import { REGISTRY_RECHECK_MS, runSync } from './engine';
 import { FakeServer, onDevice, saveDevice, type DeviceImage } from './testing/fakeServer';
 
 const T = Date.UTC(2026, 9, 21, 9);
@@ -109,21 +109,24 @@ describe('decks sync', () => {
       expect(server.rowsOf('notes')).toHaveLength(1);
       const queued = await db.outbox.toArray();
       expect(queued.map((o) => [o.table, o.attempts])).toEqual([['decks', 0]]);
-      expect(server.calls.registry).toBe(8);
+      // Asked once; within REGISTRY_RECHECK_MS the answer stands.
+      expect(server.calls.registry).toBe(1);
     });
 
-    // The migration is applied: the next run confirms the table once and sends the deck.
+    // The migration is applied: the first run after the recheck interval confirms the table
+    // and sends the deck.
     server.decksSupported = true;
+    const later = T + MIN + REGISTRY_RECHECK_MS;
     await onDevice(a, async () => {
-      await sync(server, T + 10 * MIN);
+      await sync(server, later);
       expect(await db.outbox.count()).toBe(0);
       expect(await getMeta(META.serverTables)).toEqual(['decks']);
-      await createDeck({ name: 'Two', filter: { v: 1 } }, T + 11 * MIN);
-      await sync(server, T + 11 * MIN);
-      await sync(server, T + 12 * MIN);
+      await createDeck({ name: 'Two', filter: { v: 1 } }, later + MIN);
+      await sync(server, later + MIN);
+      await sync(server, later + 2 * MIN);
     });
     expect(server.rowsOf('decks')).toHaveLength(2);
-    expect(server.calls.registry).toBe(9);
+    expect(server.calls.registry).toBe(2);
   });
 
   it('a backend from before practice (no registry at all) also just makes decks wait', async () => {

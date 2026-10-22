@@ -51,6 +51,8 @@ const CORS = {
   'access-control-expose-headers': '*',
 };
 
+const INSERT_ONLY = new Set(['review_logs', 'practice_logs', 'level_tests']);
+
 type Row = Record<string, unknown> & { id: string };
 interface Stored {
   table: string;
@@ -227,7 +229,7 @@ function fakeExamplesModel(counter: { calls: number }): AiProvider {
   };
 }
 
-/** public.sync_tables as after migration 20261022000400_decks.sql. */
+/** public.sync_tables as after every migration (decks, level test, …). */
 const SYNC_TABLES = [
   'notes',
   'senses',
@@ -239,6 +241,8 @@ const SYNC_TABLES = [
   'content_feedback',
   'user_content',
   'decks',
+  'level_tests',
+  'known_terms',
 ];
 
 /**
@@ -444,7 +448,7 @@ export class FakeBackend {
           const cur = this.rows.get(key);
           const row: Row = { ...item.payload, user_id: TEST_USER.id };
           acked.push(item.payload.id);
-          if (item.table === 'review_logs' || item.table === 'practice_logs') {
+          if (INSERT_ONLY.has(item.table)) {
             if (!cur) this.rows.set(key, { table: item.table, seq: ++this.seq, row });
             continue;
           }

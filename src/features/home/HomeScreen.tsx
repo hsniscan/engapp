@@ -10,6 +10,8 @@ import {
   formatPercent,
   formatWeekdayShort,
 } from '@/features/stats/format';
+import { LevelChangeLine, LevelTestOffer } from '@/features/leveltest/LevelHomeNotes';
+import { VocabTile } from '@/features/leveltest/VocabTile';
 import { heatLabel } from '@/features/stats/heatLabel';
 import { buttonClasses, cn, Icon, Page, Skeleton, Surface } from '@/ui';
 import { InterestsPrompt } from '@/features/profile/InterestsPrompt';
@@ -34,16 +36,21 @@ export function HomeScreen() {
 function Dashboard({ data }: { data: HomeDashboard }) {
   return (
     <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-start lg:gap-5">
+      <div className="contents lg:col-span-2 lg:flex lg:flex-col lg:gap-5 empty:hidden">
+        <LevelChangeLine className="order-0 lg:order-none" />
+        <LevelTestOffer className="order-0 lg:order-none" />
+      </div>
       <div className="contents lg:flex lg:flex-col lg:gap-5">
         <TodayCard data={data} className="order-2 lg:order-none" />
         <InterestsPrompt className="order-2 lg:order-none" />
-        <ActivityStrip cells={data.strip} className="order-3 lg:order-none" />
-        <RecentWords data={data} className="order-6 lg:order-none" />
+        <ActivityStrip cells={data.strip} className="order-4 lg:order-none" />
+        <RecentWords data={data} className="order-7 lg:order-none" />
       </div>
       <div className="contents lg:flex lg:flex-col lg:gap-5">
         <StreakHero data={data} className="order-1 lg:order-none" />
-        <Forecast days={data.forecast} className="order-4 lg:order-none" />
-        <MiniMetrics data={data} className="order-5 lg:order-none" />
+        <VocabTile className="order-3 lg:order-none" />
+        <Forecast days={data.forecast} className="order-5 lg:order-none" />
+        <MiniMetrics data={data} className="order-6 lg:order-none" />
       </div>
     </div>
   );
@@ -501,6 +508,7 @@ function HomeEmpty() {
           {t('home.emptyAction')}
         </Link>
       </Surface>
+      <LevelTestOffer className="mt-4" />
     </Page>
   );
 }

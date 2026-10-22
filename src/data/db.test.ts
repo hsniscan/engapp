@@ -5,7 +5,7 @@ import { PULL_BACKFILL_KEY } from './backfill';
 import { EngDb } from './db';
 
 /** The current schema version; bump with every new Dexie version. */
-const LATEST = 8;
+const LATEST = 9;
 
 describe('Dexie schema', () => {
   it('opens with every table and the indexes the queries rely on', async () => {
@@ -13,7 +13,7 @@ describe('Dexie schema', () => {
     await d.open();
     expect(d.verno).toBe(LATEST);
     expect(d.tables.map((t) => t.name).sort()).toEqual(
-      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs', 'decks', 'theme_previews'].sort(),
+      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs', 'decks', 'theme_previews', 'level_tests', 'known_terms'].sort(),
     );
     const idx = (table: string) => d.table(table).schema.indexes.map((i) => i.name);
     expect(idx('decks')).toEqual(expect.arrayContaining(['sort', 'deleted_at']));
@@ -21,6 +21,8 @@ describe('Dexie schema', () => {
     expect(idx('review_logs')).toEqual(expect.arrayContaining(['card_id', 'reviewed_at', 'undo_of']));
     expect(idx('practice_logs')).toEqual(expect.arrayContaining(['card_id', 'practiced_at', 'session_id']));
     expect(d.table('notes').schema.indexes.find((i) => i.name === 'term_norm')?.unique).toBeFalsy();
+    expect(idx('known_terms')).toEqual(expect.arrayContaining(['term_norm', 'deleted_at']));
+    expect(idx('level_tests')).toEqual(expect.arrayContaining(['taken_at']));
     d.close();
     await d.delete();
   });
@@ -109,7 +111,7 @@ describe('Dexie schema', () => {
 
     const d = new EngDb(name);
     await d.open();
-    expect(d.verno).toBe(8);
+    expect(d.verno).toBe(LATEST);
     expect(await d.cards.get('c1')).toMatchObject({ state: 2, due: 5 });
     expect(await d.practice_logs.count()).toBe(1);
     expect(await d.lexicon_examples.count()).toBe(0);
@@ -134,7 +136,7 @@ describe('Dexie schema', () => {
 
     const d = new EngDb(name);
     await d.open();
-    expect(d.verno).toBe(8);
+    expect(d.verno).toBe(LATEST);
     expect(await d.notes.get('n1')).toMatchObject({ term_norm: 'bank' });
     expect(await d.meta.get('sync_cursor')).toEqual({ key: 'sync_cursor', value: 420 });
     expect(await d.ref_cache.count()).toBe(0);
@@ -224,8 +226,49 @@ describe('Dexie schema', () => {
     expect((await d.meta.get('sync_cursor'))?.value).toBe(42);
     expect((await d.meta.get('lexicon_cursor'))?.value).toBe(0);
     expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(
-      expect.arrayContaining(['content_feedback', 'user_content', 'decks']),
+      expect.arrayContaining(['content_feedback', 'user_content', 'decks', 'level_tests', 'known_terms']),
     );
+    expect(await d.settings.get('settings')).toMatchObject({ level_source: 'default', level_locked: false });
+    d.close();
+    await d.delete();
+  });
+
+  it('v9 upgrade adds the level tables, fills the level fields and re-pulls them once', async () => {
+    const name = 'upgrade-v9-test';
+    const old = new Dexie(name);
+    old.version(1).stores({ notes: 'id, term_norm, lexicon_term_id, updated_at, deleted_at, *tags', settings: 'id', meta: 'key' });
+    old.version(4).stores({});
+    await old.open();
+    await old.table('settings').add({ id: 'settings', level: 'B2', theme: 'dark' });
+    await old.table('notes').add({ id: 'n1', term_norm: 'cope', tags: [], level_override: null });
+    await old.table('meta').bulkPut([
+      { key: 'sync_cursor', value: 1234 },
+      { key: 'lexicon_cursor', value: 99 },
+    ]);
+    old.close();
+
+    const d = new EngDb(name);
+    await d.open();
+    expect(d.verno).toBe(LATEST);
+    expect(await d.settings.get('settings')).toMatchObject({
+      level: 'B2',
+      theme: 'dark',
+      // B2 was chosen by the user (the default is B1).
+      level_source: 'manual',
+      level_updated_at: null,
+      level_locked: false,
+      level_change: null,
+    });
+    expect(await d.notes.get('n1')).toMatchObject({ term_norm: 'cope' });
+    // Built as a one-time sync-cursor reset; now the shared re-pull of the new tables.
+    expect((await d.meta.get('sync_cursor'))?.value).toBe(1234);
+    expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(
+      expect.arrayContaining(['level_tests', 'known_terms']),
+    );
+    expect((await d.meta.get('lexicon_cursor'))?.value).toBe(99);
+    expect(await d.level_tests.count()).toBe(0);
+    expect(await d.known_terms.count()).toBe(0);
+    expect(await d.outbox.count()).toBe(0);
     d.close();
     await d.delete();
   });

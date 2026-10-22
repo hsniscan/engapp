@@ -13,6 +13,9 @@ interface Stored {
   seq: number;
 }
 
+/** The six v0.1 tables: all that sync_pull / sync_pull_v2 return. */
+const V2_TABLES = new Set(['notes', 'senses', 'cards', 'review_logs', 'sources', 'settings']);
+
 export class FakeServer implements SyncTransport {
   readonly rows = new Map<string, Stored>();
   private seq = 0;
@@ -42,16 +45,48 @@ export class FakeServer implements SyncTransport {
   practiceSupported = true;
 
   /**
-   * false = a backend from before migration 20261022000100: no lexicon_examples_pull, and
-   * sync_push rejects content_feedback / user_content as unknown tables.
+   * Tables in the sync registry (sync_tables). Default: every table. Remove one to act as a
+   * backend from before its migration: sync_push rejects it and pulls never return it.
+   * `registryAvailable = false`: no registry at all (listSyncTables answers null).
    */
-  examplesSupported = true;
+  registry = new Set<string>([
+    'notes',
+    'senses',
+    'cards',
+    'review_logs',
+    'sources',
+    'settings',
+    'practice_logs',
+    'content_feedback',
+    'user_content',
+    'decks',
+    'level_tests',
+    'known_terms',
+  ]);
+  registryAvailable = true;
 
   /**
-   * false = a backend from before migration 20261022000400 (decks): the registry does not list
-   * decks, sync_push rejects them as an unknown table and pulls never return them.
+   * false = a backend from before migration 20261022000100: no lexicon_examples_pull, and the
+   * registry lacks content_feedback / user_content (sync_push rejects them).
    */
-  decksSupported = true;
+  get examplesSupported(): boolean {
+    return this.registry.has('content_feedback');
+  }
+  set examplesSupported(on: boolean) {
+    for (const t of ['content_feedback', 'user_content']) {
+      if (on) this.registry.add(t);
+      else this.registry.delete(t);
+    }
+  }
+
+  /** false = a backend from before migration 20261022000400 (decks): the registry lacks decks. */
+  get decksSupported(): boolean {
+    return this.registry.has('decks');
+  }
+  set decksSupported(on: boolean) {
+    if (on) this.registry.add('decks');
+    else this.registry.delete('decks');
+  }
 
   readonly userId: string;
   constructor(userId = 'user-1') {
@@ -78,18 +113,11 @@ export class FakeServer implements SyncTransport {
         res.rejected.push({ table: it.table, id: p.id, code: '23502', message: 'not-null violation' });
         continue;
       }
-      if (
-        (it.table === 'practice_logs' && !this.practiceSupported) ||
-        (it.table === 'decks' && !this.decksSupported)
-      ) {
+      if ((it.table === 'practice_logs' && !this.practiceSupported) || !this.registry.has(it.table)) {
         res.rejected.push({ table: it.table, id: p.id, code: '22023', message: 'unknown table' });
         continue;
       }
-      if ((it.table === 'content_feedback' || it.table === 'user_content') && !this.examplesSupported) {
-        res.rejected.push({ table: it.table, id: p.id, code: '22023', message: 'unknown table' });
-        continue;
-      }
-      const insertOnly = it.table === 'review_logs' || it.table === 'practice_logs';
+      const insertOnly = it.table === 'review_logs' || it.table === 'practice_logs' || it.table === 'level_tests';
       if (insertOnly && it.op === 'delete') {
         res.rejected.push({ table: it.table, id: p.id, code: '42501', message: 'logs are append-only' });
         continue;
@@ -130,12 +158,7 @@ export class FakeServer implements SyncTransport {
       return { rows: [], invalid: [], next_seq: since, has_more: false, full_resync: true, version };
     }
     const all = [...this.rows.values()]
-      .filter(
-        (r) =>
-          r.seq > since &&
-          (version === 3 || r.table !== 'practice_logs') &&
-          (version === 3 || r.table !== 'decks'),
-      )
+      .filter((r) => r.seq > since && (version === 3 ? this.registry.has(r.table) : V2_TABLES.has(r.table)))
       .sort((a, b) => a.seq - b.seq);
     const page = all.slice(0, Math.min(limit, 500));
     return {
@@ -148,22 +171,19 @@ export class FakeServer implements SyncTransport {
     };
   }
 
-  /** public.sync_tables names (read with a plain select by the client). */
-  async listSyncTables(): Promise<string[]> {
+  /** public.sync_tables names (read with a plain select by the client); null: no registry. */
+  async listSyncTables(): Promise<string[] | null> {
     this.calls.registry++;
     if (this.faults.offline) throw new SyncApiError('network', 'offline');
-    if (!this.practiceSupported) throw new SyncApiError('server', '42P01 relation "public.sync_tables" does not exist');
-    const names = ['notes', 'senses', 'cards', 'review_logs', 'sources', 'settings', 'practice_logs'];
-    if (this.examplesSupported) names.push('content_feedback', 'user_content');
-    if (this.decksSupported) names.push('decks');
-    return names;
+    // A backend before practice_logs (sync_pull_v3) predates the registry too.
+    return this.registryAvailable && this.practiceSupported ? [...this.registry] : null;
   }
 
   /** purge_tombstones: drop every tombstone, remember the highest purged seq. */
   purgeTombstones(): number {
     let n = 0;
     for (const [k, r] of this.rows) {
-      if (r.table !== 'review_logs' && r.table !== 'practice_logs' && r.row.deleted_at != null) {
+      if (r.table !== 'review_logs' && r.table !== 'practice_logs' && r.table !== 'level_tests' && r.row.deleted_at != null) {
         this.purgedThrough = Math.max(this.purgedThrough, r.seq);
         this.rows.delete(k);
         n++;

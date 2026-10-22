@@ -91,3 +91,17 @@ export {
   setTopicMuted,
   type TopicProfile,
 } from './profile';
+export { getKnownTermKeys, listKnownTerms, markKnown, unmarkKnown } from './knownTerms';
+export {
+  BAND_SIZES,
+  countOutsideWords,
+  dismissLevelChange,
+  getLevelOverview,
+  listLevelTests,
+  runWeeklyLevelUpdate,
+  saveLevelTest,
+  undoLevelChange,
+  applyTestLevel,
+  type LevelOverview,
+  type SaveLevelTestInput,
+} from './levelModel';

@@ -13,6 +13,7 @@ const nothingSeen = (): Record<ResyncTable, Set<string>> => ({
   senses: new Set(),
   cards: new Set(),
   sources: new Set(),
+  known_terms: new Set(),
   settings: new Set(),
   content_feedback: new Set(),
   user_content: new Set(),

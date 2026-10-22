@@ -8,6 +8,8 @@ import type {
   ContentFeedback,
   Deck,
   Id,
+  KnownTerm,
+  LevelTest,
   Millis,
   Note,
   OutboxRow,
@@ -32,6 +34,7 @@ export interface MutableRows {
   content_feedback: ContentFeedback;
   user_content: UserContent;
   decks: Deck;
+  known_terms: KnownTerm;
 }
 export type MutableTable = keyof MutableRows;
 
@@ -100,6 +103,12 @@ export class SyncWriter {
   async insertPracticeLog(log: PracticeLog): Promise<void> {
     await db.practice_logs.add(log);
     this.enqueue('practice_logs', log.id, 'upsert', log);
+  }
+
+  /** level_tests are insert-only: a finished test is never changed. */
+  async insertLevelTest(test: LevelTest): Promise<void> {
+    await db.level_tests.add(test);
+    this.enqueue('level_tests', test.id, 'upsert', test);
   }
 
   enqueue(table: OutboxTable, rowId: Id, op: OutboxRow['op'], payload: unknown): void {

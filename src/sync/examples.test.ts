@@ -16,7 +16,7 @@ import {
 } from '@/data';
 import type { LexiconExample } from '@/domain/types';
 import { resetDb } from '@/test/db';
-import { runSync } from './engine';
+import { REGISTRY_RECHECK_MS, runSync } from './engine';
 import { FakeServer, onDevice, saveDevice, type DeviceImage } from './testing/fakeServer';
 
 const T = Date.UTC(2026, 9, 22, 9);
@@ -145,7 +145,8 @@ describe('example sentences and sync', () => {
       expect(server.rowsOf('notes')).toHaveLength(1);
 
       server.examplesSupported = true; // the migration is deployed
-      await sync(server, T + 3 * MIN);
+      // The registry is asked again after REGISTRY_RECHECK_MS.
+      await sync(server, T + MIN + REGISTRY_RECHECK_MS);
       expect(await db.outbox.count()).toBe(0);
       expect(server.rowsOf('content_feedback')).toHaveLength(1);
     });

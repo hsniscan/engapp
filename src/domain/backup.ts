@@ -7,6 +7,8 @@ import {
   cardSchema,
   contentFeedbackSchema,
   deckSchema,
+  knownTermSchema,
+  levelTestSchema,
   noteSchema,
   practiceLogSchema,
   reviewLogSchema,
@@ -19,6 +21,8 @@ import type {
   Card,
   ContentFeedback,
   Deck,
+  KnownTerm,
+  LevelTest,
   Millis,
   Note,
   PracticeLog,
@@ -39,7 +43,10 @@ export const BACKUP_FORMAT = 'engapp-backup';
 //    defaulted, so older files restore and keep their checksum).
 // 7 (v0.2 İP8): decks. Older files have none (restore keeps the local decks).
 //    (İP7 and İP8 were built as "4" on their branches; no such file was ever released.)
-export const BACKUP_SCHEMA_VERSION = 7;
+// 8 (v0.2 İP3): level_tests, known_terms and the level fields of settings. Older files have
+//    no such tables (restored as none; overwrite keeps the local ones) and default level
+//    fields. (Built as "9" on its branch, numbered like its Dexie version; never released.)
+export const BACKUP_SCHEMA_VERSION = 8;
 
 export interface BackupTables {
   notes: Note[];
@@ -55,6 +62,9 @@ export interface BackupTables {
   user_content?: UserContent[];
   /** Absent in files before schema_version 7; buildBackup always writes it. */
   decks?: Deck[];
+  /** Absent in files before schema_version 8; buildBackup always writes them. */
+  level_tests?: LevelTest[];
+  known_terms?: KnownTerm[];
 }
 
 export const backupTablesSchema = z.object({
@@ -69,6 +79,8 @@ export const backupTablesSchema = z.object({
   content_feedback: z.array(contentFeedbackSchema).optional(),
   user_content: z.array(userContentSchema).optional(),
   decks: z.array(deckSchema).optional(),
+  level_tests: z.array(levelTestSchema).optional(),
+  known_terms: z.array(knownTermSchema).optional(),
 });
 
 export const backupSchema = z.object({
@@ -109,6 +121,8 @@ export function sortTables(t: BackupTables): BackupTables {
     ...(t.content_feedback ? { content_feedback: byId(t.content_feedback) } : {}),
     ...(t.user_content ? { user_content: byId(t.user_content) } : {}),
     ...(t.decks ? { decks: byId(t.decks) } : {}),
+    ...(t.level_tests ? { level_tests: byId(t.level_tests) } : {}),
+    ...(t.known_terms ? { known_terms: byId(t.known_terms) } : {}),
   };
 }
 
@@ -126,6 +140,8 @@ export async function buildBackup(
     content_feedback: tables.content_feedback ?? [],
     user_content: tables.user_content ?? [],
     decks: tables.decks ?? [],
+    level_tests: tables.level_tests ?? [],
+    known_terms: tables.known_terms ?? [],
   });
   return {
     format: BACKUP_FORMAT,
@@ -186,16 +202,30 @@ export async function verifyBackup(input: unknown): Promise<VerifyResult> {
 }
 
 /**
- * Parsing fills in fields that older files did not have (`notes.level_override` before
- * version 4, `senses.source_sentence_tr` before version 2) with null; the file's checksum
- * did not cover them. Tries the tables as they are, then as such older files had them.
+ * Parsing fills in fields that older files did not have (the level fields of settings before
+ * version 9, `notes.level_override` before version 4, `senses.source_sentence_tr` before
+ * version 2) with their defaults; the file's checksum did not cover them. Tries the tables
+ * as they are, then as such older files had them.
  */
 async function checksumMatches(t: BackupTables, checksum: string): Promise<boolean> {
-  if ((await backupChecksum(t)) === checksum) return true;
   const v3 = { ...t, notes: t.notes.map((n) => withoutNull(n, 'level_override')) };
-  if ((await backupChecksum(v3)) === checksum) return true;
   const v1 = { ...v3, senses: t.senses.map((s) => withoutNull(s, 'source_sentence_tr')) };
-  return (await backupChecksum(v1)) === checksum;
+  for (const tables of [t, v3, v1]) {
+    if ((await backupChecksum(tables)) === checksum) return true;
+    const pre9 = { ...tables, settings: tables.settings.map(withoutLevelDefaults) };
+    if ((await backupChecksum(pre9)) === checksum) return true;
+  }
+  return false;
+}
+
+/** Settings as a file before version 9 had them (the level fields at their defaults). */
+function withoutLevelDefaults(row: Settings): Settings {
+  const copy: Partial<Settings> = { ...row };
+  if (copy.level_source === 'default') delete copy.level_source;
+  if (copy.level_updated_at === null) delete copy.level_updated_at;
+  if (copy.level_locked === false) delete copy.level_locked;
+  if (copy.level_change === null) delete copy.level_change;
+  return copy as Settings;
 }
 
 function withoutNull<T extends object>(row: T, key: keyof T): T {
