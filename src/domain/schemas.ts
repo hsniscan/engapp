@@ -182,6 +182,15 @@ export const settingsSchema: z.ZodType<Settings> = z.object({
   // v0.3 İP4; absent in older rows and backups (= nothing to revert, never ran).
   fsrs_params_prev: z.array(z.number()).nullish(),
   fsrs_opt_at: millis.nullish(),
+  // v0.3 İP8; absent in older rows and backups (= off). A malformed value must not reject the row.
+  notify: z
+    .object({
+      enabled: z.boolean(),
+      mode: z.enum(['auto', 'fixed']).catch('auto'),
+      hour: z.number().int().min(0).max(23).nullable().catch(null),
+    })
+    .nullish()
+    .catch(null),
 });
 
 export const contentFeedbackSchema: z.ZodType<ContentFeedback> = z.object({

@@ -3,6 +3,7 @@ export const SECTION_IDS = [
   'senkron',
   'calisma',
   'yuk',
+  'bildirim',
   'seviye',
   'ornekler',
   'profil',

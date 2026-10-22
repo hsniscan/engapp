@@ -5,7 +5,7 @@ import { PULL_BACKFILL_KEY } from './backfill';
 import { EngDb } from './db';
 
 /** The current schema version; bump with every new Dexie version. */
-const LATEST = 15;
+const LATEST = 17;
 
 describe('Dexie schema', () => {
   it('opens with every table and the indexes the queries rely on', async () => {
@@ -417,5 +417,30 @@ describe('Dexie schema', () => {
     expect(await d.outbox.count()).toBe(0);
     d.close();
     await d.delete();
+  });
+
+  it('v17 upgrade re-pulls settings once for the reminder setting, only on devices that pulled', async () => {
+    for (const [name, cursor, expected] of [
+      ['upgrade-v17-synced', 77, ['settings']],
+      ['upgrade-v17-fresh', 0, undefined],
+    ] as const) {
+      const old = new Dexie(name);
+      old.version(1).stores({ settings: 'id', meta: 'key' });
+      old.version(11).stores({});
+      await old.open();
+      await old.table('settings').add({ id: 'settings', theme: 'dark' });
+      await old.table('meta').put({ key: 'sync_cursor', value: cursor });
+      old.close();
+
+      const d = new EngDb(name);
+      await d.open();
+      expect(d.verno).toBe(LATEST);
+      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
+      // The row itself is untouched: no notify key means "off".
+      expect(await d.settings.get('settings')).toEqual({ id: 'settings', theme: 'dark' });
+      expect(await d.outbox.count()).toBe(0);
+      d.close();
+      await d.delete();
+    }
   });
 });

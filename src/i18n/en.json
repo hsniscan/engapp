@@ -526,6 +526,7 @@
       "senkron": "Sync",
       "calisma": "Study",
       "yuk": "Review load",
+      "bildirim": "Notifications",
       "seviye": "Level",
       "profil": "Profile",
       "gorunum": "Appearance",
@@ -630,6 +631,38 @@
       "status": "{{ready}} / {{total}} meanings ready",
       "statusQueued": "{{count}} meanings queued",
       "guest": "Example sentences need a Google account."
+    },
+    "notify": {
+      "description": "A short reminder, at most once a day. It arrives even when the app is closed.",
+      "daily": "Daily reminder",
+      "dailyHint": "Not sent if you already reviewed that day, have nothing due or are on vacation. Never between 22:00 and 09:00.",
+      "when": "When should it arrive?",
+      "auto": "Automatic",
+      "fixed": "Fixed time",
+      "autoHint": "The time you usually start studying: {{time}}. It follows your habit when it changes.",
+      "hour": "Time",
+      "hourLabel": "{{hour}}:00",
+      "test": "Send a test notification",
+      "testHint": "A notification should arrive on this device within a few seconds.",
+      "testSent": "Test notification sent.",
+      "testFailed": "The test notification could not be sent. Check your connection and try again.",
+      "testGone": "This device's notification registration is no longer valid. Turn the reminder off and on again.",
+      "enabled": "Reminder turned on.",
+      "disabled": "Reminder turned off.",
+      "denied": "Notifications are blocked. Allow them for Engapp in your browser's site settings.",
+      "otherDevice": "The reminder is on for another of your devices. Turn it on to get it here too.",
+      "guest": "Notifications need a Google account, because the server sends the reminder. You can sign in in the Account section above.",
+      "unavailable": "Notifications are not available in this build: no server is connected.",
+      "unsupported": "This browser does not support notifications. Try a current Chrome, Edge, Firefox or Safari.",
+      "iosTitle": "On iPhone, add to Home Screen first",
+      "iosWhy": "On iPhone and iPad notifications only work in the app added to the Home Screen (iOS 16.4 or later). Add it, open Engapp from the Home Screen and turn this on there.",
+      "androidInstall": "On Android, install the app to your home screen: reminders then arrive even when the app is closed. The install button is in the App section below.",
+      "errors": {
+        "denied": "Permission was not given. Choose “Allow” when the browser asks.",
+        "unsupported": "This browser does not support notifications.",
+        "not_configured": "Notifications are not ready on the server yet. Try again a little later.",
+        "error": "The reminder could not be turned on. Check your connection and try again."
+      }
     }
   },
   "fsrsOpt": {

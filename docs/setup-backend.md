@@ -113,8 +113,11 @@ call AI unless added here.
    - `supabase db push --linked --yes` (applies `supabase/migrations/*.sql` once each)
    - `supabase secrets set` for `GEMINI_API_KEY`, `GEMINI_MODEL`,
      `GEMINI_FALLBACK_MODEL`, `AI_PROVIDER=gemini`, `AI_DAILY_LIMIT`, `ALLOWED_ORIGINS`
-   - `supabase functions deploy` (`ai-extract`, `ai-enrich`, `ai-examples`, `ai-themes`; JWT is verified inside the
+   - on the first run only: a Web Push (VAPID) key pair, stored as the function secrets
+     `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` (see step 10; nothing to do)
+   - `supabase functions deploy` (`ai-extract`, `ai-enrich`, `ai-examples`, `ai-themes`, `push-send`; JWT is verified inside the
      functions, so `verify_jwt = false` from `supabase/config.toml` is expected)
+   - `select public.push_configure(<push-send URL>)`, which turns on the 15-minute reminder job
 3. Both jobs must end green. If "Check secrets" fails, a secret from step 4 is missing.
 
 Not done by the workflow on purpose: `supabase config push` (it would overwrite the
@@ -182,6 +185,24 @@ grows each night.
 To give guests and offline devices the corrections too (they use the level file shipped
 with the app): `SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… node scripts/system-jobs.ts
 export-tr`, then `node scripts/build-levels.ts`, and commit `data/levels/`.
+
+## 10. Push reminders (v0.3)
+
+Nothing to set up. The first deploy creates the Web Push key pair and keeps it in the function
+secrets (never in the repository, never replaced: new keys would end every device's
+subscription). The pg_cron job `engapp-push-send` (`*/15 * * * *`) calls `push-send`, which
+sends at most one reminder per user-day (docs/decisions/0024-web-push.md).
+
+Optional repository variable `VAPID_SUBJECT`: a `mailto:` address or `https:` URL the push
+services can contact (default: the app URL).
+
+Check after the deploy: **Edge Functions → Secrets** lists `VAPID_PUBLIC_KEY`,
+`VAPID_PRIVATE_KEY` and `VAPID_SUBJECT`; **Integrations → Cron** lists `engapp-push-send`;
+`select function_url is not null from public.push_cron_config;` is true. In the app, Settings →
+Bildirim → turn on, then "Deneme bildirimi gönder". `push_log` gets one row per user and day
+a reminder was sent. If the cron job is missing (pg_cron or pg_net not enabled), enable both
+under **Database → Extensions** and run
+`select cron.schedule('engapp-push-send', '*/15 * * * *', 'select public.push_cron_tick()');`.
 
 ## Manual deploy without GitHub (alternative)
 

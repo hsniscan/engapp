@@ -90,6 +90,12 @@ export const settingsPatchSchema = z
     catchup_auto: z.boolean(),
     vacation: vacationRangeSchema.nullable(),
     vacation_history: z.array(vacationRangeSchema).max(MAX_VACATION_HISTORY).nullable(),
+    // v0.3 İP8: the hour is resolved by domain/notify.ts (09–21).
+    notify: z.object({
+      enabled: z.boolean(),
+      mode: z.enum(['auto', 'fixed']),
+      hour: z.number().int().min(9).max(21).nullable(),
+    }),
   })
   .partial();
 

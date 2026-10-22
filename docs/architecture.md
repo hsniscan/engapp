@@ -25,4 +25,8 @@
   docs/licenses.md). Edge functions store a level with each new lexicon sense, a nightly
   GitHub Actions job (`scripts/system-jobs.ts`) fills and checks the rest on a system AI
   budget, and the client falls back to a cached level file (decision 0012).
+* Reminders (v0.3): Web Push. pg_cron calls the `push-send` edge function every 15 minutes;
+  it applies one pure rule (`supabase/functions/_shared/push-rule.ts`, re-exported by
+  `src/domain/notify.ts`) to the synced settings, review logs and cards and sends at most one
+  notification per user-day. The service worker shows it (`public/push-sw.js`). Decision 0024.
 * Hosting: static build on Cloudflare Pages (see `docs/decisions/0001`).

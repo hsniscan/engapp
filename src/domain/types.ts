@@ -288,6 +288,18 @@ export interface Settings extends SyncedRow {
   vacation?: VacationRange | null;
   /** Earlier vacations, oldest first (at most 20), so their days stay neutral for the streak. */
   vacation_history?: VacationRange[] | null;
+  /**
+   * v0.3 İP8: daily reminder (Web Push). `hour` is resolved on the device (auto: the usual
+   * start hour, fixed: the chosen one) so the server can use it. Absent/null = off.
+   */
+  notify?: NotifySetting | null;
+}
+
+/** settings.notify (domain/notify.ts). */
+export interface NotifySetting {
+  enabled: boolean;
+  mode: 'auto' | 'fixed';
+  hour: number | null;
 }
 
 /** Inclusive range of local days (YYYY-MM-DD, day starts at day_start_hour). */

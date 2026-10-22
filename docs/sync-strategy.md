@@ -233,6 +233,16 @@ senses again with the level columns. The user's own level is not in the lexicon:
 `notes.level_override`, a synced column of their note (null = automatic), and applies only
 to them (decision 0009).
 
+## Reminder setting and push tables (v0.3 İP8, migration 20261023000600)
+
+`settings.notify` (`{enabled, mode, hour}`, nullable jsonb) is an ordinary synced settings
+column: a push without the key keeps it (`_sync_upsert`), `fillLateColumns` takes the server's
+value for an equal HLC, and Dexie v17 re-pulls settings once. `push_subscriptions` (one row
+per browser endpoint) and `push_log` (one row per user-day a reminder was sent) are **not**
+synced tables and not in the registry: they are server state, written only through
+`push_subscribe` / `push_unsubscribe` (owner = `auth.uid()`) and the `push-send` function
+(service role). Clients can read their own rows. Decision 0024.
+
 ## Edge cases (plan table) and where they are handled
 
 | Case                                      | Handling                                                                      |
@@ -266,6 +276,8 @@ to them (decision 0009).
 - `supabase/tests/integration/stack.test.ts`: the same through PostgREST with
   `src/sync/api.ts`.
 - `src/sync/api.test.ts`: response validation and error classification.
+- `supabase/tests/database/14_push.test.sql`: push tables' RLS and grants, subscriptions owned
+  by the session user, endpoint allow-list, one claim per user-day, due counts.
 
 ## Example sentences (v0.2 İP5, migration 20261022000100)
 
