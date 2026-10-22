@@ -392,7 +392,77 @@
     "retentionDetail": "Tekrardaki kartlar, son 30 gün",
     "retentionNone": "Henüz yeterli veri yok",
     "learned": "Öğrenilen kart",
-    "learnedDetail": "Tekrar aşamasındaki kartlar"
+    "learnedDetail": "Tekrar aşamasındaki kartlar",
+    "tabsLabel": "İstatistik bölümleri",
+    "tabContinuity": "Süreklilik",
+    "tabProgress": "Gelişim"
+  },
+  "progress": {
+    "loading": "Gelişim hesaplanıyor…",
+    "empty": "Henüz sayılacak tekrar yok. Kartların tekrar aşamasına geçtikçe burada neyi ne kadar iyi hatırladığını göreceksin.",
+    "fewData": "veri az",
+    "answers_one": "{{count}} cevap",
+    "answers_other": "{{count}} cevap",
+    "rule": "Tekrar aşamasındaki her kartın günün ilk cevabı sayılır. Pratik turları ve geri alınan cevaplar sayılmaz.",
+    "gap": {
+      "title": "Tanıma ve üretme",
+      "recognition": "İngilizceden Türkçeye",
+      "production": "Türkçeden İngilizceye",
+      "sentence": "İngilizceden Türkçeye {{rec}} hatırlıyorsun, Türkçeden İngilizceye {{prod}}.",
+      "sentenceFew": "Karşılaştırma için iki yönde de en az 20 cevap gerekiyor.",
+      "practice_one": "Farkın en büyük olduğu {{count}} kelimeyle pratik yap",
+      "practice_other": "Farkın en büyük olduğu {{count}} kelimeyle pratik yap",
+      "practiceHint": "Bu kelimeleri İngilizceden Türkçeye daha iyi hatırlıyorsun:",
+      "noList": "İki yönde de en az 3 kez tekrar edilmiş ve arasında fark olan kelime henüz yok."
+    },
+    "groups": {
+      "title": "Kategorilere göre tutma oranı",
+      "subtitle": "Son 90 gün. Oran, en az 20 cevap olunca gösterilir.",
+      "overall": "Genel tutma oranı",
+      "dimension": "Kategori",
+      "dimensions": {
+        "term_type": "Kelime türü",
+        "level": "Seviye",
+        "topic": "Konu",
+        "source": "Kaynak",
+        "pos": "Sözcük türü",
+        "card_type": "Kart türü"
+      },
+      "listLabel": "{{dimension}}: tutma oranları",
+      "weakest": "En zayıf noktan: {{group}}, {{rate}}",
+      "noWeakest": "En zayıf noktanı göstermek için bir kategoride en az 20 cevap gerekiyor.",
+      "row": "{{label}}: {{rate}}, {{answers}}. Büyük olasılıkla {{low}} ile {{high}} arasında.",
+      "rowFew": "{{label}}: veri az, {{answers}}.",
+      "interval": "Büyük olasılıkla {{low}} ile {{high}} arasında (%95 güven aralığı)",
+      "unknownSource": "Silinmiş kaynak",
+      "none": {
+        "level": "Seviyesi belli değil",
+        "topic": "Konusu belli değil",
+        "source": "Elle eklenenler",
+        "pos": "Türü belirtilmemiş"
+      },
+      "empty": "Son 90 günde sayılan cevap yok."
+    },
+    "series": {
+      "title": "Son 12 hafta",
+      "learnedTitle": "Öğrendiğin kelimeler",
+      "learnedLabel": "Her hafta öğrenilen kelime sayısı, son 12 hafta",
+      "learnedTotal_one": "Toplam {{count}} kelime",
+      "learnedTotal_other": "Toplam {{count}} kelime",
+      "learnedHint": "Bir kelime, bir kartı ilk kez tekrar aşamasına geçince öğrenilmiş sayılır.",
+      "retentionTitle": "Haftalık tutma oranı",
+      "retentionLabel": "Her haftanın tutma oranı, son 12 hafta",
+      "retentionHint": "Çizgideki boşluklar, 20'den az cevap olan haftalar.",
+      "pointLearned_one": "{{week}}: {{count}} kelime",
+      "pointLearned_other": "{{week}}: {{count}} kelime",
+      "pointRetention": "{{week}}: {{rate}}, {{answers}}",
+      "pointFew": "{{week}}: veri az, {{answers}}",
+      "weekOf": "{{date}} haftası",
+      "showTable": "Tablo olarak göster",
+      "week": "Hafta",
+      "learned": "Öğrenilen",
+      "retention": "Tutma oranı"
+    }
   },
   "settings": {
     "title": "Ayarlar",
