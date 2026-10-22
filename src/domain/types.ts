@@ -398,7 +398,12 @@ export interface Settings extends SyncedRow {
    * stored false turns them off.
    */
   image_cards?: boolean | null;
+  /** v0.4: order of new cards (docs/decisions/0039); absent/null = 'smart'. */
+  new_card_order?: NewCardOrder | null;
 }
+
+/** "Yeni kelime sırası": smart (level, frequency, own signals, interference) or as added. */
+export type NewCardOrder = 'smart' | 'added';
 
 /** settings.notify (domain/notify.ts). */
 export interface NotifySetting {

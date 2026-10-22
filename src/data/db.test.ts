@@ -5,7 +5,7 @@ import { PULL_BACKFILL_KEY } from './backfill';
 import { EngDb } from './db';
 
 /** The current schema version; bump with every new Dexie version. */
-const LATEST = 24;
+const LATEST = 25;
 
 describe('Dexie schema', () => {
   it('opens with every table and the indexes the queries rely on', async () => {
@@ -595,5 +595,32 @@ describe('Dexie schema', () => {
     expect(await d.outbox.count()).toBe(0);
     d.close();
     await d.delete();
+  });
+
+  it('v25 upgrade keeps settings and re-pulls them once for new_card_order', async () => {
+    for (const [name, cursor, expected] of [
+      ['upgrade-v25-synced', 95, ['settings']],
+      ['upgrade-v25-fresh', 0, undefined],
+    ] as const) {
+      // A database as the word-bank package left it (version 24), with every earlier backfill
+      // done (from 21 the v22 step would add cards to the backfill as well).
+      const old = new Dexie(name);
+      old.version(1).stores({ settings: 'id', meta: 'key' });
+      old.version(24).stores({ word_bank: 'id, cefr, lemma_norm' });
+      await old.open();
+      await old.table('settings').add({ id: 'settings', theme: 'dark', show_image_front: true });
+      await old.table('meta').put({ key: 'sync_cursor', value: cursor });
+      old.close();
+
+      const d = new EngDb(name);
+      await d.open();
+      expect(d.verno).toBe(LATEST);
+      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
+      // No new_card_order key means "smart"; the row is untouched.
+      expect(await d.settings.get('settings')).toEqual({ id: 'settings', theme: 'dark', show_image_front: true });
+      expect(await d.outbox.count()).toBe(0);
+      d.close();
+      await d.delete();
+    }
   });
 });

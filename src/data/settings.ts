@@ -94,6 +94,8 @@ export const settingsPatchSchema = z
     show_image_front: z.boolean(),
     // v0.4 İP8: picture cards (decision 0036).
     image_cards: z.boolean(),
+    // v0.4: new-card order ("Yeni kelime sırası", docs/decisions/0039).
+    new_card_order: z.enum(['smart', 'added']),
     // v0.3 İP3 load management (domain/capacity.ts, catchup.ts, vacation.ts).
     daily_capacity_min: z.number().int().min(CAPACITY_MIN_LIMITS.min).max(CAPACITY_MIN_LIMITS.max),
     catchup_auto: z.boolean(),

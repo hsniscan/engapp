@@ -259,6 +259,15 @@ skips insert-only tables, so reports are never purged. `settings.goals` is a nul
 settings column: `_sync_upsert` keeps it when a push leaves it out, and `fillLateColumns`
 takes the server's value for an equal HLC.
 
+## New-card order setting (v0.4, migration 20261026001200, decision 0039)
+
+`settings.new_card_order` (`'smart' | 'added'`, nullable text with a check; null = smart) is an
+ordinary synced settings column: a push without the key keeps it (`_sync_upsert`),
+`fillLateColumns` takes the server's value for an equal HLC, and Dexie v25 re-pulls settings
+once. The pull schema turns an unknown value (a newer client) into null instead of rejecting
+the row. The order itself is computed on each device from synced data and a seed of user id
+and day, so two devices of one account choose the same new cards; nothing of it is synced.
+
 ## Edge cases (plan table) and where they are handled
 
 | Case                                      | Handling                                                                      |
