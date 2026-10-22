@@ -10,6 +10,7 @@ import { isVacationDay } from '../domain/vacation';
 import { type Card, CardState, type Id, type LexiconSense, type Millis, type Note, type RatingValue, type Sense } from '../domain/types';
 import { db } from './db';
 import { exampleTables, senseExamplesFor } from './examples';
+import { cardImageOf, type CardImage } from './images';
 import { dueStudiedCards, loadTodayFacts, newCards } from './history';
 import { aheadDaysFor, getLoadToday, type LoadToday } from './load';
 import { extraNewKey, getMeta } from './meta';
@@ -115,6 +116,10 @@ export interface CardView {
   previews: Record<RatingValue, IntervalPreview>;
   /** Cached lexicon rows of the senses (their levels), by lexicon_sense_id. */
   lexicon: Map<Id, LexiconSense>;
+  /** v0.4 İP3: the picture of `sense` (or of the only sense), null when there is none. */
+  image: CardImage | null;
+  /** v0.4 İP3: settings.show_image_front. */
+  imageOnFront: boolean;
 }
 
 /** Cached lexicon rows of these senses, by id (missing rows are left out). */
@@ -126,7 +131,7 @@ async function lexiconOf(senses: Sense[]): Promise<Map<Id, LexiconSense>> {
 
 /** Everything a review screen needs to render one card. */
 export async function getCardView(cardId: Id, now: Millis = Date.now()): Promise<CardView | null> {
-  return db.transaction('r', [db.cards, db.notes, db.senses, db.review_logs, db.settings, db.lexicon_cache, ...exampleTables()], async () => {
+  return db.transaction('r', [db.cards, db.notes, db.senses, db.review_logs, db.settings, db.lexicon_cache, db.images, ...exampleTables()], async () => {
     const card = await db.cards.get(cardId);
     if (!card) return null;
     const note = await db.notes.get(card.note_id);
@@ -171,6 +176,8 @@ export async function getCardView(cardId: Id, now: Millis = Date.now()): Promise
       sentence,
       previews: previewIntervals(schedulerFor(settings), card, now),
       lexicon: await lexiconOf(senses),
+      image: await cardImageOf(sense ?? (senses.length === 1 ? senses[0]! : null)),
+      imageOnFront: settings.show_image_front === true,
     };
   });
 }

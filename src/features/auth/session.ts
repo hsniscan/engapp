@@ -10,6 +10,7 @@ import {
   signInWithGoogle,
   signOut as supabaseSignOut,
 } from '@/lib/supabase';
+import { isNativeApp } from '@/native/platform';
 
 export interface AuthUser {
   id: string;
@@ -99,12 +100,15 @@ export function authRedirectUrl(): string {
 }
 
 async function signIn(): Promise<void> {
+  // Android app: native account sheet + ID token (Google refuses OAuth pages in a WebView).
+  if (isNativeApp()) return (await import('@/native/auth')).signInNative();
   await signInWithGoogle(authRedirectUrl());
 }
 
 async function signOut(): Promise<void> {
   try {
     await supabaseSignOut();
+    if (isNativeApp()) await (await import('@/native/auth')).signOutNative();
   } catch (e) {
     void logError(e, 'auth.signOut');
     throw e;

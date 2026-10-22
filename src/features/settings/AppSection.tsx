@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Badge, Button, toast } from '@/ui';
 import { IosInstallSteps } from './IosInstallGuide';
 import { isIos, useInstallState } from './platform';
+import { isNativeApp } from '@/native/platform';
 import { SettingsRow, SettingsSection } from './SettingsLayout';
 
 /** "Uygulama": install button (Android/desktop Chrome) or iPhone "Ana Ekrana Ekle" steps. */
@@ -11,9 +12,20 @@ export function AppSection() {
   const { canInstall, installed, install } = useInstallState();
   const [busy, setBusy] = useState(false);
   const ios = isIos();
+  const native = isNativeApp();
   return (
     <SettingsSection id="uygulama" title={t('settings.sections.uygulama')}>
-      {installed ? (
+      {native ? (
+        // The Android app (Capacitor): nothing to install.
+        <SettingsRow
+          label={
+            <span className="flex items-center gap-2">
+              {t('install.title')} <Badge tone="success">{t('install.installedBadge')}</Badge>
+            </span>
+          }
+          description={t('native.app.installed')}
+        />
+      ) : installed ? (
         <SettingsRow
           label={
             <span className="flex items-center gap-2">

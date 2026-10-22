@@ -79,6 +79,16 @@ export async function signOut(): Promise<void> {
   if (error) throw error;
 }
 
+/**
+ * Ends the session on this device only (no call to the server). Used after account deletion,
+ * when the account no longer exists and a global sign-out would be refused.
+ */
+export async function signOutLocal(): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.auth.signOut({ scope: 'local' });
+  if (error) throw error;
+}
+
 /** Subscribes to sign-in/sign-out. Returns an unsubscribe function (no-op in guest mode). */
 export function onAuthChange(cb: (session: Session | null) => void): () => void {
   if (!supabase) return () => {};

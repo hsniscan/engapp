@@ -37,3 +37,9 @@ blob-report
 # Downloaded inputs of scripts/build-morphology (large, not redistributed from here)
 .cache/
 docs/screenshots/q-*.png
+
+# Android signing keys are never committed (scripts/make-upload-key.sh writes them elsewhere)
+*.jks
+*.keystore
+*.keystore.base64
+*.jks.base64

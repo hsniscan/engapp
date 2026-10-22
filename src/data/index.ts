@@ -1,10 +1,12 @@
 // Public data API for the UI. Screens import from '@/data' only.
 export { db } from './db';
+export { wipeLocalDatabase } from './wipe';
 export { loadLevelData, levelDataNow } from './levelData';
 export * from './actions';
 export * from './queries';
 export * from './examples';
 export * from './mnemonics';
+export * from './images';
 export {
   computeWeeklySummary,
   deferReportDraft,

@@ -114,7 +114,21 @@ const children: RouteObject[] = [
       Component: (await import('@/features/profile/ProfilePage')).ProfilePage,
     }),
   },
+  {
+    path: 'admin/images',
+    handle: { immersive: true } satisfies RouteHandle,
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/imageReview/ImageReviewPage')).ImageReviewRoute,
+    }),
+  },
   { path: 'auth', element: <AuthPage /> },
+  {
+    // "Paylaş → Engapp": Android share sheet and the PWA's Web Share Target (decision 0034).
+    path: 'share',
+    HydrateFallback: () => null,
+    lazy: async () => ({ Component: (await import('@/features/share/SharePage')).SharePage }),
+  },
 ];
 
 children.push({ path: '*', element: <NotFoundPage /> });
@@ -129,6 +143,30 @@ const routes: RouteObject[] = [
     children: [{ errorElement: <RouteErrorPage />, children }],
   },
 ];
+
+// Public pages outside the shell (v0.4 İP7, ADR 0035): readable without an account, linked
+// from Google Play. Static paths rank above the shell's "*", so they win on any host.
+const loadLegal = () => import('@/features/legal/pages');
+routes.unshift(
+  {
+    path: '/gizlilik',
+    errorElement: <RouteErrorPage />,
+    HydrateFallback: () => null,
+    lazy: async () => ({ Component: (await loadLegal()).PrivacyTrRoute }),
+  },
+  {
+    path: '/privacy',
+    errorElement: <RouteErrorPage />,
+    HydrateFallback: () => null,
+    lazy: async () => ({ Component: (await loadLegal()).PrivacyEnRoute }),
+  },
+  {
+    path: '/hesap-sil',
+    errorElement: <RouteErrorPage />,
+    HydrateFallback: () => null,
+    lazy: async () => ({ Component: (await loadLegal()).DeleteAccountPage }),
+  },
+);
 
 // Dev-only component gallery, outside the shell. Tree-shaken from production builds.
 if (import.meta.env.DEV) {

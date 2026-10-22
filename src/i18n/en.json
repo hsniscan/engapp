@@ -709,6 +709,8 @@
     },
     "version": "Version",
     "about": {
+      "privacy": "Privacy policy",
+      "privacyHint": "Which data is processed where, and how to delete it.",
       "sources": "Sources",
       "sourcesHint": "The word lists and data behind word levels, and their licences."
     },
@@ -1163,6 +1165,49 @@
     "reloadAlt": "Reload the page to open the new version",
     "offlineReady": "Engapp now works offline"
   },
+  "native": {
+    "signIn": {
+      "not_configured": "Google sign-in is not set up in this build. As a guest everything works on this phone.",
+      "no_account": "No Google account on this phone. Add one in Android Settings → Accounts and try again.",
+      "play_services": "Google Play services are missing or out of date. Update them from the Play Store and try again."
+    },
+    "app": {
+      "installed": "Engapp is installed on this phone as an Android app. Your data stays on the phone and works offline."
+    },
+    "reminders": {
+      "description": "At most one short reminder a day. Worked out on the phone; no internet or account needed.",
+      "daily": "Daily reminder",
+      "perDevice": "This setting applies to this phone only.",
+      "enabled": "Reminder on. It comes to this phone.",
+      "disabled": "Reminder off.",
+      "webRemoved_one": "This account's browser notification was turned off ({{count}} device), so you never get the reminder twice.",
+      "webRemoved_other": "This account's browser notifications were turned off ({{count}} devices), so you never get the reminder twice.",
+      "webRemoveFailed": "Browser notifications could not be turned off now (offline). Will retry when online.",
+      "denied": "Notifications are blocked. Allow them in Android Settings → Apps → Engapp → Notifications, then turn this on again.",
+      "next": "Next reminder: {{when}}",
+      "nextNone": "No reminder planned right now: you studied today, nothing is due, or you are on vacation.",
+      "failed": "Could not set the reminder. Try again.",
+      "channelName": "Daily reminder",
+      "channelDescription": "At most once a day, when reviews are due."
+    }
+  },
+  "share": {
+    "title": "Shared",
+    "emptyTitle": "Nothing was shared",
+    "emptyBody": "Select a word or sentence in another app, tap Share and choose Engapp.",
+    "textTitle": "Find words in the text",
+    "textLead": "Looking for words in this text. They appear in the preview with the sentence they came from.",
+    "textStart": "Find words",
+    "textStarting": "Starting…",
+    "textFailed": "Could not start finding words. Try again.",
+    "defaultTitle": "Shared text",
+    "linkTitle": "Shared link",
+    "linkLead": "For now only the page title is used. Importing the full article comes in a later version.",
+    "linkNoTitle": "No title came with this link; the address is shown below. Importing the full article comes in a later version.",
+    "linkFromTitle": "Find words in the title",
+    "linkTermFromTitle": "Add the title as a card",
+    "toHome": "Back to home"
+  },
   "account": {
     "checking": "Setting up your account…",
     "chooseTitle": "This account already has cards",
@@ -1189,6 +1234,75 @@
     "done": "Connected to your account",
     "doneCopied": "{{count}} words were copied as new cards.",
     "doneDuplicates": "{{count}} words were marked “possible duplicate”; you can review them in Cards."
+  },
+  "accountDelete": {
+    "rowTitle": "Delete my account and data",
+    "rowHint": "Your account and all your data on the server are deleted permanently.",
+    "rowButton": "Delete account",
+    "deviceRowTitle": "Delete the data on this device",
+    "guestRowHint": "Your cards, history and settings are deleted from this device permanently. In guest mode you have no data on the server.",
+    "signedOutRowHint": "Only the copy on this device is deleted. To delete your account and server data, sign in first.",
+    "deviceRowButton": "Delete data",
+    "title": "Delete your account and data?",
+    "lead": "This cannot be undone. The following is deleted permanently:",
+    "items": {
+      "cards": "Your cards, words, meanings and your own sentences",
+      "history": "Your study history, statistics and level tests",
+      "settings": "Your settings, goals and decks",
+      "reports": "Your weekly reports",
+      "notifications": "Your notification records and this device's notification subscription",
+      "account": "Your account: Google sign-in, name, e-mail and profile photo link"
+    },
+    "device": "The copy on this device is deleted too and you are signed out.",
+    "shared": "Word meanings and example sentences in the shared dictionary belong to no one and contain none of your information; they stay as they are.",
+    "otherDevices": "Delete a local copy left on another device there with “Delete the data on this device”.",
+    "backupTitle": "Take a backup first",
+    "backupHint": "Download your cards and history as a JSON file; you can restore it later in guest mode if you like.",
+    "backupButton": "Download JSON backup",
+    "confirmLabel": "Type {{word}} to confirm",
+    "confirmButton": "Delete my account permanently",
+    "deleting": "Deleting…",
+    "errors": {
+      "offline": "No internet connection. Try again once you are online; nothing was deleted.",
+      "not_signed_in": "Your session has ended. Sign in again and retry.",
+      "not_configured": "This build has no account server.",
+      "server": "The deletion did not finish. Try again in a moment; an unfinished deletion completes when retried."
+    },
+    "deviceTitle": "Delete the data on this device?",
+    "deviceLead": "This cannot be undone. Your cards, study history, statistics, reports and settings on this device are deleted.",
+    "deviceConfirmButton": "Delete the data on this device",
+    "wipeFailed": "The data could not be deleted. Try again."
+  },
+  "legal": {
+    "toApp": "Back to the app",
+    "footerNav": "Legal pages",
+    "privacyLink": "Gizlilik politikası (Turkish)",
+    "privacyEnLink": "Privacy policy",
+    "deleteLink": "Account deletion",
+    "updated": "Last updated: {{date}}",
+    "contactMissing": "(contact address not added yet)",
+    "contents": "Contents",
+    "deletePage": {
+      "title": "Delete your account and data",
+      "lead": "Delete your Engapp account and all your data on the server permanently, here or inside the app.",
+      "inApp": "In the app: Ayarlar (Settings) → Hesap (Account) → Hesabımı ve verilerimi sil.",
+      "whatTitle": "What is deleted",
+      "what": "Your cards and words, study history and statistics, settings, weekly reports, notification records, AI cache and usage counters, and then the account itself. Deletion is immediate and cannot be undone.",
+      "keptTitle": "What stays",
+      "kept": "The shared dictionary (word meanings, example sentences, audio) belongs to no one and contains none of your information; it stays as it is. Technical logs of the service providers follow their own retention periods.",
+      "guestTitle": "If you use guest mode",
+      "guest": "In guest mode your data is only on your device; there is nothing to delete on the server. Delete it in the app with Ayarlar → Hesap → Bu cihazdaki verileri sil.",
+      "signInLead": "Sign in with Google, with the account you want to delete.",
+      "signedInAs": "Signed in as",
+      "notYou": "Another account? Sign out",
+      "deleteButton": "Delete my account and data",
+      "unavailable": "This build has no account server. To delete your account, write to {{email}}.",
+      "emailAlt": "If you cannot sign in, write to {{email}}; we delete your account within 30 days.",
+      "doneTitle": "Your account and data were deleted",
+      "doneBody": "Your account and all your data on the server were deleted. The copy on this device was cleared too. You can keep using Engapp as a guest, or sign in again to start from scratch.",
+      "deviceDoneTitle": "The data on this device was deleted",
+      "deviceDoneBody": "Your cards, history and settings on this device were deleted. You can start using Engapp afresh."
+    }
   },
   "syncPanel": {
     "localTitle": "Sync is off",
@@ -2099,5 +2213,104 @@
     "saved": "Your goals are saved.",
     "cleared": "Your goals are removed.",
     "clearAll": "Remove goals"
+  },
+  "images": {
+    "newBadge": "New",
+    "newBadgeLabel": "New picture, not reviewed yet",
+    "section": {
+      "title": "Picture",
+      "intro": "Seeing the meaning with a picture makes the word easier to remember.",
+      "senseLabel": "Meaning whose picture is shown",
+      "loading": "Loading the picture…",
+      "none": "There is no picture for this meaning yet.",
+      "noneGuest": "There is no picture for this meaning yet. Sign in with Google to make one.",
+      "noneOffline": "There is no picture for this meaning yet. You can make one when you are online.",
+      "noLexicon": "This meaning is not in the shared dictionary, so no picture can be made.",
+      "hidden": "You hid the picture of this meaning; it does not show on your cards.",
+      "show": "Show the picture",
+      "hide": "Hide the picture",
+      "hiddenToast": "Picture hidden",
+      "shownToast": "The picture is back on your cards",
+      "generate": "Make a picture",
+      "regenerate": "Draw again",
+      "generating": "Drawing the picture, this can take a few seconds…",
+      "generated": "The new picture is ready and on your cards.",
+      "newNote": "This picture is new; nobody has reviewed it yet.",
+      "variantsLabel": "Other pictures",
+      "variantsHint": "Choose which one your cards show.",
+      "variantLabel": "Picture {{n}}",
+      "inUse": "Your cards show this one",
+      "useThis": "Use this",
+      "chosenToast": "Your cards will show this picture",
+      "question": "Does this picture show the meaning?",
+      "yes": "Yes",
+      "no": "No",
+      "whyNo": "Why not?",
+      "answeredYes": "You said “Yes”, thank you.",
+      "answeredNo": "You said “No”: {{reason}}.",
+      "change": "Change the answer",
+      "thanks": "Thank you, noted.",
+      "rejectedToast": "Thank you, this picture will no longer show on your cards.",
+      "saveFailed": "Could not save. Try again."
+    },
+    "reasons": {
+      "wrong_meaning": "It shows another meaning",
+      "unclear": "It is hard to tell what it is",
+      "ugly": "The drawing looks bad",
+      "other": "Another reason"
+    },
+    "errors": {
+      "daily_limit": "You made {{limit}} pictures today, which is the daily limit. Try again tomorrow.",
+      "budget": "This month's picture budget is spent. You can make pictures again next month.",
+      "not_visual": "This meaning is not something a picture can show, so none was drawn.",
+      "failed": "The picture could not be made. Try again a little later.",
+      "offline": "Making a picture needs an internet connection.",
+      "signed_out": "Sign in with Google to make a picture.",
+      "no_lexicon": "This meaning is not in the shared dictionary, so no picture can be made."
+    },
+    "settings": {
+      "title": "Pictures",
+      "front": "Show the picture on the front too",
+      "frontHint": "The picture also shows on the front of the card. Off by default, because it can give the meaning away.",
+      "stored_one": "{{count}} picture is stored on this device ({{size}}); it shows offline too.",
+      "stored_other": "{{count}} pictures are stored on this device ({{size}}); they show offline too.",
+      "review": "Picture review",
+      "reviewHint": "Go through new pictures: approve, reject or have them redrawn.",
+      "reviewOpen": "Open"
+    },
+    "leech": {
+      "title": "Study with a picture",
+      "body": "Pair the word with a picture; the picture helps you recall the meaning."
+    }
+  },
+  "imageReview": {
+    "title": "Picture review",
+    "intro": "Swipe right: approve. Left: reject. Down: redraw.",
+    "shortcuts": "Keyboard: → approve, ← reject, ↓ redraw, Z undo.",
+    "signIn": "Sign in with Google to open this page.",
+    "notAdmin": "This page is for admins only.",
+    "offline": "No internet connection. You can continue where you left off once you are online.",
+    "loading": "Loading pictures…",
+    "loadFailed": "Could not load the pictures.",
+    "retry": "Try again",
+    "empty": "No pictures are waiting. You have reviewed them all.",
+    "left_one": "{{count}} picture left",
+    "left_other": "{{count}} pictures left",
+    "leftMore": "{{count}}+ pictures left",
+    "meaning": "Meaning",
+    "cardLabel": "{{lemma}} ({{pos}}): {{gloss}}",
+    "approve": "Approve",
+    "reject": "Reject",
+    "redraw": "Redraw",
+    "undo": "Undo",
+    "whyReject": "Why are you rejecting it?",
+    "cancel": "Cancel",
+    "done": {
+      "approve": "Approved: {{lemma}}",
+      "reject": "Rejected: {{lemma}}",
+      "redraw": "Will be redrawn: {{lemma}}"
+    },
+    "undone": "Last decision undone: {{lemma}}",
+    "failed": "The decision could not be saved; the picture is back in the queue."
   }
 }

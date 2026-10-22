@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The app canvas in the dark theme (src/ui/tokens: themeColor.dark). -->
+    <color name="engapp_canvas">#1A1917</color>
+</resources>

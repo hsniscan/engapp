@@ -20,7 +20,7 @@ only from `@/data` (`src/data/index.ts`).
 | report_drafts | no | `week` | A report waiting for its AI comment: `report` (the future `weekly_reports` row), `attempts`, `next_attempt_at`, `last_error`. Local only and cleared with the account's data. |
 | known_terms | yes | `id`, `term_norm`, `deleted_at` | Words the user knows without a card: `term_norm` (same key as `notes.term_norm`), `source` (`test`/`preview`/`manual`/`auto`), `cefr_at_mark`. One live row per `term_norm`; removing is a tombstone, marking again revives the row. |
 | sources | metadata | `id`, `created_at`, `*topics` | `kind`: `text`, `pdf` or (v0.3 İP1) `anki` (one row per imported file name, reused on a re-import; Dexie v12 re-pulls sources once). `topics`: topic keys of the text (`domain/topics.ts`, from the extract call; absent/null = unknown, `[]` = none; Dexie v7, decision 0015). |
-| settings | yes | `id = 'settings'` | Defaults: `daily_new_limit 10`, `request_retention 0.9`, `timezone` from the device, `day_start_hour 4`, `theme 'system'`, `voice 'en-US'`, `level 'B1'`. `interests` (picked topic keys; absent/null = never asked, `[]` = asked) and `muted_topics` (weight 0). Topic weights are computed on the device (`domain/profile.ts`), never stored (decision 0015). Level (decision 0017): `level_source` (`default`/`test`/`auto`/`manual`), `level_updated_at`, `level_locked`, `level_change` (the last automatic change and its reason, with `dismissed`). Dexie v9 set `level_source` to `manual` when the level was not B1. `show_easy_candidates` (default false; v0.2 İP4: open the import preview's "Kolay" section; absent or null = false, so older rows and backups need no change). v0.3 İP3 (decision 0021, all optional, absent = default): `daily_capacity_min` (20), `catchup_auto` (true), `vacation` (`{start, end}` local day keys, both included; null = none) and `vacation_history` (earlier vacations, for the streak). Personal FSRS parameters (v0.3 İP4, decision 0022): `fsrs_params` (21 FSRS-6 weights; null = ts-fsrs defaults), `fsrs_params_prev` (the params before the last adoption, for "Eski ayara dön"; null = defaults / nothing to revert) and `fsrs_opt_at` (epoch ms of the last check, adopted or not; drives the monthly offer); the last two are optional (absent = null) and Dexie v15 re-pulls settings once for them. A change of `fsrs_params` (here or pulled) replays every card from its logs. `goals` (v0.3 İP7, decision 0027; optional, absent or null = none): `{week_active_days?, week_minutes?, month_new_terms?}`. Dexie v20 re-pulls settings once for it. |
+| settings | yes | `id = 'settings'` | Defaults: `daily_new_limit 10`, `request_retention 0.9`, `timezone` from the device, `day_start_hour 4`, `theme 'system'`, `voice 'en-US'`, `level 'B1'`. `interests` (picked topic keys; absent/null = never asked, `[]` = asked) and `muted_topics` (weight 0). Topic weights are computed on the device (`domain/profile.ts`), never stored (decision 0015). Level (decision 0017): `level_source` (`default`/`test`/`auto`/`manual`), `level_updated_at`, `level_locked`, `level_change` (the last automatic change and its reason, with `dismissed`). Dexie v9 set `level_source` to `manual` when the level was not B1. `show_easy_candidates` (default false; v0.2 İP4: open the import preview's "Kolay" section; absent or null = false, so older rows and backups need no change). v0.3 İP3 (decision 0021, all optional, absent = default): `daily_capacity_min` (20), `catchup_auto` (true), `vacation` (`{start, end}` local day keys, both included; null = none) and `vacation_history` (earlier vacations, for the streak). Personal FSRS parameters (v0.3 İP4, decision 0022): `fsrs_params` (21 FSRS-6 weights; null = ts-fsrs defaults), `fsrs_params_prev` (the params before the last adoption, for "Eski ayara dön"; null = defaults / nothing to revert) and `fsrs_opt_at` (epoch ms of the last check, adopted or not; drives the monthly offer); the last two are optional (absent = null) and Dexie v15 re-pulls settings once for them. A change of `fsrs_params` (here or pulled) replays every card from its logs. `goals` (v0.3 İP7, decision 0027; optional, absent or null = none): `{week_active_days?, week_minutes?, month_new_terms?}`. Dexie v20 re-pulls settings once for it. `show_image_front` (v0.4 İP3, decision 0031; optional, absent or null = off): also show the sense's picture on card fronts. Dexie v21 re-pulls settings once for it. |
 | outbox | no | `++seq`, `[table+row_id]`, `next_attempt_at` | Rows waiting to be pushed. |
 | daily_activity | no (derived) | `date` (local `YYYY-MM-DD`) | `reviews`, `new_cards`, `time_ms`, `review_answers`, `review_passed`, `completed`. |
 | meta | no | `key` | `device_id`, `user_id`, `hlc`, `sync_cursor`, `lexicon_cursor`, `lexicon_examples_cursor`, `server_practice_logs` (the server answered with `sync_pull_v3`), `server_examples`, `extra_new:<YYYY-MM-DD>` (extra new cards allowed that day, this device only), `family_dismissed_morphemes` (root/affix card suggestions the user closed), `server_tables` / `server_tables_checked_at` (late sync tables the server registry confirmed; when it was last asked), `pull_backfill` (tables to re-pull once, see sync-strategy.md; Dexie v11 adds notes, settings and sources on updated devices for the columns v0.1/İP1 stripped), `level_week:<user or guest>` (the week the weekly level update last ran), `level_test_offer_dismissed`, `load_warning_dismissed` (the day the home load warning was hidden; it stays hidden 7 days, decision 0021), `report_seen:<user or guest>` (the week whose report the user opened or whose home note they closed, decision 0027). |
@@ -29,6 +29,7 @@ only from `@/data` (`src/data/index.ts`).
 | chunk_cache, import_jobs, import_candidates | no | | Owned by the AI layer. Since Dexie v10 (v0.2 İP4, smart extraction) a candidate also has `cefr` / `cefr_source` (its sense's level), `bucket` (`for_you` / `easy` / `known` / `too_hard`; null until the job's last chunk is in), `from_list` (from a vocabulary-list chunk) and `rank` (display order); the v10 upgrade put rows of older jobs in `known` ("zaten var") or `for_you` with their selection unchanged. Decision 0018. |
 | anki_imports | no | `id` (= the import's source id), `created_at` | v0.3 İP1 (Dexie v12, decision 0019): one Anki import's counts, the note ids it created and the "Sözlükle eşleştir" queue (`enrich`: status, pending note ids, matched / term-only / unmatched, `paused_until`). Local only; cleared with the account's data. |
 | ref_cache | no | `key` | Static reference files fetched lazily, with their checksum. Currently `morphology`: word families, roots and affixes (decision 0014). Device-level: kept when switching or copying accounts (Dexie v6). |
+| images | no (read-only cache) | `id`, `sense_id`, `fetched_at` | v0.4 İP3 (Dexie v21, decision 0031): copies of `public.lexicon_images` rows the user may see (`approved`, and `review` rows of senses in their cards): `sense_id` (a **lexicon** sense id), `variant`, `svg` (stored light palette, sanitized again before it is shown), `alt_tr`, `status`, `created_at`, plus `fetched_at`. Capped at ~20 MB. Kept when switching or copying accounts; not in backups. |
 
 Every synced mutable row has `id` (UUID v7), `user_id` (null in guest mode), `created_at`,
 `updated_at`, `deleted_at` and `hlc`.
@@ -266,6 +267,21 @@ Copying cards to another account does not copy them (decision 0009).
   before v13 (no upgrade needed). Chunk results in `chunk_cache` carry `topics` and, per
   candidate, `false_friend` since extract-v5.
 
+## Account deletion and device wipe (v0.4 İP7, decision 0035)
+
+- Every user-scoped server table has a column referencing `auth.users (id) on delete cascade`;
+  `public.user_owned_columns()` lists them from the catalog and the SQL test
+  `22_account_delete.test.sql` fails for a `user_id` column without one.
+- `public.delete_user_data(user)` (service role only) deletes every row of the user in all those
+  tables in one transaction, under the per-user sync lock, and returns the counts per table.
+  The `account-delete` function calls it between removing the user's Storage files and
+  deleting the auth user. Shared tables (`lexicon_*`, `ref_*`, `ai_system_usage`, `sync_tables`,
+  `push_cron_config`) have no user column and are never touched.
+- Locally, `wipeLocalDatabase()` (`@/data`) clears every Dexie table in one transaction,
+  including `meta` (so `user_id`, the device id and the sync cursors go too: the next start is a
+  fresh guest install). `features/account/deletion.ts` adds the audio cache, the `engapp.*`
+  localStorage keys and the browser's push subscription.
+
 ## Leeches, confusables and contrast cards (v0.3 İP6, decision 0026)
 
 - Nothing is stored for a leech: `lapses ≥ 6` from the effective review logs
@@ -285,3 +301,54 @@ Copying cards to another account does not copy them (decision 0009).
 - `lexicon_pair_notes` kind `contrast` (cache of `ai-contrast`): `sense_id` = the smaller
   lexicon sense id, `content_key` = "<smaller>|<larger>", `content = {a, b, difference_tr}`
   with each side `{sense_id, lemma, sentence_en, span, sentence_tr}`. Never user text.
+
+## Pictures (v0.4 İP3 and İP4, decisions 0031 and 0032)
+
+- Dexie v21: the `images` cache table (above) and a one-time re-pull of `settings` for
+  `show_image_front`. Server: `settings.show_image_front boolean` (migration
+  `20261025000300_image_settings.sql`); `public.lexicon_images` and the review functions
+  belong to the pipeline package.
+- `user_content` kind `image_choice`: one row per sense of the user (id = UUID v8 of SHA-256
+  over ("user_content", "image_choice", sense id)); `sense_id`, `lexicon_sense_id`;
+  `replaces_id` = the chosen `lexicon_images.id` or null (no choice); `context` `chosen` or
+  `hidden` (= `text`); `selected` = not hidden. "Görseli gizle" hides the sense's picture
+  on every card; the row's tombstone or `chosen` shows it again.
+- `content_feedback` with `target_kind 'image'`: "Bu görsel anlamı anlatıyor mu?";
+  `target_id` = the image id, `verdict` `like` (Evet) or `reject` (Hayır). A rejected
+  picture is never picked for that user's cards.
+- `user_content` kind `image_feedback`: the reason of a "Hayır" (`content_feedback` has no
+  reason column). Id over ("user_content", "image_feedback", image id); `replaces_id` = the
+  image id; `context` = `text` = `wrong_meaning`, `unclear`, `ugly` or `other`
+  (`IMAGE_REJECT_REASONS`).
+- Which picture a card shows (`domain/images.ts` `pickImage`): none when hidden; else the
+  chosen one (a "Hayır" on it clears the choice); else the first approved, then the first in
+  review, by variant, skipping rejected ones.
+- None of these rows is copied to another account (decision 0009).
+
+## Pictures, server side (v0.4 İP2, decision 0030)
+
+Migration `20261025000200_images.sql`. No Dexie change in İP2 (the device cache of pictures is
+İP3). Pictures belong to a lexicon sense and never contain user data. Prompts and jobs:
+`docs/ai-image.md`.
+
+- `lexicon_senses` gains `visualizability` (0–3, visual-v1; null = not scored), `visual_hint`
+  (≤ 300 characters, null = none) and `visual_scored_at`. Changing only these columns does not
+  bump `server_seq`, so scoring does not make devices re-pull the lexicon.
+- `lexicon_images`: `id`, `sense_id`, `variant` (0, 1, … per sense, rejected attempts included),
+  `svg` (sanitised, ≤ 8 KB, light palette only), `alt_tr`, `status`
+  (`checking`/`review`/`approved`/`rejected`), `checks` (jsonb: sanitizer, contrast, coverage,
+  vision verdict, attempt, problem), `model`, `prompt_version`, `cost_usd`, `created_at`,
+  `updated_at`. Clients may read only `id, sense_id, variant, svg, alt_tr, status, created_at`,
+  and only `approved` rows plus `review` rows of senses in their own cards (RLS). No client
+  writes.
+- `image_requests` (one row per sense: `source` auto/user, `priority`, `requesters`, `state`
+  queued/submitted/done/skipped, `batch_id`, `attempt` 1–2, `problem`, `hold_id`,
+  `last_error`) and `image_request_users` (who asked). Service role only; users go through
+  `image_request(p_sense_id)`.
+- `image_budget` (month, `cap_usd`, `spent_usd`, `reserved_usd`) and `image_budget_holds`
+  (one per in-flight call, `purpose` instant/batch/check/visual/pilot). Service role only.
+- `image_usage` (user, UTC day, count) for `IMAGE_DAILY_LIMIT`; `image_feedback` (the review
+  screen's decisions: approve / reject / redraw with the reason).
+- `app_admins` (`user_id`): who may use the review screen (`is_app_admin()`,
+  `image_review_queue`, `image_review_decide`). Filled by the deploy workflow from
+  `APP_ADMIN_USER_ID`, never seeded in a migration.

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { corsHeaders, createHandler, parseOrigins } from './http.ts';
+import { CAPACITOR_ANDROID_ORIGIN, corsHeaders, createHandler, parseOrigins } from './http.ts';
 import { ApiError } from './errors.ts';
 import { createAiFunction } from './setup.ts';
 import { MemoryAiStore } from './testing/memory-store.ts';
@@ -52,6 +52,14 @@ describe('http handler', () => {
       'https://a.example',
       'http://b',
     ]);
+  });
+
+  it('accepts the Android app (Capacitor) origin when listed', () => {
+    const h = corsHeaders(
+      new Request('http://x', { headers: { origin: CAPACITOR_ANDROID_ORIGIN } }),
+      { allowedOrigins: parseOrigins(`${ORIGIN},${CAPACITOR_ANDROID_ORIGIN}`) },
+    );
+    expect(h['Access-Control-Allow-Origin']).toBe('https://localhost');
   });
 
   it('uses the {error: {code, message}} shape', async () => {

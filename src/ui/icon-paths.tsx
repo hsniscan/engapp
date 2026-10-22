@@ -187,6 +187,27 @@ export const paths = {
       <path d="m4.5 15.75 7.5 3.75 7.5-3.75" />
     </>
   ),
+  // v0.4: pictures (word detail, leech sheet, review screen).
+  image: (
+    <>
+      <rect x="4.25" y="5" width="15.5" height="14" rx="1.75" />
+      <circle cx="9" cy="9.75" r="1.5" />
+      <path d="m4.75 17 4.5-4.25 3.25 3 2.5-2.25 4.25 3.75" />
+    </>
+  ),
+  eye: (
+    <>
+      <path d="M3.75 12S6.75 6.25 12 6.25 20.25 12 20.25 12 17.25 17.75 12 17.75 3.75 12 3.75 12z" />
+      <circle cx="12" cy="12" r="2.5" />
+    </>
+  ),
+  'eye-off': (
+    <>
+      <path d="M9.9 6.5A8.4 8.4 0 0 1 12 6.25c5.25 0 8.25 5.75 8.25 5.75a14 14 0 0 1-2.1 2.85M14.2 17.45a7.7 7.7 0 0 1-2.2.3C6.75 17.75 3.75 12 3.75 12a14.3 14.3 0 0 1 3.2-3.85" />
+      <path d="M10.25 10.25a2.5 2.5 0 0 0 3.5 3.5" />
+      <path d="m4.5 4.5 15 15" />
+    </>
+  ),
 } satisfies Record<string, ReactNode>;
 
 export type IconName = keyof typeof paths | 'google';

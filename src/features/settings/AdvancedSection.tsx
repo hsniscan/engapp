@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { db, listErrors, logError } from '@/data';
+import { ImageReviewEntry } from '@/features/images/ImageSettings';
 import { Badge, Button, toast } from '@/ui';
 import { version } from '../../../package.json';
 import { downloadText, errorLogFileName } from './download';
@@ -64,6 +65,7 @@ export function AdvancedSection() {
 
   return (
     <SettingsSection id="gelismis" title={t('settings.sections.gelismis')}>
+      <ImageReviewEntry />
       <SettingsRow
         label={
           <span className="flex flex-wrap items-center gap-2">

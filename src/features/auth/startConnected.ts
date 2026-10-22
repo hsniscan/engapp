@@ -4,6 +4,7 @@
 import { kickAnkiEnrich, startAnkiEnrichQueue } from '@/features/anki/enrichQueue';
 import { kickExampleQueue, startExampleQueue } from '@/features/examples/queue';
 import { kickImportQueue, startImportQueue } from '@/features/import/queue';
+import { kickImageFetch, startImageFetch } from '@/features/images/fetcher';
 import { startPushFeatures } from '@/features/notify/start';
 import { kickReports } from '@/features/report/queue';
 import { isBackendConfigured } from '@/lib/supabase';
@@ -27,6 +28,7 @@ export function startConnectedFeatures(): void {
       kickImportQueue();
       kickExampleQueue();
       kickAnkiEnrich();
+      kickImageFetch();
     } else {
       void engine.isActive();
     }
@@ -37,4 +39,5 @@ export function startConnectedFeatures(): void {
   startImportQueue();
   startExampleQueue();
   startAnkiEnrichQueue();
+  startImageFetch();
 }

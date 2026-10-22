@@ -426,9 +426,17 @@ verify_jwt = false
 [functions.ai-contrast]
 verify_jwt = false
 
+# Pictures drawn on demand (v0.4, docs/decisions/0030-image-pipeline.md); checks the JWT itself.
+[functions.ai-image]
+verify_jwt = false
+
 # Web Push (v0.3 İP8): /config is public, /test checks the user's JWT itself, and the
 # scheduled job (pg_cron + pg_net) authenticates with the database's own token.
 [functions.push-send]
+verify_jwt = false
+
+# Account deletion (v0.4 İP7, docs/decisions/0035-account-deletion.md); checks the JWT itself.
+[functions.account-delete]
 verify_jwt = false
 
 [analytics]

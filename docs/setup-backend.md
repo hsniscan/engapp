@@ -88,20 +88,28 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 | `SUPABASE_DB_PASSWORD`      | the database password from step 3.6                                                                                                                                                                                                 |
 | `GEMINI_API_KEY`            | the key from step 1                                                                                                                                                                                                                 |
 | `SUPABASE_SERVICE_ROLE_KEY` | optional, for the level job (step 9): **Project Settings → API Keys** → the `service_role` key or a secret key (`sb_secret_…`). Without it the job reads the key with `SUPABASE_ACCESS_TOKEN`, which then needs API key read access |
+| `ANTHROPIC_API_KEY`         | optional, for pictures (step 12): `https://console.anthropic.com/settings/keys` → **Create Key** → copy (starts with `sk-ant-`)                                                                                                     |
 
 **Variables** tab → **New repository variable** (all optional; defaults in brackets):
 
-| Name                    | Value                                                                                                     |
-| ----------------------- | --------------------------------------------------------------------------------------------------------- |
-| `ALLOWED_ORIGINS`       | `<APP_URL>,http://localhost:5173` [default: only `http://localhost:5173`, so **set this** for production] |
-| `GEMINI_MODEL`          | [`gemini-3.8-flash`]                                                                                      |
-| `GEMINI_FALLBACK_MODEL` | [`gemini-3.5-flash-lite`]                                                                                 |
-| `AI_DAILY_LIMIT`        | AI calls per user per UTC day [`200`]                                                                     |
-| `AI_SYSTEM_DAILY_LIMIT` | model calls per UTC day for system jobs (the level job), separate from users' budgets [`100`]             |
+| Name                        | Value                                                                                                     |
+| --------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `ALLOWED_ORIGINS`           | `<APP_URL>,http://localhost:5173` [default: only `http://localhost:5173`, so **set this** for production] |
+| `GEMINI_MODEL`              | [`gemini-3.8-flash`]                                                                                      |
+| `GEMINI_FALLBACK_MODEL`     | [`gemini-3.5-flash-lite`]                                                                                 |
+| `AI_DAILY_LIMIT`            | AI calls per user per UTC day [`200`]                                                                     |
+| `AI_SYSTEM_DAILY_LIMIT`     | model calls per UTC day for system jobs (the level job), separate from users' budgets [`100`]             |
+| `CLAUDE_MONTHLY_CREDIT_USD` | the monthly Claude credit in USD; pictures may use 80 % of it [`100`]                                     |
+| `APP_ADMIN_USER_ID`         | your Supabase user id (step 12): who may open the picture review screen [none]                            |
+| `IMAGE_DAILY_LIMIT`         | pictures a user may ask for per UTC day [`10`]                                                            |
+| `CLAUDE_IMAGE_MODEL`        | model that draws pictures [`claude-opus-5-5`]                                                             |
+| `CLAUDE_CHECK_MODEL`        | model that scores and checks pictures [`claude-haiku-5-5`]                                                |
 
 `ALLOWED_ORIGINS` is the list of web origins allowed to call the AI functions
 (comma-separated, exact, no trailing slash). Preview deploys on other origins cannot
-call AI unless added here.
+call AI unless added here. The deploy workflow always appends the production Pages URL,
+`http://localhost:5173` and `https://localhost` (the Android app's origin, see
+`docs/setup-android.md`), so the variable only needs extra origins.
 
 ## 5. Deploy
 
@@ -115,7 +123,7 @@ call AI unless added here.
      `GEMINI_FALLBACK_MODEL`, `AI_PROVIDER=gemini`, `AI_DAILY_LIMIT`, `ALLOWED_ORIGINS`
    - on the first run only: a Web Push (VAPID) key pair, stored as the function secrets
      `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` (see step 10; nothing to do)
-   - `supabase functions deploy` (`ai-extract`, `ai-enrich`, `ai-examples`, `ai-themes`, `ai-mnemonic`, `ai-report`, `ai-contrast`, `push-send`; JWT is verified inside the
+   - `supabase functions deploy` (`ai-extract`, `ai-enrich`, `ai-examples`, `ai-themes`, `ai-mnemonic`, `ai-report`, `ai-contrast`, `push-send`, `tts`, `account-delete`; JWT is verified inside the
      functions, so `verify_jwt = false` from `supabase/config.toml` is expected)
    - `select public.push_configure(<push-send URL>)`, which turns on the 15-minute reminder job
 3. Both jobs must end green. If "Check secrets" fails, a secret from step 4 is missing.
@@ -145,6 +153,7 @@ Secrets**, for **Production** and **Preview**, then redeploy:
 | ------------------------------- | ------------------------------------------ |
 | `VITE_SUPABASE_URL`             | `https://bikcjlomrjaxymifxogi.supabase.co` |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | the publishable key from step 3.5          |
+| `VITE_CONTACT_EMAIL`            | the contact address shown in the privacy policy and on `/hesap-sil` (v0.4) |
 
 Locally: create `.env.local` in the repository root with the same two lines
 (`*.local` is git-ignored). Without these variables the app runs in guest mode only.
@@ -203,6 +212,62 @@ Bildirim → turn on, then "Deneme bildirimi gönder". `push_log` gets one row p
 a reminder was sent. If the cron job is missing (pg_cron or pg_net not enabled), enable both
 under **Database → Extensions** and run
 `select cron.schedule('engapp-push-send', '*/15 * * * *', 'select public.push_cron_tick()');`.
+
+## 11. Account deletion and Google Play (v0.4)
+
+Nothing to set up on the server: the `account-delete` function and `delete_user_data()` come with
+the normal deploy (step 5). It needs no secret beyond the service role key every function has.
+
+1. Set `VITE_CONTACT_EMAIL` (step 7) and redeploy the web app. Until it is set, `/gizlilik`,
+   `/privacy` and `/hesap-sil` show "(iletişim adresi henüz eklenmedi)" instead of an address.
+2. Check, signed out, that `<APP_URL>/gizlilik`, `<APP_URL>/privacy` and `<APP_URL>/hesap-sil`
+   open directly (Cloudflare Pages serves `index.html` for every path).
+3. Smoke test with a throwaway Google account: sign in, add a card, sync, then **Ayarlar → Hesap →
+   Hesabımı ve verilerimi sil**. The account disappears from **Authentication → Users**,
+   `select count(*) from public.notes where user_id = '<id>'` is 0, and **Edge Functions →
+   account-delete → Logs** shows one `account deleted` line with row counts (no content).
+4. Play Console (docs/play-store/):
+   - **Privacy policy URL:** `<APP_URL>/gizlilik`;
+   - **Data safety → Delete account URL:** `<APP_URL>/hesap-sil`; the rest of the form from
+     `data-safety.md`;
+   - **Content rating, Target audience (18+), Ads, App access:** `content-rating.md`;
+   - **Store listing:** `listing-tr.md`, `listing-en.md`, images from `screenshots/` and `graphics/`;
+   - **Closed test:** `testers-message-tr.md`.
+
+## 12. Pictures (v0.4)
+
+Pictures are drawn by Claude (docs/ai-image.md, decisions 0029 and 0030). Nothing breaks
+without them: until the key is set, the picture workflow ends with a notice and the "draw now"
+button answers that pictures are not available.
+
+1. **Key.** Create an API key in the Anthropic Console
+   (`https://console.anthropic.com/settings/keys`) and add it as the repository secret
+   `ANTHROPIC_API_KEY` (step 4). The deploy workflow copies it into the function secrets (never
+   printed); the picture workflow reads it directly.
+2. **Credit.** Set the repository variable `CLAUDE_MONTHLY_CREDIT_USD` to the monthly amount you
+   want to spend on Claude (default 100). Pictures stop for the month at 80 % of it; every call
+   is reserved before it is sent, so the cap holds even with many users at once. Also set a
+   **spending limit** in the Console (**Settings → Limits**) as a second guard.
+3. **Reviewer.** Find your user id in **Authentication → Users** (the row with your Google
+   address, column UID) and set it as the repository variable `APP_ADMIN_USER_ID`. The next
+   deploy adds it to `public.app_admins`. Without GitHub, run once in **SQL Editor**:
+   `insert into public.app_admins (user_id) values ('<your user id>') on conflict do nothing;`
+4. **Deploy** (step 5) so the migration, the `ai-image` function and the secrets are in place.
+5. **Pilot.** **Actions → Picture jobs → Run workflow**, job `pilot`: draws 50 random concrete
+   words now and stores them for review. The log lists each picture with its cost and the total;
+   the report is kept as the run's `pilot-report` artifact. Judge them in the app's review
+   screen before letting the nightly job run on its own.
+6. **Nightly.** `.github/workflows/images.yml` runs every night at 01:30 UTC: it collects the
+   previous night's batch (checks, stores pictures for review), scores new words and sends the
+   next batch (half price). Other jobs by hand: `visualize`, `submit`, `collect`.
+
+Optional variables: `IMAGE_DAILY_LIMIT` (pictures per user per day, default 10),
+`CLAUDE_IMAGE_MODEL`, `CLAUDE_CHECK_MODEL` (defaults in `_shared/image-models.ts`). The picture
+workflow also needs the service-role key, exactly like the level job (step 9).
+
+Check: **Edge Functions** lists `ai-image`; in **SQL Editor**,
+`select * from public.image_budget_status();` shows this month's cap and spending, and
+`select status, count(*) from public.lexicon_images group by 1;` grows after each night.
 
 ## Manual deploy without GitHub (alternative)
 

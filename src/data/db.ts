@@ -29,6 +29,7 @@ import type {
   ReportDraft,
   WeeklyReport,
 } from '../domain/types';
+import type { CachedImage } from '../domain/images';
 import { addPullBackfill } from './backfill';
 
 /**
@@ -66,6 +67,7 @@ export class EngDb extends Dexie {
   lexicon_pair_notes!: EntityTable<LexiconPairNote, 'id'>;
   weekly_reports!: EntityTable<WeeklyReport, 'id'>;
   report_drafts!: EntityTable<ReportDraft, 'week'>;
+  images!: EntityTable<CachedImage, 'id'>;
 
   constructor(name = 'engapp') {
     super(name);
@@ -272,6 +274,16 @@ export class EngDb extends Dexie {
     this.version(20)
       .stores({ weekly_reports: 'id, week', report_drafts: 'week' })
       .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings', 'weekly_reports']));
+    // v21 (v0.4 İP3, pictures; 22+ belong to the other v0.4 packages): `images` caches the
+    // shared pictures of the user's lexicon senses (read-only, like lexicon_pair_notes; not
+    // synced, kept within ~20 MB, see domain/images.ts). The user's picture choice, hide flag
+    // and verdicts are user_content / content_feedback rows (already synced). The settings row
+    // gains show_image_front (optional, absent = off): a device that pulled settings while it
+    // ran an older version dropped it, so re-pull settings once (equal HLC → the server's set
+    // value, domain/syncMerge.ts).
+    this.version(21)
+      .stores({ images: 'id, sense_id, fetched_at' })
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
   }
 }
 

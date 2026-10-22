@@ -32,6 +32,7 @@ export function ImportGate({ children }: { children: ReactNode }) {
       setBusy(true);
       try {
         await auth.signIn();
+        setBusy(false); // Android app: the native sheet returns here
       } catch (e) {
         void logError(e, 'import.signIn');
         toast({ title: t('auth.startFailed'), tone: 'danger' });

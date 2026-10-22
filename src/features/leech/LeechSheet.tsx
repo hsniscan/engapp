@@ -22,6 +22,7 @@ import type { Id } from '@/domain/types';
 import { ExamplesSection, type ExamplesSpeech } from '@/features/examples/ExamplesPanel';
 import { FamilySection } from '@/features/family/FamilySection';
 import { useMorphology, useUserWords } from '@/features/family/hooks';
+import { ImageSection } from '@/features/images/ImageSection';
 import { MnemonicSection } from '@/features/mnemonics';
 import { Button, cn, Dialog, Icon, TextArea, toast, type IconName } from '@/ui';
 import { ConfusionPicker, ReportedNote } from './ConfusionPicker';
@@ -211,6 +212,18 @@ function Paths({
       open: open === 'mnemonic',
       onToggle: toggle('mnemonic'),
       children: <MnemonicSection termNorm={note.term_norm} senses={cardSenses} />,
+    });
+  }
+  if (!isContrast && type !== 'affix' && cardSenses.some((s) => s.lexicon_sense_id)) {
+    // v0.4 İP3: the picture of the sense, or "Görsel üret" when it has none.
+    paths.push({
+      id: 'image',
+      icon: 'image',
+      title: t('images.leech.title'),
+      body: t('images.leech.body'),
+      open: open === 'image',
+      onToggle: toggle('image'),
+      children: <ImageSection senses={cardSenses.filter((s) => s.lexicon_sense_id)} initialSenseId={card.sense_id} bare />,
     });
   }
   if (!isContrast && cardSenses.some((s) => s.lexicon_sense_id)) {
