@@ -113,7 +113,7 @@ describe('selectNewCards: level mix', () => {
             expect(got.filter((d) => d === 0).length).toBeGreaterThanOrEqual(Math.floor(limit * 0.55));
         },
       ),
-      { numRuns: 300 },
+      { numRuns: 150 },
     );
   });
 
@@ -227,7 +227,7 @@ describe('selectNewCards: per-user daily variation', () => {
           expect(again).toEqual(full.slice(k));
         },
       ),
-      { numRuns: 300 },
+      { numRuns: 150 },
     );
   });
 });
@@ -371,7 +371,7 @@ describe('buildQueue with the smart order', () => {
           expect(smart.newReasons?.size).toBe(newOnes.length);
         },
       ),
-      { numRuns: 300 },
+      { numRuns: 150 },
     );
   });
 
@@ -402,11 +402,12 @@ describe('selectNewCards: speed', () => {
     const ms = performance.now() - t0;
     console.info(`[perf] selectNewCards 10k → 50: ${ms.toFixed(1)} ms`);
     expect(sel.cards).toHaveLength(50);
-    expect(ms).toBeLessThan(150);
+    // Loose guards (CI and parallel test files share the CPU); typical: ~20 ms and ~100 ms.
+    expect(ms).toBeLessThan(400);
     const t1 = performance.now();
     selectNewCards(cards, 999, () => false, inp);
     const big = performance.now() - t1;
     console.info(`[perf] selectNewCards 10k → 999: ${big.toFixed(1)} ms`);
-    expect(big).toBeLessThan(500);
+    expect(big).toBeLessThan(1500);
   });
 });

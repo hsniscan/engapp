@@ -14,6 +14,7 @@ import { cardImageOf, type CardImage } from './images';
 import { dueStudiedCards, loadTodayFacts, newCards } from './history';
 import { aheadDaysFor, getLoadToday, type LoadToday } from './load';
 import { extraNewKey, getMeta } from './meta';
+import { newOrderInput, newOrderTables } from './newOrder';
 import { dayConfig, getSettings, schedulerFor } from './settings';
 
 export interface StudyQueue {
@@ -52,7 +53,7 @@ export interface StudyQueueOptions {
  * introduced today count against it from the logs, so other devices never double count.
  */
 export async function getStudyQueue(opts: StudyQueueOptions = {}, now: Millis = Date.now()): Promise<StudyQueue> {
-  return db.transaction('r', [db.cards, db.review_logs, db.settings, db.meta], async () => {
+  return db.transaction('r', [db.cards, db.review_logs, db.settings, db.meta, ...newOrderTables()], async () => {
     const settings = await getSettings(now);
     const cfg = dayConfig(settings);
     const facts = await loadTodayFacts(cfg, now);
@@ -67,6 +68,9 @@ export async function getStudyQueue(opts: StudyQueueOptions = {}, now: Millis = 
       getExtraNewToday(facts.bounds.key),
     ]);
     const cards = [...studied, ...fresh];
+    // "Yeni kelime sırası": smart unless the user chose insertion order.
+    const smart = !ahead && settings.new_card_order !== 'added' && fresh.length > 0;
+    const newOrder = smart ? await newOrderInput(fresh, facts, settings) : null;
     const q = buildQueue(cards, {
       now,
       dayEnd: facts.bounds.end,
@@ -74,6 +78,7 @@ export async function getStudyQueue(opts: StudyQueueOptions = {}, now: Millis = 
       aheadEnd,
       dailyNewLimit: load ? load.newLimitToday : settings.daily_new_limit,
       reviewCap: load?.plan.reviewCap ?? null,
+      newOrder,
       extraNewToday,
       newIntroducedToday: facts.newIntroducedToday,
       reviewedTodayCardIds: facts.reviewedCardIds,
