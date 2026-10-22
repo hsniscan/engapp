@@ -6,7 +6,9 @@ server contract (implemented) and the rules the sync engine must follow (the eng
 itself lives in `src/sync/` and is built on `src/sync/api.ts`).
 
 Sign-in is Google only. Guests sync nothing; on first sign-in all local rows get the
-user's id and go through the outbox.
+user's id and go through the outbox. A guest's outbox is compacted (decision 0025): one entry
+per mutable row and no log entries, since the first sign-in (`adoptGuestData`) queues every
+log again and compacts once more before the first push.
 Data that belongs to another account is never re-stamped: the device offers to copy its
 cards without study history, or to start with the signed-in account's data (decision 0008).
 
@@ -92,6 +94,18 @@ one-time re-pull. (İP3 was built with its own copy of both mechanisms, a separa
 list and a one-time `sync_cursor` reset; they were unified when the packages merged.)
 Settings rows from older clients lack the level columns: a trigger fills their defaults on
 insert, and `_sync_upsert` leaves them alone on update.
+
+### Anki import (v0.3 İP1, migration 20261023000100, decision 0019)
+
+No new table. `review_logs.origin` (`app` default, `anki` for imported answers) is a new
+column of an insert-only table: the push path inserts `jsonb_populate_record(...)`, so a log
+from an older app without the key arrives as an explicit null, and a BEFORE INSERT trigger
+stores it as `app` (a NOT NULL default alone would reject it, and a rejected log never leaves
+the outbox). Pulled logs carry `origin`; an older client's zod strips it and still counts the
+answer. `sources.kind` accepts `anki`; an older version drops such a pulled source as invalid,
+so Dexie v12 adds `sources` to `meta.pull_backfill`. Imported logs have deterministic ids
+(UUID v7 at the review time, hash of card id + Anki revlog id), so a repeated push is the usual
+`ON CONFLICT DO NOTHING`.
 
 ## Push
 
@@ -221,6 +235,30 @@ senses again with the level columns. The user's own level is not in the lexicon:
 `notes.level_override`, a synced column of their note (null = automatic), and applies only
 to them (decision 0009).
 
+## Reminder setting and push tables (v0.3 İP8, migration 20261023000600)
+
+`settings.notify` (`{enabled, mode, hour}`, nullable jsonb) is an ordinary synced settings
+column: a push without the key keeps it (`_sync_upsert`), `fillLateColumns` takes the server's
+value for an equal HLC, and Dexie v17 re-pulls settings once. `push_subscriptions` (one row
+per browser endpoint) and `push_log` (one row per user-day a reminder was sent) are **not**
+synced tables and not in the registry: they are server state, written only through
+`push_subscribe` / `push_unsubscribe` (owner = `auth.uid()`) and the `push-send` function
+(service role). Clients can read their own rows. Decision 0024.
+
+## Weekly reports and goals (v0.3 İP7, migration 20261023000900, decision 0027)
+
+`weekly_reports` is insert-only and registered (`insert_only = true`). It is a
+`LATE_SYNC_TABLES` table, and Dexie v20 records it for the one-time re-pull. The server keeps
+one row per user and week: there is a unique index on `(user_id, week)`, and the
+`weekly_reports_one_per_week` BEFORE INSERT trigger returns null for a second row of a week.
+The push of that second row is therefore acked like a repeated id and never waits in the
+outbox. On pull, the stored row replaces the device's own report of that week, along with
+its outbox row and its local draft (`applyRemoteReport`, `src/data/maintenance.ts`). Drafts
+(`report_drafts`) are never synced, so a synced report never changes. `purge_tombstones`
+skips insert-only tables, so reports are never purged. `settings.goals` is a nullable jsonb
+settings column: `_sync_upsert` keeps it when a push leaves it out, and `fillLateColumns`
+takes the server's value for an equal HLC.
+
 ## Edge cases (plan table) and where they are handled
 
 | Case                                      | Handling                                                                      |
@@ -254,6 +292,8 @@ to them (decision 0009).
 - `supabase/tests/integration/stack.test.ts`: the same through PostgREST with
   `src/sync/api.ts`.
 - `src/sync/api.test.ts`: response validation and error classification.
+- `supabase/tests/database/18_push.test.sql`: push tables' RLS and grants, subscriptions owned
+  by the session user, endpoint allow-list, one claim per user-day, due counts.
 
 ## Example sentences (v0.2 İP5, migration 20261022000100)
 

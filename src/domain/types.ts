@@ -15,8 +15,14 @@ export interface SyncedRow {
 }
 
 export type TermType = 'word' | 'phrase' | 'pattern';
-/** A note can also be a root or affix card ("-spect-", "re-"): recognition card only. */
-export type NoteTermType = TermType | 'affix';
+/**
+ * A note can also be a root or affix card ("-spect-", "re-") or a contrast card for two
+ * terms the learner mixes up ("affect ↔ effect", v0.3 İP6): recognition card only.
+ */
+export type NoteTermType = TermType | 'affix' | 'contrast';
+
+/** Notes with only a recognition card (no production or cloze cards for their senses). */
+export const recognitionOnly = (t: NoteTermType): boolean => t === 'affix' || t === 'contrast';
 export type CardType = 'recognition' | 'production' | 'cloze';
 
 /** FSRS card states (numeric values match ts-fsrs State enum). */
@@ -91,7 +97,14 @@ export interface ReviewLog {
   shown_sense_id: Id | null; // recognition card: which sense's sentence was shown
   created_at: Millis;
   hlc: string;
+  /**
+   * Where the answer was given (v0.3 İP1): 'anki' = imported from an Anki revlog. Absent or
+   * null = 'app' (rows written before the column, and every answer given here).
+   */
+  origin?: ReviewLogOrigin | null;
 }
+
+export type ReviewLogOrigin = 'app' | 'anki';
 
 /** "Bildim" / "Bilemedim" in a practice round. */
 export type PracticeResult = 'known' | 'unknown';
@@ -146,6 +159,86 @@ export interface LevelTest {
   hlc: string;
 }
 
+/** A category of the weekly report (domain/retention.ts groups), with its counted answers. */
+export interface ReportGroupStat {
+  dimension: 'term_type' | 'level' | 'topic' | 'source' | 'pos' | 'card_type';
+  key: string;
+  n: number;
+  passed: number;
+}
+
+/** A goal and how far the week got (domain/goals.ts). */
+export interface ReportGoalStat {
+  key: 'week_active_days' | 'week_minutes' | 'month_new_terms';
+  target: number;
+  value: number;
+}
+
+/**
+ * The numbers of one weekly report (v0.3 İP7, domain/weeklyReport.ts). Computed on the device
+ * by fixed rules; the AI comment never changes them.
+ */
+export interface WeeklyReportSummary {
+  v: 1;
+  /** Monday of the week (local day key). */
+  week: string;
+  /** Sunday of the week. */
+  week_end: string;
+  active_days: number;
+  /** Answers (reviews, learning steps and new cards). */
+  reviews: number;
+  minutes: number;
+  /** New cards seen for the first time. */
+  new_cards: number;
+  /** Notes whose first card first reached the review stage this week ("öğrenildi"). */
+  new_learned: number;
+  /** The week's counted answers (domain/retention.ts rule). */
+  retention: { n: number; passed: number };
+  /** Window of the categories: the week (7), or 28 days when no category had 20 answers in it. */
+  groups_days: 7 | 28;
+  strongest: ReportGroupStat | null;
+  weakest: ReportGroupStat | null;
+  /** The streak at the end of the week. */
+  streak: number;
+  goals: ReportGoalStat[];
+  /** One key of REPORT_FOCUS_KEYS (supabase/functions/_shared/report-contracts.ts). */
+  focus: string;
+  /** Notes of the focus action (practice list, the words for mnemonics), at most 20. */
+  focus_note_ids: Id[];
+  /** Number of the focus action (the suggested new-card limit), else null. */
+  focus_value: number | null;
+}
+
+/**
+ * One weekly report. Synced, insert-only, one row per user and week (the server keeps the
+ * first one). `comment` is the AI's 3–4 sentences, or null when it could not be had.
+ */
+export interface WeeklyReport {
+  id: Id;
+  user_id: string | null;
+  week: string;
+  summary: WeeklyReportSummary;
+  comment: string | null;
+  comment_model: string | null;
+  prompt_version: string | null;
+  device_id: string;
+  created_at: Millis;
+  hlc: string;
+}
+
+/**
+ * A report whose comment has not come yet (offline, signed out): local only, not synced. It is
+ * shown like a report and becomes a weekly_reports row when the comment arrives or the wait
+ * ends (data/weeklyReport.ts).
+ */
+export interface ReportDraft {
+  week: string;
+  report: WeeklyReport;
+  attempts: number;
+  next_attempt_at: Millis;
+  last_error: string | null;
+}
+
 export type KnownTermSource = 'test' | 'preview' | 'manual' | 'auto';
 
 /** A word the user knows without a card ("Biliyorum"). Deleting it is a tombstone. */
@@ -158,7 +251,8 @@ export interface KnownTerm extends SyncedRow {
 }
 
 export interface Source extends SyncedRow {
-  kind: 'text' | 'pdf';
+  /** 'anki': an imported Anki package (v0.3 İP1). */
+  kind: 'text' | 'pdf' | 'anki';
   title: string;
   file_name: string | null;
   page_count: number | null;
@@ -263,6 +357,50 @@ export interface Settings extends SyncedRow {
   muted_topics?: string[] | null;
   /** v0.2 İP4: open "Kolay olabilir" in the import preview (absent/null = closed). */
   show_easy_candidates?: boolean | null;
+  /**
+   * v0.3 İP4 (docs/decisions/0022): the parameters in use before the last adoption, for "Eski
+   * ayara dön" (null = the defaults were in use, or nothing to go back to).
+   */
+  fsrs_params_prev?: number[] | null;
+  /** When the personal-parameter check last ran (adopted or not); absent/null = never. */
+  fsrs_opt_at?: Millis | null;
+  // v0.3 İP3 load management (docs/decisions/0021-load-management.md). All optional: older
+  // rows, backups and servers lack them, and absent means the default.
+  /** Most minutes of study a day; turned into cards by domain/capacity.ts (absent/null = 20). */
+  daily_capacity_min?: number | null;
+  /** Catch-up mode switches itself on when the backlog exceeds capacity (absent/null = on). */
+  catchup_auto?: boolean | null;
+  /** The current or next vacation, local days, both ends included (null = none). */
+  vacation?: VacationRange | null;
+  /** Earlier vacations, oldest first (at most 20), so their days stay neutral for the streak. */
+  vacation_history?: VacationRange[] | null;
+  /**
+   * v0.3 İP8: daily reminder (Web Push). `hour` is resolved on the device (auto: the usual
+   * start hour, fixed: the chosen one) so the server can use it. Absent/null = off.
+   */
+  notify?: NotifySetting | null;
+  /**
+   * v0.3 İP7: goals on the continuity panel (domain/goals.ts). Every field optional; absent
+   * or null = no goal of that kind. Never carried to another account.
+   */
+  goals?: {
+    week_active_days?: number | null;
+    month_new_terms?: number | null;
+    week_minutes?: number | null;
+  } | null;
+}
+
+/** settings.notify (domain/notify.ts). */
+export interface NotifySetting {
+  enabled: boolean;
+  mode: 'auto' | 'fixed';
+  hour: number | null;
+}
+
+/** Inclusive range of local days (YYYY-MM-DD, day starts at day_start_hour). */
+export interface VacationRange {
+  start: string;
+  end: string;
 }
 
 /** Shared dictionary entries, read-only on the client (pulled from server). */
@@ -303,6 +441,25 @@ export interface LexiconExample {
   span: [number, number];
   /** {"tr": "..."} */
   translations: Record<string, string>;
+  status: 'active' | 'retired';
+  updated_at: Millis;
+}
+
+/**
+ * Shared note on a lexicon sense in a language pair (lexicon_pair_notes), read-only on the
+ * client (v0.3 İP2): AI mnemonic suggestions and extract-v5 false friends. Never user text.
+ * A mnemonic row with content {type: 'none'} records "asked, no good association".
+ */
+export interface LexiconPairNote {
+  id: Id;
+  term_norm: string;
+  /** lexicon_senses.id (not the user's sense id); null for a note about the whole term. */
+  sense_id: Id | null;
+  lang_pair: 'en-tr';
+  kind: 'false_friend' | 'mnemonic_suggestion' | 'contrast';
+  content_key: string;
+  content: Record<string, unknown>;
+  curated: boolean;
   status: 'active' | 'retired';
   updated_at: Millis;
 }
@@ -425,12 +582,14 @@ export type OutboxTable =
   | 'user_content'
   | 'decks'
   | 'level_tests'
-  | 'known_terms';
+  | 'known_terms'
+  | 'weekly_reports';
 /** Synced tables whose rows are never changed or deleted. */
 export const INSERT_ONLY_TABLES = [
   'review_logs',
   'practice_logs',
   'level_tests',
+  'weekly_reports',
 ] as const satisfies readonly OutboxTable[];
 export type InsertOnlyTable = (typeof INSERT_ONLY_TABLES)[number];
 
@@ -478,3 +637,55 @@ export interface RefCacheRow {
   fetched_at: Millis;
 }
 
+/** Counts of one Anki import, shown on the result screen (src/data/anki.ts). */
+export interface AnkiImportCounts {
+  /** Notes in the file. */
+  notes: number;
+  /** New Engapp notes created with their Anki history. */
+  created: number;
+  /** Meanings added to a word that was already in the library (no history). */
+  sensesAdded: number;
+  /** Words (and meanings) the library already had: nothing changed. */
+  alreadyHad: number;
+  skippedNoteType: number;
+  skippedEmpty: number;
+  sameInFile: number;
+  cards: number;
+  cardsMapped: number;
+  cardsIgnored: number;
+  cardsMerged: number;
+  logs: number;
+  logsSkipped: number;
+  suspended: number;
+  media: number;
+}
+
+export type AnkiEnrichStatus = 'off' | 'queued' | 'paused' | 'done';
+
+/**
+ * One Anki import on this device (v0.3 İP1): its counts and the optional "Sözlükle eşleştir"
+ * queue. Local only (the notes themselves sync); id = the import's source id.
+ */
+export interface AnkiImportRecord {
+  id: Id;
+  file_name: string;
+  created_at: Millis;
+  updated_at: Millis;
+  counts: AnkiImportCounts;
+  /** Notes created by the import (lexicon matching works through them). */
+  note_ids: Id[];
+  enrich: {
+    status: AnkiEnrichStatus;
+    /** Notes still to look up, in order. */
+    pending: Id[];
+    /** Linked to a lexicon sense with the same meaning. */
+    matched: number;
+    /** Linked to the lexicon word only (no sense with the user's meaning). */
+    term_only: number;
+    /** Not found in the lexicon (or not an English word). */
+    unmatched: number;
+    /** Paused until this time (daily AI limit, offline). */
+    paused_until: Millis | null;
+    error: string | null;
+  };
+}

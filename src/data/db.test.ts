@@ -5,7 +5,7 @@ import { PULL_BACKFILL_KEY } from './backfill';
 import { EngDb } from './db';
 
 /** The current schema version; bump with every new Dexie version. */
-const LATEST = 11;
+const LATEST = 20;
 
 describe('Dexie schema', () => {
   it('opens with every table and the indexes the queries rely on', async () => {
@@ -13,7 +13,7 @@ describe('Dexie schema', () => {
     await d.open();
     expect(d.verno).toBe(LATEST);
     expect(d.tables.map((t) => t.name).sort()).toEqual(
-      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs', 'decks', 'theme_previews', 'level_tests', 'known_terms'].sort(),
+      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs', 'decks', 'theme_previews', 'level_tests', 'known_terms', 'anki_imports', 'lexicon_pair_notes', 'weekly_reports', 'report_drafts'].sort(),
     );
     const idx = (table: string) => d.table(table).schema.indexes.map((i) => i.name);
     expect(idx('decks')).toEqual(expect.arrayContaining(['sort', 'deleted_at']));
@@ -303,5 +303,201 @@ describe('Dexie schema', () => {
     expect(await d.outbox.count()).toBe(0);
     d.close();
     await d.delete();
+  });
+
+  it('v12 adds anki_imports, keeps review logs as they are and re-pulls sources once', async () => {
+    const name = 'upgrade-v12-test';
+    // A database as v0.2 left it (version 11).
+    const old = new Dexie(name);
+    old.version(1).stores({ review_logs: 'id, card_id, reviewed_at, undo_of', sources: 'id, created_at', meta: 'key' });
+    old.version(11).stores({ sources: 'id, created_at, *topics' });
+    await old.open();
+    await old.table('review_logs').add({ id: 'l1', card_id: 'c1', reviewed_at: 1, undo_of: null, rating: 3 });
+    await old.table('meta').bulkPut([
+      { key: 'sync_cursor', value: 77 },
+      { key: PULL_BACKFILL_KEY, value: ['decks'] },
+    ]);
+    old.close();
+
+    const d = new EngDb(name);
+    await d.open();
+    expect(d.verno).toBe(LATEST);
+    expect(await d.anki_imports.count()).toBe(0);
+    // Logs are never rewritten: no origin is filled in (absent = 'app').
+    expect(await d.review_logs.get('l1')).toEqual({ id: 'l1', card_id: 'c1', reviewed_at: 1, undo_of: null, rating: 3 });
+    expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expect.arrayContaining(['decks', 'sources']));
+    expect(await d.outbox.count()).toBe(0);
+    d.close();
+    await d.delete();
+  });
+
+  it('v13 adds the lexicon_pair_notes cache and keeps import jobs and user content as they are', async () => {
+    const name = 'upgrade-to-v13';
+    // A database as v0.2 left it (version 11), with an import job and an edited sentence.
+    const old = new Dexie(name);
+    old.version(11).stores({
+      import_jobs: 'id, status, created_at',
+      user_content: 'id, kind, lexicon_sense_id, replaces_id, deleted_at',
+      meta: 'key',
+    });
+    await old.open();
+    await old.table('import_jobs').add({ id: 'j1', status: 'done', created_at: 1, chunk_total: 2, chunk_done: 2 });
+    await old.table('user_content').add({ id: 'u1', kind: 'example_sentence', text: 'x', deleted_at: null });
+    old.close();
+
+    const d = new EngDb(name);
+    await d.open();
+    expect(d.verno).toBe(LATEST);
+    const job = await d.import_jobs.get('j1');
+    expect(job).toMatchObject({ id: 'j1', chunk_done: 2 });
+    expect((job as unknown as { chunk_topics?: unknown }).chunk_topics).toBeUndefined();
+    expect(await d.user_content.get('u1')).toMatchObject({ kind: 'example_sentence' });
+    const idx = d.lexicon_pair_notes.schema.indexes.map((i) => i.name);
+    expect(idx).toEqual(expect.arrayContaining(['[sense_id+kind]', 'term_norm']));
+    await d.lexicon_pair_notes.add({
+      id: 'pn1',
+      term_norm: 'reluctant',
+      sense_id: 'ls1',
+      lang_pair: 'en-tr',
+      kind: 'mnemonic_suggestion',
+      content_key: 'k',
+      content: { type: 'sound', text_tr: 't', why: null },
+      curated: false,
+      status: 'active',
+      updated_at: 1,
+    });
+    expect(await d.lexicon_pair_notes.where('[sense_id+kind]').equals(['ls1', 'mnemonic_suggestion']).count()).toBe(1);
+    // A cache, not synced: nothing waits in the outbox.
+    expect(await d.outbox.count()).toBe(0);
+    d.close();
+    await d.delete();
+  });
+
+  it('v14 upgrade (load management) keeps settings as they are and re-pulls them once', async () => {
+    const name = 'upgrade-v14-test';
+    const old = new Dexie(name);
+    old.version(1).stores({ settings: 'id', meta: 'key' });
+    old.version(11).stores({});
+    await old.open();
+    await old.table('settings').add({ id: 'settings', level: 'B1', daily_new_limit: 12 });
+    await old.table('meta').put({ key: 'sync_cursor', value: 77 });
+    old.close();
+
+    const d = new EngDb(name);
+    await d.open();
+    expect(d.verno).toBe(LATEST);
+    const s = await d.settings.get('settings');
+    expect(s).toMatchObject({ daily_new_limit: 12 });
+    // Absent means the defaults (20 min, catch-up on, no vacation): nothing is written.
+    expect(s && 'vacation' in s).toBe(false);
+    expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expect.arrayContaining(['settings']));
+    expect(await d.outbox.count()).toBe(0);
+    d.close();
+    await d.delete();
+  });
+
+  it('v15 upgrade keeps the settings and re-pulls them once (fsrs_params_prev / fsrs_opt_at)', async () => {
+    const name = 'upgrade-v15-test';
+    const old = new Dexie(name);
+    old.version(1).stores({ settings: 'id', meta: 'key' });
+    old.version(11).stores({});
+    await old.open();
+    await old.table('settings').add({ id: 'settings', fsrs_params: [1, 2, 3], hlc: 'h1' });
+    await old.table('meta').put({ key: 'sync_cursor', value: 77 });
+    old.close();
+
+    const d = new EngDb(name);
+    await d.open();
+    expect(d.verno).toBe(LATEST);
+    const row = await d.settings.get('settings');
+    expect(row).toMatchObject({ fsrs_params: [1, 2, 3], hlc: 'h1' });
+    expect(row?.fsrs_params_prev).toBeUndefined();
+    expect((await d.meta.get('sync_cursor'))?.value).toBe(77);
+    expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expect.arrayContaining(['settings']));
+    expect(await d.outbox.count()).toBe(0);
+    d.close();
+    await d.delete();
+  });
+
+  it('v17 upgrade re-pulls settings once for the reminder setting, only on devices that pulled', async () => {
+    for (const [name, cursor, expected] of [
+      // 'sources' comes from v12 (Anki import), 'notes' from v19 (contrast cards) and
+      // 'weekly_reports' from v20, which also run on this v11 database.
+      ['upgrade-v17-synced', 77, ['sources', 'settings', 'notes', 'weekly_reports']],
+      ['upgrade-v17-fresh', 0, undefined],
+    ] as const) {
+      const old = new Dexie(name);
+      old.version(1).stores({ settings: 'id', meta: 'key' });
+      old.version(11).stores({});
+      await old.open();
+      await old.table('settings').add({ id: 'settings', theme: 'dark' });
+      await old.table('meta').put({ key: 'sync_cursor', value: cursor });
+      old.close();
+
+      const d = new EngDb(name);
+      await d.open();
+      expect(d.verno).toBe(LATEST);
+      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
+      // The row itself is untouched: no notify key means "off".
+      expect(await d.settings.get('settings')).toEqual({ id: 'settings', theme: 'dark' });
+      expect(await d.outbox.count()).toBe(0);
+      d.close();
+      await d.delete();
+    }
+  });
+
+  it('v19 upgrade re-pulls notes once for contrast cards, only on devices that pulled', async () => {
+    for (const [name, cursor, expected] of [
+      // v20 (weekly reports) runs after v19 and adds its own tables.
+      ['upgrade-v19-synced', 77, ['notes', 'settings', 'weekly_reports']],
+      ['upgrade-v19-fresh', 0, undefined],
+    ] as const) {
+      const old = new Dexie(name);
+      old.version(1).stores({ notes: 'id, term_norm', settings: 'id', meta: 'key' });
+      old.version(17).stores({});
+      await old.open();
+      await old.table('notes').add({ id: 'n1', term: 'affect', term_norm: 'affect', term_type: 'word' });
+      await old.table('meta').put({ key: 'sync_cursor', value: cursor });
+      old.close();
+
+      const d = new EngDb(name);
+      await d.open();
+      expect(d.verno).toBe(LATEST);
+      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
+      expect(await d.notes.get('n1')).toEqual({ id: 'n1', term: 'affect', term_norm: 'affect', term_type: 'word' });
+      expect(await d.outbox.count()).toBe(0);
+      d.close();
+      await d.delete();
+    }
+  });
+
+  it('v20 upgrade adds the weekly report tables, keeps settings and re-pulls reports and settings once', async () => {
+    for (const [name, cursor, expected] of [
+      ['upgrade-v20-synced', 91, ['settings', 'weekly_reports']],
+      ['upgrade-v20-fresh', 0, undefined],
+    ] as const) {
+      // A database as İP6 left it (version 19), with the backfill of v12–v19 already done.
+      const old = new Dexie(name);
+      old.version(1).stores({ settings: 'id', meta: 'key' });
+      old.version(19).stores({});
+      await old.open();
+      await old.table('settings').add({ id: 'settings', theme: 'dark', notify: null });
+      await old.table('meta').put({ key: 'sync_cursor', value: cursor });
+      old.close();
+
+      const d = new EngDb(name);
+      await d.open();
+      expect(d.verno).toBe(LATEST);
+      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
+      // No goals key means "no goals"; the row is untouched.
+      expect(await d.settings.get('settings')).toEqual({ id: 'settings', theme: 'dark', notify: null });
+      expect(await d.weekly_reports.count()).toBe(0);
+      expect(await d.report_drafts.count()).toBe(0);
+      expect(d.weekly_reports.schema.indexes.map((i) => i.name)).toContain('week');
+      expect(d.report_drafts.schema.primKey.name).toBe('week');
+      expect(await d.outbox.count()).toBe(0);
+      d.close();
+      await d.delete();
+    }
   });
 });

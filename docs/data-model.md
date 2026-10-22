@@ -11,20 +11,23 @@ only from `@/data` (`src/data/index.ts`).
 | notes | yes | `id`, `term_norm`, `lexicon_term_id`, `updated_at`, `deleted_at`, `*tags` | One live note per `term_norm` (enforced in actions, not by a unique index, so account merges can keep duplicates flagged `possible_duplicate`). `level_override` (A1–C2 or null) is the user's own level for the word; null = the computed one (Dexie v4 filled null on old rows). |
 | senses | yes | `id`, `note_id`, `[note_id+lexicon_sense_id]`, `lexicon_sense_id`, `deleted_at` | `sense_no` is the display order. `meaning_tr_override` beats `meaning_tr`. `span` is `[start, end)` in `source_sentence`. `source_sentence_tr` is the user's Turkish translation of that sentence (AI or typed; null when none, dropped with its sentence; never in the shared lexicon; Dexie v2 filled null on old rows). |
 | cards | yes | `id`, `note_id`, `sense_id`, `[state+due]`, `due`, `card_type`, `deleted_at` | FSRS fields in UTC ms. `unlocked`, `suspended`. |
-| review_logs | yes, insert-only | `id`, `card_id`, `reviewed_at`, `undo_of` | Never updated or deleted. An undo is a new row with `undo_of`. |
+| review_logs | yes, insert-only | `id`, `card_id`, `reviewed_at`, `undo_of` | Never updated or deleted. An undo is a new row with `undo_of`. `origin` (v0.3 İP1): `anki` for answers imported from an Anki revlog; absent/null = `app` (not indexed, Dexie v12 fills nothing). Imported answers are never offered for undo. |
 | practice_logs | yes, insert-only | `id`, `card_id`, `practiced_at`, `session_id` | One row per answer in a practice round: `result` (`known`/`unknown`), `mode` (the source: `hard`, `recent`, `tag`; free text, 1–32 chars), `session_id`, `duration_ms` (≤ 60 s), `device_id`. Never read by scheduling, `daily_activity` or the streak (Dexie v3, decision 0010). |
 | decks | yes | `id`, `sort`, `deleted_at` | Smart decks (Dexie v8, ADR 0016): `name` (1–60 chars on the client), `filter` (versioned JSON, see "Smart decks"), `sort` (1..n). The deck is a saved filter: no note ids are stored, membership is computed on the device. |
 | theme_previews | no | `id` (`'current'`) | The pending "Kelimelerimi temalara ayır" preview: AI groups with the user's edits (`name`, `removed`, `rejected`) until approved or discarded. Local only; cleared with the account's data. |
 | level_tests | yes, insert-only | `id`, `taken_at` | One finished level test: `result_level`, `vocab_estimate`, `reliable`, `false_alarm_rate`, `ratios` (corrected share known per level), `items` (`{w, band, pseudo, answer, mc_ok?}`), `bank_version`, `applied` (false: unreliable and not used), `duration_ms`, `device_id` (Dexie v9, decision 0017). |
+| weekly_reports | yes, insert-only | `id`, `week` | One weekly report per week (v0.3 İP7, Dexie v20, decision 0027). `week` is the Monday of the week as a local day key. `summary` holds the numbers computed on the device (`v`, `week_end`, `active_days`, `reviews`, `minutes`, `new_cards`, `new_learned`, `retention {n, passed}`, `groups_days` 7/28, `strongest`/`weakest` `{dimension, key, n, passed}`, `streak`, `goals`, `focus`, `focus_note_ids`, `focus_value`). `comment` is the ai-report text or null, with `comment_model`, `prompt_version` and `device_id`. The server keeps the first row of a week. |
+| report_drafts | no | `week` | A report waiting for its AI comment: `report` (the future `weekly_reports` row), `attempts`, `next_attempt_at`, `last_error`. Local only and cleared with the account's data. |
 | known_terms | yes | `id`, `term_norm`, `deleted_at` | Words the user knows without a card: `term_norm` (same key as `notes.term_norm`), `source` (`test`/`preview`/`manual`/`auto`), `cefr_at_mark`. One live row per `term_norm`; removing is a tombstone, marking again revives the row. |
-| sources | metadata | `id`, `created_at`, `*topics` | `topics`: topic keys of the text (`domain/topics.ts`, from the extract call; absent/null = unknown, `[]` = none; Dexie v7, decision 0015). |
-| settings | yes | `id = 'settings'` | Defaults: `daily_new_limit 10`, `request_retention 0.9`, `timezone` from the device, `day_start_hour 4`, `theme 'system'`, `voice 'en-US'`, `level 'B1'`. `interests` (picked topic keys; absent/null = never asked, `[]` = asked) and `muted_topics` (weight 0). Topic weights are computed on the device (`domain/profile.ts`), never stored (decision 0015). Level (decision 0017): `level_source` (`default`/`test`/`auto`/`manual`), `level_updated_at`, `level_locked`, `level_change` (the last automatic change and its reason, with `dismissed`). Dexie v9 set `level_source` to `manual` when the level was not B1. `show_easy_candidates` (default false; v0.2 İP4: open the import preview's "Kolay" section; absent or null = false, so older rows and backups need no change). |
+| sources | metadata | `id`, `created_at`, `*topics` | `kind`: `text`, `pdf` or (v0.3 İP1) `anki` (one row per imported file name, reused on a re-import; Dexie v12 re-pulls sources once). `topics`: topic keys of the text (`domain/topics.ts`, from the extract call; absent/null = unknown, `[]` = none; Dexie v7, decision 0015). |
+| settings | yes | `id = 'settings'` | Defaults: `daily_new_limit 10`, `request_retention 0.9`, `timezone` from the device, `day_start_hour 4`, `theme 'system'`, `voice 'en-US'`, `level 'B1'`. `interests` (picked topic keys; absent/null = never asked, `[]` = asked) and `muted_topics` (weight 0). Topic weights are computed on the device (`domain/profile.ts`), never stored (decision 0015). Level (decision 0017): `level_source` (`default`/`test`/`auto`/`manual`), `level_updated_at`, `level_locked`, `level_change` (the last automatic change and its reason, with `dismissed`). Dexie v9 set `level_source` to `manual` when the level was not B1. `show_easy_candidates` (default false; v0.2 İP4: open the import preview's "Kolay" section; absent or null = false, so older rows and backups need no change). v0.3 İP3 (decision 0021, all optional, absent = default): `daily_capacity_min` (20), `catchup_auto` (true), `vacation` (`{start, end}` local day keys, both included; null = none) and `vacation_history` (earlier vacations, for the streak). Personal FSRS parameters (v0.3 İP4, decision 0022): `fsrs_params` (21 FSRS-6 weights; null = ts-fsrs defaults), `fsrs_params_prev` (the params before the last adoption, for "Eski ayara dön"; null = defaults / nothing to revert) and `fsrs_opt_at` (epoch ms of the last check, adopted or not; drives the monthly offer); the last two are optional (absent = null) and Dexie v15 re-pulls settings once for them. A change of `fsrs_params` (here or pulled) replays every card from its logs. `goals` (v0.3 İP7, decision 0027; optional, absent or null = none): `{week_active_days?, week_minutes?, month_new_terms?}`. Dexie v20 re-pulls settings once for it. |
 | outbox | no | `++seq`, `[table+row_id]`, `next_attempt_at` | Rows waiting to be pushed. |
 | daily_activity | no (derived) | `date` (local `YYYY-MM-DD`) | `reviews`, `new_cards`, `time_ms`, `review_answers`, `review_passed`, `completed`. |
-| meta | no | `key` | `device_id`, `user_id`, `hlc`, `sync_cursor`, `lexicon_cursor`, `lexicon_examples_cursor`, `server_practice_logs` (the server answered with `sync_pull_v3`), `server_examples`, `extra_new:<YYYY-MM-DD>` (extra new cards allowed that day, this device only), `family_dismissed_morphemes` (root/affix card suggestions the user closed), `server_tables` / `server_tables_checked_at` (late sync tables the server registry confirmed; when it was last asked), `pull_backfill` (tables to re-pull once, see sync-strategy.md; Dexie v11 adds notes, settings and sources on updated devices for the columns v0.1/İP1 stripped), `level_week:<user or guest>` (the week the weekly level update last ran), `level_test_offer_dismissed`. |
+| meta | no | `key` | `device_id`, `user_id`, `hlc`, `sync_cursor`, `lexicon_cursor`, `lexicon_examples_cursor`, `server_practice_logs` (the server answered with `sync_pull_v3`), `server_examples`, `extra_new:<YYYY-MM-DD>` (extra new cards allowed that day, this device only), `family_dismissed_morphemes` (root/affix card suggestions the user closed), `server_tables` / `server_tables_checked_at` (late sync tables the server registry confirmed; when it was last asked), `pull_backfill` (tables to re-pull once, see sync-strategy.md; Dexie v11 adds notes, settings and sources on updated devices for the columns v0.1/İP1 stripped), `level_week:<user or guest>` (the week the weekly level update last ran), `level_test_offer_dismissed`, `load_warning_dismissed` (the day the home load warning was hidden; it stays hidden 7 days, decision 0021), `report_seen:<user or guest>` (the week whose report the user opened or whose home note they closed, decision 0027). |
 | error_log | no | `++id`, `at` | Newest 200 rows are kept. |
 | lexicon_cache | no | `id`, `term_id`, `lemma_norm`, `updated_at` | Shared lexicon senses the user's senses reference (sync layer). Since Dexie v4 also `cefr`, `cefr_source`, `cefr_list`, `cefr_reason_tr`, `zipf` (word level, see "Word levels"); the v4 upgrade set `lexicon_cursor` back to 0 so they are pulled again with levels. |
 | chunk_cache, import_jobs, import_candidates | no | | Owned by the AI layer. Since Dexie v10 (v0.2 İP4, smart extraction) a candidate also has `cefr` / `cefr_source` (its sense's level), `bucket` (`for_you` / `easy` / `known` / `too_hard`; null until the job's last chunk is in), `from_list` (from a vocabulary-list chunk) and `rank` (display order); the v10 upgrade put rows of older jobs in `known` ("zaten var") or `for_you` with their selection unchanged. Decision 0018. |
+| anki_imports | no | `id` (= the import's source id), `created_at` | v0.3 İP1 (Dexie v12, decision 0019): one Anki import's counts, the note ids it created and the "Sözlükle eşleştir" queue (`enrich`: status, pending note ids, matched / term-only / unmatched, `paused_until`). Local only; cleared with the account's data. |
 | ref_cache | no | `key` | Static reference files fetched lazily, with their checksum. Currently `morphology`: word families, roots and affixes (decision 0014). Device-level: kept when switching or copying accounts (Dexie v6). |
 
 Every synced mutable row has `id` (UUID v7), `user_id` (null in guest mode), `created_at`,
@@ -35,8 +38,11 @@ Every synced mutable row has `id` (UUID v7), `user_id` (null in guest mode), `cr
 1. **Outbox in the same transaction.** Every write to a synced table goes through
    `writeTx` / `SyncWriter` (`src/data/writer.ts`). The writer stamps `updated_at` and a fresh
    HLC, then adds an outbox row (`op: 'upsert'`, or `'delete'` when `deleted_at` is set;
-   `payload` is the full row). Outbox rows are append-only on our side. The sync engine
-   deletes a row only after the server acknowledges it.
+   `payload` is the full row). The sync engine deletes a row only after the server
+   acknowledges it. The only other removal is compaction (decision 0025,
+   `src/data/outbox.ts`): entries covered by a newer entry of the same row are dropped (push
+   sends only the newest one anyway), and on a never-linked guest device log entries are
+   dropped too, because the first sign-in queues every log again.
 2. **Soft delete only.** Deleting a note soft-deletes its senses and cards. Deleting a sense
    soft-deletes its cards. Tombstones sync like any other change.
 3. **Logs are the truth for scheduling.** A card's FSRS state must equal
@@ -47,11 +53,16 @@ Every synced mutable row has `id` (UUID v7), `user_id` (null in guest mode), `cr
 4. **Unlock rule.** Recognition cards are always unlocked. A production or cloze card
    is unlocked when the note's recognition card is in Review or Relearning, or when the
    card has its own history (`deriveUnlocked`). This rule is re-derived after answers,
-   undo, sync and restore.
+   undo, sync and restore. When a note has more than one recognition card (a split or a
+   reset, v0.3 İP6), the rule follows its primary one (`primaryRecognition`: live,
+   note-level and not suspended first; decision 0026).
 5. **Card set per note.** Each live note has 1 recognition card. Each live sense has 1
    production card, plus 1 cloze card only when it has `source_sentence` and a valid
    `span`. A root/affix note (`term_type = 'affix'`, e.g. "-spect-") has only its recognition
-   card (decision 0014).
+   card (decision 0014), and so has a contrast note (`term_type = 'contrast'`, "affect ↔
+   effect", decision 0026). Split senses (one recognition card per sense, `sense_id` set)
+   and reset copies are extra cards the user asked for; the card they replace stays,
+   suspended, with its logs.
 6. **HLC.** The format is `"<ms:15>:<counter:5>:<device_id>"`, and the strings compare
    lexicographically. The clock is stored in `meta.hlc` and advanced inside each write
    transaction. Remote and restored stamps are merged with `receive`, so the next local
@@ -157,18 +168,28 @@ All actions take an optional trailing `now` (ms) for tests. They throw `ActionEr
 | `getHomeSummary()` / `getStreakSummary()` / `getHeatmap()` | Feed the home line, the stats metrics and the 26-week heatmap. |
 | `getNoteDetail`, `findNoteByTerm`, `listNotes`, `listSources`, `pendingChangesCount` | Read helpers. |
 | `getSettings` / `ensureSettings` / `updateSettings(patch)` | Settings. `updateSettings` validates with zod and with ts-fsrs. Call `ensureSettings()` at startup. |
-| `exportBackup()` → `BackupFile` | Builds the backup (`schema_version` 8: `practice_logs` since 3, `notes.level_override` since 4, `content_feedback`/`user_content` since 5, profile fields since 6, `decks` since 7, `level_tests`, `known_terms` and the settings level fields since 8; older files still restore, missing fields as null or their defaults and missing tables as none; an overwrite restore of a file without a table leaves the local rows of that table alone) and records `last_backup_at`. |
+| `loadOptimizerLogs` / `countOptimizerReviews` / `adoptFsrsParams(params)` / `revertFsrsParams()` / `markFsrsOptRun()` | Personal FSRS parameters (`src/data/fsrsOpt.ts`, decision 0022). Adopt and revert store the settings and replay every card from its logs in one transaction; review logs are only read. |
+| `exportBackup()` → `BackupFile` | Builds the backup (`schema_version` 9: `practice_logs` since 3, `notes.level_override` since 4, `content_feedback`/`user_content` since 5, profile fields since 6, `decks` since 7, `level_tests`, `known_terms` and the settings level fields since 8, `weekly_reports` and `settings.goals` since 9; older files still restore, missing fields as null or their defaults and missing tables as none; an overwrite restore of a file without a table leaves the local rows of that table alone) and records `last_backup_at`. |
+| `ensureWeeklyReport()` / `finalizeReportDraft(week, comment)` / `listWeeklyReports()` / `getReportNotice()` / `markReportSeen(week)` | Weekly report (`src/data/weeklyReport.ts`, decision 0027). The report is made as a draft after Monday's day start and stored in `weekly_reports` when its comment comes, or without a comment once waiting ends. The runner is `src/features/report/queue.ts`. |
+| `getGoalsView()` / `setGoals(goals)` | Goal progress this week and month, with suggestions from the last 8 weeks (`domain/goals.ts`). `setGoals(null)` removes the goals. |
 | `saveLevelTest(input)` / `applyTestLevel(level)` | Store a finished level test; a reliable one sets the level (`test`) and marks its "Biliyorum" words known. `applyTestLevel` uses an unreliable result anyway. |
 | `getKnownTermKeys()` / `markKnown(term, source)` / `unmarkKnown(term)` / `listKnownTerms()` | Known words (stable API for İP4). |
 | `getLevelOverview()` / `runWeeklyLevelUpdate()` / `dismissLevelChange()` / `undoLevelChange()` | The level model, vocabulary counter and weekly update (`domain/levelUpdate.ts`, `domain/vocabSize.ts`). |
-| `restoreBackup(fileOrJson, 'merge' \| 'overwrite')` | Verifies the zod schema and checksum, restores, then recomputes all cards and `daily_activity`. |
+| `restoreBackup(fileOrJson, 'merge' \| 'overwrite')` | Verifies the zod schema and checksum, restores in transactions of `RESTORE_CHUNK` (500) rows with bulk reads and writes, then recomputes all cards and `daily_activity` and compacts a guest's outbox (decision 0025). |
 | `exportCsv(headers)` | CSV export. |
+| `importAnkiPlan(plan, fileName, {onProgress})` | Anki import (decision 0019): writes a `planAnkiImport()` plan (`domain/anki.ts`). New terms get notes, cards and their history (logs `origin = 'anki'`, cards = replay) in transactions of 500 notes; terms the library has get only missing meanings, no history. Re-importing the same file adds nothing. Rebuilds `daily_activity`. |
+| `startAnkiEnrich(id)` / `nextAnkiEnrichItems` / `applyAnkiEnrichResult` / `pauseAnkiEnrich` | "Sözlükle eşleştir" queue of an Anki import (runner: `src/features/anki/enrichQueue.ts`). A sense is linked only to a lexicon sense with the same Turkish meaning. |
 | `runIntegrityCheck()` / `repairIntegrity()` | Startup check and the "Veri onarımı" repair. |
-| `applyRemoteRows(batch)` | Sync pull hook. Mutable rows use last-writer-wins by HLC (an equal HLC only fills columns an older version dropped, `domain/syncMerge.ts`); logs are inserted if new. Pulled rows are not queued. Touched cards are recomputed (and queued if changed), duplicates are flagged, and `daily_activity` is rebuilt when logs arrive. |
-| `adoptGuestData(userId)` | Moves guest data to an account: sets `meta.user_id`, stamps guest rows and queues everything, including logs. |
+| `applyRemoteRows(batch)` | Sync pull hook. Mutable rows use last-writer-wins by HLC (an equal HLC only fills columns an older version dropped, `domain/syncMerge.ts`); logs are inserted if new. Pulled rows are not queued. Touched cards are recomputed (and queued if changed; every card when the pulled settings change `fsrs_params`), duplicates are flagged, and `daily_activity` is rebuilt when logs arrive. |
+| `adoptGuestData(userId)` | Moves guest data to an account: sets `meta.user_id`, stamps guest rows and queues everything, including logs, then compacts the outbox (one entry per row). |
+| `compactOutbox()` / `compactGuestOutbox()` | Outbox compaction (decision 0025): one entry per row; a guest also drops log entries. Runs after a restore, at the first sign-in and with the daily startup check. |
 | `copyCardsFromOtherAccount(userId, snapshot)` | Another account's data on this device: copies its live notes, senses and referenced sources into `userId` as new rows (new ids, cards New), applies the account's snapshot and drops the other account's rows, logs, settings and import jobs locally. No history crosses accounts (decision 0008). |
 | `resetStudyHistory()` | "Çalışma geçmişini sıfırla": an undo row for every answer that still counts, all cards recomputed (New, re-locked), `daily_activity` rebuilt. Syncs as ordinary log and card rows. |
 | `rebuildDailyActivity()`, `recomputeAllCards()` | Maintenance. |
+| `getCardLapses(cardId)` / `leechAfterAnswer(cardId, logId)` / `listLeechCards()` / `lapsesByNote()` | Leeches (`src/data/leech.ts`, decision 0026): lapses from the card's effective logs; whether an answer was the 6th lapse; the 6+-lapse cards for Stats. |
+| `getLeechSheet(cardId)` / `splitSenses(cardId)` / `resetCard(cardId)` / `undoLeechAction(originalId, createdIds)` | "Bu karta başka yoldan bakalım": the sheet's data; one recognition card per sense or a fresh copy (the original is suspended, logs untouched); undo tombstones the new cards and unsuspends the original. |
+| `getConfusables({noteId, limit, familyOf})` / `getConfusionPicker(noteId, query)` / `reportConfusion` / `hideConfusablePair` / `clearConfusion` | Confusable pairs (`src/data/contrast.ts`): scanned near pairs whose words are forgotten plus reported ones, minus hidden pairs and pairs with a card; the "karıştırdığın kelime" picker; report/hide rows in `user_content` (kind `confusion`). |
+| `getContrastDraft(pair)` / `cachedContrast` / `storeContrastNote(res)` / `createContrastCard(input)` / `getContrastCard(noteId)` / `saveContrastText(noteId, text)` | Contrast cards: the draft from the cached shared content (works offline), caching an `ai-contrast` answer, the recognition-only note, and the user's difference line (`user_content` kind `contrast`). |
 | `logError`, `listErrors`, `clearErrors` | Error log. |
 
 ### Restore semantics
@@ -179,7 +200,11 @@ All actions take an optional trailing `now` (ms) for tests. They throw `ActionEr
 - **overwrite**: The backup's mutable rows replace the local ones and are restamped. Live
   local rows that are absent from the file are soft-deleted.
 - **Both modes**: Logs (review and practice) are insert-only, so missing logs are added and
-  none are removed.
+  none are removed. A guest's restored logs are not queued (the first sign-in queues them).
+- **Chunks**: each transaction covers `RESTORE_CHUNK` rows and their outbox entries, so an
+  interrupted restore leaves part of the file applied; running it again finishes it (rows
+  already restored compare equal, known logs are skipped). Tests check that every chunk size
+  gives the same result and that a failed chunk is finished by a second run.
 
 Restoring into an empty database and exporting again gives identical tables and checksum.
 A property test checks this.
@@ -206,8 +231,8 @@ show.
 | Table (Dexie v5)   | Synced                      | Indexes                                              | Notes |
 | ------------------ | --------------------------- | ---------------------------------------------------- | ----- |
 | `lexicon_examples` | pulled only (shared cache)  | `id`, `sense_id`, `[sense_id+level_band]`, `updated_at` | Shared sentences of a lexicon sense: `context`, `level_band` (A2/B1/B2/C1), `text_en`, `span`, `translations` (`{"tr": …}`), `status`. Never user text; written only by `ai-examples`. Retired rows are removed locally. |
-| `content_feedback` | yes (per user, LWW)         | `id`, `[target_kind+target_id]`, `deleted_at`         | One row per target (`target_kind` `example`, `false_friend` — a false-friend warning hidden (`skip`) or reported (`reject`), target id = UUID v8 of SHA-256 over ("pair_note", "en-tr", `term_norm\|tr_word`), decision 0014; `mnemonic` etc. later), `verdict` `like`/`skip`/`reject`. The id is derived from the target (UUID v8 of SHA-256), so two devices write the same row. Taking a verdict back is a tombstone. |
-| `user_content`     | yes (per user, LWW)         | `id`, `kind`, `lexicon_sense_id`, `replaces_id`, `deleted_at` | The user's own text: `kind` `example_sentence` (an edited sentence, `replaces_id` = the shared sentence, id derived from it) and later mnemonics (İP6). Private to the account; never written to a shared table. |
+| `content_feedback` | yes (per user, LWW)         | `id`, `[target_kind+target_id]`, `deleted_at`         | One row per target (`target_kind` `example`, `false_friend` — a false-friend warning hidden (`skip`) or reported (`reject`), target id = UUID v8 of SHA-256 over ("pair_note", "en-tr", `term_norm\|tr_word`), decision 0014; `mnemonic` — a hidden mnemonic suggestion, decision 0020), `verdict` `like`/`skip`/`reject`. The id is derived from the target (UUID v8 of SHA-256), so two devices write the same row. Taking a verdict back is a tombstone. |
+| `user_content`     | yes (per user, LWW)         | `id`, `kind`, `lexicon_sense_id`, `replaces_id`, `deleted_at` | The user's own text: `kind` `example_sentence` (an edited sentence, `replaces_id` = the shared sentence, id derived from it) and `mnemonic` (the user's pick or own text, one row per sense, decision 0020). Private to the account; never written to a shared table. |
 | `example_jobs`     | no (device-local queue)     | `key` (`<lexicon sense id>\|<band>`), `status`, `next_attempt_at` | Background preparation: `contexts` asked, `priority` (2 open on screen, 1 new card, 0 backfill), `attempts`, `error`. |
 
 Settings: `example_tr_visible` (null/false: the translation of an example sentence shows on
@@ -223,3 +248,40 @@ where the term is located). The back repeats that sentence.
 Backups (`schema_version` 5 and later) carry `content_feedback` and `user_content`; files without them
 restore as before, and an overwrite restore of such a file leaves the local rows alone.
 Copying cards to another account does not copy them (decision 0009).
+
+## Mnemonics, text topics and model false friends (v0.3 İP2, decision 0020)
+
+| Table (Dexie v13)    | Synced                     | Indexes                                   | Notes |
+| -------------------- | -------------------------- | ----------------------------------------- | ----- |
+| `lexicon_pair_notes` | no (read-only cache)       | `id`, `[sense_id+kind]`, `term_norm`      | Shared notes of a lexicon sense: `mnemonic_suggestion` (`content = {type: sound/story/image, text_tr, why}`, from `ai-mnemonic`; a local row `none:<sense id>` with `{type: 'none'}` remembers "no good association") and `false_friend` (`{tr_word, en_meaning_tr, tr_meaning_tr, tr_meaning_en, strength, note_tr}`, from `ai-extract` extract-v5). Never user text. Kept when switching or copying accounts. |
+
+- The user's mnemonic: `user_content` with `kind 'mnemonic'`, one row per sense of the user
+  (id = UUID v8 of SHA-256 over ("user_content", "mnemonic", sense id)), `sense_id`,
+  `lexicon_sense_id` (null for a sense outside the shared lexicon), `replaces_id` = the
+  suggestion it came from or null, `text` (1–300 characters), `selected: true`.
+- A rejected suggestion: `content_feedback` with `target_kind 'mnemonic'`, `target_id` =
+  the suggestion's `lexicon_pair_notes.id`, `verdict 'reject'`.
+- `import_jobs.chunk_topics` (not indexed): the topic keys of each processed chunk; the
+  last chunk aggregates them into `sources.topics` (`aggregateTopics`). Absent on jobs from
+  before v13 (no upgrade needed). Chunk results in `chunk_cache` carry `topics` and, per
+  candidate, `false_friend` since extract-v5.
+
+## Leeches, confusables and contrast cards (v0.3 İP6, decision 0026)
+
+- Nothing is stored for a leech: `lapses ≥ 6` from the effective review logs
+  (`domain/leech.ts`). Split and reset add cards and suspend the original; no log changes.
+- Dexie v19: no new table or index. The upgrade re-pulls `notes` once (`pull_backfill`) for
+  contrast notes written by newer devices.
+- `notes.term_type` may be `contrast`: term "a ↔ b" (sorted), sense 1 = the first word,
+  sense 2 = the second (meanings copied from the user's senses, sentences from the shared
+  content or none), one recognition card, no level.
+- `user_content` kind `confusion`: a pair the user reported (`context 'reported'`,
+  `selected: true`) or hid (`'hidden'`); id = UUID v8 of SHA-256 over ("user_content",
+  "confusion", the sorted normalised terms); `text` "a ↔ b"; `sense_id` / `replaces_id` =
+  the two senses. Undo is a tombstone.
+- `user_content` kind `contrast`: the difference line of a contrast note (1–300
+  characters); id from ("user_content", "contrast", note id); `sense_id` = the note's first
+  sense; `replaces_id` = the shared `lexicon_pair_notes` row it came from, or null.
+- `lexicon_pair_notes` kind `contrast` (cache of `ai-contrast`): `sense_id` = the smaller
+  lexicon sense id, `content_key` = "<smaller>|<larger>", `content = {a, b, difference_tr}`
+  with each side `{sense_id, lemma, sentence_en, span, sentence_tr}`. Never user text.

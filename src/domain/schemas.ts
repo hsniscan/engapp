@@ -1,5 +1,6 @@
 // zod schemas for synced rows. Used to validate backup files and (later) sync payloads.
 import { z } from 'zod';
+import { clampNotifyHour } from '../../supabase/functions/_shared/push-rule';
 import type {
   Card,
   ContentFeedback,
@@ -14,6 +15,7 @@ import type {
   Settings,
   Source,
   UserContent,
+  WeeklyReport,
 } from './types';
 
 const millis = z.number().int();
@@ -35,10 +37,15 @@ const span = z.tuple([z.number().int(), z.number().int()]);
 // Optional, not defaulted: a backup without the key keeps the checksum it was written with.
 const topicList = z.array(z.string().min(1).max(40)).max(40).nullable().optional();
 
-const termType = z.enum(['word', 'phrase', 'pattern', 'affix']);
+const termType = z.enum(['word', 'phrase', 'pattern', 'affix', 'contrast']);
 const cefr = z.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']);
 const cardState = z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]);
 const rating = z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]);
+const dayKey = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+// v0.3 İP3: an inclusive range of local days (domain/vacation.ts).
+const vacationRange = z
+  .object({ start: dayKey, end: dayKey })
+  .refine((r) => r.start <= r.end, 'Vacation ends before it starts');
 
 export const noteSchema: z.ZodType<Note> = z.object({
   ...synced,
@@ -100,6 +107,9 @@ export const reviewLogSchema: z.ZodType<ReviewLog> = z.object({
   shown_sense_id: id.nullable(),
   created_at: millis,
   hlc: z.string().min(1),
+  // v0.3 İP1: absent/null = 'app'. An unknown value from a newer app is read as absent, so
+  // the log still counts.
+  origin: z.enum(['app', 'anki']).nullable().optional().catch(undefined),
 });
 
 export const practiceLogSchema: z.ZodType<PracticeLog> = z.object({
@@ -118,7 +128,7 @@ export const practiceLogSchema: z.ZodType<PracticeLog> = z.object({
 
 export const sourceSchema: z.ZodType<Source> = z.object({
   ...synced,
-  kind: z.enum(['text', 'pdf']),
+  kind: z.enum(['text', 'pdf', 'anki']),
   title: z.string(),
   file_name: z.string().nullable(),
   page_count: z.number().int().nullable(),
@@ -164,6 +174,42 @@ export const settingsSchema: z.ZodType<Settings> = z.object({
     .catch(null),
   // v0.2 İP4; absent in older rows and backups (= false).
   show_easy_candidates: z.boolean().nullish(),
+  // v0.3 İP3 load management; absent in older rows and backups (= the defaults). Malformed
+  // values (a newer client, a hand-edited backup) fall back to "unset" instead of rejecting
+  // the whole settings row.
+  daily_capacity_min: z.number().int().min(1).max(600).nullish().catch(null),
+  catchup_auto: z.boolean().nullish().catch(null),
+  vacation: vacationRange.nullish().catch(null),
+  vacation_history: z.array(vacationRange).max(50).nullish().catch(null),
+  // v0.3 İP4; absent in older rows and backups (= nothing to revert, never ran).
+  fsrs_params_prev: z.array(z.number()).nullish(),
+  fsrs_opt_at: millis.nullish(),
+  // v0.3 İP8; absent in older rows and backups (= off). A malformed value must not reject the row.
+  // The hour is kept inside 09–21 like the patch schema (data/settings.ts) and the push rule
+  // (clampNotifyHour): a reminder at 22:00 would fall into the quiet hours (decision 0024).
+  notify: z
+    .object({
+      enabled: z.boolean(),
+      mode: z.enum(['auto', 'fixed']).catch('auto'),
+      hour: z
+        .number()
+        .int()
+        .nullable()
+        .transform((h) => (h === null ? null : clampNotifyHour(h)))
+        .catch(null),
+    })
+    .nullish()
+    .catch(null),
+  // v0.3 İP7; absent in older rows and backups (= no goals). A malformed goal (a newer
+  // client, a hand-edited backup) is dropped, not the row.
+  goals: z
+    .object({
+      week_active_days: z.number().int().min(1).max(7).nullish().catch(null),
+      month_new_terms: z.number().int().min(1).max(100_000).nullish().catch(null),
+      week_minutes: z.number().int().min(1).max(100_000).nullish().catch(null),
+    })
+    .nullish()
+    .catch(null),
 });
 
 export const contentFeedbackSchema: z.ZodType<ContentFeedback> = z.object({
@@ -237,4 +283,57 @@ export const knownTermSchema: z.ZodType<KnownTerm> = z.object({
   term_norm: z.string().min(1).max(200),
   source: z.enum(['test', 'preview', 'manual', 'auto']),
   cefr_at_mark: cefr.nullable().default(null),
+});
+
+const reportGroupStat = z.object({
+  dimension: z.enum(['term_type', 'level', 'topic', 'source', 'pos', 'card_type']),
+  key: z.string().min(1).max(200),
+  n: z.number().int().min(0),
+  passed: z.number().int().min(0),
+});
+
+/**
+ * The numbers of a weekly report (v0.3 İP7). Loose: a newer app version may add fields, and
+ * they are kept, so an insert-only row is never changed by reading it.
+ */
+export const weeklyReportSummarySchema = z.looseObject({
+  v: z.literal(1),
+  week: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  week_end: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  active_days: z.number().int().min(0).max(7),
+  reviews: z.number().int().min(0),
+  minutes: z.number().int().min(0),
+  new_cards: z.number().int().min(0),
+  new_learned: z.number().int().min(0),
+  retention: z.object({ n: z.number().int().min(0), passed: z.number().int().min(0) }),
+  groups_days: z.union([z.literal(7), z.literal(28)]),
+  strongest: reportGroupStat.nullable(),
+  weakest: reportGroupStat.nullable(),
+  streak: z.number().int().min(0),
+  goals: z
+    .array(
+      z.object({
+        key: z.enum(['week_active_days', 'week_minutes', 'month_new_terms']),
+        target: z.number().int().min(0),
+        value: z.number().int().min(0),
+      }),
+    )
+    .max(3),
+  focus: z.string().min(1).max(40),
+  focus_note_ids: z.array(id).max(20),
+  focus_value: z.number().int().nullable(),
+});
+
+/** A weekly report row (insert-only, one per user and week). */
+export const weeklyReportSchema: z.ZodType<WeeklyReport> = z.object({
+  id,
+  user_id: z.string().nullable(),
+  week: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  summary: weeklyReportSummarySchema,
+  comment: z.string().min(1).max(2000).nullable(),
+  comment_model: z.string().max(100).nullable(),
+  prompt_version: z.string().max(40).nullable(),
+  device_id: z.string(),
+  created_at: millis,
+  hlc: z.string().min(1),
 });

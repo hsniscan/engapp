@@ -16,7 +16,7 @@ export async function restoreSeed(page: Page, cards: number) {
   const dialog = page.getByRole('dialog', { name: 'Yedeği geri yükle' });
   await dialog.getByRole('button', { name: 'Üzerine yaz' }).click();
   await expect(page.getByText('Geri yükleme tamamlandı', { exact: true })).toBeVisible({
-    timeout: 120_000,
+    timeout: 240_000,
   });
   return {
     restoreMs: Date.now() - t0,

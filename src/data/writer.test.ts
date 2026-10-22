@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { resetDb } from '../test/db';
-import { compareHlc, decodeHlc } from '../domain/hlc';
+import { compareHlc, decodeHlc, encodeHlc } from '../domain/hlc';
 import { addNoteWithSenses, editNote } from './actions';
 import { db } from './db';
 import { ActionError } from './errors';
 import { clearErrors, ERROR_LOG_LIMIT, listErrors, logError } from './errorLog';
 import { getDeviceId } from './meta';
 import { defaultSettings, ensureSettings, getSettings, updateSettings } from './settings';
+import { writeTx } from './writer';
 
 const T = Date.UTC(2026, 9, 21, 9);
 
@@ -45,6 +46,26 @@ describe('sync write path', () => {
     const a = await addNoteWithSenses({ term: 'one', senses: [{ meaning_tr: 'bir' }] }, T);
     const b = await addNoteWithSenses({ term: 'two', senses: [{ meaning_tr: 'iki' }] }, T - 86_400_000);
     expect(compareHlc(b.note.hlc, a.note.hlc)).toBe(1);
+  });
+
+  it('bulk writes stamp and queue like single ones; as-is rows move the clock past them', async () => {
+    const a = await addNoteWithSenses({ term: 'one', senses: [{ meaning_tr: 'bir' }] }, T);
+    const b = await addNoteWithSenses({ term: 'two', senses: [{ meaning_tr: 'iki' }] }, T);
+    await db.outbox.clear();
+    const future = encodeHlc({ ms: T + 3_600_000, counter: 7, node: 'other' });
+    const stamped = await writeTx([db.notes], T + 1, async (w) => {
+      await w.putManyAsIs('notes', [{ ...a.note, tags: ['x'], hlc: future }]);
+      return w.putMany('notes', [{ ...b.note, deleted_at: T + 1 }]);
+    });
+    expect(compareHlc(stamped[0]!.hlc, future)).toBe(1);
+    expect(stamped[0]!.updated_at).toBe(T + 1);
+    expect(await db.notes.get(a.note.id)).toMatchObject({ tags: ['x'], hlc: future });
+    const queued = await db.outbox.toArray();
+    expect(queued.map((o) => [o.row_id, o.op])).toEqual([
+      [a.note.id, 'upsert'],
+      [b.note.id, 'delete'],
+    ]);
+    expect(queued[1]!.payload).toEqual(await db.notes.get(b.note.id));
   });
 });
 

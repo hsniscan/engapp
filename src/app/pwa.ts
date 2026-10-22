@@ -28,6 +28,13 @@ export function registerServiceWorker(): void {
     });
   };
 
+  // A tapped reminder while the app is open (public/push-sw.js): route in place, no reload.
+  navigator.serviceWorker.addEventListener('message', (e: MessageEvent) => {
+    const data = e.data as { type?: unknown; url?: unknown } | null;
+    if (data?.type === 'engapp:navigate' && typeof data.url === 'string' && data.url.startsWith('/'))
+      void router.navigate(data.url);
+  });
+
   router.subscribe((state) => {
     if (inReview(state.location.pathname)) {
       if (toastId) toast.dismiss(toastId);

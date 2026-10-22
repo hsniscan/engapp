@@ -4,7 +4,43 @@ export { loadLevelData, levelDataNow } from './levelData';
 export * from './actions';
 export * from './queries';
 export * from './examples';
+export * from './mnemonics';
+export {
+  computeWeeklySummary,
+  deferReportDraft,
+  draftExpired,
+  dueReportDrafts,
+  ensureWeeklyReport,
+  finalizeReportDraft,
+  getGoalsView,
+  getReportNotice,
+  listReportDrafts,
+  listWeeklyReports,
+  markReportSeen,
+  REPORT_COMMENT_WAIT_MS,
+  REPORT_MAX_ATTEMPTS,
+  reportSeenKey,
+  setGoals,
+  type EnsureReportOutcome,
+  type GoalsView,
+  type ReportListItem,
+} from './weeklyReport';
+export * from './leech';
+export * from './contrast';
 export { addExtraNew, getMoreStudyOverview, MAX_EXTRA_NEW_STEP, type MoreStudyOverview } from './extraStudy';
+export {
+  computeWorkload,
+  dismissLoadWarning,
+  endVacation,
+  getLoadStatus,
+  getWorkloadInput,
+  isLoadWarningSnoozed,
+  setVacation,
+  type LoadStatus,
+  type LoadToday,
+  type WorkloadInput,
+  type WorkloadView,
+} from './load';
 export {
   countDeckFilter,
   createDeck,
@@ -47,6 +83,7 @@ export {
   exportBackup,
   exportCsv,
   restoreBackup,
+  RESTORE_CHUNK,
   runIntegrityCheck,
   repairIntegrity,
   adoptGuestData,
@@ -59,8 +96,18 @@ export {
   type RestoreResult,
   type RepairResult,
 } from './maintenance';
+export { compactOutbox, compactGuestOutbox } from './outbox';
+export { isRestoreRunning, subscribeRestoreRunning } from './restoreState';
 export { getSettings, ensureSettings, updateSettings, defaultSettings, DEFAULT_SETTINGS, type SettingsPatch } from './settings';
 export { rebuildDailyActivity, listDailyActivity } from './dailyActivity';
+export {
+  adoptFsrsParams,
+  countOptimizerReviews,
+  loadOptimizerLogs,
+  markFsrsOptRun,
+  revertFsrsParams,
+  type ReviewCounts,
+} from './fsrsOpt';
 export { repairDuplicateSenses, repairListEntrySentences } from './repairs';
 export { getDeviceId, getCurrentUserId, getMeta, setMeta, META } from './meta';
 export { PULL_BACKFILL_KEY } from './backfill';
@@ -72,6 +119,7 @@ export {
   clearPairNoteFeedback,
   dismissMorphemeSuggestion,
   getDismissedMorphemes,
+  getFoundFalseFriends,
   getHiddenPairNotes,
   pairNoteFeedbackIds,
   getUserWordSets,
@@ -91,6 +139,22 @@ export {
   setTopicMuted,
   type TopicProfile,
 } from './profile';
+export {
+  ANKI_CHUNK_NOTES,
+  ankiEnrichResumeAt,
+  applyAnkiEnrichResult,
+  getAnkiImport,
+  importAnkiPlan,
+  listAnkiImports,
+  nextAnkiEnrichItems,
+  nextAnkiEnrichWake,
+  pauseAnkiEnrich,
+  startAnkiEnrich,
+  type AnkiEnrichItem,
+  type AnkiEnrichOutcome,
+  type AnkiImportProgress,
+  type AnkiImportResult,
+} from './anki';
 export { getKnownTermKeys, listKnownTerms, markKnown, unmarkKnown } from './knownTerms';
 export {
   BAND_SIZES,

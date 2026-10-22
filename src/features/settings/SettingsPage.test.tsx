@@ -77,9 +77,10 @@ describe('settings', () => {
       '2 not, 5 kart, 1 tekrar',
     );
     await user.click(within(dialog).getByRole('button', { name: 'Birleştir' }));
-    await waitFor(async () => expect(await db.notes.count()).toBe(2));
-    expect(await db.review_logs.count()).toBe(1);
+    // The restore writes in chunks (decision 0025): check once it has finished.
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(await db.notes.count()).toBe(2);
+    expect(await db.review_logs.count()).toBe(1);
   });
 
   it('"Çalışma geçmişini sıfırla" asks first, then resets every card to New', async () => {

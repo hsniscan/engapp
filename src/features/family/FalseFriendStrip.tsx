@@ -1,16 +1,26 @@
+import { useLiveQuery } from 'dexie-react-hooks';
 import { useTranslation } from 'react-i18next';
-import { clearPairNoteFeedback, logError, setPairNoteFeedback } from '@/data';
-import { falseFriendsFor, type FalseFriendNote } from '@/domain/pairNotes';
+import { clearPairNoteFeedback, getFoundFalseFriends, logError, setPairNoteFeedback } from '@/data';
+import { normalizeTerm } from '@/domain/normalize';
+import { falseFriendOfRow, falseFriendsFor, mergeFalseFriends, type FalseFriendNote } from '@/domain/pairNotes';
 import { cn, Icon, toast } from '@/ui';
 import { useFalseFriendIndex, useHiddenPairNotes } from './hooks';
 
 /**
  * The false-friend warnings for a term ("actually ≠ aktüel"), one strip each: an alert icon
- * and a label (never colour alone), what each word means, and "Gizle" / "Hatalı".
+ * and a label (never colour alone), what each word means, and "Gizle" / "Hatalı". The
+ * hand-written list first, then the ones the extraction model found (extract-v5).
  */
 export function FalseFriendStrips({ term, className }: { term: string; className?: string }) {
   const index = useFalseFriendIndex();
-  const all = index ? falseFriendsFor(term, index) : [];
+  const norm = normalizeTerm(term);
+  const found = useLiveQuery(() => getFoundFalseFriends(norm), [norm]);
+  const all = index
+    ? mergeFalseFriends(
+        falseFriendsFor(term, index),
+        (found ?? []).map((r) => falseFriendOfRow(r, term)).filter((n): n is FalseFriendNote => n !== null),
+      )
+    : [];
   const hidden = useHiddenPairNotes(all.map((n) => n.key));
   if (!index || !hidden) return null;
   const notes = all.filter((n) => !hidden.has(n.key));

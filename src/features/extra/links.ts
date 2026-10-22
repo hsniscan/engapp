@@ -11,13 +11,21 @@ export interface PracticeParams {
   tag: string | null;
   /** Source 'deck': the smart deck's id. */
   deck?: string | null;
+  /** Source 'list': the notes of the round (at most MAX_LIST_NOTES). */
+  notes?: string[] | null;
 }
 
-/** URL of a practice round: /practice?source=hard&size=10[&tag=iş][&deck=<id>]. */
+/** A 'list' round names at most this many notes (a round has at most 20 cards). */
+export const MAX_LIST_NOTES = 20;
+const NOTE_ID = /^[0-9A-Za-z-]{1,64}$/;
+
+/** URL of a practice round: /practice?source=hard&size=10[&tag=iş][&deck=<id>][&notes=a,b]. */
 export function practiceHref(p: PracticeParams): string {
   const q = new URLSearchParams({ source: p.source, size: String(p.size) });
   if (p.source === 'tag' && p.tag) q.set('tag', p.tag);
   if (p.source === 'deck' && p.deck) q.set('deck', p.deck);
+  if (p.source === 'list' && p.notes?.length)
+    q.set('notes', p.notes.slice(0, MAX_LIST_NOTES).join(','));
   return `/practice?${q.toString()}`;
 }
 
@@ -33,7 +41,11 @@ export function parsePracticeParams(search: URLSearchParams): PracticeParams {
     : 10;
   const tag = source === 'tag' ? search.get('tag') || null : null;
   const deck = source === 'deck' ? search.get('deck') || null : null;
-  return { source, size, tag, deck };
+  if (source !== 'list') return { source, size, tag, deck };
+  const notes = [
+    ...new Set((search.get('notes') ?? '').split(',').filter((id) => NOTE_ID.test(id))),
+  ].slice(0, MAX_LIST_NOTES);
+  return { source, size, tag, deck, notes };
 }
 
 /** The +N choices: 5 and 10 when that many are waiting, otherwise what is left. */

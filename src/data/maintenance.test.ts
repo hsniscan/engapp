@@ -1,5 +1,5 @@
 import fc from 'fast-check';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetDb } from '../test/db';
 import { encodeHlc } from '../domain/hlc';
 import { CardState, Rating, type Card, type RatingValue, type ReviewLog } from '../domain/types';
@@ -17,6 +17,7 @@ import {
   runIntegrityCheck,
 } from './maintenance';
 import { getSettings, updateSettings } from './settings';
+import { META, setMeta } from './meta';
 
 const T = Date.UTC(2026, 9, 21, 9);
 const MIN = 60_000;
@@ -179,6 +180,118 @@ describe('backup and restore', () => {
     await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] }, T);
     const csv = await exportCsv({ term: 'terim', meaning: 'anlam', ipa: 'IPA', sentence: 'cümle', tags: 'etiketler', created: 'eklenme tarihi' }, T);
     expect(csv).toBe('﻿terim;anlam;IPA;cümle;etiketler;eklenme tarihi\r\nbank;banka;;;;2026-10-21\r\n');
+  });
+});
+
+describe('chunked restore (decision 0025)', () => {
+  type Image = Record<string, unknown[]>;
+  const snapshot = async (): Promise<Image> => {
+    const out: Image = {};
+    for (const t of db.tables) out[t.name] = await t.toArray();
+    return out;
+  };
+  const load = async (img: Image) =>
+    db.transaction('rw', db.tables, async () => {
+      for (const t of db.tables) {
+        await t.clear();
+        if (img[t.name]?.length) await t.bulkPut(img[t.name]!);
+      }
+    });
+  /** Synced tables without the stamps, which depend on the order of writes. */
+  const content = async () => {
+    const out: Record<string, unknown[]> = {};
+    for (const t of ['notes', 'senses', 'cards', 'review_logs', 'sources', 'settings', 'practice_logs', 'daily_activity']) {
+      out[t] = (await db.table(t).toArray()).map((r: Record<string, unknown>) => {
+        const { hlc: _h, updated_at: _u, ...rest } = r;
+        return rest;
+      });
+    }
+    out.outbox = [...new Set((await db.outbox.toArray()).map((o) => `${o.table}:${o.row_id}:${o.op}`))].sort();
+    return out;
+  };
+
+  async function study(terms: string[], t0: number): Promise<number> {
+    let t = t0;
+    for (const [i, term] of terms.entries()) {
+      const r = await addNoteWithSenses({ term, tags: [`t${i}`], senses: [{ meaning_tr: `${term} tr` }] }, (t += MIN));
+      const rec = await recognition(r.note.id);
+      for (const rating of [3, 1, 3] as RatingValue[]) await answerCard({ card_id: rec.id, rating, duration_ms: 1000 }, (t += 11 * MIN));
+    }
+    return t;
+  }
+
+  it('property: any chunk size restores the same as one big chunk (merge and overwrite)', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.subarray(['bank', 'shore', 'give up', 'run', 'cope'], { minLength: 1 }),
+        fc.subarray(['bank', 'thrive', 'curb'], { minLength: 0 }),
+        fc.constantFrom<'merge' | 'overwrite'>('merge', 'overwrite'),
+        fc.integer({ min: 1, max: 4 }),
+        async (backupTerms, localTerms, mode, chunk) => {
+          await resetDb();
+          await updateSettings({ timezone: 'Europe/Istanbul' }, T - 1);
+          const t = await study(backupTerms, T);
+          const backup = await exportBackup(t + MIN);
+          await resetDb();
+          await updateSettings({ timezone: 'Europe/Istanbul' }, T - 1);
+          await study(localTerms, T + 5 * MIN);
+          const before = await snapshot();
+
+          const big = await restoreBackup(backup, mode, t + 2 * MIN);
+          const expected = await content();
+          await load(before);
+          const small = await restoreBackup(backup, mode, t + 2 * MIN, chunk);
+          expect(small).toEqual(big);
+          expect(await content()).toEqual(expected);
+          expect((await runIntegrityCheck()).ok).toBe(true);
+        },
+      ),
+      { numRuns: 12 },
+    );
+  }, 120_000);
+
+  it('an interrupted restore is finished by running it again', async () => {
+    const t = await study(['bank', 'shore', 'run'], T);
+    const backup = await exportBackup(t + MIN);
+    await resetDb();
+    await updateSettings({ timezone: 'Europe/Istanbul' }, T - 1);
+    const empty = await snapshot();
+    await restoreBackup(backup, 'overwrite', t + 2 * MIN);
+    const expected = await content();
+
+    await load(empty);
+    const realBulkAdd = db.review_logs.bulkAdd.bind(db.review_logs);
+    let calls = 0;
+    const spy = vi.spyOn(db.review_logs, 'bulkAdd').mockImplementation((...args: Parameters<typeof realBulkAdd>) => {
+      if (++calls === 2) return Promise.reject(new Error('QuotaExceededError')) as ReturnType<typeof realBulkAdd>;
+      return realBulkAdd(...args);
+    });
+    await expect(restoreBackup(backup, 'overwrite', t + 2 * MIN, 2)).rejects.toThrow('QuotaExceededError');
+    spy.mockRestore();
+    expect(await db.review_logs.count()).toBe(2); // the first chunk is in, the rest is not
+    const res = await restoreBackup(backup, 'overwrite', t + 2 * MIN, 2);
+    expect(res.inserted).toBe(0);
+    expect(res.logsAdded).toBe(backup.tables.review_logs.length - 2);
+    expect(await content()).toEqual(expected);
+  });
+
+  it('a guest restore queues one entry per row and no logs; a linked device queues the logs', async () => {
+    const t = await study(['bank', 'shore'], T);
+    const backup = await exportBackup(t + MIN);
+    const rows = backup.tables.notes.length + backup.tables.senses.length + backup.tables.cards.length + backup.tables.settings.length;
+
+    await resetDb();
+    await restoreBackup(backup, 'merge', t + 2 * MIN);
+    const guest = await db.outbox.toArray();
+    expect(guest.filter((o) => o.table === 'review_logs')).toHaveLength(0);
+    expect(new Set(guest.map((o) => `${o.table}:${o.row_id}`)).size).toBe(guest.length);
+    expect(guest).toHaveLength(rows);
+
+    await resetDb();
+    await db.transaction('rw', db.meta, () => setMeta(META.userId, 'user-1'));
+    await restoreBackup(backup, 'merge', t + 2 * MIN);
+    const linked = await db.outbox.toArray();
+    expect(linked.filter((o) => o.table === 'review_logs')).toHaveLength(backup.tables.review_logs.length);
   });
 });
 

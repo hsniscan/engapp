@@ -34,6 +34,22 @@ describe('practice links', () => {
   });
 });
 
+describe('list rounds', () => {
+  it('carries the note ids, cleaned and capped', () => {
+    const p = { source: 'list', size: 10, tag: null, deck: null, notes: ['n-1', 'n-2'] } as const;
+    const href = practiceHref({ ...p, notes: [...p.notes] });
+    expect(href).toBe('/practice?source=list&size=10&notes=n-1%2Cn-2');
+    expect(parsePracticeParams(new URLSearchParams(href.split('?')[1]))).toEqual(p);
+    const many = Array.from({ length: 30 }, (_, i) => `n${i}`);
+    const parsed = parsePracticeParams(
+      new URLSearchParams(`source=list&size=20&notes=${['bad id', 'n0', ...many].join(',')}`),
+    );
+    expect(parsed.notes).toHaveLength(20);
+    expect(parsed.notes?.[0]).toBe('n0');
+    expect(parsePracticeParams(new URLSearchParams('source=hard&notes=a')).notes).toBeUndefined();
+  });
+});
+
 describe('extraNewSteps', () => {
   it('offers +5 and +10 when enough new cards wait, else what is left', () => {
     expect(extraNewSteps(0)).toEqual([]);

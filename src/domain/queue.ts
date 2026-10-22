@@ -9,12 +9,17 @@
 //           no new cards. Answers are ordinary FSRS reviews (ts-fsrs uses the real elapsed
 //           time, so an early answer gets a shorter interval than an on-time one).
 // Practice rounds never use this queue (domain/practice.ts).
+//
+// Catch-up (v0.3 İP3, domain/catchup.ts): with `reviewCap` set, at most that many reviews are
+// taken, the most overdue relative to their interval first. The cap never changes a card.
+import { relativeOverdueness } from './catchup';
 import { type Card, CardState, type Id, type Millis } from './types';
 
 export type QueueCard = Pick<
   Card,
   'id' | 'note_id' | 'card_type' | 'state' | 'due' | 'suspended' | 'deleted_at' | 'unlocked' | 'created_at'
->;
+> &
+  Partial<Pick<Card, 'scheduled_days'>>;
 
 export const NEW_EVERY_N_REVIEWS = 5;
 export const DEFAULT_LEARN_AHEAD_MS = 20 * 60_000;
@@ -44,6 +49,11 @@ export interface QueueContext {
    * instead of making the user wait. Default 20 minutes.
    */
   learnAheadMs?: number;
+  /**
+   * Catch-up: most reviews (Review-state cards) this queue may hold, ordered by relative
+   * overdueness instead of due date. Absent/null = no cap. Ignored in 'ahead' mode.
+   */
+  reviewCap?: number | null;
 }
 
 export type QueueKind = 'learning' | 'review' | 'new';
@@ -112,7 +122,11 @@ export function buildQueue(cards: Iterable<QueueCard>, ctx: QueueContext): Queue
   }
   learningDue.sort(byDue);
   learningSoon.sort(byDue);
-  reviews.sort(byDue);
+  const capped = !ahead && ctx.reviewCap !== undefined && ctx.reviewCap !== null;
+  if (capped) {
+    const od = new Map(reviews.map((c) => [c.id, relativeOverdueness(c, ctx.now)]));
+    reviews.sort((a, b) => od.get(b.id)! - od.get(a.id)! || byDue(a, b));
+  } else reviews.sort(byDue);
   fresh.sort(byCreated);
 
   // One card per note per day. Cards already answered today (learning steps) always pass.
@@ -129,7 +143,7 @@ export function buildQueue(cards: Iterable<QueueCard>, ctx: QueueContext): Queue
   };
   const newAllowed = ahead ? 0 : newCardsAllowed(ctx);
   const learnNow = take(learningDue);
-  const rev = take(reviews);
+  const rev = take(reviews, capped ? Math.max(0, ctx.reviewCap!) : Infinity);
   const nw = take(fresh, newAllowed);
   const soon = take(learningSoon);
 

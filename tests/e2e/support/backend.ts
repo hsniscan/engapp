@@ -18,6 +18,15 @@
  *    validation, insert-or-skip) on an in-memory example store with a scripted model;
  *    rpc lexicon_examples_pull pages that store for the senses the user has synced.
  *
+ *  - Mnemonics: /functions/v1/ai-mnemonic runs the real `runMnemonic` (shared table first,
+ *    validation, insert-or-skip) on an in-memory pair-note store with a scripted model.
+ *
+ *  - Weekly report: /functions/v1/ai-report runs the real `runReport` (request validation,
+ *    number check) with a scripted model; weekly_reports keeps one row per week.
+ *
+ *  - Contrast cards: /functions/v1/ai-contrast runs the real `runContrast` (shared table
+ *    first, validation, insert-or-skip) on the pair-note store with a scripted model.
+ *
  * Service workers are blocked in these tests (playwright.config.ts): routes then see every
  * request the page makes. The PWA test enables the worker and needs no backend.
  */
@@ -26,6 +35,10 @@ import { runExtract } from '../../../supabase/functions/_shared/extract.ts';
 import { runEnrich } from '../../../supabase/functions/_shared/enrich.ts';
 import { runExamples } from '../../../supabase/functions/_shared/examples.ts';
 import { MemoryExampleStore } from '../../../supabase/functions/_shared/testing/memory-example-store.ts';
+import { runMnemonic } from '../../../supabase/functions/_shared/mnemonic.ts';
+import { runReport } from '../../../supabase/functions/_shared/report.ts';
+import { runContrast } from '../../../supabase/functions/_shared/contrast.ts';
+import { MemoryPairNoteStore } from '../../../supabase/functions/_shared/testing/memory-pair-note-store.ts';
 import { ApiError } from '../../../supabase/functions/_shared/errors.ts';
 import { runThemes, THEMES_SYSTEM_PROMPT } from '../../../supabase/functions/_shared/themes.ts';
 import type { AiProvider } from '../../../supabase/functions/_shared/ai-provider.ts';
@@ -51,7 +64,7 @@ const CORS = {
   'access-control-expose-headers': '*',
 };
 
-const INSERT_ONLY = new Set(['review_logs', 'practice_logs', 'level_tests']);
+const INSERT_ONLY = new Set(['review_logs', 'practice_logs', 'level_tests', 'weekly_reports']);
 
 type Row = Record<string, unknown> & { id: string };
 interface Stored {
@@ -235,6 +248,83 @@ function fakeExamplesModel(counter: { calls: number }): AiProvider {
   };
 }
 
+/** ai-mnemonic's model: one story per call that names TERM (numbered, so "Başka öner" differs). */
+function fakeMnemonicModel(counter: { calls: number }): AiProvider {
+  return {
+    name: 'fake',
+    async generateJson(req) {
+      counter.calls++;
+      const term = /^TERM: (.+)$/m.exec(req.user)?.[1] ?? 'word';
+      const meaning = /^MEANING_TR: (.+)$/m.exec(req.user)?.[1] ?? 'anlam';
+      return {
+        data: {
+          mnemonics: [
+            {
+              type: 'story',
+              text_tr: `Öğretmenim derste ${term} dedi ve hepimiz ${meaning} anlamını güldürerek öğrendik (${counter.calls}).`,
+              why: 'Kısa bir sınıf sahnesi anlamı akılda tutar.',
+            },
+          ],
+        },
+        model: 'fake-model',
+        attempts: 1,
+        usage: { input_tokens: 300, output_tokens: 80, thinking_tokens: 0 },
+      };
+    },
+  };
+}
+
+/**
+ * ai-report's model: three sentences with the request's numbers, and one with a number the app
+ * never computed (the server drops it, so it never reaches the screen).
+ */
+function fakeReportModel(counter: { calls: number }): AiProvider {
+  return {
+    name: 'fake',
+    async generateJson(req) {
+      counter.calls++;
+      const days = /^ACTIVE_DAYS: (\d+)$/m.exec(req.user)?.[1] ?? '0';
+      return {
+        data: {
+          sentences: [
+            `Bu hafta ${days} gün çalıştın, bu güzel bir tempo.`,
+            'Toplamda 9999 tekrar yaptın.',
+            'Düzenli tekrar etmen kelimeleri kalıcı yapıyor.',
+            'Kısa ama sık çalışmaya devam edersen fark hemen görünür.',
+          ],
+        },
+        model: 'fake-model',
+        attempts: 1,
+        usage: { input_tokens: 200, output_tokens: 80, thinking_tokens: 0 },
+      };
+    },
+  };
+}
+
+/** ai-contrast's model: one sentence per term and a Turkish line naming both. */
+function fakeContrastModel(counter: { calls: number }): AiProvider {
+  return {
+    name: 'fake',
+    async generateJson(req) {
+      counter.calls++;
+      const a = /^A: (.+)$/m.exec(req.user)?.[1] ?? 'first';
+      const b = /^B: (.+)$/m.exec(req.user)?.[1] ?? 'second';
+      return {
+        data: {
+          a_sentence_en: `She wrote the word ${a} on the board today.`,
+          a_sentence_tr: 'Bugün kelimeyi tahtaya yazdı.',
+          b_sentence_en: `He said the word ${b} slowly in class.`,
+          b_sentence_tr: 'Kelimeyi derste yavaşça söyledi.',
+          difference_tr: `${a} ve ${b} farklı anlamlar taşır; cümlede hangisinin geçtiğine dikkat et.`,
+        },
+        model: 'fake-model',
+        attempts: 1,
+        usage: { input_tokens: 250, output_tokens: 90, thinking_tokens: 0 },
+      };
+    },
+  };
+}
+
 /** public.sync_tables as after every migration (decks, level test, …). */
 const SYNC_TABLES = [
   'notes',
@@ -249,6 +339,7 @@ const SYNC_TABLES = [
   'decks',
   'level_tests',
   'known_terms',
+  'weekly_reports',
 ];
 
 /**
@@ -292,6 +383,10 @@ export class FakeBackend {
   readonly model = { calls: 0 };
   readonly examples = new MemoryExampleStore();
   readonly examplesModel = { calls: 0 };
+  readonly pairNotes = new MemoryPairNoteStore();
+  readonly mnemonicModel = { calls: 0 };
+  readonly reportModel = { calls: 0 };
+  readonly contrastModel = { calls: 0 };
   /** Every RPC / function call, in order: { name, body }. */
   readonly calls: { name: string; body: unknown; at: number }[] = [];
   /** When true every backend request fails like a dropped connection. */
@@ -391,6 +486,62 @@ export class FakeBackend {
         return this.json(route, 500, { error: { code: 'internal', message: String(e) } });
       }
     }
+    if (path === '/functions/v1/ai-mnemonic') {
+      const deps = {
+        userId: TEST_USER.id,
+        store: this.store,
+        pairNotes: this.pairNotes,
+        provider: () => fakeMnemonicModel(this.mnemonicModel),
+        dailyLimit: 200,
+      };
+      try {
+        return this.json(route, 200, await runMnemonic(body, deps));
+      } catch (e) {
+        if (e instanceof ApiError) {
+          return this.json(route, e.status, {
+            error: { code: e.code, message: e.message, retry_after_s: e.retryAfterS },
+          });
+        }
+        return this.json(route, 500, { error: { code: 'internal', message: String(e) } });
+      }
+    }
+    if (path === '/functions/v1/ai-report') {
+      const deps = {
+        userId: TEST_USER.id,
+        store: this.store,
+        provider: () => fakeReportModel(this.reportModel),
+        dailyLimit: 200,
+      };
+      try {
+        return this.json(route, 200, await runReport(body, deps));
+      } catch (e) {
+        if (e instanceof ApiError) {
+          return this.json(route, e.status, {
+            error: { code: e.code, message: e.message, retry_after_s: e.retryAfterS },
+          });
+        }
+        return this.json(route, 500, { error: { code: 'internal', message: String(e) } });
+      }
+    }
+    if (path === '/functions/v1/ai-contrast') {
+      const deps = {
+        userId: TEST_USER.id,
+        store: this.store,
+        pairNotes: this.pairNotes,
+        provider: () => fakeContrastModel(this.contrastModel),
+        dailyLimit: 200,
+      };
+      try {
+        return this.json(route, 200, await runContrast(body, deps));
+      } catch (e) {
+        if (e instanceof ApiError) {
+          return this.json(route, e.status, {
+            error: { code: e.code, message: e.message, retry_after_s: e.retryAfterS },
+          });
+        }
+        return this.json(route, 500, { error: { code: 'internal', message: String(e) } });
+      }
+    }
     if (path === '/rest/v1/sync_tables') return this.json(route, 200, SYNC_TABLES.map((n) => ({ name: n })));
     if (path === '/functions/v1/ai-themes') return this.themes(route, body);
     if (path === '/functions/v1/ai-extract' || path === '/functions/v1/ai-enrich') {
@@ -455,7 +606,11 @@ export class FakeBackend {
           const row: Row = { ...item.payload, user_id: TEST_USER.id };
           acked.push(item.payload.id);
           if (INSERT_ONLY.has(item.table)) {
-            if (!cur) this.rows.set(key, { table: item.table, seq: ++this.seq, row });
+            // weekly_reports: one per week; another device's row for the week is skipped.
+            const sameWeek =
+              item.table === 'weekly_reports' &&
+              [...this.rows.values()].some((r) => r.table === 'weekly_reports' && r.row.week === row.week);
+            if (!cur && !sameWeek) this.rows.set(key, { table: item.table, seq: ++this.seq, row });
             continue;
           }
           const newer = !cur || String(row.hlc ?? '') > String(cur.row.hlc ?? '');
