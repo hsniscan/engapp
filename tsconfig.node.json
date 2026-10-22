@@ -27,6 +27,7 @@
     "scripts/build-morphology/**/*.ts",
     "scripts/lib/**/*.ts",
     "scripts/img-*.ts",
-    "scripts/system-jobs.ts"
+    "scripts/system-jobs.ts",
+    "scripts/word-bank.ts"
   ]
 }

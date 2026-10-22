@@ -166,6 +166,19 @@ export {
 } from './anki';
 export { getKnownTermKeys, listKnownTerms, markKnown, unmarkKnown } from './knownTerms';
 export {
+  addFromWordBank,
+  applyWordBankPage,
+  bankNoteInput,
+  countWordBank,
+  getOwnedTerms,
+  getWordBankCursor,
+  getWordBankSyncedAt,
+  listWordBank,
+  markWordBankSynced,
+  WORD_BANK_META,
+  type BankAddResult,
+} from './wordBank';
+export {
   BAND_SIZES,
   countOutsideWords,
   dismissLevelChange,

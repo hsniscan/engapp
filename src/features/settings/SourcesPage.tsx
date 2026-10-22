@@ -29,7 +29,9 @@ export function SourcesPage() {
           {SOURCES.map(({ key, url }) => (
             <li key={key}>
               <Surface className="flex flex-col gap-2">
-                <h2 className="font-serif text-lg font-semibold text-fg">{t(`sources.${key}.name`)}</h2>
+                <h2 className="font-serif text-lg font-semibold text-fg">
+                  {t(`sources.${key}.name`)}
+                </h2>
                 <p className="text-[0.9375rem] text-fg-muted">{t(`sources.${key}.what`)}</p>
                 <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
                   <dt className="text-fg-subtle">{t('sources.license')}</dt>
@@ -52,7 +54,9 @@ export function SourcesPage() {
           ))}
           <li>
             <Surface tone="flat" className="flex flex-col gap-2">
-              <h2 className="font-serif text-lg font-semibold text-fg">{t('sources.derived.name')}</h2>
+              <h2 className="font-serif text-lg font-semibold text-fg">
+                {t('sources.derived.name')}
+              </h2>
               <p className="text-[0.9375rem] text-fg-muted">{t('sources.derived.what')}</p>
               <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
                 <dt className="text-fg-subtle">{t('sources.license')}</dt>
@@ -66,6 +70,18 @@ export function SourcesPage() {
             {t('sources.aiTitle')}
           </h2>
           <p className="text-[0.9375rem] text-fg-muted">{t('sources.aiBody')}</p>
+        </section>
+        <section aria-labelledby="sources-word-bank" className="flex flex-col gap-1.5 px-1 pt-2">
+          <h2 id="sources-word-bank" className="font-serif text-lg font-semibold text-fg">
+            {t('sources.wordBankTitle')}
+          </h2>
+          <p className="text-[0.9375rem] text-fg-muted">{t('sources.wordBankBody')}</p>
+          <Link
+            to="/kelime-bankasi"
+            className="inline-flex min-h-11 items-center gap-1 self-start text-sm font-medium text-accent-text underline-offset-4 hover:underline"
+          >
+            {t('wordBank.entryLink')}
+          </Link>
         </section>
       </div>
     </Page>

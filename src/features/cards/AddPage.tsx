@@ -21,6 +21,24 @@ export function PrivacyNote() {
   );
 }
 
+/** Way into the word bank (decision 0038), above the tabs. */
+function WordBankEntry() {
+  const { t } = useTranslation();
+  return (
+    <aside className="mb-6 flex flex-col gap-1 rounded-card border border-border bg-surface px-4 py-3">
+      <p className="font-medium text-fg">{t('wordBank.entryTitle')}</p>
+      <p className="text-sm text-fg-muted">{t('wordBank.entryBody')}</p>
+      <Link
+        to="/kelime-bankasi"
+        className="inline-flex min-h-11 items-center gap-1.5 self-start text-[0.9375rem] font-medium text-accent-text underline-offset-4 hover:underline"
+      >
+        <Icon name="layers" size={18} />
+        {t('wordBank.entryLink')}
+      </Link>
+    </aside>
+  );
+}
+
 /** Way into the Anki import (v0.3 İP1), under every tab. */
 function AnkiEntry() {
   const { t } = useTranslation();
@@ -49,6 +67,7 @@ export function AddPage() {
   const Pdf = addTabPanels.pdf;
   return (
     <Page title={t('add.title')} description={t('cards.add.pageHint')}>
+      <WordBankEntry />
       <Tabs
         label={t('add.title')}
         value={tab}

@@ -2,7 +2,7 @@
 -- Run: supabase test db   (pgTAP)
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(3);
+select plan(4);
 
 select is_empty(
   $$ select table_name from public.tables_without_rls() $$,
@@ -15,11 +15,19 @@ select ok(
   'all Engapp tables exist'
 );
 
--- anon (not signed in) can read nothing at all.
+-- anon (not signed in) has no table privileges at all.
 select is_empty(
   $$ select grantee, table_name, privilege_type from information_schema.role_table_grants
       where table_schema = 'public' and grantee = 'anon' $$,
   'anon has no table privileges in public'
+);
+
+-- The only thing a guest reads: some columns of the word bank (system content, decision 0038).
+select is_empty(
+  $$ select table_name, column_name, privilege_type from information_schema.column_privileges
+      where table_schema = 'public' and grantee = 'anon'
+        and not (table_name = 'word_bank' and privilege_type = 'SELECT') $$,
+  'anon column privileges: SELECT on word_bank only'
 );
 
 select * from finish();

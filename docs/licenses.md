@@ -72,6 +72,9 @@ AI-built lexicon, and carries its own licence notice:
   v0.2 İP3) selects words and levels from CEFR-J and Octanove, and `pseudowords.tsv` was
   filtered with wordfreq: CC BY-SA 4.0, stated in the files' headers (`note` in the JSON).
   The app loads the bank as its own lazy chunk.
+- The word bank (`public.word_bank`, migration `20261026001100_word_bank.sql`; decision 0038)
+  selects the words and levels of CEFR-J and Octanove and adds AI-written Turkish meanings and
+  examples: CC BY-SA 4.0, stated on the Kelime Bankası screen and in Ayarlar → Kaynaklar.
 
 Share-alike applies to these data files and their adaptations, not to the application code
 that reads them.
