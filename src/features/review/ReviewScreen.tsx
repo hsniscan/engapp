@@ -6,6 +6,8 @@ import { db, getSettings } from '@/data';
 import { Rating as R, type RatingValue } from '@/domain/types';
 import { getNextDue, cfgOf } from '@/features/home/queries';
 import { nextDueText } from '@/features/home/nextDueText';
+import { AfterAgainBar, LeechSheet } from '@/features/leech';
+import type { Id } from '@/domain/types';
 import { requestSync } from '@/sync';
 import {
   Badge,
@@ -53,6 +55,11 @@ export function ReviewScreen() {
   const settings = useLiveQuery(() => getSettings(), []);
   const speech = useSpeech(settings?.voice ?? 'en-US');
   const [editOpen, setEditOpen] = useState(false);
+  // "Bu karta başka yoldan bakalım" (v0.3 İP6): which card, and whether it opens on the picker.
+  const [leech, setLeech] = useState<{ cardId: Id; startWith: 'paths' | 'picker' } | null>(null);
+  const leechRef = useRef(leech);
+  // Cards the leech sheet suspended: the session moves on by itself, without "kart gitti".
+  const leechHandled = useRef(new Set<Id>());
   const busy = useRef(false);
   const showAnswerRef = useRef<HTMLButtonElement>(null);
   const ratingGroupRef = useRef<HTMLDivElement>(null);
@@ -69,6 +76,7 @@ export function ReviewScreen() {
   );
   useEffect(() => {
     if (!watched || watched.id !== currentId || busy.current) return;
+    if (leechRef.current?.cardId === watched.id || leechHandled.current.has(watched.id)) return;
     const c = watched.card;
     if (!c || c.deleted_at !== null || c.suspended) {
       toast({ title: t('review.cardGone') });
@@ -129,13 +137,14 @@ export function ReviewScreen() {
   useLayoutEffect(() => {
     stateRef.current = state;
     editOpenRef.current = editOpen;
+    leechRef.current = leech;
   });
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
       const target = e.target instanceof Element ? e.target : null;
-      if (editOpenRef.current || target?.closest(KEY_SCOPE_IGNORE)) return;
+      if (editOpenRef.current || leechRef.current || target?.closest(KEY_SCOPE_IGNORE)) return;
       const s = stateRef.current;
       if (e.key === ' ' || e.code === 'Space') {
         // A focused button or link keeps its native Space activation.
@@ -217,11 +226,25 @@ export function ReviewScreen() {
                 onSelect: () => void doUndo(),
               },
               { label: t('review.edit'), icon: 'pencil', onSelect: () => setEditOpen(true) },
+              {
+                label: t('leech.menu'),
+                icon: 'layers',
+                onSelect: () => current && setLeech({ cardId: current.view.card.id, startWith: 'paths' }),
+              },
               { label: t('review.suspend'), icon: 'pause', onSelect: () => void doSuspend() },
             ]}
           />
         </div>
       </div>
+
+      {state.notice && (
+        <AfterAgainBar
+          notice={state.notice}
+          onOpenSheet={() => setLeech({ cardId: state.notice!.cardId, startWith: 'paths' })}
+          onPickConfusion={() => setLeech({ cardId: state.notice!.cardId, startWith: 'picker' })}
+          onDismiss={session.dismissNotice}
+        />
+      )}
 
       {current ? (
         <div
@@ -290,6 +313,21 @@ export function ReviewScreen() {
         open={editOpen}
         onOpenChange={setEditOpen}
         onSaved={() => void session.refreshCurrent()}
+      />
+      <LeechSheet
+        cardId={leech?.cardId ?? null}
+        startWith={leech?.startWith}
+        onOpenChange={(open) => {
+          if (open) return;
+          setLeech(null);
+          void session.refreshCurrent();
+        }}
+        onCardSuspended={(id) => {
+          leechHandled.current.add(id);
+          void session.cardSuspended(id);
+        }}
+        onCardsChanged={() => void session.reloadQueue()}
+        speech={{ available: speech.available, speak: speech.speak }}
       />
     </div>
   );

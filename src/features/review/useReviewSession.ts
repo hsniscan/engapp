@@ -9,13 +9,15 @@ import {
   getCardView,
   getStreakSummary,
   getStudyQueue,
+  leechAfterAnswer,
   logError,
   setSuspended,
   undoAnswer,
   type CardView,
 } from '@/data';
 import type { QueueItem, QueueKind, QueueMode } from '@/domain/queue';
-import type { Id, RatingValue } from '@/domain/types';
+import { Rating, type Id, type RatingValue } from '@/domain/types';
+import type { LeechNotice } from '@/features/leech';
 
 export const MAX_ANSWER_MS = 60_000;
 
@@ -45,6 +47,12 @@ export interface SessionState {
   /** Cards left, including the one on screen. */
   remaining: number;
   canUndo: boolean;
+  /**
+   * After an "Again" answer (v0.3 İP6): the leech flag when this answer was the card's 6th
+   * lapse, else the optional "mixed it up with another word?" prompt. Cleared by the next
+   * answer and by undo.
+   */
+  notice: LeechNotice | null;
 }
 
 export interface SessionStart {
@@ -62,6 +70,7 @@ export function useReviewSession(mode: QueueMode = 'normal') {
     answered: 0,
     remaining: 0,
     canUndo: false,
+    notice: null,
   });
   const [start, setStart] = useState<SessionStart | null>(null);
 
@@ -214,6 +223,7 @@ export function useReviewSession(mode: QueueMode = 'normal') {
       else if (kind === 'new') counts.current.new++;
       const mySeq = ++seq.current;
       forget(entry.cardId);
+      if (stateRef.current.notice) patch({ notice: null });
 
       void enqueue(async () => {
         try {
@@ -224,6 +234,23 @@ export function useReviewSession(mode: QueueMode = 'normal') {
             shown_sense_id: view.card.card_type === 'recognition' ? (view.sense?.id ?? null) : null,
           });
           entry.logId = res.log.id;
+          if (rating === Rating.Again) {
+            const leech = await leechAfterAnswer(entry.cardId, res.log.id);
+            // Only while this is still the session's last answer.
+            if (answers.current.at(-1) === entry && alive.current) {
+              const type = view.note.term_type;
+              patch({
+                notice: {
+                  cardId: entry.cardId,
+                  noteId: view.note.id,
+                  term: view.note.term,
+                  lapses: leech.lapses,
+                  crossed: leech.crossed,
+                  confusable: type !== 'affix' && type !== 'contrast',
+                },
+              });
+            }
+          }
         } catch (e) {
           // Deleted elsewhere (another tab, sync): drop the answer and move on.
           answers.current = answers.current.filter((a) => a !== entry);
@@ -281,6 +308,7 @@ export function useReviewSession(mode: QueueMode = 'normal') {
       return false;
     }
     answers.current.pop();
+    patch({ notice: null });
     if (last.kind === 'review') counts.current.reviews--;
     else if (last.kind === 'new') counts.current.new--;
     forget(last.cardId);
@@ -356,6 +384,35 @@ export function useReviewSession(mode: QueueMode = 'normal') {
     }
   }, [forget, loadView, patch]);
 
+  /** Hide the after-Again line. */
+  const dismissNotice = useCallback(() => patch({ notice: null }), [patch]);
+
+  /**
+   * A card was suspended outside the session's own actions (the leech sheet): skip it when it
+   * is on screen, drop it from the queue otherwise.
+   */
+  const cardSuspended = useCallback(
+    async (cardId: Id) => {
+      if (stateRef.current.current?.view.card.id === cardId) {
+        await skipCurrent();
+        return;
+      }
+      forget(cardId);
+      upcoming.current = upcoming.current.filter((i) => i.card_id !== cardId);
+      patch({ remaining: remainingCount(stateRef.current.current) });
+    },
+    [forget, patch, skipCurrent],
+  );
+
+  /** Cards came back or were added (undo of a leech action): rebuild the queue. */
+  const reloadQueue = useCallback(async () => {
+    const mySeq = ++seq.current;
+    const wasDone = stateRef.current.phase === 'done';
+    if (wasDone) patch({ phase: 'waiting' });
+    await enqueue(() => rebuild(mySeq));
+    if (wasDone && stateRef.current.phase === 'waiting') finish();
+  }, [enqueue, finish, patch, rebuild]);
+
   /** Resolves when every answer has been written. */
   const settled = useCallback(() => chain.current, []);
   const getAnswers = useCallback((): readonly SessionAnswer[] => answers.current, []);
@@ -369,6 +426,9 @@ export function useReviewSession(mode: QueueMode = 'normal') {
       unsuspend,
       skipCurrent,
       refreshCurrent,
+      dismissNotice,
+      cardSuspended,
+      reloadQueue,
       settled,
       getAnswers,
     }),
@@ -380,6 +440,9 @@ export function useReviewSession(mode: QueueMode = 'normal') {
       unsuspend,
       skipCurrent,
       refreshCurrent,
+      dismissNotice,
+      cardSuspended,
+      reloadQueue,
       settled,
       getAnswers,
     ],
