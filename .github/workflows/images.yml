@@ -1,0 +1,137 @@
+# Picture jobs (v0.4 İP2, decision 0030). Every night: collect the finished Message Batch
+# (checks, stores pictures for review, one redraw after a failed check), score new senses with
+# visual-v1, then submit the next batch. On demand: one of the jobs, or the pilot (50 random
+# concrete senses drawn now and stored for review, with their cost). Every model call is
+# reserved against the monthly picture budget first (80 % of CLAUDE_MONTHLY_CREDIT_USD).
+# Without the ANTHROPIC_API_KEY secret the run is skipped with a notice. Details:
+# docs/ai-image.md, docs/setup-backend.md.
+#
+# Repository secrets:
+#   ANTHROPIC_API_KEY          Claude API key (optional until the owner adds it)
+#   SUPABASE_SERVICE_ROLE_KEY  optional: the project's service_role (or sb_secret_) key.
+#                              Without it the key is read through the Management API with
+#   SUPABASE_ACCESS_TOKEN      (needs the "API keys: Read" permission / a full-access token).
+# Repository variables (optional): CLAUDE_IMAGE_MODEL, CLAUDE_CHECK_MODEL,
+#   CLAUDE_MONTHLY_CREDIT_USD (default 100)
+name: Picture jobs
+
+on:
+  schedule:
+    - cron: '30 1 * * *' # 01:30 UTC
+  workflow_dispatch:
+    inputs:
+      job:
+        description: 'Which job to run'
+        type: choice
+        options: [pilot, visualize, submit, collect]
+        default: collect
+      count:
+        description: 'pilot: number of senses (default 50); visualize: at most this many; submit: batch size'
+        type: string
+        default: ''
+
+concurrency:
+  group: images
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  SUPABASE_PROJECT_REF: bikcjlomrjaxymifxogi
+
+jobs:
+  images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Check for the Claude key
+        id: key
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::notice::Repository secret ANTHROPIC_API_KEY is not set: picture jobs skipped (docs/setup-backend.md)"
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.key.outputs.run == 'true'
+        uses: actions/checkout@v4
+      - if: steps.key.outputs.run == 'true'
+        uses: pnpm/action-setup@v4
+      - if: steps.key.outputs.run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - if: steps.key.outputs.run == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Run the picture jobs
+        if: steps.key.outputs.run == 'true'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_IMAGE_MODEL: ${{ vars.CLAUDE_IMAGE_MODEL }}
+          CLAUDE_CHECK_MODEL: ${{ vars.CLAUDE_CHECK_MODEL }}
+          CLAUDE_MONTHLY_CREDIT_USD: ${{ vars.CLAUDE_MONTHLY_CREDIT_USD }}
+          SERVICE_KEY_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          JOB: ${{ inputs.job || 'nightly' }}
+          COUNT: ${{ inputs.count }}
+        run: |
+          set -euo pipefail
+          case "$JOB" in nightly|pilot|visualize|submit|collect) ;; *) echo "::error::Unknown job"; exit 1 ;; esac
+          if [ -n "$COUNT" ] && ! [[ "$COUNT" =~ ^[0-9]{1,5}$ ]]; then echo "::error::count must be a whole number"; exit 1; fi
+          key="$SERVICE_KEY_SECRET"
+          if [ -z "$key" ]; then
+            if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
+              echo "::error::Set SUPABASE_SERVICE_ROLE_KEY, or SUPABASE_ACCESS_TOKEN with API key read access (docs/setup-backend.md)"
+              exit 1
+            fi
+            # Read without printing: the response goes to a private temp file, the key is masked.
+            umask 077
+            f="$(mktemp)"
+            trap 'rm -f "$f"' EXIT
+            status=$(curl -sS -o "$f" -w '%{http_code}' \
+              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+              "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/api-keys?reveal=true")
+            if [ "$status" != "200" ]; then
+              echo "::error::Could not read the project's API keys (HTTP $status). Set the SUPABASE_SERVICE_ROLE_KEY secret instead."
+              exit 1
+            fi
+            key=$(jq -r '([.[] | select(.type == "secret")] + [.[] | select(.name == "service_role")])[0].api_key // empty' "$f")
+            if [ -z "$key" ]; then echo "::error::No secret or service_role key found"; exit 1; fi
+          fi
+          echo "::add-mask::$key"
+          export SUPABASE_URL="https://$SUPABASE_PROJECT_REF.supabase.co"
+          export SUPABASE_SERVICE_ROLE_KEY="$key"
+          case "$JOB" in
+            nightly)
+              node scripts/img-batch.ts collect
+              node scripts/img-batch.ts visualize
+              node scripts/img-batch.ts submit
+              ;;
+            pilot)
+              node scripts/img-pilot.ts ${COUNT:+--n "$COUNT"} --out pilot-report.json
+              ;;
+            visualize)
+              node scripts/img-batch.ts visualize ${COUNT:+--limit "$COUNT"}
+              ;;
+            submit)
+              node scripts/img-batch.ts submit ${COUNT:+--max "$COUNT"}
+              ;;
+            collect)
+              node scripts/img-batch.ts collect
+              ;;
+          esac
+
+      - name: Keep the pilot report
+        if: steps.key.outputs.run == 'true' && inputs.job == 'pilot' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pilot-report
+          path: pilot-report.json
+          if-no-files-found: ignore
+          retention-days: 30

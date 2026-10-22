@@ -86,7 +86,7 @@ export interface ImageStore extends BudgetStore {
   insertImage(row: NewImage): Promise<LexiconImageRow & { cost_usd: number }>;
 }
 
-/** PNG renders of a sanitised SVG (Node only: scripts/lib/render.ts). */
+/** PNG renders of a sanitised SVG (Node only: scripts/lib/image-render.ts). */
 export interface Rendered {
   light: { png: string; coverage: number };
   dark: { png: string; coverage: number };
