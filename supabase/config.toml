@@ -404,6 +404,10 @@ deno_version = 2
 [functions.ai-extract]
 verify_jwt = false
 
+# Pronunciation audio (docs/decisions/0028-server-tts.md); checks the user's JWT itself.
+[functions.tts]
+verify_jwt = false
+
 [functions.ai-enrich]
 verify_jwt = false
 
