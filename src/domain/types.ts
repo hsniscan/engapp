@@ -576,12 +576,14 @@ export type OutboxTable =
   | 'user_content'
   | 'decks'
   | 'level_tests'
-  | 'known_terms';
+  | 'known_terms'
+  | 'weekly_reports';
 /** Synced tables whose rows are never changed or deleted. */
 export const INSERT_ONLY_TABLES = [
   'review_logs',
   'practice_logs',
   'level_tests',
+  'weekly_reports',
 ] as const satisfies readonly OutboxTable[];
 export type InsertOnlyTable = (typeof INSERT_ONLY_TABLES)[number];
 

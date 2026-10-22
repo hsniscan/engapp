@@ -21,6 +21,7 @@ import type {
   Source,
   SyncedRow,
   UserContent,
+  WeeklyReport,
 } from '../domain/types';
 import { db } from './db';
 import { getDeviceId, getMeta, META, setMeta } from './meta';
@@ -109,6 +110,12 @@ export class SyncWriter {
   async insertLevelTest(test: LevelTest): Promise<void> {
     await db.level_tests.add(test);
     this.enqueue('level_tests', test.id, 'upsert', test);
+  }
+
+  /** weekly_reports are insert-only: one row per week, never changed (v0.3 İP7). */
+  async insertWeeklyReport(report: WeeklyReport): Promise<void> {
+    await db.weekly_reports.add(report);
+    this.enqueue('weekly_reports', report.id, 'upsert', report);
   }
 
   enqueue(table: OutboxTable, rowId: Id, op: OutboxRow['op'], payload: unknown): void {

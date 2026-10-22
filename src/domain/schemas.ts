@@ -15,6 +15,7 @@ import type {
   Settings,
   Source,
   UserContent,
+  WeeklyReport,
 } from './types';
 
 const millis = z.number().int();
@@ -199,6 +200,16 @@ export const settingsSchema: z.ZodType<Settings> = z.object({
     })
     .nullish()
     .catch(null),
+  // v0.3 İP7; absent in older rows and backups (= no goals). A malformed goal (a newer
+  // client, a hand-edited backup) is dropped, not the row.
+  goals: z
+    .object({
+      week_active_days: z.number().int().min(1).max(7).nullish().catch(null),
+      month_new_terms: z.number().int().min(1).max(100_000).nullish().catch(null),
+      week_minutes: z.number().int().min(1).max(100_000).nullish().catch(null),
+    })
+    .nullish()
+    .catch(null),
 });
 
 export const contentFeedbackSchema: z.ZodType<ContentFeedback> = z.object({
@@ -272,4 +283,57 @@ export const knownTermSchema: z.ZodType<KnownTerm> = z.object({
   term_norm: z.string().min(1).max(200),
   source: z.enum(['test', 'preview', 'manual', 'auto']),
   cefr_at_mark: cefr.nullable().default(null),
+});
+
+const reportGroupStat = z.object({
+  dimension: z.enum(['term_type', 'level', 'topic', 'source', 'pos', 'card_type']),
+  key: z.string().min(1).max(200),
+  n: z.number().int().min(0),
+  passed: z.number().int().min(0),
+});
+
+/**
+ * The numbers of a weekly report (v0.3 İP7). Loose: a newer app version may add fields, and
+ * they are kept, so an insert-only row is never changed by reading it.
+ */
+export const weeklyReportSummarySchema = z.looseObject({
+  v: z.literal(1),
+  week: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  week_end: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  active_days: z.number().int().min(0).max(7),
+  reviews: z.number().int().min(0),
+  minutes: z.number().int().min(0),
+  new_cards: z.number().int().min(0),
+  new_learned: z.number().int().min(0),
+  retention: z.object({ n: z.number().int().min(0), passed: z.number().int().min(0) }),
+  groups_days: z.union([z.literal(7), z.literal(28)]),
+  strongest: reportGroupStat.nullable(),
+  weakest: reportGroupStat.nullable(),
+  streak: z.number().int().min(0),
+  goals: z
+    .array(
+      z.object({
+        key: z.enum(['week_active_days', 'week_minutes', 'month_new_terms']),
+        target: z.number().int().min(0),
+        value: z.number().int().min(0),
+      }),
+    )
+    .max(3),
+  focus: z.string().min(1).max(40),
+  focus_note_ids: z.array(id).max(20),
+  focus_value: z.number().int().nullable(),
+});
+
+/** A weekly report row (insert-only, one per user and week). */
+export const weeklyReportSchema: z.ZodType<WeeklyReport> = z.object({
+  id,
+  user_id: z.string().nullable(),
+  week: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  summary: weeklyReportSummarySchema,
+  comment: z.string().min(1).max(2000).nullable(),
+  comment_model: z.string().max(100).nullable(),
+  prompt_version: z.string().max(40).nullable(),
+  device_id: z.string(),
+  created_at: millis,
+  hlc: z.string().min(1),
 });

@@ -27,6 +27,7 @@ import {
   settingsSchema,
   sourceSchema,
   userContentSchema,
+  weeklyReportSchema,
 } from '../domain/schemas';
 import {
   type Card,
@@ -38,6 +39,7 @@ import {
   type PracticeLog,
   type ReviewLog,
   type Settings,
+  type WeeklyReport,
 } from '../domain/types';
 import { emptyFsrs } from '../domain/fsrs';
 import { db } from './db';
@@ -72,6 +74,7 @@ const allSyncedTables = () => [
   db.settings,
   db.practice_logs,
   db.decks,
+  db.weekly_reports,
 ];
 
 // ------------------------------------------------------------------ recompute
@@ -212,7 +215,8 @@ export async function resetStudyHistory(now: Millis = Date.now(), chunkNotes = R
 
 // ------------------------------------------------------------------ sync hook
 
-export type RemoteBatch = Partial<Record<MutableTable | 'review_logs' | 'practice_logs' | 'level_tests', unknown[]>>;
+type InsertOnlyRemote = 'review_logs' | 'practice_logs' | 'level_tests' | 'weekly_reports';
+export type RemoteBatch = Partial<Record<MutableTable | InsertOnlyRemote, unknown[]>>;
 
 export interface ApplyRemoteResult {
   applied: number;
@@ -234,7 +238,8 @@ const rowSchemas = {
   decks: deckSchema,
   known_terms: knownTermSchema,
   level_tests: levelTestSchema,
-} satisfies Record<MutableTable | 'review_logs' | 'practice_logs' | 'level_tests', z.ZodType>;
+  weekly_reports: weeklyReportSchema,
+} satisfies Record<MutableTable | InsertOnlyRemote, z.ZodType>;
 
 /**
  * Hook for the sync engine's pull. Rows are validated; mutable rows win when their hlc is
@@ -250,12 +255,18 @@ export async function applyRemoteRows(
 ): Promise<ApplyRemoteResult> {
   const result: ApplyRemoteResult = { applied: 0, skipped: 0, invalid: 0, recomputedCards: 0 };
   let logsArrived = false;
-  await writeTx(allSyncedTables(), now, async (w) => {
+  await writeTx([...allSyncedTables(), db.report_drafts], now, async (w) => {
     const touchedCards = new Set<Id>();
     const touchedTerms = new Set<string>();
     // New FSRS parameters from another device (v0.3 İP4): every card is replayed with them.
     let paramsChanged = false;
-    for (const table of [...MUTABLE, 'review_logs', 'practice_logs', 'level_tests'] as const) {
+    for (const table of [
+      ...MUTABLE,
+      'review_logs',
+      'practice_logs',
+      'level_tests',
+      'weekly_reports',
+    ] as const) {
       for (const raw of batch[table] ?? []) {
         const parsed = rowSchemas[table].safeParse(raw);
         if (!parsed.success) {
@@ -281,6 +292,13 @@ export async function applyRemoteRows(
             await db.level_tests.add(t);
             result.applied++;
           }
+          continue;
+        }
+        if (table === 'weekly_reports') {
+          const r = parsed.data as WeeklyReport;
+          w.observe(r.hlc);
+          if (await applyRemoteReport(r)) result.applied++;
+          else result.skipped++;
           continue;
         }
         const row = parsed.data as MutableRows[MutableTable] | ReviewLog;
@@ -331,6 +349,28 @@ export async function applyRemoteRows(
   return result;
 }
 
+/**
+ * A pulled weekly report. The server keeps one report per user and week, the first one it
+ * got (migration 20261023000900), so the pulled row is the week's report on every device:
+ * it replaces a report of the same week this device made (its push was skipped by the server)
+ * and the week's draft. Returns false when the row was here already.
+ */
+async function applyRemoteReport(r: WeeklyReport): Promise<boolean> {
+  const sameWeek = await db.weekly_reports.where('week').equals(r.week).toArray();
+  await db.report_drafts.delete(r.week);
+  if (sameWeek.length === 1 && sameWeek[0]!.id === r.id) return false;
+  const others = sameWeek.filter((x) => x.id !== r.id).map((x) => x.id);
+  if (others.length) {
+    await db.weekly_reports.bulkDelete(others);
+    for (const id of others) {
+      const queued = await db.outbox.where('[table+row_id]').equals(['weekly_reports', id]).primaryKeys();
+      await db.outbox.bulkDelete(queued);
+    }
+  }
+  await db.weekly_reports.put(r);
+  return true;
+}
+
 /** Mark live notes sharing a term_norm as possible duplicates (account merge rule). */
 async function flagDuplicates(w: SyncWriter, termNorms: Iterable<string>): Promise<number> {
   let n = 0;
@@ -365,6 +405,7 @@ async function readTables(): Promise<BackupTables> {
     decks: await db.decks.toArray(),
     level_tests: await db.level_tests.toArray(),
     known_terms: await db.known_terms.toArray(),
+    weekly_reports: await db.weekly_reports.toArray(),
   }));
 }
 
@@ -436,7 +477,7 @@ export async function restoreBackup(
     recomputedCards: 0,
   };
 
-  await writeTx(allSyncedTables(), now, async (w) => {
+  await writeTx([...allSyncedTables(), db.report_drafts], now, async (w) => {
     const terms = new Set<string>();
     for (const table of MUTABLE) {
       // content_feedback / user_content (before schema_version 5), decks (before 7) and
@@ -497,6 +538,16 @@ export async function restoreBackup(
       if (knownTests[i]) continue;
       w.observe(test.hlc);
       await w.insertLevelTest(test);
+    }
+    // Weekly reports (schema_version 9): one per week; a week this device has keeps its own.
+    const reports = tables.weekly_reports ?? [];
+    const haveWeeks = new Set((await db.weekly_reports.toArray()).map((r) => r.week));
+    for (const report of reports) {
+      if (haveWeeks.has(report.week)) continue;
+      haveWeeks.add(report.week);
+      w.observe(report.hlc);
+      await w.insertWeeklyReport(report);
+      await db.report_drafts.delete(report.week);
     }
     if (mode === 'merge') await flagDuplicates(w, terms);
     res.recomputedCards = await recomputeCardsIn(w, 'all');
@@ -597,6 +648,10 @@ export async function adoptGuestData(userId: string, now: Millis = Date.now()): 
     }
     for (const test of await db.level_tests.toArray()) {
       w.enqueue('level_tests', test.id, 'upsert', test);
+      n++;
+    }
+    for (const report of await db.weekly_reports.toArray()) {
+      w.enqueue('weekly_reports', report.id, 'upsert', report);
       n++;
     }
     return n;

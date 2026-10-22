@@ -16,6 +16,7 @@ import {
   settingsSchema,
   sourceSchema,
   userContentSchema,
+  weeklyReportSchema,
 } from './schemas';
 import type {
   Card,
@@ -31,6 +32,7 @@ import type {
   Settings,
   Source,
   UserContent,
+  WeeklyReport,
 } from './types';
 
 export const BACKUP_FORMAT = 'engapp-backup';
@@ -49,7 +51,9 @@ export const BACKUP_FORMAT = 'engapp-backup';
 // v0.3 İP3 adds optional settings fields (daily_capacity_min, catchup_auto, vacation,
 //    vacation_history) without a version bump: like show_easy_candidates they are optional and
 //    not defaulted, so files of every version restore and keep their checksum.
-export const BACKUP_SCHEMA_VERSION = 8;
+// 9 (v0.3 İP7): weekly_reports (insert-only) and the optional settings.goals. Older files
+//    have no reports (restored as none) and no goals (none set).
+export const BACKUP_SCHEMA_VERSION = 9;
 
 export interface BackupTables {
   notes: Note[];
@@ -68,6 +72,8 @@ export interface BackupTables {
   /** Absent in files before schema_version 8; buildBackup always writes them. */
   level_tests?: LevelTest[];
   known_terms?: KnownTerm[];
+  /** Absent in files before schema_version 9; buildBackup always writes it. */
+  weekly_reports?: WeeklyReport[];
 }
 
 export const backupTablesSchema = z.object({
@@ -84,6 +90,7 @@ export const backupTablesSchema = z.object({
   decks: z.array(deckSchema).optional(),
   level_tests: z.array(levelTestSchema).optional(),
   known_terms: z.array(knownTermSchema).optional(),
+  weekly_reports: z.array(weeklyReportSchema).optional(),
 });
 
 export const backupSchema = z.object({
@@ -126,6 +133,7 @@ export function sortTables(t: BackupTables): BackupTables {
     ...(t.decks ? { decks: byId(t.decks) } : {}),
     ...(t.level_tests ? { level_tests: byId(t.level_tests) } : {}),
     ...(t.known_terms ? { known_terms: byId(t.known_terms) } : {}),
+    ...(t.weekly_reports ? { weekly_reports: byId(t.weekly_reports) } : {}),
   };
 }
 
@@ -145,6 +153,7 @@ export async function buildBackup(
     decks: tables.decks ?? [],
     level_tests: tables.level_tests ?? [],
     known_terms: tables.known_terms ?? [],
+    weekly_reports: tables.weekly_reports ?? [],
   });
   return {
     format: BACKUP_FORMAT,
