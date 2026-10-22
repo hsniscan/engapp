@@ -148,9 +148,9 @@ test('signed in: levels stored with the lexicon by ai-extract; an AI guess has a
   const specs = FAKE_SPECS.filter((s) => ['reluctant', 'backfire', 'cut corners'].includes(s.term));
   // A B2 learner: the two B2 words are pre-selected, the C1 idiom (one above) is picked by hand.
   await page.goto('/settings');
-  await page.getByRole('combobox', { name: 'Tahmini seviye' }).click();
+  await page.getByRole('combobox', { name: 'Seviyen' }).click();
   await page.getByRole('option', { name: /^B2/ }).click();
-  await expect(page.getByRole('combobox', { name: 'Tahmini seviye' })).toContainText('B2');
+  await expect(page.getByRole('combobox', { name: 'Seviyen' })).toContainText('B2');
   await page.goto('/add?tab=paste');
   await expect(page.getByRole('status', { name: 'Senkron durumu: Senkronlandı' })).toBeVisible();
   await page.getByLabel('İngilizce metin').fill(specs.map((s) => s.sentence).join(' '));
