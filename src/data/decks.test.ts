@@ -269,8 +269,15 @@ describe('Dexie v8 upgrade', () => {
     await v7('bf-pulled', 42);
     const d = new EngDb('bf-pulled');
     await d.open();
-    // v9 (level tables) adds its own tables to the same list.
-    expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(['decks', 'level_tests', 'known_terms']);
+    // v9 (level tables) and v11 (late columns) add their tables to the same list.
+    expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual([
+      'decks',
+      'level_tests',
+      'known_terms',
+      'notes',
+      'settings',
+      'sources',
+    ]);
     d.close();
     await d.delete();
 

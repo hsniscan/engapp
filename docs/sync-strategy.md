@@ -71,6 +71,19 @@ BEFORE UPDATE trigger keeps the stored value when the incoming one is null, and
 `applyRemoteRows` does the same locally (`keepProfileFields`). A list is cleared with `[]`,
 never with null (decision 0015).
 
+**Pulled by an older version (Dexie v11).** The other direction: a device that still ran
+v0.1/İP1 pulled notes, settings and sources written by an updated device, and zod stripped
+the columns it did not know. After its own update the Dexie upgrade filled them with unset
+values (`level_override = null`, `level_source`, `level_locked = false`…) under the same HLC,
+so last-writer-wins never replaced them and the device's next edit pushed them over the real
+values. Two client rules close this: a pulled row whose HLC **equals** the local one (the
+same write) gives the local row the late columns the server has set
+(`fillLateColumns`, `src/domain/syncMerge.ts`; an unset server value never overwrites a
+local one), and the v11 upgrade re-pulls notes, settings and sources once
+(`meta.pull_backfill`). The same rule fills the column into the echo of a push an older
+version queued (the server kept the column the push left out). Left open: an edit of that
+row made after the update but before the first sync still pushes the unset value.
+
 **Level tables (decision 0017).** `level_tests` (insert-only) and `known_terms` (mutable,
 tombstoned) are in the registry since `20261022000500_level_test.sql`. They are
 `LATE_SYNC_TABLES` like the İP5 tables and decks (see "Tables added after v3" below): their

@@ -5,7 +5,7 @@ import { PULL_BACKFILL_KEY } from './backfill';
 import { EngDb } from './db';
 
 /** The current schema version; bump with every new Dexie version. */
-const LATEST = 10;
+const LATEST = 11;
 
 describe('Dexie schema', () => {
   it('opens with every table and the indexes the queries rely on', async () => {
@@ -228,6 +228,8 @@ describe('Dexie schema', () => {
     expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(
       expect.arrayContaining(['content_feedback', 'user_content', 'decks', 'level_tests', 'known_terms']),
     );
+    // v11: notes, settings and sources once more, for the columns v0.1/İP1 stripped.
+    expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expect.arrayContaining(['notes', 'settings', 'sources']));
     expect(await d.settings.get('settings')).toMatchObject({ level_source: 'default', level_locked: false });
     d.close();
     await d.delete();

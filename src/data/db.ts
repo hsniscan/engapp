@@ -195,6 +195,16 @@ export class EngDb extends Dexie {
             row.from_list ??= false;
           });
       });
+    // v11 (v0.2 batch 1 review): columns, not tables, an older version dropped. While this
+    // device ran v0.1/İP1 it pulled notes, settings and sources written by an updated device
+    // and stripped the newer columns (a level the user set, the level test's source and lock,
+    // interests, topics); v4/v9 then filled them with their unset values under the same HLC.
+    // Re-pull these tables once: rows with an equal HLC take the server's set values
+    // (domain/syncMerge.ts), so the device shows them and its next edit does not push the
+    // unset values over them.
+    this.version(11)
+      .stores({})
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['notes', 'settings', 'sources']));
   }
 }
 

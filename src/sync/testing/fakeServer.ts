@@ -108,7 +108,8 @@ export class FakeServer implements SyncTransport {
     if (items.length > 100) throw new SyncApiError('server', '22023 too many');
     const res: PushResult = { acked: [], stale: [], rejected: [] };
     for (const it of items) {
-      const p = structuredClone(it.payload) as Record<string, unknown> & { id: string; hlc: string };
+      // JSON, as on the wire: keys holding undefined are left out.
+      const p = JSON.parse(JSON.stringify(it.payload)) as Record<string, unknown> & { id: string; hlc: string };
       if (this.faults.rejectIds?.has(p.id)) {
         res.rejected.push({ table: it.table, id: p.id, code: '23502', message: 'not-null violation' });
         continue;
@@ -135,7 +136,8 @@ export class FakeServer implements SyncTransport {
         res.stale.push(p.id);
         continue;
       }
-      this.rows.set(k, { table: it.table, row: p, seq: ++this.seq });
+      // _sync_upsert (20261021001100): a column the payload leaves out keeps its value.
+      this.rows.set(k, { table: it.table, row: cur ? { ...cur.row, ...p } : p, seq: ++this.seq });
       res.acked.push(p.id);
     }
     if (this.faults.networkAfterPush) {

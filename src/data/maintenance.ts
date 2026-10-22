@@ -12,6 +12,7 @@ import { fsrsEqual, pickFsrs } from '../domain/fsrs';
 import { compareHlc } from '../domain/hlc';
 import { checkIntegrity, type IntegrityReport } from '../domain/integrity';
 import { keepProfileFields } from '../domain/profile';
+import { fillLateColumns } from '../domain/syncMerge';
 import { deriveUnlocked, effectiveLogs, replayCard } from '../domain/recompute';
 import {
   cardSchema,
@@ -290,7 +291,18 @@ export async function applyRemoteRows(
           continue;
         }
         const local = (await db.table(table).get(row.id)) as MutableRows[MutableTable] | undefined;
-        if (local && compareHlc(row.hlc, local.hlc) <= 0) {
+        const order = local ? compareHlc(row.hlc, local.hlc) : 1;
+        if (local && order === 0) {
+          // The same write: take columns an older app version dropped (domain/syncMerge.ts).
+          const filled = fillLateColumns(table, row, local);
+          if (filled === local) result.skipped++;
+          else {
+            await db.table(table).put(filled);
+            result.applied++;
+          }
+          continue;
+        }
+        if (local && order < 0) {
           result.skipped++;
           continue;
         }
