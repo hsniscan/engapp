@@ -193,7 +193,9 @@ test.describe('Görsel onayı (admin)', () => {
     await expect(card.getByText('elma', { exact: true })).toBeVisible();
     await expect(page.getByTestId('review-left')).toHaveText('6 görsel kaldı');
     await noHorizontalScroll(page);
-    if (SHOTS) await expect(page.getByText('Hesabına bağlandın')).toBeHidden({ timeout: 20_000 });
+    // The "Hesabına bağlandın" toast would cover the undo button in the screenshot.
+    if (SHOTS) await page.getByText('Hesabına bağlandın').waitFor({ timeout: 10_000 }).catch(() => {});
+    for (const close of await page.getByRole('button', { name: 'Bildirimi kapat' }).all()) await close.click();
     await shots(page, 'image-review-360');
 
     const swipe = async (dx: number, dy: number) => {
