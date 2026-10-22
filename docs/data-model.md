@@ -20,7 +20,7 @@ only from `@/data` (`src/data/index.ts`).
 | report_drafts | no | `week` | A report waiting for its AI comment: `report` (the future `weekly_reports` row), `attempts`, `next_attempt_at`, `last_error`. Local only and cleared with the account's data. |
 | known_terms | yes | `id`, `term_norm`, `deleted_at` | Words the user knows without a card: `term_norm` (same key as `notes.term_norm`), `source` (`test`/`preview`/`manual`/`auto`), `cefr_at_mark`. One live row per `term_norm`; removing is a tombstone, marking again revives the row. |
 | sources | metadata | `id`, `created_at`, `*topics` | `kind`: `text`, `pdf` or (v0.3 İP1) `anki` (one row per imported file name, reused on a re-import; Dexie v12 re-pulls sources once). `topics`: topic keys of the text (`domain/topics.ts`, from the extract call; absent/null = unknown, `[]` = none; Dexie v7, decision 0015). |
-| settings | yes | `id = 'settings'` | Defaults: `daily_new_limit 10`, `request_retention 0.9`, `timezone` from the device, `day_start_hour 4`, `theme 'system'`, `voice 'en-US'`, `level 'B1'`. `interests` (picked topic keys; absent/null = never asked, `[]` = asked) and `muted_topics` (weight 0). Topic weights are computed on the device (`domain/profile.ts`), never stored (decision 0015). Level (decision 0017): `level_source` (`default`/`test`/`auto`/`manual`), `level_updated_at`, `level_locked`, `level_change` (the last automatic change and its reason, with `dismissed`). Dexie v9 set `level_source` to `manual` when the level was not B1. `show_easy_candidates` (default false; v0.2 İP4: open the import preview's "Kolay" section; absent or null = false, so older rows and backups need no change). v0.3 İP3 (decision 0021, all optional, absent = default): `daily_capacity_min` (20), `catchup_auto` (true), `vacation` (`{start, end}` local day keys, both included; null = none) and `vacation_history` (earlier vacations, for the streak). Personal FSRS parameters (v0.3 İP4, decision 0022): `fsrs_params` (21 FSRS-6 weights; null = ts-fsrs defaults), `fsrs_params_prev` (the params before the last adoption, for "Eski ayara dön"; null = defaults / nothing to revert) and `fsrs_opt_at` (epoch ms of the last check, adopted or not; drives the monthly offer); the last two are optional (absent = null) and Dexie v15 re-pulls settings once for them. A change of `fsrs_params` (here or pulled) replays every card from its logs. `goals` (v0.3 İP7, decision 0027; optional, absent or null = none): `{week_active_days?, week_minutes?, month_new_terms?}`. Dexie v20 re-pulls settings once for it. `show_image_front` (v0.4 İP3, decision 0031; optional, absent or null = off): also show the sense's picture on card fronts. Dexie v21 re-pulls settings once for it. |
+| settings | yes | `id = 'settings'` | Defaults: `daily_new_limit 10`, `request_retention 0.9`, `timezone` from the device, `day_start_hour 4`, `theme 'system'`, `voice 'en-US'`, `level 'B1'`. `interests` (picked topic keys; absent/null = never asked, `[]` = asked) and `muted_topics` (weight 0). Topic weights are computed on the device (`domain/profile.ts`), never stored (decision 0015). Level (decision 0017): `level_source` (`default`/`test`/`auto`/`manual`), `level_updated_at`, `level_locked`, `level_change` (the last automatic change and its reason, with `dismissed`). Dexie v9 set `level_source` to `manual` when the level was not B1. `show_easy_candidates` (default false; v0.2 İP4: open the import preview's "Kolay" section; absent or null = false, so older rows and backups need no change). v0.3 İP3 (decision 0021, all optional, absent = default): `daily_capacity_min` (20), `catchup_auto` (true), `vacation` (`{start, end}` local day keys, both included; null = none) and `vacation_history` (earlier vacations, for the streak). Personal FSRS parameters (v0.3 İP4, decision 0022): `fsrs_params` (21 FSRS-6 weights; null = ts-fsrs defaults), `fsrs_params_prev` (the params before the last adoption, for "Eski ayara dön"; null = defaults / nothing to revert) and `fsrs_opt_at` (epoch ms of the last check, adopted or not; drives the monthly offer); the last two are optional (absent = null) and Dexie v15 re-pulls settings once for them. A change of `fsrs_params` (here or pulled) replays every card from its logs. `goals` (v0.3 İP7, decision 0027; optional, absent or null = none): `{week_active_days?, week_minutes?, month_new_terms?}`. Dexie v20 re-pulls settings once for it. `show_image_front` (v0.4 İP3, decision 0031; optional, absent or null = off): also show the sense's picture on card fronts. Dexie v21 re-pulls settings once for it. `new_card_order` (v0.4, decision 0039; optional, absent or null = `smart`): `smart` or `added` ("Yeni kelime sırası"). Dexie v25 re-pulls settings once for it. |
 | outbox | no | `++seq`, `[table+row_id]`, `next_attempt_at` | Rows waiting to be pushed. |
 | daily_activity | no (derived) | `date` (local `YYYY-MM-DD`) | `reviews`, `new_cards`, `time_ms`, `review_answers`, `review_passed`, `completed`. |
 | meta | no | `key` | `device_id`, `user_id`, `hlc`, `sync_cursor`, `lexicon_cursor`, `lexicon_examples_cursor`, `server_practice_logs` (the server answered with `sync_pull_v3`), `server_examples`, `extra_new:<YYYY-MM-DD>` (extra new cards allowed that day, this device only), `family_dismissed_morphemes` (root/affix card suggestions the user closed), `server_tables` / `server_tables_checked_at` (late sync tables the server registry confirmed; when it was last asked), `pull_backfill` (tables to re-pull once, see sync-strategy.md; Dexie v11 adds notes, settings and sources on updated devices for the columns v0.1/İP1 stripped), `level_week:<user or guest>` (the week the weekly level update last ran), `level_test_offer_dismissed`, `load_warning_dismissed` (the day the home load warning was hidden; it stays hidden 7 days, decision 0021), `report_seen:<user or guest>` (the week whose report the user opened or whose home note they closed, decision 0027). |
@@ -87,8 +87,9 @@ ordinary `answerCard` calls.
 The queue is built in this order:
 1. Due (re)learning steps.
 2. Reviews due before the end of the day, oldest due first.
-3. New cards, by `created_at`. One new card follows every 5 reviews; this rhythm is kept
-   across rebuilds through the session counts.
+3. New cards, in the smart order (`domain/newOrder.ts`, decision 0039) or, with
+   `settings.new_card_order = 'added'`, by `created_at`. One new card follows every 5
+   reviews; this rhythm is kept across rebuilds through the session counts.
 
 Rules:
 - New cards are limited to `daily_new_limit + extra_new:<today>` minus the cards first
@@ -99,6 +100,17 @@ Rules:
 - Suspended, deleted and locked cards are excluded.
 - When nothing else is left, learning cards due within 20 minutes are shown early. Rebuild
   the queue after every answer.
+
+Smart new-card order (decision 0039): words typed in by hand in the last 7 days first (oldest
+first); then a mix by level against the learner's level X (about 60 % at X, 30 % below,
+at most 10 % at X+1, unknown level = X+1, nothing above X+1 while the pool allows), inside a
+band the active source (imported in the last 14 days, or a word started from it in the 7 days
+before today), word frequency, waiting time and a per-user daily jitter
+(`seed = hash(user id | day)`). Two confusable notes (same family or lemma, a derivation, a
+shared Turkish meaning, near spelling, a reported confusion, a contrast card and its terms, a
+cached false friend) are not introduced on one day while another card can take the place. The
+cards first answered today (`loadTodayFacts().introducedNoteIds`) seed the day's shares and
+conflicts, so a rebuilt queue continues the same sequence. Nothing of the order is stored.
 
 ## Practice rounds (`domain/practice.ts`)
 
