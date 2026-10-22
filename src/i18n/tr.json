@@ -682,7 +682,12 @@
       "level": "Tahmini seviye",
       "levelHint": "AI, bu seviyenin altındaki çok temel kelimeleri önermez.",
       "showEasy": "Kolay adayları açık göster",
-      "showEasyHint": "Metinden kelime çıkarırken seviyenin altındaki adaylar kapalı bir bölümde gelir. Açarsan bu bölüm hep açık görünür."
+      "showEasyHint": "Metinden kelime çıkarırken seviyenin altındaki adaylar kapalı bir bölümde gelir. Açarsan bu bölüm hep açık görünür.",
+      "newOrder": "Yeni kelime sırası",
+      "newOrderSmart": "Akıllı (önerilen)",
+      "newOrderAdded": "Eklenme sırası",
+      "newOrderSmartHint": "Önce seviyene uyan ve sık kullanılan kelimeler; elle eklediklerin ve üzerinde çalıştığın metnin kelimeleri öne geçer. Birbirine karışabilecek kelimeler aynı gün gelmez.",
+      "newOrderAddedHint": "Yeni kartlar eklediğin sırayla gelir."
     },
     "levels": {
       "A1": "Başlangıç",

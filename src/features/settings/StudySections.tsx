@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { Settings, ThemePref } from '@/domain/types';
+import type { NewCardOrder, Settings, ThemePref } from '@/domain/types';
 import { Button, SegmentedControl, Select, Skeleton, Slider, Switch } from '@/ui';
 import { FsrsOptimizerRow, RetentionHelper } from '@/features/fsrs/FsrsSettings';
 import { ImageSettingsRows } from '@/features/images/ImageSettings';
@@ -76,6 +76,10 @@ export function StudySection() {
             />
             <p className="-mt-1 text-sm text-fg-muted">{t('settings.study.dailyNewHint')}</p>
           </SettingsRow>
+          <NewOrderRow
+            value={settings.new_card_order ?? 'smart'}
+            onChange={(v) => update({ new_card_order: v })}
+          />
           <SettingsRow stack>
             <Slider
               label={t('settings.study.retention')}
@@ -121,6 +125,33 @@ export function StudySection() {
         </>
       )}
     </SettingsSection>
+  );
+}
+
+/** "Yeni kelime sırası" (docs/decisions/0039): smart by default, or the order added. */
+function NewOrderRow({ value, onChange }: { value: NewCardOrder; onChange: (v: NewCardOrder) => Promise<void> }) {
+  const { t } = useTranslation();
+  // The choice shows at once; the stored value takes over once it changes (or on a failed save).
+  const [pending, setPending] = useState<{ from: NewCardOrder; to: NewCardOrder } | null>(null);
+  const shown = pending && pending.from === value ? pending.to : value;
+  return (
+    <SettingsRow stack>
+      <SegmentedControl<NewCardOrder>
+        legend={t('settings.study.newOrder')}
+        value={shown}
+        onValueChange={(v) => {
+          setPending({ from: value, to: v });
+          void onChange(v).catch(() => setPending(null));
+        }}
+        options={[
+          { value: 'smart', label: t('settings.study.newOrderSmart') },
+          { value: 'added', label: t('settings.study.newOrderAdded') },
+        ]}
+      />
+      <p className="-mt-1 text-sm text-fg-muted" aria-live="polite">
+        {shown === 'smart' ? t('settings.study.newOrderSmartHint') : t('settings.study.newOrderAddedHint')}
+      </p>
+    </SettingsRow>
   );
 }
 

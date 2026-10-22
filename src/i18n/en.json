@@ -682,7 +682,12 @@
       "level": "Estimated level",
       "levelHint": "AI skips very basic words below this level.",
       "showEasy": "Show easy candidates open",
-      "showEasyHint": "When words are extracted from a text, those below your level come in a closed section. Turn this on to always show it open."
+      "showEasyHint": "When words are extracted from a text, those below your level come in a closed section. Turn this on to always show it open.",
+      "newOrder": "New word order",
+      "newOrderSmart": "Smart (recommended)",
+      "newOrderAdded": "Order added",
+      "newOrderSmartHint": "Words that fit your level and are common come first; words you added yourself and words of the text you are working on move ahead. Words that are easy to mix up never come on the same day.",
+      "newOrderAddedHint": "New cards come in the order you added them."
     },
     "levels": {
       "A1": "Beginner",
