@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReviewQueueRow } from '@/ai/image';
 import { setAuthStateForTesting } from '@/features/auth/session';
 import { clearPictureCache } from '@/features/images/picture';
+import { ImageReviewEntry } from '@/features/images/ImageSettings';
 import { resetAdminCache } from '@/features/images/useIsAdmin';
 import { SAMPLE_PICTURES } from '@/test/imageSamples';
 import { renderRoute } from '@/test/ui';
@@ -214,5 +215,17 @@ describe('Görsel onayı', () => {
     await waitFor(() => expect(screen.getByTestId('review-left')).toHaveTextContent('2 görsel kaldı'));
     await user.keyboard('{ArrowRight}');
     expect(card()).toHaveAttribute('data-image-id', imgId(0));
+  });
+});
+
+describe('Settings entry', () => {
+  it('shows "Görsel onayı" only when is_app_admin() says yes', async () => {
+    const view = renderRoute(<ImageReviewEntry ask={no} />);
+    await act(async () => {});
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    view.unmount();
+    resetAdminCache();
+    renderRoute(<ImageReviewEntry ask={yes} />);
+    expect(await screen.findByRole('link')).toHaveAttribute('href', '/admin/images');
   });
 });

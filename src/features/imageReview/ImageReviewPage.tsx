@@ -72,7 +72,10 @@ export function ImageReviewPage({ api = defaultApi, ask }: { api?: ReviewApi; as
   else body = <Reviewer api={api} online={online} />;
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-xl flex-col px-4 pt-3 pb-4 sm:px-6" data-testid="image-review">
+    <div
+      className="mx-auto flex h-[calc(100dvh-3.5rem)] min-h-[34rem] w-full max-w-xl flex-col px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6"
+      data-testid="image-review"
+    >
       <header className="flex items-center gap-2">
         <Link
           to="/settings#gelismis"
@@ -81,7 +84,7 @@ export function ImageReviewPage({ api = defaultApi, ask }: { api?: ReviewApi; as
         >
           <Icon name="arrow-left" />
         </Link>
-        <h1 className="font-serif text-2xl font-semibold text-fg">{t('imageReview.title')}</h1>
+        <h1 className="font-serif text-xl font-semibold text-fg sm:text-2xl">{t('imageReview.title')}</h1>
       </header>
       {body}
     </div>
@@ -267,7 +270,7 @@ function Reviewer({ api, online }: { api: ReviewApi; online: boolean }) {
   const hint = offset ? swipeHint(offset) : null;
 
   return (
-    <div className="flex flex-1 flex-col gap-3 pt-2">
+    <div className="flex min-h-0 flex-1 flex-col gap-3 pt-1">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <p className="text-sm text-fg-muted">{t('imageReview.intro')}</p>
         <p className="tabular text-sm font-medium text-fg" data-testid="review-left">
@@ -276,7 +279,7 @@ function Reviewer({ api, online }: { api: ReviewApi; online: boolean }) {
       </div>
       <p className="hidden text-xs text-fg-subtle sm:block">{t('imageReview.shortcuts')}</p>
 
-      <div className="relative flex flex-1 flex-col items-center justify-center">
+      <div className="relative flex min-h-0 flex-1 flex-col items-center justify-center">
         {!online && !current ? (
           <Notice text={t('imageReview.offline')} />
         ) : loadFailed && !current ? (
@@ -314,7 +317,7 @@ function Reviewer({ api, online }: { api: ReviewApi; online: boolean }) {
                 : undefined,
               transition: offset || reduce ? 'none' : 'transform var(--duration-micro, 150ms) ease-out',
             }}
-            className="relative flex w-full max-w-sm touch-none flex-col items-center gap-3 rounded-card border border-border bg-surface-raised px-5 pt-5 pb-6 shadow-md select-none"
+            className="relative flex max-h-full w-full max-w-sm touch-none flex-col items-center gap-2 rounded-card border border-border bg-surface-raised px-4 pt-4 pb-4 shadow-md select-none"
           >
             {hint && (
               <span
@@ -343,7 +346,7 @@ function Reviewer({ api, online }: { api: ReviewApi; online: boolean }) {
             <CardPicture
               image={{ id: current.id, svg: current.svg, alt: current.alt_tr }}
               showNew={false}
-              className="aspect-square w-full max-w-[16rem]"
+              className="aspect-square w-full max-w-[min(16rem,30dvh)]"
             />
             <p lang="tr" className="text-center text-sm text-fg-muted">
               {current.alt_tr}

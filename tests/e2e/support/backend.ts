@@ -47,6 +47,15 @@ import { FAKE_SPECS } from '../../../src/features/import/testing/fakeSpecs.ts';
 import { readFileSync } from 'node:fs';
 import { parseClientLevels } from '../../../src/domain/level.ts';
 import { lemmasNeeded } from '../../../supabase/functions/_shared/level.ts';
+import type { AiImageResponse, LexiconImageRow } from '../../../supabase/functions/_shared/image-contract.ts';
+
+/** One row of image_review_queue (v0.4 İP4). */
+export interface ImageReviewQueueRow {
+  image: LexiconImageRow;
+  lemma: string;
+  pos: string | null;
+  gloss_tr: string;
+}
 
 export const SUPABASE_URL = 'https://bikcjlomrjaxymifxogi.supabase.co';
 const STORAGE_KEY = 'sb-bikcjlomrjaxymifxogi-auth-token';
@@ -393,6 +402,16 @@ export class FakeBackend {
   offline = false;
   /** RPC names that answer like a backend that is not deployed (PostgREST 404). */
   readonly brokenRpcs = new Set<string>();
+  /**
+   * v0.4 pictures: public.lexicon_images (read through PostgREST with `in.(…)` filters), the
+   * admin flag and review queue (is_app_admin, image_review_queue, image_review_decide) and
+   * the answers ai-image gives, in order (the last one repeats).
+   */
+  readonly images: LexiconImageRow[] = [];
+  imageAdmin = false;
+  readonly reviewQueue: ImageReviewQueueRow[] = [];
+  readonly reviewDecisions: { id: string; decision: string; reason: string | null }[] = [];
+  readonly imageAnswers: AiImageResponse[] = [];
   private readonly opts: BackendOptions;
   constructor(opts: BackendOptions = {}) {
     this.opts = opts;
@@ -464,6 +483,13 @@ export class FakeBackend {
       if (name.startsWith('token')) return this.json(route, 200, fakeSession());
       if (name.startsWith('logout')) return route.fulfill({ status: 204, headers: CORS });
       return this.json(route, 404, { msg: 'not found' });
+    }
+    if (path === '/rest/v1/lexicon_images') return this.lexiconImages(route, new URL(req.url()));
+    if (path === '/functions/v1/ai-image') {
+      const answer = this.imageAnswers.length > 1 ? this.imageAnswers.shift()! : this.imageAnswers[0];
+      if (!answer) return this.json(route, 200, { ok: false, reason: 'failed' });
+      if (answer.ok) this.images.push(answer.image);
+      return this.json(route, 200, answer);
     }
     if (path.startsWith('/rest/v1/rpc/'))
       return this.rpc(route, name, body as Record<string, unknown>);
@@ -586,6 +612,25 @@ export class FakeBackend {
     }
   }
 
+  /** GET lexicon_images?select=…&sense_id=in.(…)|id=in.(…)&status=in.(…) */
+  private lexiconImages(route: Route, url: URL) {
+    const list = (v: string | null) =>
+      v?.startsWith('in.(') ? v.slice(4, -1).split(',').map((s) => s.replace(/^"|"$/g, '')) : null;
+    const senseIds = list(url.searchParams.get('sense_id'));
+    const ids = list(url.searchParams.get('id'));
+    const statuses = list(url.searchParams.get('status'));
+    const columns = (url.searchParams.get('select') ?? '*').split(',');
+    const rows = this.images
+      .filter((r) => (!senseIds || senseIds.includes(r.sense_id)) && (!ids || ids.includes(r.id)))
+      .filter((r) => !statuses || statuses.includes(r.status))
+      .map((r) =>
+        columns[0] === '*'
+          ? r
+          : Object.fromEntries(columns.map((c) => [c, (r as Record<string, unknown>)[c]])),
+      );
+    return this.json(route, 200, rows);
+  }
+
   private rpc(route: Route, fn: string, args: Record<string, unknown>) {
     if (this.brokenRpcs.has(fn)) {
       return this.json(route, 404, {
@@ -649,6 +694,22 @@ export class FakeBackend {
         const page = this.examples.pull(Number(args.p_since ?? 0), Number(args.p_limit ?? 500));
         return this.json(route, 200, { ...page, rows: page.rows.filter((r) => mine.has(r.sense_id)) });
       }
+      case 'is_app_admin':
+        return this.json(route, 200, this.imageAdmin);
+      case 'image_review_queue': {
+        if (!this.imageAdmin) return this.json(route, 403, { code: '42501', message: 'not an admin' });
+        const decided = new Set(this.reviewDecisions.map((d) => d.id));
+        const rows = this.reviewQueue.filter((r) => !decided.has(r.image.id));
+        return this.json(route, 200, rows.slice(0, Number(args.p_limit ?? 20)));
+      }
+      case 'image_review_decide':
+        if (!this.imageAdmin) return this.json(route, 403, { code: '42501', message: 'not an admin' });
+        this.reviewDecisions.push({
+          id: String(args.p_image_id),
+          decision: String(args.p_decision),
+          reason: (args.p_reason as string | null) ?? null,
+        });
+        return this.json(route, 200, null);
       case 'lexicon_get':
         return this.store
           .getEntries((args.p_ids ?? []) as string[])
