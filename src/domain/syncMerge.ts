@@ -39,6 +39,8 @@ const LATE_COLUMNS: Readonly<Record<string, Readonly<Record<string, unknown>>>> 
     notify: null,
     // v0.3 İP7
     goals: null,
+    // v0.4 İP3
+    show_image_front: null,
   },
 };
 

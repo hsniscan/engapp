@@ -6,6 +6,7 @@ export * from './actions';
 export * from './queries';
 export * from './examples';
 export * from './mnemonics';
+export * from './images';
 export {
   computeWeeklySummary,
   deferReportDraft,

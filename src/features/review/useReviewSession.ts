@@ -18,6 +18,7 @@ import {
 import type { QueueItem, QueueKind, QueueMode } from '@/domain/queue';
 import { Rating, type Id, type RatingValue } from '@/domain/types';
 import type { LeechNotice } from '@/features/leech';
+import { preloadPicture } from '@/features/images/picture';
 
 export const MAX_ANSWER_MS = 60_000;
 
@@ -119,7 +120,8 @@ export function useReviewSession(mode: QueueMode = 'normal') {
 
   const prefetch = useCallback(() => {
     const next = upcoming.current[0];
-    if (next) void loadView(next.card_id);
+    // v0.4: the next card's picture is built and decoded while this card is on screen.
+    if (next) void loadView(next.card_id).then((v) => preloadPicture(v?.image));
   }, [loadView]);
 
   const remainingCount = (current: CurrentCard | null) =>

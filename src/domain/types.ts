@@ -387,7 +387,8 @@ export interface Settings extends SyncedRow {
     week_active_days?: number | null;
     month_new_terms?: number | null;
     week_minutes?: number | null;
-  } | null;
+  } | null;  /** v0.4 İP3: show the sense's picture on the front of the card too (absent/null = off). */
+  show_image_front?: boolean | null;
 }
 
 /** settings.notify (domain/notify.ts). */

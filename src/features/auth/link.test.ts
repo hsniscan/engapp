@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   addNoteWithSenses,
   answerCard,
+  cardImageOf,
+  chooseImage,
   createSource,
   db,
   ensureSettings,
@@ -11,9 +13,14 @@ import {
   getStreakSummary,
   META,
   setGoals,
+  setImageHidden,
+  setImageVerdict,
   setMeta,
+  storeImage,
   updateSettings,
 } from '@/data';
+import { IMAGE_CHOICE_KIND, IMAGE_REASON_KIND, IMAGE_TARGET } from '@/domain/images';
+import { SAMPLE_PICTURES } from '@/test/imageSamples';
 import { SyncEngine } from '@/sync/engine';
 import { FakeServer, loadDevice, saveDevice } from '@/sync/testing/fakeServer';
 import { CardState, Rating } from '@/domain/types';
@@ -354,6 +361,65 @@ describe('account linking', () => {
 
     // v0.3 İP7: the other account's weekly reports, waiting report and goals stay behind.
     await expectNoReportsOrGoals();
+  });
+
+  it("v0.4: another account's picture choice, hide flag and verdicts are never copied", async () => {
+    const LEX = '0199f0a0-0000-7000-8000-00000000a001';
+    const LEX2 = '0199f0a0-0000-7000-8000-00000000a002';
+    const pic = (id: string, sense_id: string, variant: number) => ({
+      id,
+      sense_id,
+      variant,
+      svg: SAMPLE_PICTURES.apple.svg,
+      alt_tr: 'Kırmızı bir elma',
+      status: 'approved' as const,
+      created_at: '2026-10-25T01:30:00Z',
+      fetched_at: T,
+    });
+    const P0 = '0199f0a0-0000-7000-8000-0000000b0000';
+    const P1 = '0199f0a0-0000-7000-8000-0000000b0001';
+    const P2 = '0199f0a0-0000-7000-8000-0000000b0002';
+    // The other account: "apple" with a picked second variant and a "Hayır" for the first;
+    // "bridge" with its picture hidden.
+    await resetDb();
+    await db.transaction('rw', db.meta, () => setMeta(META.userId, OTHER));
+    const apple = await addNoteWithSenses({ term: 'apple', senses: [{ meaning_tr: 'elma', lexicon_sense_id: LEX }] }, T);
+    const bridge = await addNoteWithSenses({ term: 'bridge', senses: [{ meaning_tr: 'köprü', lexicon_sense_id: LEX2 }] }, T);
+    for (const p of [pic(P0, LEX, 0), pic(P1, LEX, 1), pic(P2, LEX2, 0)]) await storeImage(p);
+    const appleSense = (await db.senses.where('note_id').equals(apple.note.id).toArray())[0]!;
+    const bridgeSense = (await db.senses.where('note_id').equals(bridge.note.id).toArray())[0]!;
+    await chooseImage(appleSense.id, P1, T);
+    await setImageVerdict(appleSense.id, P0, 'reject', 'wrong_meaning', T);
+    await setImageVerdict(appleSense.id, P1, 'like', null, T);
+    await setImageHidden(bridgeSense.id, true, T);
+    expect(await db.user_content.count()).toBe(3);
+    expect(await db.content_feedback.count()).toBe(2);
+    const img = await saveDevice();
+
+    await accountWithData();
+    await loadDevice(img);
+    configureLink({ transport: server, engine: engine() });
+    await linkAccount(USER);
+    expect(getLinkState()).toMatchObject({ phase: 'choose', otherAccount: true });
+    await resolveLink('copy_cards');
+    expect(getLinkState()).toMatchObject({ phase: 'done' });
+
+    // The words come along; none of the other account's picture rows, here or on the server.
+    const kinds = (rows: { kind?: unknown }[]) => rows.map((r) => r.kind);
+    expect(kinds(await db.user_content.toArray())).not.toContain(IMAGE_CHOICE_KIND);
+    expect(kinds(await db.user_content.toArray())).not.toContain(IMAGE_REASON_KIND);
+    expect((await db.content_feedback.toArray()).filter((f) => f.target_kind === IMAGE_TARGET)).toEqual([]);
+    for (const r of server.rowsOf('user_content')) expect([IMAGE_CHOICE_KIND, IMAGE_REASON_KIND]).not.toContain(r.kind);
+    expect(server.rowsOf('content_feedback').filter((f) => f.target_kind === IMAGE_TARGET)).toEqual([]);
+
+    // The shared picture cache stays; the copied words show the default picture, not hidden.
+    expect(await db.images.count()).toBe(3);
+    const senses = (await db.senses.toArray()).filter((s) => s.deleted_at === null);
+    const copiedApple = senses.find((s) => s.lexicon_sense_id === LEX)!;
+    const copiedBridge = senses.find((s) => s.lexicon_sense_id === LEX2)!;
+    expect(copiedApple.id).not.toBe(appleSense.id);
+    expect((await cardImageOf(copiedApple))?.id).toBe(P0);
+    expect((await cardImageOf(copiedBridge))?.id).toBe(P2);
   });
 
   it('"bu hesabın verisiyle başla" keeps only the account on this device', async () => {
