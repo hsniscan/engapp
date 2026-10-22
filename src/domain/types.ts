@@ -263,6 +263,22 @@ export interface Settings extends SyncedRow {
   muted_topics?: string[] | null;
   /** v0.2 İP4: open "Kolay olabilir" in the import preview (absent/null = closed). */
   show_easy_candidates?: boolean | null;
+  // v0.3 İP3 load management (docs/decisions/0021-load-management.md). All optional: older
+  // rows, backups and servers lack them, and absent means the default.
+  /** Most minutes of study a day; turned into cards by domain/capacity.ts (absent/null = 20). */
+  daily_capacity_min?: number | null;
+  /** Catch-up mode switches itself on when the backlog exceeds capacity (absent/null = on). */
+  catchup_auto?: boolean | null;
+  /** The current or next vacation, local days, both ends included (null = none). */
+  vacation?: VacationRange | null;
+  /** Earlier vacations, oldest first (at most 20), so their days stay neutral for the streak. */
+  vacation_history?: VacationRange[] | null;
+}
+
+/** Inclusive range of local days (YYYY-MM-DD, day starts at day_start_hour). */
+export interface VacationRange {
+  start: string;
+  end: string;
 }
 
 /** Shared dictionary entries, read-only on the client (pulled from server). */

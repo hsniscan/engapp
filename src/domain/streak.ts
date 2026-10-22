@@ -117,33 +117,57 @@ export interface StreakSummary {
 
 export interface StreakOptions {
   today: DayKey;
+  /**
+   * Vacation days (v0.3 İP3, domain/vacation.ts): a frozen day without reviews neither
+   * breaks nor extends a streak. Default: no frozen days.
+   */
+  isFrozenDay?: (day: DayKey) => boolean;
   /** Local day the account (or guest data) was created; older activity also extends it. */
   accountStartDay: DayKey | null;
   /** Cards currently in state Review. */
   learnedCards: number;
 }
 
-export function currentStreak(active: ReadonlySet<DayKey>, today: DayKey): number {
+const noFrozenDays = (): boolean => false;
+
+/** Active days in a row up to today (or yesterday); inactive frozen days are skipped. */
+export function currentStreak(
+  active: ReadonlySet<DayKey>,
+  today: DayKey,
+  isFrozenDay: (day: DayKey) => boolean = noFrozenDays,
+): number {
   let k = active.has(today) ? today : addDays(today, -1);
   let n = 0;
-  while (active.has(k)) {
-    n++;
+  // A frozen day is finite (vacations are bounded), so this loop ends.
+  for (;;) {
+    if (active.has(k)) n++;
+    else if (!isFrozenDay(k)) break;
     k = addDays(k, -1);
   }
   return n;
 }
 
-export function longestStreak(active: ReadonlySet<DayKey>): number {
+export function longestStreak(
+  active: ReadonlySet<DayKey>,
+  isFrozenDay: (day: DayKey) => boolean = noFrozenDays,
+): number {
   const sorted = [...active].sort();
   let best = 0;
   let run = 0;
   let prev: DayKey | null = null;
   for (const k of sorted) {
-    run = prev !== null && diffDays(prev, k) === 1 ? run + 1 : 1;
+    run = prev !== null && bridged(prev, k, isFrozenDay) ? run + 1 : 1;
     best = Math.max(best, run);
     prev = k;
   }
   return best;
+}
+
+/** Every day strictly between `a` and `b` is frozen (true for neighbours). */
+function bridged(a: DayKey, b: DayKey, isFrozenDay: (day: DayKey) => boolean): boolean {
+  const gap = diffDays(a, b);
+  for (let i = 1; i < gap; i++) if (!isFrozenDay(addDays(a, i))) return false;
+  return true;
 }
 
 export function computeStreakSummary(activity: Iterable<DailyActivity>, opts: StreakOptions): StreakSummary {
@@ -178,8 +202,8 @@ export function computeStreakSummary(activity: Iterable<DailyActivity>, opts: St
     todayCompleted: isActive(today) && !!today?.completed,
     todayReviews: today?.reviews ?? 0,
     totalActiveDays: active.size,
-    currentStreak: currentStreak(active, opts.today),
-    longestStreak: longestStreak(active),
+    currentStreak: currentStreak(active, opts.today, opts.isFrozenDay),
+    longestStreak: longestStreak(active, opts.isFrozenDay),
     last30Ratio: last30Active / denominator,
     last30ActiveDays: last30Active,
     avgDailyTimeMs: last30Active ? Math.round(last30Time / last30Active) : 0,
