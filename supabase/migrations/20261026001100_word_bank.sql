@@ -98,6 +98,9 @@ create table public.word_bank_jobs (
   batch_id text check (char_length(batch_id) <= 200),
   custom_id text check (custom_id ~ '^[a-zA-Z0-9_-]{1,64}$'),
   last_error text check (char_length(last_error) <= 500),
+  -- What the submitted request was built from (level, the lexicon senses it was given), so
+  -- collect reads the answer against the same input even if the lexicon changed meanwhile.
+  input jsonb check (input is null or (jsonb_typeof(input) = 'object' and pg_column_size(input) <= 8000)),
   updated_at timestamptz not null default now(),
   primary key (lemma_norm, pos),
   check ((state = 'submitted') = (batch_id is not null))
@@ -128,7 +131,8 @@ revoke all on table public.word_bank_jobs, public.word_bank_batches from anon, a
 -- ---------------------------------------------------------------------------
 
 -- Words of the reference lists that still need a bank row, easiest and most frequent first:
--- [{lemma_norm, pos, cefr, source, zipf, attempt}]. A word in both lists takes CEFR-J; the
+-- [{lemma_norm, pos, cefr, source, zipf, attempt, problem}] (problem: why the last answer was
+-- rejected, sent with the retry). A word in both lists takes CEFR-J; the
 -- Turkish-learner correction applies while the list level is the one it was made for.
 -- Words with a bank row, a submitted request or a final failure are left out.
 create or replace function public.word_bank_pending(p_limit integer default 1000)
@@ -146,7 +150,8 @@ as $$
     order by r.lemma_norm, r.pos, (r.source = 'cefrj') desc
   ),
   todo as (
-    select ref.lemma_norm, ref.pos, ref.cefr, ref.source, f.zipf, coalesce(j.attempt, 0) as attempt
+    select ref.lemma_norm, ref.pos, ref.cefr, ref.source, f.zipf, coalesce(j.attempt, 0) as attempt,
+      j.last_error as problem
     from ref
     left join public.ref_word_freq f on f.lemma_norm = ref.lemma_norm
     left join public.word_bank_jobs j on j.lemma_norm = ref.lemma_norm and j.pos = ref.pos
@@ -158,7 +163,7 @@ as $$
   )
   select coalesce(jsonb_agg(jsonb_build_object(
     'lemma_norm', t.lemma_norm, 'pos', t.pos, 'cefr', t.cefr, 'source', t.source,
-    'zipf', t.zipf::double precision, 'attempt', t.attempt
+    'zipf', t.zipf::double precision, 'attempt', t.attempt, 'problem', t.problem
   ) order by public.cefr_rank(t.cefr), t.zipf desc nulls last, t.lemma_norm, t.pos), '[]'::jsonb)
   from todo t
 $$;
@@ -209,7 +214,7 @@ begin
   select x.lemma_norm, x.pos, 'done', 0, null, null, now()
   from jsonb_to_recordset(p_rows) as x(lemma_norm text, pos text)
   on conflict (lemma_norm, pos) do update
-    set state = 'done', batch_id = null, last_error = null, updated_at = now();
+    set state = 'done', batch_id = null, last_error = null, input = null, updated_at = now();
 
   return n;
 end;
