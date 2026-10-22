@@ -114,6 +114,14 @@ const children: RouteObject[] = [
       Component: (await import('@/features/profile/ProfilePage')).ProfilePage,
     }),
   },
+  {
+    path: 'admin/images',
+    handle: { immersive: true } satisfies RouteHandle,
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/imageReview/ImageReviewPage')).ImageReviewRoute,
+    }),
+  },
   { path: 'auth', element: <AuthPage /> },
 ];
 
