@@ -36,23 +36,19 @@ export interface GeminiTtsConfig {
 // the free tier and have their own quota, separate from the text models').
 export const DEFAULT_GEMINI_TTS_MODEL = 'gemini-3.8-flash-tts';
 export const DEFAULT_GEMINI_TTS_FALLBACK_MODEL = 'gemini-3.8-flash-lite-tts';
-/** Prebuilt voices ("Clear" in Google's voice list). The accent comes from the prompt. */
+/** Prebuilt voices ("Clear" in Google's voice list). The accent comes from languageCode. */
 export const DEFAULT_TTS_VOICES: Record<TtsVoice, string> = {
   'en-US': 'Iapetus',
   'en-GB': 'Erinome',
 };
 
-const ACCENT: Record<TtsVoice, string> = {
-  'en-US': 'a natural American English accent',
-  'en-GB': 'a natural British English accent',
-};
-
 /**
- * The spoken text with a short, neutral direction. TTS models read everything after the colon
- * and treat the part before it as a style instruction.
+ * The text sent to the model: only the words to be read. A style direction in the prompt
+ * ("Say clearly, in an American accent: ...") was read aloud together with the word, so the
+ * accent is set through speechConfig.languageCode instead.
  */
-export function ttsPrompt(text: string, voice: TtsVoice): string {
-  return `Say clearly, in ${ACCENT[voice]}: ${text}`;
+export function ttsPrompt(text: string, _voice: TtsVoice): string {
+  return text;
 }
 
 interface InlineData {
@@ -77,12 +73,18 @@ export function createGeminiTts(cfg: GeminiTtsConfig): SpeechSynth {
     (m, i, a): m is string => !!m && a.indexOf(m) === i,
   );
 
+  // Set to false when a model rejects speechConfig.languageCode (HTTP 400 naming it).
+  let sendLanguageCode = true;
+
   async function once(model: string, text: string, voice: TtsVoice) {
     const body = {
       contents: [{ role: 'user', parts: [{ text: ttsPrompt(text, voice) }] }],
       generationConfig: {
         responseModalities: ['AUDIO'],
-        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: cfg.voices[voice] } } },
+        speechConfig: {
+          ...(sendLanguageCode ? { languageCode: voice } : {}),
+          voiceConfig: { prebuiltVoiceConfig: { voiceName: cfg.voices[voice] } },
+        },
       },
     };
     const ctrl = new AbortController();
@@ -95,6 +97,10 @@ export function createGeminiTts(cfg: GeminiTtsConfig): SpeechSynth {
         signal: ctrl.signal,
       });
       const raw = await res.text();
+      if (res.status === 400 && sendLanguageCode && /language_?code/i.test(raw)) {
+        sendLanguageCode = false;
+        return { fail: { kind: 'retry' as const, quota: false, message: 'languageCode rejected' } };
+      }
       if (!res.ok)
         return { fail: classifyHttpError(res.status, raw, res.headers.get('retry-after')) };
       let parsed: TtsResponseBody;
