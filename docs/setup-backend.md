@@ -101,7 +101,9 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 
 `ALLOWED_ORIGINS` is the list of web origins allowed to call the AI functions
 (comma-separated, exact, no trailing slash). Preview deploys on other origins cannot
-call AI unless added here.
+call AI unless added here. The deploy workflow always appends the production Pages URL,
+`http://localhost:5173` and `https://localhost` (the Android app's origin, see
+`docs/setup-android.md`), so the variable only needs extra origins.
 
 ## 5. Deploy
 

@@ -30,6 +30,13 @@ export default defineConfig({
         background_color: themeColor.light,
         theme_color: themeColor.light,
         categories: ['education'],
+        // "Paylaş → Engapp" for the installed web app (Android Chrome): /share?title&text&url,
+        // the same page the Android app opens (docs/decisions/0034-share-target.md).
+        share_target: {
+          action: '/share',
+          method: 'GET',
+          params: { title: 'title', text: 'text', url: 'url' },
+        },
         icons: [
           { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
           { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },

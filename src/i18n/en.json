@@ -1165,6 +1165,49 @@
     "reloadAlt": "Reload the page to open the new version",
     "offlineReady": "Engapp now works offline"
   },
+  "native": {
+    "signIn": {
+      "not_configured": "Google sign-in is not set up in this build. As a guest everything works on this phone.",
+      "no_account": "No Google account on this phone. Add one in Android Settings → Accounts and try again.",
+      "play_services": "Google Play services are missing or out of date. Update them from the Play Store and try again."
+    },
+    "app": {
+      "installed": "Engapp is installed on this phone as an Android app. Your data stays on the phone and works offline."
+    },
+    "reminders": {
+      "description": "At most one short reminder a day. Worked out on the phone; no internet or account needed.",
+      "daily": "Daily reminder",
+      "perDevice": "This setting applies to this phone only.",
+      "enabled": "Reminder on. It comes to this phone.",
+      "disabled": "Reminder off.",
+      "webRemoved_one": "This account's browser notification was turned off ({{count}} device), so you never get the reminder twice.",
+      "webRemoved_other": "This account's browser notifications were turned off ({{count}} devices), so you never get the reminder twice.",
+      "webRemoveFailed": "Browser notifications could not be turned off now (offline). Will retry when online.",
+      "denied": "Notifications are blocked. Allow them in Android Settings → Apps → Engapp → Notifications, then turn this on again.",
+      "next": "Next reminder: {{when}}",
+      "nextNone": "No reminder planned right now: you studied today, nothing is due, or you are on vacation.",
+      "failed": "Could not set the reminder. Try again.",
+      "channelName": "Daily reminder",
+      "channelDescription": "At most once a day, when reviews are due."
+    }
+  },
+  "share": {
+    "title": "Shared",
+    "emptyTitle": "Nothing was shared",
+    "emptyBody": "Select a word or sentence in another app, tap Share and choose Engapp.",
+    "textTitle": "Find words in the text",
+    "textLead": "Looking for words in this text. They appear in the preview with the sentence they came from.",
+    "textStart": "Find words",
+    "textStarting": "Starting…",
+    "textFailed": "Could not start finding words. Try again.",
+    "defaultTitle": "Shared text",
+    "linkTitle": "Shared link",
+    "linkLead": "For now only the page title is used. Importing the full article comes in a later version.",
+    "linkNoTitle": "No title came with this link; the address is shown below. Importing the full article comes in a later version.",
+    "linkFromTitle": "Find words in the title",
+    "linkTermFromTitle": "Add the title as a card",
+    "toHome": "Back to home"
+  },
   "account": {
     "checking": "Setting up your account…",
     "chooseTitle": "This account already has cards",

@@ -1,0 +1,231 @@
+# Android app (Capacitor): build, test, sign, and optionally upload to Google Play closed testing.
+# docs/setup-android.md explains every secret and variable; docs/decisions/0033-android-capacitor.md
+# the design.
+#
+# Outputs (workflow artifacts):
+#   engapp-apk                release APK signed with the upload key  -> sideload on your phone
+#   engapp-apk-unsigned-test  (no upload key secrets) release APK signed with a throwaway key made
+#                             in this run: installs, guest mode works, Google sign-in does NOT
+#   engapp-debug-apk          debug APK (debug key of this runner)
+#   engapp-aab                release bundle for Play (signed only with the upload key)
+#
+# versionCode = this workflow's run number (always increases, so a newer APK installs over the
+# older one and keeps its data); versionName = package.json "version".
+name: Android
+
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'android/**'
+      - 'index.html'
+      - 'capacitor.config.ts'
+      - 'vite.config.ts'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/android.yml'
+  workflow_dispatch:
+    inputs:
+      play_upload:
+        description: 'Upload the signed AAB to Google Play (needs PLAY_SERVICE_ACCOUNT_JSON and the upload key)'
+        type: boolean
+        default: false
+      play_track:
+        description: 'Play track (closed testing is "alpha" unless you created another one)'
+        type: string
+        default: 'alpha'
+      play_status:
+        description: 'Release status ("draft" while the app has never been reviewed, then "completed")'
+        type: choice
+        options: [completed, draft]
+        default: completed
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      key: ${{ steps.key.outputs.kind }}
+    env:
+      VERSION_CODE: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - uses: android-actions/setup-android@v3
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build the web app (bundled into the APK)
+        # .env.production holds the public Supabase URL and publishable key. The Google *web*
+        # OAuth client id is public too; it comes from the repository variable.
+        env:
+          VITE_GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
+        run: |
+          if [ -z "$VITE_GOOGLE_WEB_CLIENT_ID" ]; then
+            echo "::warning::Repository variable GOOGLE_WEB_CLIENT_ID is not set: native Google sign-in will say it is not configured (guest mode works)."
+          fi
+          pnpm build
+
+      - name: Copy the web build into the Android project
+        run: npx cap sync android
+
+      - name: Signing key
+        id: key
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          if [ -n "$KS_B64" ] && [ -n "$KS_PASS" ] && [ -n "$KS_ALIAS" ]; then
+            printf '%s' "$KS_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+            {
+              echo "UPLOAD_KEYSTORE_FILE=$RUNNER_TEMP/upload.jks"
+              echo "UPLOAD_KEY_ALIAS=$KS_ALIAS"
+            } >> "$GITHUB_ENV"
+            echo "kind=upload" >> "$GITHUB_OUTPUT"
+            store="$RUNNER_TEMP/upload.jks"; alias="$KS_ALIAS"
+            export KEYPASS="$KS_PASS"
+            echo "Signing with the upload key (secrets present)."
+          else
+            # Throwaway key, made for this run only: the APK installs, but Google sign-in will
+            # refuse it (its SHA-1 is not registered). Never reused, never uploaded.
+            pass="$(openssl rand -hex 24)"
+            echo "::add-mask::$pass"
+            export KEYPASS="$pass"
+            keytool -genkeypair -noprompt -keystore "$RUNNER_TEMP/throwaway.jks" -storetype PKCS12 \
+              -alias engapp-test -keyalg RSA -keysize 2048 -validity 30 \
+              -dname "CN=Engapp throwaway test key" -storepass:env KEYPASS -keypass:env KEYPASS
+            {
+              echo "TEST_KEYSTORE_FILE=$RUNNER_TEMP/throwaway.jks"
+              echo "TEST_KEYSTORE_PASSWORD=$pass"
+            } >> "$GITHUB_ENV"
+            echo "kind=throwaway" >> "$GITHUB_OUTPUT"
+            store="$RUNNER_TEMP/throwaway.jks"; alias="engapp-test"
+            echo "::notice::No upload key secrets (ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS): the AAB is unsigned and the APK is signed with a throwaway key (artifact engapp-apk-unsigned-test; Google sign-in will not work on it)."
+          fi
+          # The certificate fingerprints are public (they go into Google Cloud and Play Console).
+          echo "Signing certificate fingerprints:"
+          keytool -list -v -keystore "$store" -alias "$alias" -storepass:env KEYPASS \
+            | grep -E '^\s*(SHA1|SHA256):'
+
+      - name: Unit tests, debug APK and release bundle
+        working-directory: android
+        env:
+          # Upload key only: the Play bundle is never signed with the throwaway key.
+          ENGAPP_KEYSTORE_FILE: ${{ env.UPLOAD_KEYSTORE_FILE }}
+          ENGAPP_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ENGAPP_KEY_ALIAS: ${{ env.UPLOAD_KEY_ALIAS }}
+        run: ./gradlew --no-daemon -PversionCode="$VERSION_CODE" :app:testDebugUnitTest assembleDebug bundleRelease
+
+      - name: Release APK (sideload)
+        working-directory: android
+        env:
+          ENGAPP_KEYSTORE_FILE: ${{ env.UPLOAD_KEYSTORE_FILE || env.TEST_KEYSTORE_FILE }}
+          ENGAPP_KEYSTORE_PASSWORD: ${{ steps.key.outputs.kind == 'upload' && secrets.ANDROID_KEYSTORE_PASSWORD || env.TEST_KEYSTORE_PASSWORD }}
+          ENGAPP_KEY_ALIAS: ${{ env.UPLOAD_KEY_ALIAS || 'engapp-test' }}
+        run: ./gradlew --no-daemon -PversionCode="$VERSION_CODE" assembleRelease
+
+      - name: Name and check the outputs
+        id: out
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('./package.json').version")"
+          name="engapp-${version}-${VERSION_CODE}"
+          mkdir -p out
+          cp android/app/build/outputs/apk/release/app-release.apk "out/${name}.apk"
+          cp android/app/build/outputs/apk/debug/app-debug.apk "out/${name}-debug.apk"
+          cp android/app/build/outputs/bundle/release/app-release.aab "out/${name}.aab"
+          bt="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          echo "Release APK certificate:"
+          "$bt/apksigner" verify --print-certs "out/${name}.apk" | grep -E 'SHA-1|SHA-256|DN'
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Engapp ${version} (versionCode ${VERSION_CODE})"
+            if [ "${{ steps.key.outputs.kind }}" = upload ]; then
+              echo "- **engapp-apk**: signed with the upload key — install it on your phone (docs/setup-android.md)."
+              echo "- **engapp-aab**: signed bundle for Google Play."
+            else
+              echo "- **engapp-apk-unsigned-test**: throwaway key — installs, guest mode works, Google sign-in does not."
+              echo "- **engapp-aab**: unsigned (add the upload key secrets to sign it)."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload APK (upload key)
+        if: steps.key.outputs.kind == 'upload'
+        uses: actions/upload-artifact@v4
+        with:
+          name: engapp-apk
+          path: out/${{ steps.out.outputs.name }}.apk
+          retention-days: 30
+      - name: Upload APK (throwaway key, test only)
+        if: steps.key.outputs.kind != 'upload'
+        uses: actions/upload-artifact@v4
+        with:
+          name: engapp-apk-unsigned-test
+          path: out/${{ steps.out.outputs.name }}.apk
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: engapp-debug-apk
+          path: out/${{ steps.out.outputs.name }}-debug.apk
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: engapp-aab
+          path: out/${{ steps.out.outputs.name }}.aab
+          retention-days: 30
+
+  play:
+    # Manual only: Actions → Android → Run workflow → tick "Upload … to Google Play".
+    if: github.event_name == 'workflow_dispatch' && inputs.play_upload
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check prerequisites
+        id: pre
+        env:
+          PLAY_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          KEY_KIND: ${{ needs.build.outputs.key }}
+        run: |
+          if [ -z "$PLAY_JSON" ]; then
+            echo "::notice::PLAY_SERVICE_ACCOUNT_JSON is not set: skipping the Play upload (docs/setup-android.md, step 6)."
+            echo "go=false" >> "$GITHUB_OUTPUT"
+          elif [ "$KEY_KIND" != upload ]; then
+            echo "::notice::The bundle is not signed with the upload key (secrets missing): skipping the Play upload."
+            echo "go=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.pre.outputs.go == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: engapp-aab
+          path: aab
+      - if: steps.pre.outputs.go == 'true'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: io.github.hsniscan.engapp
+          releaseFiles: aab/*.aab
+          track: ${{ inputs.play_track }}
+          status: ${{ inputs.play_status }}

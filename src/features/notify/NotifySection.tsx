@@ -18,6 +18,8 @@ import { useInstallState } from '@/features/settings/platform';
 import { SettingsRow, SettingsSection } from '@/features/settings/SettingsLayout';
 import { useAppSettings } from '@/features/settings/useAppSettings';
 import { Button, SegmentedControl, Select, Skeleton, Switch, toast } from '@/ui';
+import { isNativeApp } from '@/native/platform';
+import { NativeNotifySection } from './NativeNotifySection';
 import {
   browserPushEnv,
   disablePush,
@@ -32,7 +34,13 @@ import {
 
 const pad = (h: number) => String(h).padStart(2, '0');
 
-export function NotifySection({ env: envProp }: { env?: PushEnv } = {}) {
+export function NotifySection(props: { env?: PushEnv } = {}) {
+  // The Android app plans its reminder on the phone; no Web Push there (decision 0033).
+  if (isNativeApp()) return <NativeNotifySection />;
+  return <WebNotifySection {...props} />;
+}
+
+function WebNotifySection({ env: envProp }: { env?: PushEnv } = {}) {
   const { t } = useTranslation();
   const auth = useAuth();
   const { settings } = useAppSettings();

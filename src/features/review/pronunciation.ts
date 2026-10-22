@@ -13,6 +13,7 @@ import { useRef, useSyncExternalStore } from 'react';
 
 import { requestPronunciation } from '@/ai/tts';
 import { getAuthState } from '@/features/auth/session';
+import { isNativeApp } from '@/native/platform';
 import {
   normalizeTtsText,
   TTS_CACHE_VERSION,
@@ -280,6 +281,24 @@ export function createPronouncer(deps: PronunciationDeps): Pronouncer {
   };
 }
 
+/**
+ * The device voice: the phone's TextToSpeech engine in the Android app (its WebView has no
+ * usable speechSynthesis; src/native/tts.ts), the browser's speechSynthesis on the web.
+ */
+export function deviceVoice(
+  text: string,
+  voice: VoicePref,
+  onDone: () => void,
+  native: boolean = isNativeApp(),
+): boolean {
+  if (!native) return speakEnglish(text, voice, { onDone });
+  void import('@/native/tts')
+    .then((m) => m.speakNative(text, voice))
+    .catch(() => {})
+    .finally(onDone);
+  return true;
+}
+
 const defaultPronouncer = createPronouncer({
   serverAllowed: () => {
     const s = getAuthState().status;
@@ -299,7 +318,8 @@ const defaultPronouncer = createPronouncer({
   createAudio: () => new Audio(),
   createObjectURL: (b) => URL.createObjectURL(b),
   revokeObjectURL: (u) => URL.revokeObjectURL(u),
-  fallback: (text, voice, onDone) => speakEnglish(text, voice, { onDone }),
+  // Offline without a cached copy (and every failure) goes straight to the device voice.
+  fallback: (text, voice, onDone) => deviceVoice(text, voice, onDone),
   setTimeout: (fn, ms) => window.setTimeout(fn, ms),
   clearTimeout: (id) => window.clearTimeout(id as number),
 });
@@ -314,6 +334,7 @@ export function playPronunciation(text: string, voice: VoicePref, opts?: PlayOpt
 
 /** True when this browser can play pronunciations at all (audio element or speech engine). */
 export function pronunciationSupported(): boolean {
+  if (isNativeApp()) return true; // native TextToSpeech is always there as the fallback
   return (
     typeof Audio !== 'undefined' || (typeof window !== 'undefined' && 'speechSynthesis' in window)
   );

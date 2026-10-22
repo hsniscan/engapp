@@ -8,6 +8,13 @@ export interface CorsConfig {
   allowedOrigins: string[];
 }
 
+/**
+ * Origin of the Android app: Capacitor serves the bundled files from https://localhost
+ * (docs/decisions/0033-android-capacitor.md). The deploy workflow always adds it to
+ * ALLOWED_ORIGINS; calls still need a valid user JWT.
+ */
+export const CAPACITOR_ANDROID_ORIGIN = 'https://localhost';
+
 export function parseOrigins(raw: string | undefined): string[] {
   const list = (raw ?? '')
     .split(',')

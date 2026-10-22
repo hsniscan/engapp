@@ -9,6 +9,8 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_ANON_KEY?: string;
   /** Contact e-mail shown in the privacy policy and on /hesap-sil (set at build time). */
   readonly VITE_CONTACT_EMAIL?: string;
+  /** Google OAuth *web* client id (…apps.googleusercontent.com): native sign-in in the Android app */
+  readonly VITE_GOOGLE_WEB_CLIENT_ID?: string;
 }
 
 interface ImportMeta {
