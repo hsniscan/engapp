@@ -1,3 +1,6 @@
+// Read-aloud. `speak` plays server audio through playPronunciation (pronunciation.ts,
+// docs/decisions/0028-server-tts.md); the browser's speechSynthesis below is its fallback.
+//
 // Text-to-speech through the browser's speechSynthesis, with the English voice from settings.
 //
 // Mobile browsers need extra care (decision: fix/mobile-tts):
@@ -13,6 +16,8 @@ import { useCallback, useEffect, useState } from 'react';
 
 import i18n from '@/i18n';
 import { toast } from '@/ui';
+
+import { playPronunciation, pronunciationSupported } from './pronunciation';
 
 export type VoicePref = 'en-US' | 'en-GB';
 
@@ -139,7 +144,7 @@ export function useSpeech(pref: VoicePref) {
     };
   }, []);
 
-  const speak = useCallback((text: string) => void speakEnglish(text, pref), [pref]);
+  const speak = useCallback((text: string) => void playPronunciation(text, pref), [pref]);
 
-  return { available: speechSupported(), speak };
+  return { available: pronunciationSupported(), speak };
 }

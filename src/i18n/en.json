@@ -700,7 +700,7 @@
       "us": "American",
       "gb": "British",
       "test": "Listen",
-      "hint": "Words are read with this voice, from your device's speech engine.",
+      "hint": "Words are read aloud in this accent. When you are signed in the voice comes from Engapp's server; otherwise from your device's speech engine.",
       "missing": "This device has no voice for that accent; the default English voice is used.",
       "unsupported": "This browser does not support speech."
     },

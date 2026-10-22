@@ -12,6 +12,7 @@ import { CardBackExtras } from '@/features/family/CardBackExtras';
 import { ContrastBack, ContrastFront, LeechBadge, LeechHint } from '@/features/leech';
 import { CardMnemonic } from '@/features/mnemonics';
 import { Badge, cn, IconButton } from '@/ui';
+import { usePronunciationBusy } from './pronunciation';
 
 const meaningOf = (s: Pick<Sense, 'meaning_tr' | 'meaning_tr_override'>) =>
   s.meaning_tr_override ?? s.meaning_tr;
@@ -61,18 +62,21 @@ export function SpeakButton({
   className,
 }: Pick<SpeakProps, 'available' | 'onSpeak'> & { label?: string; className?: string }) {
   const { t } = useTranslation();
+  const { busy, run } = usePronunciationBusy();
   return (
     <IconButton
       icon="speaker"
       label={available ? (label ?? t('common.listen')) : t('review.noVoice')}
       aria-disabled={!available || undefined}
+      aria-busy={busy || undefined}
       className={cn(
         className,
         !available && 'opacity-45 hover:bg-transparent hover:text-fg-muted',
+        busy && 'animate-pulse',
       )}
       onClick={(e) => {
         e.stopPropagation();
-        if (available) onSpeak();
+        if (available) run(onSpeak);
       }}
     />
   );

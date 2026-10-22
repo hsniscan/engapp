@@ -7,7 +7,13 @@ import { SettingsRow, SettingsSection } from './SettingsLayout';
 import { setTheme } from './themeSync';
 import { useAppSettings } from './useAppSettings';
 import type { SettingsPatch } from '@/data';
-import { speakEnglish } from '@/features/review/useSpeech';
+import { useAuth } from '@/features/auth/session';
+import {
+  playPronunciation,
+  pronunciationSupported,
+  usePronunciationBusy,
+} from '@/features/review/pronunciation';
+import { TTS_SAMPLE_TEXT } from '../../../supabase/functions/_shared/tts-contract';
 
 /** Local value while dragging; saved 400 ms after the last change (one write, one outbox row). */
 function useDebouncedSetting<K extends keyof SettingsPatch & keyof Settings>(
@@ -144,7 +150,8 @@ export function AppearanceSection() {
   );
 }
 
-const SAMPLE = 'Hello! This is how new words will sound.';
+// The server allows exactly this text (it is on no card), so it must stay the shared constant.
+const SAMPLE = TTS_SAMPLE_TEXT;
 
 function pickVoice(lang: string): SpeechSynthesisVoice | null {
   const voices = window.speechSynthesis.getVoices();
@@ -158,25 +165,31 @@ function pickVoice(lang: string): SpeechSynthesisVoice | null {
 export function VoiceSection() {
   const { t } = useTranslation();
   const { settings, update } = useAppSettings();
-  const supported = typeof window !== 'undefined' && 'speechSynthesis' in window;
+  const supported = pronunciationSupported();
+  const deviceSpeech = typeof window !== 'undefined' && 'speechSynthesis' in window;
+  // Signed in, words come from the server's voice; the device voice is only the fallback.
+  const serverVoice = useAuth().status === 'signed_in';
   const [speaking, setSpeaking] = useState(false);
   const [voiceMissing, setVoiceMissing] = useState(false);
+  const { busy, run } = usePronunciationBusy();
   const voice = settings?.voice ?? 'en-US';
 
   useEffect(() => {
-    if (!supported) return;
+    if (!deviceSpeech) return;
     const check = () =>
       setVoiceMissing(window.speechSynthesis.getVoices().length > 0 && !pickVoice(voice));
     check();
     window.speechSynthesis.addEventListener?.('voiceschanged', check);
     return () => window.speechSynthesis.removeEventListener?.('voiceschanged', check);
-  }, [voice, supported]);
+  }, [voice, deviceSpeech]);
 
   const test = () => {
     setSpeaking(true);
-    if (!speakEnglish(SAMPLE, voice, { rate: 0.95, onDone: () => setSpeaking(false) })) {
-      setSpeaking(false);
-    }
+    run(() => {
+      if (!playPronunciation(SAMPLE, voice, { onDone: () => setSpeaking(false) })) {
+        setSpeaking(false);
+      }
+    });
   };
 
   return (
@@ -197,6 +210,7 @@ export function VoiceSection() {
             variant="secondary"
             leadingIcon="speaker"
             onClick={test}
+            loading={busy}
             disabled={!supported}
             aria-pressed={speaking}
             className="sm:mb-px"
@@ -207,7 +221,7 @@ export function VoiceSection() {
         <p className="-mt-1 text-sm text-fg-muted">
           {!supported
             ? t('settings.voice.unsupported')
-            : voiceMissing
+            : voiceMissing && !serverVoice
               ? t('settings.voice.missing')
               : t('settings.voice.hint')}
         </p>

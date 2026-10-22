@@ -52,7 +52,7 @@ jobs:
       - name: Type-check edge functions (Deno)
         working-directory: supabase/functions
         run: |
-          for fn in ai-extract ai-enrich ai-examples ai-themes ai-mnemonic ai-report ai-contrast push-send; do (cd "$fn" && deno check index.ts); done
+          for fn in ai-extract ai-enrich ai-examples ai-themes ai-mnemonic ai-report ai-contrast push-send tts; do (cd "$fn" && deno check index.ts); done
       - name: Start local database
         # Only Postgres + Auth are needed for the SQL tests.
         run: supabase start -x studio,imgproxy,vector,logflare,storage-api,realtime,supavisor,mailpit,postgres-meta,edge-runtime,kong,postgrest
@@ -124,6 +124,10 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.8-flash' }}
           GEMINI_FALLBACK_MODEL: ${{ vars.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite' }}
+          # Pronunciation audio (tts function, docs/decisions/0028-server-tts.md); optional variables.
+          GEMINI_TTS_MODEL: ${{ vars.GEMINI_TTS_MODEL || 'gemini-3.8-flash-tts' }}
+          GEMINI_TTS_FALLBACK_MODEL: ${{ vars.GEMINI_TTS_FALLBACK_MODEL || 'gemini-3.8-flash-lite-tts' }}
+          TTS_DAILY_LIMIT: ${{ vars.TTS_DAILY_LIMIT || '150' }}
           AI_DAILY_LIMIT: ${{ vars.AI_DAILY_LIMIT || '200' }}
           ALLOWED_ORIGINS: ${{ format('{0},https://engapp-65y.pages.dev,http://localhost:5173', vars.ALLOWED_ORIGINS) }}
           VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT || 'https://engapp-65y.pages.dev' }}
@@ -137,6 +141,9 @@ jobs:
             echo "GEMINI_API_KEY=$GEMINI_API_KEY"
             echo "GEMINI_MODEL=$GEMINI_MODEL"
             echo "GEMINI_FALLBACK_MODEL=$GEMINI_FALLBACK_MODEL"
+            echo "GEMINI_TTS_MODEL=$GEMINI_TTS_MODEL"
+            echo "GEMINI_TTS_FALLBACK_MODEL=$GEMINI_TTS_FALLBACK_MODEL"
+            echo "TTS_DAILY_LIMIT=$TTS_DAILY_LIMIT"
             echo "AI_PROVIDER=gemini"
             echo "AI_DAILY_LIMIT=$AI_DAILY_LIMIT"
             echo "ALLOWED_ORIGINS=$ALLOWED_ORIGINS"

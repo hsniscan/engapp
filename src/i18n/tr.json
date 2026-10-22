@@ -700,7 +700,7 @@
       "us": "Amerikan",
       "gb": "İngiliz",
       "test": "Dinle",
-      "hint": "Kelimeler bu sesle okunur. Ses, cihazının konuşma motorundan gelir.",
+      "hint": "Kelimeler bu aksanla okunur. Giriş yaptıysan ses Engapp sunucusundan gelir; yoksa cihazının konuşma motorundan.",
       "missing": "Bu cihazda seçtiğin aksanda ses yok; varsayılan İngilizce ses kullanılır.",
       "unsupported": "Bu tarayıcı sesli okumayı desteklemiyor."
     },
