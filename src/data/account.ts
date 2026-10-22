@@ -14,7 +14,17 @@ import { getMeta, META, setMeta } from './meta';
 import { SETTINGS_ID } from './settings';
 import { type MutableRows, type MutableTable, writeTx } from './writer';
 
-const MUTABLE: MutableTable[] = ['notes', 'senses', 'cards', 'sources', 'settings'];
+const MUTABLE: MutableTable[] = [
+  'notes',
+  'senses',
+  'cards',
+  'sources',
+  'settings',
+  'content_feedback',
+  'user_content',
+  'decks',
+  'known_terms',
+];
 
 /** Data the user created on this device (settings alone do not count). */
 export async function hasLocalUserData(): Promise<boolean> {
@@ -40,6 +50,7 @@ export async function claimLocalData(userId: string, now: Millis = Date.now()): 
   await db.transaction('rw', db.meta, async () => {
     await setMeta(META.syncCursor, 0);
     await setMeta(META.lexiconCursor, 0);
+    await setMeta(META.lexiconExamplesCursor, 0);
   });
   return adoptGuestData(userId, now);
 }
@@ -59,12 +70,13 @@ export async function dropLocalSettings(): Promise<void> {
 
 /** "Yerel veriyi at": forget everything on this device and link it to `userId`. */
 export async function discardLocalData(userId: string): Promise<void> {
-  const keep = new Set(['meta']);
+  const keep = new Set(['meta', 'ref_cache']);
   await db.transaction('rw', db.tables, async () => {
     for (const t of db.tables) if (!keep.has(t.name)) await t.clear();
     await setMeta(META.userId, userId);
     await setMeta(META.syncCursor, 0);
     await setMeta(META.lexiconCursor, 0);
+    await setMeta(META.lexiconExamplesCursor, 0);
   });
 }
 
@@ -83,7 +95,18 @@ export interface RemoteSnapshot {
  */
 export async function discardAccountData(userId: string, snapshot: RemoteSnapshot, now: Millis = Date.now()): Promise<number> {
   await claimLocalData(userId, now);
-  const n = await writeTx([db.notes, db.senses, db.cards, db.sources, db.settings], now, async (w) => {
+  const tables = [
+    db.notes,
+    db.senses,
+    db.cards,
+    db.sources,
+    db.settings,
+    db.content_feedback,
+    db.user_content,
+    db.decks,
+    db.known_terms,
+  ];
+  const n = await writeTx(tables, now, async (w) => {
     let count = 0;
     for (const { table, row } of snapshot.rows) {
       if (!(MUTABLE as string[]).includes(table)) continue;
@@ -104,7 +127,9 @@ export async function discardAccountData(userId: string, snapshot: RemoteSnapsho
 }
 
 /** Device-level caches that do not belong to an account and survive a copy. */
-const KEEP_ON_COPY = new Set(['meta', 'chunk_cache', 'lexicon_cache', 'error_log']);
+// lexicon_examples is the shared sentence cache; the other account's likes, rejections and
+// edits (content_feedback, user_content) are personal and are NOT copied (ADR 0009).
+const KEEP_ON_COPY = new Set(['meta', 'chunk_cache', 'lexicon_cache', 'lexicon_examples', 'error_log', 'ref_cache']);
 
 /** The user's own content of a live note, as input for the normal add path. */
 function copyInput(note: Note, senses: Sense[], sourceIds: Map<Id, Id>): AddNoteInput {
@@ -150,6 +175,7 @@ export async function copyCardsFromOtherAccount(userId: string, snapshot: Remote
     const notes = (await db.notes.toArray()).filter((n) => n.deleted_at === null).sort((a, b) => a.created_at - b.created_at);
     const senses = (await db.senses.toArray()).filter((s) => s.deleted_at === null);
     const sources = new Map((await db.sources.toArray()).filter((s) => s.deleted_at === null).map((s) => [s.id, s]));
+    const decks = (await db.decks.toArray()).filter((d) => d.deleted_at === null).sort((a, b) => a.sort - b.sort);
     const sensesByNote = new Map<Id, Sense[]>();
     for (const s of senses) {
       const list = sensesByNote.get(s.note_id);
@@ -161,6 +187,7 @@ export async function copyCardsFromOtherAccount(userId: string, snapshot: Remote
     await setMeta(META.userId, userId);
     await setMeta(META.syncCursor, snapshot.nextSeq);
     await setMeta(META.lexiconCursor, 0);
+    await setMeta(META.lexiconExamplesCursor, 0);
 
     const batch: RemoteBatch = {};
     for (const { table, row } of snapshot.rows) (batch[table as keyof RemoteBatch] ??= []).push(row);
@@ -171,8 +198,9 @@ export async function copyCardsFromOtherAccount(userId: string, snapshot: Remote
     const sourceIds = await writeTx([db.sources], now, async (w) => {
       const map = new Map<Id, Id>();
       for (const id of used) {
-        const { kind, title, file_name, page_count } = sources.get(id)!;
-        map.set(id, (await w.put('sources', { ...w.base(), kind, title, file_name, page_count })).id);
+        const { kind, title, file_name, page_count, topics } = sources.get(id)!;
+        const copy = { ...w.base(), kind, title, file_name, page_count, ...(topics ? { topics } : {}) };
+        map.set(id, (await w.put('sources', copy)).id);
       }
       return map;
     });
@@ -189,6 +217,21 @@ export async function copyCardsFromOtherAccount(userId: string, snapshot: Remote
       }
       const res = await addNoteWithSenses(input, now);
       if (res.status !== 'existing' || res.addedSenses.length > 0) copied++;
+    }
+
+    // Smart decks are saved filters, not history: they come along under new ids unless the
+    // account already has a deck with the same name.
+    if (decks.length) {
+      await writeTx([db.decks], now, async (w) => {
+        const have = (await db.decks.toArray()).filter((d) => d.deleted_at === null);
+        const names = new Set(have.map((d) => d.name.toLocaleLowerCase('tr')));
+        let sort = have.reduce((m, d) => Math.max(m, d.sort), 0);
+        for (const d of decks) {
+          if (names.has(d.name.toLocaleLowerCase('tr'))) continue;
+          names.add(d.name.toLocaleLowerCase('tr'));
+          await w.put('decks', { ...w.base(), name: d.name, filter: d.filter, sort: ++sort });
+        }
+      });
     }
     return copied;
   });

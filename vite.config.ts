@@ -45,7 +45,8 @@ export default defineConfig({
         // Precache the whole build (app shell, route chunks, fonts, icons): works offline after one visit.
         globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest}'],
         // Not the pdf.js worker (1.26 MB, only for PDF import): it is cached on first use
-        // below (docs/decisions/0008-pdf-worker-runtime-cache.md).
+        // below (docs/decisions/0008-pdf-worker-runtime-cache.md). The word-level file (.tsv) is
+        // not matched either and is cached on first use as well (0012).
         globIgnores: ['**/pdf.worker*.mjs'],
         maximumFileSizeToCacheInBytes: 2 * 1024 * 1024,
         cleanupOutdatedCaches: true,
@@ -74,6 +75,17 @@ export default defineConfig({
             handler: 'CacheFirst',
             options: {
               cacheName: 'engapp-pdf-worker',
+              expiration: { maxEntries: 2 },
+            },
+          },
+          {
+            // Word-level file (data/levels/client-levels.tsv, ~160 KB compressed): fetched when a
+            // screen first shows levels, then offline (docs/decisions/0012-word-levels.md).
+            urlPattern: ({ url, sameOrigin }) =>
+              sameOrigin && /\/assets\/client-levels-[^/]*\.tsv$/.test(url.pathname),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'engapp-levels',
               expiration: { maxEntries: 2 },
             },
           },
@@ -119,6 +131,7 @@ export default defineConfig({
       'src/**/*.test.{ts,tsx}',
       'supabase/functions/_shared/**/*.test.ts',
       'supabase/tests/**/*.test.ts',
+      'scripts/**/*.test.ts',
     ],
   },
 });

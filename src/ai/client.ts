@@ -1,4 +1,4 @@
-// Typed client for the ai-extract and ai-enrich edge functions. Every response is
+// Typed client for the ai-extract, ai-enrich and ai-themes edge functions. Every response is
 // validated with the same zod schemas the server uses. AI needs a signed-in account;
 // guests get AiClientError('not_signed_in') without a network call.
 
@@ -16,11 +16,17 @@ import {
   type ExtractResponse,
   type LexiconEntry,
 } from '../../supabase/functions/_shared/contracts';
+import {
+  themesRequest,
+  themesResponse,
+  type ThemesRequest,
+  type ThemesResponse,
+} from '../../supabase/functions/_shared/themes-contract';
 import { hashChunk } from '@/domain/chunking';
 import type { CefrLevel, ImportCandidate, LexiconSense } from '@/domain/types';
 import { backendConfig, getAccessToken } from '@/lib/supabase';
 
-export type { EnrichResponse, ExtractCandidate, ExtractResponse, LexiconEntry };
+export type { EnrichResponse, ExtractCandidate, ExtractResponse, LexiconEntry, ThemesResponse };
 /** Prompt version the deployed ai-extract is expected to answer with (local chunk cache key). */
 export { EXTRACT_PROMPT_VERSION };
 
@@ -65,8 +71,9 @@ export interface AiClientDeps {
   timeoutMs?: number; // default 150 s (server retries + fallback model fit inside)
 }
 
-async function call<T>(
-  fn: 'ai-extract' | 'ai-enrich',
+/** POST to an AI edge function with the session token; `parse` validates the answer. */
+export async function call<T>(
+  fn: 'ai-extract' | 'ai-enrich' | 'ai-examples' | 'ai-themes',
   body: unknown,
   parse: (x: unknown) => T,
   deps: AiClientDeps,
@@ -158,6 +165,18 @@ export async function enrichTerm(
   return call('ai-enrich', body, (x) => enrichResponse.parse(x), deps);
 }
 
+/**
+ * Theme groups for up to 200 words ("Kelimelerimi temalara ayır"). Send only terms and
+ * English glosses with short refs; one call counts against the daily AI budget.
+ */
+export async function groupThemes(
+  input: ThemesRequest,
+  deps: AiClientDeps = {},
+): Promise<ThemesResponse> {
+  const body = themesRequest.parse(input);
+  return call('ai-themes', body, (x) => themesResponse.parse(x), deps);
+}
+
 /** A lexicon entry as stored in Dexie's lexicon_cache. */
 export function toLexiconCacheRow(e: LexiconEntry): LexiconSense {
   return { ...e };
@@ -166,7 +185,10 @@ export function toLexiconCacheRow(e: LexiconEntry): LexiconSense {
 /** Fields of an ImportCandidate (preview row) from an extract candidate. */
 export function toCandidateFields(
   c: ExtractCandidate,
-): Omit<ImportCandidate, 'id' | 'job_id' | 'selected' | 'user_status' | 'meaning_tr_edit'> {
+): Omit<
+  ImportCandidate,
+  'id' | 'job_id' | 'selected' | 'user_status' | 'meaning_tr_edit' | 'bucket' | 'from_list'
+> {
   return {
     term: c.term,
     surface: c.surface,
@@ -181,5 +203,7 @@ export function toCandidateFields(
     source_sentence_tr: c.sentence_tr,
     span: c.span,
     confidence: c.confidence,
+    cefr: c.lexicon.cefr ?? null,
+    cefr_source: c.lexicon.cefr_source ?? null,
   };
 }

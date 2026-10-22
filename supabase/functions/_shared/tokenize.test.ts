@@ -58,3 +58,10 @@ describe('tokenize / termForms', () => {
     expect(termForms('banks')).toEqual(expect.arrayContaining(['banks', 'bank']));
   });
 });
+
+describe('lemmaForms', () => {
+  it('handles words that are Object.prototype keys', () => {
+    for (const w of ['constructor', 'tostring', 'hasownproperty', '__proto__', 'valueof'])
+      expect(lemmaForms(w)).toContain(w);
+  });
+});

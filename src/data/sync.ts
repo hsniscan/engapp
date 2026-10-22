@@ -2,7 +2,7 @@
 // pulled pages together with their cursor, full-resync cleanup and the lexicon cache.
 // Business rules for conflicts live in applyRemoteRows (maintenance.ts); this module only
 // moves rows in and out of Dexie in the right transactions.
-import type { Id, LexiconSense, Millis, OutboxRow, OutboxTable } from '../domain/types';
+import type { Id, LexiconExample, LexiconSense, Millis, OutboxRow, OutboxTable } from '../domain/types';
 import { db } from './db';
 import { rebuildDailyActivity } from './dailyActivity';
 import { applyRemoteRows, type ApplyRemoteResult, type RemoteBatch } from './maintenance';
@@ -136,7 +136,7 @@ export async function outboxRowIds(): Promise<Set<string>> {
 
 // ------------------------------------------------------------------ pull
 
-export type CursorKey = typeof META.syncCursor | typeof META.lexiconCursor;
+export type CursorKey = typeof META.syncCursor | typeof META.lexiconCursor | typeof META.lexiconExamplesCursor;
 
 export async function getCursor(key: CursorKey): Promise<number> {
   const v = await getMeta<number>(key);
@@ -156,7 +156,17 @@ export async function applyPulledPage(batch: RemoteBatch, nextSeq: number, now: 
 }
 
 /** Tables whose rows a full resync may remove locally (review logs are never removed). */
-const RESYNC_TABLES = ['notes', 'senses', 'cards', 'sources', 'settings'] as const;
+const RESYNC_TABLES = [
+  'notes',
+  'senses',
+  'cards',
+  'sources',
+  'settings',
+  'content_feedback',
+  'user_content',
+  'decks',
+  'known_terms',
+] as const;
 export type ResyncTable = (typeof RESYNC_TABLES)[number];
 
 /**
@@ -207,4 +217,21 @@ export async function missingLexiconSenseIds(): Promise<Id[]> {
   const ids = [...used];
   const have = await db.lexicon_cache.bulkGet(ids);
   return ids.filter((_, i) => !have[i]);
+}
+
+// ------------------------------------------------------------------ example sentence cache
+
+/**
+ * Store a lexicon_examples_pull page (or rows returned by ai-examples) in the local cache.
+ * Retired rows are removed: a sentence taken out of the shared table is never shown again.
+ * With `nextSeq` the examples cursor is stored in the same transaction.
+ */
+export async function applyLexiconExamples(rows: LexiconExample[], nextSeq?: number): Promise<void> {
+  await db.transaction('rw', db.lexicon_examples, db.meta, async () => {
+    const active = rows.filter((r) => r.status === 'active');
+    const retired = rows.filter((r) => r.status !== 'active').map((r) => r.id);
+    if (active.length) await db.lexicon_examples.bulkPut(active);
+    if (retired.length) await db.lexicon_examples.bulkDelete(retired);
+    if (nextSeq !== undefined) await setMeta(META.lexiconExamplesCursor, nextSeq);
+  });
 }

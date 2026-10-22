@@ -9,6 +9,14 @@ import {
   EXTRACT_RESPONSE_SCHEMA,
   EXTRACT_SYSTEM_PROMPT,
 } from '../../supabase/functions/_shared/prompts';
+import {
+  LEVEL_GUESS_PROMPT_VERSION,
+  LEVEL_GUESS_RESPONSE_SCHEMA,
+  LEVEL_GUESS_SYSTEM_PROMPT,
+  LEVEL_TR_PROMPT_VERSION,
+  LEVEL_TR_RESPONSE_SCHEMA,
+  LEVEL_TR_SYSTEM_PROMPT,
+} from '../../supabase/functions/_shared/level-job';
 
 describe('docs/ai-pipeline.md', () => {
   it('documents the current prompt versions, prompts and schemas verbatim', () => {
@@ -16,6 +24,10 @@ describe('docs/ai-pipeline.md', () => {
     expect(doc).toContain(`\`${ENRICH_PROMPT_VERSION}\``);
     expect(doc).toContain(EXTRACT_SYSTEM_PROMPT);
     expect(doc).toContain(ENRICH_SYSTEM_PROMPT);
+    expect(doc).toContain(`\`${LEVEL_GUESS_PROMPT_VERSION}\``);
+    expect(doc).toContain(`\`${LEVEL_TR_PROMPT_VERSION}\``);
+    expect(doc).toContain(LEVEL_GUESS_SYSTEM_PROMPT);
+    expect(doc).toContain(LEVEL_TR_SYSTEM_PROMPT);
     // JSON blocks are compared parsed (formatting may differ).
     const jsonBlocks = [...doc.matchAll(/```json\n([\s\S]*?)```/g)].flatMap((m) => {
       try {
@@ -26,5 +38,7 @@ describe('docs/ai-pipeline.md', () => {
     });
     expect(jsonBlocks).toContainEqual(EXTRACT_RESPONSE_SCHEMA);
     expect(jsonBlocks).toContainEqual(ENRICH_RESPONSE_SCHEMA);
+    expect(jsonBlocks).toContainEqual(LEVEL_GUESS_RESPONSE_SCHEMA);
+    expect(jsonBlocks).toContainEqual(LEVEL_TR_RESPONSE_SCHEMA);
   });
 });

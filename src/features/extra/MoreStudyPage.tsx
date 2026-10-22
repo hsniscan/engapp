@@ -176,6 +176,22 @@ function PracticeSection({ data }: { data: MoreStudyOverview }) {
       count: practice.tags.reduce((a, x) => Math.max(a, x.count), 0),
     });
   }
+  if (practice.decks.length > 0) {
+    options.push({
+      value: 'deck',
+      label: t('more.sourceDeck'),
+      hint: t('more.sourceDeckHint'),
+      count: practice.decks.reduce((a, x) => Math.max(a, x.count), 0),
+    });
+  }
+  if (practice.interests > 0) {
+    options.push({
+      value: 'interests',
+      label: t('more.sourceInterests'),
+      hint: t('more.sourceInterestsHint'),
+      count: practice.interests,
+    });
+  }
   const firstAvailable = options.find((o) => o.count > 0)?.value ?? 'hard';
   const [picked, setPicked] = useState<PracticeSource | null>(null);
   const source =
@@ -185,6 +201,11 @@ function PracticeSection({ data }: { data: MoreStudyOverview }) {
     tagPicked && practice.tags.some((x) => x.tag === tagPicked)
       ? tagPicked
       : (practice.tags[0]?.tag ?? null);
+  const [deckPicked, setDeck] = useState<string | null>(null);
+  const deck =
+    deckPicked && practice.decks.some((x) => x.id === deckPicked)
+      ? deckPicked
+      : (practice.decks[0]?.id ?? null);
   const [size, setSize] = useState<PracticeSize>(10);
   const nothing = options.every((o) => o.count === 0);
 
@@ -201,7 +222,14 @@ function PracticeSection({ data }: { data: MoreStudyOverview }) {
           className="flex flex-col gap-5"
           onSubmit={(e) => {
             e.preventDefault();
-            void navigate(practiceHref({ source, size, tag: source === 'tag' ? tag : null }));
+            void navigate(
+              practiceHref({
+                source,
+                size,
+                tag: source === 'tag' ? tag : null,
+                deck: source === 'deck' ? deck : null,
+              }),
+            );
           }}
         >
           <fieldset className="flex flex-col gap-2">
@@ -236,7 +264,7 @@ function PracticeSection({ data }: { data: MoreStudyOverview }) {
                     <span className="font-medium text-fg">{o.label}</span>
                     <span className="text-sm text-fg-muted">{o.hint}</span>
                   </span>
-                  {o.value !== 'tag' && (
+                  {o.value !== 'tag' && o.value !== 'deck' && (
                     <span className="tabular shrink-0 text-sm text-fg-muted">
                       {t('more.sourceCount', { count: o.count })}
                     </span>
@@ -254,6 +282,18 @@ function PracticeSection({ data }: { data: MoreStudyOverview }) {
               options={practice.tags.map((x) => ({
                 value: x.tag,
                 label: `${x.tag} · ${t('more.sourceCount', { count: x.count })}`,
+              }))}
+            />
+          )}
+
+          {source === 'deck' && deck && (
+            <Select
+              label={t('more.deckLabel')}
+              value={deck}
+              onValueChange={setDeck}
+              options={practice.decks.map((x) => ({
+                value: x.id,
+                label: `${x.name} · ${t('more.sourceCount', { count: x.count })}`,
               }))}
             />
           )}

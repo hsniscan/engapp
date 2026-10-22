@@ -15,6 +15,8 @@ export interface SyncedRow {
 }
 
 export type TermType = 'word' | 'phrase' | 'pattern';
+/** A note can also be a root or affix card ("-spect-", "re-"): recognition card only. */
+export type NoteTermType = TermType | 'affix';
 export type CardType = 'recognition' | 'production' | 'cloze';
 
 /** FSRS card states (numeric values match ts-fsrs State enum). */
@@ -29,11 +31,13 @@ export type RatingValue = (typeof Rating)[keyof typeof Rating];
 export interface Note extends SyncedRow {
   term: string; // display form, dictionary form ("give up")
   term_norm: string; // lower-case normalized form, unique per user
-  term_type: TermType;
+  term_type: NoteTermType;
   lexicon_term_id: Id | null;
   ipa: string | null; // copied from lexicon or entered by hand
   tags: string[];
   possible_duplicate: boolean; // set when an account merge finds two notes with same term
+  /** The user's own level for this word; null = the computed one (src/domain/level.ts). */
+  level_override: CefrLevel | null;
 }
 
 /** One meaning of a note ("1. banka", "2. kıyı"). */
@@ -112,15 +116,120 @@ export interface PracticeLog {
   hlc: string;
 }
 
+/** One answered word of a level test (domain/levelTest.ts TestItem). */
+export interface LevelTestItem {
+  w: string;
+  band: CefrLevel | null;
+  pseudo: boolean;
+  answer: 'yes' | 'no';
+  mc_ok?: boolean;
+}
+
+/** A finished level test. Insert-only; study history (never copied between accounts). */
+export interface LevelTest {
+  id: Id;
+  user_id: string | null;
+  taken_at: Millis;
+  result_level: CefrLevel;
+  vocab_estimate: number;
+  reliable: boolean;
+  false_alarm_rate: number;
+  /** Corrected share of known words per level (all six, untested ones inferred). */
+  ratios: Record<CefrLevel, number>;
+  items: LevelTestItem[];
+  bank_version: string;
+  /** The result was made the user's level. */
+  applied: boolean;
+  duration_ms: number;
+  device_id: string;
+  created_at: Millis;
+  hlc: string;
+}
+
+export type KnownTermSource = 'test' | 'preview' | 'manual' | 'auto';
+
+/** A word the user knows without a card ("Biliyorum"). Deleting it is a tombstone. */
+export interface KnownTerm extends SyncedRow {
+  /** Normalised dictionary form (normalizeTerm), the same key as notes.term_norm. */
+  term_norm: string;
+  source: KnownTermSource;
+  /** The word's level when it was marked (null: unknown). */
+  cefr_at_mark: CefrLevel | null;
+}
+
 export interface Source extends SyncedRow {
   kind: 'text' | 'pdf';
   title: string;
   file_name: string | null;
   page_count: number | null;
+  /**
+   * Topic keys of the text (domain/topics.ts), from the extract call (İP7). Absent or null =
+   * unknown (older rows and clients); [] = no topic. Keys this version does not know are kept.
+   */
+  topics?: string[] | null;
+}
+
+/**
+ * A smart deck ("Akıllı deste", v0.2 İP8): a named, saved filter over the user's notes.
+ * `filter` is the raw JSON of a DeckFilter (domain/deckFilter.ts); it is kept as stored so a
+ * filter written by a newer app version survives an edit here.
+ */
+export interface Deck extends SyncedRow {
+  name: string;
+  filter: Record<string, unknown>;
+  /** Display order, ascending. */
+  sort: number;
+}
+
+/** "Temalara ayır" result waiting for the user's approval. Local only, never synced. */
+export interface ThemePreview {
+  id: string; // 'current'
+  created_at: Millis;
+  model: string | null;
+  groups: ThemePreviewGroup[];
+  /** Notes sent to the model (for the "N kelimeden M tanesi gruplandı" line). */
+  sent: number;
+}
+
+export interface ThemePreviewGroup {
+  key: string;
+  /** Name suggested by the model. */
+  suggested: string;
+  /** Name the user approves (editable). */
+  name: string;
+  note_ids: Id[];
+  /** Words the user took out of the group. */
+  removed: Id[];
+  rejected: boolean;
 }
 
 export type ThemePref = 'system' | 'light' | 'dark';
 export type CefrLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
+/**
+ * Where a word's level comes from (supabase/functions/_shared/level.ts): a word list
+ * (CEFR-J, Octanove C1/C2), the AI's guess, word frequency, or the hardest word of a
+ * multi-word expression.
+ */
+export type LevelSource = 'cefrj' | 'octanove' | 'ai' | 'freq' | 'words';
+
+/** Where the user's level comes from: never set, a level test, the weekly update, or by hand. */
+export type LevelSourceKind = 'default' | 'test' | 'auto' | 'manual';
+
+/** The last change the weekly update made to the level, with its reason (home "Neden?"). */
+export interface LevelChangeNote {
+  from: CefrLevel;
+  to: CefrLevel;
+  /** Week start the decision was made for. */
+  week: Millis;
+  /** The level whose share decided (the next level when moving up, the own level when down). */
+  band: CefrLevel;
+  ratio: number;
+  ratio_prev: number;
+  known: number;
+  unknown: number;
+  /** The user closed the note on the home screen. */
+  dismissed: boolean;
+}
 
 /** One settings row per user (id = 'settings'). */
 export interface Settings extends SyncedRow {
@@ -131,8 +240,29 @@ export interface Settings extends SyncedRow {
   theme: ThemePref;
   voice: 'en-US' | 'en-GB';
   level: CefrLevel; // self-estimated, default B1
+  /** v0.2 İP3: where `level` comes from; 'default' = never set. */
+  level_source: LevelSourceKind;
+  /** When `level` last changed (test, weekly update or by hand). */
+  level_updated_at: Millis | null;
+  /** The weekly update never changes a locked level. */
+  level_locked: boolean;
+  /** Last change made by the weekly update (null: none). */
+  level_change: LevelChangeNote | null;
   fsrs_params: number[] | null; // null = ts-fsrs defaults
   last_backup_at: Millis | null;
+  /** Example sentences: Turkish translation always shown (default: hidden until tapped). */
+  example_tr_visible?: boolean | null;
+  /** Example contexts prepared in the background, in order (null/absent = defaults). */
+  example_contexts?: string[] | null;
+  /**
+   * Topics the user picked (İP7, domain/topics.ts keys). Absent or null = never asked (the
+   * home screen offers the choice once); [] = asked, picked none.
+   */
+  interests?: string[] | null;
+  /** Topics the user turned off: they weigh 0 in the profile. */
+  muted_topics?: string[] | null;
+  /** v0.2 İP4: open "Kolay olabilir" in the import preview (absent/null = closed). */
+  show_easy_candidates?: boolean | null;
 }
 
 /** Shared dictionary entries, read-only on the client (pulled from server). */
@@ -147,6 +277,80 @@ export interface LexiconSense {
   meaning_tr: string;
   ipa: string | null;
   updated_at: Millis;
+  /** v0.2 level of the sense; absent on rows cached before it (re-pulled by the Dexie v4 upgrade). */
+  cefr?: CefrLevel | null;
+  cefr_source?: LevelSource | null;
+  /** List level before the Turkish-learner correction. */
+  cefr_list?: CefrLevel | null;
+  /** Short Turkish reason of the correction. */
+  cefr_reason_tr?: string | null;
+  /** Word frequency of the term (Zipf scale, wordfreq). */
+  zipf?: number | null;
+}
+
+/** Level band of an example sentence (A1/A2 → A2, …, C1/C2 → C1). */
+export type LevelBand = 'A2' | 'B1' | 'B2' | 'C1';
+
+/** Shared example sentence (lexicon_examples), read-only on the client. Never user text. */
+export interface LexiconExample {
+  id: Id;
+  /** lexicon_senses.id (not the user's sense id). */
+  sense_id: Id;
+  context: string;
+  level_band: LevelBand;
+  text_en: string;
+  /** [start, end) of the term in text_en. */
+  span: [number, number];
+  /** {"tr": "..."} */
+  translations: Record<string, string>;
+  status: 'active' | 'retired';
+  updated_at: Millis;
+}
+
+export type FeedbackVerdict = 'like' | 'skip' | 'reject';
+
+/** The user's verdict on a piece of content. One row per target (id derived from the target). */
+export interface ContentFeedback extends SyncedRow {
+  /** 'example' (lexicon_examples) | 'user_content' | later 'mnemonic', 'false_friend', 'theme'. */
+  target_kind: string;
+  target_id: Id;
+  verdict: FeedbackVerdict;
+}
+
+/**
+ * Text the user wrote or corrected (an edited example sentence; mnemonics in İP6). Private
+ * to the user's account: synced, never written to a shared table.
+ */
+export interface UserContent extends SyncedRow {
+  /** 'example_sentence' | later 'mnemonic', … */
+  kind: string;
+  lexicon_sense_id: Id | null;
+  sense_id: Id | null;
+  context: string | null;
+  /** The shared item this text corrects (lexicon_examples.id). */
+  replaces_id: Id | null;
+  text: string;
+  translations: Record<string, string> | null;
+  span: [number, number] | null;
+  selected: boolean | null;
+}
+
+/** Background preparation of example sentences for one lexicon sense (device-local queue). */
+export interface ExampleJob {
+  /** `${sense_id}|${level_band}` */
+  key: string;
+  sense_id: Id;
+  level_band: LevelBand;
+  /** Contexts asked for in the last attempt. */
+  contexts: string[];
+  status: 'queued' | 'done' | 'failed';
+  /** Higher runs first (opened on screen > new note > older note). */
+  priority: number;
+  attempts: number;
+  next_attempt_at: Millis;
+  created_at: Millis;
+  updated_at: Millis;
+  error: string | null;
 }
 
 export type ImportJobStatus = 'queued' | 'processing' | 'ready' | 'failed' | 'done';
@@ -186,7 +390,22 @@ export interface ImportCandidate {
   selected: boolean;
   user_status: CandidateUserStatus;
   meaning_tr_edit: string | null; // user's in-place correction in preview
+  // v0.2 İP4 smart extraction (Dexie v10; local only, set when the job's last chunk is in):
+  /** Level of the candidate's sense (lexicon, else the client level file); null = unknown. */
+  cefr: CefrLevel | null;
+  cefr_source: LevelSource | null;
+  /** Preview section (domain/candidates.ts); null until the job is classified. */
+  bucket: CandidateBucket | null;
+  /** The candidate comes from a vocabulary-list chunk (every entry is shown). */
+  from_list: boolean;
 }
+
+/**
+ * Preview sections of smart extraction: "Senin için", "Kolay olabilir", "Biliyorsun" (a note
+ * for the term exists or the word was marked known), and items more than one level above the
+ * learner (counted for prose, shown for vocabulary lists).
+ */
+export type CandidateBucket = 'for_you' | 'easy' | 'known' | 'too_hard';
 
 export interface ChunkCacheRow {
   chunk_hash: string;
@@ -195,11 +414,23 @@ export interface ChunkCacheRow {
 }
 
 export type OutboxTable =
-  'notes' | 'senses' | 'cards' | 'review_logs' | 'sources' | 'settings' | 'practice_logs';
+  | 'notes'
+  | 'senses'
+  | 'cards'
+  | 'review_logs'
+  | 'sources'
+  | 'settings'
+  | 'practice_logs'
+  | 'content_feedback'
+  | 'user_content'
+  | 'decks'
+  | 'level_tests'
+  | 'known_terms';
 /** Synced tables whose rows are never changed or deleted. */
 export const INSERT_ONLY_TABLES = [
   'review_logs',
   'practice_logs',
+  'level_tests',
 ] as const satisfies readonly OutboxTable[];
 export type InsertOnlyTable = (typeof INSERT_ONLY_TABLES)[number];
 
@@ -237,3 +468,13 @@ export interface MetaRow {
   key: string;
   value: unknown;
 }
+
+/** Device cache of a static reference file (the morphology data), keyed by name. */
+export interface RefCacheRow {
+  key: string;
+  /** SHA-256 of the cached file; a new build has a new checksum. */
+  sha256: string;
+  data: unknown;
+  fetched_at: Millis;
+}
+

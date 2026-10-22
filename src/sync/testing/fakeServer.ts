@@ -2,16 +2,19 @@
 // rules as supabase/migrations/20261021000400_sync.sql (LWW by HLC, append-only logs,
 // server_seq cursor, tombstone purge → full_resync) and 20261021000900_practice.sql
 // (practice_logs: insert-only, pulled only by sync_pull_v3). Test-only.
-import type { Id, LexiconSense, OutboxTable } from '@/domain/types';
+import type { Id, LexiconExample, LexiconSense, OutboxTable } from '@/domain/types';
 import { db } from '@/data';
 import type { SyncTransport } from '../engine';
-import { SyncApiError, type PulledRow, type PullResult, type PushItem, type PushResult } from '../api';
+import { SyncApiError, type LexiconExamplesPullResult, type PulledRow, type PullResult, type PushItem, type PushResult } from '../api';
 
 interface Stored {
   table: OutboxTable;
   row: Record<string, unknown> & { id: string };
   seq: number;
 }
+
+/** The six v0.1 tables: all that sync_pull / sync_pull_v2 return. */
+const V2_TABLES = new Set(['notes', 'senses', 'cards', 'review_logs', 'sources', 'settings']);
 
 export class FakeServer implements SyncTransport {
   readonly rows = new Map<string, Stored>();
@@ -20,7 +23,9 @@ export class FakeServer implements SyncTransport {
   readonly lexicon = new Map<Id, { row: LexiconSense; seq: number }>();
   private lexSeq = 0;
   /** Calls made, for assertions. */
-  readonly calls = { push: 0, pull: 0, lexiconPull: 0, lexiconGet: 0 };
+  readonly calls = { push: 0, pull: 0, lexiconPull: 0, lexiconGet: 0, examplesPull: 0, registry: 0 };
+  readonly examples = new Map<Id, { row: LexiconExample; seq: number }>();
+  private exSeq = 0;
   /** Fault injection. */
   faults: {
     /** Throw a network error before the server applies the batch (n times). */
@@ -38,6 +43,50 @@ export class FakeServer implements SyncTransport {
    * as an unknown table and pulls answer like sync_pull_v2 (version 2, no practice rows).
    */
   practiceSupported = true;
+
+  /**
+   * Tables in the sync registry (sync_tables). Default: every table. Remove one to act as a
+   * backend from before its migration: sync_push rejects it and pulls never return it.
+   * `registryAvailable = false`: no registry at all (listSyncTables answers null).
+   */
+  registry = new Set<string>([
+    'notes',
+    'senses',
+    'cards',
+    'review_logs',
+    'sources',
+    'settings',
+    'practice_logs',
+    'content_feedback',
+    'user_content',
+    'decks',
+    'level_tests',
+    'known_terms',
+  ]);
+  registryAvailable = true;
+
+  /**
+   * false = a backend from before migration 20261022000100: no lexicon_examples_pull, and the
+   * registry lacks content_feedback / user_content (sync_push rejects them).
+   */
+  get examplesSupported(): boolean {
+    return this.registry.has('content_feedback');
+  }
+  set examplesSupported(on: boolean) {
+    for (const t of ['content_feedback', 'user_content']) {
+      if (on) this.registry.add(t);
+      else this.registry.delete(t);
+    }
+  }
+
+  /** false = a backend from before migration 20261022000400 (decks): the registry lacks decks. */
+  get decksSupported(): boolean {
+    return this.registry.has('decks');
+  }
+  set decksSupported(on: boolean) {
+    if (on) this.registry.add('decks');
+    else this.registry.delete('decks');
+  }
 
   readonly userId: string;
   constructor(userId = 'user-1') {
@@ -59,16 +108,17 @@ export class FakeServer implements SyncTransport {
     if (items.length > 100) throw new SyncApiError('server', '22023 too many');
     const res: PushResult = { acked: [], stale: [], rejected: [] };
     for (const it of items) {
-      const p = structuredClone(it.payload) as Record<string, unknown> & { id: string; hlc: string };
+      // JSON, as on the wire: keys holding undefined are left out.
+      const p = JSON.parse(JSON.stringify(it.payload)) as Record<string, unknown> & { id: string; hlc: string };
       if (this.faults.rejectIds?.has(p.id)) {
         res.rejected.push({ table: it.table, id: p.id, code: '23502', message: 'not-null violation' });
         continue;
       }
-      if (it.table === 'practice_logs' && !this.practiceSupported) {
+      if ((it.table === 'practice_logs' && !this.practiceSupported) || !this.registry.has(it.table)) {
         res.rejected.push({ table: it.table, id: p.id, code: '22023', message: 'unknown table' });
         continue;
       }
-      const insertOnly = it.table === 'review_logs' || it.table === 'practice_logs';
+      const insertOnly = it.table === 'review_logs' || it.table === 'practice_logs' || it.table === 'level_tests';
       if (insertOnly && it.op === 'delete') {
         res.rejected.push({ table: it.table, id: p.id, code: '42501', message: 'logs are append-only' });
         continue;
@@ -86,7 +136,8 @@ export class FakeServer implements SyncTransport {
         res.stale.push(p.id);
         continue;
       }
-      this.rows.set(k, { table: it.table, row: p, seq: ++this.seq });
+      // _sync_upsert (20261021001100): a column the payload leaves out keeps its value.
+      this.rows.set(k, { table: it.table, row: cur ? { ...cur.row, ...p } : p, seq: ++this.seq });
       res.acked.push(p.id);
     }
     if (this.faults.networkAfterPush) {
@@ -109,7 +160,7 @@ export class FakeServer implements SyncTransport {
       return { rows: [], invalid: [], next_seq: since, has_more: false, full_resync: true, version };
     }
     const all = [...this.rows.values()]
-      .filter((r) => r.seq > since && (version === 3 || r.table !== 'practice_logs'))
+      .filter((r) => r.seq > since && (version === 3 ? this.registry.has(r.table) : V2_TABLES.has(r.table)))
       .sort((a, b) => a.seq - b.seq);
     const page = all.slice(0, Math.min(limit, 500));
     return {
@@ -122,11 +173,19 @@ export class FakeServer implements SyncTransport {
     };
   }
 
+  /** public.sync_tables names (read with a plain select by the client); null: no registry. */
+  async listSyncTables(): Promise<string[] | null> {
+    this.calls.registry++;
+    if (this.faults.offline) throw new SyncApiError('network', 'offline');
+    // A backend before practice_logs (sync_pull_v3) predates the registry too.
+    return this.registryAvailable && this.practiceSupported ? [...this.registry] : null;
+  }
+
   /** purge_tombstones: drop every tombstone, remember the highest purged seq. */
   purgeTombstones(): number {
     let n = 0;
     for (const [k, r] of this.rows) {
-      if (r.table !== 'review_logs' && r.table !== 'practice_logs' && r.row.deleted_at != null) {
+      if (r.table !== 'review_logs' && r.table !== 'practice_logs' && r.table !== 'level_tests' && r.row.deleted_at != null) {
         this.purgedThrough = Math.max(this.purgedThrough, r.seq);
         this.rows.delete(k);
         n++;
@@ -157,6 +216,28 @@ export class FakeServer implements SyncTransport {
   async getLexiconSenses(ids: Id[]) {
     this.calls.lexiconGet++;
     return ids.map((id) => this.lexicon.get(id)?.row).filter((x): x is LexiconSense => !!x);
+  }
+
+  /** Add or change a shared example sentence (server-side write, e.g. by ai-examples). */
+  addExample(row: LexiconExample): void {
+    this.examples.set(row.id, { row, seq: ++this.exSeq });
+  }
+
+  async pullLexiconExamples(since: number, limit = 500): Promise<LexiconExamplesPullResult | null> {
+    this.calls.examplesPull++;
+    if (this.faults.offline) throw new SyncApiError('network', 'offline');
+    if (!this.examplesSupported) return null;
+    const ref = this.referenced();
+    const all = [...this.examples.values()]
+      .filter((e) => e.seq > since && ref.has(e.row.sense_id))
+      .sort((a, b) => a.seq - b.seq);
+    const page = all.slice(0, limit);
+    return {
+      rows: page.map((p) => structuredClone(p.row)),
+      invalid: 0,
+      next_seq: page.length ? page[page.length - 1]!.seq : since,
+      has_more: all.length > page.length,
+    };
   }
 
   rowsOf(table: OutboxTable) {

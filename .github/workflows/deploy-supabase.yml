@@ -50,7 +50,7 @@ jobs:
       - name: Type-check edge functions (Deno)
         working-directory: supabase/functions
         run: |
-          for fn in ai-extract ai-enrich; do (cd "$fn" && deno check index.ts); done
+          for fn in ai-extract ai-enrich ai-examples ai-themes; do (cd "$fn" && deno check index.ts); done
       - name: Start local database
         # Only Postgres + Auth are needed for the SQL tests.
         run: supabase start -x studio,imgproxy,vector,logflare,storage-api,realtime,supavisor,mailpit,postgres-meta,edge-runtime,kong,postgrest

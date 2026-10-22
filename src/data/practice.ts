@@ -20,10 +20,35 @@ import {
 } from '../domain/types';
 import { db } from './db';
 import { ActionError } from './errors';
+import { deckNoteIds } from '../domain/deckFilter';
+import { deckContext, getDeckNoteIds, listDecks, loadDeckFacts } from './decks';
 import { dueStudiedCards, logsByCard } from './history';
+import { getTopicProfile } from './profile';
 import { writeTx } from './writer';
 
 export const MAX_PRACTICE_DURATION_MS = 60_000;
+
+/** "İlgi alanlarımdan" draws from texts about this many of the user's heaviest topics. */
+export const INTEREST_TOPIC_COUNT = 3;
+
+/**
+ * Notes for "İlgi alanlarımdan" (İP7): live notes with a live sense from a live text whose
+ * topics include one of the user's top INTEREST_TOPIC_COUNT topics (profile weights, muted
+ * topics excluded). Uses the sources `*topics` index (Dexie v7).
+ */
+export async function getInterestNoteIds(now: Millis = Date.now()): Promise<Set<Id>> {
+  const top = (await getTopicProfile(now)).ranked.slice(0, INTEREST_TOPIC_COUNT);
+  if (top.length === 0) return new Set();
+  const sources = await db.sources.where('topics').anyOf(top).toArray();
+  const sourceIds = new Set(sources.filter((x) => x.deleted_at === null).map((x) => x.id));
+  if (sourceIds.size === 0) return new Set();
+  const senses = await db.senses
+    .filter((x) => x.deleted_at === null && !!x.source_id && sourceIds.has(x.source_id))
+    .toArray();
+  const noteIds = [...new Set(senses.map((x) => x.note_id))];
+  const notes = await db.notes.bulkGet(noteIds);
+  return new Set(notes.filter((n) => n && n.deleted_at === null).map((n) => n!.id));
+}
 
 /** Every practicable card with the facts the selector needs (see PracticeCandidate). */
 export async function loadPracticeCandidates(
@@ -78,16 +103,34 @@ export interface PracticeSourceCounts {
   recent: number;
   /** Tags of practicable notes with their note counts, most used first. */
   tags: { tag: string; count: number }[];
+  /** Smart decks (in deck order) with their practicable notes; decks with none are left out. */
+  decks: { id: Id; name: string; count: number }[];
+  /** Practicable notes for "İlgi alanlarımdan" (getInterestNoteIds). */
+  interests: number;
 }
 
 export async function getPracticeSourceCounts(
   now: Millis = Date.now(),
 ): Promise<PracticeSourceCounts> {
-  const c = countPracticeSources(await loadPracticeCandidates(now), now);
+  const candidates = await loadPracticeCandidates(now);
+  const c = countPracticeSources(candidates, now);
   const tags = [...c.tags]
     .map(([tag, count]) => ({ tag, count }))
     .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag, 'tr'));
-  return { hard: c.hard, recent: c.recent, tags };
+  const practicable = new Set(candidates.map((x) => x.card.note_id));
+  const decks: PracticeSourceCounts['decks'] = [];
+  const deckList = await listDecks();
+  if (deckList.length) {
+    const [facts, ctx] = await Promise.all([loadDeckFacts(now), deckContext(now)]);
+    for (const deck of deckList) {
+      const ids = deckNoteIds(deck.filter, facts, ctx);
+      const count = ids ? [...ids].filter((id) => practicable.has(id)).length : 0;
+      if (count > 0) decks.push({ id: deck.id, name: deck.name, count });
+    }
+  }
+  const interestIds = await getInterestNoteIds(now);
+  const interests = [...interestIds].filter((id) => practicable.has(id)).length;
+  return { hard: c.hard, recent: c.recent, tags, decks, interests };
 }
 
 /** The card ids of a new round, in play order. `seed` (the session id) fixes the shuffle. */
@@ -96,7 +139,13 @@ export async function getPracticeCards(
   opts: { size: number; seed: string },
   now: Millis = Date.now(),
 ): Promise<Id[]> {
-  return selectPracticeCards(await loadPracticeCandidates(now), filter, {
+  const resolved: PracticeFilter =
+    filter.source === 'deck'
+      ? { ...filter, noteIds: filter.deckId ? await getDeckNoteIds(filter.deckId, now) : null }
+      : filter.source === 'interests'
+        ? { ...filter, noteIds: await getInterestNoteIds(now) }
+        : filter;
+  return selectPracticeCards(await loadPracticeCandidates(now), resolved, {
     now,
     size: opts.size,
     seed: opts.seed,

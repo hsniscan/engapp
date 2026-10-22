@@ -7,6 +7,7 @@ import {
   editNote,
   editSense,
   getLastUndoableAnswer,
+  setLevelOverride,
   setSuspended,
   softDeleteNote,
   softDeleteSense,
@@ -368,5 +369,24 @@ describe('createSource', () => {
     const s = await createSource({ kind: 'pdf', title: 'ş'.repeat(600), file_name: `${'x'.repeat(600)}.pdf` }, T);
     expect([...s.title].length).toBe(500);
     expect(s.file_name!.length).toBe(500);
+  });
+});
+
+describe('setLevelOverride', () => {
+  it("stores and syncs the user's own level, clears it with null, and skips no-ops", async () => {
+    const { note } = await addNoteWithSenses({ term: 'cope', senses: [{ meaning_tr: 'başa çıkmak' }] }, T);
+    expect(note.level_override).toBeNull();
+    const before = await db.outbox.count();
+    const set = await setLevelOverride(note.id, 'B2', T + MIN);
+    expect(set.level_override).toBe('B2');
+    expect(set.hlc > note.hlc).toBe(true);
+    const queued = (await db.outbox.toArray()).filter((o) => o.row_id === note.id);
+    expect((queued.at(-1)!.payload as { level_override: string }).level_override).toBe('B2');
+    expect(await db.outbox.count()).toBe(before + 1);
+    await setLevelOverride(note.id, 'B2', T + 2 * MIN); // unchanged: no write
+    expect(await db.outbox.count()).toBe(before + 1);
+    expect((await setLevelOverride(note.id, null, T + 3 * MIN)).level_override).toBeNull();
+    await expect(setLevelOverride(note.id, 'Z9' as never)).rejects.toBeInstanceOf(ActionError);
+    await expect(setLevelOverride('nope', 'A1')).rejects.toBeInstanceOf(ActionError);
   });
 });

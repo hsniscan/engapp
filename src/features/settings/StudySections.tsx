@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { CefrLevel, Settings, ThemePref } from '@/domain/types';
-import { Button, SegmentedControl, Select, Skeleton, Slider } from '@/ui';
+import type { Settings, ThemePref } from '@/domain/types';
+import { Button, SegmentedControl, Select, Skeleton, Slider, Switch } from '@/ui';
 import { SettingsRow, SettingsSection } from './SettingsLayout';
 import { setTheme } from './themeSync';
 import { useAppSettings } from './useAppSettings';
@@ -26,7 +26,6 @@ function useDebouncedSetting<K extends keyof SettingsPatch & keyof Settings>(
   return [local ?? settings?.[key], set];
 }
 
-const LEVELS: CefrLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 const pad = (n: number) => String(n).padStart(2, '0');
 
 export function StudySection() {
@@ -99,20 +98,13 @@ export function StudySection() {
               }))}
             />
           </SettingsRow>
-          <SettingsRow
-            label={t('settings.study.level')}
-            description={t('settings.study.levelHint')}
-          >
-            <Select
-              label={t('settings.study.level')}
-              hideLabel
-              className="sm:w-52"
-              value={settings.level}
-              onValueChange={(v) => void update({ level: v as CefrLevel })}
-              options={LEVELS.map((l) => ({
-                value: l,
-                label: `${l} · ${t(`settings.levels.${l}`)}`,
-              }))}
+          <SettingsRow className="py-2">
+            <Switch
+              className="w-full"
+              label={t('settings.study.showEasy')}
+              description={t('settings.study.showEasyHint')}
+              checked={settings.show_easy_candidates === true}
+              onCheckedChange={(v) => void update({ show_easy_candidates: v })}
             />
           </SettingsRow>
         </>

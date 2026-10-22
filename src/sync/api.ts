@@ -7,15 +7,26 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { lexiconEntry } from '../../supabase/functions/_shared/contracts';
 import {
   cardSchema,
+  contentFeedbackSchema,
+  lexiconExampleSchema,
+  deckSchema,
+  knownTermSchema,
+  levelTestSchema,
   noteSchema,
   practiceLogSchema,
   reviewLogSchema,
   senseSchema,
   settingsSchema,
   sourceSchema,
+  userContentSchema,
 } from '@/domain/schemas';
 import type {
   Card,
+  ContentFeedback,
+  LexiconExample,
+  Deck,
+  KnownTerm,
+  LevelTest,
   LexiconSense,
   Note,
   OutboxTable,
@@ -24,6 +35,7 @@ import type {
   Sense,
   Settings,
   Source,
+  UserContent,
 } from '@/domain/types';
 import { supabase } from '@/lib/supabase';
 
@@ -60,6 +72,11 @@ export interface RowByTable {
   sources: Source;
   settings: Settings;
   practice_logs: PracticeLog;
+  content_feedback: ContentFeedback;
+  user_content: UserContent;
+  decks: Deck;
+  level_tests: LevelTest;
+  known_terms: KnownTerm;
 }
 export type PulledRow = {
   [T in OutboxTable]: { table: T; seq: number; row: RowByTable[T] };
@@ -73,6 +90,11 @@ const ROW_SCHEMAS: { [T in OutboxTable]: z.ZodType<RowByTable[T]> } = {
   sources: sourceSchema,
   settings: settingsSchema,
   practice_logs: practiceLogSchema,
+  content_feedback: contentFeedbackSchema,
+  user_content: userContentSchema,
+  decks: deckSchema,
+  level_tests: levelTestSchema,
+  known_terms: knownTermSchema,
 };
 
 const pullEnvelope = z.object({
@@ -224,6 +246,31 @@ export async function pullChanges(
   };
 }
 
+/**
+ * Names in the server's sync registry (public.sync_tables, readable by signed-in users), or
+ * null when the backend predates the registry. The engine holds back rows of tables the
+ * server does not list yet (LATE_SYNC_TABLES), so a client released before its migration
+ * never burns their push attempts.
+ */
+export async function listSyncTables(c?: SupabaseClient | null): Promise<string[] | null> {
+  const cl = client(c);
+  let res: { data: unknown; error: { code?: string; message: string } | null };
+  try {
+    res = await cl.from('sync_tables').select('name');
+  } catch (e) {
+    throw new SyncApiError('network', e instanceof Error ? e.message : String(e));
+  }
+  if (res.error) {
+    // No such relation (PostgREST PGRST205 / Postgres 42P01): an older backend.
+    if (/^(PGRST205|42P01)$/.test(res.error.code ?? '')) return null;
+    if (!res.error.code && /fetch|network|load failed/i.test(res.error.message)) throw new SyncApiError('network', res.error.message);
+    throw new SyncApiError('server', `${res.error.code ?? ''} ${res.error.message}`.trim());
+  }
+  const parsed = z.array(z.object({ name: z.string() })).safeParse(res.data);
+  if (!parsed.success) throw new SyncApiError('invalid_response', parsed.error.message);
+  return parsed.data.map((r) => r.name);
+}
+
 /** Lexicon senses referenced by the user's senses, changed after `sinceSeq` (lexicon_cursor). */
 export async function pullLexicon(
   sinceSeq: number,
@@ -246,4 +293,50 @@ export async function getLexiconSenses(
   if (ids.length === 0) return [];
   if (ids.length > 500) throw new RangeError('at most 500 ids');
   return rpc(client(c), 'lexicon_get', { p_ids: ids }, z.array(lexiconEntry));
+}
+
+const examplesPullEnvelope = z.object({
+  rows: z.array(z.unknown()),
+  next_seq: z.number(),
+  has_more: z.boolean(),
+});
+export interface LexiconExamplesPullResult {
+  /** Active and retired rows (a retired row removes the sentence from the local cache). */
+  rows: LexiconExample[];
+  /** Rows that did not validate (skipped; the cursor still moves past them). */
+  invalid: number;
+  next_seq: number;
+  has_more: boolean;
+}
+
+/**
+ * Shared example sentences of the lexicon senses the user has, changed after `sinceSeq`
+ * (lexicon_examples_cursor). null when the backend does not have lexicon_examples_pull yet
+ * (migration 20261022000100 not deployed): the client then treats examples as unavailable.
+ */
+export async function pullLexiconExamples(
+  sinceSeq: number,
+  limit = MAX_PULL_PAGE,
+  c?: SupabaseClient | null,
+): Promise<LexiconExamplesPullResult | null> {
+  let env: z.infer<typeof examplesPullEnvelope>;
+  try {
+    env = await rpc(
+      client(c),
+      'lexicon_examples_pull',
+      { p_since: sinceSeq, p_limit: Math.min(limit, MAX_PULL_PAGE) },
+      examplesPullEnvelope,
+    );
+  } catch (e) {
+    if (isMissingFunction(e)) return null;
+    throw e;
+  }
+  const rows: LexiconExample[] = [];
+  let invalid = 0;
+  for (const raw of env.rows) {
+    const p = lexiconExampleSchema.safeParse(raw);
+    if (p.success) rows.push(p.data);
+    else invalid++;
+  }
+  return { rows, invalid, next_seq: env.next_seq, has_more: env.has_more };
 }

@@ -7,17 +7,26 @@
 //         re-pull from 0, drop local rows the server no longer has.
 //   lexicon: lexicon_pull from meta.lexicon_cursor, then lexicon_get for referenced senses
 //         missing from lexicon_cache.
+//   examples: lexicon_examples_pull from meta.lexicon_examples_cursor (shared example
+//         sentences of the user's lexicon senses). content_feedback / user_content wait in
+//         the outbox until that function has answered once (the server has the tables).
 //   practice_logs wait in the outbox until a pull has been answered by sync_pull_v3 (the
 //         server has the table): a client deployed before the migration does not burn the
-//         rows' attempts on "unknown table" rejections.
+//         rows' attempts on "unknown table" rejections. Tables added later (LATE_SYNC_TABLES:
+//         İP5 feedback, decks, level tests, known words) wait until the server's table
+//         registry lists them.
+//   backfill: a table this device learned about in an app update is pulled once more from
+//         the start (data/backfill.ts), since an older version skipped its rows.
 //
 // Triggers (startSyncEngine): app open, `online`, back to a visible tab, every 60 s while
 // visible, shortly after local changes, requestSync() (end of a review session) and the
 // "Şimdi senkronla" button (syncNow). One tab runs it at a time (src/sync/lock.ts).
 import {
   ackOutboxItems,
+  applyLexiconExamples,
   applyLexiconPage,
   applyPulledPage,
+  applyRemoteRows,
   db,
   ensureSettings,
   failOutboxItems,
@@ -26,6 +35,7 @@ import {
   getMeta,
   logError,
   META,
+  PULL_BACKFILL_KEY,
   missingLexiconSenseIds,
   outboxKey,
   putLexiconSenses,
@@ -41,8 +51,10 @@ import {
   getLexiconSenses,
   MAX_PULL_PAGE,
   MAX_PUSH_BATCH,
+  listSyncTables,
   pullChanges,
   pullLexicon,
+  pullLexiconExamples,
   pushBatch,
   SyncApiError,
   type PulledRow,
@@ -50,6 +62,7 @@ import {
   type PushItem,
   type PushResult,
   type LexiconPullResult,
+  type LexiconExamplesPullResult,
 } from './api';
 import type { LexiconSense } from '@/domain/types';
 
@@ -68,13 +81,39 @@ export interface SyncTransport {
   pullChanges(since: number, limit?: number, from?: number): Promise<PullResult>;
   pullLexicon(since: number, limit?: number): Promise<LexiconPullResult>;
   getLexiconSenses(ids: Id[]): Promise<LexiconSense[]>;
+  /** Shared example sentences (İP5). null: the backend does not have them yet. Optional so
+   *  transports without examples (older tests) keep working: they count as "not yet". */
+  pullLexiconExamples?(since: number, limit?: number): Promise<LexiconExamplesPullResult | null>;
+  /**
+   * Names in the server's sync table registry (null: the backend has no registry yet).
+   * Absent on transports that predate it: they are assumed to store every table.
+   */
+  listSyncTables?(): Promise<string[] | null>;
 }
+
+/**
+ * Synced tables added after the registry (v0.2 İP1). Their rows stay in the outbox until the
+ * server's registry lists the table, so a new client against an older backend never burns
+ * push attempts on "unknown table" rejections. Every package that adds a synced table adds
+ * it here (and records a one-time re-pull in its Dexie upgrade, data/backfill.ts).
+ */
+export const LATE_SYNC_TABLES: readonly OutboxTable[] = [
+  'content_feedback',
+  'user_content',
+  'decks',
+  'level_tests',
+  'known_terms',
+];
+/** While rows of an unconfirmed table wait, the registry is asked at most this often. */
+export const REGISTRY_RECHECK_MS = 10 * 60_000;
 
 export const supabaseTransport: SyncTransport = {
   pushBatch: (items) => pushBatch(items),
   pullChanges: (since, limit, from) => pullChanges(since, limit, undefined, from),
   pullLexicon: (since, limit) => pullLexicon(since, limit),
   getLexiconSenses: (ids) => getLexiconSenses(ids),
+  pullLexiconExamples: (since, limit) => pullLexiconExamples(since, limit),
+  listSyncTables: () => listSyncTables(),
 };
 
 export type SyncErrorKind = 'network' | 'auth' | 'server';
@@ -133,6 +172,14 @@ export interface RunOptions {
 export async function pushOutbox(t: SyncTransport, report: SyncReport, opts: RunOptions = {}): Promise<void> {
   const now = opts.now ?? Date.now;
   const skipTables = new Set<OutboxTable>((await getMeta<boolean>(META.serverPractice)) ? [] : ['practice_logs']);
+  if (!(await getMeta<boolean>(META.serverExamples))) {
+    skipTables.add('content_feedback');
+    skipTables.add('user_content');
+  }
+  // The registry is asked at most once per sync run (a run pushes twice: before and after its pull).
+  let lacking = lackingByRun.get(report);
+  if (!lacking) lackingByRun.set(report, (lacking = await tablesServerLacks(t, now())));
+  for (const table of lacking) skipTables.add(table);
   // Rows that failed in this run are not sent again in the same run (a forced run would
   // otherwise resend them with every batch and burn through their attempts at once).
   const failedThisRun = new Set<string>();
@@ -162,6 +209,70 @@ export async function pushOutbox(t: SyncTransport, report: SyncReport, opts: Run
     // Everything left was just rescheduled; a forced run must not spin on the same rows.
     if (ok.length === 0) return;
   }
+}
+
+/** tablesServerLacks() result per sync run (keyed by the run's report). */
+const lackingByRun = new WeakMap<SyncReport, OutboxTable[]>();
+
+/**
+ * LATE_SYNC_TABLES with queued rows that the server has not confirmed yet. Asks the registry
+ * only while such rows wait, at most every REGISTRY_RECHECK_MS; a confirmed table is
+ * remembered and never asked about again. A transport without a registry call (tests, older
+ * fakes) is assumed to store every table.
+ */
+async function tablesServerLacks(t: SyncTransport, now: Millis): Promise<OutboxTable[]> {
+  if (!t.listSyncTables) return [];
+  const known = (await getMeta<string[]>(META.serverTables)) ?? [];
+  const pending: OutboxTable[] = [];
+  for (const table of LATE_SYNC_TABLES) {
+    if (known.includes(table)) continue;
+    const queued = await db.outbox.where('[table+row_id]').between([table, ''], [table, '\uffff']).count();
+    if (queued > 0) pending.push(table);
+  }
+  if (pending.length === 0) return pending;
+  const checkedAt = (await getMeta<number>(META.serverTablesCheckedAt)) ?? 0;
+  if (now - checkedAt >= 0 && now - checkedAt < REGISTRY_RECHECK_MS) return pending;
+  let registry: string[] | null;
+  try {
+    registry = await t.listSyncTables();
+  } catch (e) {
+    const f = classify(e);
+    if (f.kind !== 'server') throw f;
+    void logError(e, 'sync.registry');
+    registry = null;
+  }
+  const listed = registry ?? []; // null: no registry yet (older backend), keep waiting
+  const confirmed = pending.filter((x) => listed.includes(x));
+  await db.transaction('rw', db.meta, async () => {
+    await setMeta(META.serverTablesCheckedAt, now);
+    if (confirmed.length) await setMeta(META.serverTables, [...known, ...confirmed]);
+  });
+  return pending.filter((x) => !listed.includes(x));
+}
+
+/**
+ * Re-pull rows of tables this device learned about in an app update (data/backfill.ts):
+ * pages from 0 up to the current cursor, applying only those tables' rows. The cursor is
+ * not moved. Interrupted runs start over (the apply is idempotent: last writer wins).
+ */
+async function pullBackfill(t: SyncTransport, report: SyncReport, now: () => Millis): Promise<void> {
+  const tables = (await getMeta<string[]>(PULL_BACKFILL_KEY)) ?? [];
+  if (tables.length === 0) return;
+  const until = await getCursor(META.syncCursor);
+  let cursor = 0;
+  for (let round = 0; round < MAX_ROUNDS && cursor < until; round++) {
+    const page = await t.pullChanges(cursor, MAX_PULL_PAGE, 0);
+    // An older backend has none of these tables; a purge means a full resync brings them.
+    if (page.version < 3 || page.full_resync) break;
+    const rows = page.rows.filter((r) => tables.includes(r.table) && r.seq <= until);
+    if (rows.length) {
+      await applyRemoteRows(toBatch(rows), now());
+      report.pulled += rows.length;
+    }
+    cursor = page.next_seq;
+    if (!page.has_more) break;
+  }
+  await db.transaction('rw', db.meta, () => setMeta(PULL_BACKFILL_KEY, []));
 }
 
 /** Remember whether the server stores practice_logs (it answered with sync_pull_v3). */
@@ -205,6 +316,10 @@ async function fullResync(t: SyncTransport, report: SyncReport, now: () => Milli
     cards: new Set(),
     sources: new Set(),
     settings: new Set(),
+    content_feedback: new Set(),
+    user_content: new Set(),
+    decks: new Set(),
+    known_terms: new Set(),
   });
   let seen = emptySeen();
   let cursor = 0;
@@ -221,7 +336,7 @@ async function fullResync(t: SyncTransport, report: SyncReport, now: () => Milli
       cursor = 0;
       continue;
     }
-    for (const r of page.rows) if (r.table !== 'review_logs' && r.table !== 'practice_logs') seen[r.table].add(r.row.id);
+    for (const r of page.rows) if (r.table in seen) seen[r.table as ResyncTable].add((r.row as { id: Id }).id);
     for (const bad of page.invalid) {
       // An invalid row still exists on the server: never delete it locally.
       if (bad.table in seen && typeof bad.id === 'string') seen[bad.table as ResyncTable].add(bad.id);
@@ -254,6 +369,27 @@ async function pullLexiconCache(t: SyncTransport, report: SyncReport): Promise<v
 }
 
 /**
+ * Example sentences of the user's lexicon senses (lexicon_examples_pull). The first answer
+ * also tells us the server stores content_feedback / user_content (META.serverExamples).
+ */
+async function pullExamplesCache(t: SyncTransport): Promise<void> {
+  if (!t.pullLexiconExamples) return;
+  let cursor = await getCursor(META.lexiconExamplesCursor);
+  for (let round = 0; round < MAX_ROUNDS; round++) {
+    const page = await t.pullLexiconExamples(cursor, MAX_PULL_PAGE);
+    const supported = page !== null;
+    if (((await getMeta<boolean>(META.serverExamples)) ?? false) !== supported) {
+      await db.transaction('rw', db.meta, () => setMeta(META.serverExamples, supported));
+    }
+    if (!page) return;
+    if (page.invalid) void logError(`${page.invalid} invalid rows`, 'sync.examples');
+    await applyLexiconExamples(page.rows, page.next_seq);
+    cursor = page.next_seq;
+    if (!page.has_more) return;
+  }
+}
+
+/**
  * One complete sync round for the linked account. Exported for tests and for the account
  * linking flow; the app uses the SyncEngine below (locking, triggers, status).
  */
@@ -266,7 +402,17 @@ export async function runSync(t: SyncTransport, opts: RunOptions = {}): Promise<
     await pushOutbox(t, report, opts);
     if (await pullAll(t, report, now)) await fullResync(t, report, now);
   }
-  // Rows pulled between our push and pull may have triggered recomputes (queued): push them.
+  try {
+    await pullExamplesCache(t);
+  } catch (e) {
+    // Example sentences are extras; user data is already in sync.
+    void logError(e, 'sync.examples');
+  }
+  // After a full resync every row was pulled; otherwise re-pull late tables once if needed.
+  if (report.fullResync) await db.transaction('rw', db.meta, () => setMeta(PULL_BACKFILL_KEY, []));
+  else await pullBackfill(t, report, now);
+  // Rows pulled between our push and pull may have triggered recomputes (queued), and
+  // feedback rows wait for the first examples pull: push them.
   if ((await db.outbox.count()) > 0) await pushOutbox(t, report, { ...opts, force: false });
   try {
     await pullLexiconCache(t, report);
@@ -376,6 +522,12 @@ export class SyncEngine {
       pullChanges: async (since, limit, from) => (await check(), t.pullChanges(since, limit, from)),
       pullLexicon: async (since, limit) => (await check(), t.pullLexicon(since, limit)),
       getLexiconSenses: async (ids) => (await check(), t.getLexiconSenses(ids)),
+      ...(t.pullLexiconExamples
+        ? { pullLexiconExamples: async (since: number, limit?: number) => (await check(), t.pullLexiconExamples!(since, limit)) }
+        : {}),
+      ...(t.listSyncTables
+        ? { listSyncTables: async () => (await check(), t.listSyncTables!()) }
+        : {}),
     };
   }
 

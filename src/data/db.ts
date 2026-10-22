@@ -2,20 +2,30 @@ import Dexie, { type EntityTable } from 'dexie';
 import type {
   Card,
   ChunkCacheRow,
+  ContentFeedback,
   DailyActivity,
+  Deck,
   ErrorLogRow,
+  ExampleJob,
   ImportCandidate,
   ImportJob,
+  LexiconExample,
+  KnownTerm,
+  LevelTest,
   LexiconSense,
   MetaRow,
   Note,
   OutboxRow,
   PracticeLog,
+  RefCacheRow,
   ReviewLog,
   Sense,
   Settings,
   Source,
+  UserContent,
+  ThemePreview,
 } from '../domain/types';
+import { addPullBackfill } from './backfill';
 
 /**
  * Local database. The source of truth for the UI: screens read and write only here,
@@ -29,6 +39,10 @@ export class EngDb extends Dexie {
   cards!: EntityTable<Card, 'id'>;
   review_logs!: EntityTable<ReviewLog, 'id'>;
   practice_logs!: EntityTable<PracticeLog, 'id'>;
+  decks!: EntityTable<Deck, 'id'>;
+  theme_previews!: EntityTable<ThemePreview, 'id'>;
+  level_tests!: EntityTable<LevelTest, 'id'>;
+  known_terms!: EntityTable<KnownTerm, 'id'>;
   sources!: EntityTable<Source, 'id'>;
   settings!: EntityTable<Settings, 'id'>;
   lexicon_cache!: EntityTable<LexiconSense, 'id'>;
@@ -39,6 +53,11 @@ export class EngDb extends Dexie {
   daily_activity!: EntityTable<DailyActivity, 'date'>;
   error_log!: EntityTable<ErrorLogRow, 'id'>;
   meta!: EntityTable<MetaRow, 'key'>;
+  lexicon_examples!: EntityTable<LexiconExample, 'id'>;
+  content_feedback!: EntityTable<ContentFeedback, 'id'>;
+  user_content!: EntityTable<UserContent, 'id'>;
+  example_jobs!: EntityTable<ExampleJob, 'key'>;
+  ref_cache!: EntityTable<RefCacheRow, 'key'>;
 
   constructor(name = 'engapp') {
     super(name);
@@ -79,6 +98,113 @@ export class EngDb extends Dexie {
     // v3 (v0.2 İP1): practice_logs, insert-only and synced. Practice answers never feed FSRS.
     // Meta keys `extra_new:<day>` hold today's extra new-card allowance (no schema change).
     this.version(3).stores({ practice_logs: 'id, card_id, practiced_at, session_id' });
+    // v4 (v0.2 İP2): notes.level_override (null = the computed level) and level columns on
+    // lexicon_cache rows (not indexed). Notes get null so the type holds (a local fill-in, not
+    // stamped or queued; the server column defaults to null). The lexicon cursor goes back
+    // to 0 so the next sync pulls the cached senses again, now with their levels.
+    this.version(4)
+      .stores({})
+      .upgrade(async (tx) => {
+        await tx
+          .table('notes')
+          .toCollection()
+          .modify((row: { level_override?: string | null }) => {
+            if (row.level_override === undefined) row.level_override = null;
+          });
+        await tx.table('meta').put({ key: 'lexicon_cursor', value: 0 });
+      });
+    // v5 (v0.2 İP5): example sentences. lexicon_examples is a read-only cache of the shared
+    // table (like lexicon_cache); content_feedback and user_content are synced, per user;
+    // example_jobs is the device-local preparation queue. An older app version that pulled
+    // content_feedback / user_content rows (sync_pull_v3 returns every registered table)
+    // dropped them as invalid: re-pull those two tables once (data/backfill.ts).
+    this.version(5)
+      .stores({
+        lexicon_examples: 'id, sense_id, [sense_id+level_band], updated_at',
+        content_feedback: 'id, [target_kind+target_id], deleted_at',
+        user_content: 'id, kind, lexicon_sense_id, replaces_id, deleted_at',
+        example_jobs: 'key, status, next_attempt_at',
+      })
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['content_feedback', 'user_content']));
+    // v6 (v0.2 İP6, word families): ref_cache keeps the lazily
+    // fetched morphology file for offline use; pair_note_feedback held the user's "gizle" /
+    // "bildir" on false-friend warnings (device-local; replaced in v8, see there). Notes may now have term_type 'affix'. An older app
+    // version skipped such a pulled note as invalid and moved its cursor past it; if this
+    // device logged one, pull again from the start so the note arrives (rows are merged by
+    // HLC, so a repeated pull changes nothing else).
+    this.version(6)
+      .stores({ ref_cache: 'key', pair_note_feedback: 'key, verdict' })
+      .upgrade(async (tx) => {
+        const skippedNote = await tx
+          .table('error_log')
+          .filter((r: { context?: string | null }) => !!r.context?.startsWith('sync.pull invalid notes/'))
+          .count();
+        if (skippedNote > 0) await tx.table('meta').put({ key: 'sync_cursor', value: 0 });
+      });
+    // v7 (v0.2 İP7): sources.topics (multi-entry index, for "texts about this topic") and
+    // settings.interests / settings.muted_topics (not indexed). All optional: an absent list
+    // means "unknown", so existing rows need no upgrade.
+    this.version(7).stores({ sources: 'id, created_at, *topics' });
+    // v8 (v0.2 İP8): decks (synced, mutable) and the local
+    // theme-grouping preview. A device that has pulled before may have skipped deck rows
+    // written by a newer device while it ran an older version: re-pull them once.
+    // Also (v0.2 batch 1): pair_note_feedback is dropped. False-friend "gizle" / "hatalı" are
+    // content_feedback rows now (synced, per account); v6 was never released, so no device
+    // has rows to carry over.
+    this.version(8)
+      .stores({ decks: 'id, sort, deleted_at', theme_previews: 'id', pair_note_feedback: null })
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['decks']));
+    // v9 (v0.2 İP3): level_tests (insert-only) and known_terms (synced, tombstones), and the
+    // level fields of settings. A level other than the default B1 was chosen by the user, so
+    // it counts as 'manual' (a local fill-in, not stamped or queued; the server columns have
+    // the same defaults). A device that has pulled before may have skipped rows of the two
+    // tables while it ran an older version: re-pull them once (data/backfill.ts, the same
+    // mechanism as v5 and v8; built as a one-time sync-cursor reset, unified when merged).
+    this.version(9)
+      .stores({
+        level_tests: 'id, taken_at',
+        known_terms: 'id, term_norm, deleted_at',
+      })
+      .upgrade(async (tx) => {
+        await tx
+          .table('settings')
+          .toCollection()
+          .modify((row: Record<string, unknown>) => {
+            if (row.level_source === undefined)
+              row.level_source = row.level !== undefined && row.level !== 'B1' ? 'manual' : 'default';
+            if (row.level_updated_at === undefined) row.level_updated_at = null;
+            if (row.level_locked === undefined) row.level_locked = false;
+            if (row.level_change === undefined) row.level_change = null;
+          });
+        await addPullBackfill(tx.table('meta'), ['level_tests', 'known_terms']);
+      });
+    // v10 (v0.2 İP4; versions 5–9 belong to the other v0.2 packages): smart-extraction fields
+    // on the local import_candidates rows (not indexed). Rows of jobs from before keep their
+    // selection: "zaten var" rows go to "Biliyorsun", the others to "Senin için", level
+    // unknown. Settings rows need nothing: a missing show_easy_candidates means false.
+    this.version(10)
+      .stores({})
+      .upgrade(async (tx) => {
+        await tx
+          .table('import_candidates')
+          .toCollection()
+          .modify((row: Partial<ImportCandidate>) => {
+            row.cefr ??= null;
+            row.cefr_source ??= null;
+            row.bucket ??= row.user_status === 'exists' ? 'known' : 'for_you';
+            row.from_list ??= false;
+          });
+      });
+    // v11 (v0.2 batch 1 review): columns, not tables, an older version dropped. While this
+    // device ran v0.1/İP1 it pulled notes, settings and sources written by an updated device
+    // and stripped the newer columns (a level the user set, the level test's source and lock,
+    // interests, topics); v4/v9 then filled them with their unset values under the same HLC.
+    // Re-pull these tables once: rows with an equal HLC take the server's set values
+    // (domain/syncMerge.ts), so the device shows them and its next edit does not push the
+    // unset values over them.
+    this.version(11)
+      .stores({})
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['notes', 'settings', 'sources']));
   }
 }
 

@@ -62,6 +62,37 @@ registry but cannot write it. pgTAP checks that every registered table has RLS w
 select and insert policies, that mutable tables have an update policy, and that insert-only
 tables can be neither updated nor deleted.
 
+### Columns older clients do not know (v0.2 İP7)
+
+A client that predates a column pushes rows without it, and `jsonb_populate_record` makes it
+null, so normally its edit clears the column (accepted for `senses.source_sentence_tr`). For
+`settings.interests`, `settings.muted_topics` and `sources.topics` a `keep_profile_fields`
+BEFORE UPDATE trigger keeps the stored value when the incoming one is null, and
+`applyRemoteRows` does the same locally (`keepProfileFields`). A list is cleared with `[]`,
+never with null (decision 0015).
+
+**Pulled by an older version (Dexie v11).** The other direction: a device that still ran
+v0.1/İP1 pulled notes, settings and sources written by an updated device, and zod stripped
+the columns it did not know. After its own update the Dexie upgrade filled them with unset
+values (`level_override = null`, `level_source`, `level_locked = false`…) under the same HLC,
+so last-writer-wins never replaced them and the device's next edit pushed them over the real
+values. Two client rules close this: a pulled row whose HLC **equals** the local one (the
+same write) gives the local row the late columns the server has set
+(`fillLateColumns`, `src/domain/syncMerge.ts`; an unset server value never overwrites a
+local one), and the v11 upgrade re-pulls notes, settings and sources once
+(`meta.pull_backfill`). The same rule fills the column into the echo of a push an older
+version queued (the server kept the column the push left out). Left open: an edit of that
+row made after the update but before the first sync still pushes the unset value.
+
+**Level tables (decision 0017).** `level_tests` (insert-only) and `known_terms` (mutable,
+tombstoned) are in the registry since `20261022000500_level_test.sql`. They are
+`LATE_SYNC_TABLES` like the İP5 tables and decks (see "Tables added after v3" below): their
+rows are pushed only after the registry lists them, and Dexie v9 records them for the
+one-time re-pull. (İP3 was built with its own copy of both mechanisms, a separate registry
+list and a one-time `sync_cursor` reset; they were unified when the packages merged.)
+Settings rows from older clients lack the level columns: a trigger fills their defaults on
+insert, and `_sync_upsert` leaves them alone on update.
+
 ## Push
 
 `sync_push(p_batch jsonb)`; `p_batch` = up to 100 items `{table, op, payload}`:
@@ -91,6 +122,13 @@ Whole-call errors: not signed in (`42501` → `SyncApiError('not_signed_in')`), 
 Payload columns the server does not know are ignored; server columns
 (`server_seq`, `server_updated_at`, `user_id`) are overwritten. Missing NOT NULL columns
 reject the row (send full rows).
+
+**Columns the payload leaves out (v0.2 İP2).** When an upsert updates an existing row, a
+column whose key is not in the payload keeps its server value; a key sent as `null`
+clears it (`_sync_upsert`, migration `20261021001100_word_levels.sql`). An app version
+that does not know a newer column (one without `notes.level_override`) therefore cannot
+clear it by editing the note's tags on another device. Inserts are unchanged: a missing
+key is null.
 
 ## Pull
 
@@ -127,6 +165,32 @@ not delete local insert-only rows that the pull did not return.
 Known gap: a v0.1 client pulls with v2 and moves its cursor past practice rows written by
 another device. After it updates, it does not get them (decision 0010).
 
+### Tables added after v3: `content_feedback`, `user_content` (İP5), `decks` (İP8)
+
+`content_feedback`, `user_content` (migration `20261022000100_examples.sql`, ADR 0013) and
+`decks` (migration `20261022000400_decks.sql`, ADR 0016) are ordinary mutable tables: the
+standard columns, stamp trigger and RLS, plus one registry row each. False-friend "Gizle" /
+"Hatalı" (İP6) are `content_feedback` rows with `target_kind = 'false_friend'`, so they need
+no table of their own. Nothing in the RPCs changed. Two
+client mechanisms make it safe to add a table after clients already pull with v3:
+
+- **Push waits for the registry.** `LATE_SYNC_TABLES` (`src/sync/engine.ts`) lists tables
+  that may be missing on the backend. While such rows wait in the outbox, the engine reads
+  `public.sync_tables` (a plain PostgREST select, at most once per run) and skips the table
+  until the registry lists it; then it remembers this in `meta.server_tables` and never
+  asks again. A backend without the migration (or without a registry at all) therefore
+  costs no attempts, and the deploy order does not matter.
+- **One-time re-pull.** An app version that does not know a table still pulls with v3, gets
+  its rows, drops them as invalid and moves its cursor past them. The Dexie upgrade that
+  adds the table (v5 for the İP5 tables, v8 for decks) adds it to `meta.pull_backfill` when the device
+  has pulled before (`sync_cursor > 0`). After the next normal pull the engine pages from 0
+  up to the stored cursor, applies only rows of the listed tables (last writer wins, so it
+  is idempotent and an interrupted run simply starts over), and clears the list. A full
+  resync clears it too, because it pulls every row anyway. This closes for these tables the
+  gap that practice logs still have.
+- Both mechanisms work with İP2's `_sync_upsert`, which keeps server columns a payload
+  lacks: the registry check only delays a push, and the re-pull applies full server rows.
+
 ### Tombstones and full resync
 
 `purge_tombstones(30)` (daily at 03:17 UTC via pg_cron) deletes tombstones whose
@@ -148,6 +212,15 @@ another device) is not in that feed: after a pull, look for `lexicon_sense_id`s 
 from `lexicon_cache` and fetch them with `lexicon_get(ids)` (≤ 500). `meaning_tr_override`
 on the user's sense always wins over the lexicon.
 
+**Word levels (v0.2 İP2).** Lexicon rows carry `cefr`, `cefr_source`, `cefr_list`,
+`cefr_reason_tr` and `zipf` (the term's frequency) at the end of `lexicon_entries`; the raw
+AI guess stays on the server. The level job writes them with `lexicon_set_levels()`, and
+every changed row gets a new lexicon `server_seq`, so devices pull it like a correction.
+Dexie v4 sets `meta.lexicon_cursor` to 0 once, so a device updated from v0.1 pulls its
+senses again with the level columns. The user's own level is not in the lexicon: it is
+`notes.level_override`, a synced column of their note (null = automatic), and applies only
+to them (decision 0009).
+
 ## Edge cases (plan table) and where they are handled
 
 | Case                                      | Handling                                                                      |
@@ -167,9 +240,31 @@ on the user's sense always wins over the lexicon.
   cross-user read/write denial, push validation/idempotency/LWW/tombstones, review log
   immutability, pagination, purge → `full_resync`. `05_practice_logs.test.sql`: the
   registry, insert-only practice logs, v3 pull pages and horizon, and v1/v2 not returning
-  them.
+  them. `12_level_test.test.sql`: level tests insert-only, known-word tombstones and purge,
+  isolation, v1/v2 not returning them, and settings pushed by an old client.
+- `src/sync/levelTables.test.ts` (FakeServer): level tests and known words between devices,
+  the registry wait, guest adoption, copying cards from another account (they stay
+  behind) and backups.
 - `src/sync/practice.test.ts` (FakeServer): practice logs wait for a v3 server, then sync
   insert-only between devices without touching cards.
+- `src/sync/decks.test.ts` (FakeServer): decks between two devices, waiting without
+  attempts on a backend without the table, and the one-time re-pull.
+  `supabase/tests/database/11_decks.test.sql`: RLS, LWW, tombstones, v3 pull and v1/v2 not
+  returning decks.
 - `supabase/tests/integration/stack.test.ts`: the same through PostgREST with
   `src/sync/api.ts`.
 - `src/sync/api.test.ts`: response validation and error classification.
+
+## Example sentences (v0.2 İP5, migration 20261022000100)
+
+- `content_feedback` and `user_content` are registered in `public.sync_tables` with
+  `conflict_key (user_id, id)` and go through the same `sync_push` / `sync_pull_v3` path
+  (LWW by HLC, tombstones, purge). Their ids are derived from what they are about, so the
+  primary key includes `user_id`.
+- `lexicon_examples` is shared and read-only: `lexicon_examples_pull(since, limit)` returns
+  the sentences of the lexicon senses the user's senses reference, by `server_seq`
+  (cursor `lexicon_examples_cursor`, reset with the lexicon cursor on account changes).
+  It runs after the lexicon pull; a failure there never fails the sync.
+- Until `lexicon_examples_pull` has answered once (`server_examples`), content rows wait in
+  the outbox without spending attempts, like `practice_logs` before `sync_pull_v3`.
+- Tests: `src/sync/examples.test.ts` (two devices, deterministic ids, gating, retired rows).

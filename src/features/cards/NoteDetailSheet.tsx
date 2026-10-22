@@ -9,13 +9,16 @@ import {
   editNote,
   editSense,
   getNoteDetail,
+  listTags,
   logError,
   setSuspended,
   softDeleteNote,
   softDeleteSense,
   type NoteDetail,
 } from '@/data';
-import type { Card, Sense, TermType } from '@/domain/types';
+import type { Card, NoteTermType, Sense } from '@/domain/types';
+import { FalseFriendStrips } from '@/features/family/FalseFriendStrip';
+import { FamilySection } from '@/features/family/FamilySection';
 import {
   Badge,
   Button,
@@ -29,6 +32,10 @@ import {
   TextField,
   toast,
 } from '@/ui';
+import { LevelSection } from '@/features/levels/LevelSection';
+import { ExamplesSection } from '@/features/examples/ExamplesPanel';
+import { useAppSettings } from '@/features/settings/useAppSettings';
+import { useSpeech } from '@/features/review/useSpeech';
 import { ConfirmDialog } from './ConfirmDialog';
 import { cardTypeLabel, posLabel, stateKey } from './labels';
 import { senseText } from './libraryFilter';
@@ -56,7 +63,7 @@ interface Draft {
   term: string;
   ipa: string;
   tags: string[];
-  termType: TermType;
+  termType: NoteTermType;
   senses: Record<string, SenseEdit>;
   added: NewSense[];
 }
@@ -125,6 +132,7 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
   const { t } = useTranslation();
   const id = useId();
   const { note, senses, cards } = detail;
+  const speech = useSpeech(useAppSettings().settings?.voice ?? 'en-US');
   const [draft, setDraft] = useState<Draft>(() => draftFrom(detail));
   const [termError, setTermError] = useState<string>();
   const [senseErrors, setSenseErrors] = useState<Record<string, string>>({});
@@ -133,6 +141,7 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
     null,
   );
   const [deleting, setDeleting] = useState(false);
+  const knownTags = useLiveQuery(() => listTags(), []);
 
   // Senses deleted or added elsewhere (sync, another tab): keep the draft in step.
   const [seenSenses, setSeenSenses] = useState(senses);
@@ -284,6 +293,7 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
           {t('library.detail.duplicateHint')}
         </p>
       )}
+      <FalseFriendStrips term={note.term_norm} className="max-w-none" />
       <div className="grid gap-4 sm:grid-cols-2">
         <TextField
           maxLength={LIMITS.term}
@@ -311,21 +321,26 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
           spellCheck={false}
         />
       </div>
-      <SegmentedControl<TermType>
-        legend={t('cards.add.termType')}
-        value={draft.termType}
-        onValueChange={(v) => setDraft((d) => ({ ...d, termType: v }))}
-        options={[
-          { value: 'word', label: t('cards.termType.word') },
-          { value: 'phrase', label: t('cards.termType.phrase') },
-          { value: 'pattern', label: t('cards.termType.pattern') },
-        ]}
-      />
+      {note.term_type !== 'affix' && (
+        <SegmentedControl<NoteTermType>
+          legend={t('cards.add.termType')}
+          value={draft.termType}
+          onValueChange={(v) => setDraft((d) => ({ ...d, termType: v }))}
+          options={[
+            { value: 'word', label: t('cards.termType.word') },
+            { value: 'phrase', label: t('cards.termType.phrase') },
+            { value: 'pattern', label: t('cards.termType.pattern') },
+          ]}
+        />
+      )}
       <TagInput
         label={t('cards.tags.label')}
         value={draft.tags}
         onChange={(tags) => setDraft((d) => ({ ...d, tags }))}
+        suggestions={knownTags?.map((x) => x.tag)}
       />
+
+      <LevelSection detail={detail} />
 
       <section aria-labelledby={`${id}-senses`} className="flex flex-col gap-3">
         <h3 id={`${id}-senses`} className="font-serif text-lg font-semibold text-fg">
@@ -503,6 +518,16 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
           {t('cards.add.addSense')}
         </Button>
       </section>
+
+      {senses.some((s) => s.lexicon_sense_id) && (
+        <ExamplesSection
+          term={note.term}
+          senses={senses}
+          headingId={`${id}-examples`}
+          speech={{ available: speech.available, speak: speech.speak }}
+        />
+      )}
+      <FamilySection note={note} />
 
       <section aria-labelledby={`${id}-cards`} className="flex flex-col gap-2">
         <h3 id={`${id}-cards`} className="font-serif text-lg font-semibold text-fg">

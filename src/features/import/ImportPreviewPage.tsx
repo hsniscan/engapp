@@ -1,6 +1,6 @@
 import { LIMITS } from '@/domain/limits';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router';
 import {
@@ -8,13 +8,18 @@ import {
   db,
   deleteImportJob,
   logError,
+  markCandidateKnown,
+  refreshKnownCandidates,
   updateImportCandidate,
   type CandidateChoice,
   type ImportCandidateRecord,
   type ImportJobRecord,
 } from '@/data';
-import type { TermType } from '@/domain/types';
+import { BUCKETS } from '@/domain/candidates';
+import type { CandidateBucket, TermType } from '@/domain/types';
 import { posLabel } from '@/features/cards/labels';
+import { LevelBadge } from '@/features/levels/LevelBadge';
+import { useAppSettings } from '@/features/settings/useAppSettings';
 import { requestSync } from '@/sync';
 import {
   Badge,
@@ -115,9 +120,16 @@ function CandidateReview({ job }: { job: ImportJobRecord }) {
           .where('job_id')
           .equals(job.id)
           .toArray()) as ImportCandidateRecord[]
-      ).sort((a, b) => a.order - b.order),
+      ).sort((a, b) => (a.rank ?? a.order) - (b.rank ?? b.order)),
     [job.id],
   );
+  // Words marked known since the job ran (another device, the level test, another preview)
+  // leave "Senin için" before the user reads the list.
+  const confirmed = job.status === 'done';
+  useEffect(() => {
+    if (confirmed) return;
+    refreshKnownCandidates(job.id).catch((e: unknown) => void logError(e, 'import.knownRefresh'));
+  }, [job.id, confirmed]);
   if (!rows) {
     return (
       <Page title={t('importer.preview.title')} width="wide">
@@ -132,9 +144,18 @@ function CandidateReview({ job }: { job: ImportJobRecord }) {
   return <CandidateList job={job} rows={rows} />;
 }
 
+/** Preview sections in display order; "too_hard" is shown only for vocabulary lists. */
+type Section = CandidateBucket;
+
+/** A row's section (rows of jobs from before smart extraction: "Senin için"). */
+const bucketOf = (r: ImportCandidateRecord): Section => r.bucket ?? 'for_you';
+/** Shown rows: a word more than one level up is only counted for prose (owner's rule). */
+const isShown = (r: ImportCandidateRecord) => bucketOf(r) !== 'too_hard' || r.from_list;
+
 function CandidateList({ job, rows }: { job: ImportJobRecord; rows: ImportCandidateRecord[] }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { settings } = useAppSettings();
   // Selection and edits live in React state (instant on 300+ rows) and are written through
   // to Dexie in the background, so a reload keeps them.
   const [state, setState] = useState(
@@ -146,20 +167,38 @@ function CandidateList({ job, rows }: { job: ImportJobRecord; rows: ImportCandid
   const [filter, setFilter] = useState<Filter>('all');
   const [busy, setBusy] = useState(false);
   const [discardOpen, setDiscardOpen] = useState(false);
+  // null = the default: "Kolay olabilir" follows show_easy_candidates, the others are closed.
+  const [open, setOpen] = useState<Partial<Record<Section, boolean>>>({});
+  const isOpen = (s: Section) =>
+    s === 'for_you' || (open[s] ?? (s === 'easy' && settings?.show_easy_candidates === true));
 
   const counts = useMemo(() => {
     const c = { all: 0, word: 0, phrase: 0, pattern: 0 };
     for (const r of rows) {
+      if (!isShown(r)) continue;
       c.all++;
       c[r.term_type]++;
     }
     return c;
   }, [rows]);
 
-  const visible = useMemo(
-    () => rows.filter((r) => filter === 'all' || r.term_type === filter),
-    [rows, filter],
+  const sections = useMemo(() => {
+    const by: Record<Section, ImportCandidateRecord[]> = {
+      for_you: [],
+      easy: [],
+      known: [],
+      too_hard: [],
+    };
+    for (const r of rows) by[bucketOf(r)].push(r);
+    return by;
+  }, [rows]);
+
+  const visibleIn = useCallback(
+    (s: Section) =>
+      sections[s].filter((r) => isShown(r) && (filter === 'all' || r.term_type === filter)),
+    [sections, filter],
   );
+
   const selectedCount = useMemo(() => {
     let n = 0;
     for (const v of state.values()) if (v.selected) n++;
@@ -187,14 +226,32 @@ function CandidateList({ job, rows }: { job: ImportJobRecord; rows: ImportCandid
     void updateImportCandidate(id, { meaning_tr_edit: edit });
   }, []);
 
-  const setAll = (selected: boolean) => {
+  const markKnown = useCallback(
+    async (id: string, term: string) => {
+      try {
+        const moved = await markCandidateKnown(id);
+        setState((s) => {
+          const next = new Map(s);
+          for (const m of moved) next.set(m, { ...next.get(m)!, selected: false });
+          return next;
+        });
+        toast({ title: t('importer.preview.markedKnown', { term }) });
+      } catch (e) {
+        void logError(e, 'import.markKnown');
+        toast({ title: t('importer.preview.markKnownFailed'), tone: 'danger' });
+      }
+    },
+    [t],
+  );
+
+  const setAll = (list: ImportCandidateRecord[], selected: boolean) => {
     setState((s) => {
       const next = new Map(s);
-      for (const r of visible) next.set(r.id, { ...next.get(r.id)!, selected });
+      for (const r of list) next.set(r.id, { ...next.get(r.id)!, selected });
       return next;
     });
     void db.transaction('rw', db.import_candidates, async () => {
-      for (const r of visible) await db.import_candidates.update(r.id, { selected });
+      for (const r of list) await db.import_candidates.update(r.id, { selected });
     });
   };
 
@@ -237,9 +294,10 @@ function CandidateList({ job, rows }: { job: ImportJobRecord; rows: ImportCandid
 
   const filterOptions = (['all', 'word', 'phrase', 'pattern'] as const)
     .filter((f) => f === 'all' || counts[f] > 0)
-    .map((f) => ({ value: f, label: `${t(`importer.preview.${f}`)}\u00a0${counts[f]}` }));
-  const allVisibleSelected = visible.length > 0 && visible.every((r) => state.get(r.id)?.selected);
-  const noneVisibleSelected = visible.every((r) => !state.get(r.id)?.selected);
+    .map((f) => ({ value: f, label: `${t(`importer.preview.${f}`)} ${counts[f]}` }));
+
+  const hiddenHard = sections.too_hard.filter((r) => !r.from_list).length;
+  const shownSections = BUCKETS.filter((s) => s === 'for_you' || sections[s].some(isShown));
 
   return (
     <Page
@@ -266,7 +324,18 @@ function CandidateList({ job, rows }: { job: ImportJobRecord; rows: ImportCandid
         />
       }
     >
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+      <p className="text-[0.9375rem] text-fg-muted" data-testid="smart-summary">
+        {t('importer.preview.smartSummary', {
+          level: job.level,
+          total: counts.all + hiddenHard,
+          forYou: sections.for_you.length,
+          easy: sections.easy.length,
+          known: sections.known.length,
+        })}
+        {hiddenHard > 0 && <> {t('importer.preview.tooHardHidden', { count: hiddenHard })}</>}
+      </p>
+
+      <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         {filterOptions.length > 2 ? (
           <SegmentedControl<Filter>
             legend={t('importer.preview.filter')}
@@ -279,51 +348,121 @@ function CandidateList({ job, rows }: { job: ImportJobRecord; rows: ImportCandid
         ) : (
           <span />
         )}
-        <div className="flex items-center justify-between gap-2 md:justify-end">
-          <span className="tabular text-sm text-fg-muted" aria-live="polite">
-            {t('importer.preview.summary', { selected: selectedCount, total: counts.all })}
-          </span>
-          <span className="flex gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setAll(true)}
-              disabled={allVisibleSelected}
-            >
-              {t('importer.preview.selectAll')}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setAll(false)}
-              disabled={noneVisibleSelected}
-            >
-              {t('importer.preview.selectNone')}
-            </Button>
-          </span>
-        </div>
+        <span className="tabular text-sm text-fg-muted md:text-right" aria-live="polite">
+          {t('importer.preview.summary', { selected: selectedCount, total: counts.all })}
+        </span>
       </div>
 
-      {visible.length === 0 ? (
-        <p className="mt-8 text-center text-fg-muted">{t('importer.preview.emptyFilter')}</p>
-      ) : (
-        <ul className="mt-5 flex flex-col gap-3" aria-label={t('importer.preview.title')}>
-          {visible.map((r) => {
-            const s = state.get(r.id)!;
-            return (
-              <CandidateRow
-                key={r.id}
-                c={r}
-                selected={s.selected}
-                edit={s.edit}
-                onToggle={toggle}
-                onEdit={editMeaning}
-                onCommit={persistMeaning}
-              />
-            );
-          })}
-        </ul>
-      )}
+      <div className="mt-5 flex flex-col gap-6">
+        {shownSections.map((s) => {
+          const visible = visibleIn(s);
+          const total = sections[s].filter(isShown).length;
+          const expanded = isOpen(s);
+          const allSelected = visible.length > 0 && visible.every((r) => state.get(r.id)?.selected);
+          const noneSelected = visible.every((r) => !state.get(r.id)?.selected);
+          const headingId = `section-${s}`;
+          const bodyId = `section-${s}-body`;
+          return (
+            <section key={s} aria-labelledby={headingId} className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-border pb-2">
+                <h2 id={headingId} className="m-0 text-base font-semibold text-fg">
+                  {s === 'for_you' ? (
+                    <span className="inline-flex items-baseline gap-2">
+                      {t(`importer.preview.sections.${s}`)}{' '}
+                      <span className="tabular text-sm font-normal text-fg-muted">{total}</span>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      aria-expanded={expanded}
+                      aria-controls={bodyId}
+                      onClick={() => setOpen((o) => ({ ...o, [s]: !expanded }))}
+                      className="-ml-1 inline-flex min-h-11 items-center gap-2 rounded-control px-1 text-left hover:text-accent-text"
+                    >
+                      <Icon
+                        name="chevron-down"
+                        size={18}
+                        className={cn(
+                          'shrink-0 text-fg-muted transition-transform duration-(--duration-micro)',
+                          expanded && 'rotate-180',
+                        )}
+                      />
+                      {t(`importer.preview.sections.${s}`)}{' '}
+                      <span className="tabular text-sm font-normal text-fg-muted">{total}</span>
+                    </button>
+                  )}
+                </h2>
+                {expanded && visible.length > 0 && (
+                  <span className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAll(visible, true)}
+                      disabled={allSelected}
+                      aria-label={t('importer.preview.selectAllIn', {
+                        section: t(`importer.preview.sections.${s}`),
+                      })}
+                    >
+                      {t('importer.preview.selectAll')}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAll(visible, false)}
+                      disabled={noneSelected}
+                      aria-label={t('importer.preview.selectNoneIn', {
+                        section: t(`importer.preview.sections.${s}`),
+                      })}
+                    >
+                      {t('importer.preview.selectNone')}
+                    </Button>
+                  </span>
+                )}
+              </div>
+              {expanded && (
+                <div id={bodyId} className="flex flex-col gap-3">
+                  <p className="-mt-1 text-sm text-fg-muted">
+                    {t(`importer.preview.sectionHints.${s}`, { level: job.level })}
+                  </p>
+                  {s === 'for_you' && !sections.for_you.some((r) => r.cefr === job.level) && (
+                    <p className="rounded-card border border-border bg-surface-sunken/60 px-4 py-3 text-[0.9375rem] text-fg">
+                      {t('importer.preview.forYouEmpty', { level: job.level })}
+                    </p>
+                  )}
+                  {visible.length === 0 ? (
+                    total > 0 && (
+                      <p className="py-4 text-center text-fg-muted">
+                        {t('importer.preview.emptyFilter')}
+                      </p>
+                    )
+                  ) : (
+                    <ul
+                      className="flex flex-col gap-3"
+                      aria-label={t(`importer.preview.sections.${s}`)}
+                    >
+                      {visible.map((r) => {
+                        const st = state.get(r.id)!;
+                        return (
+                          <CandidateRow
+                            key={r.id}
+                            c={r}
+                            selected={st.selected}
+                            edit={st.edit}
+                            onToggle={toggle}
+                            onEdit={editMeaning}
+                            onCommit={persistMeaning}
+                            onKnown={s === 'known' ? undefined : markKnown}
+                          />
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </section>
+          );
+        })}
+      </div>
 
       <div className="sticky bottom-[calc(var(--nav-height)+env(safe-area-inset-bottom))] z-10 -mx-4 mt-6 border-t border-border bg-canvas/95 px-4 py-3 backdrop-blur-sm sm:-mx-6 sm:px-6 md:bottom-0">
         <div className="flex items-center justify-between gap-3">
@@ -358,6 +497,8 @@ interface RowProps {
   onToggle: (id: string, selected: boolean) => void;
   onEdit: (id: string, edit: string | null) => void;
   onCommit: (id: string, edit: string | null) => void;
+  /** "Biliyorum": absent in the "Biliyorsun" section. */
+  onKnown?: (id: string, term: string) => void;
 }
 
 /** The source sentence with the term's surface highlighted (span from the server). */
@@ -394,6 +535,7 @@ const CandidateRow = memo(function CandidateRow({
   onToggle,
   onEdit,
   onCommit,
+  onKnown,
 }: RowProps) {
   const { t } = useTranslation();
   const base = c.meaning_tr ?? '';
@@ -442,7 +584,7 @@ const CandidateRow = memo(function CandidateRow({
         onCheckedChange={(v) => onToggle(c.id, v === true)}
         className="-mt-1.5"
       />
-      <div className={cn('flex min-w-0 flex-1 flex-col gap-2', !selected && 'opacity-70')}>
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
         <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
           <span lang="en" className="font-serif text-xl leading-snug font-semibold text-fg">
             {c.term}
@@ -454,6 +596,17 @@ const CandidateRow = memo(function CandidateRow({
           )}
           {c.pos && <span className="text-sm text-fg-muted italic">{posLabel(t, c.pos)}</span>}
           <span className="flex flex-wrap items-center gap-1.5 self-center sm:ml-auto">
+            {c.cefr && (
+              <LevelBadge
+                level={{
+                  cefr: c.cefr,
+                  source: c.cefr_source ?? 'freq',
+                  list_cefr: null,
+                  reason_tr: null,
+                  auto: null,
+                }}
+              />
+            )}
             {low && (
               <Badge tone="warn" title={t('importer.preview.lowConfidenceHint', { pct })}>
                 <Icon name="alert" size={14} />
@@ -502,6 +655,19 @@ const CandidateRow = memo(function CandidateRow({
             </span>
           )}
         </div>
+        {onKnown && (
+          <div className="-mb-1 flex justify-end">
+            <Button
+              variant="ghost"
+              size="sm"
+              leadingIcon="check"
+              aria-label={t('importer.preview.knowIt', { term: c.term })}
+              onClick={() => onKnown(c.id, c.term)}
+            >
+              {t('importer.preview.knowItShort')}
+            </Button>
+          </div>
+        )}
         {edited && (
           <p className="flex items-center gap-2 text-xs text-fg-muted">
             <Icon name="pencil" size={14} />

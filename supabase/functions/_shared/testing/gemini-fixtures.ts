@@ -31,7 +31,7 @@ export function envelope(payload: unknown, extra: Record<string, unknown> = {}) 
   };
 }
 
-const nullSense = { pos: null, gloss_en: null, meaning_tr: null, ipa: null };
+const nullSense = { pos: null, gloss_en: null, meaning_tr: null, ipa: null, cefr_guess: null };
 
 export const GOOD_EXTRACT = {
   candidates: [
@@ -47,6 +47,7 @@ export const GOOD_EXTRACT = {
       gloss_en: 'stop doing a habit or activity',
       meaning_tr: 'bırakmak',
       ipa: '/ɡɪv ˈʌp/',
+      cefr_guess: 'B1',
     },
     {
       term: 'bank',
@@ -60,6 +61,7 @@ export const GOOD_EXTRACT = {
       gloss_en: 'the land beside a river',
       meaning_tr: 'kıyı',
       ipa: '/bæŋk/',
+      cefr_guess: 'B2',
     },
     {
       term: 'turn down',
@@ -73,6 +75,7 @@ export const GOOD_EXTRACT = {
       gloss_en: 'reject an offer or request',
       meaning_tr: 'reddetmek',
       ipa: '/tɜːrn ˈdaʊn/',
+      cefr_guess: 'b2',
     },
   ],
 };
@@ -104,6 +107,7 @@ export function knownSenseExtract(ref: string) {
         gloss_en: 'an organization that keeps and lends money',
         meaning_tr: 'banka',
         ipa: null,
+        cefr_guess: 'A2',
       },
     ],
   };
@@ -193,6 +197,7 @@ export const ENRICH_BANK = {
       gloss_en: 'an organization that keeps and lends money',
       meaning_tr: 'banka',
       ipa: '/bæŋk/',
+      cefr_guess: 'A1',
       used_in_sentence: false,
     },
     {
@@ -200,6 +205,7 @@ export const ENRICH_BANK = {
       gloss_en: 'Land beside rivers.',
       meaning_tr: 'kıyı',
       ipa: '/bæŋk/',
+      cefr_guess: 'B2',
       used_in_sentence: false,
     },
     {
@@ -207,6 +213,7 @@ export const ENRICH_BANK = {
       gloss_en: 'to keep money in a particular bank',
       meaning_tr: 'bankaya yatırmak',
       ipa: '/bæŋk/',
+      cefr_guess: 'Z9',
       used_in_sentence: false,
     },
   ],

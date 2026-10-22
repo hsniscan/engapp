@@ -79,7 +79,10 @@ export function ManualAddForm() {
   const { t } = useTranslation();
   const formId = useId();
   const termRef = useRef<HTMLInputElement>(null);
-  const [term, setTerm] = useState('');
+  // /add?term=inspector: opened from a word family ("Aile") when no meaning could be looked up.
+  const [term, setTerm] = useState(() =>
+    typeof window === 'undefined' ? '' : (new URLSearchParams(window.location.search).get('term') ?? '').slice(0, LIMITS.term),
+  );
   // The term type follows the spelling (a space → phrase) until the user picks one.
   const [chosenType, setChosenType] = useState<TermType | null>(null);
   const termType: TermType = chosenType ?? (term.trim().includes(' ') ? 'phrase' : 'word');

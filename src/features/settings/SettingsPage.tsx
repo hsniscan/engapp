@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Page, cn } from '@/ui';
+import { AboutSection } from './AboutSection';
+import { ProfileSettingsSection } from '@/features/profile/ProfileSettingsSection';
 import { AdvancedSection } from './AdvancedSection';
 import { AppSection } from './AppSection';
 import { DataSection } from './DataSection';
+import { ExamplesSettingsSection } from './ExamplesSettings';
 import { SECTION_IDS, type SectionId } from './sections';
 import { SettingsSection } from './SettingsLayout';
 import { settingsSlots } from './slots';
 import { AppearanceSection, StudySection, VoiceSection } from './StudySections';
+import { LevelSettingsSection } from '@/features/leveltest/LevelSettingsSection';
 
 function SectionNav() {
   const { t } = useTranslation();
@@ -72,11 +76,15 @@ export function SettingsPage() {
             <Sync />
           </SettingsSection>
           <StudySection />
+          <LevelSettingsSection />
+          <ExamplesSettingsSection />
+          <ProfileSettingsSection />
           <AppearanceSection />
           <VoiceSection />
           <DataSection />
           <AppSection />
           <AdvancedSection />
+          <AboutSection />
         </div>
       </div>
     </Page>

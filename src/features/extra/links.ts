@@ -9,12 +9,15 @@ export interface PracticeParams {
   source: PracticeSource;
   size: PracticeSize;
   tag: string | null;
+  /** Source 'deck': the smart deck's id. */
+  deck?: string | null;
 }
 
-/** URL of a practice round: /practice?source=hard&size=10[&tag=iş]. */
+/** URL of a practice round: /practice?source=hard&size=10[&tag=iş][&deck=<id>]. */
 export function practiceHref(p: PracticeParams): string {
   const q = new URLSearchParams({ source: p.source, size: String(p.size) });
   if (p.source === 'tag' && p.tag) q.set('tag', p.tag);
+  if (p.source === 'deck' && p.deck) q.set('deck', p.deck);
   return `/practice?${q.toString()}`;
 }
 
@@ -29,7 +32,8 @@ export function parsePracticeParams(search: URLSearchParams): PracticeParams {
     ? (rawSize as PracticeSize)
     : 10;
   const tag = source === 'tag' ? search.get('tag') || null : null;
-  return { source, size, tag };
+  const deck = source === 'deck' ? search.get('deck') || null : null;
+  return { source, size, tag, deck };
 }
 
 /** The +N choices: 5 and 10 when that many are waiting, otherwise what is left. */

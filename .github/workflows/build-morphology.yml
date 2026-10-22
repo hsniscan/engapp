@@ -1,0 +1,53 @@
+# Rebuilds the word-family / root reference data (İP6) from the official kaikki.org Wiktionary
+# extract, wordfreq and MorphyNet, and uploads the result as a workflow artifact for review.
+# It never commits, deploys or touches Supabase: a maintainer downloads the artifact, checks
+# the diff and commits it (see scripts/build-morphology/README.md).
+name: Build morphology data
+on:
+  workflow_dispatch:
+    inputs:
+      etymology:
+        description: Wiktionary source (kaikki = official extract, mirror = pinned SQLite mirror)
+        type: choice
+        options: [kaikki, mirror]
+        default: kaikki
+      meanings:
+        description: Run the Turkish morpheme meaning job for new morphemes (needs GEMINI_API_KEY)
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          # Runs the .ts scripts directly and needs node:sqlite for the mirror variant.
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/build-morphology/index.ts --etymology ${{ inputs.etymology }}
+      - if: ${{ inputs.meanings }}
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          GEMINI_FALLBACK_MODEL: ${{ vars.GEMINI_FALLBACK_MODEL }}
+        run: |
+          node scripts/build-morphology/meanings.ts
+          node scripts/build-morphology/index.ts --etymology ${{ inputs.etymology }}
+      - run: node scripts/build-morphology/load-sql.ts > reference-data.sql
+      - run: pnpm vitest run scripts src/features/family src/domain
+      - uses: actions/upload-artifact@v4
+        with:
+          name: morphology-data
+          path: |
+            public/data/morphology-*.json
+            src/features/family/morphologyAsset.ts
+            data/reference/morphology.sources.json
+            data/reference/morpheme-meanings.tr.json
+            reference-data.sql
+          retention-days: 14

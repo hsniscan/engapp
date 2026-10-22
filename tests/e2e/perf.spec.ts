@@ -52,14 +52,25 @@ async function timeSwitch(page: Page): Promise<number> {
     const before = document.querySelector('[data-card-type]');
     const t0 = performance.now();
     window.dispatchEvent(new KeyboardEvent('keydown', { key: '3', code: 'Digit3', bubbles: true }));
-    await new Promise<void>((resolve) => {
+    await new Promise<void>((resolve, reject) => {
       const done = () => {
+        // The session ran out of cards: fail now instead of at the test timeout.
+        if (document.querySelector('h1, h2') && /Oturum tamamlandı/.test(document.body.innerText))
+          throw new Error('The review session ended before 20 card switches (seed too small)');
         const now = document.querySelector('[data-card-type]');
         return now !== null && now !== before && now.getAttribute('data-flipped') === 'false';
       };
-      if (done()) return resolve();
+      const check = () => {
+        try {
+          return done();
+        } catch (e) {
+          reject(e);
+          return true;
+        }
+      };
+      if (check()) return resolve();
       const mo = new MutationObserver(() => {
-        if (done()) {
+        if (check()) {
           mo.disconnect();
           resolve();
         }

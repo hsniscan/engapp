@@ -1,9 +1,19 @@
 // Persistence used by the AI pipeline. SupabaseAiStore (supabase-store.ts) is the real
 // implementation; tests use an in-memory one.
 
+import type { Cefr, LevelSource } from './cefr.ts';
 import type { LexiconEntry } from './contracts.ts';
+import type { WordRefs } from './level.ts';
 
-export interface LexSense {
+/** Level columns of a lexicon sense (v0.2 İP2); absent on rows from an older function. */
+export interface LexLevel {
+  cefr?: Cefr | null;
+  cefr_source?: LevelSource | null;
+  cefr_list?: Cefr | null;
+  cefr_reason_tr?: string | null;
+}
+
+export interface LexSense extends LexLevel {
   id: string;
   pos: string;
   gloss_en: string;
@@ -18,7 +28,19 @@ export interface LexTerm {
   lemma: string;
   lemma_norm: string;
   term_type: 'word' | 'phrase' | 'pattern';
+  zipf?: number | null;
   senses: LexSense[];
+}
+
+/** level_refs() row: a lemma's list entries (with the current correction) and frequency. */
+export interface LevelRefRow extends WordRefs {
+  lemma_norm: string;
+}
+
+export interface LevelRefs {
+  /** Coverage of the frequency data (FreqCoverage.minZipf); null when none is loaded. */
+  min_zipf: number | null;
+  rows: LevelRefRow[];
 }
 
 export interface LexiconUpsertItem {
@@ -32,6 +54,13 @@ export interface LexiconUpsertItem {
   meaning_tr?: string;
   ipa?: string | null;
   model?: string | null;
+  /** Level of a new sense (level.ts) and the term's Zipf value. */
+  zipf?: number | null;
+  cefr?: Cefr | null;
+  cefr_source?: LevelSource | null;
+  cefr_list?: Cefr | null;
+  cefr_reason_tr?: string | null;
+  cefr_guess?: Cefr | null;
 }
 
 export interface LexiconUpsertResult {
@@ -75,4 +104,6 @@ export interface AiStore {
   upsertLexicon(items: LexiconUpsertItem[]): Promise<LexiconUpsertResult[]>;
   /** LexiconEntry rows by sense id (missing ids are omitted). */
   getEntries(ids: string[]): Promise<LexiconEntry[]>;
+  /** Reference data (word lists, frequency) of up to 2000 lemmas; unknown lemmas are omitted. */
+  getLevelRefs(lemmas: string[]): Promise<LevelRefs>;
 }

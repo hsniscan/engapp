@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next';
-import type { CardStateValue, CardType, TermType } from '@/domain/types';
+import type { CardStateValue, CardType, NoteTermType } from '@/domain/types';
 
 /** Part-of-speech values are stored in English (like the shared lexicon); labels are Turkish. */
 export const POS_VALUES = [
@@ -16,7 +16,7 @@ export const POS_VALUES = [
 ] as const;
 
 /** Every value with a label: the ones above plus the rest of the lexicon's list (text.ts). */
-const POS_LABELED = [...POS_VALUES, 'phrase', 'determiner', 'other'] as const;
+const POS_LABELED = [...POS_VALUES, 'phrase', 'determiner', 'other', 'root', 'prefix', 'suffix'] as const;
 
 /**
  * The part of speech in the UI language ("noun" → "isim"). Case, separators and spacing
@@ -29,7 +29,7 @@ export function posLabel(t: TFunction, pos: string): string {
     : pos;
 }
 
-export function termTypeLabel(t: TFunction, type: TermType): string {
+export function termTypeLabel(t: TFunction, type: NoteTermType): string {
   return t(`cards.termType.${type}`);
 }
 

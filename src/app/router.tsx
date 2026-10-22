@@ -57,6 +57,16 @@ const children: RouteObject[] = [
     lazy: async () => ({ Component: (await import('@/features/cards/LibraryPage')).LibraryPage }),
   },
   {
+    path: 'decks',
+    HydrateFallback: () => null,
+    lazy: async () => ({ Component: (await import('@/features/decks/DecksPage')).DecksPage }),
+  },
+  {
+    path: 'decks/themes',
+    HydrateFallback: () => null,
+    lazy: async () => ({ Component: (await import('@/features/decks/ThemesPage')).ThemesPage }),
+  },
+  {
     path: 'stats',
     HydrateFallback: () => null,
     lazy: async () => ({ Component: (await import('@/features/stats/StatsScreen')).StatsScreen }),
@@ -66,6 +76,35 @@ const children: RouteObject[] = [
     HydrateFallback: () => null,
     lazy: async () => ({
       Component: (await import('@/features/settings/SettingsPage')).SettingsPage,
+    }),
+  },
+  {
+    path: 'level-test',
+    handle: { immersive: true } satisfies RouteHandle,
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/leveltest/LevelTestScreen')).LevelTestRoute,
+    }),
+  },
+  {
+    path: 'settings/bilinen-kelimeler',
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/leveltest/KnownWordsPage')).KnownWordsPage,
+    }),
+  },
+  {
+    path: 'settings/kaynaklar',
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/settings/SourcesPage')).SourcesPage,
+    }),
+  },
+  {
+    path: 'settings/profile',
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/profile/ProfilePage')).ProfilePage,
     }),
   },
   { path: 'auth', element: <AuthPage /> },

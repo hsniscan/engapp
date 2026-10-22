@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useTranslation } from 'react-i18next';
 import { getHeatmap, getStreakSummary } from '@/data';
+import { VocabTile } from '@/features/leveltest/VocabTile';
 import type { HeatmapCell, StreakSummary } from '@/domain/streak';
 import { cn, Page, Skeleton, Surface } from '@/ui';
 import { formatDuration, formatNumber, formatPercent } from './format';
@@ -82,6 +83,7 @@ function StatsBody({ weeks, streak: s }: { weeks: HeatmapCell[][]; streak: Strea
 
   return (
     <div className="flex flex-col gap-5">
+      <VocabTile wide />
       <Surface as="section" aria-labelledby="heatmap-title" padding="lg">
         <div className="mb-5 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <h2 id="heatmap-title" className="font-serif text-xl font-semibold">

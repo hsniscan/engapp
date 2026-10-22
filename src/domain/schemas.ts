@@ -1,6 +1,20 @@
 // zod schemas for synced rows. Used to validate backup files and (later) sync payloads.
 import { z } from 'zod';
-import type { Card, Note, PracticeLog, ReviewLog, Sense, Settings, Source } from './types';
+import type {
+  Card,
+  ContentFeedback,
+  Deck,
+  KnownTerm,
+  LevelTest,
+  LexiconExample,
+  Note,
+  PracticeLog,
+  ReviewLog,
+  Sense,
+  Settings,
+  Source,
+  UserContent,
+} from './types';
 
 const millis = z.number().int();
 const id = z.string().min(1);
@@ -14,7 +28,15 @@ const synced = {
   hlc: z.string().min(1),
 };
 
-const termType = z.enum(['word', 'phrase', 'pattern']);
+const contextKey = z.string().regex(/^[a-z][a-z_]{1,31}$/);
+const span = z.tuple([z.number().int(), z.number().int()]);
+
+// Topic key lists (İP7). Free strings, not an enum: a newer device may know more topics.
+// Optional, not defaulted: a backup without the key keeps the checksum it was written with.
+const topicList = z.array(z.string().min(1).max(40)).max(40).nullable().optional();
+
+const termType = z.enum(['word', 'phrase', 'pattern', 'affix']);
+const cefr = z.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']);
 const cardState = z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]);
 const rating = z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]);
 
@@ -27,6 +49,8 @@ export const noteSchema: z.ZodType<Note> = z.object({
   ipa: z.string().nullable(),
   tags: z.array(z.string()),
   possible_duplicate: z.boolean(),
+  // v0.2 İP2; absent in older backups and from older servers.
+  level_override: z.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']).nullable().default(null),
 });
 
 export const senseSchema: z.ZodType<Sense> = z.object({
@@ -98,6 +122,7 @@ export const sourceSchema: z.ZodType<Source> = z.object({
   title: z.string(),
   file_name: z.string().nullable(),
   page_count: z.number().int().nullable(),
+  topics: topicList,
 });
 
 export const settingsSchema: z.ZodType<Settings> = z.object({
@@ -111,4 +136,105 @@ export const settingsSchema: z.ZodType<Settings> = z.object({
   level: z.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']),
   fsrs_params: z.array(z.number()).nullable(),
   last_backup_at: millis.nullable(),
+  // v0.2 İP5. Optional and without a default (older backups and server rows lack them;
+  // a default would change the backup checksum of rows that never had the key).
+  example_tr_visible: z.boolean().nullish(),
+  example_contexts: z.array(contextKey).max(12).nullish(),
+  interests: topicList,
+  muted_topics: topicList,
+  // v0.2 İP3; absent in older backups and from older servers.
+  level_source: z.enum(['default', 'test', 'auto', 'manual']).default('default'),
+  level_updated_at: millis.nullable().default(null),
+  level_locked: z.boolean().default(false),
+  level_change: z
+    .object({
+      from: cefr,
+      to: cefr,
+      week: millis,
+      band: cefr,
+      ratio: z.number(),
+      ratio_prev: z.number(),
+      known: z.number(),
+      unknown: z.number(),
+      dismissed: z.boolean().default(false),
+    })
+    .nullable()
+    .default(null)
+    // A malformed note (newer client, hand-edited backup) must not reject the whole row.
+    .catch(null),
+  // v0.2 İP4; absent in older rows and backups (= false).
+  show_easy_candidates: z.boolean().nullish(),
+});
+
+export const contentFeedbackSchema: z.ZodType<ContentFeedback> = z.object({
+  ...synced,
+  target_kind: contextKey,
+  target_id: id,
+  verdict: z.enum(['like', 'skip', 'reject']),
+});
+
+export const userContentSchema: z.ZodType<UserContent> = z.object({
+  ...synced,
+  kind: contextKey,
+  lexicon_sense_id: id.nullable(),
+  sense_id: id.nullable(),
+  context: contextKey.nullable(),
+  replaces_id: id.nullable(),
+  text: z.string().min(1).max(1000),
+  translations: z.record(z.string(), z.string()).nullable(),
+  span: span.nullable(),
+  selected: z.boolean().nullable(),
+});
+
+export const lexiconExampleSchema: z.ZodType<LexiconExample> = z.object({
+  id,
+  sense_id: id,
+  context: contextKey,
+  level_band: z.enum(['A2', 'B1', 'B2', 'C1']),
+  text_en: z.string().min(1).max(300),
+  span,
+  translations: z.record(z.string(), z.string()),
+  status: z.enum(['active', 'retired']),
+  updated_at: millis,
+});
+
+/** decks.filter is kept as raw JSON here; domain/deckFilter.ts parses it for evaluation. */
+export const deckSchema: z.ZodType<Deck> = z.object({
+  ...synced,
+  name: z.string().min(1).max(200),
+  filter: z.record(z.string(), z.unknown()),
+  sort: z.number().int(),
+});
+
+export const levelTestItemSchema = z.object({
+  w: z.string().min(1).max(64),
+  band: cefr.nullable(),
+  pseudo: z.boolean(),
+  answer: z.enum(['yes', 'no']),
+  mc_ok: z.boolean().optional(),
+});
+
+export const levelTestSchema: z.ZodType<LevelTest> = z.object({
+  id,
+  user_id: z.string().nullable(),
+  taken_at: millis,
+  result_level: cefr,
+  vocab_estimate: z.number().int().min(0),
+  reliable: z.boolean(),
+  false_alarm_rate: z.number().min(0).max(1),
+  ratios: z.object({ A1: z.number(), A2: z.number(), B1: z.number(), B2: z.number(), C1: z.number(), C2: z.number() }),
+  items: z.array(levelTestItemSchema).max(200),
+  bank_version: z.string().min(1).max(64),
+  applied: z.boolean(),
+  duration_ms: z.number().int().min(0),
+  device_id: z.string(),
+  created_at: millis,
+  hlc: z.string().min(1),
+});
+
+export const knownTermSchema: z.ZodType<KnownTerm> = z.object({
+  ...synced,
+  term_norm: z.string().min(1).max(200),
+  source: z.enum(['test', 'preview', 'manual', 'auto']),
+  cefr_at_mark: cefr.nullable().default(null),
 });

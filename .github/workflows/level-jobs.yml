@@ -1,0 +1,92 @@
+# Nightly word-level job (v0.2 İP2): keeps the stored level of every lexicon sense in line
+# with the level rule, asks the model for level guesses of senses outside the word lists
+# (level-guess-v1) and runs the Turkish-learner check of the lists (level-tr-v1). All model
+# calls come from the system AI budget (public.ai_system_consume, AI_SYSTEM_DAILY_LIMIT per
+# UTC day), never from a user's budget; a run stops when it is used up and the next night
+# continues. Details: docs/ai-pipeline.md ("Level job"), docs/setup-backend.md.
+#
+# Repository secrets (same as deploy-supabase.yml):
+#   GEMINI_API_KEY             Google AI Studio API key
+#   SUPABASE_SERVICE_ROLE_KEY  optional: the project's service_role (or sb_secret_) key.
+#                              Without it the key is read through the Management API with
+#   SUPABASE_ACCESS_TOKEN      (needs the "API keys: Read" permission / a full-access token).
+# Repository variables (optional): GEMINI_MODEL, GEMINI_FALLBACK_MODEL, AI_SYSTEM_DAILY_LIMIT
+name: Level job
+
+on:
+  schedule:
+    - cron: '30 2 * * *' # 02:30 UTC, after the day's budget resets
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Report only: no writes, no model calls'
+        type: boolean
+        default: false
+      max_calls:
+        description: 'At most this many model calls in this run (empty: up to the daily budget)'
+        type: string
+        default: ''
+
+concurrency:
+  group: level-jobs
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  SUPABASE_PROJECT_REF: bikcjlomrjaxymifxogi
+
+jobs:
+  levels:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Run the level job
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.8-flash' }}
+          GEMINI_FALLBACK_MODEL: ${{ vars.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite' }}
+          AI_SYSTEM_DAILY_LIMIT: ${{ vars.AI_SYSTEM_DAILY_LIMIT || '100' }}
+          SERVICE_KEY_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
+          MAX_CALLS: ${{ inputs.max_calls }}
+        run: |
+          set -euo pipefail
+          if [ -z "$GEMINI_API_KEY" ]; then echo "::error::Repository secret GEMINI_API_KEY is not set"; exit 1; fi
+          key="$SERVICE_KEY_SECRET"
+          if [ -z "$key" ]; then
+            if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
+              echo "::error::Set SUPABASE_SERVICE_ROLE_KEY, or SUPABASE_ACCESS_TOKEN with API key read access (docs/setup-backend.md)"
+              exit 1
+            fi
+            # Read without printing: the response goes to a private temp file, the key is masked.
+            umask 077
+            f="$(mktemp)"
+            trap 'rm -f "$f"' EXIT
+            status=$(curl -sS -o "$f" -w '%{http_code}' \
+              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+              "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/api-keys?reveal=true")
+            if [ "$status" != "200" ]; then
+              echo "::error::Could not read the project's API keys (HTTP $status). Set the SUPABASE_SERVICE_ROLE_KEY secret instead."
+              exit 1
+            fi
+            key=$(jq -r '([.[] | select(.type == "secret")] + [.[] | select(.name == "service_role")])[0].api_key // empty' "$f")
+            if [ -z "$key" ]; then echo "::error::No secret or service_role key found"; exit 1; fi
+          fi
+          echo "::add-mask::$key"
+          export SUPABASE_URL="https://$SUPABASE_PROJECT_REF.supabase.co"
+          export SUPABASE_SERVICE_ROLE_KEY="$key"
+          args=(levels)
+          if [ -n "$DRY_RUN" ]; then args+=("$DRY_RUN"); fi
+          if [ -n "$MAX_CALLS" ]; then args+=(--max-calls "$MAX_CALLS"); fi
+          node scripts/system-jobs.ts "${args[@]}"

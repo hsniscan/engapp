@@ -1,0 +1,103 @@
+{
+  "generated_by": "scripts/build-levels.ts",
+  "license": "CC BY-SA 4.0 (derived data); see docs/licenses.md",
+  "sources": {
+    "cefrj": {
+      "name": "CEFR-J Wordlist",
+      "version": "1.5",
+      "source_version": "cefrj-1.5",
+      "url": "https://raw.githubusercontent.com/openlanguageprofiles/olp-en-cefrj/d4e45b75b38f27b30dfc5c44d8c571aec7e7092f/cefrj-vocabulary-profile-1.5.csv",
+      "homepage": "https://github.com/openlanguageprofiles/olp-en-cefrj",
+      "sha256": "b0dd3c635f1c9a4fdf1490c7e5b7c48e8bbe55b652ad0c9860a95f98e10ae498",
+      "license": "Free for research and commercial purposes with proper citation (CEFR-J terms of use, as published by Open Language Profiles). © Tono Laboratory, Tokyo University of Foreign Studies.",
+      "citation": "The CEFR-J Wordlist Version 1.5. Compiled by Yukio Tono, Tokyo University of Foreign Studies. Retrieved from http://www.cefr-j.org/download.html (via Open Language Profiles)."
+    },
+    "octanove": {
+      "name": "Octanove Vocabulary Profile C1/C2",
+      "version": "1.0",
+      "source_version": "octanove-1.0",
+      "url": "https://raw.githubusercontent.com/openlanguageprofiles/olp-en-cefrj/d4e45b75b38f27b30dfc5c44d8c571aec7e7092f/octanove-vocabulary-profile-c1c2-1.0.csv",
+      "homepage": "https://github.com/openlanguageprofiles/olp-en-cefrj",
+      "sha256": "18c33a407f2f89f7b8de9671c6d45fe3ea0bce45e7d2d7dcaab48d73e0f7b380",
+      "license": "CC BY-SA 4.0",
+      "citation": "Octanove Vocabulary Profile C1/C2 (ver 1.0), Octanove Labs."
+    },
+    "wordfreq": {
+      "name": "wordfreq (English, large list)",
+      "version": "3.1.1",
+      "source_version": "wordfreq-3.1.1",
+      "url": "https://files.pythonhosted.org/packages/py3/w/wordfreq/wordfreq-3.1.1-py3-none-any.whl",
+      "homepage": "https://github.com/rspeer/wordfreq",
+      "sha256": "4b1c6ecffc6198be3396d5cf871c4423ca71c907c231348d352dd54d62b97473",
+      "member": "wordfreq/data/large_en.msgpack.gz",
+      "member_sha256": "dffae8066b78dce0a6667cf5f58e567054f902674667090a7ac8a8a44628b05c",
+      "license": "Data CC BY-SA 4.0, code Apache-2.0. Includes SUBTLEX (Brysbaert et al., free for any use with credit), OpenSubtitles 2018, Google Books Ngrams, Wikipedia, NewsCrawl, OSCAR, ParaCrawl.",
+      "citation": "Robyn Speer. (2022). rspeer/wordfreq: v3.0 (v3.0.2). Zenodo. https://doi.org/10.5281/zenodo.7199437"
+    }
+  },
+  "olp_commit": "d4e45b75b38f27b30dfc5c44d8c571aec7e7092f",
+  "summary": {
+    "ref_word_levels": 10084,
+    "ref_cefrj": 7964,
+    "ref_octanove": 2120,
+    "list_lemmas": 8845,
+    "ref_word_freq": 30221,
+    "client_lemmas": 30521,
+    "client_min_zipf": 3,
+    "tr_corrections_in_client": 0,
+    "calibration": {
+      "words": 8545,
+      "fitted_thresholds": [
+        5.24,
+        4.63,
+        3.89,
+        3.01,
+        1.62
+      ],
+      "fitted_agreement": {
+        "exact": 0.3957,
+        "within1": 0.8606
+      },
+      "used_thresholds": [
+        5.24,
+        4.63,
+        3.89,
+        3.01,
+        1.62
+      ],
+      "used_agreement": {
+        "exact": 0.3957,
+        "within1": 0.8606
+      },
+      "plan_thresholds": [
+        5.5,
+        5,
+        4.5,
+        4,
+        3.3
+      ],
+      "plan_agreement": {
+        "exact": 0.2774,
+        "within1": 0.6809
+      }
+    }
+  },
+  "outputs": {
+    "data/levels/ref-word-levels.tsv": {
+      "sha256": "49dbc1133ec1148104ee9d0137b46fa1e72e1867059828416a0372269763c0cf",
+      "bytes": 352332
+    },
+    "data/levels/ref-word-freq.tsv": {
+      "sha256": "5c6d292d721cc4e4cc53c4f787242141ce64c10ab0ba9f8d95cd0903ae79fff4",
+      "bytes": 397697
+    },
+    "data/levels/client-levels.tsv": {
+      "sha256": "e2eda42e8f95d3eccfdb2809b6e2c3c0177c3c66ac2ae6a77ba9bc9c5fc5de35",
+      "bytes": 494067
+    },
+    "supabase/migrations/20261021001200_ref_word_data.sql": {
+      "sha256": "cdc6c4d3d3175583b3bc16af5b762e8d4439777c6dffb15999e58c8e1ef05eaa",
+      "bytes": 1038215
+    }
+  }
+}

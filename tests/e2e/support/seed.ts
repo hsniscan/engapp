@@ -93,6 +93,7 @@ export async function buildSeedBackup(cards: number, now = Date.now()): Promise<
       ipa: spec?.ipa ?? null,
       tags: i % 7 === 0 ? ['iş'] : [],
       possible_duplicate: false,
+      level_override: null,
     });
     const sentence = spec?.sentence ?? `People say the word ${term} is useful in daily life.`;
     const surface = spec?.surface ?? term;
@@ -171,7 +172,10 @@ export async function buildSeedBackup(cards: number, now = Date.now()): Promise<
     updated_at: start,
     deleted_at: null,
     hlc: hlc(start),
-    daily_new_limit: 10,
+    // The histories end at `now`, so few reviews are due, and almost none in the minutes
+    // before the 04:00 day start (the day then ends at once). New cards keep a session long
+    // enough for the perf test's 20 card switches at any time of day (perfSeed.test.ts).
+    daily_new_limit: 40,
     request_retention: 0.9,
     timezone: 'Europe/Istanbul',
     day_start_hour: 4,
@@ -180,6 +184,10 @@ export async function buildSeedBackup(cards: number, now = Date.now()): Promise<
     level: 'B1',
     fsrs_params: null,
     last_backup_at: null,
+    level_source: 'default',
+    level_updated_at: null,
+    level_locked: false,
+    level_change: null,
   };
   return buildBackup(
     { notes, senses, cards: cardRows, review_logs: logs, sources: [], settings: [settings] },

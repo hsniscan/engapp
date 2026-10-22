@@ -7,6 +7,7 @@ import { lexiconEntry, type LexiconEntry } from './contracts.ts';
 import type {
   AiStore,
   CachedChunk,
+  LevelRefs,
   LexiconUpsertItem,
   LexiconUpsertResult,
   LexTerm,
@@ -168,5 +169,13 @@ export class SupabaseAiStore implements AiStore {
       'lexicon_get',
     ) as unknown[];
     return rows.map((r) => lexiconEntry.parse(r));
+  }
+
+  async getLevelRefs(lemmas: string[]): Promise<LevelRefs> {
+    if (lemmas.length === 0) return { min_zipf: null, rows: [] };
+    return check(
+      await this.db.rpc('level_refs', { p_lemmas: lemmas.slice(0, 2000) }),
+      'level_refs',
+    ) as LevelRefs;
   }
 }

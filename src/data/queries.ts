@@ -1,12 +1,14 @@
 // Read-side API for screens. Safe to wrap in dexie-react-hooks' useLiveQuery.
 import { addDays, type DayKey, dayEndMs, dayKeyOf } from '../domain/day';
+import { bandFor, type CardSentence, pickRotation, rotationSentences, selectedContexts } from '../domain/examples';
 import { previewIntervals, type IntervalPreview } from '../domain/fsrs';
 import { normalizeTerm } from '../domain/normalize';
 import { buildQueue, type QueueCounts, type QueueItem, type QueueMode } from '../domain/queue';
 import { type Cloze, firstLetterHint, lastShownSenseId, makeCloze, nextRecognitionSense } from '../domain/recognition';
 import { buildHeatmap, computeStreakSummary, type HeatmapCell, type StreakSummary } from '../domain/streak';
-import { type Card, CardState, type Id, type Millis, type Note, type RatingValue, type Sense } from '../domain/types';
+import { type Card, CardState, type Id, type LexiconSense, type Millis, type Note, type RatingValue, type Sense } from '../domain/types';
 import { db } from './db';
+import { exampleTables, senseExamplesFor } from './examples';
 import { dueStudiedCards, loadTodayFacts, newCards } from './history';
 import { extraNewKey, getMeta } from './meta';
 import { dayConfig, getSettings, schedulerFor } from './settings';
@@ -95,13 +97,27 @@ export interface CardView {
   cloze: Cloze | null;
   /** Production card: "b___". */
   hint: string | null;
+  /**
+   * The sentence shown this time (front of recognition and cloze cards, back of all): the
+   * source sentence and the example sentences take turns, one more step after every answer.
+   */
+  sentence: CardSentence | null;
   /** Interval labels for the four buttons. */
   previews: Record<RatingValue, IntervalPreview>;
+  /** Cached lexicon rows of the senses (their levels), by lexicon_sense_id. */
+  lexicon: Map<Id, LexiconSense>;
+}
+
+/** Cached lexicon rows of these senses, by id (missing rows are left out). */
+async function lexiconOf(senses: Sense[]): Promise<Map<Id, LexiconSense>> {
+  const ids = [...new Set(senses.map((s) => s.lexicon_sense_id).filter((x): x is Id => !!x))];
+  const rows = ids.length ? await db.lexicon_cache.bulkGet(ids) : [];
+  return new Map(rows.filter((r): r is LexiconSense => !!r).map((r) => [r.id, r]));
 }
 
 /** Everything a review screen needs to render one card. */
 export async function getCardView(cardId: Id, now: Millis = Date.now()): Promise<CardView | null> {
-  return db.transaction('r', [db.cards, db.notes, db.senses, db.review_logs, db.settings], async () => {
+  return db.transaction('r', [db.cards, db.notes, db.senses, db.review_logs, db.settings, db.lexicon_cache, ...exampleTables()], async () => {
     const card = await db.cards.get(cardId);
     if (!card) return null;
     const note = await db.notes.get(card.note_id);
@@ -109,6 +125,7 @@ export async function getCardView(cardId: Id, now: Millis = Date.now()): Promise
     const senses = (await db.senses.where('note_id').equals(note.id).toArray())
       .filter((s) => s.deleted_at === null)
       .sort((a, b) => a.sense_no - b.sense_no);
+    const settings = await getSettings(now);
     let sense: Sense | null = null;
     let cloze: Cloze | null = null;
     let hint: string | null = null;
@@ -117,13 +134,32 @@ export async function getCardView(cardId: Id, now: Millis = Date.now()): Promise
       sense = nextRecognitionSense(senses, lastShownSenseId(logs));
     } else {
       sense = senses.find((s) => s.id === card.sense_id) ?? null;
-      if (card.card_type === 'cloze' && sense?.source_sentence && sense.span) {
-        cloze = makeCloze(sense.source_sentence, sense.span);
-      }
       if (card.card_type === 'production') hint = firstLetterHint(note.term);
     }
-    const settings = await getSettings(now);
-    return { card, note, senses, sense, cloze, hint, previews: previewIntervals(schedulerFor(settings), card, now) };
+    let sentence: CardSentence | null = null;
+    if (sense) {
+      const selected = selectedContexts(settings);
+      const examples = sense.lexicon_sense_id
+        ? await senseExamplesFor(sense.lexicon_sense_id, bandFor(settings), selected)
+        : null;
+      const needSpan = card.card_type === 'cloze';
+      const picked = pickRotation(rotationSentences(sense, examples, selected, needSpan), card.reps);
+      sentence = picked && { ...picked, trOnTap: picked.exampleId !== null && settings.example_tr_visible !== true };
+      // A cloze card keeps its own sentence when the source sentence has no usable span
+      // (as before) and no example sentence can stand in.
+      if (needSpan && sentence?.span) cloze = makeCloze(sentence.text, sentence.span);
+    }
+    return {
+      card,
+      note,
+      senses,
+      sense,
+      cloze,
+      hint,
+      sentence,
+      previews: previewIntervals(schedulerFor(settings), card, now),
+      lexicon: await lexiconOf(senses),
+    };
   });
 }
 
@@ -165,17 +201,19 @@ export interface NoteDetail {
   note: Note;
   senses: Sense[];
   cards: Card[];
+  /** Cached lexicon rows of the senses (their levels), by lexicon_sense_id. */
+  lexicon: Map<Id, LexiconSense>;
 }
 
 export async function getNoteDetail(noteId: Id): Promise<NoteDetail | null> {
-  return db.transaction('r', [db.notes, db.senses, db.cards], async () => {
+  return db.transaction('r', [db.notes, db.senses, db.cards, db.lexicon_cache], async () => {
     const note = await db.notes.get(noteId);
     if (!note) return null;
     const senses = (await db.senses.where('note_id').equals(noteId).toArray())
       .filter((s) => s.deleted_at === null)
       .sort((a, b) => a.sense_no - b.sense_no);
     const cards = (await db.cards.where('note_id').equals(noteId).toArray()).filter((c) => c.deleted_at === null);
-    return { note, senses, cards };
+    return { note, senses, cards, lexicon: await lexiconOf(senses) };
   });
 }
 
