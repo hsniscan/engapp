@@ -101,7 +101,10 @@ select is((select array_agg(user_id) from public.push_candidates()),
   array['88888888-8888-4888-8888-888888888888'::uuid],
   'candidates: notifications on and at least one subscription (G has none left)');
 select is((select jsonb_array_length(subscriptions) from public.push_candidates()), 2, 'with all their subscriptions');
-select is((select vacation from public.push_candidates()), null, 'no vacation column or value: null');
+-- With the load-management column present, an unset vacation reads as JSON null (to_jsonb);
+-- without it, as SQL null. push-rule.ts treats both as "not on vacation".
+select is((select coalesce(vacation, 'null'::jsonb) from public.push_candidates()), 'null'::jsonb,
+  'no vacation column or value: null');
 reset role;
 
 -- Cards and logs for the due count: two reviews due today, one later, one new, one suspended.
