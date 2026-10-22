@@ -1,8 +1,8 @@
-import { useLiveQuery } from 'dexie-react-hooks';
 import { countOptimizerReviews, getSettings, type ReviewCounts } from '@/data';
 import { MIN_REVIEWS, shouldSuggest } from '@/domain/fsrsOptimizer';
 import type { Settings } from '@/domain/types';
 import { useNow } from '@/features/settings/useNow';
+import { usePausedLiveQuery } from '@/features/settings/usePausedLiveQuery';
 
 export interface OptimizerStatus {
   settings: Settings;
@@ -18,7 +18,7 @@ export interface OptimizerStatus {
 /** Live: review counts and whether a run is suggested. undefined while loading. */
 export function useOptimizerStatus(): OptimizerStatus | undefined {
   const now = Math.floor(useNow() / 3_600_000) * 3_600_000;
-  return useLiveQuery(async () => {
+  return usePausedLiveQuery(async () => {
     const settings = await getSettings();
     const counts = await countOptimizerReviews(settings.fsrs_opt_at);
     return {

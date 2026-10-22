@@ -1,6 +1,5 @@
 // Settings → Çalışma: "Algoritmayı hafızama göre ayarla" and the retention helper
 // (v0.3 İP4, docs/decisions/0022). Logic lives in domain/fsrsOptimizer.ts and domain/workload.ts.
-import { useLiveQuery } from 'dexie-react-hooks';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -15,6 +14,7 @@ import { MIN_REVIEWS, normalizeParams, type OptimizeResult } from '@/domain/fsrs
 import { CardState, type Settings } from '@/domain/types';
 import { changePct, expectedDailyReviews, RETENTION_CHOICES } from '@/domain/workload';
 import { SettingsRow } from '@/features/settings/SettingsLayout';
+import { usePausedLiveQuery } from '@/features/settings/usePausedLiveQuery';
 import { Button, cn, ProgressBar, toast } from '@/ui';
 import { OptimizerUnavailableError, runOptimizer } from './runOptimizer';
 import { useOptimizerStatus } from './useOptimizerStatus';
@@ -203,7 +203,7 @@ function ResultNote({ result }: { result: OptimizeResult }) {
 /** Expected reviews per day at 85 / 90 / 95 % for the cards studied so far. */
 export function RetentionHelper({ settings }: { settings: Settings }) {
   const { t } = useTranslation();
-  const stabilities = useLiveQuery(async () => {
+  const stabilities = usePausedLiveQuery(async () => {
     const out: number[] = [];
     await db.cards.each((c) => {
       if (c.deleted_at === null && !c.suspended && c.state !== CardState.New) out.push(c.stability);

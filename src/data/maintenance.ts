@@ -45,6 +45,7 @@ import {
 import { emptyFsrs } from '../domain/fsrs';
 import { db } from './db';
 import { compactGuestOutbox, compactOutbox } from './outbox';
+import { whileRestoring } from './restoreState';
 import { rebuildDailyActivity } from './dailyActivity';
 import { ActionError } from './errors';
 import { groupLogs } from './history';
@@ -481,11 +482,21 @@ function chunks<T>(rows: readonly T[], size = RESTORE_CHUNK): T[][] {
  * already restored compare equal, logs already present are skipped).
  * @throws ActionError('invalid_backup') with the verify error as message.
  */
-export async function restoreBackup(
+export function restoreBackup(
   file: unknown,
   mode: RestoreMode,
   now: Millis = Date.now(),
   chunkSize = RESTORE_CHUNK,
+): Promise<RestoreResult> {
+  // Whole-table views pause meanwhile (data/restoreState.ts).
+  return whileRestoring(() => restoreBackupNow(file, mode, now, chunkSize));
+}
+
+async function restoreBackupNow(
+  file: unknown,
+  mode: RestoreMode,
+  now: Millis,
+  chunkSize: number,
 ): Promise<RestoreResult> {
   const verified = await verifyBackup(file);
   if (!verified.ok) throw new ActionError('invalid_backup', verified.error);

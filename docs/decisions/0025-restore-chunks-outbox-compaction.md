@@ -63,6 +63,12 @@ laptop writes IndexedDB several times faster, so the < 15 s target has to be con
 real device; the spec asserts a generous bound (90 s, `E2E_RESTORE_MAX_MS`) and prints the
 time.
 
+The restore runs on Ayarlar → Veri, and every chunk commit re-runs the page's live queries.
+After the v0.3 merge three of them scan whole tables (Tekrar yükü forecast, the FSRS retention
+helper and optimizer review count) and made the same restore ~105 s instead of ~63 s here.
+They now pause while a restore runs (`data/restoreState.ts`,
+`features/settings/usePausedLiveQuery.ts`) and run once at the end: ~61 s again.
+
 ## Why
 
 - Fewer, larger requests are what IndexedDB is fast at; per-row awaits in one huge

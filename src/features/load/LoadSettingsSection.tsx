@@ -1,5 +1,4 @@
 // Ayarlar → Tekrar yükü: daily capacity in minutes, catch-up mode, vacation (decision 0021).
-import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { endVacation, getLoadStatus, logError, setVacation } from '@/data';
@@ -9,12 +8,13 @@ import { MAX_VACATION_DAYS } from '@/domain/vacation';
 import { formatDayLong } from '@/features/stats/format';
 import { SettingsRow, SettingsSection } from '@/features/settings/SettingsLayout';
 import { useAppSettings } from '@/features/settings/useAppSettings';
+import { usePausedLiveQuery } from '@/features/settings/usePausedLiveQuery';
 import { Button, Skeleton, Slider, Switch, TextField, toast } from '@/ui';
 
 export function LoadSettingsSection() {
   const { t } = useTranslation();
   const { settings, update } = useAppSettings();
-  const status = useLiveQuery(() => getLoadStatus(), []);
+  const status = usePausedLiveQuery(() => getLoadStatus(), []);
   const [minutes, setMinutes] = useState<number | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
