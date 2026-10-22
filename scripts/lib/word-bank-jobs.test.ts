@@ -1,6 +1,7 @@
 // @vitest-environment node
 // The word-bank job against fakes: recorded-style model answers, an in-memory database and
 // batch API. No network, no model calls (decision 0038).
+import { readFileSync } from 'node:fs';
 import type Anthropic from '@anthropic-ai/sdk';
 import { describe, expect, it } from 'vitest';
 import { callCostUsd } from '../../supabase/functions/_shared/image-models.ts';
@@ -22,7 +23,14 @@ import {
   type WordBankDeps,
   type WordBankStore,
 } from './word-bank-jobs.ts';
-import { parseWordAnswer, wordUserContent, type WordInput } from './word-bank-prompt.ts';
+import {
+  parseWordAnswer,
+  wordUserContent,
+  WORDBANK_PROMPT_VERSION,
+  WORDBANK_RESPONSE_SCHEMA,
+  WORDBANK_SYSTEM_PROMPT,
+  type WordInput,
+} from './word-bank-prompt.ts';
 
 const MODEL = 'claude-haiku-5-5';
 const uid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
@@ -701,7 +709,8 @@ describe('wordbank-v1 answers', () => {
 describe('word bank model', () => {
   it('comes from the environment, else the check model default (never hard-coded)', async () => {
     const { wordBankModel } = await import('./word-bank-env.ts');
-    const { DEFAULT_CHECK_MODEL } = await import('../../supabase/functions/_shared/image-models.ts');
+    const { DEFAULT_CHECK_MODEL } =
+      await import('../../supabase/functions/_shared/image-models.ts');
     expect(wordBankModel(() => undefined)).toBe(DEFAULT_CHECK_MODEL);
     expect(wordBankModel((k) => (k === 'CLAUDE_CHECK_MODEL' ? 'check-x' : undefined))).toBe(
       'check-x',
@@ -709,5 +718,21 @@ describe('word bank model', () => {
     expect(wordBankModel((k) => (k === 'CLAUDE_WORDBANK_MODEL' ? ' bank-y ' : 'check-x'))).toBe(
       'bank-y',
     );
+  });
+});
+
+describe('docs/ai-pipeline.md', () => {
+  it('documents the word bank prompt and schema verbatim', () => {
+    const doc = readFileSync(new URL('../../docs/ai-pipeline.md', import.meta.url), 'utf8');
+    expect(doc).toContain(`\`${WORDBANK_PROMPT_VERSION}\``);
+    expect(doc).toContain(WORDBANK_SYSTEM_PROMPT);
+    const blocks = [...doc.matchAll(/```json\n([\s\S]*?)```/g)].flatMap((m) => {
+      try {
+        return [JSON.parse(m[1]!) as unknown];
+      } catch {
+        return [];
+      }
+    });
+    expect(blocks).toContainEqual(WORDBANK_RESPONSE_SCHEMA);
   });
 });

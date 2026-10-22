@@ -104,6 +104,8 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 | `IMAGE_DAILY_LIMIT`         | pictures a user may ask for per UTC day [`10`]                                                            |
 | `CLAUDE_IMAGE_MODEL`        | model that draws pictures [`claude-opus-5-5`]                                                             |
 | `CLAUDE_CHECK_MODEL`        | model that scores and checks pictures [`claude-haiku-5-5`]                                                |
+| `CLAUDE_WORDBANK_MODEL`     | model of the word bank job (step 13) [`CLAUDE_CHECK_MODEL`]                                               |
+| `WORD_BANK_NIGHTLY`         | `true`: the word bank job also runs every night (step 13) [off]                                           |
 
 `ALLOWED_ORIGINS` is the list of web origins allowed to call the AI functions
 (comma-separated, exact, no trailing slash). Preview deploys on other origins cannot
@@ -268,6 +270,37 @@ workflow also needs the service-role key, exactly like the level job (step 9).
 Check: **Edge Functions** lists `ai-image`; in **SQL Editor**,
 `select * from public.image_budget_status();` shows this month's cap and spending, and
 `select status, count(*) from public.lexicon_images group by 1;` grows after each night.
+
+## 13. Kelime Bankası (v0.4)
+
+The word bank (decision 0038) is filled once by a job: Turkish meanings and an example sentence
+for every word of the level lists (~10,000 rows), written to the shared `public.word_bank`
+table that every device, guests too, downloads. Until it has run, the app's Kelime Bankası
+screen says it is still empty (nothing else is affected).
+
+Needs: the migration `20261026001100_word_bank.sql` deployed (step 5), `ANTHROPIC_API_KEY`
+(step 12.1), and the service-role key exactly like the level job (step 9). It spends from the
+same monthly Claude credit as the pictures (`CLAUDE_MONTHLY_CREDIT_USD`, 80 % cap); the whole
+list is expected to cost about **$2** (upper bound reserved per batch ≈ $8).
+
+1. **Plan.** **Actions → Word bank job → Run workflow**, job `plan`. Sends nothing; the log
+   shows how many words are left, how many the shared dictionary already covers and the
+   estimated cost. A `submit` with **dry_run** ticked also shows the reserved amount.
+2. **Run.** Same workflow, job `run`: collects finished batches (none the first time), stores
+   the words the dictionary covers, sends the rest as one Message Batch (half price) and
+   prints the plan again.
+3. **Collect.** A batch usually ends within an hour (at most 24 h). Run job `run` again: it
+   checks the answers, stores the rows and sends again the few that were rejected. Repeat
+   until `plan` shows 0 words left (normally two or three runs). Words rejected three times are
+   left out (counted as `failed` in the log and in `word_bank_jobs`).
+4. Optional: set the repository variable `WORD_BANK_NIGHTLY` to `true` to run step 3 every
+   night at 03:45 UTC (useful when the lists change); leave it unset otherwise.
+
+Optional variable: `CLAUDE_WORDBANK_MODEL` (else `CLAUDE_CHECK_MODEL`, else the default Haiku).
+
+Check in **SQL Editor**: `select cefr, count(*) from public.word_bank group by 1 order by 1;`
+and `select state, count(*) from public.word_bank_jobs group by 1;`. In the app, open
+Ekle → "Kelime Bankası'nı aç": the list downloads once and then works offline.
 
 ## Manual deploy without GitHub (alternative)
 
