@@ -5,6 +5,7 @@ import { kickAnkiEnrich, startAnkiEnrichQueue } from '@/features/anki/enrichQueu
 import { kickExampleQueue, startExampleQueue } from '@/features/examples/queue';
 import { kickImportQueue, startImportQueue } from '@/features/import/queue';
 import { startPushFeatures } from '@/features/notify/start';
+import { kickReports } from '@/features/report/queue';
 import { isBackendConfigured } from '@/lib/supabase';
 import { startSyncEngine } from '@/sync';
 import { supabaseTransport } from '@/sync/engine';
@@ -21,7 +22,8 @@ export function startConnectedFeatures(): void {
   configureLink({ transport: supabaseTransport, engine });
   onUserChange((user) => {
     if (user) {
-      void linkAccount(user.id);
+      // The report waits for the account link (its data may be replaced or adopted).
+      void linkAccount(user.id).finally(() => kickReports());
       kickImportQueue();
       kickExampleQueue();
       kickAnkiEnrich();
