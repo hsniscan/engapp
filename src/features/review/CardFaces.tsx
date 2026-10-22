@@ -10,12 +10,35 @@ import { useCardLevel } from '@/features/levels/useWordLevel';
 import { CardExamples } from '@/features/examples/ExamplesPanel';
 import { CardBackExtras } from '@/features/family/CardBackExtras';
 import { ContrastBack, ContrastFront, LeechBadge, LeechHint } from '@/features/leech';
+import { CardPicture } from '@/features/images';
 import { CardMnemonic } from '@/features/mnemonics';
 import { Badge, cn, IconButton } from '@/ui';
 import { usePronunciationBusy } from './pronunciation';
 
 const meaningOf = (s: Pick<Sense, 'meaning_tr' | 'meaning_tr_override'>) =>
   s.meaning_tr_override ?? s.meaning_tr;
+
+/**
+ * v0.4 İP3: the sense's picture beside its meaning on the back. Without a picture the meaning
+ * stays centred as before; with one the two sit side by side, also on a 360 px phone.
+ */
+function BesidePicture({ view, children, className }: { view: CardView; children: ReactNode; className?: string }) {
+  const image = view.image ?? null;
+  if (!image) return <>{children}</>;
+  return (
+    <div className={cn('flex w-full max-w-md items-center justify-center gap-4 sm:gap-5', className)} data-testid="meaning-with-picture">
+      <CardPicture image={image} className="size-[5.5rem] sm:size-28" />
+      <div className="flex min-w-0 flex-1 flex-col items-start text-left">{children}</div>
+    </div>
+  );
+}
+
+/** v0.4 İP3: the picture on the front too, when the user turned that on. */
+function FrontPicture({ view }: { view: CardView }) {
+  const image = view.image ?? null;
+  if (!image || !view.imageOnFront) return null;
+  return <CardPicture image={image} showNew={false} className="mt-1 size-24 sm:size-28" />;
+}
 
 /** The sentence with the term set apart. Falls back to a text search when no span is stored. */
 export function Sentence({
@@ -239,6 +262,7 @@ export const CardFront = memo(function CardFront({ view, isNew, speech }: FacePr
             <span lang="en">{hint}</span>
           </p>
         )}
+        <FrontPicture view={view} />
         <LeechHint view={view} />
       </Face>
     );
@@ -267,6 +291,7 @@ export const CardFront = memo(function CardFront({ view, isNew, speech }: FacePr
           </span>
           <p className="font-serif text-xl text-fg-muted">{meaningOf(sense)}</p>
         </div>
+        <FrontPicture view={view} />
         <LeechHint view={view} />
       </Face>
     );
@@ -285,12 +310,13 @@ export const CardFront = memo(function CardFront({ view, isNew, speech }: FacePr
           className="mt-3 max-w-md"
         />
       )}
+      <FrontPicture view={view} />
       <LeechHint view={view} />
     </Face>
   );
 });
 
-function SenseList({ view }: { view: CardView }) {
+function SenseList({ view, align = 'center' }: { view: CardView; align?: 'center' | 'start' }) {
   const { t } = useTranslation();
   const { sense } = view;
   // A per-sense recognition card (split leech) covers only its own sense.
@@ -299,8 +325,8 @@ function SenseList({ view }: { view: CardView }) {
     const only = senses[0];
     if (!only) return null;
     return (
-      <div className="flex flex-col items-center gap-1.5">
-        <p className="font-serif text-3xl leading-snug font-semibold text-fg">{meaningOf(only)}</p>
+      <div className={cn('flex flex-col gap-1.5', align === 'start' ? 'items-start' : 'items-center')}>
+        <p className="font-serif text-3xl leading-snug font-semibold break-words text-fg">{meaningOf(only)}</p>
         {only.gloss_en && (
           <p className="text-[0.9375rem] text-fg-muted">
             {only.pos && <span className="italic">{posLabel(t, only.pos)} · </span>}
@@ -404,7 +430,9 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
           </div>
           <Ipa ipa={note.ipa} />
         </div>
-        <SenseList view={view} />
+        <BesidePicture view={view}>
+          <SenseList view={view} align={view.image ? 'start' : 'center'} />
+        </BesidePicture>
         {/* The mnemonic of the sense asked this time (a split card: always its own sense). */}
         {(sense ? [sense] : view.senses).map((s) => (
           <CardMnemonic key={s.id} senseId={s.id} className="text-center" />
@@ -445,12 +473,14 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
         </div>
       </div>
       <div className="flex w-full max-w-md flex-col items-center gap-1 border-t border-border pt-4">
-        <p className="font-serif text-xl text-fg">{meaningOf(sense)}</p>
-        {sense.gloss_en && (
-          <p lang="en" className="text-sm text-fg-muted">
-            {sense.gloss_en}
-          </p>
-        )}
+        <BesidePicture view={view}>
+          <p className="font-serif text-xl break-words text-fg">{meaningOf(sense)}</p>
+          {sense.gloss_en && (
+            <p lang="en" className="text-sm text-fg-muted">
+              {sense.gloss_en}
+            </p>
+          )}
+        </BesidePicture>
       </div>
       <CardMnemonic senseId={sense.id} className="text-center" />
       {card.card_type === 'production' && sentence}

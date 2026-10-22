@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { Settings, ThemePref } from '@/domain/types';
 import { Button, SegmentedControl, Select, Skeleton, Slider, Switch } from '@/ui';
 import { FsrsOptimizerRow, RetentionHelper } from '@/features/fsrs/FsrsSettings';
+import { ImageSettingsRows } from '@/features/images/ImageSettings';
 import { SettingsRow, SettingsSection } from './SettingsLayout';
 import { setTheme } from './themeSync';
 import { useAppSettings } from './useAppSettings';
@@ -146,6 +147,7 @@ export function AppearanceSection() {
         />
         <p className="-mt-1 text-sm text-fg-muted">{t('settings.appearance.hint')}</p>
       </SettingsRow>
+      <ImageSettingsRows />
     </SettingsSection>
   );
 }
