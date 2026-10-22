@@ -189,7 +189,7 @@ try {
     await page.evaluate(() => window.scrollBy(0, 330));
     await shoot(page, '4-add-from-text', theme);
 
-    await page.goto(`${base}/stats`);
+    await page.goto(`${base}/stats?tab=gelisim`);
     await shoot(page, '5-stats', theme);
 
     await page.goto(`${base}/settings`);
