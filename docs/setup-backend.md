@@ -341,6 +341,37 @@ Check in **SQL Editor**: `select cefr, count(*) from public.word_bank group by 1
 and `select state, count(*) from public.word_bank_jobs group by 1;`. In the app, open
 Ekle → "Kelime Bankası'nı aç": the list downloads once and then works offline.
 
+### 14.1 Review pass (clean-up, decision 0040)
+
+The first bank was written by Claude Haiku and about one meaning in twenty is wrong. The review
+sends every bank row once more to a stronger model (Claude Sonnet 5.5 by default), 25 rows per
+request, and applies its corrections: wrong meanings or examples are fixed, redundant meanings
+dropped. Expected cost for the whole bank about **$1–2** (upper bound reserved ≈ $13.5, from
+the same monthly Claude credit).
+
+Needs: the migration `20261026001300_word_bank_review.sql` deployed (step 5), the same
+secrets as above.
+
+1. **Plan.** **Actions → Word bank job → Run workflow**, job `review-plan`. Sends nothing; the
+   log shows the rows left to review, the number of requests, `estimatedUsd` and
+   `upperBoundUsd`. (Or job `review` with **dry_run** ticked: the same.)
+2. **Send.** Job `review` (dry_run off; `max` empty = all rows): collects nothing the first
+   time, reserves the upper bound and sends one Message Batch.
+3. **Apply.** After the batch ends (usually within an hour, at most 24 h) run job `review`
+   again. The log shows `rowsChanged`, `sensesKept` / `sensesFixed` / `sensesDropped`,
+   `rowsRetired`, `fixesRejected`, `retried`, `failed`, `stale`, the cost and up to 40 example
+   changes (`lemma (pos) fix: old → new [reason]`): read them. The few rows with a rejected
+   correction are sent again in the same run; run `review` once more for them. Done when
+   `review-plan` shows `pending: 0`.
+
+Changed rows reach devices on their next bank download (at most once a day, when the screen
+opens); rows with nothing left are retired and disappear. Cards users already made keep their
+own text. Optional variable: `CLAUDE_WORDBANK_REVIEW_MODEL`.
+
+Check in **SQL Editor**: `select state, count(*) from public.word_bank_review group by 1;`
+and, for the changes, `select lemma_norm, pos, outcome from public.word_bank_review where
+previous_senses is not null limit 50;` (`previous_senses` holds the row before the change).
+
 ## Manual deploy without GitHub (alternative)
 
 From the repository root, with the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started)

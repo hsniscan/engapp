@@ -1182,3 +1182,122 @@ Answer with JSON only: {"lemma": string, "senses": [{"given": number, "meaning_t
   }
 }
 ```
+
+## Word bank review (`wordbank-review-v1`)
+
+The review pass of the Kelime Bankası (decision 0040): `scripts/word-bank.ts review-submit` /
+`review-collect` (logic `scripts/lib/word-bank-review.ts`, prompt
+`scripts/lib/word-bank-review-prompt.ts`), run by the "Word bank job" workflow (jobs
+`review-plan`, `review`). A second, stronger model reads the finished bank rows once and
+names the meanings that are wrong, odd or redundant. No user input.
+
+- **Input.** 25 bank rows per request, as numbered plain lines: `n. lemma (pos, level)` and
+  per meaning `k) meaning_tr | example_en | example_tr`; on a retry a `note` naming why the
+  previous correction was rejected. Nothing else (no ids, no bookkeeping).
+- **Answer.** Only the changes: per wrong meaning `fix` (the parts that change, an English
+  definition when the Turkish meaning changes) or `drop`, with a short reason. Meanings not
+  named are kept.
+- **Model.** `CLAUDE_WORDBANK_REVIEW_MODEL`, else `DEFAULT_WORDBANK_REVIEW_MODEL` in
+  `_shared/image-models.ts` (Claude Sonnet 5.5), Message Batches API (half price),
+  `max_tokens` 6000, no extended thinking (Sonnet 5.5: `thinking: between_tools`; another
+  model: adaptive), effort `low`, structured output with the schema below, the system prompt
+  cached. Expected ≈ $0.005 per request (≈ $1.9 for ~9,545 rows, a deliberately high
+  estimate), upper bound reserved ≈ $13.5.
+- **Checks** (`reviewRow`): the same as generation: a changed Turkish meaning ≤ 120
+  characters of clean text without brackets and with an English definition; the example ≤ 20
+  words, clean, containing the word (`exampleSpan`); a Turkish translation that is not the
+  English sentence (a new English example needs its translation); no near-duplicate meanings
+  in a row afterwards (`isDuplicateSense`, then the same lexicon sense). A rejected fix keeps
+  the meaning as it was and the row is asked again once with the problem named; the second
+  answer's valid changes are applied. A row with every meaning dropped is retired.
+- **Lexicon.** A changed Turkish meaning is a different meaning: it goes through
+  `lexicon_upsert` (with its near-duplicate guard) and the bank sense links the returned
+  sense. Existing lexicon senses are never edited (users' notes and other features point to
+  them); `word_bank_review.outcome` lists the senses judged wrong for a later reviewed
+  lexicon clean-up.
+
+### System prompt
+
+```text
+You check flashcard content for Turkish speakers who learn English words. Another model wrote it; about one meaning in twenty is wrong. Find those.
+
+You receive numbered words. Each has a part of speech, a CEFR level and 1 to 3 numbered meanings. A meaning is: the Turkish meaning | an English example sentence | its Turkish translation.
+
+A meaning is wrong when:
+- the Turkish meaning is not a meaning of this word in this part of speech, or a rare, figurative or wrong sense where a common one is expected (scythe: "ölüm meleği" instead of "tırpan");
+- the example does not show this meaning, or uses the word in another part of speech or wrongly ("She felt reminiscent" is not English);
+- the Turkish translation is wrong, unnatural, has junk text (a stray English word or label), or translates the word with a different meaning than the Turkish meaning says;
+- it repeats another meaning of the same word (synonyms belong together in one meaning: "davet, davetiye", not two meanings).
+
+For function words (the, a, in, all, some ...) the Turkish meaning may describe the use ("belirli tanımlık" is fine); the example and its translation must match that use.
+
+For each wrong meaning give one change:
+- action "fix": write only the parts that must change; leave the others "". meaning_tr: short Turkish meaning, lower case, synonyms separated by ", ", no brackets. When you change meaning_tr, also give gloss_en: a short English definition of the new meaning (at most 12 words). example_en: a natural English sentence of at most 12 words for a learner at the word's level, containing the word itself unchanged or with a regular ending (-s, -es, -ed, -d, -ing, -er, -est), no irregular forms. When you change example_en, also give example_tr. example_tr: a natural Turkish translation of the (new or old) example_en.
+- action "drop": the meaning is redundant or not worth learning. Never drop every meaning of a word: fix the best one instead.
+- reason: at most 8 English words, why.
+
+Content: everyday, neutral situations. No real people, brands, politics, religion, violence or adult topics.
+
+Meanings you do not list are kept unchanged. Most words need no change. Answer with JSON only: {"changes": [{"word": number, "meaning": number, "action": "fix" | "drop", "meaning_tr": string, "gloss_en": string, "example_en": string, "example_tr": string, "reason": string}]}; an empty list when everything is right.
+```
+
+### Response schema
+
+```json
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "changes"
+  ],
+  "properties": {
+    "changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "word",
+          "meaning",
+          "action",
+          "meaning_tr",
+          "gloss_en",
+          "example_en",
+          "example_tr",
+          "reason"
+        ],
+        "properties": {
+          "word": {
+            "type": "integer"
+          },
+          "meaning": {
+            "type": "integer"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "fix",
+              "drop"
+            ]
+          },
+          "meaning_tr": {
+            "type": "string"
+          },
+          "gloss_en": {
+            "type": "string"
+          },
+          "example_en": {
+            "type": "string"
+          },
+          "example_tr": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
+```

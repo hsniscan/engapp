@@ -327,6 +327,12 @@ Copying cards to another account does not copy them (decision 0009).
   `created_at`, `updated_at` service-only), `word_bank_jobs` and `word_bank_batches` (service
   role only), `word_bank_pending(limit)` and `word_bank_put(rows)` (service role only).
   `image_budget_holds.purpose` gains `wordbank`.
+- Review pass (migration `20261026001300_word_bank_review.sql`, decision 0040):
+  `word_bank_review` (per bank row: `state`, `attempt`, `batch_id`, `custom_id`, `last_error`,
+  `input`, `outcome`, `previous_senses`, `model`, `prompt_version`, `cost_usd`, `reviewed_at`)
+  and `word_bank_review_batches`, service role only; `word_bank_review_pending(limit)` and
+  `word_bank_review_apply(rows)` (changes a bank row only while it still has the reviewed
+  senses). A corrected or retired row gets a new `server_seq`, so devices pull it again.
 - Adding a word (`data/wordBank.ts` `addFromWordBank`) calls `addNoteWithSenses` with the term,
   `lexicon_term_id` and per chosen sense `pos`, `meaning_tr`, `lexicon_sense_id`,
   `source_sentence` (the example), `source_sentence_tr` and `span`. A word that already has a

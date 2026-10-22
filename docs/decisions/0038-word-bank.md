@@ -131,3 +131,12 @@ server_seq`); no client writes. This is the first table a guest reads: the conte
   content is shared under CC BY-SA 4.0 too (`docs/licenses.md`), stated in the app.
 - **Budget function change.** `image_budget_release_stale` is redefined to skip `wordbank`
   holds; picture holds behave as before.
+
+## Addendum: review pass (decision 0040)
+
+About one meaning in twenty of the Haiku-made rows was wrong. A one-time review job
+(`review-submit` / `review-collect`, workflow jobs `review-plan` and `review`, migration
+`20261026001300_word_bank_review.sql`) sends every row to Claude Sonnet 5.5 in groups of 25 and
+applies its fixes and drops with the same checks as generation; changed rows get a new
+`server_seq` so devices pull them, a row with nothing left is retired, users' existing cards are
+untouched. Details: `0040-word-bank-review.md`.

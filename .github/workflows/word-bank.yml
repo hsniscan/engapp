@@ -11,13 +11,21 @@
 # reports nothing pending. With the repository variable WORD_BANK_NIGHTLY=true the `run` step
 # also happens every night.
 #
+# Review pass (decision 0040): `review-plan` reports how many rows still need their review and
+# the estimated / upper-bound cost (sends nothing); `review` collects finished review batches,
+# applies the corrections and prints example changes, then sends the rows not yet reviewed
+# (max = at most this many rows; dry_run = report only). Run `review` again after the batch
+# ends (usually within an hour) to apply it. Model: CLAUDE_WORDBANK_REVIEW_MODEL, else the
+# default Sonnet (about $1-2 for the whole bank).
+#
 # Repository secrets:
 #   ANTHROPIC_API_KEY          Claude API key (without it submit/collect are skipped)
 #   SUPABASE_SERVICE_ROLE_KEY  optional: the project's service_role (or sb_secret_) key.
 #                              Without it the key is read through the Management API with
 #   SUPABASE_ACCESS_TOKEN      (needs the "API keys: Read" permission / a full-access token).
 # Repository variables (optional): CLAUDE_WORDBANK_MODEL (else CLAUDE_CHECK_MODEL, else the
-#   default Haiku), CLAUDE_MONTHLY_CREDIT_USD (default 100), WORD_BANK_NIGHTLY
+#   default Haiku), CLAUDE_WORDBANK_REVIEW_MODEL (else the default Sonnet),
+#   CLAUDE_MONTHLY_CREDIT_USD (default 100), WORD_BANK_NIGHTLY
 name: Word bank job
 
 on:
@@ -26,16 +34,16 @@ on:
   workflow_dispatch:
     inputs:
       job:
-        description: 'plan: report only; run: collect finished batches, then submit the rest; collect / submit: one step; sample: print the newest rows (max = how many)'
+        description: 'plan: report only; run: collect finished batches, then submit the rest; collect / submit: one step; sample: print the newest rows (max = how many); review-plan: review cost, sends nothing; review: apply finished review batches, then send the rest'
         type: choice
-        options: [plan, run, collect, submit, sample]
+        options: [plan, run, collect, submit, sample, review-plan, review]
         default: plan
       max:
-        description: 'submit: at most this many words in the batch (empty: 10000)'
+        description: 'submit / review: at most this many words in the batch (empty: 10000)'
         type: string
         default: ''
       dry_run:
-        description: 'submit: build the batch and report its cost, send nothing'
+        description: 'submit / review: build the batch and report its cost, send nothing'
         type: boolean
         default: false
 
@@ -67,6 +75,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           CLAUDE_WORDBANK_MODEL: ${{ vars.CLAUDE_WORDBANK_MODEL }}
+          CLAUDE_WORDBANK_REVIEW_MODEL: ${{ vars.CLAUDE_WORDBANK_REVIEW_MODEL }}
           CLAUDE_CHECK_MODEL: ${{ vars.CLAUDE_CHECK_MODEL }}
           CLAUDE_MONTHLY_CREDIT_USD: ${{ vars.CLAUDE_MONTHLY_CREDIT_USD }}
           SERVICE_KEY_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -76,7 +85,7 @@ jobs:
           DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
         run: |
           set -euo pipefail
-          case "$JOB" in plan|run|collect|submit|sample) ;; *) echo "::error::Unknown job"; exit 1 ;; esac
+          case "$JOB" in plan|run|collect|submit|sample|review-plan|review) ;; *) echo "::error::Unknown job"; exit 1 ;; esac
           if [ -n "$MAX" ] && ! [[ "$MAX" =~ ^[0-9]{1,5}$ ]]; then echo "::error::max must be a whole number"; exit 1; fi
           key="$SERVICE_KEY_SECRET"
           if [ -z "$key" ]; then
@@ -121,5 +130,15 @@ jobs:
               ;;
             sample)
               node scripts/word-bank.ts sample ${MAX:+--limit "$MAX"}
+              ;;
+            review-plan)
+              node scripts/word-bank.ts review-submit --dry-run ${MAX:+--max "$MAX"}
+              ;;
+            review)
+              if [ -z "$DRY_RUN" ]; then node scripts/word-bank.ts review-collect; fi
+              review_args=(review-submit)
+              if [ -n "$MAX" ]; then review_args+=(--max "$MAX"); fi
+              if [ -n "$DRY_RUN" ]; then review_args+=("$DRY_RUN"); fi
+              node scripts/word-bank.ts "${review_args[@]}"
               ;;
           esac
