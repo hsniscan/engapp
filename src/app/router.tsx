@@ -115,6 +115,12 @@ const children: RouteObject[] = [
     }),
   },
   { path: 'auth', element: <AuthPage /> },
+  {
+    // "Paylaş → Engapp": Android share sheet and the PWA's Web Share Target (decision 0034).
+    path: 'share',
+    HydrateFallback: () => null,
+    lazy: async () => ({ Component: (await import('@/features/share/SharePage')).SharePage }),
+  },
 ];
 
 children.push({ path: '*', element: <NotFoundPage /> });

@@ -54,6 +54,7 @@ export async function startNative(): Promise<void> {
   startSystemBars();
   startBackButton();
   const tasks: [string, () => Promise<unknown>][] = [
+    ['native.share', async () => (await import('./share')).startShareTarget()],
     ['native.reminders', async () => (await import('./reminders')).startNativeReminders()],
   ];
   for (const [where, run] of tasks) await run().catch((e: unknown) => void logError(e, where));
