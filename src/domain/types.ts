@@ -153,6 +153,86 @@ export interface LevelTest {
   hlc: string;
 }
 
+/** A category of the weekly report (domain/retention.ts groups), with its counted answers. */
+export interface ReportGroupStat {
+  dimension: 'term_type' | 'level' | 'topic' | 'source' | 'pos' | 'card_type';
+  key: string;
+  n: number;
+  passed: number;
+}
+
+/** A goal and how far the week got (domain/goals.ts). */
+export interface ReportGoalStat {
+  key: 'week_active_days' | 'week_minutes' | 'month_new_terms';
+  target: number;
+  value: number;
+}
+
+/**
+ * The numbers of one weekly report (v0.3 İP7, domain/weeklyReport.ts). Computed on the device
+ * by fixed rules; the AI comment never changes them.
+ */
+export interface WeeklyReportSummary {
+  v: 1;
+  /** Monday of the week (local day key). */
+  week: string;
+  /** Sunday of the week. */
+  week_end: string;
+  active_days: number;
+  /** Answers (reviews, learning steps and new cards). */
+  reviews: number;
+  minutes: number;
+  /** New cards seen for the first time. */
+  new_cards: number;
+  /** Notes whose first card first reached the review stage this week ("öğrenildi"). */
+  new_learned: number;
+  /** The week's counted answers (domain/retention.ts rule). */
+  retention: { n: number; passed: number };
+  /** Window of the categories: the week (7), or 28 days when no category had 20 answers in it. */
+  groups_days: 7 | 28;
+  strongest: ReportGroupStat | null;
+  weakest: ReportGroupStat | null;
+  /** The streak at the end of the week. */
+  streak: number;
+  goals: ReportGoalStat[];
+  /** One key of REPORT_FOCUS_KEYS (supabase/functions/_shared/report-contracts.ts). */
+  focus: string;
+  /** Notes of the focus action (practice list, the words for mnemonics), at most 20. */
+  focus_note_ids: Id[];
+  /** Number of the focus action (the suggested new-card limit), else null. */
+  focus_value: number | null;
+}
+
+/**
+ * One weekly report. Synced, insert-only, one row per user and week (the server keeps the
+ * first one). `comment` is the AI's 3–4 sentences, or null when it could not be had.
+ */
+export interface WeeklyReport {
+  id: Id;
+  user_id: string | null;
+  week: string;
+  summary: WeeklyReportSummary;
+  comment: string | null;
+  comment_model: string | null;
+  prompt_version: string | null;
+  device_id: string;
+  created_at: Millis;
+  hlc: string;
+}
+
+/**
+ * A report whose comment has not come yet (offline, signed out): local only, not synced. It is
+ * shown like a report and becomes a weekly_reports row when the comment arrives or the wait
+ * ends (data/weeklyReport.ts).
+ */
+export interface ReportDraft {
+  week: string;
+  report: WeeklyReport;
+  attempts: number;
+  next_attempt_at: Millis;
+  last_error: string | null;
+}
+
 export type KnownTermSource = 'test' | 'preview' | 'manual' | 'auto';
 
 /** A word the user knows without a card ("Biliyorum"). Deleting it is a tombstone. */
@@ -293,6 +373,15 @@ export interface Settings extends SyncedRow {
    * start hour, fixed: the chosen one) so the server can use it. Absent/null = off.
    */
   notify?: NotifySetting | null;
+  /**
+   * v0.3 İP7: goals on the continuity panel (domain/goals.ts). Every field optional; absent
+   * or null = no goal of that kind. Never carried to another account.
+   */
+  goals?: {
+    week_active_days?: number | null;
+    month_new_terms?: number | null;
+    week_minutes?: number | null;
+  } | null;
 }
 
 /** settings.notify (domain/notify.ts). */
@@ -487,12 +576,14 @@ export type OutboxTable =
   | 'user_content'
   | 'decks'
   | 'level_tests'
-  | 'known_terms';
+  | 'known_terms'
+  | 'weekly_reports';
 /** Synced tables whose rows are never changed or deleted. */
 export const INSERT_ONLY_TABLES = [
   'review_logs',
   'practice_logs',
   'level_tests',
+  'weekly_reports',
 ] as const satisfies readonly OutboxTable[];
 export type InsertOnlyTable = (typeof INSERT_ONLY_TABLES)[number];
 

@@ -19,6 +19,7 @@ import {
   settingsSchema,
   sourceSchema,
   userContentSchema,
+  weeklyReportSchema,
 } from '@/domain/schemas';
 import type {
   Card,
@@ -27,6 +28,7 @@ import type {
   Deck,
   KnownTerm,
   LevelTest,
+  WeeklyReport,
   LexiconSense,
   Note,
   OutboxTable,
@@ -77,6 +79,7 @@ export interface RowByTable {
   decks: Deck;
   level_tests: LevelTest;
   known_terms: KnownTerm;
+  weekly_reports: WeeklyReport;
 }
 export type PulledRow = {
   [T in OutboxTable]: { table: T; seq: number; row: RowByTable[T] };
@@ -95,6 +98,7 @@ const ROW_SCHEMAS: { [T in OutboxTable]: z.ZodType<RowByTable[T]> } = {
   decks: deckSchema,
   level_tests: levelTestSchema,
   known_terms: knownTermSchema,
+  weekly_reports: weeklyReportSchema,
 };
 
 const pullEnvelope = z.object({

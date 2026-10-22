@@ -37,6 +37,8 @@ const LATE_COLUMNS: Readonly<Record<string, Readonly<Record<string, unknown>>>> 
     fsrs_params_prev: null,
     fsrs_opt_at: null,
     notify: null,
+    // v0.3 İP7
+    goals: null,
   },
 };
 

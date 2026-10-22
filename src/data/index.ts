@@ -5,6 +5,26 @@ export * from './actions';
 export * from './queries';
 export * from './examples';
 export * from './mnemonics';
+export {
+  computeWeeklySummary,
+  deferReportDraft,
+  draftExpired,
+  dueReportDrafts,
+  ensureWeeklyReport,
+  finalizeReportDraft,
+  getGoalsView,
+  getReportNotice,
+  listReportDrafts,
+  listWeeklyReports,
+  markReportSeen,
+  REPORT_COMMENT_WAIT_MS,
+  REPORT_MAX_ATTEMPTS,
+  reportSeenKey,
+  setGoals,
+  type EnsureReportOutcome,
+  type GoalsView,
+  type ReportListItem,
+} from './weeklyReport';
 export { addExtraNew, getMoreStudyOverview, MAX_EXTRA_NEW_STEP, type MoreStudyOverview } from './extraStudy';
 export {
   computeWorkload,

@@ -83,7 +83,12 @@ describe('compactOutboxEntries', () => {
     expect(plan).toEqual({ remove: [1], update: [{ seq: 5, attempts: 3, next_attempt_at: 900 }] });
   });
 
-  it('guests: review, practice and level-test logs are re-queued at sign-in', () => {
-    expect([...GUEST_REQUEUED_TABLES].sort()).toEqual(['level_tests', 'practice_logs', 'review_logs']);
+  it('guests: review, practice and level-test logs and weekly reports are re-queued at sign-in', () => {
+    expect([...GUEST_REQUEUED_TABLES].sort()).toEqual([
+      'level_tests',
+      'practice_logs',
+      'review_logs',
+      'weekly_reports',
+    ]);
   });
 });

@@ -245,6 +245,20 @@ synced tables and not in the registry: they are server state, written only throu
 `push_subscribe` / `push_unsubscribe` (owner = `auth.uid()`) and the `push-send` function
 (service role). Clients can read their own rows. Decision 0024.
 
+## Weekly reports and goals (v0.3 İP7, migration 20261023000900, decision 0027)
+
+`weekly_reports` is insert-only and registered (`insert_only = true`). It is a
+`LATE_SYNC_TABLES` table, and Dexie v20 records it for the one-time re-pull. The server keeps
+one row per user and week: there is a unique index on `(user_id, week)`, and the
+`weekly_reports_one_per_week` BEFORE INSERT trigger returns null for a second row of a week.
+The push of that second row is therefore acked like a repeated id and never waits in the
+outbox. On pull, the stored row replaces the device's own report of that week, along with
+its outbox row and its local draft (`applyRemoteReport`, `src/data/maintenance.ts`). Drafts
+(`report_drafts`) are never synced, so a synced report never changes. `purge_tombstones`
+skips insert-only tables, so reports are never purged. `settings.goals` is a nullable jsonb
+settings column: `_sync_upsert` keeps it when a push leaves it out, and `fillLateColumns`
+takes the server's value for an equal HLC.
+
 ## Edge cases (plan table) and where they are handled
 
 | Case                                      | Handling                                                                      |

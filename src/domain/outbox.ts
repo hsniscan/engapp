@@ -12,7 +12,12 @@ export type OutboxEntry = Pick<OutboxRow, 'table' | 'row_id' | 'attempts' | 'nex
  * outbox entries are redundant: the first sign-in (adoptGuestData) queues every row of
  * these tables again, and nothing is pushed before it.
  */
-export const GUEST_REQUEUED_TABLES: readonly OutboxTable[] = ['review_logs', 'practice_logs', 'level_tests'];
+export const GUEST_REQUEUED_TABLES: readonly OutboxTable[] = [
+  'review_logs',
+  'practice_logs',
+  'level_tests',
+  'weekly_reports',
+];
 
 export interface OutboxCompaction {
   /** Entries to delete: covered by a newer entry of the same row, or in a dropped table. */

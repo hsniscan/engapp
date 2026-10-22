@@ -442,14 +442,16 @@
     "last30Detail_other": "{{count}} aktif gün",
     "avgTime": "Günlük ortalama süre",
     "avgTimeDetail": "Aktif günlerde, son 30 gün",
-    "retention": "Tutma oranı",
-    "retentionDetail": "Tekrardaki kartlar, son 30 gün",
+    "retention": "Hatırlama, son 30 gün",
+    "retentionDetail": "Tekrardaki kartlara verdiğin bütün cevaplar sayılır.",
     "retentionNone": "Henüz yeterli veri yok",
     "learned": "Öğrenilen kart",
     "learnedDetail": "Tekrar aşamasındaki kartlar",
     "tabsLabel": "İstatistik bölümleri",
     "tabContinuity": "Süreklilik",
-    "tabProgress": "Gelişim"
+    "tabProgress": "Gelişim",
+    "retentionHint": "Gelişim sekmesindeki tutma oranı başka bir ölçüdür: orada her kartın günün ilk cevabı, son 90 gün sayılır.",
+    "tabReport": "Haftalık rapor"
   },
   "progress": {
     "loading": "Gelişim hesaplanıyor…",
@@ -472,7 +474,7 @@
     "groups": {
       "title": "Kategorilere göre tutma oranı",
       "subtitle": "Son 90 gün. Oran, en az 20 cevap olunca gösterilir.",
-      "overall": "Genel tutma oranı",
+      "overall": "Tutma oranı, son 90 gün",
       "dimension": "Kategori",
       "dimensions": {
         "term_type": "Kelime türü",
@@ -495,7 +497,8 @@
         "source": "Elle eklenenler",
         "pos": "Türü belirtilmemiş"
       },
-      "empty": "Son 90 günde sayılan cevap yok."
+      "empty": "Son 90 günde sayılan cevap yok.",
+      "overallHint": "Süreklilik sekmesindeki \"Hatırlama, son 30 gün\" bütün cevapları sayar; bu oran yalnızca her kartın günün ilk cevabını sayar, o yüzden ikisi farklı çıkabilir."
     },
     "series": {
       "title": "Son 12 hafta",
@@ -1888,5 +1891,98 @@
       "words_one": "{{n}} kelime",
       "words_other": "{{n}} kelime"
     }
+  },
+  "report": {
+    "title": "Geçen haftanın raporu",
+    "weekRange": "{{from}} – {{to}}",
+    "loading": "Rapor hazırlanıyor…",
+    "empty": "İlk raporun, çalışmaya başladığın haftadan sonraki pazartesi burada olacak.",
+    "numbersLabel": "Haftanın sayıları",
+    "activeDays": "Çalıştığın gün",
+    "activeDaysValue": "{{count}} / 7",
+    "reviews": "Tekrar",
+    "minutes": "Süre",
+    "minutesValue": "{{count}} dk",
+    "newLearned": "Yeni öğrenilen kelime",
+    "retention": "Hatırladığın kartlar",
+    "retentionFew": "veri az",
+    "retentionHint": "Tekrardaki kartlarda her kartın günün ilk cevabı sayılır. Oran en az 20 cevap olunca gösterilir.",
+    "streak": "Seri",
+    "streakValue_one": "{{count}} gün",
+    "streakValue_other": "{{count}} gün",
+    "strongest": "En iyi hatırladığın: {{group}}, {{rate}}",
+    "weakest": "En çok zorlandığın: {{group}}, {{rate}}",
+    "noGroups": "En güçlü ve en zayıf yanını göstermek için bir kategoride en az 20 cevap gerekiyor.",
+    "groups28": "Bu haftaki cevaplar az olduğu için son 28 güne bakıldı.",
+    "groupName": "{{name}} ({{dimension}})",
+    "goalsTitle": "Hedeflerin",
+    "goalLine": "{{label}}: {{value}} / {{target}}",
+    "commentTitle": "Yorum",
+    "commentPending": "Yorum, internete bağlanınca eklenecek. Sayılar şimdiden hazır.",
+    "commentNone": "Bu hafta için yorum yok.",
+    "commentNote": "Yorumu yapay zekâ yazdı; sayıları uygulama hesapladı.",
+    "focusTitle": "Bu haftaki önerimiz",
+    "focus": {
+      "lower_new_limit": "Önümüzdeki günlerde tekrar sayın artıyor. Günlük yeni kart sınırını {{value}} yaparsan yükün hafifler.",
+      "come_back": "Geçen hafta az çalıştın. Kısa bir tekrarla yeniden başlamak en kolayı.",
+      "practice_weakest": "En çok zorlandığın kelimelerle kısa bir pratik turu yap.",
+      "practice_gap": "Bazı kelimeleri tanıyorsun ama İngilizcesini söylemekte zorlanıyorsun. Bunlarla kısa bir pratik yap.",
+      "mnemonic_hard": "Birkaç kelimeyi sık sık unutuyorsun. Bunlar için akılda tutma ipucu yazmak işe yarar.",
+      "add_words": "Bekleyen yeni kartın kalmadı. Öğrenmek istediğin yeni kelimeler ekle.",
+      "keep_going": "Her şey yolunda. Böyle devam et."
+    },
+    "action": {
+      "lower_new_limit": "Sınırı {{value}} yap",
+      "lower_new_limitDone": "Günlük yeni kart sınırın artık {{value}}.",
+      "come_back": "Tekrara başla",
+      "practice_weakest_one": "{{count}} kelimeyle pratik yap",
+      "practice_weakest_other": "{{count}} kelimeyle pratik yap",
+      "practice_gap_one": "{{count}} kelimeyle pratik yap",
+      "practice_gap_other": "{{count}} kelimeyle pratik yap",
+      "mnemonic_hard": "İlk kelimeyi aç",
+      "add_words": "Kelime ekle",
+      "keep_going": "Tekrara başla"
+    },
+    "pastTitle": "Önceki raporlar",
+    "pastEmpty": "Henüz önceki rapor yok.",
+    "pastSummary": "{{days}} gün · {{reviews}} tekrar · {{learned}} yeni kelime",
+    "homeNote": "Geçen haftanın raporu hazır.",
+    "homeOpen": "Raporu aç"
+  },
+  "goals": {
+    "title": "Hedeflerin",
+    "intro": "Kendine bir hedef koy; ilerlemeni burada görürsün.",
+    "set": "Hedef koy",
+    "change": "Hedefleri değiştir",
+    "dialogTitle": "Hedeflerin",
+    "dialogDescription": "İstediğin hedefi doldur, istemediğini boş bırak. Önerilen değerler son haftalarına göre hesaplanır.",
+    "week_active_days": "Haftada çalışma günü",
+    "week_minutes": "Haftada çalışma süresi (dakika)",
+    "month_new_terms": "Ayda yeni kelime",
+    "short": {
+      "week_active_days": "Bu hafta çalıştığın gün",
+      "week_minutes": "Bu hafta çalışma süresi",
+      "month_new_terms": "Bu ay öğrenilen kelime"
+    },
+    "unit": {
+      "week_active_days_one": "{{count}} gün",
+      "week_active_days_other": "{{count}} gün",
+      "week_minutes_one": "{{count}} dk",
+      "week_minutes_other": "{{count}} dk",
+      "month_new_terms_one": "{{count}} kelime",
+      "month_new_terms_other": "{{count}} kelime"
+    },
+    "ringLabel": "{{label}}: {{value}} / {{target}}",
+    "met": "Tamam",
+    "suggestion": "Önerimiz: {{value}}",
+    "suggestionHistory_one": "Son {{count}} haftanın iyi günlerine göre.",
+    "suggestionHistory_other": "Son {{count}} haftanın iyi günlerine göre.",
+    "suggestionDefault": "Yeterli geçmiş olmadığı için başlangıç önerisi.",
+    "useSuggestion": "Öneriyi kullan",
+    "range": "{{min}} ile {{max}} arasında bir sayı yaz.",
+    "rangeStep": "{{min}} ile {{max}} arasında, {{step}} ve katları olan bir sayı yaz.",
+    "saved": "Hedeflerin kaydedildi.",
+    "cleared": "Hedeflerin kaldırıldı.",
+    "clearAll": "Hedefleri kaldır"
   }
 }

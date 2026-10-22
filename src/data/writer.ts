@@ -21,6 +21,7 @@ import type {
   Source,
   SyncedRow,
   UserContent,
+  WeeklyReport,
 } from '../domain/types';
 import { db } from './db';
 import { getDeviceId, getMeta, META, setMeta } from './meta';
@@ -143,6 +144,19 @@ export class SyncWriter {
     if (tests.length === 0) return;
     await db.level_tests.bulkAdd([...tests]);
     if (queue) for (const test of tests) this.enqueue('level_tests', test.id, 'upsert', test);
+  }
+
+  /** weekly_reports are insert-only: one row per week, never changed (v0.3 İP7). */
+  async insertWeeklyReport(report: WeeklyReport): Promise<void> {
+    await db.weekly_reports.add(report);
+    this.enqueue('weekly_reports', report.id, 'upsert', report);
+  }
+
+  /** Many weekly reports at once (restore); bulkAdd fails if an id exists. `queue`: see insertLogs. */
+  async insertWeeklyReports(reports: readonly WeeklyReport[], queue = true): Promise<void> {
+    if (reports.length === 0) return;
+    await db.weekly_reports.bulkAdd([...reports]);
+    if (queue) for (const report of reports) this.enqueue('weekly_reports', report.id, 'upsert', report);
   }
 
   enqueue(table: OutboxTable, rowId: Id, op: OutboxRow['op'], payload: unknown): void {

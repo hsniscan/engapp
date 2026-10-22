@@ -35,7 +35,7 @@ QA report:
    only when it is missing locally or newer.
 3. **Guests: no outbox entries for logs.** On a device never linked to an account
    (`meta.user_id` null) nothing has been pushed, and the first sign-in (`adoptGuestData`)
-   queues every review log, practice log and level test from the tables. Their guest entries
+   queues every review log, practice log, level test and weekly report (İP7) from the tables. Their guest entries
    are therefore redundant: guest compaction drops them, and a guest restore does not queue
    restored logs at all. Mutable rows keep one entry each (a restored row may carry another
    user id and is then pushed from its guest entry, as before).

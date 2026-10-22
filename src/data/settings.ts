@@ -7,6 +7,8 @@ import {
 import { type DayConfig, deviceTimeZone, isValidTimeZone } from '../domain/day';
 import { CAPACITY_MIN_LIMITS } from '../domain/capacity';
 import { createScheduler, RETENTION_MAX, RETENTION_MIN, type Scheduler } from '../domain/fsrs';
+import { GOAL_LIMITS, type GoalKey } from '../domain/goals';
+import { FIRST_NOTIFY_HOUR, LAST_NOTIFY_HOUR } from '../domain/notify';
 import { isValidRange, MAX_VACATION_HISTORY } from '../domain/vacation';
 import { HLC_ZERO } from '../domain/hlc';
 import type { Millis, Settings } from '../domain/types';
@@ -59,6 +61,9 @@ export async function ensureSettings(now: Millis = Date.now()): Promise<Settings
   });
 }
 
+const goalValue = (key: GoalKey) =>
+  z.number().int().min(GOAL_LIMITS[key].min).max(GOAL_LIMITS[key].max).nullable().optional();
+
 const vacationRangeSchema = z
   .object({ start: z.string(), end: z.string() })
   .refine(isValidRange, 'Invalid vacation range');
@@ -90,12 +95,21 @@ export const settingsPatchSchema = z
     catchup_auto: z.boolean(),
     vacation: vacationRangeSchema.nullable(),
     vacation_history: z.array(vacationRangeSchema).max(MAX_VACATION_HISTORY).nullable(),
-    // v0.3 İP8: the hour is resolved by domain/notify.ts (09–21).
+    // v0.3 İP8: the hour is resolved by domain/notify.ts; 09–21 here, in settingsSchema and in
+    // the push rule (decision 0024: a reminder at 22:00 would fall into the quiet hours).
     notify: z.object({
       enabled: z.boolean(),
       mode: z.enum(['auto', 'fixed']),
-      hour: z.number().int().min(9).max(21).nullable(),
+      hour: z.number().int().min(FIRST_NOTIFY_HOUR).max(LAST_NOTIFY_HOUR).nullable(),
     }),
+    // v0.3 İP7: goals on the continuity panel (domain/goals.ts); null = no goals at all.
+    goals: z
+      .object({
+        week_active_days: goalValue('week_active_days'),
+        month_new_terms: goalValue('month_new_terms'),
+        week_minutes: goalValue('week_minutes'),
+      })
+      .nullable(),
   })
   .partial();
 

@@ -3,7 +3,9 @@ import { makeLog } from '../test/factories';
 import { resetDb } from '../test/db';
 import { db } from './db';
 import { computeAutoHour, refreshAutoHour, saveNotify } from './notify';
-import { ensureSettings, getSettings, updateSettings } from './settings';
+import { parseNotify } from '../domain/notify';
+import { settingsSchema } from '../domain/schemas';
+import { ensureSettings, getSettings, settingsPatchSchema, updateSettings } from './settings';
 
 const NOW = Date.parse('2026-10-23T12:00:00+03:00');
 const at = (daysAgo: number, hour: number) =>
@@ -61,5 +63,20 @@ describe('reminder hour on the device', () => {
     expect(queued.at(-1)?.payload).toMatchObject({
       notify: { enabled: true, mode: 'auto', hour: 19 },
     });
+  });
+});
+
+describe('allowed reminder hours (09–21 everywhere, decision 0024)', () => {
+  it('the settings patch, the row schema and the push rule agree', async () => {
+    const patch = (hour: number) =>
+      settingsPatchSchema.safeParse({ notify: { enabled: true, mode: 'fixed', hour } }).success;
+    expect([8, 9, 21, 22].map(patch)).toEqual([false, true, true, false]);
+
+    const row = { ...(await getSettings(NOW)) };
+    const read = (hour: number) =>
+      settingsSchema.parse({ ...row, notify: { enabled: true, mode: 'fixed', hour } }).notify?.hour;
+    const rule = (hour: number) => parseNotify({ enabled: true, mode: 'fixed', hour })?.hour;
+    for (const h of [0, 8, 9, 15, 21, 22, 23]) expect(read(h)).toBe(rule(h));
+    expect([read(3), read(22)]).toEqual([9, 21]);
   });
 });

@@ -167,6 +167,7 @@ function GroupsSection({ view }: { view: ProgressView }) {
         </p>
       </div>
       <p className="mt-1 text-sm text-fg-muted">{t('progress.groups.subtitle')}</p>
+      <p className="mt-1 text-xs text-fg-muted">{t('progress.groups.overallHint')}</p>
       <p className="mt-4 text-[0.9375rem] text-fg">
         {report.weakest
           ? t('progress.groups.weakest', {

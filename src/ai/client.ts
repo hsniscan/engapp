@@ -73,7 +73,7 @@ export interface AiClientDeps {
 
 /** POST to an AI edge function with the session token; `parse` validates the answer. */
 export async function call<T>(
-  fn: 'ai-extract' | 'ai-enrich' | 'ai-examples' | 'ai-themes' | 'ai-mnemonic',
+  fn: 'ai-extract' | 'ai-enrich' | 'ai-examples' | 'ai-themes' | 'ai-mnemonic' | 'ai-report',
   body: unknown,
   parse: (x: unknown) => T,
   deps: AiClientDeps,

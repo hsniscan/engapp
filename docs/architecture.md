@@ -29,4 +29,10 @@
   it applies one pure rule (`supabase/functions/_shared/push-rule.ts`, re-exported by
   `src/domain/notify.ts`) to the synced settings, review logs and cards and sends at most one
   notification per user-day. The service worker shows it (`public/push-sw.js`). Decision 0024.
+* Weekly report (v0.3): computed on the device after the Monday day start
+  (`src/domain/weeklyReport.ts`, `src/data/weeklyReport.ts`, runner
+  `src/features/report/queue.ts`). The `ai-report` function receives only the numbers and
+  names from fixed lists, and writes a 3–4 sentence Turkish comment whose numbers are checked
+  on the server and again on the device (docs/ai-report.md). Reports sync as insert-only rows,
+  one per week. Decision 0027.
 * Hosting: static build on Cloudflare Pages (see `docs/decisions/0001`).

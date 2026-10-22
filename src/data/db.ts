@@ -26,6 +26,8 @@ import type {
   Source,
   UserContent,
   ThemePreview,
+  ReportDraft,
+  WeeklyReport,
 } from '../domain/types';
 import { addPullBackfill } from './backfill';
 
@@ -62,6 +64,8 @@ export class EngDb extends Dexie {
   ref_cache!: EntityTable<RefCacheRow, 'key'>;
   anki_imports!: EntityTable<AnkiImportRecord, 'id'>;
   lexicon_pair_notes!: EntityTable<LexiconPairNote, 'id'>;
+  weekly_reports!: EntityTable<WeeklyReport, 'id'>;
+  report_drafts!: EntityTable<ReportDraft, 'week'>;
 
   constructor(name = 'engapp') {
     super(name);
@@ -249,6 +253,15 @@ export class EngDb extends Dexie {
     this.version(17)
       .stores({})
       .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
+    // v20 (v0.3 İP7; 12–20 belong to the v0.3 packages): weekly reports and goals.
+    // weekly_reports is synced and insert-only (one row per week; the server keeps the first);
+    // report_drafts holds this device's report while its AI comment has not come yet (local
+    // only, cleared with the account's data). settings.goals is an optional column (absent =
+    // no goals). A device that pulled while it ran an older version dropped both: re-pull them
+    // once (data/backfill.ts; equal HLC → the server's set values, domain/syncMerge.ts).
+    this.version(20)
+      .stores({ weekly_reports: 'id, week', report_drafts: 'week' })
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings', 'weekly_reports']));
   }
 }
 

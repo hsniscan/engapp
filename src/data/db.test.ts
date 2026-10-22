@@ -5,7 +5,7 @@ import { PULL_BACKFILL_KEY } from './backfill';
 import { EngDb } from './db';
 
 /** The current schema version; bump with every new Dexie version. */
-const LATEST = 17;
+const LATEST = 20;
 
 describe('Dexie schema', () => {
   it('opens with every table and the indexes the queries rely on', async () => {
@@ -13,7 +13,7 @@ describe('Dexie schema', () => {
     await d.open();
     expect(d.verno).toBe(LATEST);
     expect(d.tables.map((t) => t.name).sort()).toEqual(
-      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs', 'decks', 'theme_previews', 'level_tests', 'known_terms', 'anki_imports', 'lexicon_pair_notes'].sort(),
+      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs', 'decks', 'theme_previews', 'level_tests', 'known_terms', 'anki_imports', 'lexicon_pair_notes', 'weekly_reports', 'report_drafts'].sort(),
     );
     const idx = (table: string) => d.table(table).schema.indexes.map((i) => i.name);
     expect(idx('decks')).toEqual(expect.arrayContaining(['sort', 'deleted_at']));
@@ -421,8 +421,9 @@ describe('Dexie schema', () => {
 
   it('v17 upgrade re-pulls settings once for the reminder setting, only on devices that pulled', async () => {
     for (const [name, cursor, expected] of [
-      // 'sources' comes from v12 (Anki import), which also runs on this v11 database.
-      ['upgrade-v17-synced', 77, ['sources', 'settings']],
+      // 'sources' comes from v12 (Anki import), which also runs on this v11 database, and
+      // 'weekly_reports' from v20.
+      ['upgrade-v17-synced', 77, ['sources', 'settings', 'weekly_reports']],
       ['upgrade-v17-fresh', 0, undefined],
     ] as const) {
       const old = new Dexie(name);
@@ -439,6 +440,36 @@ describe('Dexie schema', () => {
       expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
       // The row itself is untouched: no notify key means "off".
       expect(await d.settings.get('settings')).toEqual({ id: 'settings', theme: 'dark' });
+      expect(await d.outbox.count()).toBe(0);
+      d.close();
+      await d.delete();
+    }
+  });
+
+  it('v20 upgrade adds the weekly report tables, keeps settings and re-pulls reports and settings once', async () => {
+    for (const [name, cursor, expected] of [
+      ['upgrade-v20-synced', 91, ['settings', 'weekly_reports']],
+      ['upgrade-v20-fresh', 0, undefined],
+    ] as const) {
+      // A database as İP8 left it (version 17), with the backfill of v12–v17 already done.
+      const old = new Dexie(name);
+      old.version(1).stores({ settings: 'id', meta: 'key' });
+      old.version(17).stores({});
+      await old.open();
+      await old.table('settings').add({ id: 'settings', theme: 'dark', notify: null });
+      await old.table('meta').put({ key: 'sync_cursor', value: cursor });
+      old.close();
+
+      const d = new EngDb(name);
+      await d.open();
+      expect(d.verno).toBe(LATEST);
+      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
+      // No goals key means "no goals"; the row is untouched.
+      expect(await d.settings.get('settings')).toEqual({ id: 'settings', theme: 'dark', notify: null });
+      expect(await d.weekly_reports.count()).toBe(0);
+      expect(await d.report_drafts.count()).toBe(0);
+      expect(d.weekly_reports.schema.indexes.map((i) => i.name)).toContain('week');
+      expect(d.report_drafts.schema.primKey.name).toBe('week');
       expect(await d.outbox.count()).toBe(0);
       d.close();
       await d.delete();
