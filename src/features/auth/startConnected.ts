@@ -3,6 +3,7 @@
 // sync indicator as a safety net).
 import { kickExampleQueue, startExampleQueue } from '@/features/examples/queue';
 import { kickImportQueue, startImportQueue } from '@/features/import/queue';
+import { startPushFeatures } from '@/features/notify/start';
 import { isBackendConfigured } from '@/lib/supabase';
 import { startSyncEngine } from '@/sync';
 import { supabaseTransport } from '@/sync/engine';
@@ -26,6 +27,7 @@ export function startConnectedFeatures(): void {
       void engine.isActive();
     }
   });
+  startPushFeatures(); // before startAuth: it listens for the restored session
   startAuth();
   startSyncEngine();
   startImportQueue();

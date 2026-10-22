@@ -28,6 +28,7 @@ const LATE_COLUMNS: Readonly<Record<string, Readonly<Record<string, unknown>>>> 
     level_locked: false,
     level_change: null,
     show_easy_candidates: null,
+    notify: null,
   },
 };
 

@@ -263,6 +263,18 @@ export interface Settings extends SyncedRow {
   muted_topics?: string[] | null;
   /** v0.2 İP4: open "Kolay olabilir" in the import preview (absent/null = closed). */
   show_easy_candidates?: boolean | null;
+  /**
+   * v0.3 İP8: daily reminder (Web Push). `hour` is resolved on the device (auto: the usual
+   * start hour, fixed: the chosen one) so the server can use it. Absent/null = off.
+   */
+  notify?: NotifySetting | null;
+}
+
+/** settings.notify (domain/notify.ts). */
+export interface NotifySetting {
+  enabled: boolean;
+  mode: 'auto' | 'fixed';
+  hour: number | null;
 }
 
 /** Shared dictionary entries, read-only on the client (pulled from server). */

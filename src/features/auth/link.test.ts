@@ -341,12 +341,15 @@ describe('account linking', () => {
   it("another account's leftover settings are not carried into an account", async () => {
     await resetDb();
     await db.transaction('rw', db.meta, () => setMeta(META.userId, OTHER));
-    await updateSettings({ daily_new_limit: 3 }, T);
+    // v0.3 İP8: the other account's reminder setting stays behind as well.
+    await updateSettings({ daily_new_limit: 3, notify: { enabled: true, mode: 'fixed', hour: 9 } }, T);
     configureLink({ transport: server, engine: engine() });
     await linkAccount(USER); // nothing local but settings: no question
     expect(getLinkState()).toMatchObject({ phase: 'done' });
     expect(await getCurrentUserId()).toBe(USER);
     expect((await db.settings.get('settings'))!.daily_new_limit).toBe(10);
+    expect((await db.settings.get('settings'))!.notify ?? null).toBeNull();
+    expect(JSON.stringify(server.rowsOf('settings'))).not.toContain('"notify":{"enabled":true');
   });
 
   it("another account's data is never copied silently into an empty account", async () => {

@@ -164,6 +164,15 @@ export const settingsSchema: z.ZodType<Settings> = z.object({
     .catch(null),
   // v0.2 İP4; absent in older rows and backups (= false).
   show_easy_candidates: z.boolean().nullish(),
+  // v0.3 İP8; absent in older rows and backups (= off). A malformed value must not reject the row.
+  notify: z
+    .object({
+      enabled: z.boolean(),
+      mode: z.enum(['auto', 'fixed']).catch('auto'),
+      hour: z.number().int().min(0).max(23).nullable().catch(null),
+    })
+    .nullish()
+    .catch(null),
 });
 
 export const contentFeedbackSchema: z.ZodType<ContentFeedback> = z.object({

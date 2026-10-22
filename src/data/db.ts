@@ -205,6 +205,14 @@ export class EngDb extends Dexie {
     this.version(11)
       .stores({})
       .upgrade((tx) => addPullBackfill(tx.table('meta'), ['notes', 'settings', 'sources']));
+    // v17 (v0.3 İP8; 12–20 belong to the v0.3 packages): settings.notify, the daily reminder
+    // (not indexed; absent = off). A device that ran an older version while another device
+    // turned reminders on dropped the column when it pulled settings: re-pull settings once
+    // so it shows the reminder as on (rows with an equal HLC take the server's value,
+    // domain/syncMerge.ts).
+    this.version(17)
+      .stores({})
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
   }
 }
 

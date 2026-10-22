@@ -401,6 +401,7 @@
       "hesap": "Hesap",
       "senkron": "Senkron",
       "calisma": "Çalışma",
+      "bildirim": "Bildirim",
       "seviye": "Seviye",
       "profil": "Profil",
       "gorunum": "Görünüm",
@@ -505,6 +506,38 @@
       "status": "{{ready}} / {{total}} anlam hazır",
       "statusQueued": "{{count}} anlam sırada",
       "guest": "Örnek cümleler Google hesabıyla çalışır."
+    },
+    "notify": {
+      "description": "Günde en fazla bir kez kısa bir hatırlatma. Uygulama kapalıyken de gelir.",
+      "daily": "Günlük hatırlatma",
+      "dailyHint": "O gün tekrar yaptıysan, bekleyen kartın yoksa ya da tatildeysen gelmez. 22.00 ile 09.00 arasında hiç gelmez.",
+      "when": "Ne zaman gelsin?",
+      "auto": "Otomatik",
+      "fixed": "Sabit saat",
+      "autoHint": "En sık çalışmaya başladığın saat: {{time}}. Alışkanlığın değişirse saat de kendiliğinden değişir.",
+      "hour": "Saat",
+      "hourLabel": "{{hour}}.00",
+      "test": "Deneme bildirimi gönder",
+      "testHint": "Birkaç saniye içinde bu cihaza bir bildirim gelmeli.",
+      "testSent": "Deneme bildirimi gönderildi.",
+      "testFailed": "Deneme bildirimi gönderilemedi. İnternet bağlantını kontrol edip tekrar dene.",
+      "testGone": "Bu cihazın bildirim kaydı artık geçersiz. Hatırlatmayı kapatıp yeniden aç.",
+      "enabled": "Hatırlatma açıldı.",
+      "disabled": "Hatırlatma kapatıldı.",
+      "denied": "Bildirim izni kapalı. Açmak için tarayıcının site ayarlarından Engapp'e bildirim izni ver.",
+      "otherDevice": "Hatırlatma başka bir cihazında açık. Bu cihaza da gelsin istersen aç.",
+      "guest": "Bildirimler Google hesabıyla çalışır, çünkü hatırlatmayı sunucu gönderir. Yukarıdaki Hesap bölümünden giriş yapabilirsin.",
+      "unavailable": "Bu sürümde bildirim yok, çünkü sunucu bağlantısı kurulmamış.",
+      "unsupported": "Bu tarayıcı bildirimleri desteklemiyor. Chrome, Edge, Firefox ya da Safari'nin güncel sürümünü dene.",
+      "iosTitle": "iPhone'da önce ana ekrana ekle",
+      "iosWhy": "iPhone ve iPad'de bildirimler yalnızca ana ekrana eklenen uygulamada çalışır (iOS 16.4 ve sonrası). Ekledikten sonra Engapp'i ana ekrandan aç ve bu ayarı orada aç.",
+      "androidInstall": "Android'de uygulamayı ana ekrana yükle: bildirimler uygulama kapalıyken de gelir. Yükleme düğmesi aşağıdaki Uygulama bölümünde.",
+      "errors": {
+        "denied": "İzin verilmedi. Bildirim almak için tarayıcı sorduğunda “İzin ver”i seç.",
+        "unsupported": "Bu tarayıcı bildirimleri desteklemiyor.",
+        "not_configured": "Bildirimler sunucuda henüz hazır değil. Biraz sonra tekrar dene.",
+        "error": "Hatırlatma açılamadı. İnternet bağlantını kontrol edip tekrar dene."
+      }
     }
   },
   "auth": {
