@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The app canvas (src/ui/tokens: themeColor.light). Splash and window background. -->
+    <color name="engapp_canvas">#F5F2EC</color>
+</resources>

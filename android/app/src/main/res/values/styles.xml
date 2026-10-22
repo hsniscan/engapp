@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat.DayNight.DarkActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
+
+    <!-- Theme while the web app runs. The window background is the canvas colour, so any
+         area the WebView does not cover (system bar padding on old WebViews) matches the app. -->
+    <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:background">@null</item>
+        <item name="android:windowBackground">@color/engapp_canvas</item>
+    </style>
+
+    <!-- Launch theme. Android 12+: the system splash shows the adaptive launcher icon on the
+         canvas colour. Older versions: the window background drawable (drawable/splash.xml). -->
+    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/engapp_canvas</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
+        <item name="android:background">@drawable/splash</item>
+    </style>
+</resources>
