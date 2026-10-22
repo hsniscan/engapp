@@ -1711,5 +1711,97 @@
     "savedNotes_other": "{{count}} words tagged.",
     "saveFailed": "Could not save the tags. Try again.",
     "gone": "deleted"
+  },
+  "anki": {
+    "title": "Move from Anki",
+    "description": "Bring your Anki decks here together with their review history.",
+    "entry": {
+      "title": "Using Anki?",
+      "body": "You can move your decks here with their review history.",
+      "link": "Upload an Anki file (.apkg)"
+    },
+    "pick": {
+      "drop": "Drop your Anki file here",
+      "or": "or",
+      "button": "Choose Anki file",
+      "hint": "The .apkg file from File → Export in Anki (up to {{mb}} MB). Sounds and images are not imported."
+    },
+    "reading": "Reading {{name}}…",
+    "errors": {
+      "not_apkg": "This isn't an Anki file. In Anki, use File → Export to get an .apkg file.",
+      "no_collection": "No Anki deck was found in the file.",
+      "unreadable": "The file couldn't be opened. Try exporting it again with a current Anki version.",
+      "too_big": "The file is too large (up to {{mb}} MB).",
+      "reader_unavailable": "The Anki reader couldn't be downloaded. The first Anki file needs an internet connection; after that it works offline.",
+      "empty": "There are no notes to import in this file.",
+      "importFailed": "The import couldn't finish. Choose the file again to continue where it stopped."
+    },
+    "summary": "{{notes}} notes, {{cards}} cards, {{reviews}} reviews",
+    "media_one": "{{n}} sound or image file won't be imported.",
+    "media_other": "{{n}} sound or image files won't be imported.",
+    "fsrs": {
+      "title": "Review intervals will be recalculated",
+      "body": "Intervals from Anki's older algorithm (SM-2) are recalculated from your review history with the algorithm used here (FSRS). For the first few weeks some cards may come earlier or later than you expect; then it settles to your answers."
+    },
+    "mapping": {
+      "title": "Match the fields",
+      "intro": "Choose which field holds the English word and which holds the Turkish meaning. The preview below shows how your cards will look.",
+      "notes_one": "{{n}} note",
+      "notes_other": "{{n}} notes",
+      "include": "Import this note type",
+      "term": "English word",
+      "meaning": "Turkish meaning",
+      "sentence": "Example sentence",
+      "none": "None",
+      "unnamed": "Field {{n}}",
+      "invalid": "Choose different fields for the English word, the Turkish meaning and the example sentence.",
+      "preview": "Preview (first 3 notes)",
+      "empty": "(empty)",
+      "cloze_one": "Cloze notes aren't imported: {{n}} note.",
+      "cloze_other": "Cloze notes aren't imported: {{n}} notes."
+    },
+    "cancel": "Choose another file",
+    "submit_one": "Import {{n}} note",
+    "submit_other": "Import {{n}} notes",
+    "importing": "Importing… {{done}} / {{total}} notes",
+    "done": {
+      "title": "Import finished",
+      "created_one": "{{n}} new word added",
+      "created_other": "{{n}} new words added",
+      "sensesAdded_one": "New meaning added to {{n}} word",
+      "sensesAdded_other": "New meanings added to {{n}} words",
+      "alreadyHad_one": "{{n}} word was already there and didn't change",
+      "alreadyHad_other": "{{n}} words were already there and didn't change",
+      "logs_one": "{{n}} review added to your history",
+      "logs_other": "{{n}} reviews added to your history",
+      "suspended_one": "{{n}} card stays suspended, as in Anki",
+      "suspended_other": "{{n}} cards stay suspended, as in Anki",
+      "sameInFile_one": "{{n}} note was in the file twice and was added once",
+      "sameInFile_other": "{{n}} notes were in the file twice and were added once",
+      "skipped_one": "{{n}} note wasn't imported (empty field, cloze or a note type you left out)",
+      "skipped_other": "{{n}} notes weren't imported (empty field, cloze or a note type you left out)",
+      "ignored_one": "{{n}} Anki card was of another card type; its history wasn't taken",
+      "ignored_other": "{{n}} Anki cards were of another card type; their history wasn't taken",
+      "media_one": "{{n}} sound or image skipped",
+      "media_other": "{{n}} sounds or images skipped",
+      "toLibrary": "Go to my cards",
+      "another": "Import another file"
+    },
+    "enrich": {
+      "title": "Match with the dictionary",
+      "body": "Links your words to the shared dictionary: levels, example sentences and word families come with it. Your own meanings don't change. Optional; your cards work without it.",
+      "quota": "Words the dictionary already has use no AI. Others count against the daily AI allowance; when it runs out, matching continues the next day where it stopped.",
+      "start": "Match with the dictionary",
+      "signIn": "Sign in with Google to match with the dictionary. Your cards work without signing in.",
+      "running": "Matching: {{done}} / {{total}} words. Without internet it continues when you're back online.",
+      "paused": "Today's AI allowance is used up. Matching continues tomorrow where it stopped ({{done}} / {{total}} words).",
+      "pausedRetry": "Taking a short break; it continues soon ({{done}} / {{total}} words).",
+      "done": "Matching finished: {{matched}} words matched with their meaning, {{termOnly}} words with the dictionary entry only, {{unmatched}} words not found."
+    },
+    "history": {
+      "title": "Your earlier Anki imports",
+      "words_one": "{{n}} word",
+      "words_other": "{{n}} words"
+    }
   }
 }

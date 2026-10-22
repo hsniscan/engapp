@@ -105,6 +105,9 @@ export const reviewLogSchema: z.ZodType<ReviewLog> = z.object({
   shown_sense_id: id.nullable(),
   created_at: millis,
   hlc: z.string().min(1),
+  // v0.3 İP1: absent/null = 'app'. An unknown value from a newer app is read as absent, so
+  // the log still counts.
+  origin: z.enum(['app', 'anki']).nullable().optional().catch(undefined),
 });
 
 export const practiceLogSchema: z.ZodType<PracticeLog> = z.object({
@@ -123,7 +126,7 @@ export const practiceLogSchema: z.ZodType<PracticeLog> = z.object({
 
 export const sourceSchema: z.ZodType<Source> = z.object({
   ...synced,
-  kind: z.enum(['text', 'pdf']),
+  kind: z.enum(['text', 'pdf', 'anki']),
   title: z.string(),
   file_name: z.string().nullable(),
   page_count: z.number().int().nullable(),

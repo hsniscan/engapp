@@ -91,7 +91,14 @@ export interface ReviewLog {
   shown_sense_id: Id | null; // recognition card: which sense's sentence was shown
   created_at: Millis;
   hlc: string;
+  /**
+   * Where the answer was given (v0.3 İP1): 'anki' = imported from an Anki revlog. Absent or
+   * null = 'app' (rows written before the column, and every answer given here).
+   */
+  origin?: ReviewLogOrigin | null;
 }
+
+export type ReviewLogOrigin = 'app' | 'anki';
 
 /** "Bildim" / "Bilemedim" in a practice round. */
 export type PracticeResult = 'known' | 'unknown';
@@ -158,7 +165,8 @@ export interface KnownTerm extends SyncedRow {
 }
 
 export interface Source extends SyncedRow {
-  kind: 'text' | 'pdf';
+  /** 'anki': an imported Anki package (v0.3 İP1). */
+  kind: 'text' | 'pdf' | 'anki';
   title: string;
   file_name: string | null;
   page_count: number | null;
@@ -501,3 +509,55 @@ export interface RefCacheRow {
   fetched_at: Millis;
 }
 
+/** Counts of one Anki import, shown on the result screen (src/data/anki.ts). */
+export interface AnkiImportCounts {
+  /** Notes in the file. */
+  notes: number;
+  /** New Engapp notes created with their Anki history. */
+  created: number;
+  /** Meanings added to a word that was already in the library (no history). */
+  sensesAdded: number;
+  /** Words (and meanings) the library already had: nothing changed. */
+  alreadyHad: number;
+  skippedNoteType: number;
+  skippedEmpty: number;
+  sameInFile: number;
+  cards: number;
+  cardsMapped: number;
+  cardsIgnored: number;
+  cardsMerged: number;
+  logs: number;
+  logsSkipped: number;
+  suspended: number;
+  media: number;
+}
+
+export type AnkiEnrichStatus = 'off' | 'queued' | 'paused' | 'done';
+
+/**
+ * One Anki import on this device (v0.3 İP1): its counts and the optional "Sözlükle eşleştir"
+ * queue. Local only (the notes themselves sync); id = the import's source id.
+ */
+export interface AnkiImportRecord {
+  id: Id;
+  file_name: string;
+  created_at: Millis;
+  updated_at: Millis;
+  counts: AnkiImportCounts;
+  /** Notes created by the import (lexicon matching works through them). */
+  note_ids: Id[];
+  enrich: {
+    status: AnkiEnrichStatus;
+    /** Notes still to look up, in order. */
+    pending: Id[];
+    /** Linked to a lexicon sense with the same meaning. */
+    matched: number;
+    /** Linked to the lexicon word only (no sense with the user's meaning). */
+    term_only: number;
+    /** Not found in the lexicon (or not an English word). */
+    unmatched: number;
+    /** Paused until this time (daily AI limit, offline). */
+    paused_until: Millis | null;
+    error: string | null;
+  };
+}

@@ -79,6 +79,17 @@ export default defineConfig({
             },
           },
           {
+            // SQLite (sql.js) wasm for the Anki import (~650 KB): not precached (globPatterns has
+            // no .wasm), cached on the first Anki import, then offline (decision 0019).
+            urlPattern: ({ url, sameOrigin }) =>
+              sameOrigin && /\/assets\/sql-wasm[^/]*\.wasm$/.test(url.pathname),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'engapp-anki-reader',
+              expiration: { maxEntries: 2 },
+            },
+          },
+          {
             // Word-level file (data/levels/client-levels.tsv, ~160 KB compressed): fetched when a
             // screen first shows levels, then offline (docs/decisions/0012-word-levels.md).
             urlPattern: ({ url, sameOrigin }) =>

@@ -13,7 +13,7 @@ describe('Dexie schema', () => {
     await d.open();
     expect(d.verno).toBe(LATEST);
     expect(d.tables.map((t) => t.name).sort()).toEqual(
-      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs', 'decks', 'theme_previews', 'level_tests', 'known_terms'].sort(),
+      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs', 'decks', 'theme_previews', 'level_tests', 'known_terms', 'anki_imports'].sort(),
     );
     const idx = (table: string) => d.table(table).schema.indexes.map((i) => i.name);
     expect(idx('decks')).toEqual(expect.arrayContaining(['sort', 'deleted_at']));
@@ -300,6 +300,32 @@ describe('Dexie schema', () => {
       ['c2', 'for_you', true, null, null, false],
       ['c3', 'for_you', false, null, null, false],
     ]);
+    expect(await d.outbox.count()).toBe(0);
+    d.close();
+    await d.delete();
+  });
+
+  it('v12 adds anki_imports, keeps review logs as they are and re-pulls sources once', async () => {
+    const name = 'upgrade-v12-test';
+    // A database as v0.2 left it (version 11).
+    const old = new Dexie(name);
+    old.version(1).stores({ review_logs: 'id, card_id, reviewed_at, undo_of', sources: 'id, created_at', meta: 'key' });
+    old.version(11).stores({ sources: 'id, created_at, *topics' });
+    await old.open();
+    await old.table('review_logs').add({ id: 'l1', card_id: 'c1', reviewed_at: 1, undo_of: null, rating: 3 });
+    await old.table('meta').bulkPut([
+      { key: 'sync_cursor', value: 77 },
+      { key: PULL_BACKFILL_KEY, value: ['decks'] },
+    ]);
+    old.close();
+
+    const d = new EngDb(name);
+    await d.open();
+    expect(d.verno).toBe(LATEST);
+    expect(await d.anki_imports.count()).toBe(0);
+    // Logs are never rewritten: no origin is filled in (absent = 'app').
+    expect(await d.review_logs.get('l1')).toEqual({ id: 'l1', card_id: 'c1', reviewed_at: 1, undo_of: null, rating: 3 });
+    expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expect.arrayContaining(['decks', 'sources']));
     expect(await d.outbox.count()).toBe(0);
     d.close();
     await d.delete();

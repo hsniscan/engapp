@@ -1711,5 +1711,97 @@
     "savedNotes_other": "{{count}} kelime etiketlendi.",
     "saveFailed": "Etiketler kaydedilemedi. Tekrar dene.",
     "gone": "silinmiş"
+  },
+  "anki": {
+    "title": "Anki'den taşı",
+    "description": "Anki destelerini tekrar geçmişiyle birlikte buraya taşı.",
+    "entry": {
+      "title": "Anki kullanıyor musun?",
+      "body": "Destelerini tekrar geçmişiyle birlikte taşıyabilirsin.",
+      "link": "Anki dosyası (.apkg) yükle"
+    },
+    "pick": {
+      "drop": "Anki dosyasını buraya bırak",
+      "or": "ya da",
+      "button": "Anki dosyası seç",
+      "hint": "Anki'de Dosya → Dışa aktar ile aldığın .apkg dosyası (en çok {{mb}} MB). Ses ve resimler aktarılmaz."
+    },
+    "reading": "{{name}} okunuyor…",
+    "errors": {
+      "not_apkg": "Bu bir Anki dosyası değil. Anki'de Dosya → Dışa aktar ile bir .apkg dosyası al.",
+      "no_collection": "Dosyada Anki destesi bulunamadı.",
+      "unreadable": "Dosya açılamadı. Anki'nin güncel sürümüyle yeniden dışa aktarmayı dene.",
+      "too_big": "Dosya çok büyük (en çok {{mb}} MB).",
+      "reader_unavailable": "Anki okuyucusu indirilemedi. İlk Anki dosyası için internet bağlantısı gerekir; sonra internetsiz de çalışır.",
+      "empty": "Dosyada aktarılacak not yok.",
+      "importFailed": "Aktarma tamamlanamadı. Dosyayı yeniden seçersen kaldığı yerden devam eder."
+    },
+    "summary": "{{notes}} not, {{cards}} kart, {{reviews}} tekrar kaydı",
+    "media_one": "{{n}} ses veya resim dosyası aktarılmayacak.",
+    "media_other": "{{n}} ses veya resim dosyası aktarılmayacak.",
+    "fsrs": {
+      "title": "Tekrar aralıkları yeniden hesaplanacak",
+      "body": "Anki'nin eski algoritmasındaki (SM-2) aralıklar, buradaki algoritmaya (FSRS) göre tekrar kayıtlarından yeniden hesaplanır. İlk birkaç hafta bazı kartlar beklediğinden erken veya geç gelebilir; sonra senin cevaplarına göre oturur."
+    },
+    "mapping": {
+      "title": "Alanları eşleştir",
+      "intro": "Hangi alanda İngilizce kelime, hangisinde Türkçe anlam olduğunu seç. Aşağıdaki önizleme kartlarının nasıl görüneceğini gösterir.",
+      "notes_one": "{{n}} not",
+      "notes_other": "{{n}} not",
+      "include": "Bu not tipini aktar",
+      "term": "İngilizce kelime",
+      "meaning": "Türkçe anlam",
+      "sentence": "Örnek cümle",
+      "none": "Yok",
+      "unnamed": "Alan {{n}}",
+      "invalid": "İngilizce kelime, Türkçe anlam ve örnek cümle için farklı alanlar seç.",
+      "preview": "Önizleme (ilk 3 not)",
+      "empty": "(boş)",
+      "cloze_one": "Boşluk doldurma (cloze) notları aktarılmaz: {{n}} not.",
+      "cloze_other": "Boşluk doldurma (cloze) notları aktarılmaz: {{n}} not."
+    },
+    "cancel": "Başka dosya seç",
+    "submit_one": "{{n}} notu aktar",
+    "submit_other": "{{n}} notu aktar",
+    "importing": "Aktarılıyor… {{done}} / {{total}} not",
+    "done": {
+      "title": "Aktarma bitti",
+      "created_one": "{{n}} yeni kelime eklendi",
+      "created_other": "{{n}} yeni kelime eklendi",
+      "sensesAdded_one": "{{n}} kelimeye yeni anlam eklendi",
+      "sensesAdded_other": "{{n}} kelimeye yeni anlam eklendi",
+      "alreadyHad_one": "{{n}} kelime zaten vardı, değişmedi",
+      "alreadyHad_other": "{{n}} kelime zaten vardı, değişmedi",
+      "logs_one": "{{n}} tekrar kaydı geçmişine eklendi",
+      "logs_other": "{{n}} tekrar kaydı geçmişine eklendi",
+      "suspended_one": "{{n}} kart Anki'deki gibi askıda",
+      "suspended_other": "{{n}} kart Anki'deki gibi askıda",
+      "sameInFile_one": "{{n}} not dosyada iki kez vardı, bir kez eklendi",
+      "sameInFile_other": "{{n}} not dosyada iki kez vardı, bir kez eklendi",
+      "skipped_one": "{{n}} not aktarılmadı (boş alan, boşluk doldurma ya da seçmediğin not tipi)",
+      "skipped_other": "{{n}} not aktarılmadı (boş alan, boşluk doldurma ya da seçmediğin not tipi)",
+      "ignored_one": "{{n}} Anki kartı başka bir kart türündeydi, geçmişi alınmadı",
+      "ignored_other": "{{n}} Anki kartı başka bir kart türündeydi, geçmişi alınmadı",
+      "media_one": "{{n}} ses veya resim atlandı",
+      "media_other": "{{n}} ses veya resim atlandı",
+      "toLibrary": "Kartlarıma git",
+      "another": "Başka dosya aktar"
+    },
+    "enrich": {
+      "title": "Sözlükle eşleştir",
+      "body": "Kelimelerini ortak sözlüğe bağlar: seviye, örnek cümleler ve kelime ailesi gelir. Senin yazdığın anlamlar değişmez. İsteğe bağlı; kartların bunsuz da çalışır.",
+      "quota": "Sözlükte zaten olan kelimeler AI kullanmaz. Olmayanlar günlük AI hakkından düşer; hak biterse ertesi gün kaldığı yerden devam eder.",
+      "start": "Sözlükle eşleştir",
+      "signIn": "Sözlükle eşleştirmek için Google ile giriş yap. Kartların giriş yapmadan da çalışır.",
+      "running": "Eşleştiriliyor: {{done}} / {{total}} kelime. İnternet yoksa bağlantı gelince devam eder.",
+      "paused": "Bugünlük AI hakkı doldu. Yarın kaldığı yerden devam edecek ({{done}} / {{total}} kelime).",
+      "pausedRetry": "Kısa bir ara verildi, birazdan devam edecek ({{done}} / {{total}} kelime).",
+      "done": "Eşleştirme bitti: {{matched}} kelime anlamıyla, {{termOnly}} kelime yalnızca sözlük kaydıyla eşleşti, {{unmatched}} kelime bulunamadı."
+    },
+    "history": {
+      "title": "Önceki Anki aktarmaların",
+      "words_one": "{{n}} kelime",
+      "words_other": "{{n}} kelime"
+    }
   }
 }

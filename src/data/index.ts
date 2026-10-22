@@ -112,6 +112,22 @@ export {
   setTopicMuted,
   type TopicProfile,
 } from './profile';
+export {
+  ANKI_CHUNK_NOTES,
+  ankiEnrichResumeAt,
+  applyAnkiEnrichResult,
+  getAnkiImport,
+  importAnkiPlan,
+  listAnkiImports,
+  nextAnkiEnrichItems,
+  nextAnkiEnrichWake,
+  pauseAnkiEnrich,
+  startAnkiEnrich,
+  type AnkiEnrichItem,
+  type AnkiEnrichOutcome,
+  type AnkiImportProgress,
+  type AnkiImportResult,
+} from './anki';
 export { getKnownTermKeys, listKnownTerms, markKnown, unmarkKnown } from './knownTerms';
 export {
   BAND_SIZES,

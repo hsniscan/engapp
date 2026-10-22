@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { useSearchParams } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { Icon, Page, Tabs } from '@/ui';
 import { addTabPanels, type AddTabId } from './addTabs';
 import { ManualAddForm } from './ManualAddForm';
@@ -18,6 +18,24 @@ export function PrivacyNote() {
         {t('cards.import.privacyWhy')}
       </span>
     </p>
+  );
+}
+
+/** Way into the Anki import (v0.3 İP1), under every tab. */
+function AnkiEntry() {
+  const { t } = useTranslation();
+  return (
+    <aside className="mt-8 flex flex-col gap-1 border-t border-border pt-5">
+      <p className="font-medium text-fg">{t('anki.entry.title')}</p>
+      <p className="text-sm text-fg-muted">{t('anki.entry.body')}</p>
+      <Link
+        to="/import/anki"
+        className="inline-flex min-h-11 items-center gap-1.5 self-start text-[0.9375rem] font-medium text-accent-text underline-offset-4 hover:underline"
+      >
+        <Icon name="layers" size={18} />
+        {t('anki.entry.link')}
+      </Link>
+    </aside>
   );
 }
 
@@ -68,6 +86,7 @@ export function AddPage() {
           },
         ]}
       />
+      <AnkiEntry />
     </Page>
   );
 }

@@ -93,6 +93,18 @@ list and a one-time `sync_cursor` reset; they were unified when the packages mer
 Settings rows from older clients lack the level columns: a trigger fills their defaults on
 insert, and `_sync_upsert` leaves them alone on update.
 
+### Anki import (v0.3 İP1, migration 20261023000100, decision 0019)
+
+No new table. `review_logs.origin` (`app` default, `anki` for imported answers) is a new
+column of an insert-only table: the push path inserts `jsonb_populate_record(...)`, so a log
+from an older app without the key arrives as an explicit null, and a BEFORE INSERT trigger
+stores it as `app` (a NOT NULL default alone would reject it, and a rejected log never leaves
+the outbox). Pulled logs carry `origin`; an older client's zod strips it and still counts the
+answer. `sources.kind` accepts `anki`; an older version drops such a pulled source as invalid,
+so Dexie v12 adds `sources` to `meta.pull_backfill`. Imported logs have deterministic ids
+(UUID v7 at the review time, hash of card id + Anki revlog id), so a repeated push is the usual
+`ON CONFLICT DO NOTHING`.
+
 ## Push
 
 `sync_push(p_batch jsonb)`; `p_batch` = up to 100 items `{table, op, payload}`:
