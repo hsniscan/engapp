@@ -20,9 +20,9 @@ function startSystemBars(): void {
         typeof matchMedia === 'function' &&
         matchMedia('(prefers-color-scheme: dark)').matches);
     // Style "Dark" = light icons for a dark background.
-    void SystemBars.setStyle({ style: isDark ? SystemBarsStyle.Dark : SystemBarsStyle.Light }).catch(
-      () => {},
-    );
+    void SystemBars.setStyle({
+      style: isDark ? SystemBarsStyle.Dark : SystemBarsStyle.Light,
+    }).catch(() => {});
   };
   apply();
   new MutationObserver(apply).observe(document.documentElement, {
@@ -53,6 +53,8 @@ export async function startNative(): Promise<void> {
   document.documentElement.dataset.native = 'android';
   startSystemBars();
   startBackButton();
-  const tasks: [string, () => Promise<unknown>][] = [];
+  const tasks: [string, () => Promise<unknown>][] = [
+    ['native.reminders', async () => (await import('./reminders')).startNativeReminders()],
+  ];
   for (const [where, run] of tasks) await run().catch((e: unknown) => void logError(e, where));
 }

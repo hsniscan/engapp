@@ -36,7 +36,12 @@ export function overlayOpen(doc: Document = document): boolean {
 export function closeTopOverlay(doc: Document = document): void {
   const target = doc.activeElement ?? doc.body;
   target.dispatchEvent(
-    new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true, cancelable: true }),
+    new KeyboardEvent('keydown', {
+      key: 'Escape',
+      code: 'Escape',
+      bubbles: true,
+      cancelable: true,
+    }),
   );
 }
 
