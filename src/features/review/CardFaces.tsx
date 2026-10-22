@@ -222,6 +222,7 @@ const promptKey = {
   recognition: 'review.promptRecognition',
   production: 'review.promptProduction',
   cloze: 'review.promptCloze',
+  image: 'review.promptImage',
 } as const;
 
 export interface FaceProps {
@@ -245,7 +246,27 @@ export const CardFront = memo(function CardFront({ view, isNew, speech }: FacePr
     );
   }
 
-  if (card.card_type === 'production' && sense) {
+  // v0.4 İP8: the picture asks for the English word; the part of speech narrows it down.
+  if (card.card_type === 'image' && sense && view.image) {
+    return (
+      <Face prompt={prompt} isNew={isNew} aside={marker} className="gap-4">
+        <CardPicture image={view.image} showNew={false} className="size-44 sm:size-56" />
+        {sense.pos && (
+          <p className="text-[0.9375rem] text-fg-muted">
+            <span className="sr-only">{t('imageCard.pos', { pos: posLabel(t, sense.pos) })}</span>
+            <span aria-hidden="true" className="font-serif italic">
+              {posLabel(t, sense.pos)}
+            </span>
+          </p>
+        )}
+        <LeechHint view={view} />
+      </Face>
+    );
+  }
+
+  // A picture card whose picture is gone (the session skips those; a practice round may not)
+  // asks like a production card instead of showing an empty frame.
+  if ((card.card_type === 'production' || card.card_type === 'image') && sense) {
     return (
       <Face prompt={prompt} isNew={isNew} aside={marker}>
         <p className="font-serif text-3xl leading-snug font-semibold text-fg sm:text-4xl">
@@ -483,7 +504,7 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
         </BesidePicture>
       </div>
       <CardMnemonic senseId={sense.id} className="text-center" />
-      {card.card_type === 'production' && sentence}
+      {(card.card_type === 'production' || card.card_type === 'image') && sentence}
       {examples}
       <CardBackExtras note={note} />
     </Face>

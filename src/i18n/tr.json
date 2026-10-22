@@ -172,7 +172,8 @@
     },
     "moreStudy": "Biraz daha çalış",
     "aheadBadge": "Yarının kartları",
-    "aheadEmptyTitle": "Yarının kartları bitti"
+    "aheadEmptyTitle": "Yarının kartları bitti",
+    "promptImage": "Görseldeki kelimeyi bul"
   },
   "examples": {
     "title": "Örnek cümleler",
@@ -953,7 +954,8 @@
     "cardType": {
       "recognition": "Tanıma",
       "production": "Üretme",
-      "cloze": "Boşluk doldurma"
+      "cloze": "Boşluk doldurma",
+      "image": "Görselden hatırlama"
     },
     "state": {
       "new": "Yeni",
@@ -2213,6 +2215,22 @@
     "saved": "Hedeflerin kaydedildi.",
     "cleared": "Hedeflerin kaldırıldı.",
     "clearAll": "Hedefleri kaldır"
+  },
+  "imageCard": {
+    "pos": "Sözcük türü: {{pos}}",
+    "settings": {
+      "label": "Görselden hatırlama kartları",
+      "hint": "Onaylı görseli olan bir anlamı tanımayı öğrendiğinde yeni bir kart açılır: önde görsel, sen İngilizcesini hatırlarsın. Gizlediğin ya da beğenmediğin görsellerde kart çıkmaz."
+    },
+    "progress": {
+      "title": "Görsel kartlarının etkisi",
+      "with": "Görsel kartı olan anlamlar",
+      "without": "Görsel kartı olmayan anlamlar",
+      "sentence": "Görsel kartı olan kelimelerin İngilizcesini {{with}} oranında hatırlıyorsun; görsel kartı olmayanlarda bu oran {{without}}.",
+      "few": "Karşılaştırma için iki tarafta da en az {{min}} cevap gerekiyor. Çalıştıkça burada görünecek.",
+      "own": "Görsel kartlarının kendisi: {{rate}} · {{answers}}",
+      "hint": "Türkçeden İngilizceye kartlarındaki cevaplar sayılır. Görseli olanlar çoğunlukla somut kelimeler, bu yüzden fark yalnızca görselden gelmeyebilir."
+    }
   },
   "images": {
     "newBadge": "Yeni",

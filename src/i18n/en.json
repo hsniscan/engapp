@@ -172,7 +172,8 @@
     },
     "moreStudy": "Study a bit more",
     "aheadBadge": "Tomorrow's cards",
-    "aheadEmptyTitle": "Tomorrow's cards are done"
+    "aheadEmptyTitle": "Tomorrow's cards are done",
+    "promptImage": "Find the word in the picture"
   },
   "examples": {
     "title": "Example sentences",
@@ -953,7 +954,8 @@
     "cardType": {
       "recognition": "Recognition",
       "production": "Production",
-      "cloze": "Cloze"
+      "cloze": "Cloze",
+      "image": "Picture recall"
     },
     "state": {
       "new": "New",
@@ -2213,6 +2215,22 @@
     "saved": "Your goals are saved.",
     "cleared": "Your goals are removed.",
     "clearAll": "Remove goals"
+  },
+  "imageCard": {
+    "pos": "Part of speech: {{pos}}",
+    "settings": {
+      "label": "Picture recall cards",
+      "hint": "Once you recognise a meaning that has an approved picture, a new card opens: the picture on the front, you recall the English word. Pictures you hid or turned down never make a card."
+    },
+    "progress": {
+      "title": "What picture cards do",
+      "with": "Meanings with a picture card",
+      "without": "Meanings without one",
+      "sentence": "You recall the English word of meanings with a picture card {{with}} of the time; without one, {{without}}.",
+      "few": "The comparison needs at least {{min}} answers on each side. It will show up here as you study.",
+      "own": "The picture cards themselves: {{rate}} · {{answers}}",
+      "hint": "Counts the answers of your Turkish → English cards. Meanings with pictures are mostly concrete words, so the difference may not come from the picture alone."
+    }
   },
   "images": {
     "newBadge": "New",

@@ -41,6 +41,8 @@ const LATE_COLUMNS: Readonly<Record<string, Readonly<Record<string, unknown>>>> 
     goals: null,
     // v0.4 İP3
     show_image_front: null,
+    // v0.4 İP8: default on, so a stored false is a real choice (unset = missing or null only).
+    image_cards: undefined,
   },
 };
 

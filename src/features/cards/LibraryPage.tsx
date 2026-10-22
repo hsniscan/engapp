@@ -549,6 +549,7 @@ function FilterSelects({ filters, tags, onChange }: FilterProps) {
           { value: 'recognition', label: t('cards.cardType.recognition') },
           { value: 'production', label: t('cards.cardType.production') },
           { value: 'cloze', label: t('cards.cardType.cloze') },
+          { value: 'image', label: t('cards.cardType.image') },
         ]}
       />
       <Select

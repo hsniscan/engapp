@@ -167,7 +167,7 @@ export function filterRows(rows: LibraryRow[], f: LibraryFilters): LibraryRow[] 
   return out;
 }
 
-const TYPES: (CardType | 'all')[] = ['all', 'recognition', 'production', 'cloze'];
+const TYPES: (CardType | 'all')[] = ['all', 'recognition', 'production', 'cloze', 'image'];
 const SUSP: SuspendedFilter[] = ['all', 'active', 'suspended'];
 const LEVEL_FILTERS: string[] = [...CEFR, 'none'];
 const SORTS: SortOrder[] = ['new', 'az', 'level', 'level_desc'];

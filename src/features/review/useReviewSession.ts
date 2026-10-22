@@ -18,7 +18,7 @@ import {
 import type { QueueItem, QueueKind, QueueMode } from '@/domain/queue';
 import { Rating, type Id, type RatingValue } from '@/domain/types';
 import type { LeechNotice } from '@/features/leech';
-import { preloadPicture } from '@/features/images/picture';
+import { canShowPicture, preloadPicture } from '@/features/images/picture';
 
 export const MAX_ANSWER_MS = 60_000;
 
@@ -63,6 +63,15 @@ export interface SessionStart {
 
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
+/**
+ * A card the session can show. A picture card (v0.4 İP8) needs its picture: one missing on this
+ * device (offline before the fetch) or refused by the sanitizer is skipped for the session.
+ */
+export function canShow(view: CardView | null | undefined): boolean {
+  if (!view || view.card.deleted_at !== null || view.card.suspended) return false;
+  return view.card.card_type !== 'image' || canShowPicture(view.image);
+}
+
 export function useReviewSession(mode: QueueMode = 'normal') {
   const [state, setState] = useState<SessionState>({
     phase: 'loading',
@@ -79,6 +88,8 @@ export function useReviewSession(mode: QueueMode = 'normal') {
   const stateRef = useRef(state);
   const upcoming = useRef<QueueItem[]>([]);
   const views = useRef(new Map<Id, CardView | null>());
+  /** Picture cards without a picture: left out until the session ends. */
+  const skipped = useRef(new Set<Id>());
   const pendingViews = useRef(new Map<Id, Promise<CardView | null>>());
   const chain = useRef<Promise<void>>(Promise.resolve());
   const seq = useRef(0);
@@ -147,7 +158,10 @@ export function useReviewSession(mode: QueueMode = 'normal') {
       const item = upcoming.current.shift()!;
       const cached = views.current.get(item.card_id);
       const view = cached !== undefined ? cached : await loadView(item.card_id);
-      if (!view || view.card.deleted_at !== null || view.card.suspended) continue;
+      if (!view || !canShow(view)) {
+        if (view?.card.card_type === 'image') skipped.current.add(view.card.id);
+        continue;
+      }
       show({ view, kind: item.kind });
       return true;
     }
@@ -165,7 +179,7 @@ export function useReviewSession(mode: QueueMode = 'normal') {
       if (mySeq !== seq.current || !alive.current) return;
       const currentId = stateRef.current.current?.view.card.id;
       upcoming.current = q.items
-        .filter((i) => i.card_id !== currentId)
+        .filter((i) => i.card_id !== currentId && !skipped.current.has(i.card_id))
         .map(({ card_id, note_id, kind }) => ({ card_id, note_id, kind }));
       const s = stateRef.current;
       if (s.phase === 'waiting') {
@@ -193,6 +207,7 @@ export function useReviewSession(mode: QueueMode = 'normal') {
       const [q, streak] = await Promise.all([getStudyQueue({ mode }), getStreakSummary()]);
       if (cancelled) return;
       setStart({ todayActive: streak.todayActive, streak: streak.currentStreak });
+      skipped.current.clear();
       upcoming.current = q.items.map(({ card_id, note_id, kind }) => ({ card_id, note_id, kind }));
       if (!(await advance()) && !cancelled) finish();
     })();
@@ -269,7 +284,7 @@ export function useReviewSession(mode: QueueMode = 'normal') {
       // Optimistic switch to the prefetched next card.
       const next = upcoming.current[0];
       const cached = next ? views.current.get(next.card_id) : undefined;
-      if (next && cached && cached.card.deleted_at === null && !cached.card.suspended) {
+      if (next && cached && canShow(cached)) {
         upcoming.current.shift();
         shownAt.current = now();
         patch({
