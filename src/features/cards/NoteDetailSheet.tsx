@@ -34,6 +34,7 @@ import {
 } from '@/ui';
 import { LevelSection } from '@/features/levels/LevelSection';
 import { ExamplesSection } from '@/features/examples/ExamplesPanel';
+import { ImageSection } from '@/features/images/ImageSection';
 import { MnemonicSection } from '@/features/mnemonics';
 import { useAppSettings } from '@/features/settings/useAppSettings';
 import { useSpeech } from '@/features/review/useSpeech';
@@ -527,6 +528,9 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
           headingId={`${id}-examples`}
           speech={{ available: speech.available, speak: speech.speak }}
         />
+      )}
+      {senses.some((s) => s.lexicon_sense_id) && note.term_type !== 'affix' && note.term_type !== 'contrast' && (
+        <ImageSection senses={senses} headingId={`${id}-image`} />
       )}
       {senses.length > 0 && note.term_type !== 'affix' && (
         <MnemonicSection termNorm={note.term_norm} senses={senses} headingId={`${id}-mnemonic`} />
