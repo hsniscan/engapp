@@ -46,6 +46,9 @@ export const BACKUP_FORMAT = 'engapp-backup';
 // 8 (v0.2 İP3, İP4): level_tests, known_terms and the level fields of settings; also the
 //    optional settings.show_easy_candidates. Older files have no such tables (restored as
 //    none; overwrite keeps the local ones) and default level fields. (Built as "9" on its branch, numbered like its Dexie version; never released.)
+// v0.3 İP3 adds optional settings fields (daily_capacity_min, catchup_auto, vacation,
+//    vacation_history) without a version bump: like show_easy_candidates they are optional and
+//    not defaulted, so files of every version restore and keep their checksum.
 export const BACKUP_SCHEMA_VERSION = 8;
 
 export interface BackupTables {

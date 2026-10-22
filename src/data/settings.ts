@@ -5,7 +5,9 @@ import {
   MIN_SELECTED_CONTEXTS,
 } from '../../supabase/functions/_shared/examples-contracts';
 import { type DayConfig, deviceTimeZone, isValidTimeZone } from '../domain/day';
+import { CAPACITY_MIN_LIMITS } from '../domain/capacity';
 import { createScheduler, RETENTION_MAX, RETENTION_MIN, type Scheduler } from '../domain/fsrs';
+import { isValidRange, MAX_VACATION_HISTORY } from '../domain/vacation';
 import { HLC_ZERO } from '../domain/hlc';
 import type { Millis, Settings } from '../domain/types';
 import { db } from './db';
@@ -57,6 +59,10 @@ export async function ensureSettings(now: Millis = Date.now()): Promise<Settings
   });
 }
 
+const vacationRangeSchema = z
+  .object({ start: z.string(), end: z.string() })
+  .refine(isValidRange, 'Invalid vacation range');
+
 export const settingsPatchSchema = z
   .object({
     daily_new_limit: z.number().int().min(0).max(999),
@@ -79,6 +85,11 @@ export const settingsPatchSchema = z
     muted_topics: z.array(z.string().min(1).max(40)).max(40),
     level_locked: z.boolean(),
     show_easy_candidates: z.boolean(),
+    // v0.3 İP3 load management (domain/capacity.ts, catchup.ts, vacation.ts).
+    daily_capacity_min: z.number().int().min(CAPACITY_MIN_LIMITS.min).max(CAPACITY_MIN_LIMITS.max),
+    catchup_auto: z.boolean(),
+    vacation: vacationRangeSchema.nullable(),
+    vacation_history: z.array(vacationRangeSchema).max(MAX_VACATION_HISTORY).nullable(),
   })
   .partial();
 

@@ -39,6 +39,11 @@ const termType = z.enum(['word', 'phrase', 'pattern', 'affix']);
 const cefr = z.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']);
 const cardState = z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]);
 const rating = z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]);
+const dayKey = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+// v0.3 İP3: an inclusive range of local days (domain/vacation.ts).
+const vacationRange = z
+  .object({ start: dayKey, end: dayKey })
+  .refine((r) => r.start <= r.end, 'Vacation ends before it starts');
 
 export const noteSchema: z.ZodType<Note> = z.object({
   ...synced,
@@ -164,6 +169,13 @@ export const settingsSchema: z.ZodType<Settings> = z.object({
     .catch(null),
   // v0.2 İP4; absent in older rows and backups (= false).
   show_easy_candidates: z.boolean().nullish(),
+  // v0.3 İP3 load management; absent in older rows and backups (= the defaults). Malformed
+  // values (a newer client, a hand-edited backup) fall back to "unset" instead of rejecting
+  // the whole settings row.
+  daily_capacity_min: z.number().int().min(1).max(600).nullish().catch(null),
+  catchup_auto: z.boolean().nullish().catch(null),
+  vacation: vacationRange.nullish().catch(null),
+  vacation_history: z.array(vacationRange).max(50).nullish().catch(null),
 });
 
 export const contentFeedbackSchema: z.ZodType<ContentFeedback> = z.object({

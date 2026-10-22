@@ -6,10 +6,12 @@ import { normalizeTerm } from '../domain/normalize';
 import { buildQueue, type QueueCounts, type QueueItem, type QueueMode } from '../domain/queue';
 import { type Cloze, firstLetterHint, lastShownSenseId, makeCloze, nextRecognitionSense } from '../domain/recognition';
 import { buildHeatmap, computeStreakSummary, type HeatmapCell, type StreakSummary } from '../domain/streak';
+import { isVacationDay } from '../domain/vacation';
 import { type Card, CardState, type Id, type LexiconSense, type Millis, type Note, type RatingValue, type Sense } from '../domain/types';
 import { db } from './db';
 import { exampleTables, senseExamplesFor } from './examples';
 import { dueStudiedCards, loadTodayFacts, newCards } from './history';
+import { aheadDaysFor, getLoadToday, type LoadToday } from './load';
 import { extraNewKey, getMeta } from './meta';
 import { dayConfig, getSettings, schedulerFor } from './settings';
 
@@ -25,6 +27,8 @@ export interface StudyQueue {
   day: DayKey;
   /** Exclusive end of today; in 'ahead' mode, items with `card.due >= dayEnd` are tomorrow's. */
   dayEnd: Millis;
+  /** v0.3 İP3: today's catch-up / vacation plan (null in 'ahead' mode). */
+  load: LoadToday | null;
 }
 
 /** Today's extra new-card allowance (meta `extra_new:<day>`, this device only). */
@@ -52,7 +56,10 @@ export async function getStudyQueue(opts: StudyQueueOptions = {}, now: Millis = 
     const cfg = dayConfig(settings);
     const facts = await loadTodayFacts(cfg, now);
     const ahead = opts.mode === 'ahead';
-    const aheadEnd = dayEndMs(addDays(facts.bounds.key, 1), cfg);
+    // Before a vacation, "Yarının kartları" reaches over the vacation (up to 7 days).
+    const aheadEnd = dayEndMs(addDays(facts.bounds.key, ahead ? aheadDaysFor(settings, facts.bounds.key) : 1), cfg);
+    // Catch-up and the new-card ramp (domain/catchup.ts) shape the normal queue only.
+    const load = ahead ? null : await getLoadToday(settings, now);
     const [studied, fresh, extraNewToday] = await Promise.all([
       dueStudiedCards(ahead ? aheadEnd : facts.bounds.end),
       ahead ? Promise.resolve([]) : newCards(),
@@ -64,7 +71,8 @@ export async function getStudyQueue(opts: StudyQueueOptions = {}, now: Millis = 
       dayEnd: facts.bounds.end,
       mode: opts.mode ?? 'normal',
       aheadEnd,
-      dailyNewLimit: settings.daily_new_limit,
+      dailyNewLimit: load ? load.newLimitToday : settings.daily_new_limit,
+      reviewCap: load?.plan.reviewCap ?? null,
       extraNewToday,
       newIntroducedToday: facts.newIntroducedToday,
       reviewedTodayCardIds: facts.reviewedCardIds,
@@ -82,6 +90,7 @@ export async function getStudyQueue(opts: StudyQueueOptions = {}, now: Millis = 
       extraNewToday,
       day: facts.bounds.key,
       dayEnd: facts.bounds.end,
+      load,
     };
   });
 }
@@ -180,6 +189,8 @@ export async function getStreakSummary(now: Millis = Date.now()): Promise<Streak
   ]);
   return computeStreakSummary(activity, {
     today: dayKeyOf(now, cfg),
+    // Vacation days without reviews neither break nor extend the streak (v0.3 İP3).
+    isFrozenDay: (day) => isVacationDay(settings, day),
     accountStartDay: dayKeyOf(settings.created_at, cfg),
     learnedCards: learned,
   });

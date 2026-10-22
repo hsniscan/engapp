@@ -5,7 +5,7 @@ import { PULL_BACKFILL_KEY } from './backfill';
 import { EngDb } from './db';
 
 /** The current schema version; bump with every new Dexie version. */
-const LATEST = 11;
+const LATEST = 14;
 
 describe('Dexie schema', () => {
   it('opens with every table and the indexes the queries rely on', async () => {
@@ -300,6 +300,29 @@ describe('Dexie schema', () => {
       ['c2', 'for_you', true, null, null, false],
       ['c3', 'for_you', false, null, null, false],
     ]);
+    expect(await d.outbox.count()).toBe(0);
+    d.close();
+    await d.delete();
+  });
+
+  it('v14 upgrade (load management) keeps settings as they are and re-pulls them once', async () => {
+    const name = 'upgrade-v14-test';
+    const old = new Dexie(name);
+    old.version(1).stores({ settings: 'id', meta: 'key' });
+    old.version(11).stores({});
+    await old.open();
+    await old.table('settings').add({ id: 'settings', level: 'B1', daily_new_limit: 12 });
+    await old.table('meta').put({ key: 'sync_cursor', value: 77 });
+    old.close();
+
+    const d = new EngDb(name);
+    await d.open();
+    expect(d.verno).toBe(LATEST);
+    const s = await d.settings.get('settings');
+    expect(s).toMatchObject({ daily_new_limit: 12 });
+    // Absent means the defaults (20 min, catch-up on, no vacation): nothing is written.
+    expect(s && 'vacation' in s).toBe(false);
+    expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expect.arrayContaining(['settings']));
     expect(await d.outbox.count()).toBe(0);
     d.close();
     await d.delete();

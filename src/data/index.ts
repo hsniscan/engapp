@@ -6,6 +6,19 @@ export * from './queries';
 export * from './examples';
 export { addExtraNew, getMoreStudyOverview, MAX_EXTRA_NEW_STEP, type MoreStudyOverview } from './extraStudy';
 export {
+  computeWorkload,
+  dismissLoadWarning,
+  endVacation,
+  getLoadStatus,
+  getWorkloadInput,
+  isLoadWarningSnoozed,
+  setVacation,
+  type LoadStatus,
+  type LoadToday,
+  type WorkloadInput,
+  type WorkloadView,
+} from './load';
+export {
   countDeckFilter,
   createDeck,
   deleteDeck,

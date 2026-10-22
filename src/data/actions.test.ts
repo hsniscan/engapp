@@ -329,6 +329,8 @@ describe('study queue from the database', () => {
       });
     }
     await db.cards.bulkAdd(cards);
+    // The raw queue: catch-up would cap the 750 due reviews at the daily capacity (v0.3 İP3).
+    await updateSettings({ catchup_auto: false }, T);
     const t0 = performance.now();
     const q = await getStudyQueue({}, T);
     const elapsed = performance.now() - t0;

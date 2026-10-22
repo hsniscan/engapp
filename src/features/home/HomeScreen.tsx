@@ -12,6 +12,7 @@ import {
 } from '@/features/stats/format';
 import { LevelChangeLine, LevelTestOffer } from '@/features/leveltest/LevelHomeNotes';
 import { VocabTile } from '@/features/leveltest/VocabTile';
+import { LoadNotes } from '@/features/load/LoadNotes';
 import { heatLabel } from '@/features/stats/heatLabel';
 import { buttonClasses, cn, Icon, Page, Skeleton, Surface } from '@/ui';
 import { InterestsPrompt } from '@/features/profile/InterestsPrompt';
@@ -39,6 +40,7 @@ function Dashboard({ data }: { data: HomeDashboard }) {
       <div className="contents lg:col-span-2 lg:flex lg:flex-col lg:gap-5 empty:hidden">
         <LevelChangeLine className="order-0 lg:order-none" />
         <LevelTestOffer className="order-0 lg:order-none" />
+        <LoadNotes className="order-0 lg:order-none" />
       </div>
       <div className="contents lg:flex lg:flex-col lg:gap-5">
         <TodayCard data={data} className="order-2 lg:order-none" />
