@@ -285,3 +285,31 @@ Copying cards to another account does not copy them (decision 0009).
 - `lexicon_pair_notes` kind `contrast` (cache of `ai-contrast`): `sense_id` = the smaller
   lexicon sense id, `content_key` = "<smaller>|<larger>", `content = {a, b, difference_tr}`
   with each side `{sense_id, lemma, sentence_en, span, sentence_tr}`. Never user text.
+
+## Pictures, server side (v0.4 İP2, decision 0030)
+
+Migration `20261025000200_images.sql`. No Dexie change in İP2 (the device cache of pictures is
+İP3). Pictures belong to a lexicon sense and never contain user data. Prompts and jobs:
+`docs/ai-image.md`.
+
+- `lexicon_senses` gains `visualizability` (0–3, visual-v1; null = not scored), `visual_hint`
+  (≤ 300 characters, null = none) and `visual_scored_at`. Changing only these columns does not
+  bump `server_seq`, so scoring does not make devices re-pull the lexicon.
+- `lexicon_images`: `id`, `sense_id`, `variant` (0, 1, … per sense, rejected attempts included),
+  `svg` (sanitised, ≤ 8 KB, light palette only), `alt_tr`, `status`
+  (`checking`/`review`/`approved`/`rejected`), `checks` (jsonb: sanitizer, contrast, coverage,
+  vision verdict, attempt, problem), `model`, `prompt_version`, `cost_usd`, `created_at`,
+  `updated_at`. Clients may read only `id, sense_id, variant, svg, alt_tr, status, created_at`,
+  and only `approved` rows plus `review` rows of senses in their own cards (RLS). No client
+  writes.
+- `image_requests` (one row per sense: `source` auto/user, `priority`, `requesters`, `state`
+  queued/submitted/done/skipped, `batch_id`, `attempt` 1–2, `problem`, `hold_id`,
+  `last_error`) and `image_request_users` (who asked). Service role only; users go through
+  `image_request(p_sense_id)`.
+- `image_budget` (month, `cap_usd`, `spent_usd`, `reserved_usd`) and `image_budget_holds`
+  (one per in-flight call, `purpose` instant/batch/check/visual/pilot). Service role only.
+- `image_usage` (user, UTC day, count) for `IMAGE_DAILY_LIMIT`; `image_feedback` (the review
+  screen's decisions: approve / reject / redraw with the reason).
+- `app_admins` (`user_id`): who may use the review screen (`is_app_admin()`,
+  `image_review_queue`, `image_review_decide`). Filled by the deploy workflow from
+  `APP_ADMIN_USER_ID`, never seeded in a migration.

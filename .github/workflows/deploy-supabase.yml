@@ -137,8 +137,9 @@ jobs:
           VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT || 'https://engapp-65y.pages.dev' }}
           # Pictures (ai-image, docs/decisions/0030-image-pipeline.md); all optional.
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          CLAUDE_IMAGE_MODEL: ${{ vars.CLAUDE_IMAGE_MODEL || 'claude-opus-5-5' }}
-          CLAUDE_CHECK_MODEL: ${{ vars.CLAUDE_CHECK_MODEL || 'claude-haiku-5-5' }}
+          # Model ids: only when set; otherwise the defaults in _shared/image-models.ts apply.
+          CLAUDE_IMAGE_MODEL: ${{ vars.CLAUDE_IMAGE_MODEL }}
+          CLAUDE_CHECK_MODEL: ${{ vars.CLAUDE_CHECK_MODEL }}
           CLAUDE_MONTHLY_CREDIT_USD: ${{ vars.CLAUDE_MONTHLY_CREDIT_USD || '100' }}
           IMAGE_DAILY_LIMIT: ${{ vars.IMAGE_DAILY_LIMIT || '10' }}
         run: |
@@ -158,8 +159,8 @@ jobs:
             echo "AI_DAILY_LIMIT=$AI_DAILY_LIMIT"
             echo "ALLOWED_ORIGINS=$ALLOWED_ORIGINS"
             echo "VAPID_SUBJECT=$VAPID_SUBJECT"
-            echo "CLAUDE_IMAGE_MODEL=$CLAUDE_IMAGE_MODEL"
-            echo "CLAUDE_CHECK_MODEL=$CLAUDE_CHECK_MODEL"
+            if [ -n "$CLAUDE_IMAGE_MODEL" ]; then echo "CLAUDE_IMAGE_MODEL=$CLAUDE_IMAGE_MODEL"; fi
+            if [ -n "$CLAUDE_CHECK_MODEL" ]; then echo "CLAUDE_CHECK_MODEL=$CLAUDE_CHECK_MODEL"; fi
             echo "CLAUDE_MONTHLY_CREDIT_USD=$CLAUDE_MONTHLY_CREDIT_USD"
             echo "IMAGE_DAILY_LIMIT=$IMAGE_DAILY_LIMIT"
             # Only when the secret exists, so a missing key never overwrites a stored one.
