@@ -1,10 +1,12 @@
 // Smart new-card order, data side (v0.4, docs/decisions/0039): reads what domain/newOrder.ts
 // needs about the notes of today's new cards, inside the queue's transaction (newOrderTables).
 //
-// The client level file is never awaited here: the queue is built inside useLiveQuery, where
-// awaiting a fetch would lose Dexie's zone. The first build of an app session starts the load
-// in the background (the home screen builds the queue before a session opens, so the file is
-// normally there by then); until it is, levels stored with the lexicon still count. Word
+// The client level file is used once something else loaded it (the card's level badge does,
+// on the first card shown): it is never awaited or fetched here, because the queue is built
+// inside useLiveQuery, where awaiting a fetch would lose Dexie's zone, and parsing it would
+// delay a cold start's first card. Until then the levels stored with the lexicon count; the
+// cards not shown yet may move once it is there, which the user does not see (cards introduced
+// earlier today always seed the selection, so what was shown stays consistent). Word
 // families come from the morphology file the family screens cached (ref_cache), read once per
 // app session. The part that only depends on earlier days (sources the user started words
 // from in the last 7 days) is computed once per day.
@@ -15,32 +17,17 @@ import type { MorphologyFile } from '../domain/morphology';
 import { type NewNoteFacts, type NewOrderInput, newOrderSeed, noteFacts } from '../domain/newOrder';
 import { normalizeTerm } from '../domain/normalize';
 import { effectiveLogs } from '../domain/recompute';
-import type { Card, Id, LexiconSense, Sense, Settings } from '../domain/types';
+import type { Card, Id, LexiconSense, Note, Sense, Settings } from '../domain/types';
 import Dexie from 'dexie';
 import { db } from './db';
 import { logsByCard, type TodayFacts } from './history';
-import { levelDataNow, loadLevelData } from './levelData';
+import { levelDataNow } from './levelData';
 
 const DAY_MS = 86_400_000;
 /** A source imported this many days before today (or today) counts as one the user works on. */
 export const ACTIVE_SOURCE_NEW_DAYS = 14;
 /** …as does a source the user started a word from in this many days before today. */
 export const ACTIVE_SOURCE_STUDY_DAYS = 7;
-const LEVEL_RETRY_MS = 10 * 60_000;
-
-let levelTriedAt = -Infinity;
-
-/** The level file if loaded; otherwise starts loading it (at most every 10 minutes). */
-function levelsForOrder(): LevelData | null {
-  const loaded = levelDataNow();
-  const now = Date.now();
-  if (!loaded && now - levelTriedAt >= LEVEL_RETRY_MS) {
-    levelTriedAt = now;
-    loadLevelData().catch(() => undefined);
-  }
-  return loaded;
-}
-
 /** Word family of a lemma; undefined = not read yet this app session; null = no file cached. */
 let familyMap: Map<string, number> | null | undefined;
 
@@ -59,7 +46,6 @@ async function familiesForOrder(): Promise<((lemma: string) => number | null) | 
 
 /** Tests only: forget what was read once per app session. */
 export function resetNewOrderCaches(): void {
-  levelTriedAt = -Infinity;
   familyMap = undefined;
   studied = null;
   cache = null;
@@ -124,11 +110,21 @@ function englishWords(v: unknown): string[] {
 // ------------------------------------------------------------------ per-note facts, cached
 
 /**
- * Facts of the notes read so far, and the false-friend pairs of their terms. Answers only
- * change cards and logs, so the queue rebuilt after every answer reads nothing new; any write
- * to a table the facts come from (here or in another tab: a sync pull, an edit) clears it.
+ * The rows of the notes read so far, their facts and the false-friend pairs of their terms.
+ * Answers only change cards and logs, so the queue rebuilt after every answer reads nothing
+ * new; any write to a table the rows come from (here or in another tab: a sync pull, an edit)
+ * clears it. When the level file or the word families arrive, only the facts are recomputed.
  */
+interface RawNote {
+  note: Note;
+  /** Live senses in display order. */
+  senses: Sense[];
+  lex: Map<Id, LexiconSense>;
+}
+
 interface FactsCache {
+  raw: Map<Id, RawNote>;
+  /** Facts for `levels` and `families`. */
   levels: LevelData | null;
   families: boolean;
   facts: Map<Id, NewNoteFacts>;
@@ -151,17 +147,26 @@ function listen(): void {
   });
 }
 
-/** Above this many notes to read, one scan of the table beats a lookup per key. */
+/**
+ * Above this many notes to read, reading the whole table at once (getAll) beats a lookup per
+ * key; a Dexie filter() would walk a cursor row by row, which is slower than both.
+ */
 const SCAN_ABOVE = 300;
 
-async function loadFacts(noteIds: Id[], c: FactsCache, familyOf: ((lemma: string) => number | null) | undefined): Promise<void> {
-  const missing = noteIds.filter((id) => !c.facts.has(id) && !c.absent.has(id));
+async function loadRows(noteIds: Id[], c: FactsCache): Promise<void> {
+  const missing = noteIds.filter((id) => !c.raw.has(id) && !c.absent.has(id));
   if (missing.length === 0) return;
   const wanted = new Set(missing);
+  const scan = missing.length > SCAN_ABOVE;
   const [notes, senseRows] = await Promise.all([
-    db.notes.bulkGet(missing),
-    missing.length > SCAN_ABOVE
-      ? db.senses.filter((s) => wanted.has(s.note_id)).toArray()
+    scan
+      ? db.notes.toArray().then((all) => {
+          const byId = new Map(all.map((n) => [n.id, n]));
+          return missing.map((id) => byId.get(id));
+        })
+      : db.notes.bulkGet(missing),
+    scan
+      ? db.senses.toArray().then((all) => all.filter((x) => wanted.has(x.note_id)))
       : db.senses.where('note_id').anyOf(missing).toArray(),
   ]);
   const sensesByNote = new Map<Id, Sense[]>();
@@ -182,9 +187,10 @@ async function loadFacts(noteIds: Id[], c: FactsCache, familyOf: ((lemma: string
       continue;
     }
     const own = (sensesByNote.get(n.id) ?? []).sort((a, b) => a.sense_no - b.sense_no);
-    const f = noteFacts(n, own, (id) => lex.get(id), c.levels, familyOf);
-    c.facts.set(n.id, f);
-    (byTerm.get(f.term_norm) ?? byTerm.set(f.term_norm, []).get(f.term_norm)!).push(n.id);
+    const ownLex = new Map<Id, LexiconSense>();
+    for (const x of own) if (x.lexicon_sense_id && lex.has(x.lexicon_sense_id)) ownLex.set(x.lexicon_sense_id, lex.get(x.lexicon_sense_id)!);
+    c.raw.set(n.id, { note: n, senses: own, lex: ownLex });
+    (byTerm.get(n.term_norm) ?? byTerm.set(n.term_norm, []).get(n.term_norm)!).push(n.id);
   }
   // False friends of these words (cached lexicon_pair_notes rows): the Turkish look-alike's
   // English words ("actual" → "current") are confusable with the word.
@@ -193,7 +199,7 @@ async function loadFacts(noteIds: Id[], c: FactsCache, familyOf: ((lemma: string
   const termSet = new Set(terms);
   const rows =
     terms.length > SCAN_ABOVE
-      ? await db.lexicon_pair_notes.filter((r) => r.kind === 'false_friend' && termSet.has(r.term_norm)).toArray()
+      ? (await db.lexicon_pair_notes.toArray()).filter((r) => termSet.has(r.term_norm))
       : await db.lexicon_pair_notes.where('term_norm').anyOf(terms).toArray();
   for (const r of rows) {
     if (r.kind !== 'false_friend' || r.status !== 'active') continue;
@@ -226,14 +232,22 @@ export async function newOrderInput(
   settings: Pick<Settings, 'level' | 'user_id' | 'created_at'>,
 ): Promise<NewOrderInput> {
   listen();
-  const levels = levelsForOrder();
+  const levels = levelDataNow();
   const familyOf = await familiesForOrder();
-  if (!cache || cache.levels !== levels || cache.families !== !!familyOf)
-    cache = { levels, families: !!familyOf, facts: new Map(), absent: new Set(), falseFriends: new Map(), confusions: null };
+  cache ??= { raw: new Map(), levels, families: !!familyOf, facts: new Map(), absent: new Set(), falseFriends: new Map(), confusions: null };
   const c = cache;
+  if (c.levels !== levels || c.families !== !!familyOf) {
+    c.levels = levels;
+    c.families = !!familyOf;
+    c.facts = new Map();
+  }
   const userKey = settings.user_id ?? `guest:${settings.created_at}`;
   const noteIds = [...new Set([...fresh.map((x) => x.note_id), ...today.introducedNoteIds])];
-  await loadFacts(noteIds, c, familyOf);
+  await loadRows(noteIds, c);
+  for (const id of noteIds) {
+    const r = c.raw.get(id);
+    if (r && !c.facts.has(id)) c.facts.set(id, noteFacts(r.note, r.senses, (x) => r.lex.get(x), levels, familyOf));
+  }
   c.confusions ??= await reportedPairs();
 
   // Sources the user works on: imported lately, or words started from them lately.
@@ -242,7 +256,10 @@ export async function newOrderInput(
     .aboveOrEqual(today.bounds.start - ACTIVE_SOURCE_NEW_DAYS * DAY_MS)
     .filter((x) => x.deleted_at === null)
     .primaryKeys();
-  const activeSources = new Set<Id>([...recent, ...(await recentlyStudiedSources(today.bounds, userKey))]);
+  // Only worth reading the last week's logs when one of these words comes from a source.
+  const fromSource = noteIds.some((id) => !!c.facts.get(id)?.source_id);
+  const activeSources = new Set<Id>(recent);
+  if (fromSource) for (const s of await recentlyStudiedSources(today.bounds, userKey)) activeSources.add(s);
 
   const pairs = new Set(c.confusions);
   const notes = new Map<Id, NewNoteFacts>();
