@@ -129,7 +129,8 @@ jobs:
           GEMINI_TTS_FALLBACK_MODEL: ${{ vars.GEMINI_TTS_FALLBACK_MODEL || 'gemini-3.8-flash-lite-tts' }}
           TTS_DAILY_LIMIT: ${{ vars.TTS_DAILY_LIMIT || '150' }}
           AI_DAILY_LIMIT: ${{ vars.AI_DAILY_LIMIT || '200' }}
-          ALLOWED_ORIGINS: ${{ format('{0},https://engapp-65y.pages.dev,http://localhost:5173', vars.ALLOWED_ORIGINS) }}
+          # https://localhost = the Android app (Capacitor), docs/decisions/0033-android-capacitor.md.
+          ALLOWED_ORIGINS: ${{ format('{0},https://engapp-65y.pages.dev,http://localhost:5173,https://localhost', vars.ALLOWED_ORIGINS) }}
           VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT || 'https://engapp-65y.pages.dev' }}
         run: |
           # Written to a temp file (not the command line) so values never show in logs.
