@@ -5,6 +5,7 @@
 import {
   extractRequest,
   MAX_CANDIDATES,
+  type AiFalseFriend,
   type ExtractCandidate,
   type ExtractResponse,
   type LexiconEntry,
@@ -13,6 +14,7 @@ import { ApiError } from './errors.ts';
 import { AiError, type AiProvider } from './ai-provider.ts';
 import { parseCefr, type Cefr } from './cefr.ts';
 import { lemmasNeeded, resolveLevel, type RefLookup } from './level.ts';
+import { looksBorrowed } from './level-job.ts';
 import { stripListEntryPrefix } from './listEntry.ts';
 import { findGappedSpan, findSentence, findSpan } from './locate.ts';
 import {
@@ -21,10 +23,12 @@ import {
   EXTRACT_RESPONSE_SCHEMA,
   EXTRACT_SYSTEM_PROMPT,
   extractModelCandidate,
+  extractModelFalseFriend,
   extractModelOutput,
   MAX_KNOWN_SENSES,
   type KnownSenseLine,
 } from './prompts.ts';
+import type { LexiconPairNoteRow, NewPairNote, PairNoteStore } from './pair-notes.ts';
 import type { AiStore, LexiconUpsertItem, LexSense, LexTerm } from './store.ts';
 import {
   cleanLemma,
@@ -32,10 +36,13 @@ import {
   isCleanLexiconText,
   isDuplicateSense,
   isNearDuplicateGloss,
+  isSameMeaningTr,
+  meaningAlternatives,
   normalizeLemma,
   normalizePos,
   type Pos,
 } from './text.ts';
+import { cleanChunkTopics } from './topics-contract.ts';
 import { FUNCTION_WORDS, lemmaForms, prematchForms, termForms, tokenize } from './tokenize.ts';
 
 /** Two word forms that share a base form ("talked" ~ "talk"). */
@@ -98,6 +105,11 @@ export interface PipelineDeps {
   log?: (msg: string, data?: Record<string, unknown>) => void;
 }
 
+/** ai-extract's dependencies. Without `pairNotes` (older tests) false friends are not stored. */
+export interface ExtractDeps extends PipelineDeps {
+  pairNotes?: PairNoteStore;
+}
+
 // ---------------------------------------------------------------------------
 // Validation of the model output
 // ---------------------------------------------------------------------------
@@ -115,6 +127,16 @@ export interface NewSense {
   ipa: string | null;
   /** The model's level guess (extract-v3 / enrich-v2); null when missing or invalid. */
   cefr_guess: Cefr | null;
+  /** extract-v5: a checked false-friend warning for this sense, or null. */
+  false_friend?: CleanFalseFriend | null;
+}
+
+/** A false friend the server accepted (extract-v5), before it is stored. */
+export interface CleanFalseFriend {
+  tr_word: string;
+  tr_meaning_tr: string;
+  strength: 'full' | 'partial';
+  note_tr: string | null;
 }
 
 export interface ValidCandidate {
@@ -147,6 +169,8 @@ export type DropReason =
 export interface ValidationResult {
   candidates: ValidCandidate[];
   dropped: Partial<Record<DropReason, number>>;
+  /** extract-v5: topic keys of the chunk (empty when missing or unknown). */
+  topics: string[];
 }
 
 export function cleanGloss(s: string): string {
@@ -199,6 +223,42 @@ export function cleanIpa(s: string | null | undefined): string | null {
   return `/${v}/`;
 }
 
+const MAX_FALSE_FRIEND_NOTE_CHARS = 160;
+
+/**
+ * The model's false_friend_tr for a new sense (extract-v5), checked: a Turkish word (1–3
+ * words, ≤ 40 chars) whose meaning is NOT the sense's Turkish meaning (that would be a
+ * borrowed word, not a false friend) and that sounds like the English term (looksBorrowed,
+ * the same sound check as the level job's false friends). Anything else gives null: a bad
+ * warning never drops the candidate.
+ */
+export function cleanFalseFriend(raw: unknown, term: string, meaningTr: string): CleanFalseFriend | null {
+  if (raw === null || raw === undefined) return null;
+  const p = extractModelFalseFriend.safeParse(raw);
+  if (!p.success) return null;
+  const strip = (v: string) =>
+    v
+      .normalize('NFC')
+      .replace(/\s+/g, ' ')
+      .replace(/^["'“”‘’]+|["'“”‘’]+$/g, '')
+      .trim();
+  const word = strip(p.data.tr_word).toLocaleLowerCase('tr');
+  const meaning = cleanMeaningTr(p.data.tr_meaning_tr);
+  if (!word || word.length > 40 || word.split(' ').length > 3 || !isCleanLexiconText(word, 'tr')) return null;
+  if (!meaning || meaning.length > 60 || !isCleanLexiconText(meaning, 'tr')) return null;
+  // Same meaning as the sense: a loanword ("television" ~ "televizyon"), not a trap.
+  if (isSameMeaningTr(meaning, meaningTr) || meaningAlternatives(meaningTr).includes(word)) return null;
+  if (!word.split(' ').some((w) => looksBorrowed(term, `'${w}'`))) return null;
+  const note = p.data.note_tr ? strip(p.data.note_tr).replace(/["“”]/g, "'") : '';
+  return {
+    tr_word: word,
+    tr_meaning_tr: meaning,
+    strength: p.data.strength === 'partial' ? 'partial' : 'full',
+    note_tr:
+      note && note.length <= MAX_FALSE_FRIEND_NOTE_CHARS && isCleanLexiconText(note, 'tr') ? note : null,
+  };
+}
+
 function inferTermType(raw: string, term: string): 'word' | 'phrase' | 'pattern' {
   if (raw === 'word' || raw === 'phrase' || raw === 'pattern') {
     if (raw === 'word' && term.includes(' ')) return 'phrase';
@@ -224,7 +284,7 @@ export function validateExtractOutput(
     onDrop?.(r, current);
   };
   const top = extractModelOutput.safeParse(data);
-  if (!top.success) return { candidates: [], dropped: { invalid_shape: 1 } };
+  if (!top.success) return { candidates: [], dropped: { invalid_shape: 1 }, topics: [] };
 
   const out: ValidCandidate[] = [];
   const seen = new Set<string>();
@@ -316,6 +376,7 @@ export function validateExtractOutput(
           meaning_tr: meaning,
           ipa,
           cefr_guess: parseCefr(c.cefr_guess),
+          false_friend: cleanFalseFriend(c.false_friend_tr, term, meaning),
         };
       } else {
         drop(ref ? 'unknown_sense_ref' : 'incomplete_new_sense');
@@ -372,7 +433,7 @@ export function validateExtractOutput(
     bySentence.set(sentenceKey, out.length);
     out.push(candidate);
   }
-  return { candidates: out, dropped };
+  return { candidates: out, dropped, topics: cleanChunkTopics(top.data.topics) };
 }
 
 // ---------------------------------------------------------------------------
@@ -560,6 +621,8 @@ interface CachedResult {
   v: 1;
   candidates: CachedCandidate[];
   dropped: Record<string, number>;
+  /** extract-v5 */
+  topics?: string[];
 }
 
 function isCachedResult(x: unknown): x is CachedResult {
@@ -571,10 +634,48 @@ function isCachedResult(x: unknown): x is CachedResult {
   );
 }
 
+/** A stored false_friend pair note as the response carries it; null when malformed. */
+export function toAiFalseFriend(row: LexiconPairNoteRow): AiFalseFriend | null {
+  const c = row.content;
+  const str = (v: unknown) => (typeof v === 'string' && v ? v : null);
+  const trWord = str(c.tr_word);
+  const enTr = str(c.en_meaning_tr);
+  const trTr = str(c.tr_meaning_tr);
+  if (row.kind !== 'false_friend' || row.status !== 'active' || !trWord || !enTr || !trTr) return null;
+  return {
+    id: row.id,
+    tr_word: trWord,
+    en_meaning_tr: enTr,
+    tr_meaning_tr: trTr,
+    tr_meaning_en: str(c.tr_meaning_en),
+    strength: c.strength === 'partial' ? 'partial' : 'full',
+    note_tr: str(c.note_tr),
+  };
+}
+
+/** AI false friends stored for these senses (first per sense). A failed lookup shows none. */
+async function falseFriendsOf(
+  senseIds: string[],
+  deps: ExtractDeps,
+): Promise<Map<string, AiFalseFriend>> {
+  const out = new Map<string, AiFalseFriend>();
+  if (!deps.pairNotes || senseIds.length === 0) return out;
+  try {
+    for (const row of await deps.pairNotes.findNotes(senseIds, 'false_friend')) {
+      const ff = toAiFalseFriend(row);
+      if (ff && row.sense_id && !out.has(row.sense_id)) out.set(row.sense_id, ff);
+    }
+  } catch (e) {
+    deps.log?.('ai-extract false friend lookup failed', { error: String(e) });
+  }
+  return out;
+}
+
 function buildResponse(
   cached: CachedResult,
   entries: LexiconEntry[],
   meta: { cacheHit: boolean; model: string | null; usage: { used: number; limit: number } | null },
+  falseFriends: ReadonlyMap<string, AiFalseFriend> = new Map(),
 ): ExtractResponse {
   const byId = new Map(entries.map((e) => [e.id, e]));
   const candidates: ExtractCandidate[] = [];
@@ -596,6 +697,7 @@ function buildResponse(
       match: c.match,
       lexicon_hit: meta.cacheHit || c.match === 'known_sense',
       lexicon: lex,
+      false_friend: falseFriends.get(lex.id) ?? null,
     });
   }
   const count = (m: string) => candidates.filter((c) => c.match === m).length;
@@ -604,6 +706,7 @@ function buildResponse(
     cache_hit: meta.cacheHit,
     ai_called: !meta.cacheHit,
     model: meta.model,
+    topics: cleanChunkTopics(cached.topics ?? []),
     candidates,
     counts: {
       candidates: candidates.length,
@@ -634,7 +737,7 @@ export function pickKnownSenses(terms: LexTerm[], max: number): { t: LexTerm; s:
   return terms.flatMap((t) => t.senses.filter((s) => picked.has(s.id)).map((s) => ({ t, s })));
 }
 
-export async function runExtract(body: unknown, deps: PipelineDeps): Promise<ExtractResponse> {
+export async function runExtract(body: unknown, deps: ExtractDeps): Promise<ExtractResponse> {
   const parsed = extractRequest.safeParse(body);
   if (!parsed.success)
     throw new ApiError(
@@ -655,10 +758,14 @@ export async function runExtract(body: unknown, deps: PipelineDeps): Promise<Ext
     level,
   );
   if (hit && isCachedResult(hit.result)) {
-    const entries = await deps.store.getEntries([
-      ...new Set(hit.result.candidates.map((c) => c.sense_id)),
-    ]);
-    return buildResponse(hit.result, entries, { cacheHit: true, model: hit.model, usage: null });
+    const ids = [...new Set(hit.result.candidates.map((c) => c.sense_id))];
+    const entries = await deps.store.getEntries(ids);
+    return buildResponse(
+      hit.result,
+      entries,
+      { cacheHit: true, model: hit.model, usage: null },
+      await falseFriendsOf(ids, deps),
+    );
   }
 
   // 2. Lexicon pre-match: existing senses of terms that occur in the chunk.
@@ -768,7 +875,40 @@ export async function runExtract(body: unknown, deps: PipelineDeps): Promise<Ext
       match: matchOf[i]!,
     });
   });
-  const cached: CachedResult = { v: 1, candidates: cachedCandidates, dropped };
+  const cached: CachedResult = { v: 1, candidates: cachedCandidates, dropped, topics: v.topics };
+
+  // 6b. extract-v5: false friends of new senses go to the shared pair notes (no user text:
+  // the Turkish look-alike, its meaning and a short note, written by the model and checked).
+  if (deps.pairNotes) {
+    const notes: NewPairNote[] = [];
+    v.candidates.forEach((c, i) => {
+      const ff = c.newSense?.false_friend;
+      const senseId = senseIdOf[i];
+      if (!ff || !senseId || !c.newSense) return;
+      notes.push({
+        term_norm: c.lemma_norm,
+        sense_id: senseId,
+        lang_pair: 'en-tr',
+        kind: 'false_friend',
+        content_key: ff.tr_word,
+        content: {
+          tr_word: ff.tr_word,
+          en_meaning_tr: c.newSense.meaning_tr,
+          tr_meaning_tr: ff.tr_meaning_tr,
+          tr_meaning_en: null,
+          strength: ff.strength,
+          note_tr: ff.note_tr,
+        },
+        model: result.model,
+        prompt_version: EXTRACT_PROMPT_VERSION,
+      });
+    });
+    try {
+      if (notes.length) await deps.pairNotes.insertNotes(notes);
+    } catch (e) {
+      deps.log?.('ai-extract false friend write failed', { error: String(e) });
+    }
+  }
 
   // 7. Cache (failure to cache must not fail the request).
   try {
@@ -785,9 +925,10 @@ export async function runExtract(body: unknown, deps: PipelineDeps): Promise<Ext
   }
 
   const entries = await deps.store.getEntries([...seenSense]);
-  return buildResponse(cached, entries, {
-    cacheHit: false,
-    model: result.model,
-    usage: { used: usage.used, limit: usage.limit },
-  });
+  return buildResponse(
+    cached,
+    entries,
+    { cacheHit: false, model: result.model, usage: { used: usage.used, limit: usage.limit } },
+    await falseFriendsOf([...seenSense], deps),
+  );
 }

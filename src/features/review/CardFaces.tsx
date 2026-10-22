@@ -9,6 +9,7 @@ import { LevelDialogButton } from '@/features/levels/LevelDetails';
 import { useCardLevel } from '@/features/levels/useWordLevel';
 import { CardExamples } from '@/features/examples/ExamplesPanel';
 import { CardBackExtras } from '@/features/family/CardBackExtras';
+import { CardMnemonic } from '@/features/mnemonics';
 import { Badge, cn, IconButton } from '@/ui';
 
 const meaningOf = (s: Pick<Sense, 'meaning_tr' | 'meaning_tr_override'>) =>
@@ -377,6 +378,10 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
           <Ipa ipa={note.ipa} />
         </div>
         <SenseList view={view} />
+        {/* A recognition card covers every sense of the note: each sense's mnemonic. */}
+        {(sense ? [sense] : view.senses).map((s) => (
+          <CardMnemonic key={s.id} senseId={s.id} className="text-center" />
+        ))}
         {sentence && (
           <div className="flex w-full max-w-md justify-center border-t border-border pt-4">
             {sentence}
@@ -420,6 +425,7 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
           </p>
         )}
       </div>
+      <CardMnemonic senseId={sense.id} className="text-center" />
       {card.card_type === 'production' && sentence}
       {examples}
       <CardBackExtras note={note} />

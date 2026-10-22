@@ -13,7 +13,7 @@ describe('Dexie schema', () => {
     await d.open();
     expect(d.verno).toBe(LATEST);
     expect(d.tables.map((t) => t.name).sort()).toEqual(
-      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs', 'decks', 'theme_previews', 'level_tests', 'known_terms', 'anki_imports'].sort(),
+      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs', 'decks', 'theme_previews', 'level_tests', 'known_terms', 'anki_imports', 'lexicon_pair_notes'].sort(),
     );
     const idx = (table: string) => d.table(table).schema.indexes.map((i) => i.name);
     expect(idx('decks')).toEqual(expect.arrayContaining(['sort', 'deleted_at']));
@@ -326,6 +326,48 @@ describe('Dexie schema', () => {
     // Logs are never rewritten: no origin is filled in (absent = 'app').
     expect(await d.review_logs.get('l1')).toEqual({ id: 'l1', card_id: 'c1', reviewed_at: 1, undo_of: null, rating: 3 });
     expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expect.arrayContaining(['decks', 'sources']));
+    expect(await d.outbox.count()).toBe(0);
+    d.close();
+    await d.delete();
+  });
+
+  it('v13 adds the lexicon_pair_notes cache and keeps import jobs and user content as they are', async () => {
+    const name = 'upgrade-to-v13';
+    // A database as v0.2 left it (version 11), with an import job and an edited sentence.
+    const old = new Dexie(name);
+    old.version(11).stores({
+      import_jobs: 'id, status, created_at',
+      user_content: 'id, kind, lexicon_sense_id, replaces_id, deleted_at',
+      meta: 'key',
+    });
+    await old.open();
+    await old.table('import_jobs').add({ id: 'j1', status: 'done', created_at: 1, chunk_total: 2, chunk_done: 2 });
+    await old.table('user_content').add({ id: 'u1', kind: 'example_sentence', text: 'x', deleted_at: null });
+    old.close();
+
+    const d = new EngDb(name);
+    await d.open();
+    expect(d.verno).toBe(LATEST);
+    const job = await d.import_jobs.get('j1');
+    expect(job).toMatchObject({ id: 'j1', chunk_done: 2 });
+    expect((job as unknown as { chunk_topics?: unknown }).chunk_topics).toBeUndefined();
+    expect(await d.user_content.get('u1')).toMatchObject({ kind: 'example_sentence' });
+    const idx = d.lexicon_pair_notes.schema.indexes.map((i) => i.name);
+    expect(idx).toEqual(expect.arrayContaining(['[sense_id+kind]', 'term_norm']));
+    await d.lexicon_pair_notes.add({
+      id: 'pn1',
+      term_norm: 'reluctant',
+      sense_id: 'ls1',
+      lang_pair: 'en-tr',
+      kind: 'mnemonic_suggestion',
+      content_key: 'k',
+      content: { type: 'sound', text_tr: 't', why: null },
+      curated: false,
+      status: 'active',
+      updated_at: 1,
+    });
+    expect(await d.lexicon_pair_notes.where('[sense_id+kind]').equals(['ls1', 'mnemonic_suggestion']).count()).toBe(1);
+    // A cache, not synced: nothing waits in the outbox.
     expect(await d.outbox.count()).toBe(0);
     d.close();
     await d.delete();

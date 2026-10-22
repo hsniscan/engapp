@@ -4,6 +4,7 @@ export { loadLevelData, levelDataNow } from './levelData';
 export * from './actions';
 export * from './queries';
 export * from './examples';
+export * from './mnemonics';
 export { addExtraNew, getMoreStudyOverview, MAX_EXTRA_NEW_STEP, type MoreStudyOverview } from './extraStudy';
 export {
   computeWorkload,
@@ -93,6 +94,7 @@ export {
   clearPairNoteFeedback,
   dismissMorphemeSuggestion,
   getDismissedMorphemes,
+  getFoundFalseFriends,
   getHiddenPairNotes,
   pairNoteFeedbackIds,
   getUserWordSets,

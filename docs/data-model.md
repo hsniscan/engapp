@@ -210,8 +210,8 @@ show.
 | Table (Dexie v5)   | Synced                      | Indexes                                              | Notes |
 | ------------------ | --------------------------- | ---------------------------------------------------- | ----- |
 | `lexicon_examples` | pulled only (shared cache)  | `id`, `sense_id`, `[sense_id+level_band]`, `updated_at` | Shared sentences of a lexicon sense: `context`, `level_band` (A2/B1/B2/C1), `text_en`, `span`, `translations` (`{"tr": …}`), `status`. Never user text; written only by `ai-examples`. Retired rows are removed locally. |
-| `content_feedback` | yes (per user, LWW)         | `id`, `[target_kind+target_id]`, `deleted_at`         | One row per target (`target_kind` `example`, `false_friend` — a false-friend warning hidden (`skip`) or reported (`reject`), target id = UUID v8 of SHA-256 over ("pair_note", "en-tr", `term_norm\|tr_word`), decision 0014; `mnemonic` etc. later), `verdict` `like`/`skip`/`reject`. The id is derived from the target (UUID v8 of SHA-256), so two devices write the same row. Taking a verdict back is a tombstone. |
-| `user_content`     | yes (per user, LWW)         | `id`, `kind`, `lexicon_sense_id`, `replaces_id`, `deleted_at` | The user's own text: `kind` `example_sentence` (an edited sentence, `replaces_id` = the shared sentence, id derived from it) and later mnemonics (İP6). Private to the account; never written to a shared table. |
+| `content_feedback` | yes (per user, LWW)         | `id`, `[target_kind+target_id]`, `deleted_at`         | One row per target (`target_kind` `example`, `false_friend` — a false-friend warning hidden (`skip`) or reported (`reject`), target id = UUID v8 of SHA-256 over ("pair_note", "en-tr", `term_norm\|tr_word`), decision 0014; `mnemonic` — a hidden mnemonic suggestion, decision 0020), `verdict` `like`/`skip`/`reject`. The id is derived from the target (UUID v8 of SHA-256), so two devices write the same row. Taking a verdict back is a tombstone. |
+| `user_content`     | yes (per user, LWW)         | `id`, `kind`, `lexicon_sense_id`, `replaces_id`, `deleted_at` | The user's own text: `kind` `example_sentence` (an edited sentence, `replaces_id` = the shared sentence, id derived from it) and `mnemonic` (the user's pick or own text, one row per sense, decision 0020). Private to the account; never written to a shared table. |
 | `example_jobs`     | no (device-local queue)     | `key` (`<lexicon sense id>\|<band>`), `status`, `next_attempt_at` | Background preparation: `contexts` asked, `priority` (2 open on screen, 1 new card, 0 backfill), `attempts`, `error`. |
 
 Settings: `example_tr_visible` (null/false: the translation of an example sentence shows on
@@ -227,3 +227,20 @@ where the term is located). The back repeats that sentence.
 Backups (`schema_version` 5 and later) carry `content_feedback` and `user_content`; files without them
 restore as before, and an overwrite restore of such a file leaves the local rows alone.
 Copying cards to another account does not copy them (decision 0009).
+
+## Mnemonics, text topics and model false friends (v0.3 İP2, decision 0020)
+
+| Table (Dexie v13)    | Synced                     | Indexes                                   | Notes |
+| -------------------- | -------------------------- | ----------------------------------------- | ----- |
+| `lexicon_pair_notes` | no (read-only cache)       | `id`, `[sense_id+kind]`, `term_norm`      | Shared notes of a lexicon sense: `mnemonic_suggestion` (`content = {type: sound/story/image, text_tr, why}`, from `ai-mnemonic`; a local row `none:<sense id>` with `{type: 'none'}` remembers "no good association") and `false_friend` (`{tr_word, en_meaning_tr, tr_meaning_tr, tr_meaning_en, strength, note_tr}`, from `ai-extract` extract-v5). Never user text. Kept when switching or copying accounts. |
+
+- The user's mnemonic: `user_content` with `kind 'mnemonic'`, one row per sense of the user
+  (id = UUID v8 of SHA-256 over ("user_content", "mnemonic", sense id)), `sense_id`,
+  `lexicon_sense_id` (null for a sense outside the shared lexicon), `replaces_id` = the
+  suggestion it came from or null, `text` (1–300 characters), `selected: true`.
+- A rejected suggestion: `content_feedback` with `target_kind 'mnemonic'`, `target_id` =
+  the suggestion's `lexicon_pair_notes.id`, `verdict 'reject'`.
+- `import_jobs.chunk_topics` (not indexed): the topic keys of each processed chunk; the
+  last chunk aggregates them into `sources.topics` (`aggregateTopics`). Absent on jobs from
+  before v13 (no upgrade needed). Chunk results in `chunk_cache` carry `topics` and, per
+  candidate, `false_friend` since extract-v5.

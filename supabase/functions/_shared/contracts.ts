@@ -22,7 +22,7 @@ export const MAX_PROSE_CANDIDATES = 30;
  * Version of the extract prompt and response schema; it keys the server chunk cache and
  * the client's local chunk cache. Bump it with every prompt or schema change (prompts.ts).
  */
-export const EXTRACT_PROMPT_VERSION = 'extract-v4';
+export const EXTRACT_PROMPT_VERSION = 'extract-v5';
 
 export const ERROR_CODES = [
   'unauthorized', // no/invalid/expired session, or an anonymous session
@@ -87,6 +87,26 @@ export type ExtractRequest = z.input<typeof extractRequest>;
 
 export const candidateMatch = z.enum(['known_sense', 'new_sense', 'new_term']);
 
+/**
+ * extract-v5: a Turkish word that looks or sounds like the term but means something else
+ * ("actually" ~ "aktüel"), written by the model for a new sense, checked by the server and
+ * stored in the shared lexicon_pair_notes (kind 'false_friend'). Same content as the
+ * hand-written list (src/domain/pairNotes.ts FalseFriendContent).
+ */
+export const aiFalseFriend = z.object({
+  /** lexicon_pair_notes.id */
+  id: z.string(),
+  tr_word: z.string(),
+  /** What the English term means, in Turkish (the sense's meaning_tr). */
+  en_meaning_tr: z.string(),
+  /** What the Turkish word means. */
+  tr_meaning_tr: z.string(),
+  tr_meaning_en: z.string().nullable(),
+  strength: z.enum(['full', 'partial']),
+  note_tr: z.string().nullable(),
+});
+export type AiFalseFriend = z.infer<typeof aiFalseFriend>;
+
 export const extractCandidate = z.object({
   term: z.string(), // dictionary form (= lexicon.lemma)
   surface: z.string(), // as written in source_sentence
@@ -101,6 +121,8 @@ export const extractCandidate = z.object({
   /** true when no lexicon content was generated for this candidate in this request */
   lexicon_hit: z.boolean(),
   lexicon: lexiconEntry,
+  /** extract-v5: an AI false-friend warning stored for this sense; null when none (and before v5). */
+  false_friend: aiFalseFriend.nullable().default(null).catch(null),
 });
 export type ExtractCandidate = z.infer<typeof extractCandidate>;
 
@@ -111,6 +133,11 @@ export const extractResponse = z.object({
   cache_hit: z.boolean(), // served from the server chunk cache (no AI call)
   ai_called: z.boolean(),
   model: z.string().nullable(),
+  /**
+   * extract-v5: 1–2 topic keys of the chunk (_shared/topics-contract.ts); the device
+   * aggregates a text's chunks into sources.topics. Empty before v5 or when unclear.
+   */
+  topics: z.array(z.string()).max(4).default([]).catch([]),
   candidates: z.array(extractCandidate).max(MAX_CANDIDATES),
   counts: z.object({
     candidates: z.number(),

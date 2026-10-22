@@ -312,3 +312,41 @@ describe('one sense per note and sentence ("invitation": "davetiye, davet" / "da
     expect((await db.senses.toArray()).map((s) => s.meaning_tr).sort()).toEqual(['davetiye, davet', 'teşvik']);
   });
 });
+
+describe('extract-v5: topics and false friends', () => {
+  it('collects each chunk topics and stores the text topics on the source when the job is done', async () => {
+    const job = await createImportJob({ kind: 'text', title: 'T', chunks: ['a', 'b'], level: 'B1' }, T);
+    await recordChunkResult(job.id, 0, 'h0', { ...result([{ term: 'trailer', lexId: 'L-tr', meaning: 'römork' }]), topics: ['travel', 'daily_life'] }, { fromLocalCache: false }, T);
+    expect((await getImportJob(job.id))?.chunk_topics).toEqual([['travel', 'daily_life']]);
+    expect((await db.sources.get(job.source_id))?.topics ?? null).toBeNull();
+    // A chunk from an older prompt has no topics: it counts as an empty list.
+    await recordChunkResult(job.id, 1, 'h1', result([{ term: 'engine', lexId: 'L-en', meaning: 'motor' }]), { fromLocalCache: false }, T + 1);
+    expect((await getImportJob(job.id))?.chunk_topics).toEqual([['travel', 'daily_life'], []]);
+    expect((await db.sources.get(job.source_id))?.topics).toEqual(['daily_life', 'travel']);
+  });
+
+  it('caches the false friend of a new sense as a shared pair note (not synced)', async () => {
+    const job = await createImportJob({ kind: 'text', title: 'T', chunks: ['a'], level: 'B1' }, T);
+    const r = result([{ term: 'bank', lexId: 'L-bank', meaning: 'nehir kıyısı', match: 'new_sense' }]);
+    r.candidates[0]!.false_friend = {
+      id: 'pn-ff',
+      tr_word: 'Banka',
+      en_meaning_tr: 'nehir kıyısı',
+      tr_meaning_tr: 'para kurumu',
+      tr_meaning_en: null,
+      strength: 'partial',
+      note_tr: 'Nehir kıyısı anlamındaki bank bir banka değildir.',
+    };
+    const queued = await db.outbox.count();
+    await recordChunkResult(job.id, 0, 'h0', r, { fromLocalCache: false }, T);
+    expect(await db.lexicon_pair_notes.get('pn-ff')).toMatchObject({
+      term_norm: 'bank',
+      sense_id: 'L-bank',
+      kind: 'false_friend',
+      curated: false,
+      content: { tr_word: 'Banka', tr_meaning_tr: 'para kurumu', strength: 'partial' },
+    });
+    expect(await db.outbox.where('table').equals('lexicon_pair_notes').count()).toBe(0);
+    expect(await db.outbox.count()).toBe(queued);
+  });
+});

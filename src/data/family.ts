@@ -4,7 +4,7 @@
 import type { MorphemeEntry, UserWord } from '../domain/morphology';
 import { morphemeMeaning } from '../domain/morphology';
 import { contentRowId, feedbackRowId } from '../domain/examples';
-import type { Id, Millis } from '../domain/types';
+import type { Id, LexiconPairNote, Millis } from '../domain/types';
 import { addNoteWithSenses, type AddNoteResult } from './actions';
 import { db } from './db';
 import { setContentFeedback } from './examples';
@@ -129,6 +129,16 @@ export async function getHiddenPairNotes(ids: ReadonlyMap<Id, string>): Promise<
     if (r && r.deleted_at === null && r.target_kind === FALSE_FRIEND_TARGET) out.add(ids.get(rowIds[i]!)!);
   });
   return out;
+}
+
+/**
+ * False friends the extraction model found for this term (extract-v5): cached
+ * lexicon_pair_notes rows, written on the device that imported the text. Dexie reads only.
+ */
+export async function getFoundFalseFriends(termNorm: string): Promise<LexiconPairNote[]> {
+  if (!termNorm) return [];
+  const rows = await db.lexicon_pair_notes.where('term_norm').equals(termNorm).toArray();
+  return rows.filter((r) => r.kind === 'false_friend' && r.status === 'active');
 }
 
 /** Hide a false-friend warning ("Gizle") or report it as wrong ("Hatalı"). */
