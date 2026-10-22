@@ -25,6 +25,7 @@ const entry = (
   pos,
   lemma,
   cefr,
+  list_source: levelRank(cefr) >= 4 ? 'octanove' : 'cefrj',
   zipf,
   lexicon_term_id: null,
   senses: meanings.map((m) => ({
@@ -72,6 +73,9 @@ describe('filterBank', () => {
     expect(filterBank(bank, { ...ALL, query: 'İSTANBUL' }, none).map((i) => i.entry.lemma)).toEqual(
       ['istanbul'],
     );
+    expect(
+      filterBank(bank, { ...ALL, query: 'basvur' }, none).map((i) => i.entry.lemma_norm),
+    ).toEqual(['apply']);
     expect(filterBank(bank, { ...ALL, query: 'zzz' }, none)).toEqual([]);
   });
 

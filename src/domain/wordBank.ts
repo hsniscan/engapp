@@ -18,6 +18,8 @@ export interface WordBankEntry {
   pos: string;
   lemma: string;
   cefr: CefrLevel;
+  /** The word list the level comes from. */
+  list_source: 'cefrj' | 'octanove';
   zipf: number | null;
   lexicon_term_id: string | null;
   senses: WordBankSense[];
@@ -32,6 +34,7 @@ export function entryFromRow(row: WordBankRow): WordBankEntry {
     pos: row.pos,
     lemma: row.lemma,
     cefr: row.cefr,
+    list_source: row.list_source,
     zipf: row.zipf,
     lexicon_term_id: row.lexicon_term_id,
     senses: row.senses,
@@ -73,8 +76,16 @@ export interface BankItem {
   owned: OwnedStatus;
 }
 
-/** Turkish-aware lower case for matching meanings ("İ" → "i", "I" → "ı"). */
-const trLower = (s: string) => s.normalize('NFC').toLocaleLowerCase('tr');
+/**
+ * Turkish-aware folding for matching meanings: Turkish lower case ("İ" → "i"), then without
+ * marks and dotless i, so "vazgec" finds "vazgeçmek" and "KIYI" finds "kıyı".
+ */
+const trFold = (s: string) =>
+  s
+    .toLocaleLowerCase('tr')
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .replace(/ı/g, 'i');
 
 /** More frequent words first, then alphabetical. */
 export function byFrequency(a: WordBankEntry, b: WordBankEntry): number {
@@ -97,7 +108,7 @@ export function filterBank(
   owned: OwnedTerms,
 ): BankItem[] {
   const q = normalizeTerm(f.query);
-  const qTr = trLower(f.query.trim());
+  const qTr = trFold(f.query.trim());
   const scored: { item: BankItem; score: number }[] = [];
   for (const entry of entries) {
     if (f.level && entry.cefr !== f.level) continue;
@@ -109,7 +120,7 @@ export function filterBank(
       if (entry.lemma_norm === q) score = 4;
       else if (entry.lemma_norm.startsWith(q)) score = 3;
       else if (entry.lemma_norm.includes(q)) score = 2;
-      else if (entry.senses.some((s) => trLower(s.meaning_tr).includes(qTr))) score = 1;
+      else if (entry.senses.some((s) => trFold(s.meaning_tr).includes(qTr))) score = 1;
       else continue;
     }
     scored.push({ item: { entry, owned: status }, score });

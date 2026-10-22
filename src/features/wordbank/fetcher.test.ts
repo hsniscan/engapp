@@ -10,6 +10,7 @@ const row = (lemma: string, seq: number, retired = false) => ({
   pos: 'noun',
   lemma,
   cefr: 'A1',
+  list_source: 'cefrj',
   zipf: 5,
   lexicon_term_id: null,
   senses: [{ meaning_tr: 'x', example_en: `A ${lemma}.`, example_tr: 'Bir x.', sense_id: null }],

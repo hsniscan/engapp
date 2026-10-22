@@ -59,6 +59,14 @@ const children: RouteObject[] = [
     }),
   },
   {
+    // Kelime Bankası (decision 0038): the leveled list words, ready to add.
+    path: 'kelime-bankasi',
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/wordbank/WordBankPage')).WordBankPage,
+    }),
+  },
+  {
     path: 'library',
     HydrateFallback: () => null,
     lazy: async () => ({ Component: (await import('@/features/cards/LibraryPage')).LibraryPage }),

@@ -78,7 +78,7 @@ create trigger stamp_word_bank_row before insert or update on public.word_bank
 alter table public.word_bank enable row level security;
 revoke all on table public.word_bank from anon, authenticated;
 -- Only the columns the app needs (the job's bookkeeping stays private).
-grant select (lemma_norm, pos, lemma, cefr, zipf, lexicon_term_id, senses, retired, server_seq)
+grant select (lemma_norm, pos, lemma, cefr, list_source, zipf, lexicon_term_id, senses, retired, server_seq)
   on public.word_bank to anon, authenticated;
 create policy "word bank: read for everyone" on public.word_bank
   for select to anon, authenticated using (true);

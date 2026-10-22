@@ -25,6 +25,7 @@ const row = (over: Partial<WordBankRow> = {}): WordBankRow => ({
   pos: 'noun',
   lemma: 'invitation',
   cefr: 'A2',
+  list_source: 'cefrj',
   zipf: 4.2,
   lexicon_term_id: SID(1),
   senses: [

@@ -42,6 +42,7 @@ export const wordBankRowSchema = z.object({
   pos: z.enum(WORDBANK_POS),
   lemma: z.string().min(1).max(120),
   cefr: z.enum(WORDBANK_LEVELS),
+  list_source: z.enum(['cefrj', 'octanove']),
   zipf: z.coerce.number().min(0).max(9).nullable(),
   lexicon_term_id: z.uuid().nullable(),
   senses: z.array(wordBankSenseSchema).min(1).max(WORDBANK_MAX_SENSES),
@@ -52,7 +53,7 @@ export type WordBankRow = z.infer<typeof wordBankRowSchema>;
 
 /** The select list of a pull (only the granted columns). */
 export const WORDBANK_COLUMNS =
-  'lemma_norm,pos,lemma,cefr,zipf,lexicon_term_id,senses,retired,server_seq';
+  'lemma_norm,pos,lemma,cefr,list_source,zipf,lexicon_term_id,senses,retired,server_seq';
 
 /** Rows per pull page. */
 export const WORDBANK_PAGE = 1000;
