@@ -7,7 +7,6 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { useReducedMotion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
 import { decideReview, fetchReviewQueue, type ReviewQueueRow } from '@/ai/image';
 import { logError } from '@/data';
 import {
@@ -76,14 +75,8 @@ export function ImageReviewPage({ api = defaultApi, ask }: { api?: ReviewApi; as
       className="mx-auto flex h-[calc(100dvh-3.5rem)] min-h-[34rem] w-full max-w-xl flex-col px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6"
       data-testid="image-review"
     >
-      <header className="flex items-center gap-2">
-        <Link
-          to="/settings#gelismis"
-          aria-label={t('common.back')}
-          className="-ml-2 inline-flex size-11 items-center justify-center rounded-control text-fg-muted hover:bg-hover hover:text-fg focus-visible:outline-2 focus-visible:outline-focus"
-        >
-          <Icon name="arrow-left" />
-        </Link>
+      {/* The close control is the shell's ✕ (route handle exitTo), as on every immersive screen. */}
+      <header className="flex min-h-11 items-center gap-2">
         <h1 className="font-serif text-xl font-semibold text-fg sm:text-2xl">{t('imageReview.title')}</h1>
       </header>
       {body}

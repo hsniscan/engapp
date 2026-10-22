@@ -2284,6 +2284,7 @@
     }
   },
   "imageReview": {
+    "close": "Leave picture review",
     "title": "Picture review",
     "intro": "Swipe right: approve. Left: reject. Down: redraw.",
     "shortcuts": "Keyboard: → approve, ← reject, ↓ redraw, Z undo.",

@@ -2284,6 +2284,7 @@
     }
   },
   "imageReview": {
+    "close": "Görsel onayından çık",
     "title": "Görsel onayı",
     "intro": "Sağa kaydır: onayla. Sola: reddet. Aşağı: yeniden çizdir.",
     "shortcuts": "Klavyeyle: → onayla, ← reddet, ↓ yeniden çizdir, Z geri al.",

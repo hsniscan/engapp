@@ -116,7 +116,13 @@ const children: RouteObject[] = [
   },
   {
     path: 'admin/images',
-    handle: { immersive: true } satisfies RouteHandle,
+    // Entered from Ayarlar → Gelişmiş: the top bar's ✕ goes back there (the page has no
+    // back arrow of its own, like every other immersive screen).
+    handle: {
+      immersive: true,
+      exitTo: '/settings#gelismis',
+      exitLabelKey: 'imageReview.close',
+    } satisfies RouteHandle,
     HydrateFallback: () => null,
     lazy: async () => ({
       Component: (await import('@/features/imageReview/ImageReviewPage')).ImageReviewRoute,
