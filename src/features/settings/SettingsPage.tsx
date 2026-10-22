@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Page, cn } from '@/ui';
 import { AboutSection } from './AboutSection';
+import { AccountDeleteRow } from '@/features/account/AccountDeleteRow';
 import { ProfileSettingsSection } from '@/features/profile/ProfileSettingsSection';
 import { AdvancedSection } from './AdvancedSection';
 import { AppSection } from './AppSection';
@@ -73,6 +74,7 @@ export function SettingsPage() {
         <div className="flex min-w-0 flex-col gap-10">
           <SettingsSection id="hesap" title={t('settings.sections.hesap')}>
             <Account />
+            <AccountDeleteRow />
           </SettingsSection>
           <SettingsSection id="senkron" title={t('settings.sections.senkron')}>
             <Sync />
