@@ -18,8 +18,10 @@ v0.4 İP10 (maintenance) together with the code side of İP9 (bulk picture gener
   2. An exception in the AI steps (network error, an RPC failure) ended the run before the
      final resolve.
   3. Up to 100 model calls of up to 90 s each could pass the job's 60-minute timeout, so the
-     final resolve could be cut off. (The manual run on 22 October was still in its AI steps
-     after 50 minutes.)
+     final resolve could be cut off. The manual run on 22 October shows it: the resolve took
+     3 s (1,159 senses, `zipf` for 830 terms), the AI steps 55 minutes (54 calls, 4,500 list
+     entries checked, stopped by a 90 s Gemini timeout), and the job ended green only 4
+     minutes before the timeout.
   4. GitHub may start a scheduled run late or drop it under load, and disables schedules in a
      repository without activity for 60 days. Nothing made a missing run visible.
 
