@@ -510,6 +510,50 @@
       "guest": "Example sentences need a Google account."
     }
   },
+  "fsrsOpt": {
+    "title": "Tune the algorithm to my memory",
+    "body": "The app looks at your answers so far and adjusts when cards come back to fit your memory. It runs on this device; your answers are not sent anywhere.",
+    "needMore": "This needs at least {{min}} reviews. You have {{count}} so far.",
+    "progressText": "{{count}} / {{min}} reviews",
+    "personalActive": "A setting tuned to you is in use.",
+    "defaultActive": "The shared default setting is in use.",
+    "lastRun": "Last check: {{date}}.",
+    "suggestFirst": "You have {{count}} reviews. I can now tune card timing to your memory.",
+    "suggestAgain": "You did {{count}} new reviews since the last check; time to tune again.",
+    "run": "Tune",
+    "runAgain": "Tune again",
+    "runningLabel": "Tuning",
+    "running": "Calculating… {{pct}}%",
+    "runningHint": "Usually takes a few seconds.",
+    "adopted": "Prediction accuracy for your memory improved by {{gain}}%. The new setting is in use.",
+    "workloadDown": "With it, your daily reviews drop by ~{{pct}}%.",
+    "workloadUp": "With it, your daily reviews rise by ~{{pct}}%, so you remember at your target rate.",
+    "workloadSame": "Your daily reviews stay about the same.",
+    "adoptedRevert": "Not happy? “Back to previous setting” undoes it in one tap.",
+    "kept": "The new setting I tried did not predict your answers better than the current one, so nothing changed.",
+    "tooFew": "Not enough reviews spread over different days to compare. Try again after studying a bit more. Nothing changed.",
+    "failed": "The calculation did not finish; nothing changed. Try again in a moment.",
+    "unavailable": "The calculation tool could not load. Go online and reload the app once, then try again.",
+    "revert": "Back to previous setting",
+    "reverted": "Previous setting restored.",
+    "saveFailed": "Could not save the setting.",
+    "helper": {
+      "title": "Daily reviews by target rate",
+      "hint": "A rough estimate from your current cards. A higher rate means less forgetting but more frequent reviews.",
+      "retention": "{{pct}}% recall",
+      "reviews": "~{{count}}/day",
+      "current": "Your current target",
+      "empty": "Once you review cards, the estimate shows up here."
+    },
+    "offer": {
+      "title": "Tune the algorithm to your memory?",
+      "body": "You have {{count}} reviews. The app can now time your cards to fit your memory. Takes a few seconds; you can undo it.",
+      "bodyAgain": "A month has passed since the last tuning and you did {{count}} new reviews. Tune again?",
+      "go": "Tune",
+      "later": "Later",
+      "dismissed": "OK, I will remind you in a month."
+    }
+  },
   "auth": {
     "title": "Sign in",
     "heading": "Take your words with you",

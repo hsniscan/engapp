@@ -34,6 +34,8 @@ const LATE_COLUMNS: Readonly<Record<string, Readonly<Record<string, unknown>>>> 
     catchup_auto: undefined,
     vacation: null,
     vacation_history: null,
+    fsrs_params_prev: null,
+    fsrs_opt_at: null,
   },
 };
 

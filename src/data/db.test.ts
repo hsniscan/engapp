@@ -5,7 +5,7 @@ import { PULL_BACKFILL_KEY } from './backfill';
 import { EngDb } from './db';
 
 /** The current schema version; bump with every new Dexie version. */
-const LATEST = 14;
+const LATEST = 15;
 
 describe('Dexie schema', () => {
   it('opens with every table and the indexes the queries rely on', async () => {
@@ -322,6 +322,29 @@ describe('Dexie schema', () => {
     expect(s).toMatchObject({ daily_new_limit: 12 });
     // Absent means the defaults (20 min, catch-up on, no vacation): nothing is written.
     expect(s && 'vacation' in s).toBe(false);
+    expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expect.arrayContaining(['settings']));
+    expect(await d.outbox.count()).toBe(0);
+    d.close();
+    await d.delete();
+  });
+
+  it('v15 upgrade keeps the settings and re-pulls them once (fsrs_params_prev / fsrs_opt_at)', async () => {
+    const name = 'upgrade-v15-test';
+    const old = new Dexie(name);
+    old.version(1).stores({ settings: 'id', meta: 'key' });
+    old.version(11).stores({});
+    await old.open();
+    await old.table('settings').add({ id: 'settings', fsrs_params: [1, 2, 3], hlc: 'h1' });
+    await old.table('meta').put({ key: 'sync_cursor', value: 77 });
+    old.close();
+
+    const d = new EngDb(name);
+    await d.open();
+    expect(d.verno).toBe(LATEST);
+    const row = await d.settings.get('settings');
+    expect(row).toMatchObject({ fsrs_params: [1, 2, 3], hlc: 'h1' });
+    expect(row?.fsrs_params_prev).toBeUndefined();
+    expect((await d.meta.get('sync_cursor'))?.value).toBe(77);
     expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expect.arrayContaining(['settings']));
     expect(await d.outbox.count()).toBe(0);
     d.close();

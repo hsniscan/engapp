@@ -75,3 +75,12 @@ AI-built lexicon, and carries its own licence notice:
 
 Share-alike applies to these data files and their adaptations, not to the application code
 that reads them.
+
+## FSRS optimizer (v0.3 İP4)
+
+No third-party code or data is shipped for it. The personal-parameter optimizer
+(`src/domain/fsrsOptimizer.ts`) is our own TypeScript implementation of the published FSRS-6
+model and the training recipe of the FSRS reference optimizer; defaults and parameter bounds
+come from **ts-fsrs** (MIT, already a dependency). Evaluated and not used: **fsrs-browser**
+6.6.0 (WASM build of fsrs-rs, BSD-3-Clause, commercial use allowed): its build needs shared
+WebAssembly memory and threads, i.e. a cross-origin-isolated site (decision 0022).

@@ -12,14 +12,9 @@ import {
 import { z } from 'zod';
 import type { CardStateValue, FsrsFields, Id, Millis, RatingValue, Settings } from './types';
 import { Rating } from './types';
+import { FSRS_CONFIG } from './fsrsConfig';
 
-export const FSRS_CONFIG = {
-  maximum_interval: 36500,
-  enable_fuzz: true,
-  enable_short_term: true,
-  learning_steps: ['1m', '10m'] as const,
-  relearning_steps: ['10m'] as const,
-} as const;
+export { FSRS_CONFIG };
 
 export const RETENTION_MIN = 0.8;
 export const RETENTION_MAX = 0.95;

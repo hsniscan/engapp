@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Settings, ThemePref } from '@/domain/types';
 import { Button, SegmentedControl, Select, Skeleton, Slider, Switch } from '@/ui';
+import { FsrsOptimizerRow, RetentionHelper } from '@/features/fsrs/FsrsSettings';
 import { SettingsRow, SettingsSection } from './SettingsLayout';
 import { setTheme } from './themeSync';
 import { useAppSettings } from './useAppSettings';
@@ -83,6 +84,8 @@ export function StudySection() {
               <p className="text-fg">{retentionNote}</p>
             </div>
           </SettingsRow>
+          <RetentionHelper settings={settings} />
+          <FsrsOptimizerRow />
           <SettingsRow
             label={t('settings.study.dayStart')}
             description={t('settings.study.dayStartHint')}

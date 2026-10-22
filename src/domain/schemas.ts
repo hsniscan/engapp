@@ -176,6 +176,9 @@ export const settingsSchema: z.ZodType<Settings> = z.object({
   catchup_auto: z.boolean().nullish().catch(null),
   vacation: vacationRange.nullish().catch(null),
   vacation_history: z.array(vacationRange).max(50).nullish().catch(null),
+  // v0.3 İP4; absent in older rows and backups (= nothing to revert, never ran).
+  fsrs_params_prev: z.array(z.number()).nullish(),
+  fsrs_opt_at: millis.nullish(),
 });
 
 export const contentFeedbackSchema: z.ZodType<ContentFeedback> = z.object({

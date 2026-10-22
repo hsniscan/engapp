@@ -214,6 +214,14 @@ export class EngDb extends Dexie {
     this.version(14)
       .stores({})
       .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
+    // v15 (v0.3 İP4; versions 12–14 and 16+ belong to the other v0.3 packages): the optional
+    // settings fsrs_params_prev and fsrs_opt_at (not indexed; absent = nothing to revert, never
+    // ran). A device that pulled the settings row while it ran an older version stripped them
+    // under the same HLC: re-pull settings once so "Eski ayara dön" and the monthly offer see
+    // them (domain/syncMerge.ts takes the set values).
+    this.version(15)
+      .stores({})
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
   }
 }
 
