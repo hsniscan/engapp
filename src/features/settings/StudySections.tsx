@@ -6,6 +6,7 @@ import { SettingsRow, SettingsSection } from './SettingsLayout';
 import { setTheme } from './themeSync';
 import { useAppSettings } from './useAppSettings';
 import type { SettingsPatch } from '@/data';
+import { speakEnglish } from '@/features/review/useSpeech';
 
 /** Local value while dragging; saved 400 ms after the last change (one write, one outbox row). */
 function useDebouncedSetting<K extends keyof SettingsPatch & keyof Settings>(
@@ -169,17 +170,10 @@ export function VoiceSection() {
   }, [voice, supported]);
 
   const test = () => {
-    const synth = window.speechSynthesis;
-    synth.cancel();
-    const u = new SpeechSynthesisUtterance(SAMPLE);
-    u.lang = voice;
-    const v = pickVoice(voice);
-    if (v) u.voice = v;
-    u.rate = 0.95;
-    u.onend = () => setSpeaking(false);
-    u.onerror = () => setSpeaking(false);
     setSpeaking(true);
-    synth.speak(u);
+    if (!speakEnglish(SAMPLE, voice, { rate: 0.95, onDone: () => setSpeaking(false) })) {
+      setSpeaking(false);
+    }
   };
 
   return (
