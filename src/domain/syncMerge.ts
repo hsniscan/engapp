@@ -28,6 +28,12 @@ const LATE_COLUMNS: Readonly<Record<string, Readonly<Record<string, unknown>>>> 
     level_locked: false,
     level_change: null,
     show_easy_candidates: null,
+    // v0.3 İP3. catchup_auto defaults to true, so its "unset" is only a missing key or null
+    // (undefined here: a stored false is a real choice and must be taken).
+    daily_capacity_min: null,
+    catchup_auto: undefined,
+    vacation: null,
+    vacation_history: null,
   },
 };
 

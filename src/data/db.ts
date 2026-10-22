@@ -205,6 +205,15 @@ export class EngDb extends Dexie {
     this.version(11)
       .stores({})
       .upgrade((tx) => addPullBackfill(tx.table('meta'), ['notes', 'settings', 'sources']));
+    // v14 (v0.3 İP3, load management; versions 12–20 belong to the v0.3 packages): the
+    // settings row gains daily_capacity_min, catchup_auto, vacation and vacation_history (not
+    // indexed, all optional: absent means the default, so no row is rewritten). While this
+    // device ran an older version it may have pulled a settings row with these columns and
+    // dropped them; re-pull settings once so a vacation set on another device arrives
+    // (equal HLC → the server's set values win, domain/syncMerge.ts).
+    this.version(14)
+      .stores({})
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
   }
 }
 
