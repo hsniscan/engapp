@@ -288,7 +288,9 @@ export const CardFront = memo(function CardFront({ view, isNew, speech }: FacePr
 
 function SenseList({ view }: { view: CardView }) {
   const { t } = useTranslation();
-  const { senses, sense } = view;
+  const { sense } = view;
+  // A per-sense recognition card (split leech) covers only its own sense.
+  const senses = view.card.sense_id && sense ? [sense] : view.senses;
   if (senses.length <= 1) {
     const only = senses[0];
     if (!only) return null;
@@ -399,7 +401,7 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
           <Ipa ipa={note.ipa} />
         </div>
         <SenseList view={view} />
-        {/* A recognition card covers every sense of the note: each sense's mnemonic. */}
+        {/* The mnemonic of the sense asked this time (a split card: always its own sense). */}
         {(sense ? [sense] : view.senses).map((s) => (
           <CardMnemonic key={s.id} senseId={s.id} className="text-center" />
         ))}

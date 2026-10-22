@@ -138,7 +138,10 @@ export async function getCardView(cardId: Id, now: Millis = Date.now()): Promise
     let sense: Sense | null = null;
     let cloze: Cloze | null = null;
     let hint: string | null = null;
-    if (card.card_type === 'recognition') {
+    if (card.card_type === 'recognition' && card.sense_id) {
+      // A per-sense recognition card (a split leech, data/leech.ts) always asks its own sense.
+      sense = senses.find((s) => s.id === card.sense_id) ?? null;
+    } else if (card.card_type === 'recognition') {
       const logs = await db.review_logs.where('card_id').equals(card.id).toArray();
       sense = nextRecognitionSense(senses, lastShownSenseId(logs));
     } else {

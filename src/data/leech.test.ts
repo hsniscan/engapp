@@ -16,7 +16,7 @@ import {
   undoLeechAction,
 } from './leech';
 import { recomputeAllCards, runIntegrityCheck } from './maintenance';
-import { getStudyQueue } from './queries';
+import { getCardView, getStudyQueue } from './queries';
 
 const DAY = 86_400_000;
 const T0 = Date.UTC(2026, 9, 1, 9);
@@ -123,6 +123,21 @@ describe('split senses', () => {
     const back = await db.cards.where('note_id').equals(note.id).toArray();
     expect(back.find((c) => c.id === recognition.id)!.suspended).toBe(false);
     expect(back.filter((c) => created.includes(c.id)).every((c) => c.deleted_at !== null)).toBe(true);
+  });
+
+  it('a split card shows its own sense, never the rotation of the note', async () => {
+    const { recognition, senses } = await bank();
+    await forget(recognition.id, LEECH_LAPSES);
+    const created = await splitSenses(recognition.id, T0 + 100 * DAY);
+    const cards = await db.cards.bulkGet(created);
+    for (const s of senses) {
+      const card = cards.find((c) => c!.sense_id === s.id)!;
+      const view = (await getCardView(card.id, T0 + 100 * DAY))!;
+      expect(view.sense!.id).toBe(s.id);
+      // Still its own sense after answers (the rotation would move on to the next one).
+      await answerCard({ card_id: card.id, rating: Rating.Good, duration_ms: 3000 }, T0 + 100 * DAY);
+      expect((await getCardView(card.id, T0 + 101 * DAY))!.sense!.id).toBe(s.id);
+    }
   });
 });
 
