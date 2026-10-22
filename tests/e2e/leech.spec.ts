@@ -21,8 +21,10 @@ const HOUR = 3_600_000;
 async function leechBackup(now: number) {
   const scheduler = createScheduler({ request_retention: 0.9, fsrs_params: null });
   const ratings: RatingValue[] = [4, 1, 4, 1, 4, 1, 4, 1, 4, 1, 4];
-  // Replay once to learn when the last answer falls due, then shift the history so that
-  // it is due an hour ago (FSRS only looks at the gaps).
+  // Replay once to learn when the last answer falls due, then shift the history so that it
+  // is due at least an hour ago. The shift is whole days: ts-fsrs counts elapsed days by
+  // calendar day, so a shift by any other amount changes the intervals (the card then fell
+  // due tomorrow or yesterday depending on the time of day the test ran).
   const replay = (start: number) => {
     let f = emptyFsrs(start);
     let t = start;
@@ -34,9 +36,11 @@ async function leechBackup(now: number) {
     }
     return { f, at };
   };
-  const shift = now - HOUR - replay(0).f.due;
-  const created = shift - DAY;
-  const { f, at } = replay(created);
+  let created = Math.floor((now - HOUR - replay(0).f.due) / DAY) * DAY;
+  let { f, at } = replay(created);
+  // Fuzz is seeded by the review time, so check the shifted replay and step back if needed.
+  for (let i = 0; f.due > now - HOUR && i < 5; i++) ({ f, at } = replay((created -= DAY)));
+  if (f.due > now - HOUR) throw new Error('leechBackup: could not make the card due');
   const hlc = (t: number) => encodeHlc({ ms: t, counter: 0, node: 'seed' });
   const base = (id: string, t = created) => ({ id, user_id: null, created_at: t, updated_at: t, deleted_at: null, hlc: hlc(t) });
 
