@@ -43,7 +43,9 @@ show whether picture cards help.
    it.
 7. **When it runs.** `data/imageCards.ts` `reconcileImageCards` after every picture fetch run
    (also the "fresh", offline and signed-out outcomes, so a setting or senses pulled by sync
-   apply; after a real fetch with `serverHasNone` for senses the server listed nothing for),
+   apply, but then only when a cheap signature of index counts changed,
+   `imageCardsSignature`; after a real fetch always, with `serverHasNone` for senses the
+   server listed nothing for),
    after choosing, hiding or answering "Bu görsel anlamı anlatıyor mu?" (for that sense), and
    when the setting changes. Dexie v22 only re-pulls `cards` and `settings` (an older version
    dropped picture cards and the column); the cards of already cached pictures are made by the

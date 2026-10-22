@@ -168,6 +168,25 @@ export async function reconcileImageCards(opts: ReconcileOptions = {}, now: Mill
   });
 }
 
+/**
+ * A cheap fingerprint of what the plan depends on (index counts only, no picture is read): a run
+ * with nothing new can skip the plan. Changes when senses, pictures, picture cards, picture
+ * choices or verdicts are added or removed, or the setting changes.
+ */
+export async function imageCardsSignature(): Promise<string> {
+  return db.transaction('r', [db.settings, db.senses, db.images, db.cards, db.user_content, db.content_feedback], async () => {
+    const settings = await getSettings();
+    const parts = await Promise.all([
+      db.senses.count(),
+      db.images.count(),
+      db.cards.where('card_type').equals('image').count(),
+      db.user_content.where('kind').equals(IMAGE_CHOICE_KIND).count(),
+      db.content_feedback.where('[target_kind+target_id]').between([IMAGE_TARGET, ''], [IMAGE_TARGET, '\uffff']).count(),
+    ]);
+    return [imageCardsEnabled(settings), ...parts].join('|');
+  });
+}
+
 /** Turn picture cards on or off (Ayarlar), then add or remove the cards at once. */
 export async function setImageCardsEnabled(enabled: boolean, now: Millis = Date.now()): Promise<ImageCardPlan> {
   await updateSettings({ image_cards: enabled }, now);

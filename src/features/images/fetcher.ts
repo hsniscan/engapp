@@ -12,6 +12,7 @@ import {
   applyImageFetch,
   db,
   getMeta,
+  imageCardsSignature,
   listCachedImageKeys,
   listImageSenseIds,
   logError,
@@ -74,6 +75,9 @@ export type ImageFetchOutcome =
   | { status: 'done'; result: ImageFetchResult; downloaded: number }
   | { status: 'failed'; error: string };
 
+/** What the picture cards were last brought in line with (in this tab). */
+let lastCardsSignature: string | null = null;
+
 /** Lexicon senses the server listed no usable picture for (their picture cards may go). */
 export function sensesWithoutPictures(senseIds: readonly string[], manifest: readonly ImageManifestRow[]): Set<string> {
   const listed = new Set(manifest.filter((m) => m.status === 'approved' || m.status === 'review').map((m) => m.sense_id));
@@ -92,7 +96,11 @@ export async function fetchImages(
   const outcome = await fetchOnly(deps, opts, (none) => (serverHasNone = none));
   if (outcome.status !== 'failed') {
     try {
-      await reconcileImageCards(serverHasNone ? { serverHasNone } : {}, deps.now());
+      // Without a fetch the plan is redone only when something it depends on changed.
+      if (outcome.status === 'done' || (await imageCardsSignature()) !== lastCardsSignature) {
+        await reconcileImageCards(serverHasNone ? { serverHasNone } : {}, deps.now());
+        lastCardsSignature = await imageCardsSignature();
+      }
     } catch (e) {
       void logError(e, 'images.cards');
     }
