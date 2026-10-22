@@ -37,7 +37,7 @@ export function FlipCard({
   const [backLingers, setBackLingers] = useState(flipped);
 
   const face =
-    'rounded-card border border-border bg-surface-raised shadow-raised flex flex-col [grid-area:1/1] backface-hidden';
+    'rounded-card border border-border bg-surface-raised shadow-raised flex min-w-0 flex-col [grid-area:1/1] backface-hidden';
 
   const transition = reduce
     ? { duration: 0.15, ease: 'linear' as const }
@@ -49,7 +49,7 @@ export function FlipCard({
       onClick={onFlip}
     >
       <motion.div
-        className="grid transform-3d"
+        className="grid grid-cols-1 transform-3d"
         initial={false}
         animate={reduce ? { rotateY: 0 } : { rotateY: flipped ? 180 : 0 }}
         transition={transition}
