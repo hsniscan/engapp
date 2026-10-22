@@ -14,7 +14,7 @@ export type TtsVoice = (typeof TTS_VOICES)[number];
  * Bump when the prompt, the voices or the audio format change: it is part of the cache key,
  * so old audio is simply no longer used (and new audio is generated on the next request).
  */
-export const TTS_CACHE_VERSION = 'tts-v1';
+export const TTS_CACHE_VERSION = 'tts-v2';
 
 /**
  * The settings screen's "Listen" sample. Always allowed (it is on no card) and cached for

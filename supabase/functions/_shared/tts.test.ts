@@ -245,7 +245,35 @@ describe('createGeminiTts', () => {
       'VoiceGB',
     );
     expect(body.contents[0].parts[0].text).toBe(ttsPrompt('flat', 'en-GB'));
-    expect(body.contents[0].parts[0].text).toMatch(/British.*: flat$/);
+    expect(body.contents[0].parts[0].text).toBe('flat');
+    expect(body.generationConfig.speechConfig.languageCode).toBe('en-GB');
+  });
+
+  it('retries without languageCode when the model rejects it', async () => {
+    const bodies: { generationConfig: { speechConfig: { languageCode?: string } } }[] = [];
+    const fetch = vi.fn(async (_u: string | URL | Request, init?: RequestInit) => {
+      const b = JSON.parse(String(init!.body));
+      bodies.push(b);
+      return b.generationConfig.speechConfig.languageCode
+        ? new Response(
+            JSON.stringify({
+              error: { status: 'INVALID_ARGUMENT', message: 'Unknown name "languageCode"' },
+            }),
+            { status: 400 },
+          )
+        : geminiAnswer(new Uint8Array(200), 'audio/L16;codec=pcm;rate=24000');
+    });
+    const tts = createGeminiTts({
+      apiKey: 'k',
+      model: 'tts-a',
+      voices,
+      fetch: fetch as typeof globalThis.fetch,
+      sleep: async () => {},
+    });
+    const r = await tts.synthesize('flat', 'en-US');
+    expect(isWav(r.wav)).toBe(true);
+    expect(bodies).toHaveLength(2);
+    expect(bodies[1]!.generationConfig.speechConfig.languageCode).toBeUndefined();
   });
 
   it('falls back to the second model on quota errors', async () => {

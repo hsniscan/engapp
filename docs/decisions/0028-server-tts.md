@@ -19,9 +19,12 @@ every phone.
   models that `ai-*` use. Names are configuration only (workflow variables → function secrets);
   the code defaults are a fallback, like `DEFAULT_GEMINI_MODEL`.
 - **Voices/prompt:** prebuilt voices `Iapetus` (US) and `Erinome` (GB), both "Clear"
-  (overridable: `GEMINI_TTS_VOICE_US` / `_GB`). Prebuilt voices take their accent from the
-  prompt, so the prompt is a short neutral direction plus the text:
-  `Say clearly, in a natural British English accent: <text>`.
+  (overridable: `GEMINI_TTS_VOICE_US` / `_GB`). The prompt is only the text to read; the
+  accent is set with `speechConfig.languageCode` (en-US / en-GB). Update 2026-10-22: a style
+  direction in the prompt ("Say clearly, in a natural American English accent: …") was read
+  aloud before the word on production, so it was removed and the cache version bumped to
+  `tts-v2`. If a model rejects `languageCode` (HTTP 400 naming it), the request is retried
+  without it.
 - **Audio:** 3.8 TTS models answer a WAV (24 kHz, 16-bit, mono); older ones raw PCM
   (`audio/L16;rate=24000`). `_shared/wav.ts` passes a WAV through and wraps PCM in a 44-byte
   RIFF header. No re-encoding: a word is ~50 KB, a sentence ~200 KB, and an MP3/Opus encoder
@@ -35,7 +38,7 @@ every phone.
   - anything else → `invalid_input`; the client then uses the device voice.
 - **Shared cache.** `public` audio is stored in the public Storage bucket `tts` (created by
   migration `20261024000100_tts.sql`, or by the function on first use) at
-  `<voice>/<sha256(tts-v1 \n voice \n text)>.wav`, `Cache-Control: max-age=31536000`. The
+  `<voice>/<sha256(tts-v2 \n voice \n text)>.wav`, `Cache-Control: max-age=31536000`. The
   function checks the object first and returns its public URL; only a miss calls Gemini.
   Files can be fetched by name but not listed. `private` audio is generated and returned
   inline (base64 WAV) and never stored, so the server keeps nothing derived from a user's own
