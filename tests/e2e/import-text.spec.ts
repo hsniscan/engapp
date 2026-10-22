@@ -26,17 +26,23 @@ test('signed in: paste text → preview (edit, deselect) → cards → review; t
 
   await page.getByRole('link', { name: 'Önizlemeyi aç' }).click();
   await expect(page).toHaveURL(/\/import\//);
-  await expect(page.getByText(`${SPECS.length}/${SPECS.length} seçili`).first()).toBeVisible();
+  // Smart extraction (B1): the four B1 phrases and the two lower words are pre-selected; the
+  // B2 words wait unselected in "Senin için"; the three C1/C2 items are only counted.
+  await expect(page.getByTestId('smart-summary')).toHaveText(
+    'B1 seviyene göre bu metinde 12 aday: senin için 9, kolay 0, zaten bildiğin 0. Seviyenin bir üstünü aşan 3 aday önerilmedi.',
+  );
+  await expect(page.getByText('6/9 seçili').first()).toBeVisible();
 
-  // Edit a meaning in place, deselect one candidate.
+  // Edit a meaning in place, pick a B2 word, deselect one candidate.
   const meaning = page.getByLabel('Türkçe anlamı: reluctant');
   await expect(meaning).toHaveValue('isteksiz');
   await meaning.fill('gönülsüz');
   await meaning.press('Enter');
   await expect(page.getByText('Düzeltildi')).toBeVisible();
-  await page.getByRole('checkbox', { name: 'cope seç' }).click();
-  const n = SPECS.length - 1;
-  await expect(page.getByText(`${n}/${SPECS.length} seçili`).first()).toBeVisible();
+  await page.getByRole('checkbox', { name: 'reluctant seç' }).click();
+  await page.getByRole('checkbox', { name: 'put off seç' }).click();
+  const n = 6;
+  await expect(page.getByText(`${n}/9 seçili`).first()).toBeVisible();
 
   await page.getByRole('button', { name: `${n} kelimeyi ekle` }).click();
   await expect(page).toHaveURL(/\/library/);
@@ -44,7 +50,7 @@ test('signed in: paste text → preview (edit, deselect) → cards → review; t
   const list = page.getByRole('list', { name: 'Notlar' });
   await expect(list.getByRole('listitem')).toHaveCount(n);
   await expect(list.getByText('gönülsüz')).toBeVisible();
-  await expect(list.getByText('cope', { exact: true })).toHaveCount(0);
+  await expect(list.getByText('put off', { exact: true })).toHaveCount(0);
 
   // Review the new cards.
   await page.goto('/review');
@@ -64,8 +70,10 @@ test('signed in: paste text → preview (edit, deselect) → cards → review; t
   expect(backend.count('ai-extract')).toBe(1);
   expect(backend.model.calls).toBe(1);
   await page.getByRole('link', { name: 'Önizlemeyi aç' }).first().click();
-  // Everything already added is marked "Zaten var" and unselected; only "cope" is new.
-  await expect(page.getByText(`1/${SPECS.length} seçili`).first()).toBeVisible();
+  // Everything already added is in "Biliyorsun", unselected; only "put off" (B1) is new and
+  // pre-selected; the B2 words stay unselected.
+  await expect(page.getByText('1/9 seçili').first()).toBeVisible();
+  await expect(page.getByTestId('smart-summary')).toContainText('zaten bildiğin 6.');
 });
 
 test('another device (fresh browser): the same text is answered by the server cache and lexicon, no model call', async ({

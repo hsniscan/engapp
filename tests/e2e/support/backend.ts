@@ -110,6 +110,12 @@ const GUESS: Record<string, string> = {
   'by and large': 'C1',
   subsidy: 'C1',
   backfire: 'B2',
+  // Phrases the model rates B1 (the rule takes the higher of the guess and the hardest word),
+  // so a B1 learner gets words at their level in the smart-extraction tests.
+  'come up with': 'B1',
+  'put off': 'B1',
+  'be used to doing sth': 'B1',
+  'take advantage of sth': 'B1',
 };
 
 /**

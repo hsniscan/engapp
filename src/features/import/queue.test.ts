@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { AiClientError, type ExtractResponse } from '@/ai/client';
-import { createImportJob, db, getImportJob, listImportCandidates } from '@/data';
+import {
+  createImportJob,
+  db,
+  getImportJob,
+  listImportCandidates,
+  setKnownTermsProvider,
+} from '@/data';
 import { chunkText, hashChunk } from '@/domain/chunking';
 import { resetDb } from '@/test/db';
 import {
@@ -341,5 +347,40 @@ describe('import queue concurrency (acceptance criterion 5)', () => {
     expect(cands.map((c) => c.term)).toEqual(
       FAKE_SPECS.filter((s) => chunks.join(' ').includes(s.sentence)).map((s) => s.term),
     );
+  });
+});
+
+describe('smart extraction privacy', () => {
+  it('what the learner knows never reaches the AI request; it is used on the device', async () => {
+    setKnownTermsProvider({
+      getKnownTermKeys: () => Promise.resolve(new Set(['outweigh', 'widespread'])),
+      markKnown: () => Promise.resolve(),
+    });
+    try {
+      const h = harness();
+      const inputs: unknown[] = [];
+      const extract = h.deps.extract;
+      h.deps.extract = (input) => {
+        inputs.push(input);
+        return extract(input);
+      };
+      const text = fakeText();
+      const job = await createImportJob({
+        kind: 'text',
+        title: 'T',
+        chunks: chunkText(text, 1500),
+        level: 'B1',
+      });
+      expect(await processImportQueue(h.deps)).toBe('idle');
+      expect(inputs.length).toBeGreaterThan(1);
+      for (const input of inputs)
+        expect(Object.keys(input as object).sort()).toEqual(['level', 'text']);
+      expect(JSON.stringify(inputs)).not.toMatch(/known/i);
+      const rows = await listImportCandidates(job.id);
+      const outweigh = rows.find((r) => r.term === 'outweigh')!;
+      expect([outweigh.bucket, outweigh.selected]).toEqual(['known', false]);
+    } finally {
+      setKnownTermsProvider(null);
+    }
   });
 });

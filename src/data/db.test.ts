@@ -5,7 +5,7 @@ import { PULL_BACKFILL_KEY } from './backfill';
 import { EngDb } from './db';
 
 /** The current schema version; bump with every new Dexie version. */
-const LATEST = 9;
+const LATEST = 10;
 
 describe('Dexie schema', () => {
   it('opens with every table and the indexes the queries rely on', async () => {
@@ -268,6 +268,36 @@ describe('Dexie schema', () => {
     expect((await d.meta.get('lexicon_cursor'))?.value).toBe(99);
     expect(await d.level_tests.count()).toBe(0);
     expect(await d.known_terms.count()).toBe(0);
+    expect(await d.outbox.count()).toBe(0);
+    d.close();
+    await d.delete();
+  });
+
+  it('v10 upgrade adds the smart-extraction fields to import candidates and keeps their selection', async () => {
+    const name = 'upgrade-v10-test';
+    // A database as v0.2 İP2 left it (version 4).
+    const old = new Dexie(name);
+    old.version(1).stores({ import_candidates: 'id, job_id', meta: 'key' });
+    old.version(2).stores({});
+    old.version(3).stores({ practice_logs: 'id, card_id, practiced_at, session_id' });
+    old.version(4).stores({});
+    await old.open();
+    await old.table('import_candidates').bulkAdd([
+      { id: 'c1', job_id: 'j1', term: 'bank', selected: false, user_status: 'exists' },
+      { id: 'c2', job_id: 'j1', term: 'cope', selected: true, user_status: 'new' },
+      { id: 'c3', job_id: 'j1', term: 'sway', selected: false, user_status: 'add_sense' },
+    ]);
+    old.close();
+
+    const d = new EngDb(name);
+    await d.open();
+    expect(d.verno).toBe(LATEST);
+    const rows = await d.import_candidates.orderBy('id').toArray();
+    expect(rows.map((r) => [r.id, r.bucket, r.selected, r.cefr, r.cefr_source, r.from_list])).toEqual([
+      ['c1', 'known', false, null, null, false],
+      ['c2', 'for_you', true, null, null, false],
+      ['c3', 'for_you', false, null, null, false],
+    ]);
     expect(await d.outbox.count()).toBe(0);
     d.close();
     await d.delete();

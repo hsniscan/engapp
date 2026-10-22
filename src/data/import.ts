@@ -21,6 +21,7 @@ import { uuidv7 } from '../domain/ids';
 import { addNoteWithSenses, createSource, type SenseInput } from './actions';
 import { db } from './db';
 import { ActionError } from './errors';
+import { classifyJobCandidates, loadSmartContext } from './smartExtract';
 
 /** Error codes stored on a failed job (mapped to Turkish messages by the UI). */
 export type ImportErrorCode =
@@ -53,6 +54,11 @@ export interface ImportCandidateRecord extends ImportCandidate {
   lexicon_term_id: Id | null;
   /** Position in the job (chunk index * 1000 + order in chunk): stable list order. */
   order: number;
+  /**
+   * Display order in the preview, set by smart extraction when the job is complete (sections,
+   * then occurrences and frequency); absent before (and on rows from older versions).
+   */
+  rank?: number;
 }
 
 /** The validated result of one chunk, as stored in chunk_cache.result. */
@@ -224,6 +230,10 @@ export async function recordChunkResult(
   },
   now: Millis = Date.now(),
 ): Promise<{ added: number }> {
+  // Smart extraction (İP4): the last chunk classifies the whole job. What it needs from
+  // outside Dexie (known terms, the level file) is loaded before the transaction.
+  const pending = await jobs().get(jobId);
+  const smart = pending && chunkIndex + 1 >= pending.chunk_total ? await loadSmartContext() : null;
   return db.transaction('rw', [db.import_jobs, db.import_candidates, db.chunk_cache, db.lexicon_cache, db.notes, db.senses], async () => {
     const job = await jobs().get(jobId);
     if (!job || job.chunk_done !== chunkIndex) return { added: 0 }; // processed already (another tab)
@@ -268,6 +278,10 @@ export async function recordChunkResult(
         user_status: status,
         meaning_tr_edit: null,
         order: chunkIndex * 1000 + i,
+        cefr: c.lexicon.cefr ?? null,
+        cefr_source: c.lexicon.cefr_source ?? null,
+        bucket: null,
+        from_list: false,
       };
       const sKey = sentenceKeyOf(c.term, sentence);
       const twin = bySentence.get(sKey);
@@ -293,6 +307,7 @@ export async function recordChunkResult(
     const cached = opts.fromLocalCache || !!opts.serverCacheHit;
     const done = chunkIndex + 1;
     const finished = done >= job.chunk_total;
+    if (finished) await classifyJobCandidates(job, smart ?? { known: new Set(), levels: null });
     await jobs().update(jobId, {
       chunk_done: done,
       cache_hits: job.cache_hits + (cached ? 1 : 0) + (opts.lexiconHits ?? 0),

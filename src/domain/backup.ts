@@ -43,9 +43,9 @@ export const BACKUP_FORMAT = 'engapp-backup';
 //    defaulted, so older files restore and keep their checksum).
 // 7 (v0.2 İP8): decks. Older files have none (restore keeps the local decks).
 //    (İP7 and İP8 were built as "4" on their branches; no such file was ever released.)
-// 8 (v0.2 İP3): level_tests, known_terms and the level fields of settings. Older files have
-//    no such tables (restored as none; overwrite keeps the local ones) and default level
-//    fields. (Built as "9" on its branch, numbered like its Dexie version; never released.)
+// 8 (v0.2 İP3, İP4): level_tests, known_terms and the level fields of settings; also the
+//    optional settings.show_easy_candidates. Older files have no such tables (restored as
+//    none; overwrite keeps the local ones) and default level fields. (Built as "9" on its branch, numbered like its Dexie version; never released.)
 export const BACKUP_SCHEMA_VERSION = 8;
 
 export interface BackupTables {

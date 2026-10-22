@@ -33,7 +33,7 @@ test('text PDF (3 pages) → read with pdf.js → candidates → preview', async
   expect(sent).not.toContain('Weekly Review');
   expect(sent).not.toMatch(/Page \d/);
   await page.getByRole('link', { name: 'Önizlemeyi aç' }).click();
-  await expect(page.getByText(`${ascii.length}/${ascii.length} seçili`).first()).toBeVisible();
+  await expect(page.getByTestId('smart-summary')).toContainText(`bu metinde ${ascii.length} aday`);
 });
 
 test('scanned PDF (no text layer) → friendly message, nothing is sent', async ({

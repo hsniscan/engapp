@@ -162,6 +162,8 @@ export const settingsSchema: z.ZodType<Settings> = z.object({
     .default(null)
     // A malformed note (newer client, hand-edited backup) must not reject the whole row.
     .catch(null),
+  // v0.2 İP4; absent in older rows and backups (= false).
+  show_easy_candidates: z.boolean().nullish(),
 });
 
 export const contentFeedbackSchema: z.ZodType<ContentFeedback> = z.object({

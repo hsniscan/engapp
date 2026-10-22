@@ -26,6 +26,7 @@ export const DEFAULT_SETTINGS = {
   level_updated_at: null,
   level_locked: false,
   level_change: null,
+  show_easy_candidates: false,
 } as const satisfies Partial<Settings>;
 
 /** Defaults; timezone comes from the device. Not persisted by itself. */
@@ -77,6 +78,7 @@ export const settingsPatchSchema = z
     interests: z.array(z.string().min(1).max(40)).max(40),
     muted_topics: z.array(z.string().min(1).max(40)).max(40),
     level_locked: z.boolean(),
+    show_easy_candidates: z.boolean(),
   })
   .partial();
 

@@ -146,12 +146,18 @@ test('signed in: levels stored with the lexicon by ai-extract; an AI guess has a
 }) => {
   await FakeBackend.signIn(context);
   const specs = FAKE_SPECS.filter((s) => ['reluctant', 'backfire', 'cut corners'].includes(s.term));
+  // A B2 learner: the two B2 words are pre-selected, the C1 idiom (one above) is picked by hand.
+  await page.goto('/settings');
+  await page.getByRole('combobox', { name: 'Tahmini seviye' }).click();
+  await page.getByRole('option', { name: /^B2/ }).click();
+  await expect(page.getByRole('combobox', { name: 'Tahmini seviye' })).toContainText('B2');
   await page.goto('/add?tab=paste');
-  await expect(page.getByText('Hesabına bağlandın', { exact: true })).toBeVisible();
+  await expect(page.getByRole('status', { name: 'Senkron durumu: Senkronlandı' })).toBeVisible();
   await page.getByLabel('İngilizce metin').fill(specs.map((s) => s.sentence).join(' '));
   await page.getByRole('button', { name: 'Kelimeleri çıkar' }).click();
   await page.getByRole('link', { name: 'Önizlemeyi aç' }).click();
   expect(backend.model.calls).toBe(1);
+  await page.getByRole('checkbox', { name: 'cut corners seç' }).click();
   await page.getByRole('button', { name: '3 kelimeyi ekle' }).click();
   await expect(page).toHaveURL(/\/library/);
 

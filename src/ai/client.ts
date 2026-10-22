@@ -185,7 +185,10 @@ export function toLexiconCacheRow(e: LexiconEntry): LexiconSense {
 /** Fields of an ImportCandidate (preview row) from an extract candidate. */
 export function toCandidateFields(
   c: ExtractCandidate,
-): Omit<ImportCandidate, 'id' | 'job_id' | 'selected' | 'user_status' | 'meaning_tr_edit'> {
+): Omit<
+  ImportCandidate,
+  'id' | 'job_id' | 'selected' | 'user_status' | 'meaning_tr_edit' | 'bucket' | 'from_list'
+> {
   return {
     term: c.term,
     surface: c.surface,
@@ -200,5 +203,7 @@ export function toCandidateFields(
     source_sentence_tr: c.sentence_tr,
     span: c.span,
     confidence: c.confidence,
+    cefr: c.lexicon.cefr ?? null,
+    cefr_source: c.lexicon.cefr_source ?? null,
   };
 }

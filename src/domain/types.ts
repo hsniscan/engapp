@@ -261,6 +261,8 @@ export interface Settings extends SyncedRow {
   interests?: string[] | null;
   /** Topics the user turned off: they weigh 0 in the profile. */
   muted_topics?: string[] | null;
+  /** v0.2 İP4: open "Kolay olabilir" in the import preview (absent/null = closed). */
+  show_easy_candidates?: boolean | null;
 }
 
 /** Shared dictionary entries, read-only on the client (pulled from server). */
@@ -388,7 +390,22 @@ export interface ImportCandidate {
   selected: boolean;
   user_status: CandidateUserStatus;
   meaning_tr_edit: string | null; // user's in-place correction in preview
+  // v0.2 İP4 smart extraction (Dexie v10; local only, set when the job's last chunk is in):
+  /** Level of the candidate's sense (lexicon, else the client level file); null = unknown. */
+  cefr: CefrLevel | null;
+  cefr_source: LevelSource | null;
+  /** Preview section (domain/candidates.ts); null until the job is classified. */
+  bucket: CandidateBucket | null;
+  /** The candidate comes from a vocabulary-list chunk (every entry is shown). */
+  from_list: boolean;
 }
+
+/**
+ * Preview sections of smart extraction: "Senin için", "Kolay olabilir", "Biliyorsun" (a note
+ * for the term exists or the word was marked known), and items more than one level above the
+ * learner (counted for prose, shown for vocabulary lists).
+ */
+export type CandidateBucket = 'for_you' | 'easy' | 'known' | 'too_hard';
 
 export interface ChunkCacheRow {
   chunk_hash: string;

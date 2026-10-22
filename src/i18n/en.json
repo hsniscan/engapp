@@ -437,7 +437,9 @@
       "dayStart": "Day starts at",
       "dayStartHint": "Reviews before this hour count for the previous day, so late nights do not break your streak.",
       "level": "Estimated level",
-      "levelHint": "AI skips very basic words below this level."
+      "levelHint": "AI skips very basic words below this level.",
+      "showEasy": "Show easy candidates open",
+      "showEasyHint": "When words are extracted from a text, those below your level come in a closed section. Turn this on to always show it open."
     },
     "levels": {
       "A1": "Beginner",
@@ -1002,7 +1004,28 @@
       "toLibrary": "Go to cards",
       "pos": "Part of speech",
       "addedSenses_one": "{{count}} meaning added",
-      "addedSenses_other": "{{count}} meanings added"
+      "addedSenses_other": "{{count}} meanings added",
+      "smartSummary": "For your level {{level}}, this text has {{total}} candidates: {{forYou}} for you, {{easy}} easy, {{known}} you already know.",
+      "tooHardHidden": "{{count}} candidates more than one level above yours were not suggested.",
+      "sections": {
+        "for_you": "For you",
+        "easy": "Easy",
+        "known": "You know these",
+        "too_hard": "Above your level"
+      },
+      "sectionHints": {
+        "for_you": "Mostly {{level}}; a few from the next level, the rest from lower levels. The selected ones are ready to add.",
+        "easy": "Words below your level. Select the ones you do not know.",
+        "known": "Words you have cards for or marked as known. You can still select them.",
+        "too_hard": "These list entries are more than one level above yours. They are not selected; you can add them."
+      },
+      "forYouEmpty": "This text has no new words at level {{level}}. Have a look at the easy section.",
+      "selectAllIn": "{{section}}: select all",
+      "selectNoneIn": "{{section}}: select none",
+      "knowIt": "{{term}}: I know it",
+      "knowItShort": "I know it",
+      "markedKnown": "“{{term}}” added to the words you know",
+      "markKnownFailed": "Could not mark it. Try again."
     },
     "lookup": {
       "offline": "You're offline and this word isn't in the dictionary cache; try again when you're back online.",

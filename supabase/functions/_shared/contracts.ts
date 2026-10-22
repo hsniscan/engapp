@@ -22,7 +22,7 @@ export const MAX_PROSE_CANDIDATES = 30;
  * Version of the extract prompt and response schema; it keys the server chunk cache and
  * the client's local chunk cache. Bump it with every prompt or schema change (prompts.ts).
  */
-export const EXTRACT_PROMPT_VERSION = 'extract-v3';
+export const EXTRACT_PROMPT_VERSION = 'extract-v4';
 
 export const ERROR_CODES = [
   'unauthorized', // no/invalid/expired session, or an anonymous session
