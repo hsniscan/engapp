@@ -18,7 +18,7 @@ test('progress tab: categories, gap practice and the 12-week series on a phone',
   await page.goto('/stats?tab=gelisim');
   const groups = page.getByRole('region', { name: 'Kategorilere göre tutma oranı' });
   await expect(groups).toBeVisible();
-  await expect(groups.getByText(/Genel tutma oranı/)).toContainText('%');
+  await expect(groups.getByText(/Tutma oranı, son 90 gün:/)).toContainText('%');
   await expect(groups.getByRole('listitem', { name: /^Kelime: %\d+, \d+ cevap\./ })).toBeVisible();
 
   // Another category through the picker.

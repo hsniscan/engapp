@@ -1,5 +1,6 @@
 // zod schemas for synced rows. Used to validate backup files and (later) sync payloads.
 import { z } from 'zod';
+import { clampNotifyHour } from '../../supabase/functions/_shared/push-rule';
 import type {
   Card,
   ContentFeedback,
@@ -183,11 +184,18 @@ export const settingsSchema: z.ZodType<Settings> = z.object({
   fsrs_params_prev: z.array(z.number()).nullish(),
   fsrs_opt_at: millis.nullish(),
   // v0.3 İP8; absent in older rows and backups (= off). A malformed value must not reject the row.
+  // The hour is kept inside 09–21 like the patch schema (data/settings.ts) and the push rule
+  // (clampNotifyHour): a reminder at 22:00 would fall into the quiet hours (decision 0024).
   notify: z
     .object({
       enabled: z.boolean(),
       mode: z.enum(['auto', 'fixed']).catch('auto'),
-      hour: z.number().int().min(0).max(23).nullable().catch(null),
+      hour: z
+        .number()
+        .int()
+        .nullable()
+        .transform((h) => (h === null ? null : clampNotifyHour(h)))
+        .catch(null),
     })
     .nullish()
     .catch(null),

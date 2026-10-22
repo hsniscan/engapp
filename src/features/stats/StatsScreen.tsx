@@ -63,7 +63,7 @@ function StatsBody({ weeks, streak: s }: { weeks: HeatmapCell[][]; streak: Strea
   const active = flat.filter((c) => c.level > 0).length;
   const completed = flat.filter((c) => c.level === 2).length;
 
-  const metrics: { label: string; value: string; detail: string; hero?: boolean }[] = [
+  const metrics: { label: string; value: string; detail: string; hint?: string; hero?: boolean }[] = [
     {
       label: t('stats.currentStreak'),
       value: formatNumber(s.currentStreak),
@@ -94,6 +94,7 @@ function StatsBody({ weeks, streak: s }: { weeks: HeatmapCell[][]; streak: Strea
       label: t('stats.retention'),
       value: s.retentionRate === null ? '—' : formatPercent(s.retentionRate),
       detail: s.retentionRate === null ? t('stats.retentionNone') : t('stats.retentionDetail'),
+      hint: t('stats.retentionHint'),
     },
     {
       label: t('stats.learned'),
@@ -145,6 +146,7 @@ function StatsBody({ weeks, streak: s }: { weeks: HeatmapCell[][]; streak: Strea
                   )}
                 </span>
                 <span className="mt-1 text-xs text-fg-muted">{m.detail}</span>
+                {m.hint && <span className="mt-1 text-xs text-fg-muted">{m.hint}</span>}
               </dd>
             </Surface>
           ))}

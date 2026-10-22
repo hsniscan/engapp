@@ -442,14 +442,15 @@
     "last30Detail_other": "{{count}} active days",
     "avgTime": "Average daily time",
     "avgTimeDetail": "On active days, last 30 days",
-    "retention": "Retention",
-    "retentionDetail": "Cards in review, last 30 days",
+    "retention": "Recall, last 30 days",
+    "retentionDetail": "Every answer to cards in review counts.",
     "retentionNone": "Not enough data yet",
     "learned": "Learned cards",
     "learnedDetail": "Cards in the review stage",
     "tabsLabel": "Statistics sections",
     "tabContinuity": "Consistency",
-    "tabProgress": "Progress"
+    "tabProgress": "Progress",
+    "retentionHint": "Retention on the Progress tab is a different measure: there only the first answer of the day to each card counts, over 90 days."
   },
   "progress": {
     "loading": "Calculating progress…",
@@ -472,7 +473,7 @@
     "groups": {
       "title": "Retention by category",
       "subtitle": "Last 90 days. A rate is shown from 20 answers.",
-      "overall": "Overall retention",
+      "overall": "Retention, last 90 days",
       "dimension": "Category",
       "dimensions": {
         "term_type": "Term type",
@@ -495,7 +496,8 @@
         "source": "Added by hand",
         "pos": "Not given"
       },
-      "empty": "No counted answers in the last 90 days."
+      "empty": "No counted answers in the last 90 days.",
+      "overallHint": "\"Recall, last 30 days\" on the Continuity tab counts every answer; this rate counts only the first answer of the day to each card, so the two can differ."
     },
     "series": {
       "title": "Last 12 weeks",

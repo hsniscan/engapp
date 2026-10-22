@@ -442,14 +442,15 @@
     "last30Detail_other": "{{count}} aktif gün",
     "avgTime": "Günlük ortalama süre",
     "avgTimeDetail": "Aktif günlerde, son 30 gün",
-    "retention": "Tutma oranı",
-    "retentionDetail": "Tekrardaki kartlar, son 30 gün",
+    "retention": "Hatırlama, son 30 gün",
+    "retentionDetail": "Tekrardaki kartlara verdiğin bütün cevaplar sayılır.",
     "retentionNone": "Henüz yeterli veri yok",
     "learned": "Öğrenilen kart",
     "learnedDetail": "Tekrar aşamasındaki kartlar",
     "tabsLabel": "İstatistik bölümleri",
     "tabContinuity": "Süreklilik",
-    "tabProgress": "Gelişim"
+    "tabProgress": "Gelişim",
+    "retentionHint": "Gelişim sekmesindeki tutma oranı başka bir ölçüdür: orada her kartın günün ilk cevabı, son 90 gün sayılır."
   },
   "progress": {
     "loading": "Gelişim hesaplanıyor…",
@@ -472,7 +473,7 @@
     "groups": {
       "title": "Kategorilere göre tutma oranı",
       "subtitle": "Son 90 gün. Oran, en az 20 cevap olunca gösterilir.",
-      "overall": "Genel tutma oranı",
+      "overall": "Tutma oranı, son 90 gün",
       "dimension": "Kategori",
       "dimensions": {
         "term_type": "Kelime türü",
@@ -495,7 +496,8 @@
         "source": "Elle eklenenler",
         "pos": "Türü belirtilmemiş"
       },
-      "empty": "Son 90 günde sayılan cevap yok."
+      "empty": "Son 90 günde sayılan cevap yok.",
+      "overallHint": "Süreklilik sekmesindeki \"Hatırlama, son 30 gün\" bütün cevapları sayar; bu oran yalnızca her kartın günün ilk cevabını sayar, o yüzden ikisi farklı çıkabilir."
     },
     "series": {
       "title": "Son 12 hafta",
