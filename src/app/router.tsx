@@ -45,6 +45,13 @@ const children: RouteObject[] = [
     lazy: async () => ({ Component: (await import('@/features/cards/AddPage')).AddPage }),
   },
   {
+    path: 'import/anki',
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/anki/AnkiImportPage')).AnkiImportPage,
+    }),
+  },
+  {
     path: 'import/:jobId',
     HydrateFallback: () => null,
     lazy: async () => ({

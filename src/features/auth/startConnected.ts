@@ -1,6 +1,7 @@
 // Startup of the connected features: auth session, account linking, sync engine triggers
 // the AI import queue and the example sentence preparation. Idempotent; call once from main.tsx (it is also called by the
 // sync indicator as a safety net).
+import { kickAnkiEnrich, startAnkiEnrichQueue } from '@/features/anki/enrichQueue';
 import { kickExampleQueue, startExampleQueue } from '@/features/examples/queue';
 import { kickImportQueue, startImportQueue } from '@/features/import/queue';
 import { isBackendConfigured } from '@/lib/supabase';
@@ -22,6 +23,7 @@ export function startConnectedFeatures(): void {
       void linkAccount(user.id);
       kickImportQueue();
       kickExampleQueue();
+      kickAnkiEnrich();
     } else {
       void engine.isActive();
     }
@@ -30,4 +32,5 @@ export function startConnectedFeatures(): void {
   startSyncEngine();
   startImportQueue();
   startExampleQueue();
+  startAnkiEnrichQueue();
 }
