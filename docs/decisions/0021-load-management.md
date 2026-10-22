@@ -78,7 +78,7 @@ nor grows), the default capacity is 20 minutes, catch-up is on by default.
   the catch-up estimate on the home screen uses a simple capacity-vs-arrivals count.
 - The day facts cache is keyed by the number of logs before today; a suspend or delete of an
   overdue card changes the backlog only from the next day.
-- pgTAP file `14_load_management.test.sql` was written but not run locally (no database in the
+- pgTAP file `16_load_management.test.sql` was written but not run locally (no database in the
   agent environment).
 
 ## Why

@@ -421,7 +421,8 @@ describe('Dexie schema', () => {
 
   it('v17 upgrade re-pulls settings once for the reminder setting, only on devices that pulled', async () => {
     for (const [name, cursor, expected] of [
-      ['upgrade-v17-synced', 77, ['settings']],
+      // 'sources' comes from v12 (Anki import), which also runs on this v11 database.
+      ['upgrade-v17-synced', 77, ['sources', 'settings']],
       ['upgrade-v17-fresh', 0, undefined],
     ] as const) {
       const old = new Dexie(name);

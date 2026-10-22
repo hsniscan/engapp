@@ -44,7 +44,7 @@ already had a place for both). Constraints:
    hidden for this user only; "Geri al" is a tombstone. Rejecting the chosen, unedited
    suggestion also clears the choice (and "Geri al" restores it). Both tables were already
    synced per user with RLS (decision 0013); no new user table. pgTAP
-   `14_mnemonics.test.sql` checks that a user's text never appears in the shared tables.
+   `15_mnemonics.test.sql` checks that a user's text never appears in the shared tables.
 5. **Device cache.** Dexie v13 adds `lexicon_pair_notes` (read-only cache, not synced,
    kept when switching or copying accounts like the lexicon cache). The detail sheet works
    offline from it; guests and senses outside the shared lexicon can still write their own.

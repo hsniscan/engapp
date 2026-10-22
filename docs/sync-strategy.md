@@ -276,7 +276,7 @@ synced tables and not in the registry: they are server state, written only throu
 - `supabase/tests/integration/stack.test.ts`: the same through PostgREST with
   `src/sync/api.ts`.
 - `src/sync/api.test.ts`: response validation and error classification.
-- `supabase/tests/database/14_push.test.sql`: push tables' RLS and grants, subscriptions owned
+- `supabase/tests/database/18_push.test.sql`: push tables' RLS and grants, subscriptions owned
   by the session user, endpoint allow-list, one claim per user-day, due counts.
 
 ## Example sentences (v0.2 İP5, migration 20261022000100)

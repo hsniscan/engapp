@@ -67,7 +67,7 @@ Response (`mnemonicResponse`):
 - The user's pick, edit or own text: one `user_content` row per sense (`kind 'mnemonic'`,
   `sense_id` = the user's sense, `replaces_id` = the suggestion it came from or null,
   `selected: true`), synced like the edited example sentences. Never sent to the server's
-  shared tables or to the model (pgTAP `14_mnemonics.test.sql`).
+  shared tables or to the model (pgTAP `15_mnemonics.test.sql`).
 - A rejection: `content_feedback` (`target_kind 'mnemonic'`, `target_id` = suggestion id,
   `verdict 'reject'`); the suggestion is hidden for this user only. "Geri al" is a tombstone.
 - The suggestions themselves are cached in Dexie `lexicon_pair_notes` (shared data, kept on an
@@ -144,7 +144,7 @@ AVOID:
   tests): first request stores and the second costs no call (also for another user),
   "Başka öner" sends AVOID and appends, an empty answer is remembered, the per-sense cap, the
   daily limit, error mapping, every validation reason.
-- `supabase/tests/database/14_mnemonics.test.sql` (pgTAP): only the service role writes,
+- `supabase/tests/database/15_mnemonics.test.sql` (pgTAP): only the service role writes,
   shape CHECK, dedup, a client cannot insert or edit, the user's mnemonic and rejection sync
   per user and never appear in `lexicon_pair_notes`, `lexicon_senses` or `lexicon_examples`.
 - Quality: the weekly golden check of 20 words (plan "AI kalitesi") is still manual; no live
