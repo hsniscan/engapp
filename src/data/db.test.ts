@@ -572,7 +572,7 @@ describe('Dexie schema', () => {
 
   it('v24 upgrade adds the word bank copy and leaves everything else alone', async () => {
     // A database as the picture-card package left it (version 22), with notes and settings.
-    // (From 21 the v22 step would add its own pull backfill; v24 must add none.)
+    // (From 21 the v22 step would add its own pull backfill.)
     const old = new Dexie('upgrade-v24');
     old.version(1).stores({ notes: 'id, term_norm', settings: 'id', meta: 'key' });
     old.version(22).stores({ images: 'id, sense_id, fetched_at' });
@@ -588,7 +588,8 @@ describe('Dexie schema', () => {
     expect(await d.notes.get('n1')).toEqual({ id: 'n1', term: 'apple', term_norm: 'apple' });
     expect(await d.settings.get('settings')).toEqual({ id: 'settings', level: 'B1' });
     expect((await d.meta.get('sync_cursor'))?.value).toBe(12);
-    expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toBeUndefined();
+    // v24 itself queues no re-pull; only the later v25 step adds settings.
+    expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(['settings']);
     expect(await d.word_bank.count()).toBe(0);
     expect(d.word_bank.schema.primKey.name).toBe('id');
     expect(d.word_bank.schema.indexes.map((i) => i.name)).toEqual(expect.arrayContaining(['cefr', 'lemma_norm']));
