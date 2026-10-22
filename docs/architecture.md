@@ -35,4 +35,16 @@
   names from fixed lists, and writes a 3–4 sentence Turkish comment whose numbers are checked
   on the server and again on the device (docs/ai-report.md). Reports sync as insert-only rows,
   one per week. Decision 0027.
+* Android app (v0.4): Capacitor 8 wraps the same `dist/` build (`android/`,
+  `capacitor.config.ts`), served from `https://localhost`. `src/native/` is loaded with
+  `import()` only when `isNativeApp()` is true, so the web bundle carries no Capacitor code.
+  Native Google sign-in (Credential Manager → `signInWithIdToken`), device TextToSpeech as the
+  read-aloud fallback, back-button handling, and local-notification reminders planned on the
+  phone by `src/domain/reminderSchedule.ts` from the same push rule (per-device switch; Web Push
+  is removed for the account when it is on). CI: `.github/workflows/android.yml`; setup:
+  `docs/setup-android.md`. Decision 0033.
+* Paylaş → Engapp (v0.4): `/share?text&title&url` is opened by the Android `ACTION_SEND`
+  intent (`ShareTargetPlugin`) and by the PWA's Web Share Target; `src/features/share/route.ts`
+  sends a short term to `/add`, a passage to a text import job, and a link to a title preview.
+  Decision 0034.
 * Hosting: static build on Cloudflare Pages (see `docs/decisions/0001`).
