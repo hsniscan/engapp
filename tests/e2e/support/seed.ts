@@ -172,7 +172,10 @@ export async function buildSeedBackup(cards: number, now = Date.now()): Promise<
     updated_at: start,
     deleted_at: null,
     hlc: hlc(start),
-    daily_new_limit: 10,
+    // The histories end at `now`, so few reviews are due, and almost none in the minutes
+    // before the 04:00 day start (the day then ends at once). New cards keep a session long
+    // enough for the perf test's 20 card switches at any time of day (perfSeed.test.ts).
+    daily_new_limit: 40,
     request_retention: 0.9,
     timezone: 'Europe/Istanbul',
     day_start_hour: 4,
