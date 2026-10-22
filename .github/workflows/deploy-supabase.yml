@@ -7,7 +7,9 @@
 #   SUPABASE_DB_PASSWORD    the database password of the project
 #   GEMINI_API_KEY          Google AI Studio API key
 # Repository variables (same page > Variables), all optional:
-#   GEMINI_MODEL, GEMINI_FALLBACK_MODEL, AI_DAILY_LIMIT, ALLOWED_ORIGINS
+#   GEMINI_MODEL, GEMINI_FALLBACK_MODEL, AI_DAILY_LIMIT, ALLOWED_ORIGINS, VAPID_SUBJECT
+# Web Push (VAPID) keys are generated here on the first deploy and kept as Supabase function
+# secrets; nobody has to create them (docs/decisions/0024-web-push.md).
 name: Supabase
 
 on:
@@ -50,7 +52,7 @@ jobs:
       - name: Type-check edge functions (Deno)
         working-directory: supabase/functions
         run: |
-          for fn in ai-extract ai-enrich ai-examples ai-themes; do (cd "$fn" && deno check index.ts); done
+          for fn in ai-extract ai-enrich ai-examples ai-themes push-send; do (cd "$fn" && deno check index.ts); done
       - name: Start local database
         # Only Postgres + Auth are needed for the SQL tests.
         run: supabase start -x studio,imgproxy,vector,logflare,storage-api,realtime,supavisor,mailpit,postgres-meta,edge-runtime,kong,postgrest
@@ -92,6 +94,7 @@ jobs:
       - name: Apply database migrations
         run: |
           set -euo pipefail
+          umask 077 # the working database URL is kept in $RUNNER_TEMP for the push step below
           pass=$(jq -rn --arg p "$SUPABASE_DB_PASSWORD" '$p|@uri')
           echo "::add-mask::$pass"
           status=$(curl -sS -o pooler.json -w '%{http_code}' \
@@ -102,12 +105,14 @@ jobs:
             user=$(jq -r '[.[] | select(.database_type == "PRIMARY")][0].db_user' pooler.json)
             name=$(jq -r '[.[] | select(.database_type == "PRIMARY")][0].db_name' pooler.json)
             supabase db push --db-url "postgresql://$user:$pass@$host:5432/$name" --yes
+            echo "postgresql://$user:$pass@$host:5432/$name" > "$RUNNER_TEMP/db-url"
             exit 0
           fi
           # Token without 'Connection Pooling: Read': try the regional pooler hosts directly.
           echo "::warning::Pooler config not readable (HTTP $status); trying regional pooler hosts."
           for host in aws-0-$SUPABASE_REGION.pooler.supabase.com aws-1-$SUPABASE_REGION.pooler.supabase.com; do
             if supabase db push --db-url "postgresql://postgres.$SUPABASE_PROJECT_REF:$pass@$host:5432/postgres" --yes; then
+              echo "postgresql://postgres.$SUPABASE_PROJECT_REF:$pass@$host:5432/postgres" > "$RUNNER_TEMP/db-url"
               exit 0
             fi
           done
@@ -121,6 +126,7 @@ jobs:
           GEMINI_FALLBACK_MODEL: ${{ vars.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite' }}
           AI_DAILY_LIMIT: ${{ vars.AI_DAILY_LIMIT || '200' }}
           ALLOWED_ORIGINS: ${{ format('{0},https://engapp-65y.pages.dev,http://localhost:5173', vars.ALLOWED_ORIGINS) }}
+          VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT || 'https://engapp-65y.pages.dev' }}
         run: |
           # Written to a temp file (not the command line) so values never show in logs.
           set -euo pipefail
@@ -134,9 +140,45 @@ jobs:
             echo "AI_PROVIDER=gemini"
             echo "AI_DAILY_LIMIT=$AI_DAILY_LIMIT"
             echo "ALLOWED_ORIGINS=$ALLOWED_ORIGINS"
+            echo "VAPID_SUBJECT=$VAPID_SUBJECT"
           } > "$f"
+          supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" --env-file "$f"
+
+      - name: Web Push keys (generated once)
+        # VAPID keys identify this server to the browsers' push services. They are created on
+        # the first deploy and never replaced: new keys would silently end every device's
+        # subscription. If listing the secrets fails, the step fails instead of guessing.
+        run: |
+          set -euo pipefail
+          names="$(supabase secrets list --project-ref "$SUPABASE_PROJECT_REF")"
+          if grep -qw VAPID_PUBLIC_KEY <<<"$names" && grep -qw VAPID_PRIVATE_KEY <<<"$names"; then
+            echo "VAPID keys are set."
+            exit 0
+          fi
+          echo "VAPID keys are missing: generating a new P-256 key pair."
+          umask 077
+          f="$(mktemp)"
+          trap 'rm -f "$f"' EXIT
+          node -e '
+            const c = require("node:crypto");
+            const { privateKey } = c.generateKeyPairSync("ec", { namedCurve: "prime256v1" });
+            const j = privateKey.export({ format: "jwk" });
+            const pub = Buffer.concat([Buffer.from([4]), Buffer.from(j.x, "base64url"), Buffer.from(j.y, "base64url")]);
+            process.stdout.write(`VAPID_PUBLIC_KEY=${pub.toString("base64url")}\nVAPID_PRIVATE_KEY=${j.d}\n`);
+          ' > "$f"
+          echo "::add-mask::$(sed -n 's/^VAPID_PRIVATE_KEY=//p' "$f")"
           supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" --env-file "$f"
 
       - name: Deploy edge functions
         # verify_jwt = false comes from supabase/config.toml; the functions verify the JWT themselves.
         run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF" --use-api
+
+      - name: Schedule push reminders
+        # pg_cron (migration 20261023000600_push.sql) calls push-send every 15 minutes once the
+        # database knows the function's URL. Idempotent.
+        run: |
+          set -euo pipefail
+          command -v psql >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client; }
+          psql "$(cat "$RUNNER_TEMP/db-url")" -v ON_ERROR_STOP=1 -qAt \
+            -c "select public.push_configure('https://$SUPABASE_PROJECT_REF.supabase.co/functions/v1/push-send')" \
+            -c "select 'extensions: ' || string_agg(extname, ', ') from pg_extension where extname in ('pg_cron', 'pg_net')"
