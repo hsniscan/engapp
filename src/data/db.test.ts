@@ -5,7 +5,7 @@ import { PULL_BACKFILL_KEY } from './backfill';
 import { EngDb } from './db';
 
 /** The current schema version; bump with every new Dexie version. */
-const LATEST = 21;
+const LATEST = 22;
 
 describe('Dexie schema', () => {
   it('opens with every table and the indexes the queries rely on', async () => {
@@ -424,7 +424,7 @@ describe('Dexie schema', () => {
     for (const [name, cursor, expected] of [
       // 'sources' comes from v12 (Anki import), 'notes' from v19 (contrast cards) and
       // 'weekly_reports' from v20, which also run on this v11 database.
-      ['upgrade-v17-synced', 77, ['sources', 'settings', 'notes', 'weekly_reports']],
+      ['upgrade-v17-synced', 77, ['sources', 'settings', 'notes', 'weekly_reports', 'cards']],
       ['upgrade-v17-fresh', 0, undefined],
     ] as const) {
       const old = new Dexie(name);
@@ -450,7 +450,7 @@ describe('Dexie schema', () => {
   it('v19 upgrade re-pulls notes once for contrast cards, only on devices that pulled', async () => {
     for (const [name, cursor, expected] of [
       // v20 (weekly reports) runs after v19 and adds its own tables.
-      ['upgrade-v19-synced', 77, ['notes', 'settings', 'weekly_reports']],
+      ['upgrade-v19-synced', 77, ['notes', 'settings', 'weekly_reports', 'cards']],
       ['upgrade-v19-fresh', 0, undefined],
     ] as const) {
       const old = new Dexie(name);
@@ -474,7 +474,7 @@ describe('Dexie schema', () => {
 
   it('v20 upgrade adds the weekly report tables, keeps settings and re-pulls reports and settings once', async () => {
     for (const [name, cursor, expected] of [
-      ['upgrade-v20-synced', 91, ['settings', 'weekly_reports']],
+      ['upgrade-v20-synced', 91, ['settings', 'weekly_reports', 'cards']],
       ['upgrade-v20-fresh', 0, undefined],
     ] as const) {
       // A database as İP6 left it (version 19), with the backfill of v12–v19 already done.
@@ -503,7 +503,8 @@ describe('Dexie schema', () => {
   });
   it('v21 upgrade adds the picture cache, keeps settings and user content, and re-pulls settings once', async () => {
     for (const [name, cursor, expected] of [
-      ['upgrade-v21-synced', 93, ['settings']],
+      // v22 (picture cards) runs after v21 and re-pulls cards as well.
+      ['upgrade-v21-synced', 93, ['settings', 'cards']],
       ['upgrade-v21-fresh', 0, undefined],
     ] as const) {
       // A database as v0.3 left it (version 20), with every earlier backfill done.
@@ -527,6 +528,42 @@ describe('Dexie schema', () => {
       expect(await d.images.count()).toBe(0);
       expect(d.images.schema.primKey.name).toBe('id');
       expect(d.images.schema.indexes.map((i) => i.name)).toEqual(expect.arrayContaining(['sense_id', 'fetched_at']));
+      expect(await d.outbox.count()).toBe(0);
+      d.close();
+      await d.delete();
+    }
+  });
+
+  it('v22 upgrade keeps cards and settings untouched and re-pulls them once for picture cards', async () => {
+    for (const [name, cursor, expected] of [
+      ['upgrade-v22-synced', 120, ['cards', 'settings']],
+      ['upgrade-v22-fresh', 0, undefined],
+    ] as const) {
+      // A database as İP3 left it (version 21), with every earlier backfill done.
+      const old = new Dexie(name);
+      old.version(1).stores({
+        cards: 'id, note_id, sense_id, [state+due], due, card_type, deleted_at',
+        settings: 'id',
+        meta: 'key',
+      });
+      old.version(21).stores({ images: 'id, sense_id, fetched_at' });
+      await old.open();
+      const card = makeCard({ id: 'c1', note_id: 'n1', sense_id: 's1', card_type: 'production', unlocked: false });
+      await old.table('cards').add(card);
+      await old.table('settings').add({ id: 'settings', theme: 'dark', show_image_front: true });
+      await old.table('images').add({ id: 'i1', sense_id: 'lx1', variant: 0, svg: '<svg/>', alt_tr: 'x', status: 'approved', created_at: 'x', fetched_at: 1 });
+      await old.table('meta').put({ key: 'sync_cursor', value: cursor });
+      old.close();
+
+      const d = new EngDb(name);
+      await d.open();
+      expect(d.verno).toBe(LATEST);
+      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
+      // No image_cards key means "on"; no row is rewritten and nothing is queued.
+      expect(await d.settings.get('settings')).toEqual({ id: 'settings', theme: 'dark', show_image_front: true });
+      expect(await d.cards.get('c1')).toEqual(card);
+      expect(await d.images.count()).toBe(1);
+      expect(d.cards.schema.indexes.map((i) => i.name)).toEqual(expect.arrayContaining(['card_type', 'sense_id']));
       expect(await d.outbox.count()).toBe(0);
       d.close();
       await d.delete();

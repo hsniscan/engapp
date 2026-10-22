@@ -8,6 +8,13 @@ export * from './examples';
 export * from './mnemonics';
 export * from './images';
 export {
+  imageCardsSignature,
+  imageCardsWithoutPicture,
+  reconcileImageCards,
+  setImageCardsEnabled,
+  type ReconcileOptions,
+} from './imageCards';
+export {
   computeWeeklySummary,
   deferReportDraft,
   draftExpired,

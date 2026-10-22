@@ -284,6 +284,16 @@ export class EngDb extends Dexie {
     this.version(21)
       .stores({ images: 'id, sense_id, fetched_at' })
       .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
+    // v22 (v0.4 İP8, picture recall cards; 23+ belong to the other v0.4 packages): cards may
+    // now have card_type 'image' and the settings row gains image_cards (optional, absent =
+    // on). No new table or index. An older app version dropped a pulled picture card as
+    // invalid and stripped image_cards from settings: re-pull both once (equal HLC → the
+    // server's set values, domain/syncMerge.ts). The picture cards of senses whose pictures are
+    // already cached are made after start-up (data/imageCards.ts reconcileImageCards needs the
+    // sync writer, which an upgrade transaction cannot use).
+    this.version(22)
+      .stores({})
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['cards', 'settings']));
   }
 }
 

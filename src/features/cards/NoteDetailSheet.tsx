@@ -604,7 +604,7 @@ const STATE_TONE = {
 
 function CardList({ cards, senses }: { cards: Card[]; senses: Sense[] }) {
   const { t } = useTranslation();
-  const order = { recognition: 0, production: 1, cloze: 2 } as const;
+  const order = { recognition: 0, production: 1, cloze: 2, image: 3 } as const;
   const senseNo = new Map(senses.map((s, i) => [s.id, i + 1]));
   const sorted = [...cards].sort(
     (a, b) =>

@@ -27,6 +27,8 @@ import type { ContentFeedback, Id, Millis, Sense, UserContent } from '../domain/
 import { db } from './db';
 import { ActionError } from './errors';
 import { feedbackRowId } from '../domain/examples';
+import { imageCardPicture } from '../domain/imageCards';
+import { reconcileImageCards } from './imageCards';
 import { writeTx } from './writer';
 
 // ------------------------------------------------------------------ reading (no hashing: safe in live queries and transactions)
@@ -64,15 +66,20 @@ export interface CardImage {
 /**
  * The picture of `sense` for a card, or null (no lexicon sense, nothing cached, hidden). Reads
  * only: callable inside getCardView's transaction (tables: images, user_content,
- * content_feedback).
+ * content_feedback). A picture card (v0.4 İP8) asks with `forImageCard`: then only the chosen
+ * picture or an approved one counts (domain/imageCards.ts imageCardPicture).
  */
-export async function cardImageOf(sense: Pick<Sense, 'id' | 'lexicon_sense_id'> | null): Promise<CardImage | null> {
+export async function cardImageOf(
+  sense: Pick<Sense, 'id' | 'lexicon_sense_id'> | null,
+  forImageCard = false,
+): Promise<CardImage | null> {
   if (!sense?.lexicon_sense_id) return null;
   const rows = await db.images.where('sense_id').equals(sense.lexicon_sense_id).toArray();
   if (!rows.length) return null;
   const choice = choiceOf(await choiceRow(sense));
   if (choice.hidden) return null;
-  const picked = pickImage(rows, choice, rejectedImageIds(await imageFeedback(rows.map((r) => r.id))));
+  const rejected = rejectedImageIds(await imageFeedback(rows.map((r) => r.id)));
+  const picked = forImageCard ? imageCardPicture(rows, choice, rejected) : pickImage(rows, choice, rejected);
   return picked && { id: picked.id, svg: picked.svg, alt: picked.alt_tr, isNew: picked.status === 'review' };
 }
 
@@ -258,6 +265,7 @@ export async function chooseImage(senseId: Id, imageId: Id, now: Millis = Date.n
   const fb = await db.content_feedback.get(fbId);
   if (fb && fb.deleted_at === null && fb.verdict === 'reject') await writeVerdict(sense, imageId, null, null, fbId, reasonId, now);
   await putChoice(sense, await imageChoiceRowId(senseId), { imageId, hidden: false }, now);
+  await reconcileImageCards({ senseIds: [senseId] }, now);
 }
 
 /** "Görseli gizle" (true) / "Görseli göster" (false). The picked picture is remembered. */
@@ -265,8 +273,14 @@ export async function setImageHidden(senseId: Id, hidden: boolean, now: Millis =
   const sense = await liveSense(senseId);
   const rowId = await imageChoiceRowId(senseId);
   const current = choiceOf(await db.user_content.get(rowId));
-  if (hidden) return putChoice(sense, rowId, { imageId: current.imageId, hidden: true }, now);
-  return putChoice(sense, rowId, current.imageId ? { imageId: current.imageId, hidden: false } : null, now);
+  await putChoice(
+    sense,
+    rowId,
+    hidden ? { imageId: current.imageId, hidden: true } : current.imageId ? { imageId: current.imageId, hidden: false } : null,
+    now,
+  );
+  // v0.4 İP8: a hidden picture takes its picture card away; showing it again brings it back.
+  await reconcileImageCards({ senseIds: [senseId] }, now);
 }
 
 async function writeVerdict(
@@ -336,6 +350,8 @@ export async function setImageVerdict(
   const choice = choiceOf(await db.user_content.get(choiceId));
   const clearedChoice = verdict === 'reject' && choice.imageId === imageId;
   if (clearedChoice) await putChoice(sense, choiceId, choice.hidden ? { imageId: null, hidden: true } : null, now);
+  // v0.4 İP8: a "Hayır" for the last usable picture takes the picture card away (and undo back).
+  await reconcileImageCards({ senseIds: [senseId] }, now);
   return { clearedChoice };
 }
 

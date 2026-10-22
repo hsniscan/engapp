@@ -26,6 +26,10 @@ export function pictureSrc(image: { id: Id; svg: string }, theme: ResolvedTheme)
   return remember(key, clean ? pictureDataUrl(clean, theme) : null);
 }
 
+/** Whether a picture can be shown at all (the sanitizer accepts it). */
+export const canShowPicture = (image: { id: Id; svg: string } | null | undefined, theme: ResolvedTheme = shownTheme()): boolean =>
+  !!image && pictureSrc(image, theme) !== null;
+
 const decoded = new Map<string, HTMLImageElement>();
 
 /**
