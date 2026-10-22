@@ -6,8 +6,12 @@
 #   SUPABASE_ACCESS_TOKEN   personal access token from supabase.com/dashboard/account/tokens
 #   SUPABASE_DB_PASSWORD    the database password of the project
 #   GEMINI_API_KEY          Google AI Studio API key
+#   ANTHROPIC_API_KEY       optional: Claude API key for pictures (ai-image). Without it the
+#                           function answers an error and pictures come only from the nightly job.
 # Repository variables (same page > Variables), all optional:
-#   GEMINI_MODEL, GEMINI_FALLBACK_MODEL, AI_DAILY_LIMIT, ALLOWED_ORIGINS, VAPID_SUBJECT
+#   GEMINI_MODEL, GEMINI_FALLBACK_MODEL, AI_DAILY_LIMIT, ALLOWED_ORIGINS, VAPID_SUBJECT,
+#   CLAUDE_IMAGE_MODEL, CLAUDE_CHECK_MODEL, CLAUDE_MONTHLY_CREDIT_USD, IMAGE_DAILY_LIMIT,
+#   APP_ADMIN_USER_ID (the owner's auth user id: may use the picture review screen)
 # Web Push (VAPID) keys are generated here on the first deploy and kept as Supabase function
 # secrets; nobody has to create them (docs/decisions/0024-web-push.md).
 name: Supabase
@@ -52,7 +56,7 @@ jobs:
       - name: Type-check edge functions (Deno)
         working-directory: supabase/functions
         run: |
-          for fn in ai-extract ai-enrich ai-examples ai-themes ai-mnemonic ai-report ai-contrast push-send tts account-delete; do (cd "$fn" && deno check index.ts); done
+          for fn in ai-extract ai-enrich ai-examples ai-themes ai-mnemonic ai-report ai-contrast ai-image push-send tts account-delete; do (cd "$fn" && deno check index.ts); done
       - name: Start local database
         # Only Postgres + Auth are needed for the SQL tests.
         run: supabase start -x studio,imgproxy,vector,logflare,storage-api,realtime,supavisor,mailpit,postgres-meta,edge-runtime,kong,postgrest
@@ -132,6 +136,13 @@ jobs:
           # https://localhost = the Android app (Capacitor), docs/decisions/0033-android-capacitor.md.
           ALLOWED_ORIGINS: ${{ format('{0},https://engapp-65y.pages.dev,http://localhost:5173,https://localhost', vars.ALLOWED_ORIGINS) }}
           VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT || 'https://engapp-65y.pages.dev' }}
+          # Pictures (ai-image, docs/decisions/0030-image-pipeline.md); all optional.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Model ids: only when set; otherwise the defaults in _shared/image-models.ts apply.
+          CLAUDE_IMAGE_MODEL: ${{ vars.CLAUDE_IMAGE_MODEL }}
+          CLAUDE_CHECK_MODEL: ${{ vars.CLAUDE_CHECK_MODEL }}
+          CLAUDE_MONTHLY_CREDIT_USD: ${{ vars.CLAUDE_MONTHLY_CREDIT_USD || '100' }}
+          IMAGE_DAILY_LIMIT: ${{ vars.IMAGE_DAILY_LIMIT || '10' }}
         run: |
           # Written to a temp file (not the command line) so values never show in logs.
           set -euo pipefail
@@ -149,7 +160,16 @@ jobs:
             echo "AI_DAILY_LIMIT=$AI_DAILY_LIMIT"
             echo "ALLOWED_ORIGINS=$ALLOWED_ORIGINS"
             echo "VAPID_SUBJECT=$VAPID_SUBJECT"
+            if [ -n "$CLAUDE_IMAGE_MODEL" ]; then echo "CLAUDE_IMAGE_MODEL=$CLAUDE_IMAGE_MODEL"; fi
+            if [ -n "$CLAUDE_CHECK_MODEL" ]; then echo "CLAUDE_CHECK_MODEL=$CLAUDE_CHECK_MODEL"; fi
+            echo "CLAUDE_MONTHLY_CREDIT_USD=$CLAUDE_MONTHLY_CREDIT_USD"
+            echo "IMAGE_DAILY_LIMIT=$IMAGE_DAILY_LIMIT"
+            # Only when the secret exists, so a missing key never overwrites a stored one.
+            if [ -n "$ANTHROPIC_API_KEY" ]; then echo "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY"; fi
           } > "$f"
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::notice::ANTHROPIC_API_KEY is not set: ai-image cannot draw pictures (docs/setup-backend.md)."
+          fi
           supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" --env-file "$f"
 
       - name: Web Push keys (generated once)
@@ -190,3 +210,25 @@ jobs:
           psql "$(cat "$RUNNER_TEMP/db-url")" -v ON_ERROR_STOP=1 -qAt \
             -c "select public.push_configure('https://$SUPABASE_PROJECT_REF.supabase.co/functions/v1/push-send')" \
             -c "select 'extensions: ' || string_agg(extname, ', ') from pg_extension where extname in ('pg_cron', 'pg_net')"
+
+      - name: Picture review admin
+        # The owner's auth user id from the repository variable APP_ADMIN_USER_ID (Supabase
+        # dashboard > Authentication > Users). Idempotent; skipped when the variable is empty.
+        env:
+          APP_ADMIN_USER_ID: ${{ vars.APP_ADMIN_USER_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "$APP_ADMIN_USER_ID" ]; then
+            echo "::notice::APP_ADMIN_USER_ID is not set: nobody can open the picture review screen."
+            exit 0
+          fi
+          if ! [[ "$APP_ADMIN_USER_ID" =~ ^[0-9a-fA-F-]{36}$ ]]; then
+            echo "::error::APP_ADMIN_USER_ID must be a user id (uuid)"; exit 1
+          fi
+          command -v psql >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client; }
+          # psql variables (:'uid') are only substituted in script input, hence stdin.
+          psql "$(cat "$RUNNER_TEMP/db-url")" -v ON_ERROR_STOP=1 -qAt -v uid="$APP_ADMIN_USER_ID" <<'SQL'
+          insert into public.app_admins (user_id)
+            select id from auth.users where id = :'uid'::uuid on conflict do nothing;
+          select 'picture admins: ' || count(*) from public.app_admins;
+          SQL

@@ -21,5 +21,11 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vite.config.ts", "capacitor.config.ts", "scripts/build-morphology/**/*.ts"]
+  "include": [
+    "vite.config.ts",
+    "capacitor.config.ts",
+    "scripts/build-morphology/**/*.ts",
+    "scripts/lib/**/*.ts",
+    "scripts/img-*.ts"
+  ]
 }

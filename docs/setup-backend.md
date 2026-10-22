@@ -88,16 +88,22 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 | `SUPABASE_DB_PASSWORD`      | the database password from step 3.6                                                                                                                                                                                                 |
 | `GEMINI_API_KEY`            | the key from step 1                                                                                                                                                                                                                 |
 | `SUPABASE_SERVICE_ROLE_KEY` | optional, for the level job (step 9): **Project Settings → API Keys** → the `service_role` key or a secret key (`sb_secret_…`). Without it the job reads the key with `SUPABASE_ACCESS_TOKEN`, which then needs API key read access |
+| `ANTHROPIC_API_KEY`         | optional, for pictures (step 12): `https://console.anthropic.com/settings/keys` → **Create Key** → copy (starts with `sk-ant-`)                                                                                                     |
 
 **Variables** tab → **New repository variable** (all optional; defaults in brackets):
 
-| Name                    | Value                                                                                                     |
-| ----------------------- | --------------------------------------------------------------------------------------------------------- |
-| `ALLOWED_ORIGINS`       | `<APP_URL>,http://localhost:5173` [default: only `http://localhost:5173`, so **set this** for production] |
-| `GEMINI_MODEL`          | [`gemini-3.8-flash`]                                                                                      |
-| `GEMINI_FALLBACK_MODEL` | [`gemini-3.5-flash-lite`]                                                                                 |
-| `AI_DAILY_LIMIT`        | AI calls per user per UTC day [`200`]                                                                     |
-| `AI_SYSTEM_DAILY_LIMIT` | model calls per UTC day for system jobs (the level job), separate from users' budgets [`100`]             |
+| Name                        | Value                                                                                                     |
+| --------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `ALLOWED_ORIGINS`           | `<APP_URL>,http://localhost:5173` [default: only `http://localhost:5173`, so **set this** for production] |
+| `GEMINI_MODEL`              | [`gemini-3.8-flash`]                                                                                      |
+| `GEMINI_FALLBACK_MODEL`     | [`gemini-3.5-flash-lite`]                                                                                 |
+| `AI_DAILY_LIMIT`            | AI calls per user per UTC day [`200`]                                                                     |
+| `AI_SYSTEM_DAILY_LIMIT`     | model calls per UTC day for system jobs (the level job), separate from users' budgets [`100`]             |
+| `CLAUDE_MONTHLY_CREDIT_USD` | the monthly Claude credit in USD; pictures may use 80 % of it [`100`]                                     |
+| `APP_ADMIN_USER_ID`         | your Supabase user id (step 12): who may open the picture review screen [none]                            |
+| `IMAGE_DAILY_LIMIT`         | pictures a user may ask for per UTC day [`10`]                                                            |
+| `CLAUDE_IMAGE_MODEL`        | model that draws pictures [`claude-opus-5-5`]                                                             |
+| `CLAUDE_CHECK_MODEL`        | model that scores and checks pictures [`claude-haiku-5-5`]                                                |
 
 `ALLOWED_ORIGINS` is the list of web origins allowed to call the AI functions
 (comma-separated, exact, no trailing slash). Preview deploys on other origins cannot
@@ -227,6 +233,41 @@ the normal deploy (step 5). It needs no secret beyond the service role key every
    - **Content rating, Target audience (18+), Ads, App access:** `content-rating.md`;
    - **Store listing:** `listing-tr.md`, `listing-en.md`, images from `screenshots/` and `graphics/`;
    - **Closed test:** `testers-message-tr.md`.
+
+## 12. Pictures (v0.4)
+
+Pictures are drawn by Claude (docs/ai-image.md, decisions 0029 and 0030). Nothing breaks
+without them: until the key is set, the picture workflow ends with a notice and the "draw now"
+button answers that pictures are not available.
+
+1. **Key.** Create an API key in the Anthropic Console
+   (`https://console.anthropic.com/settings/keys`) and add it as the repository secret
+   `ANTHROPIC_API_KEY` (step 4). The deploy workflow copies it into the function secrets (never
+   printed); the picture workflow reads it directly.
+2. **Credit.** Set the repository variable `CLAUDE_MONTHLY_CREDIT_USD` to the monthly amount you
+   want to spend on Claude (default 100). Pictures stop for the month at 80 % of it; every call
+   is reserved before it is sent, so the cap holds even with many users at once. Also set a
+   **spending limit** in the Console (**Settings → Limits**) as a second guard.
+3. **Reviewer.** Find your user id in **Authentication → Users** (the row with your Google
+   address, column UID) and set it as the repository variable `APP_ADMIN_USER_ID`. The next
+   deploy adds it to `public.app_admins`. Without GitHub, run once in **SQL Editor**:
+   `insert into public.app_admins (user_id) values ('<your user id>') on conflict do nothing;`
+4. **Deploy** (step 5) so the migration, the `ai-image` function and the secrets are in place.
+5. **Pilot.** **Actions → Picture jobs → Run workflow**, job `pilot`: draws 50 random concrete
+   words now and stores them for review. The log lists each picture with its cost and the total;
+   the report is kept as the run's `pilot-report` artifact. Judge them in the app's review
+   screen before letting the nightly job run on its own.
+6. **Nightly.** `.github/workflows/images.yml` runs every night at 01:30 UTC: it collects the
+   previous night's batch (checks, stores pictures for review), scores new words and sends the
+   next batch (half price). Other jobs by hand: `visualize`, `submit`, `collect`.
+
+Optional variables: `IMAGE_DAILY_LIMIT` (pictures per user per day, default 10),
+`CLAUDE_IMAGE_MODEL`, `CLAUDE_CHECK_MODEL` (defaults in `_shared/image-models.ts`). The picture
+workflow also needs the service-role key, exactly like the level job (step 9).
+
+Check: **Edge Functions** lists `ai-image`; in **SQL Editor**,
+`select * from public.image_budget_status();` shows this month's cap and spending, and
+`select status, count(*) from public.lexicon_images group by 1;` grows after each night.
 
 ## Manual deploy without GitHub (alternative)
 
