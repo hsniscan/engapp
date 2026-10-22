@@ -11,6 +11,7 @@ import { type Card, CardState, type Id, type LexiconSense, type Millis, type Not
 import { db } from './db';
 import { exampleTables, senseExamplesFor } from './examples';
 import { cardImageOf, type CardImage } from './images';
+import { imageCardReadTables, imageCardsWithoutPicture } from './imageCards';
 import { dueStudiedCards, loadTodayFacts, newCards } from './history';
 import { aheadDaysFor, getLoadToday, type LoadToday } from './load';
 import { extraNewKey, getMeta } from './meta';
@@ -52,7 +53,7 @@ export interface StudyQueueOptions {
  * introduced today count against it from the logs, so other devices never double count.
  */
 export async function getStudyQueue(opts: StudyQueueOptions = {}, now: Millis = Date.now()): Promise<StudyQueue> {
-  return db.transaction('r', [db.cards, db.review_logs, db.settings, db.meta], async () => {
+  return db.transaction('r', [db.cards, db.review_logs, db.settings, db.meta, ...imageCardReadTables()], async () => {
     const settings = await getSettings(now);
     const cfg = dayConfig(settings);
     const facts = await loadTodayFacts(cfg, now);
@@ -66,7 +67,9 @@ export async function getStudyQueue(opts: StudyQueueOptions = {}, now: Millis = 
       ahead ? Promise.resolve([]) : newCards(),
       getExtraNewToday(facts.bounds.key),
     ]);
-    const cards = [...studied, ...fresh];
+    // v0.4 İP8: a picture card whose picture is not on this device is left out of this session.
+    const noPicture = await imageCardsWithoutPicture([...studied, ...fresh]);
+    const cards = noPicture.size ? [...studied, ...fresh].filter((c) => !noPicture.has(c.id)) : [...studied, ...fresh];
     const q = buildQueue(cards, {
       now,
       dayEnd: facts.bounds.end,
@@ -101,7 +104,7 @@ export interface CardView {
   note: Note;
   /** Live senses in display order (the back of a recognition card lists them all). */
   senses: Sense[];
-  /** Recognition: the sense whose sentence to show this time (pass its id to answerCard). Production/cloze: the card's sense. */
+  /** Recognition: the sense whose sentence to show this time (pass its id to answerCard). Production/cloze/image: the card's sense. */
   sense: Sense | null;
   /** Cloze card: the blanked sentence. */
   cloze: Cloze | null;
@@ -116,7 +119,10 @@ export interface CardView {
   previews: Record<RatingValue, IntervalPreview>;
   /** Cached lexicon rows of the senses (their levels), by lexicon_sense_id. */
   lexicon: Map<Id, LexiconSense>;
-  /** v0.4 İP3: the picture of `sense` (or of the only sense), null when there is none. */
+  /**
+   * v0.4 İP3: the picture of `sense` (or of the only sense), null when there is none. For a
+   * picture card (İP8) it is the card's question: the chosen or an approved picture only.
+   */
   image: CardImage | null;
   /** v0.4 İP3: settings.show_image_front. */
   imageOnFront: boolean;
@@ -176,7 +182,10 @@ export async function getCardView(cardId: Id, now: Millis = Date.now()): Promise
       sentence,
       previews: previewIntervals(schedulerFor(settings), card, now),
       lexicon: await lexiconOf(senses),
-      image: await cardImageOf(sense ?? (senses.length === 1 ? senses[0]! : null)),
+      image:
+        card.card_type === 'image'
+          ? await cardImageOf(sense, true)
+          : await cardImageOf(sense ?? (senses.length === 1 ? senses[0]! : null)),
       imageOnFront: settings.show_image_front === true,
     };
   });

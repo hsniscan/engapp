@@ -7,6 +7,7 @@ export * from './queries';
 export * from './examples';
 export * from './mnemonics';
 export * from './images';
+export { imageCardsWithoutPicture, reconcileImageCards, setImageCardsEnabled, type ReconcileOptions } from './imageCards';
 export {
   computeWeeklySummary,
   deferReportDraft,
