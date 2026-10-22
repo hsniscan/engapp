@@ -1,12 +1,17 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router';
 import { getHeatmap, getStreakSummary } from '@/data';
 import { VocabTile } from '@/features/leveltest/VocabTile';
 import { WorkloadSection } from '@/features/load/WorkloadChart';
 import type { HeatmapCell, StreakSummary } from '@/domain/streak';
-import { cn, Page, Skeleton, Surface } from '@/ui';
+import { cn, Page, Skeleton, Surface, Tabs } from '@/ui';
 import { formatDuration, formatNumber, formatPercent } from './format';
 import { Heatmap } from './Heatmap';
+import { ProgressPanel } from './ProgressPanel';
+
+/** ?tab=gelisim opens the progress tab (v0.3 İP5); other values open the continuity tab. */
+export const PROGRESS_TAB_PARAM = 'gelisim';
 
 export function StatsScreen() {
   const { t } = useTranslation();
@@ -15,24 +20,39 @@ export function StatsScreen() {
     return { weeks, streak };
   }, []);
 
+  const [search, setSearch] = useSearchParams();
+  const tab = search.get('tab') === PROGRESS_TAB_PARAM ? 'progress' : 'continuity';
+
+  const continuity = !data ? (
+    <div aria-busy="true" className="flex flex-col gap-5">
+      <Surface padding="lg">
+        <Skeleton className="h-40 w-full max-w-[46rem]" />
+      </Surface>
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {Array.from({ length: 4 }, (_, i) => (
+          <Surface key={i} padding="md">
+            <Skeleton lines={2} />
+          </Surface>
+        ))}
+      </div>
+    </div>
+  ) : (
+    <StatsBody weeks={data.weeks} streak={data.streak} />
+  );
+
   return (
     <Page title={t('stats.title')} description={t('stats.description')} width="wide">
-      {!data ? (
-        <div aria-busy="true" className="flex flex-col gap-5">
-          <Surface padding="lg">
-            <Skeleton className="h-40 w-full max-w-[46rem]" />
-          </Surface>
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            {Array.from({ length: 4 }, (_, i) => (
-              <Surface key={i} padding="md">
-                <Skeleton lines={2} />
-              </Surface>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <StatsBody weeks={data.weeks} streak={data.streak} />
-      )}
+      <Tabs
+        label={t('stats.tabsLabel')}
+        value={tab}
+        onValueChange={(v) =>
+          setSearch(v === 'progress' ? { tab: PROGRESS_TAB_PARAM } : {}, { replace: true })
+        }
+        items={[
+          { value: 'continuity', label: t('stats.tabContinuity'), content: continuity },
+          { value: 'progress', label: t('stats.tabProgress'), content: <ProgressPanel /> },
+        ]}
+      />
     </Page>
   );
 }

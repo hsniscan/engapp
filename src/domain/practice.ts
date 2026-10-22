@@ -6,7 +6,11 @@ import { type Card, CardState, type Id, type Millis, type PracticeResult } from 
 
 export type { PracticeResult };
 
-export const PRACTICE_SOURCES = ['hard', 'recent', 'tag', 'deck', 'interests'] as const;
+/**
+ * 'list' (v0.3 İP5): a fixed list of notes picked by another screen, e.g. the words with the
+ * biggest recognition–production gap on "Gelişim" (domain/retention.ts).
+ */
+export const PRACTICE_SOURCES = ['hard', 'recent', 'tag', 'deck', 'interests', 'list'] as const;
 export type PracticeSource = (typeof PRACTICE_SOURCES)[number];
 export const PRACTICE_SIZES = [10, 20] as const;
 export type PracticeSize = (typeof PRACTICE_SIZES)[number];
@@ -54,7 +58,7 @@ export interface PracticeFilter {
   /**
    * Source 'deck': the deck's notes (domain/deckFilter.ts). Source 'interests' ("İlgi
    * alanlarımdan", İP7): notes from texts about the user's top topics. Resolved by the data
-   * layer.
+   * layer. Source 'list': the listed notes.
    */
   noteIds?: ReadonlySet<Id> | null;
 }
@@ -91,6 +95,7 @@ export function matchesFilter(x: PracticeCandidate, f: PracticeFilter, now: Mill
       return !!f.tag && x.tags.includes(f.tag);
     case 'deck':
     case 'interests':
+    case 'list':
       return !!f.noteIds && f.noteIds.has(x.card.note_id);
   }
 }
@@ -138,8 +143,9 @@ export function seededShuffle<T>(items: readonly T[], seed: string): T[] {
 
 /**
  * The cards of one round, in play order: at most `size` cards, one per note (the hardest
- * card of the note for 'hard', otherwise a random one). 'hard' is ordered by how hard the
- * card is; the other sources are shuffled with `seed` (the round's session id).
+ * card of the note for 'hard' and 'list', otherwise a random one). 'hard' and 'list' are
+ * ordered by how hard the card is (for a gap list that is usually the production card the
+ * list was made for); the other sources are shuffled with `seed` (the round's session id).
  */
 export function selectPracticeCards(
   candidates: Iterable<PracticeCandidate>,
@@ -150,7 +156,7 @@ export function selectPracticeCards(
   const byId = (a: PracticeCandidate, b: PracticeCandidate) =>
     a.card.id < b.card.id ? -1 : a.card.id > b.card.id ? 1 : 0;
   const ordered =
-    filter.source === 'hard'
+    filter.source === 'hard' || filter.source === 'list'
       ? matching.sort((a, b) => hardness(b, opts.now) - hardness(a, opts.now) || byId(a, b))
       : seededShuffle(matching.sort(byId), opts.seed);
   const notes = new Set<Id>();

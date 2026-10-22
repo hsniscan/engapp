@@ -394,7 +394,77 @@
     "retentionDetail": "Cards in review, last 30 days",
     "retentionNone": "Not enough data yet",
     "learned": "Learned cards",
-    "learnedDetail": "Cards in the review stage"
+    "learnedDetail": "Cards in the review stage",
+    "tabsLabel": "Statistics sections",
+    "tabContinuity": "Consistency",
+    "tabProgress": "Progress"
+  },
+  "progress": {
+    "loading": "Calculating progress…",
+    "empty": "Nothing to count yet. As your cards reach the review stage, you will see here how well you remember what.",
+    "fewData": "too little data",
+    "answers_one": "{{count}} answer",
+    "answers_other": "{{count}} answers",
+    "rule": "The first answer of the day to each card in the review stage counts. Practice rounds and undone answers do not.",
+    "gap": {
+      "title": "Recognition and production",
+      "recognition": "English to Turkish",
+      "production": "Turkish to English",
+      "sentence": "You remember {{rec}} from English to Turkish and {{prod}} from Turkish to English.",
+      "sentenceFew": "Comparing needs at least 20 answers in each direction.",
+      "practice_one": "Practise the {{count}} word with the biggest gap",
+      "practice_other": "Practise the {{count}} words with the biggest gap",
+      "practiceHint": "You remember these better from English to Turkish:",
+      "noList": "No word has been reviewed at least 3 times in both directions with a gap yet."
+    },
+    "groups": {
+      "title": "Retention by category",
+      "subtitle": "Last 90 days. A rate is shown from 20 answers.",
+      "overall": "Overall retention",
+      "dimension": "Category",
+      "dimensions": {
+        "term_type": "Term type",
+        "level": "Level",
+        "topic": "Topic",
+        "source": "Source",
+        "pos": "Part of speech",
+        "card_type": "Card type"
+      },
+      "listLabel": "{{dimension}}: retention",
+      "weakest": "Your weakest spot: {{group}}, {{rate}}",
+      "noWeakest": "Showing your weakest spot needs at least 20 answers in a category.",
+      "row": "{{label}}: {{rate}}, {{answers}}. Most likely between {{low}} and {{high}}.",
+      "rowFew": "{{label}}: too little data, {{answers}}.",
+      "interval": "Most likely between {{low}} and {{high}} (95% interval)",
+      "unknownSource": "Deleted source",
+      "none": {
+        "level": "No level",
+        "topic": "No topic",
+        "source": "Added by hand",
+        "pos": "Not given"
+      },
+      "empty": "No counted answers in the last 90 days."
+    },
+    "series": {
+      "title": "Last 12 weeks",
+      "learnedTitle": "Words you learned",
+      "learnedLabel": "Words learned each week, last 12 weeks",
+      "learnedTotal_one": "{{count}} word in total",
+      "learnedTotal_other": "{{count}} words in total",
+      "learnedHint": "A word counts as learned when one of its cards first reaches the review stage.",
+      "retentionTitle": "Weekly retention",
+      "retentionLabel": "Retention of each week, last 12 weeks",
+      "retentionHint": "Gaps in the line are weeks with fewer than 20 answers.",
+      "pointLearned_one": "{{week}}: {{count}} word",
+      "pointLearned_other": "{{week}}: {{count}} words",
+      "pointRetention": "{{week}}: {{rate}}, {{answers}}",
+      "pointFew": "{{week}}: too little data, {{answers}}",
+      "weekOf": "Week of {{date}}",
+      "showTable": "Show as a table",
+      "week": "Week",
+      "learned": "Learned",
+      "retention": "Retention"
+    }
   },
   "settings": {
     "title": "Settings",
