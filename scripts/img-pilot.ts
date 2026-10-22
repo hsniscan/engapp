@@ -41,16 +41,26 @@ async function candidates(db: SupabaseClient, minZipf: number): Promise<PilotCan
   if (imgs.error) throw new Error(`lexicon_images: ${imgs.error.message}`);
   for (const r of imgs.data as { sense_id: string }[]) taken.add(r.sense_id);
 
+  // Frequencies come from the reference data; until it is loaded no term has one, and the
+  // frequency floor would leave nothing, so it only applies once some term has a value.
+  const withZipf = await db
+    .from('lexicon_terms')
+    .select('id', { count: 'exact', head: true })
+    .not('zipf', 'is', null);
+  if (withZipf.error) throw new Error(`lexicon_terms: ${withZipf.error.message}`);
+  const useZipf = (withZipf.count ?? 0) > 0;
+  if (!useZipf) log('pilot: no word frequencies yet, sampling without the frequency floor');
+
   // Sense ids are random UUIDs: reading on from a random id is a random sample.
   const page = async (from: string | null) => {
     let q = db
       .from('lexicon_senses')
       .select('id, pos, meaning_tr, visualizability, lexicon_terms!inner(lemma)')
       .in('pos', POS)
-      .gte('lexicon_terms.zipf', minZipf)
       .or('visualizability.is.null,visualizability.gte.2')
       .order('id')
       .limit(POOL);
+    if (useZipf) q = q.gte('lexicon_terms.zipf', minZipf);
     if (from) q = q.gte('id', from);
     const r = await q;
     if (r.error) throw new Error(`lexicon_senses: ${r.error.message}`);
