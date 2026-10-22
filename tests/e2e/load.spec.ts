@@ -4,6 +4,7 @@
 //   - vacation: no new cards, the streak stays frozen, new cards ramp 0 → ½ → full on return.
 import type { Page } from '@playwright/test';
 import { buildBackup } from '../../src/domain/backup.ts';
+import type { Card, Note } from '../../src/domain/types.ts';
 import { addWord, dumpTables, expect, test, type Word } from './support/app.ts';
 import { buildSeedBackup } from './support/seed.ts';
 
@@ -131,10 +132,17 @@ test('vacation: no new cards, streak frozen, new cards ramp back 0 → ½ → fu
   await expect(page.getByTestId('load-ramp')).toContainText('bugün 5 yeni kart');
   await expect(todayCount(page, 'Yeni')).toHaveText('5');
 
-  // Then the full limit (all six waiting).
+  // Then the full limit: all six waiting words, plus the first word's production card unless
+  // its recognition card is due today. "Easy" gives it a fuzzed first interval of 6–10 days,
+  // so on 6 days it is a review today and its sibling waits (one card per note per day).
   await page.clock.setSystemTime(at('2026-11-08'));
   await page.goto('/');
-  await expect(todayCount(page, 'Yeni')).toHaveText('7'); // six words + the first word's production card
+  const { cards, notes } = await dumpTables(page, ['cards', 'notes']);
+  const first = (notes as Note[]).find((n) => n.term === VOCAB[0]!.term)!;
+  const recognition = (cards as Card[]).find((c) => c.note_id === first.id && c.card_type === 'recognition')!;
+  const recognitionDueToday = recognition.due < at('2026-11-09').getTime();
+  await expect(todayCount(page, 'Yeni')).toHaveText(recognitionDueToday ? '6' : '7');
+  await expect(todayCount(page, 'Vadesi gelen')).toHaveText(recognitionDueToday ? '1' : '0');
   await expect(page.getByTestId('load-ramp')).toHaveCount(0);
 });
 
