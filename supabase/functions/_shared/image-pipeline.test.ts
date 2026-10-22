@@ -253,6 +253,29 @@ describe('ai-image (runAiImage)', () => {
     expect(await d.run()).toEqual({ ok: false, reason: 'failed' });
   });
 
+  it('without an API key: ai_failed, and no daily picture is used', async () => {
+    const store = new MemoryImageStore();
+    store.senses.set(SENSE, INPUT);
+    store.cards.set(USER, new Set([SENSE]));
+    await expect(
+      runAiImage(
+        { sense_id: SENSE },
+        {
+          userId: USER,
+          store,
+          claude: () => {
+            throw new Error('ANTHROPIC_API_KEY is not set');
+          },
+          models: MODELS,
+          capUsd: 80,
+          dailyLimit: 10,
+        },
+      ),
+    ).rejects.toMatchObject({ code: 'ai_failed' });
+    expect(store.daily.get(USER)).toBeUndefined();
+    expect(store.ledger.reserved).toBe(0);
+  });
+
   it("refuses bad input and senses outside the user's cards", async () => {
     const { run, store } = setup([]);
     await expect(run({ sense_id: 'nope' })).rejects.toBeInstanceOf(ApiError);

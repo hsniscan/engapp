@@ -53,6 +53,15 @@ export async function runAiImage(body: unknown, deps: InstantDeps): Promise<AiIm
   const [input] = await store.senseInputs([senseId]);
   if (!input) throw new ApiError('invalid_input', 'Unknown sense');
 
+  // A missing API key fails here, before a daily picture is counted.
+  let claude: ClaudeCall;
+  try {
+    claude = deps.claude();
+  } catch (e) {
+    deps.log?.('image client failed', { error: e instanceof Error ? e.name : 'unknown' });
+    throw new ApiError('ai_failed', 'Pictures are not available right now');
+  }
+
   // Budget first, so a spent month does not use up one of the user's daily pictures.
   const probe = await store.reserve(
     drawReserveUsd(deps.models.image, input, { fallback: true }),
@@ -68,7 +77,7 @@ export async function runAiImage(body: unknown, deps: InstantDeps): Promise<AiIm
   let out;
   try {
     out = await drawSense(input, {
-      claude: deps.claude(),
+      claude,
       models: deps.models,
       store,
       capUsd: deps.capUsd,
