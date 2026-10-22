@@ -18,6 +18,9 @@
  *    validation, insert-or-skip) on an in-memory example store with a scripted model;
  *    rpc lexicon_examples_pull pages that store for the senses the user has synced.
  *
+ *  - Mnemonics: /functions/v1/ai-mnemonic runs the real `runMnemonic` (shared table first,
+ *    validation, insert-or-skip) on an in-memory pair-note store with a scripted model.
+ *
  * Service workers are blocked in these tests (playwright.config.ts): routes then see every
  * request the page makes. The PWA test enables the worker and needs no backend.
  */
@@ -26,6 +29,8 @@ import { runExtract } from '../../../supabase/functions/_shared/extract.ts';
 import { runEnrich } from '../../../supabase/functions/_shared/enrich.ts';
 import { runExamples } from '../../../supabase/functions/_shared/examples.ts';
 import { MemoryExampleStore } from '../../../supabase/functions/_shared/testing/memory-example-store.ts';
+import { runMnemonic } from '../../../supabase/functions/_shared/mnemonic.ts';
+import { MemoryPairNoteStore } from '../../../supabase/functions/_shared/testing/memory-pair-note-store.ts';
 import { ApiError } from '../../../supabase/functions/_shared/errors.ts';
 import { runThemes, THEMES_SYSTEM_PROMPT } from '../../../supabase/functions/_shared/themes.ts';
 import type { AiProvider } from '../../../supabase/functions/_shared/ai-provider.ts';
@@ -235,6 +240,32 @@ function fakeExamplesModel(counter: { calls: number }): AiProvider {
   };
 }
 
+/** ai-mnemonic's model: one story per call that names TERM (numbered, so "Başka öner" differs). */
+function fakeMnemonicModel(counter: { calls: number }): AiProvider {
+  return {
+    name: 'fake',
+    async generateJson(req) {
+      counter.calls++;
+      const term = /^TERM: (.+)$/m.exec(req.user)?.[1] ?? 'word';
+      const meaning = /^MEANING_TR: (.+)$/m.exec(req.user)?.[1] ?? 'anlam';
+      return {
+        data: {
+          mnemonics: [
+            {
+              type: 'story',
+              text_tr: `Öğretmenim derste ${term} dedi ve hepimiz ${meaning} anlamını güldürerek öğrendik (${counter.calls}).`,
+              why: 'Kısa bir sınıf sahnesi anlamı akılda tutar.',
+            },
+          ],
+        },
+        model: 'fake-model',
+        attempts: 1,
+        usage: { input_tokens: 300, output_tokens: 80, thinking_tokens: 0 },
+      };
+    },
+  };
+}
+
 /** public.sync_tables as after every migration (decks, level test, …). */
 const SYNC_TABLES = [
   'notes',
@@ -292,6 +323,8 @@ export class FakeBackend {
   readonly model = { calls: 0 };
   readonly examples = new MemoryExampleStore();
   readonly examplesModel = { calls: 0 };
+  readonly pairNotes = new MemoryPairNoteStore();
+  readonly mnemonicModel = { calls: 0 };
   /** Every RPC / function call, in order: { name, body }. */
   readonly calls: { name: string; body: unknown; at: number }[] = [];
   /** When true every backend request fails like a dropped connection. */
@@ -382,6 +415,25 @@ export class FakeBackend {
       };
       try {
         return this.json(route, 200, await runExamples(body, deps));
+      } catch (e) {
+        if (e instanceof ApiError) {
+          return this.json(route, e.status, {
+            error: { code: e.code, message: e.message, retry_after_s: e.retryAfterS },
+          });
+        }
+        return this.json(route, 500, { error: { code: 'internal', message: String(e) } });
+      }
+    }
+    if (path === '/functions/v1/ai-mnemonic') {
+      const deps = {
+        userId: TEST_USER.id,
+        store: this.store,
+        pairNotes: this.pairNotes,
+        provider: () => fakeMnemonicModel(this.mnemonicModel),
+        dailyLimit: 200,
+      };
+      try {
+        return this.json(route, 200, await runMnemonic(body, deps));
       } catch (e) {
         if (e instanceof ApiError) {
           return this.json(route, e.status, {

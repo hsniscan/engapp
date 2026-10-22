@@ -10,6 +10,7 @@ import type {
   ImportCandidate,
   ImportJob,
   LexiconExample,
+  LexiconPairNote,
   KnownTerm,
   LevelTest,
   LexiconSense,
@@ -58,6 +59,7 @@ export class EngDb extends Dexie {
   user_content!: EntityTable<UserContent, 'id'>;
   example_jobs!: EntityTable<ExampleJob, 'key'>;
   ref_cache!: EntityTable<RefCacheRow, 'key'>;
+  lexicon_pair_notes!: EntityTable<LexiconPairNote, 'id'>;
 
   constructor(name = 'engapp') {
     super(name);
@@ -205,6 +207,12 @@ export class EngDb extends Dexie {
     this.version(11)
       .stores({})
       .upgrade((tx) => addPullBackfill(tx.table('meta'), ['notes', 'settings', 'sources']));
+    // v13 (v0.3 İP2; versions 12 and 14–20 belong to the other v0.3 packages, Dexie allows
+    // gaps): lexicon_pair_notes, a read-only cache of the shared table (like lexicon_cache):
+    // mnemonic suggestions from ai-mnemonic and AI false friends from extract-v5. The user's
+    // own mnemonic is a user_content row (kind 'mnemonic', already synced) and import jobs
+    // collect their chunks' topics in import_jobs.chunk_topics (not indexed): no row upgrade.
+    this.version(13).stores({ lexicon_pair_notes: 'id, [sense_id+kind], term_norm' });
   }
 }
 

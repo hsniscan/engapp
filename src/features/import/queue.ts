@@ -57,6 +57,7 @@ export function toChunkResult(res: ExtractResponse, level: CefrLevel): ChunkResu
   return {
     prompt_version: res.prompt_version,
     level,
+    topics: [...(res.topics ?? [])],
     candidates: res.candidates.map((c) => ({
       term: c.term,
       surface: c.surface,
@@ -67,6 +68,7 @@ export function toChunkResult(res: ExtractResponse, level: CefrLevel): ChunkResu
       confidence: c.confidence,
       match: c.match,
       lexicon: { ...c.lexicon },
+      false_friend: c.false_friend ? { ...c.false_friend } : null,
     })),
   };
 }

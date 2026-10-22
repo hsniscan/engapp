@@ -2,6 +2,7 @@
 // The queue runner lives in src/features/import/queue.ts; this module owns the Dexie side:
 // jobs with their chunk texts, the local chunk cache, candidates with their status against
 // the user's own notes, and the single-transaction confirm.
+import type { AiFalseFriend } from '../../supabase/functions/_shared/contracts';
 import { stripListEntry } from '../../supabase/functions/_shared/listEntry';
 import { isDuplicateSense } from '../../supabase/functions/_shared/text';
 import { normalizeTerm } from '../domain/normalize';
@@ -12,15 +13,19 @@ import type {
   Id,
   ImportCandidate,
   ImportJob,
+  LexiconPairNote,
   LexiconSense,
   Millis,
   Sense,
   Source,
 } from '../domain/types';
 import { uuidv7 } from '../domain/ids';
+import { aggregateTopics } from '../domain/topics';
 import { addNoteWithSenses, createSource, type SenseInput } from './actions';
 import { db } from './db';
+import { logError } from './errorLog';
 import { ActionError } from './errors';
+import { setSourceTopics } from './profile';
 import { classifyJobCandidates, loadSmartContext } from './smartExtract';
 
 /** Error codes stored on a failed job (mapped to Turkish messages by the UI). */
@@ -47,6 +52,11 @@ export interface ImportJobRecord extends ImportJob {
   chunk_cache_hits: number;
   /** When a transient failure was retried, the earliest next try. */
   next_attempt_at: Millis | null;
+  /**
+   * extract-v5: the topic keys of each processed chunk, in chunk order (absent on jobs from
+   * before). When the job is done they are aggregated into sources.topics.
+   */
+  chunk_topics?: string[][];
 }
 
 /** A preview row, with the lexicon term id kept for the note it may create. */
@@ -66,6 +76,8 @@ export interface ChunkResult {
   prompt_version: string;
   level: CefrLevel;
   candidates: ChunkCandidate[];
+  /** extract-v5: 1–2 topic keys of the chunk; absent in older results. */
+  topics?: string[];
 }
 
 export interface ChunkCandidate {
@@ -79,6 +91,33 @@ export interface ChunkCandidate {
   confidence: number;
   match: ImportCandidate['match'];
   lexicon: LexiconSense;
+  /** extract-v5: a Turkish look-alike of a new sense with another meaning (shared data). */
+  false_friend?: AiFalseFriend | null;
+}
+
+/** A false friend from an extract response as a cached lexicon_pair_notes row. */
+function falseFriendRow(c: ChunkCandidate): LexiconPairNote | null {
+  const ff = c.false_friend;
+  if (!ff) return null;
+  return {
+    id: ff.id,
+    term_norm: c.lexicon.lemma_norm,
+    sense_id: c.lexicon.id,
+    lang_pair: 'en-tr',
+    kind: 'false_friend',
+    content_key: ff.tr_word,
+    content: {
+      tr_word: ff.tr_word,
+      en_meaning_tr: ff.en_meaning_tr,
+      tr_meaning_tr: ff.tr_meaning_tr,
+      tr_meaning_en: ff.tr_meaning_en,
+      strength: ff.strength,
+      note_tr: ff.note_tr,
+    },
+    curated: false,
+    status: 'active',
+    updated_at: c.lexicon.updated_at,
+  };
 }
 
 const jobs = () => db.import_jobs as unknown as import('dexie').Table<ImportJobRecord, Id>;
@@ -234,9 +273,10 @@ export async function recordChunkResult(
   // outside Dexie (known terms, the level file) is loaded before the transaction.
   const pending = await jobs().get(jobId);
   const smart = pending && chunkIndex + 1 >= pending.chunk_total ? await loadSmartContext() : null;
-  return db.transaction('rw', [db.import_jobs, db.import_candidates, db.chunk_cache, db.lexicon_cache, db.notes, db.senses], async () => {
+  const tables = [db.import_jobs, db.import_candidates, db.chunk_cache, db.lexicon_cache, db.lexicon_pair_notes, db.notes, db.senses];
+  const out = await db.transaction('rw', tables, async () => {
     const job = await jobs().get(jobId);
-    if (!job || job.chunk_done !== chunkIndex) return { added: 0 }; // processed already (another tab)
+    if (!job || job.chunk_done !== chunkIndex) return { added: 0, topicsOf: null }; // processed already (another tab)
     const existing = await candidates().where('job_id').equals(jobId).toArray();
     const seen = new Set(existing.map((c) => c.lexicon_sense_id ?? `${normalizeTerm(c.term)}|${c.meaning_tr ?? ''}`));
     // One candidate per term and sentence across the job: two senses of a word for the
@@ -300,6 +340,9 @@ export async function recordChunkResult(
     if (rows.length) await candidates().bulkAdd(rows);
     const lex = result.candidates.map((c) => c.lexicon);
     if (lex.length) await db.lexicon_cache.bulkPut(lex);
+    const falseFriends = result.candidates.map(falseFriendRow).filter((r): r is LexiconPairNote => r !== null);
+    if (falseFriends.length) await db.lexicon_pair_notes.bulkPut(falseFriends);
+    const chunkTopics = [...(job.chunk_topics ?? []).slice(0, chunkIndex), result.topics ?? []];
     if (!opts.fromLocalCache) {
       const cacheRow: ChunkCacheRow = { chunk_hash: hash, result, created_at: now };
       await db.chunk_cache.put(cacheRow);
@@ -312,14 +355,22 @@ export async function recordChunkResult(
       chunk_done: done,
       cache_hits: job.cache_hits + (cached ? 1 : 0) + (opts.lexiconHits ?? 0),
       chunk_cache_hits: (job.chunk_cache_hits ?? 0) + (cached ? 1 : 0),
+      chunk_topics: chunkTopics,
       status: finished ? 'ready' : 'processing',
       error: null,
       error_code: null,
       next_attempt_at: null,
       updated_at: now,
     });
-    return { added: rows.length };
+    return { added: rows.length, topicsOf: finished ? { sourceId: job.source_id, chunkTopics } : null };
   });
+  // The text's topics (extract-v5) once every chunk is in. A synced write of its own: a
+  // failure here must not undo the job's progress.
+  const topics = out.topicsOf ? aggregateTopics(out.topicsOf.chunkTopics) : [];
+  if (out.topicsOf && topics.length) {
+    await setSourceTopics(out.topicsOf.sourceId, topics, now).catch((e: unknown) => logError(e, 'import.topics'));
+  }
+  return { added: out.added };
 }
 
 export async function listImportCandidates(jobId: Id): Promise<ImportCandidateRecord[]> {

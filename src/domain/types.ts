@@ -307,6 +307,25 @@ export interface LexiconExample {
   updated_at: Millis;
 }
 
+/**
+ * Shared note on a lexicon sense in a language pair (lexicon_pair_notes), read-only on the
+ * client (v0.3 İP2): AI mnemonic suggestions and extract-v5 false friends. Never user text.
+ * A mnemonic row with content {type: 'none'} records "asked, no good association".
+ */
+export interface LexiconPairNote {
+  id: Id;
+  term_norm: string;
+  /** lexicon_senses.id (not the user's sense id); null for a note about the whole term. */
+  sense_id: Id | null;
+  lang_pair: 'en-tr';
+  kind: 'false_friend' | 'mnemonic_suggestion';
+  content_key: string;
+  content: Record<string, unknown>;
+  curated: boolean;
+  status: 'active' | 'retired';
+  updated_at: Millis;
+}
+
 export type FeedbackVerdict = 'like' | 'skip' | 'reject';
 
 /** The user's verdict on a piece of content. One row per target (id derived from the target). */

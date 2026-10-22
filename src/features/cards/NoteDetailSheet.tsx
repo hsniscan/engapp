@@ -34,6 +34,7 @@ import {
 } from '@/ui';
 import { LevelSection } from '@/features/levels/LevelSection';
 import { ExamplesSection } from '@/features/examples/ExamplesPanel';
+import { MnemonicSection } from '@/features/mnemonics';
 import { useAppSettings } from '@/features/settings/useAppSettings';
 import { useSpeech } from '@/features/review/useSpeech';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -526,6 +527,9 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
           headingId={`${id}-examples`}
           speech={{ available: speech.available, speak: speech.speak }}
         />
+      )}
+      {senses.length > 0 && note.term_type !== 'affix' && (
+        <MnemonicSection termNorm={note.term_norm} senses={senses} headingId={`${id}-mnemonic`} />
       )}
       <FamilySection note={note} />
 
