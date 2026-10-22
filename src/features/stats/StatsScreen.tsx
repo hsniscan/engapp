@@ -1,11 +1,29 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router';
 import { getHeatmap, getStreakSummary } from '@/data';
+import { LeechStatsSection } from '@/features/leech';
 import { VocabTile } from '@/features/leveltest/VocabTile';
+import { WorkloadSection } from '@/features/load/WorkloadChart';
+import { GoalsSection } from '@/features/report/GoalsSection';
+import { REPORT_TAB_PARAM } from '@/features/report/links';
+import { ReportPanel } from '@/features/report/ReportPanel';
 import type { HeatmapCell, StreakSummary } from '@/domain/streak';
-import { cn, Page, Skeleton, Surface } from '@/ui';
+import { cn, Page, Skeleton, Surface, Tabs } from '@/ui';
 import { formatDuration, formatNumber, formatPercent } from './format';
 import { Heatmap } from './Heatmap';
+import { ProgressPanel } from './ProgressPanel';
+
+/**
+ * ?tab=gelisim opens the progress tab (v0.3 İP5), ?tab=rapor the weekly report (İP7); other
+ * values open the continuity tab.
+ */
+export const PROGRESS_TAB_PARAM = 'gelisim';
+export { REPORT_TAB_PARAM };
+const TAB_BY_PARAM: Record<string, 'progress' | 'report'> = {
+  [PROGRESS_TAB_PARAM]: 'progress',
+  [REPORT_TAB_PARAM]: 'report',
+};
 
 export function StatsScreen() {
   const { t } = useTranslation();
@@ -14,24 +32,43 @@ export function StatsScreen() {
     return { weeks, streak };
   }, []);
 
+  const [search, setSearch] = useSearchParams();
+  const tab = TAB_BY_PARAM[search.get('tab') ?? ''] ?? 'continuity';
+
+  const continuity = !data ? (
+    <div aria-busy="true" className="flex flex-col gap-5">
+      <Surface padding="lg">
+        <Skeleton className="h-40 w-full max-w-[46rem]" />
+      </Surface>
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {Array.from({ length: 4 }, (_, i) => (
+          <Surface key={i} padding="md">
+            <Skeleton lines={2} />
+          </Surface>
+        ))}
+      </div>
+    </div>
+  ) : (
+    <StatsBody weeks={data.weeks} streak={data.streak} />
+  );
+
   return (
     <Page title={t('stats.title')} description={t('stats.description')} width="wide">
-      {!data ? (
-        <div aria-busy="true" className="flex flex-col gap-5">
-          <Surface padding="lg">
-            <Skeleton className="h-40 w-full max-w-[46rem]" />
-          </Surface>
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            {Array.from({ length: 4 }, (_, i) => (
-              <Surface key={i} padding="md">
-                <Skeleton lines={2} />
-              </Surface>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <StatsBody weeks={data.weeks} streak={data.streak} />
-      )}
+      <Tabs
+        label={t('stats.tabsLabel')}
+        value={tab}
+        onValueChange={(v) =>
+          setSearch(
+            v === 'progress' ? { tab: PROGRESS_TAB_PARAM } : v === 'report' ? { tab: REPORT_TAB_PARAM } : {},
+            { replace: true },
+          )
+        }
+        items={[
+          { value: 'continuity', label: t('stats.tabContinuity'), content: continuity },
+          { value: 'progress', label: t('stats.tabProgress'), content: <ProgressPanel /> },
+          { value: 'report', label: t('stats.tabReport'), content: <ReportPanel /> },
+        ]}
+      />
     </Page>
   );
 }
@@ -42,7 +79,7 @@ function StatsBody({ weeks, streak: s }: { weeks: HeatmapCell[][]; streak: Strea
   const active = flat.filter((c) => c.level > 0).length;
   const completed = flat.filter((c) => c.level === 2).length;
 
-  const metrics: { label: string; value: string; detail: string; hero?: boolean }[] = [
+  const metrics: { label: string; value: string; detail: string; hint?: string; hero?: boolean }[] = [
     {
       label: t('stats.currentStreak'),
       value: formatNumber(s.currentStreak),
@@ -73,6 +110,7 @@ function StatsBody({ weeks, streak: s }: { weeks: HeatmapCell[][]; streak: Strea
       label: t('stats.retention'),
       value: s.retentionRate === null ? '—' : formatPercent(s.retentionRate),
       detail: s.retentionRate === null ? t('stats.retentionNone') : t('stats.retentionDetail'),
+      hint: t('stats.retentionHint'),
     },
     {
       label: t('stats.learned'),
@@ -84,6 +122,7 @@ function StatsBody({ weeks, streak: s }: { weeks: HeatmapCell[][]; streak: Strea
   return (
     <div className="flex flex-col gap-5">
       <VocabTile wide />
+      <GoalsSection />
       <Surface as="section" aria-labelledby="heatmap-title" padding="lg">
         <div className="mb-5 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <h2 id="heatmap-title" className="font-serif text-xl font-semibold">
@@ -93,6 +132,8 @@ function StatsBody({ weeks, streak: s }: { weeks: HeatmapCell[][]; streak: Strea
         </div>
         <Heatmap weeks={weeks} />
       </Surface>
+      <WorkloadSection />
+      <LeechStatsSection />
 
       <section aria-labelledby="metrics-title">
         <h2 id="metrics-title" className="sr-only">
@@ -123,6 +164,7 @@ function StatsBody({ weeks, streak: s }: { weeks: HeatmapCell[][]; streak: Strea
                   )}
                 </span>
                 <span className="mt-1 text-xs text-fg-muted">{m.detail}</span>
+                {m.hint && <span className="mt-1 text-xs text-fg-muted">{m.hint}</span>}
               </dd>
             </Surface>
           ))}

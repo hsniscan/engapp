@@ -1,5 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type {
+  AnkiImportRecord,
   Card,
   ChunkCacheRow,
   ContentFeedback,
@@ -10,6 +11,7 @@ import type {
   ImportCandidate,
   ImportJob,
   LexiconExample,
+  LexiconPairNote,
   KnownTerm,
   LevelTest,
   LexiconSense,
@@ -24,6 +26,8 @@ import type {
   Source,
   UserContent,
   ThemePreview,
+  ReportDraft,
+  WeeklyReport,
 } from '../domain/types';
 import { addPullBackfill } from './backfill';
 
@@ -58,6 +62,10 @@ export class EngDb extends Dexie {
   user_content!: EntityTable<UserContent, 'id'>;
   example_jobs!: EntityTable<ExampleJob, 'key'>;
   ref_cache!: EntityTable<RefCacheRow, 'key'>;
+  anki_imports!: EntityTable<AnkiImportRecord, 'id'>;
+  lexicon_pair_notes!: EntityTable<LexiconPairNote, 'id'>;
+  weekly_reports!: EntityTable<WeeklyReport, 'id'>;
+  report_drafts!: EntityTable<ReportDraft, 'week'>;
 
   constructor(name = 'engapp') {
     super(name);
@@ -205,6 +213,65 @@ export class EngDb extends Dexie {
     this.version(11)
       .stores({})
       .upgrade((tx) => addPullBackfill(tx.table('meta'), ['notes', 'settings', 'sources']));
+    // v12 (v0.3 İP1, Anki import; versions 13–20 belong to the other v0.3 packages):
+    // anki_imports keeps each import's counts and its "Sözlükle eşleştir" queue (local only).
+    // review_logs.origin ('anki' for imported answers) is optional and not indexed: absent
+    // means 'app', so existing logs need no fill-in (and logs are never rewritten). sources
+    // may now have kind 'anki': an older app version dropped such a pulled source as invalid,
+    // so re-pull sources once.
+    this.version(12)
+      .stores({ anki_imports: 'id, created_at' })
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['sources']));
+    // v13 (v0.3 İP2; versions 12 and 14–20 belong to the other v0.3 packages, Dexie allows
+    // gaps): lexicon_pair_notes, a read-only cache of the shared table (like lexicon_cache):
+    // mnemonic suggestions from ai-mnemonic and AI false friends from extract-v5. The user's
+    // own mnemonic is a user_content row (kind 'mnemonic', already synced) and import jobs
+    // collect their chunks' topics in import_jobs.chunk_topics (not indexed): no row upgrade.
+    this.version(13).stores({ lexicon_pair_notes: 'id, [sense_id+kind], term_norm' });
+    // v14 (v0.3 İP3, load management; versions 12–20 belong to the v0.3 packages): the
+    // settings row gains daily_capacity_min, catchup_auto, vacation and vacation_history (not
+    // indexed, all optional: absent means the default, so no row is rewritten). While this
+    // device ran an older version it may have pulled a settings row with these columns and
+    // dropped them; re-pull settings once so a vacation set on another device arrives
+    // (equal HLC → the server's set values win, domain/syncMerge.ts).
+    this.version(14)
+      .stores({})
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
+    // v15 (v0.3 İP4; versions 12–14 and 16+ belong to the other v0.3 packages): the optional
+    // settings fsrs_params_prev and fsrs_opt_at (not indexed; absent = nothing to revert, never
+    // ran). A device that pulled the settings row while it ran an older version stripped them
+    // under the same HLC: re-pull settings once so "Eski ayara dön" and the monthly offer see
+    // them (domain/syncMerge.ts takes the set values).
+    this.version(15)
+      .stores({})
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
+    // v17 (v0.3 İP8; 12–20 belong to the v0.3 packages): settings.notify, the daily reminder
+    // (not indexed; absent = off). A device that ran an older version while another device
+    // turned reminders on dropped the column when it pulled settings: re-pull settings once
+    // so it shows the reminder as on (rows with an equal HLC take the server's value,
+    // domain/syncMerge.ts).
+    this.version(17)
+      .stores({})
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
+    // v19 (v0.3 İP6, leeches and contrast cards; 12–20 belong to the v0.3 packages): notes may
+    // now have term_type 'contrast' ("affect ↔ effect", recognition card only). An older app
+    // version skipped such a pulled note as invalid and moved its cursor past it: re-pull
+    // notes once (equal HLC rows merge without change, domain/syncMerge.ts). Reported and
+    // hidden confusable pairs and a contrast card's difference line are user_content rows
+    // (kinds 'confusion' and 'contrast', already synced); shared contrast content is cached
+    // in lexicon_pair_notes (kind 'contrast'): no new table or index.
+    this.version(19)
+      .stores({})
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['notes']));
+    // v20 (v0.3 İP7; 12–20 belong to the v0.3 packages): weekly reports and goals.
+    // weekly_reports is synced and insert-only (one row per week; the server keeps the first);
+    // report_drafts holds this device's report while its AI comment has not come yet (local
+    // only, cleared with the account's data). settings.goals is an optional column (absent =
+    // no goals). A device that pulled while it ran an older version dropped both: re-pull them
+    // once (data/backfill.ts; equal HLC → the server's set values, domain/syncMerge.ts).
+    this.version(20)
+      .stores({ weekly_reports: 'id, week', report_drafts: 'week' })
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings', 'weekly_reports']));
   }
 }
 

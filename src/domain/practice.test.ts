@@ -87,6 +87,21 @@ describe('selectPracticeCards', () => {
     ).toEqual([]);
   });
 
+  it('"list": the listed notes, the hardest card of each note', () => {
+    const cards = [
+      cand('rec', { note: 'n1', difficulty: 3 }),
+      cand('prod', { note: 'n1', difficulty: 8 }),
+      cand('other', { note: 'n2' }),
+      cand('unlisted', { note: 'n3' }),
+    ];
+    const ids = selectPracticeCards(
+      cards,
+      { source: 'list', noteIds: new Set(['n1', 'n2']) },
+      { now: NOW, size: 10, seed: 's' },
+    );
+    expect(ids).toEqual(['prod', 'other']);
+  });
+
   it('skips new, suspended, locked and deleted cards', () => {
     const base = { lapses: 3 };
     const cards = [cand('ok', base), cand('new', { ...base, state: CardState.New })];

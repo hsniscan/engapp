@@ -50,6 +50,8 @@ export default defineConfig({
         globIgnores: ['**/pdf.worker*.mjs'],
         maximumFileSizeToCacheInBytes: 2 * 1024 * 1024,
         cleanupOutdatedCaches: true,
+        // Web Push: `push` and `notificationclick` handlers (public/push-sw.js, decision 0024).
+        importScripts: ['/push-sw.js'],
         navigateFallback: '/index.html',
         // Server endpoints are never answered with the app shell.
         navigateFallbackDenylist: [
@@ -75,6 +77,17 @@ export default defineConfig({
             handler: 'CacheFirst',
             options: {
               cacheName: 'engapp-pdf-worker',
+              expiration: { maxEntries: 2 },
+            },
+          },
+          {
+            // SQLite (sql.js) wasm for the Anki import (~650 KB): not precached (globPatterns has
+            // no .wasm), cached on the first Anki import, then offline (decision 0019).
+            urlPattern: ({ url, sameOrigin }) =>
+              sameOrigin && /\/assets\/sql-wasm[^/]*\.wasm$/.test(url.pathname),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'engapp-anki-reader',
               expiration: { maxEntries: 2 },
             },
           },

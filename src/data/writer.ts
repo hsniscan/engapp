@@ -21,6 +21,7 @@ import type {
   Source,
   SyncedRow,
   UserContent,
+  WeeklyReport,
 } from '../domain/types';
 import { db } from './db';
 import { getDeviceId, getMeta, META, setMeta } from './meta';
@@ -86,17 +87,37 @@ export class SyncWriter {
     this.enqueue(table, row.id, row.deleted_at !== null ? 'delete' : 'upsert', row);
   }
 
+  /** put() for many rows of one table: one bulkPut, same stamps and outbox rows as put(). */
+  async putMany<T extends MutableTable>(table: T, rows: readonly MutableRows[T][]): Promise<MutableRows[T][]> {
+    if (rows.length === 0) return [];
+    const stamped = rows.map((row) => ({ ...row, updated_at: this.now, hlc: this.nextHlc() }));
+    await (db.table(table) as Table<MutableRows[T], Id>).bulkPut(stamped);
+    for (const row of stamped) this.enqueue(table, row.id, row.deleted_at !== null ? 'delete' : 'upsert', row);
+    return stamped;
+  }
+
+  /** putAsIs() for many rows of one table (restore): one bulkPut. */
+  async putManyAsIs<T extends MutableTable>(table: T, rows: readonly MutableRows[T][]): Promise<void> {
+    if (rows.length === 0) return;
+    for (const row of rows) this.observe(row.hlc);
+    await (db.table(table) as Table<MutableRows[T], Id>).bulkPut([...rows]);
+    for (const row of rows) this.enqueue(table, row.id, row.deleted_at !== null ? 'delete' : 'upsert', row);
+  }
+
   /** review_logs are insert-only: add() fails if the id exists. */
   async insertLog(log: ReviewLog): Promise<void> {
     await db.review_logs.add(log);
     this.enqueue('review_logs', log.id, 'upsert', log);
   }
 
-  /** Many new logs at once (history reset); bulkAdd fails if an id exists. */
-  async insertLogs(logs: ReviewLog[]): Promise<void> {
+  /**
+   * Many new logs at once (history reset, restore); bulkAdd fails if an id exists.
+   * `queue: false` only for a guest's restore: adoptGuestData queues every log anyway.
+   */
+  async insertLogs(logs: ReviewLog[], queue = true): Promise<void> {
     if (logs.length === 0) return;
     await db.review_logs.bulkAdd(logs);
-    for (const log of logs) this.enqueue('review_logs', log.id, 'upsert', log);
+    if (queue) for (const log of logs) this.enqueue('review_logs', log.id, 'upsert', log);
   }
 
   /** practice_logs are insert-only too, and never touch cards or review_logs. */
@@ -105,10 +126,37 @@ export class SyncWriter {
     this.enqueue('practice_logs', log.id, 'upsert', log);
   }
 
+  /** Many practice logs at once (restore); bulkAdd fails if an id exists. `queue`: see insertLogs. */
+  async insertPracticeLogs(logs: readonly PracticeLog[], queue = true): Promise<void> {
+    if (logs.length === 0) return;
+    await db.practice_logs.bulkAdd([...logs]);
+    if (queue) for (const log of logs) this.enqueue('practice_logs', log.id, 'upsert', log);
+  }
+
   /** level_tests are insert-only: a finished test is never changed. */
   async insertLevelTest(test: LevelTest): Promise<void> {
     await db.level_tests.add(test);
     this.enqueue('level_tests', test.id, 'upsert', test);
+  }
+
+  /** Many level tests at once (restore); bulkAdd fails if an id exists. `queue`: see insertLogs. */
+  async insertLevelTests(tests: readonly LevelTest[], queue = true): Promise<void> {
+    if (tests.length === 0) return;
+    await db.level_tests.bulkAdd([...tests]);
+    if (queue) for (const test of tests) this.enqueue('level_tests', test.id, 'upsert', test);
+  }
+
+  /** weekly_reports are insert-only: one row per week, never changed (v0.3 İP7). */
+  async insertWeeklyReport(report: WeeklyReport): Promise<void> {
+    await db.weekly_reports.add(report);
+    this.enqueue('weekly_reports', report.id, 'upsert', report);
+  }
+
+  /** Many weekly reports at once (restore); bulkAdd fails if an id exists. `queue`: see insertLogs. */
+  async insertWeeklyReports(reports: readonly WeeklyReport[], queue = true): Promise<void> {
+    if (reports.length === 0) return;
+    await db.weekly_reports.bulkAdd([...reports]);
+    if (queue) for (const report of reports) this.enqueue('weekly_reports', report.id, 'upsert', report);
   }
 
   enqueue(table: OutboxTable, rowId: Id, op: OutboxRow['op'], payload: unknown): void {

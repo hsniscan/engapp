@@ -25,6 +25,11 @@ export function formatDayMonth(key: DayKey): string {
   return fmt({ day: 'numeric', month: 'long' }).format(utcDate(key));
 }
 
+/** "12 Eki" */
+export function formatDayMonthShort(key: DayKey): string {
+  return fmt({ day: 'numeric', month: 'short' }).format(utcDate(key));
+}
+
 /** "12 Ekim Pazar" */
 export function formatDayLong(key: DayKey): string {
   return fmt({ day: 'numeric', month: 'long', weekday: 'long' }).format(utcDate(key));

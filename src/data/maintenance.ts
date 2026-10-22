@@ -13,6 +13,7 @@ import { compareHlc } from '../domain/hlc';
 import { checkIntegrity, type IntegrityReport } from '../domain/integrity';
 import { keepProfileFields } from '../domain/profile';
 import { fillLateColumns } from '../domain/syncMerge';
+import { primaryRecognition } from '../domain/leech';
 import { deriveUnlocked, effectiveLogs, replayCard } from '../domain/recompute';
 import {
   cardSchema,
@@ -27,6 +28,7 @@ import {
   settingsSchema,
   sourceSchema,
   userContentSchema,
+  weeklyReportSchema,
 } from '../domain/schemas';
 import {
   type Card,
@@ -37,9 +39,13 @@ import {
   type Note,
   type PracticeLog,
   type ReviewLog,
+  type Settings,
+  type WeeklyReport,
 } from '../domain/types';
 import { emptyFsrs } from '../domain/fsrs';
 import { db } from './db';
+import { compactGuestOutbox, compactOutbox } from './outbox';
+import { whileRestoring } from './restoreState';
 import { rebuildDailyActivity } from './dailyActivity';
 import { ActionError } from './errors';
 import { groupLogs } from './history';
@@ -71,15 +77,19 @@ const allSyncedTables = () => [
   db.settings,
   db.practice_logs,
   db.decks,
+  db.weekly_reports,
 ];
 
 // ------------------------------------------------------------------ recompute
+
+const sameParams = (a: number[] | null | undefined, b: number[] | null | undefined): boolean =>
+  JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 
 /**
  * Recompute FSRS fields (from logs) and `unlocked` (from the recognition card) for the given
  * cards, or all cards. Writes only cards that changed. Call inside writeTx.
  */
-async function recomputeCardsIn(w: SyncWriter, cardIds: Iterable<Id> | 'all'): Promise<number> {
+export async function recomputeCardsIn(w: SyncWriter, cardIds: Iterable<Id> | 'all'): Promise<number> {
   const settings = await getSettings(w.now);
   const scheduler = schedulerFor(settings);
   let cards: Card[];
@@ -107,26 +117,28 @@ async function recomputeCardsIn(w: SyncWriter, cardIds: Iterable<Id> | 'all'): P
     const { fsrs } = replayCard(scheduler, c, byCard.get(c.id) ?? []);
     updated.set(c.id, fsrsEqual(fsrs, pickFsrs(c)) ? c : { ...c, ...fsrs });
   }
-  const recognitionState = new Map<Id, CardStateValue>();
+  // The primary recognition card of each note drives the unlock rule (domain/leech.ts).
+  const recognitionByNote = new Map<Id, Card[]>();
   for (const c of updated.values()) {
-    if (
-      c.card_type === 'recognition' &&
-      (c.deleted_at === null || !recognitionState.has(c.note_id))
-    ) {
-      recognitionState.set(c.note_id, c.state);
-    }
+    if (c.card_type !== 'recognition') continue;
+    const list = recognitionByNote.get(c.note_id);
+    if (list) list.push(c);
+    else recognitionByNote.set(c.note_id, [c]);
   }
-  let changed = 0;
+  const recognitionState = new Map<Id, CardStateValue>();
+  for (const [noteId, list] of recognitionByNote) {
+    const primary = primaryRecognition(list);
+    if (primary) recognitionState.set(noteId, primary.state);
+  }
+  const changed: Card[] = [];
   for (const original of cards) {
     let c = updated.get(original.id)!;
     const unlocked = deriveUnlocked(c, recognitionState.get(c.note_id) ?? null);
     if (unlocked !== c.unlocked) c = { ...c, unlocked };
-    if (c !== original) {
-      await w.put('cards', c);
-      changed++;
-    }
+    if (c !== original) changed.push(c);
   }
-  return changed;
+  await w.putMany('cards', changed);
+  return changed.length;
 }
 
 /** Rebuild every card's FSRS state and unlock flag from the review logs. */
@@ -208,7 +220,8 @@ export async function resetStudyHistory(now: Millis = Date.now(), chunkNotes = R
 
 // ------------------------------------------------------------------ sync hook
 
-export type RemoteBatch = Partial<Record<MutableTable | 'review_logs' | 'practice_logs' | 'level_tests', unknown[]>>;
+type InsertOnlyRemote = 'review_logs' | 'practice_logs' | 'level_tests' | 'weekly_reports';
+export type RemoteBatch = Partial<Record<MutableTable | InsertOnlyRemote, unknown[]>>;
 
 export interface ApplyRemoteResult {
   applied: number;
@@ -230,7 +243,8 @@ const rowSchemas = {
   decks: deckSchema,
   known_terms: knownTermSchema,
   level_tests: levelTestSchema,
-} satisfies Record<MutableTable | 'review_logs' | 'practice_logs' | 'level_tests', z.ZodType>;
+  weekly_reports: weeklyReportSchema,
+} satisfies Record<MutableTable | InsertOnlyRemote, z.ZodType>;
 
 /**
  * Hook for the sync engine's pull. Rows are validated; mutable rows win when their hlc is
@@ -246,10 +260,18 @@ export async function applyRemoteRows(
 ): Promise<ApplyRemoteResult> {
   const result: ApplyRemoteResult = { applied: 0, skipped: 0, invalid: 0, recomputedCards: 0 };
   let logsArrived = false;
-  await writeTx(allSyncedTables(), now, async (w) => {
+  await writeTx([...allSyncedTables(), db.report_drafts], now, async (w) => {
     const touchedCards = new Set<Id>();
     const touchedTerms = new Set<string>();
-    for (const table of [...MUTABLE, 'review_logs', 'practice_logs', 'level_tests'] as const) {
+    // New FSRS parameters from another device (v0.3 İP4): every card is replayed with them.
+    let paramsChanged = false;
+    for (const table of [
+      ...MUTABLE,
+      'review_logs',
+      'practice_logs',
+      'level_tests',
+      'weekly_reports',
+    ] as const) {
       for (const raw of batch[table] ?? []) {
         const parsed = rowSchemas[table].safeParse(raw);
         if (!parsed.success) {
@@ -275,6 +297,13 @@ export async function applyRemoteRows(
             await db.level_tests.add(t);
             result.applied++;
           }
+          continue;
+        }
+        if (table === 'weekly_reports') {
+          const r = parsed.data as WeeklyReport;
+          w.observe(r.hlc);
+          if (await applyRemoteReport(r)) result.applied++;
+          else result.skipped++;
           continue;
         }
         const row = parsed.data as MutableRows[MutableTable] | ReviewLog;
@@ -308,33 +337,63 @@ export async function applyRemoteRows(
         }
         await db.table(table).put(keepProfileFields(table, row, local));
         result.applied++;
+        if (
+          table === 'settings' &&
+          !sameParams((local as Settings | undefined)?.fsrs_params, (row as Settings).fsrs_params)
+        ) {
+          paramsChanged = true;
+        }
         if (table === 'cards') touchedCards.add(row.id);
         if (table === 'notes') touchedTerms.add((row as Note).term_norm);
       }
     }
-    result.recomputedCards = await recomputeCardsIn(w, touchedCards);
+    result.recomputedCards = await recomputeCardsIn(w, paramsChanged ? 'all' : touchedCards);
     await flagDuplicates(w, touchedTerms);
   });
   if (logsArrived) await rebuildDailyActivity(now);
   return result;
 }
 
-/** Mark live notes sharing a term_norm as possible duplicates (account merge rule). */
-async function flagDuplicates(w: SyncWriter, termNorms: Iterable<string>): Promise<number> {
-  let n = 0;
-  for (const norm of termNorms) {
-    const live = (await db.notes.where('term_norm').equals(norm).toArray()).filter(
-      (x) => x.deleted_at === null,
-    );
-    if (live.length < 2) continue;
-    for (const note of live) {
-      if (!note.possible_duplicate) {
-        await w.put('notes', { ...note, possible_duplicate: true });
-        n++;
-      }
+/**
+ * A pulled weekly report. The server keeps one report per user and week, the first one it
+ * got (migration 20261023000900), so the pulled row is the week's report on every device:
+ * it replaces a report of the same week this device made (its push was skipped by the server)
+ * and the week's draft. Returns false when the row was here already.
+ */
+async function applyRemoteReport(r: WeeklyReport): Promise<boolean> {
+  const sameWeek = await db.weekly_reports.where('week').equals(r.week).toArray();
+  await db.report_drafts.delete(r.week);
+  if (sameWeek.length === 1 && sameWeek[0]!.id === r.id) return false;
+  const others = sameWeek.filter((x) => x.id !== r.id).map((x) => x.id);
+  if (others.length) {
+    await db.weekly_reports.bulkDelete(others);
+    for (const id of others) {
+      const queued = await db.outbox.where('[table+row_id]').equals(['weekly_reports', id]).primaryKeys();
+      await db.outbox.bulkDelete(queued);
     }
   }
-  return n;
+  await db.weekly_reports.put(r);
+  return true;
+}
+
+/** Mark live notes sharing a term_norm as possible duplicates (account merge rule). */
+async function flagDuplicates(w: SyncWriter, termNorms: Iterable<string>): Promise<number> {
+  const norms = [...new Set(termNorms)];
+  if (norms.length === 0) return 0;
+  const byTerm = new Map<string, Note[]>();
+  for (const note of await db.notes.where('term_norm').anyOf(norms).toArray()) {
+    if (note.deleted_at !== null) continue;
+    const list = byTerm.get(note.term_norm) ?? [];
+    list.push(note);
+    byTerm.set(note.term_norm, list);
+  }
+  const flag: Note[] = [];
+  for (const live of byTerm.values()) {
+    if (live.length < 2) continue;
+    for (const note of live) if (!note.possible_duplicate) flag.push({ ...note, possible_duplicate: true });
+  }
+  await w.putMany('notes', flag);
+  return flag.length;
 }
 
 // ------------------------------------------------------------------ backup
@@ -353,6 +412,7 @@ async function readTables(): Promise<BackupTables> {
     decks: await db.decks.toArray(),
     level_tests: await db.level_tests.toArray(),
     known_terms: await db.known_terms.toArray(),
+    weekly_reports: await db.weekly_reports.toArray(),
   }));
 }
 
@@ -397,6 +457,15 @@ function sameRow(a: unknown, b: unknown): boolean {
   );
 }
 
+/** Rows per transaction while restoring (decision 0025). */
+export const RESTORE_CHUNK = 500;
+
+function chunks<T>(rows: readonly T[], size = RESTORE_CHUNK): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < rows.length; i += size) out.push(rows.slice(i, i + size));
+  return out;
+}
+
 /**
  * Restore a backup (a parsed object or the raw JSON string; verified first).
  * - merge: rows missing locally are added as-is; rows present on both sides keep the one
@@ -404,13 +473,30 @@ function sameRow(a: unknown, b: unknown): boolean {
  * - overwrite: the backup's notes/senses/cards/sources/settings replace local ones; local
  *   rows absent from the backup are soft-deleted (so the deletion syncs).
  * Review and practice logs are insert-only in both modes: missing ones are added, none are removed.
- * Afterwards all cards are recomputed and daily_activity is rebuilt.
+ * Afterwards all cards are recomputed and daily_activity is rebuilt; a guest's outbox is
+ * compacted (compactGuestOutbox).
+ *
+ * Writes go in transactions of RESTORE_CHUNK rows with bulkGet/bulkPut (decision 0025:
+ * 10,000 cards in seconds instead of ~90 s). Each chunk is atomic with its outbox rows; an
+ * interrupted restore is finished by running it again (every step is idempotent: rows
+ * already restored compare equal, logs already present are skipped).
  * @throws ActionError('invalid_backup') with the verify error as message.
  */
-export async function restoreBackup(
+export function restoreBackup(
   file: unknown,
   mode: RestoreMode,
   now: Millis = Date.now(),
+  chunkSize = RESTORE_CHUNK,
+): Promise<RestoreResult> {
+  // Whole-table views pause meanwhile (data/restoreState.ts).
+  return whileRestoring(() => restoreBackupNow(file, mode, now, chunkSize));
+}
+
+async function restoreBackupNow(
+  file: unknown,
+  mode: RestoreMode,
+  now: Millis,
+  chunkSize: number,
 ): Promise<RestoreResult> {
   const verified = await verifyBackup(file);
   if (!verified.ok) throw new ActionError('invalid_backup', verified.error);
@@ -424,72 +510,109 @@ export async function restoreBackup(
     recomputedCards: 0,
   };
 
-  await writeTx(allSyncedTables(), now, async (w) => {
-    const terms = new Set<string>();
-    for (const table of MUTABLE) {
-      // content_feedback / user_content (before schema_version 5), decks (before 7) and
-      // known_terms (before 8) are absent in older files: such a file says nothing about
-      // them, so overwrite leaves the local rows alone.
-      const fromFile = tables[table] as MutableRows[MutableTable][] | undefined;
-      const incoming = fromFile ?? [];
+  const terms = new Set<string>();
+  for (const table of MUTABLE) {
+    // content_feedback / user_content (before schema_version 5), decks (before 7) and
+    // known_terms (before 8) are absent in older files: such a file says nothing about
+    // them, so overwrite leaves the local rows alone.
+    const fromFile = tables[table] as MutableRows[MutableTable][] | undefined;
+    const incoming = fromFile ?? [];
+    for (const chunk of chunks(incoming, chunkSize)) {
+      await writeTx([db.table(table)], now, async (w) => {
+        const existing = (await db.table(table).bulkGet(chunk.map((r) => r.id))) as (
+          MutableRows[MutableTable] | undefined
+        )[];
+        const asIs: MutableRows[MutableTable][] = [];
+        const stamped: MutableRows[MutableTable][] = [];
+        for (const [i, row] of chunk.entries()) {
+          const local = existing[i];
+          if (!local) {
+            asIs.push(row);
+            res.inserted++;
+          } else if (sameRow(local, row)) {
+            res.kept++;
+          } else if (mode === 'overwrite') {
+            stamped.push(row);
+            res.replaced++;
+          } else if (compareHlc(row.hlc, local.hlc) > 0) {
+            asIs.push(row);
+            res.replaced++;
+          } else {
+            res.kept++;
+          }
+          if (table === 'notes') terms.add((row as Note).term_norm);
+        }
+        await w.putManyAsIs(table, asIs);
+        await w.putMany(table, stamped);
+      });
+    }
+    // settings is a single row: a backup without settings keeps the local ones.
+    if (mode === 'overwrite' && fromFile && table !== 'settings') {
       const ids = new Set(incoming.map((r) => r.id));
-      // One bulkGet instead of a get per row: 10,000 cards restore minutes → seconds.
-      const existing = (await db.table(table).bulkGet(incoming.map((r) => r.id))) as (
-        MutableRows[MutableTable] | undefined
-      )[];
-      for (const [i, row] of incoming.entries()) {
-        const local = existing[i];
-        if (!local) {
-          await w.putAsIs(table, row);
-          res.inserted++;
-        } else if (sameRow(local, row)) {
-          res.kept++;
-        } else if (mode === 'overwrite') {
-          await w.put(table, row);
-          res.replaced++;
-        } else if (compareHlc(row.hlc, local.hlc) > 0) {
-          await w.putAsIs(table, row);
-          res.replaced++;
-        } else {
-          res.kept++;
-        }
-        if (table === 'notes') terms.add((row as Note).term_norm);
-      }
-      if (mode === 'overwrite' && fromFile) {
-        const locals = (await db.table(table).toArray()) as MutableRows[MutableTable][];
-        for (const local of locals) {
-          if (ids.has(local.id) || local.deleted_at !== null) continue;
-          if (table === 'settings') continue; // single row; a backup without settings keeps local ones
-          await w.put(table as MutableTable, { ...local, deleted_at: now });
-          res.deleted++;
-        }
+      const localIds = (await db.table(table).toCollection().primaryKeys()) as Id[];
+      for (const chunk of chunks(localIds.filter((id) => !ids.has(id)), chunkSize)) {
+        await writeTx([db.table(table)], now, async (w) => {
+          const locals = (await db.table(table).bulkGet(chunk)) as (MutableRows[MutableTable] | undefined)[];
+          const gone = locals
+            .filter((l): l is MutableRows[MutableTable] => !!l && l.deleted_at === null)
+            .map((l) => ({ ...l, deleted_at: now }) as MutableRows[MutableTable]);
+          await w.putMany(table as MutableTable, gone);
+          res.deleted += gone.length;
+        });
       }
     }
-    const knownLogs = await db.review_logs.bulkGet(tables.review_logs.map((l) => l.id));
-    for (const [i, log] of tables.review_logs.entries()) {
-      if (knownLogs[i]) continue;
-      w.observe(log.hlc);
-      await w.insertLog(log);
-      res.logsAdded++;
-    }
-    const practice = tables.practice_logs ?? [];
-    const knownPractice = await db.practice_logs.bulkGet(practice.map((l) => l.id));
-    for (const [i, log] of practice.entries()) {
-      if (knownPractice[i]) continue;
-      w.observe(log.hlc);
-      await w.insertPracticeLog(log);
-    }
-    const tests = tables.level_tests ?? [];
-    const knownTests = await db.level_tests.bulkGet(tests.map((t) => t.id));
-    for (const [i, test] of tests.entries()) {
-      if (knownTests[i]) continue;
-      w.observe(test.hlc);
-      await w.insertLevelTest(test);
-    }
+  }
+
+  for (const chunk of chunks(tables.review_logs, chunkSize)) {
+    await writeTx([db.review_logs], now, async (w) => {
+      const known = await db.review_logs.bulkGet(chunk.map((l) => l.id));
+      const fresh = chunk.filter((_, i) => !known[i]);
+      for (const log of fresh) w.observe(log.hlc);
+      // A guest's logs are queued by adoptGuestData at the first sign-in (all of them), so
+      // queuing them now would only fill the outbox (decision 0025).
+      await w.insertLogs(fresh, w.userId !== null);
+      res.logsAdded += fresh.length;
+    });
+  }
+  for (const chunk of chunks(tables.practice_logs ?? [], chunkSize)) {
+    await writeTx([db.practice_logs], now, async (w) => {
+      const known = await db.practice_logs.bulkGet(chunk.map((l) => l.id));
+      const fresh = chunk.filter((_, i) => !known[i]);
+      for (const log of fresh) w.observe(log.hlc);
+      await w.insertPracticeLogs(fresh, w.userId !== null);
+    });
+  }
+  for (const chunk of chunks(tables.level_tests ?? [], chunkSize)) {
+    await writeTx([db.level_tests], now, async (w) => {
+      const known = await db.level_tests.bulkGet(chunk.map((t) => t.id));
+      const fresh = chunk.filter((_, i) => !known[i]);
+      for (const test of fresh) w.observe(test.hlc);
+      await w.insertLevelTests(fresh, w.userId !== null);
+    });
+  }
+  // Weekly reports (schema_version 9): one per week; a week this device has keeps its own.
+  // Insert-only like the logs, so a guest's are queued at the first sign-in instead.
+  const haveWeeks = new Set((await db.weekly_reports.toArray()).map((r) => r.week));
+  for (const chunk of chunks(tables.weekly_reports ?? [], chunkSize)) {
+    await writeTx([db.weekly_reports, db.report_drafts], now, async (w) => {
+      const fresh: WeeklyReport[] = [];
+      for (const report of chunk) {
+        if (haveWeeks.has(report.week)) continue;
+        haveWeeks.add(report.week);
+        w.observe(report.hlc);
+        fresh.push(report);
+      }
+      await w.insertWeeklyReports(fresh, w.userId !== null);
+      await db.report_drafts.bulkDelete(fresh.map((r) => r.week));
+    });
+  }
+
+  await writeTx([db.notes, db.cards, db.review_logs, db.settings], now, async (w) => {
     if (mode === 'merge') await flagDuplicates(w, terms);
     res.recomputedCards = await recomputeCardsIn(w, 'all');
   });
   await rebuildDailyActivity(now);
+  await compactGuestOutbox();
   return res;
 }
 
@@ -559,12 +682,13 @@ export async function repairIntegrity(now: Millis = Date.now()): Promise<RepairR
 
 /**
  * Guest → account: remember the user id, stamp it on every guest row of the mutable
- * tables (queued for push) and queue every review log for its first push. Logs themselves
+ * tables (queued for push) and queue every review log for its first push, then compact
+ * the outbox (one entry per row). Logs themselves
  * are not rewritten; the server takes user_id from the session.
  */
 export async function adoptGuestData(userId: string, now: Millis = Date.now()): Promise<number> {
   await db.transaction('rw', db.meta, () => setMeta(META.userId, userId));
-  return writeTx(allSyncedTables(), now, async (w) => {
+  const queued = await writeTx(allSyncedTables(), now, async (w) => {
     let n = 0;
     for (const table of MUTABLE) {
       const rows = (await db.table(table).toArray()) as MutableRows[MutableTable][];
@@ -587,6 +711,14 @@ export async function adoptGuestData(userId: string, now: Millis = Date.now()): 
       w.enqueue('level_tests', test.id, 'upsert', test);
       n++;
     }
+    for (const report of await db.weekly_reports.toArray()) {
+      w.enqueue('weekly_reports', report.id, 'upsert', report);
+      n++;
+    }
     return n;
   });
+  // Before the first push: one entry per row (guest edits and the re-queued logs above
+  // leave several).
+  await compactOutbox();
+  return queued;
 }

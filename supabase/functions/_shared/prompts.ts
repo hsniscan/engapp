@@ -5,6 +5,7 @@
 
 import { z } from 'zod';
 import { EXTRACT_PROMPT_VERSION, MAX_CANDIDATES, MAX_PROSE_CANDIDATES } from './contracts.ts';
+import { EXTRACT_TOPIC_KEYS } from './topics-contract.ts';
 
 export { EXTRACT_PROMPT_VERSION };
 export const ENRICH_PROMPT_VERSION = 'enrich-v2';
@@ -22,10 +23,16 @@ const FIELD_RULES = `- pos: one of: ${POS_LIST}.
 - ipa: IPA transcription of the whole term between slashes, General American, e.g. "/rɪˈlʌktənt/", "/ɡɪv ˈʌp/". Use null if you are not sure.
 - cefr_guess: the CEFR level (A1, A2, B1, B2, C1 or C2) at which a typical Turkish-speaking learner of English meets and learns this sense. Rate this sense, not the word's most common one. A word Turkish has borrowed with the same meaning ("television" ~ televizyon) is easier; a word that looks like a Turkish word with another meaning ("actually" ~ aktüel) is harder.`;
 
+/** extract-v5: false friends of a new sense, in the same call (no extra call). */
+const FALSE_FRIEND_RULE = `- false_friend_tr: null in most cases. Fill it in only when a common Turkish word looks or sounds like the term but means something clearly different, so that a Turkish learner is likely to misread this sense: tr_word is the Turkish word; tr_meaning_tr is what the Turkish word means, in Turkish (1-4 words); strength is "full" when the two meanings are unrelated and "partial" when they overlap but differ in an important way; note_tr is one short Turkish sentence that helps, or null. Set it for e.g. "actually" ~ "aktüel" (güncel), "magazine" ~ "mağaza" (dükkân), "fabric" ~ "fabrika" (üretim yeri), "pension" ~ "pansiyon" (küçük otel), "sympathetic" ~ "sempatik" (cana yakın). Leave it null for e.g. "television" ~ "televizyon", "hotel" ~ "otel" and "economy" ~ "ekonomi" (same meaning: a borrowed word is not a false friend), and for "advice" or "reluctant" (no Turkish word looks like them).`;
+
 export const EXTRACT_SYSTEM_PROMPT = `You are an expert lexicographer who builds English-to-Turkish vocabulary flashcards for a Turkish-speaking learner of English.
 
 TASK
 Read TEXT and select the words and multi-word expressions that are most worth learning for a learner at CEFR level LEVEL. TARGET_LEVEL is the next level above LEVEL (for C2 it is C2). Return them in "candidates" as defined by the response schema: at most ${MAX_PROSE_CANDIDATES}, the most useful first. Return fewer, or none, when TEXT has few useful items.
+
+TOPICS
+Set "topics" to the one or two topics TEXT is mainly about, most important first, from this list: ${EXTRACT_TOPIC_KEYS.join(', ')}. Use an empty list when no topic fits (for example a list of unrelated words).
 
 VOCABULARY LISTS
 If TEXT is a vocabulary list or glossary (numbered or bulleted entries, each usually a term followed by an example sentence, e.g. "12 bad Be careful of bad people."), the learner chose these words: return EVERY entry, in the order of the list, including easy entries, entries below LEVEL and entries above TARGET_LEVEL, at most ${MAX_CANDIDATES}. The selection rules below do not apply to a list, except that proper nouns are skipped. Use the entry's own example sentence as source_sentence; if an entry has no example sentence, use the entry's text as it stands in TEXT. Skip headings, page numbers and other lines that are not entries.
@@ -46,8 +53,9 @@ FIELDS OF EACH CANDIDATE
 - source_sentence: the complete sentence from TEXT that contains the term, copied character for character. Do not correct, shorten, re-punctuate or merge lines. If the sentence is longer than about 300 characters, copy only the clause containing the term, still verbatim.
 - sentence_tr: a natural, fluent Turkish translation of source_sentence as a good translator would write it, not word for word. Translate all of source_sentence and nothing more: no notes, no alternatives, no quotation marks around it.
 - confidence: 0 to 1, how sure you are that the term, its sense and the Turkish meaning are correct for this sentence.
-- known_sense: KNOWN_SENSES lists senses that already exist in the dictionary, one per line as "<ref> | <term> | <part of speech> | <English gloss>". If the term is listed there and its meaning in this sentence is one of the listed senses, set known_sense to that ref (for example "s3") and set pos, gloss_en, meaning_tr, ipa and cefr_guess to null: that content exists already and must not be written again. A ref may only be used for the same term. Otherwise set known_sense to null and fill in the new sense:
+- known_sense: KNOWN_SENSES lists senses that already exist in the dictionary, one per line as "<ref> | <term> | <part of speech> | <English gloss>". If the term is listed there and its meaning in this sentence is one of the listed senses, set known_sense to that ref (for example "s3") and set pos, gloss_en, meaning_tr, ipa, cefr_guess and false_friend_tr to null: that content exists already and must not be written again. A ref may only be used for the same term. Otherwise set known_sense to null and fill in the new sense:
 ${FIELD_RULES}
+${FALSE_FRIEND_RULE}
   If the term itself appears in KNOWN_SENSES (with other senses), set ipa to null.
 
 RULES
@@ -63,7 +71,7 @@ export interface KnownSenseLine {
 
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
 
-/** TARGET_LEVEL of extract-v4: the level above the learner's (C2 for C2). */
+/** TARGET_LEVEL (since extract-v4): the level above the learner's (C2 for C2). */
 export function extractTargetLevel(level: string): string {
   const i = LEVELS.indexOf(level as (typeof LEVELS)[number]);
   return i < 0 ? level : LEVELS[Math.min(LEVELS.length - 1, i + 1)]!;
@@ -98,6 +106,12 @@ const nullableString = { type: ['string', 'null'] } as const;
 export const EXTRACT_RESPONSE_SCHEMA = {
   type: 'object',
   properties: {
+    // First, so an answer cut off by the token limit keeps it (salvageTruncatedJson).
+    topics: {
+      type: 'array',
+      items: { type: 'string', enum: [...EXTRACT_TOPIC_KEYS] },
+      description: '1-2 topics of TEXT',
+    },
     candidates: {
       type: 'array',
       // No maxItems: Gemini answers HTTP 400 for maxItems on this schema (seen Oct 2026).
@@ -120,6 +134,17 @@ export const EXTRACT_RESPONSE_SCHEMA = {
             ...nullableString,
             description: 'A1, A2, B1, B2, C1 or C2; null when known_sense is set',
           },
+          false_friend_tr: {
+            type: ['object', 'null'],
+            description: 'a Turkish look-alike with another meaning; usually null',
+            properties: {
+              tr_word: { type: 'string' },
+              tr_meaning_tr: { type: 'string' },
+              strength: { type: 'string', enum: ['full', 'partial'] },
+              note_tr: nullableString,
+            },
+            required: ['tr_word', 'tr_meaning_tr', 'strength', 'note_tr'],
+          },
         },
         required: [
           'term',
@@ -134,11 +159,12 @@ export const EXTRACT_RESPONSE_SCHEMA = {
           'meaning_tr',
           'ipa',
           'cefr_guess',
+          'false_friend_tr',
         ],
       },
     },
   },
-  required: ['candidates'],
+  required: ['topics', 'candidates'],
 } as const;
 
 /** Lenient per-candidate shape; strict checks happen in validateExtractOutput. */
@@ -156,11 +182,27 @@ export const extractModelCandidate = z.object({
   ipa: z.string().nullish(),
   /** extract-v3; checked by the server (parseCefr), a bad value only drops the guess. */
   cefr_guess: z.unknown().optional(),
+  /** extract-v5; checked by the server (cleanFalseFriend), a bad value only drops the warning. */
+  false_friend_tr: z.unknown().optional(),
 });
 export type ExtractModelCandidate = z.infer<typeof extractModelCandidate>;
 
-/** Top level must parse, items are checked one by one (one bad item does not sink the rest). */
-export const extractModelOutput = z.object({ candidates: z.array(z.unknown()) });
+/**
+ * Top level must parse, items are checked one by one (one bad item does not sink the rest).
+ * `topics` (extract-v5) is optional: a missing or bad value only means "no topics".
+ */
+export const extractModelOutput = z.object({
+  topics: z.unknown().optional(),
+  candidates: z.array(z.unknown()),
+});
+
+/** The model's false_friend_tr before the server's checks (extract-v5). */
+export const extractModelFalseFriend = z.object({
+  tr_word: z.string(),
+  tr_meaning_tr: z.string(),
+  strength: z.string().nullish(),
+  note_tr: z.string().nullish(),
+});
 
 // ---------------------------------------------------------------------------
 // enrich

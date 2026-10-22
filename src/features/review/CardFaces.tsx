@@ -9,6 +9,8 @@ import { LevelDialogButton } from '@/features/levels/LevelDetails';
 import { useCardLevel } from '@/features/levels/useWordLevel';
 import { CardExamples } from '@/features/examples/ExamplesPanel';
 import { CardBackExtras } from '@/features/family/CardBackExtras';
+import { ContrastBack, ContrastFront, LeechBadge, LeechHint } from '@/features/leech';
+import { CardMnemonic } from '@/features/mnemonics';
 import { Badge, cn, IconButton } from '@/ui';
 import { usePronunciationBusy } from './pronunciation';
 
@@ -209,10 +211,20 @@ export const CardFront = memo(function CardFront({ view, isNew, speech }: FacePr
   const { t } = useTranslation();
   const { card, note, sense, cloze, hint } = view;
   const prompt = t(promptKey[card.card_type]);
+  // A card forgotten 6 times or more (v0.3 İP6): a small marker, and its mnemonic as a hint.
+  const marker = <LeechBadge lapses={card.lapses} />;
+
+  if (note.term_type === 'contrast') {
+    return (
+      <Face prompt={t('leech.contrast.prompt')} isNew={isNew} aside={marker}>
+        <ContrastFront view={view} />
+      </Face>
+    );
+  }
 
   if (card.card_type === 'production' && sense) {
     return (
-      <Face prompt={prompt} isNew={isNew}>
+      <Face prompt={prompt} isNew={isNew} aside={marker}>
         <p className="font-serif text-3xl leading-snug font-semibold text-fg sm:text-4xl">
           {meaningOf(sense)}
         </p>
@@ -227,6 +239,7 @@ export const CardFront = memo(function CardFront({ view, isNew, speech }: FacePr
             <span lang="en">{hint}</span>
           </p>
         )}
+        <LeechHint view={view} />
       </Face>
     );
   }
@@ -234,7 +247,7 @@ export const CardFront = memo(function CardFront({ view, isNew, speech }: FacePr
   if (card.card_type === 'cloze' && cloze && sense) {
     const blankWidth = `${Math.max(3, Math.min(14, cloze.answer.length)) * 0.62}em`;
     return (
-      <Face prompt={prompt} isNew={isNew} className="gap-6">
+      <Face prompt={prompt} isNew={isNew} aside={marker} className="gap-6">
         <p
           lang="en"
           className="max-w-md font-serif text-xl leading-relaxed text-fg italic sm:text-2xl"
@@ -254,13 +267,14 @@ export const CardFront = memo(function CardFront({ view, isNew, speech }: FacePr
           </span>
           <p className="font-serif text-xl text-fg-muted">{meaningOf(sense)}</p>
         </div>
+        <LeechHint view={view} />
       </Face>
     );
   }
 
   // Recognition (and the fallback for a card whose sense went missing).
   return (
-    <Face prompt={prompt} isNew={isNew}>
+    <Face prompt={prompt} isNew={isNew} aside={marker}>
       <Term term={note.term} />
       {note.term_type !== 'affix' && <SpeakButton {...speech} />}
       {view.sentence && (
@@ -271,13 +285,16 @@ export const CardFront = memo(function CardFront({ view, isNew, speech }: FacePr
           className="mt-3 max-w-md"
         />
       )}
+      <LeechHint view={view} />
     </Face>
   );
 });
 
 function SenseList({ view }: { view: CardView }) {
   const { t } = useTranslation();
-  const { senses, sense } = view;
+  const { sense } = view;
+  // A per-sense recognition card (split leech) covers only its own sense.
+  const senses = view.card.sense_id && sense ? [sense] : view.senses;
   if (senses.length <= 1) {
     const only = senses[0];
     if (!only) return null;
@@ -357,6 +374,13 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
       className="text-[1.0625rem] text-fg-muted"
     />
   ) : null;
+  if (note.term_type === 'contrast') {
+    return (
+      <Face prompt={t('leech.contrast.prompt')} isNew={isNew}>
+        <ContrastBack view={view} />
+      </Face>
+    );
+  }
   const examples = view.senses.some((s) => s.lexicon_sense_id) ? (
     <div className="flex w-full max-w-md justify-center border-t border-border pt-2">
       <CardExamples
@@ -381,6 +405,10 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
           <Ipa ipa={note.ipa} />
         </div>
         <SenseList view={view} />
+        {/* The mnemonic of the sense asked this time (a split card: always its own sense). */}
+        {(sense ? [sense] : view.senses).map((s) => (
+          <CardMnemonic key={s.id} senseId={s.id} className="text-center" />
+        ))}
         {sentence && (
           <div className="flex w-full max-w-md justify-center border-t border-border pt-4">
             {sentence}
@@ -424,6 +452,7 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
           </p>
         )}
       </div>
+      <CardMnemonic senseId={sense.id} className="text-center" />
       {card.card_type === 'production' && sentence}
       {examples}
       <CardBackExtras note={note} />

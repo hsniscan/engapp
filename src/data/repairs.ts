@@ -87,7 +87,12 @@ export async function repairDuplicateSenses(now: Millis = Date.now()): Promise<n
     if (list) list.push(s);
     else byNote.set(s.note_id, [s]);
   }
-  const groups = [...byNote.values()].filter((g) => g.length > 1);
+  // A contrast card ("affect ↔ effect", v0.3 İP6) has one sense per term on purpose, often
+  // with the same Turkish meaning: never a duplicate.
+  const contrast = new Set(
+    (await db.notes.bulkGet([...byNote.keys()])).flatMap((n) => (n?.term_type === 'contrast' ? [n.id] : [])),
+  );
+  const groups = [...byNote.entries()].filter(([id, g]) => g.length > 1 && !contrast.has(id)).map(([, g]) => g);
 
   const senseIds = groups.flat().map((s) => s.id);
   const cards = senseIds.length ? await db.cards.where('sense_id').anyOf(senseIds).toArray() : [];

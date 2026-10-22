@@ -103,6 +103,7 @@ export const LATE_SYNC_TABLES: readonly OutboxTable[] = [
   'decks',
   'level_tests',
   'known_terms',
+  'weekly_reports',
 ];
 /** While rows of an unconfirmed table wait, the registry is asked at most this often. */
 export const REGISTRY_RECHECK_MS = 10 * 60_000;

@@ -125,6 +125,11 @@ for (const width of [360, 1280]) {
         page.getByRole('heading', { name: 'İstatistik', level: 1, exact: true }),
       ).toBeVisible();
       await check(page, 'stats', tag);
+      await page.goto('/stats?tab=gelisim');
+      await expect(
+        page.getByRole('region', { name: 'Kategorilere göre tutma oranı' }),
+      ).toBeVisible();
+      await check(page, 'stats-progress', tag);
 
       await page.goto('/more');
       await expect(

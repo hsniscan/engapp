@@ -47,6 +47,23 @@ describe('fillLateColumns (same HLC: take columns an older version dropped)', ()
     expect(fillLateColumns('settings', remote, local)).toEqual(remote);
   });
 
+  it('restores the load settings (v0.3), a stored catchup_auto false included', () => {
+    const local = { id: 'settings', level: 'B1' };
+    const remote = {
+      ...local,
+      daily_capacity_min: 30,
+      catchup_auto: false,
+      vacation: { start: '2026-11-01', end: '2026-11-05' },
+      vacation_history: [{ start: '2026-08-01', end: '2026-08-02' }],
+    };
+    expect(fillLateColumns('settings', remote, local)).toEqual(remote);
+    const cleared = { ...local, catchup_auto: null, vacation: null };
+    expect(fillLateColumns('settings', cleared, { ...local, catchup_auto: false })).toEqual({
+      ...local,
+      catchup_auto: false,
+    });
+  });
+
   it('returns the local row itself when there is nothing to take, and ignores other tables', () => {
     const local = { id: 's1', topics: ['science'] };
     expect(fillLateColumns('sources', { id: 's1', topics: ['science'] }, local)).toBe(local);

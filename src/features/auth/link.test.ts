@@ -5,9 +5,12 @@ import {
   createSource,
   db,
   ensureSettings,
+  ensureWeeklyReport,
+  finalizeReportDraft,
   getCurrentUserId,
   getStreakSummary,
   META,
+  setGoals,
   setMeta,
   updateSettings,
 } from '@/data';
@@ -44,6 +47,32 @@ async function accountWithData() {
   await linkAccount(USER);
   expect(getLinkState()).toMatchObject({ phase: 'done' });
   expect(server.rowsOf('notes')).toHaveLength(1);
+}
+
+const WEEK_MS = 7 * 86_400_000;
+
+/**
+ * v0.3 İP7: a weekly report (stored and queued for the push), next week's report still waiting
+ * for its comment, and goals. T is a Wednesday: T + 5 days is the next Monday.
+ */
+async function addReportsAndGoals() {
+  const monday = T + 5 * 86_400_000;
+  const first = await ensureWeeklyReport(monday);
+  expect(first.status).toBe('created');
+  await finalizeReportDraft(first.week, null, monday);
+  expect((await ensureWeeklyReport(monday + WEEK_MS)).status).toBe('created');
+  await setGoals({ week_active_days: 6, week_minutes: 120 }, monday);
+  expect(await db.weekly_reports.count()).toBe(1);
+  expect(await db.report_drafts.count()).toBe(1);
+}
+
+/** Reports and goals of another account are never on this device or the server (decision 0009). */
+async function expectNoReportsOrGoals() {
+  expect(await db.weekly_reports.count()).toBe(0);
+  expect(await db.report_drafts.count()).toBe(0);
+  expect((await db.settings.get('settings'))!.goals ?? null).toBeNull();
+  expect(server.rowsOf('weekly_reports')).toHaveLength(0);
+  expect(JSON.stringify(server.rowsOf('settings'))).not.toContain('"week_active_days":6');
 }
 
 /** A guest device with its own data. */
@@ -239,6 +268,7 @@ describe('account linking', () => {
 
   it('"kartları kopyala" copies notes and senses as new cards without any study history', async () => {
     const other = await otherAccountDevice();
+    await addReportsAndGoals();
     const otherLogs = await db.review_logs.count();
     expect(otherLogs).toBeGreaterThan(3);
     const img = await saveDevice();
@@ -321,10 +351,14 @@ describe('account linking', () => {
     expect(server.rowsOf('notes')).toHaveLength(2);
     expect(server.rowsOf('senses')).toHaveLength(3);
     expect(server.rowsOf('cards').filter((c) => c.deleted_at == null)).toHaveLength(cards.length);
+
+    // v0.3 İP7: the other account's weekly reports, waiting report and goals stay behind.
+    await expectNoReportsOrGoals();
   });
 
   it('"bu hesabın verisiyle başla" keeps only the account on this device', async () => {
     await otherAccountDevice();
+    await addReportsAndGoals();
     const img = await saveDevice();
     await accountWithData();
     await loadDevice(img);
@@ -336,17 +370,39 @@ describe('account linking', () => {
     expect(await db.review_logs.count()).toBe(1);
     expect((await db.settings.get('settings'))!.daily_new_limit).toBe(25);
     expect(server.rowsOf('notes')).toHaveLength(1);
+    await expectNoReportsOrGoals();
   });
 
   it("another account's leftover settings are not carried into an account", async () => {
     await resetDb();
     await db.transaction('rw', db.meta, () => setMeta(META.userId, OTHER));
-    await updateSettings({ daily_new_limit: 3 }, T);
+    // v0.3 İP8: the other account's reminder setting stays behind as well.
+    await updateSettings({ daily_new_limit: 3, notify: { enabled: true, mode: 'fixed', hour: 9 } }, T);
+    // v0.3 İP7: and so do its goals.
+    await setGoals({ week_active_days: 6 }, T);
     configureLink({ transport: server, engine: engine() });
     await linkAccount(USER); // nothing local but settings: no question
     expect(getLinkState()).toMatchObject({ phase: 'done' });
     expect(await getCurrentUserId()).toBe(USER);
     expect((await db.settings.get('settings'))!.daily_new_limit).toBe(10);
+    expect((await db.settings.get('settings'))!.notify ?? null).toBeNull();
+    expect(JSON.stringify(server.rowsOf('settings'))).not.toContain('"notify":{"enabled":true');
+    expect((await db.settings.get('settings'))!.goals ?? null).toBeNull();
+    expect(JSON.stringify(server.rowsOf('settings'))).not.toContain('week_active_days');
+  });
+
+  it('a guest’s weekly reports and goals go with the guest data to the account', async () => {
+    await guestDevice();
+    const rec = (await db.cards.toArray()).find((c) => c.card_type === 'recognition')!;
+    await answerCard({ card_id: rec.id, rating: Rating.Good, duration_ms: 2000 }, T);
+    await addReportsAndGoals();
+    configureLink({ transport: server, engine: engine() });
+    await linkAccount(USER);
+    expect(getLinkState()).toMatchObject({ phase: 'done' });
+    expect(server.rowsOf('weekly_reports').map((r) => r.user_id)).toEqual([USER]);
+    expect((await db.settings.get('settings'))!.goals).toEqual({ week_active_days: 6, week_minutes: 120 });
+    // The waiting report stays on the device and gets its comment later.
+    expect(await db.report_drafts.count()).toBe(1);
   });
 
   it("another account's data is never copied silently into an empty account", async () => {

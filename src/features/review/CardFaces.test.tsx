@@ -58,6 +58,26 @@ describe('card faces', () => {
     expect(speech.onSpeak).not.toHaveBeenCalled();
   });
 
+  it('a per-sense recognition card (split leech) lists only its own sense on the back', async () => {
+    const speech = { available: true, onSpeak: vi.fn(), speakText: vi.fn() };
+    const base = await viewOf('recognition');
+    const own = { ...base.senses[0]!, id: 's-own', sense_no: 2, meaning_tr: 'tören günü' };
+    const view: CardView = {
+      ...base,
+      card: { ...base.card, sense_id: own.id },
+      senses: [base.senses[0]!, own],
+      sense: own,
+    };
+    renderRoute(<CardBack view={view} isNew={false} speech={speech} />);
+    expect(await screen.findByText('tören günü')).toBeInTheDocument();
+    expect(screen.queryByText('yıldönümü')).not.toBeInTheDocument();
+    cleanup();
+    // The note's own recognition card still lists every sense.
+    renderRoute(<CardBack view={{ ...view, card: base.card }} isNew={false} speech={speech} />);
+    expect(await screen.findByText('yıldönümü')).toBeInTheDocument();
+    expect(screen.getByText('tören günü')).toBeInTheDocument();
+  });
+
   it('cloze: no translation or sentence playback on the front, both on the back', async () => {
     const speech = { available: true, onSpeak: vi.fn(), speakText: vi.fn() };
     const view = await viewOf('cloze');

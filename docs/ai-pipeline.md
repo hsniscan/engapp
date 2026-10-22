@@ -5,7 +5,7 @@ Server side of "Kart oluşturma ve AI çıkarma hattı" in `plan-v0.1.md`. Code:
 two Deno entrypoints `supabase/functions/ai-extract/index.ts` and `ai-enrich/index.ts`.
 Client: `src/ai/client.ts`.
 
-Prompt versions: **`extract-v4`**, **`enrich-v2`** (`_shared/prompts.ts`); the level job's
+Prompt versions: **`extract-v5`**, **`enrich-v2`** (`_shared/prompts.ts`); the level job's
 **`level-guess-v1`** and **`level-tr-v1`** (`_shared/level-job.ts`, see "Level job"). Any change to a
 prompt or a response schema bumps the version (the chunk cache is keyed by it) and is
 copied here; `src/ai/docs-sync.test.ts` fails when this file and the code differ.
@@ -55,10 +55,11 @@ Response (`extractResponse` in `_shared/contracts.ts`):
 
 ```json
 {
-  "prompt_version": "extract-v4",
+  "prompt_version": "extract-v5",
   "cache_hit": false,
   "ai_called": true,
   "model": "gemini-3.8-flash",
+  "topics": ["health", "daily_life"],
   "candidates": [
     {
       "term": "give up",
@@ -86,7 +87,8 @@ Response (`extractResponse` in `_shared/contracts.ts`):
         "cefr_list": null,
         "cefr_reason_tr": null,
         "zipf": null
-      }
+      },
+      "false_friend": null
     }
   ],
   "counts": {
@@ -100,6 +102,10 @@ Response (`extractResponse` in `_shared/contracts.ts`):
   "usage": { "used": 12, "limit": 200 }
 }
 ```
+
+`topics` (extract-v5): 0–2 topic keys of the chunk. `false_friend` (extract-v5): the AI
+false-friend note stored for the candidate's sense (`{id, tr_word, en_meaning_tr,
+tr_meaning_tr, tr_meaning_en, strength, note_tr}`), or null.
 
 `match` is relative to the lexicon before the request: `known_sense` (sense existed),
 `new_sense` (term existed, sense added), `new_term` (both added). `lexicon_hit` is true
@@ -249,7 +255,32 @@ responseMimeType:"application/json", responseJsonSchema, maxOutputTokens}}`
   INVALID_ARGUMENT for `maxItems: 30` on this schema (observed Oct 2026); the limits are
   in the prompts and enforced by the server.
 
-## Extract prompt (`extract-v4`)
+## Extract prompt (`extract-v5`)
+
+`extract-v5` (v0.3 İP2, decision 0020) adds two things to the same call (no extra call):
+
+- **`topics`** (top level, first in the schema so a cut-off answer keeps it): one or two keys
+  of the fixed topic list (`_shared/topics-contract.ts`, the same list as
+  `src/domain/topics.ts`). Unknown keys are dropped (`cleanChunkTopics`); a missing or bad
+  value means no topics. The response carries them as `topics`; the device collects the
+  chunks' topics on the import job and, when the last chunk is in, stores
+  `aggregateTopics(...)` in `sources.topics` (v0.2 İP7's field, decision 0015).
+- **`false_friend_tr`** on every new sense: `null`, or `{tr_word, tr_meaning_tr, strength,
+  note_tr}` for a Turkish look-alike with another meaning ("actually" ~ "aktüel"). The server
+  keeps it only when the Turkish word sounds like the term (`looksBorrowed`, the level job's
+  sound check), its meaning is not the sense's Turkish meaning (a borrowed word is not a
+  trap) and the text is clean Turkish (`cleanFalseFriend`); otherwise it is dropped without
+  dropping the candidate. Accepted ones are stored in the shared `lexicon_pair_notes`
+  (`kind = 'false_friend'`, the sense id, `content_key` = the Turkish word, content in the
+  shape of the hand-written list with `tr_meaning_en: null`, model and `extract-v5`), and
+  every candidate whose sense has such a note carries it as `false_friend` (also on a chunk
+  cache hit). The device keeps them in its `lexicon_pair_notes` cache and shows them in the
+  card's false-friend strip next to the hand-written ones (a hand-written note for the same
+  Turkish word wins).
+
+The selection rules are unchanged from `extract-v4`, so the golden set
+(`data/golden/extract/recorded/`, recorded with `extract-v4`) still measures the selection;
+see "Smart extraction on the device".
 
 `extract-v4` (v0.2 İP4, smart extraction) aims the selection at the learner's level: the user
 message gains `TARGET_LEVEL` (the level above `LEVEL`, computed by the server from the
@@ -296,6 +327,9 @@ You are an expert lexicographer who builds English-to-Turkish vocabulary flashca
 TASK
 Read TEXT and select the words and multi-word expressions that are most worth learning for a learner at CEFR level LEVEL. TARGET_LEVEL is the next level above LEVEL (for C2 it is C2). Return them in "candidates" as defined by the response schema: at most 30, the most useful first. Return fewer, or none, when TEXT has few useful items.
 
+TOPICS
+Set "topics" to the one or two topics TEXT is mainly about, most important first, from this list: daily_life, technology, science, business, health, education, travel, food, sports, nature, arts, literature, film, games, politics, law. Use an empty list when no topic fits (for example a list of unrelated words).
+
 VOCABULARY LISTS
 If TEXT is a vocabulary list or glossary (numbered or bulleted entries, each usually a term followed by an example sentence, e.g. "12 bad Be careful of bad people."), the learner chose these words: return EVERY entry, in the order of the list, including easy entries, entries below LEVEL and entries above TARGET_LEVEL, at most 150. The selection rules below do not apply to a list, except that proper nouns are skipped. Use the entry's own example sentence as source_sentence; if an entry has no example sentence, use the entry's text as it stands in TEXT. Skip headings, page numbers and other lines that are not entries.
 
@@ -315,12 +349,13 @@ FIELDS OF EACH CANDIDATE
 - source_sentence: the complete sentence from TEXT that contains the term, copied character for character. Do not correct, shorten, re-punctuate or merge lines. If the sentence is longer than about 300 characters, copy only the clause containing the term, still verbatim.
 - sentence_tr: a natural, fluent Turkish translation of source_sentence as a good translator would write it, not word for word. Translate all of source_sentence and nothing more: no notes, no alternatives, no quotation marks around it.
 - confidence: 0 to 1, how sure you are that the term, its sense and the Turkish meaning are correct for this sentence.
-- known_sense: KNOWN_SENSES lists senses that already exist in the dictionary, one per line as "<ref> | <term> | <part of speech> | <English gloss>". If the term is listed there and its meaning in this sentence is one of the listed senses, set known_sense to that ref (for example "s3") and set pos, gloss_en, meaning_tr, ipa and cefr_guess to null: that content exists already and must not be written again. A ref may only be used for the same term. Otherwise set known_sense to null and fill in the new sense:
+- known_sense: KNOWN_SENSES lists senses that already exist in the dictionary, one per line as "<ref> | <term> | <part of speech> | <English gloss>". If the term is listed there and its meaning in this sentence is one of the listed senses, set known_sense to that ref (for example "s3") and set pos, gloss_en, meaning_tr, ipa, cefr_guess and false_friend_tr to null: that content exists already and must not be written again. A ref may only be used for the same term. Otherwise set known_sense to null and fill in the new sense:
 - pos: one of: noun, verb, adjective, adverb, phrasal verb, idiom, phrase, preposition, conjunction, pronoun, determiner, interjection.
 - gloss_en: a short English definition (3-10 words, no final period) in learner's-dictionary style that tells this sense apart from the term's other senses, e.g. "the land beside a river", "an organization that keeps and lends money". Use simple, common words (B1 vocabulary) and do not use the term itself in the gloss.
 - meaning_tr: the Turkish equivalent as a good bilingual dictionary gives it: short (1-4 words; at most two alternatives separated by ", "), natural, accurate, lower-case except proper nouns, and the same part of speech as the English (verbs as infinitives: "vazgeçmek", "karşılaşmak"; adjectives as adjectives: "isteksiz"; nouns as nouns: "kıyı"). Translate this specific sense, not the most frequent meaning of the word. No explanations, no parentheses, no English, no quotation marks.
 - ipa: IPA transcription of the whole term between slashes, General American, e.g. "/rɪˈlʌktənt/", "/ɡɪv ˈʌp/". Use null if you are not sure.
 - cefr_guess: the CEFR level (A1, A2, B1, B2, C1 or C2) at which a typical Turkish-speaking learner of English meets and learns this sense. Rate this sense, not the word's most common one. A word Turkish has borrowed with the same meaning ("television" ~ televizyon) is easier; a word that looks like a Turkish word with another meaning ("actually" ~ aktüel) is harder.
+- false_friend_tr: null in most cases. Fill it in only when a common Turkish word looks or sounds like the term but means something clearly different, so that a Turkish learner is likely to misread this sense: tr_word is the Turkish word; tr_meaning_tr is what the Turkish word means, in Turkish (1-4 words); strength is "full" when the two meanings are unrelated and "partial" when they overlap but differ in an important way; note_tr is one short Turkish sentence that helps, or null. Set it for e.g. "actually" ~ "aktüel" (güncel), "magazine" ~ "mağaza" (dükkân), "fabric" ~ "fabrika" (üretim yeri), "pension" ~ "pansiyon" (küçük otel), "sympathetic" ~ "sempatik" (cana yakın). Leave it null for e.g. "television" ~ "televizyon", "hotel" ~ "otel" and "economy" ~ "ekonomi" (same meaning: a borrowed word is not a false friend), and for "advice" or "reluctant" (no Turkish word looks like them).
   If the term itself appears in KNOWN_SENSES (with other senses), set ipa to null.
 
 RULES
@@ -349,6 +384,31 @@ Response schema (`responseJsonSchema`):
 {
   "type": "object",
   "properties": {
+    "topics": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "daily_life",
+          "technology",
+          "science",
+          "business",
+          "health",
+          "education",
+          "travel",
+          "food",
+          "sports",
+          "nature",
+          "arts",
+          "literature",
+          "film",
+          "games",
+          "politics",
+          "law"
+        ]
+      },
+      "description": "1-2 topics of TEXT"
+    },
     "candidates": {
       "type": "array",
       "items": {
@@ -364,7 +424,11 @@ Response schema (`responseJsonSchema`):
           },
           "term_type": {
             "type": "string",
-            "enum": ["word", "phrase", "pattern"]
+            "enum": [
+              "word",
+              "phrase",
+              "pattern"
+            ]
           },
           "source_sentence": {
             "type": "string",
@@ -380,28 +444,80 @@ Response schema (`responseJsonSchema`):
             "maximum": 1
           },
           "known_sense": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "ref from KNOWN_SENSES or null"
           },
           "pos": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "null when known_sense is set"
           },
           "gloss_en": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "null when known_sense is set"
           },
           "meaning_tr": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "null when known_sense is set"
           },
           "ipa": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "null when known_sense is set or unsure"
           },
           "cefr_guess": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "A1, A2, B1, B2, C1 or C2; null when known_sense is set"
+          },
+          "false_friend_tr": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "a Turkish look-alike with another meaning; usually null",
+            "properties": {
+              "tr_word": {
+                "type": "string"
+              },
+              "tr_meaning_tr": {
+                "type": "string"
+              },
+              "strength": {
+                "type": "string",
+                "enum": [
+                  "full",
+                  "partial"
+                ]
+              },
+              "note_tr": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "tr_word",
+              "tr_meaning_tr",
+              "strength",
+              "note_tr"
+            ]
           }
         },
         "required": [
@@ -416,12 +532,16 @@ Response schema (`responseJsonSchema`):
           "gloss_en",
           "meaning_tr",
           "ipa",
-          "cefr_guess"
+          "cefr_guess",
+          "false_friend_tr"
         ]
       }
     }
   },
-  "required": ["candidates"]
+  "required": [
+    "topics",
+    "candidates"
+  ]
 }
 ```
 

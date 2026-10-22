@@ -1,10 +1,11 @@
 // Notes that belong to an English term in a language pair (`lexicon_pair_notes`): for now the
-// hand-written "yanıltıcı benzer" (false friend) list. Pure: parsing of the reviewable
-// Markdown table, lookup by term and the dismiss/report filter.
+// hand-written "yanıltıcı benzer" (false friend) list and, since extract-v5, the false friends
+// the extraction model found for new senses. Pure: parsing of the reviewable Markdown table,
+// lookup by term, merging and the dismiss/report filter.
 import { normalizeTerm } from './normalize.ts';
 
 export type LangPair = 'en-tr';
-export type PairNoteKind = 'false_friend' | 'mnemonic_suggestion';
+export type PairNoteKind = 'false_friend' | 'mnemonic_suggestion' | 'contrast';
 
 export interface FalseFriendContent {
   /** The Turkish look-alike ("aktüel"). */
@@ -121,6 +122,62 @@ export function falseFriendsFor(
   const list: readonly FalseFriendNote[] =
     'get' in notes ? (notes.get(norm) ?? []) : notes.filter((n) => n.term_norm === norm);
   return list.filter((n) => !hidden.has(n.key));
+}
+
+interface PairNoteRowLike {
+  kind: string;
+  status: string;
+  term_norm: string;
+  content: Record<string, unknown>;
+  curated: boolean;
+}
+
+/**
+ * A false friend the extraction model found (extract-v5, a cached lexicon_pair_notes row) as
+ * a warning. Null for other kinds, retired and malformed rows.
+ */
+export function falseFriendOfRow(row: PairNoteRowLike, term: string): FalseFriendNote | null {
+  if (row.kind !== 'false_friend' || row.status !== 'active') return null;
+  const c = row.content;
+  const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null);
+  const trWord = str(c.tr_word);
+  const enTr = str(c.en_meaning_tr);
+  const trTr = str(c.tr_meaning_tr);
+  if (!trWord || !enTr || !trTr) return null;
+  return {
+    key: falseFriendKey(row.term_norm, trWord),
+    term,
+    term_norm: row.term_norm,
+    lang_pair: 'en-tr',
+    kind: 'false_friend',
+    curated: row.curated,
+    content: {
+      tr_word: trWord,
+      en_meaning_tr: enTr,
+      tr_meaning_tr: trTr,
+      tr_meaning_en: str(c.tr_meaning_en),
+      strength: c.strength === 'full' ? 'full' : 'partial',
+      note_tr: str(c.note_tr),
+    },
+  };
+}
+
+/**
+ * The hand-written warnings first; a model-found one only when the list has none for the same
+ * Turkish word (same key), and each key once (several senses may carry the same word).
+ */
+export function mergeFalseFriends(
+  curated: readonly FalseFriendNote[],
+  found: readonly FalseFriendNote[],
+): FalseFriendNote[] {
+  const out = [...curated];
+  const keys = new Set(curated.map((n) => n.key));
+  for (const n of found) {
+    if (keys.has(n.key)) continue;
+    keys.add(n.key);
+    out.push(n);
+  }
+  return out;
 }
 
 /** Index by term_norm for constant-time lookups on the card back. */

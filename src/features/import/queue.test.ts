@@ -72,6 +72,24 @@ describe('import queue', () => {
     expect(await listImportCandidates(job.id)).toHaveLength(FAKE_SPECS.length);
   });
 
+  it('extract-v5: stores the chunk topics, the text topics and the local cache keeps them', async () => {
+    const h = harness();
+    const extract = h.deps.extract;
+    h.deps.extract = async (input) => ({ ...(await extract(input)), topics: ['technology'] });
+    const chunks = chunkText(fakeText(), 1500);
+    const job = await createImportJob({ kind: 'text', title: 'T', chunks, level: 'B1' });
+    await processImportQueue(h.deps);
+    const j = (await getImportJob(job.id))!;
+    expect(j.chunk_topics).toEqual(chunks.map(() => ['technology']));
+    expect((await db.sources.get(j.source_id))?.topics).toEqual(['technology']);
+    // The same text again comes from the local chunk cache, topics included.
+    const again = await createImportJob({ kind: 'text', title: 'T2', chunks, level: 'B1' });
+    const calls = h.calls.length;
+    await processImportQueue(h.deps);
+    expect(h.calls.length).toBe(calls);
+    expect((await db.sources.get((await getImportJob(again.id))!.source_id))?.topics).toEqual(['technology']);
+  });
+
   it('the same text a second time makes no AI call (acceptance criterion 8)', async () => {
     const h = harness();
     const chunks = chunkText(fakeText(), 1500);

@@ -86,7 +86,8 @@ const median = (a: number[]) => [...a].sort((x, y) => x - y)[Math.floor(a.length
 const p95 = (a: number[]) => [...a].sort((x, y) => x - y)[Math.ceil(a.length * 0.95) - 1]!;
 const r = (n: number) => Math.round(n * 10) / 10;
 
-// 10,000 cards (headroom; a 90 s restore) runs locally, on CI only with E2E_PERF_10K=1.
+// 10,000 cards (headroom; the restore alone is timed by restore-perf.spec.ts) runs locally,
+// on CI only with E2E_PERF_10K=1.
 const SIZES = process.env.CI && !process.env.E2E_PERF_10K ? [1_000] : [1_000, 10_000];
 
 for (const size of SIZES) {

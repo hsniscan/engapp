@@ -62,6 +62,7 @@ export class FakeServer implements SyncTransport {
     'decks',
     'level_tests',
     'known_terms',
+    'weekly_reports',
   ]);
   registryAvailable = true;
 
@@ -118,7 +119,8 @@ export class FakeServer implements SyncTransport {
         res.rejected.push({ table: it.table, id: p.id, code: '22023', message: 'unknown table' });
         continue;
       }
-      const insertOnly = it.table === 'review_logs' || it.table === 'practice_logs' || it.table === 'level_tests';
+      const insertOnly =
+        it.table === 'review_logs' || it.table === 'practice_logs' || it.table === 'level_tests' || it.table === 'weekly_reports';
       if (insertOnly && it.op === 'delete') {
         res.rejected.push({ table: it.table, id: p.id, code: '42501', message: 'logs are append-only' });
         continue;
@@ -127,7 +129,12 @@ export class FakeServer implements SyncTransport {
       const cur = this.rows.get(k);
       p.user_id = this.userId;
       if (insertOnly) {
-        if (!cur) this.rows.set(k, { table: it.table, row: p, seq: ++this.seq });
+        // weekly_reports: one row per user and week; a second device's row for the same week
+        // is skipped like a repeat (trigger weekly_reports_one_per_week, migration 20261023000900).
+        const sameWeek =
+          it.table === 'weekly_reports' &&
+          [...this.rows.values()].some((r) => r.table === 'weekly_reports' && r.row.week === p.week);
+        if (!cur && !sameWeek) this.rows.set(k, { table: it.table, row: p, seq: ++this.seq });
         res.acked.push(p.id);
         continue;
       }
@@ -185,7 +192,13 @@ export class FakeServer implements SyncTransport {
   purgeTombstones(): number {
     let n = 0;
     for (const [k, r] of this.rows) {
-      if (r.table !== 'review_logs' && r.table !== 'practice_logs' && r.table !== 'level_tests' && r.row.deleted_at != null) {
+      if (
+        r.table !== 'review_logs' &&
+        r.table !== 'practice_logs' &&
+        r.table !== 'level_tests' &&
+        r.table !== 'weekly_reports' &&
+        r.row.deleted_at != null
+      ) {
         this.purgedThrough = Math.max(this.purgedThrough, r.seq);
         this.rows.delete(k);
         n++;
