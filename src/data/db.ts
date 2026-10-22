@@ -30,6 +30,7 @@ import type {
   WeeklyReport,
 } from '../domain/types';
 import type { CachedImage } from '../domain/images';
+import type { WordBankEntry } from '../domain/wordBank';
 import { addPullBackfill } from './backfill';
 
 /**
@@ -68,6 +69,7 @@ export class EngDb extends Dexie {
   weekly_reports!: EntityTable<WeeklyReport, 'id'>;
   report_drafts!: EntityTable<ReportDraft, 'week'>;
   images!: EntityTable<CachedImage, 'id'>;
+  word_bank!: EntityTable<WordBankEntry, 'id'>;
 
   constructor(name = 'engapp') {
     super(name);
@@ -283,6 +285,28 @@ export class EngDb extends Dexie {
     // value, domain/syncMerge.ts).
     this.version(21)
       .stores({ images: 'id, sense_id, fetched_at' })
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
+    // v22 (v0.4 İP8, picture recall cards; 23+ belong to the other v0.4 packages): cards may
+    // now have card_type 'image' and the settings row gains image_cards (optional, absent =
+    // on). No new table or index. An older app version dropped a pulled picture card as
+    // invalid and stripped image_cards from settings: re-pull both once (equal HLC → the
+    // server's set values, domain/syncMerge.ts). The picture cards of senses whose pictures are
+    // already cached are made after start-up (data/imageCards.ts reconcileImageCards needs the
+    // sync writer, which an upgrade transaction cannot use).
+    this.version(22)
+      .stores({})
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['cards', 'settings']));
+    // v24 (v0.4 wave 2, Kelime Bankası, decision 0038; 22, 23 and 25 belong to the other
+    // packages): `word_bank`, the device's copy of public.word_bank (shared system content,
+    // read-only like lexicon_cache; pulled by server_seq into meta.word_bank_cursor). A new
+    // table and nothing synced changes, so no row is rewritten.
+    this.version(24).stores({ word_bank: 'id, cefr, lemma_norm' });
+    // v25 (v0.4 smart new-card order, docs/decisions/0039; 22–24 belong to other v0.4
+    // packages): the settings row gains new_card_order (optional, absent = 'smart'). A device
+    // that pulled settings while it ran an older version dropped it: re-pull settings once
+    // (equal HLC → the server's set value, domain/syncMerge.ts). No new table or index.
+    this.version(25)
+      .stores({})
       .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
   }
 }

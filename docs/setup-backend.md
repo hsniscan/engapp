@@ -104,6 +104,8 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 | `IMAGE_DAILY_LIMIT`         | pictures a user may ask for per UTC day [`10`]                                                            |
 | `CLAUDE_IMAGE_MODEL`        | model that draws pictures [`claude-opus-5-5`]                                                             |
 | `CLAUDE_CHECK_MODEL`        | model that scores and checks pictures [`claude-haiku-5-5`]                                                |
+| `CLAUDE_WORDBANK_MODEL`     | model of the word bank job (step 14) [`CLAUDE_CHECK_MODEL`]                                               |
+| `WORD_BANK_NIGHTLY`         | `true`: the word bank job also runs every night (step 14) [off]                                           |
 
 `ALLOWED_ORIGINS` is the list of web origins allowed to call the AI functions
 (comma-separated, exact, no trailing slash). Preview deploys on other origins cannot
@@ -175,21 +177,34 @@ Locally: create `.env.local` in the repository root with the same two lines
 
 `.github/workflows/level-jobs.yml` ("Level job") runs every night at 02:30 UTC and can be
 started by hand (**Actions → Level job → Run workflow**; `dry_run` reports counts without
-writing or calling the model, `max_calls` caps the run). It stores the level of every
-lexicon sense, asks the model for level guesses of older senses and runs the
-Turkish-learner check of the word lists, about 100 model calls per night from the system
-budget (`AI_SYSTEM_DAILY_LIMIT`), never from a user's. The first nights work through the
-word lists (roughly 100 calls); after that a night needs only a few calls. Details:
-docs/ai-pipeline.md ("Level job").
+writing or calling the model, `max_calls` caps the run, `no_ai` runs only the first step).
 
-It needs `GEMINI_API_KEY` and the project's service-role key: set the
-`SUPABASE_SERVICE_ROLE_KEY` secret (step 4), or let the job read it through the
-Management API with `SUPABASE_ACCESS_TOKEN` (a personal token has this access; a scoped
-token needs "API keys: read"). The key is masked in the log and never stored.
+1. **Resolve (no AI, every run).** Stores the level of every lexicon sense and the word
+   frequency (`lexicon_terms.zipf`) of every term from the reference data.
+2. **AI steps.** Level guesses for senses outside the word lists and the Turkish-learner check
+   of the lists, about 100 model calls per night from the system budget
+   (`AI_SYSTEM_DAILY_LIMIT`), never from a user's. The first nights work through the word lists;
+   after that a night needs only a few calls. They stop after 40 minutes, so the last resolve
+   fits in the job's 60 minutes; the next night continues. Details: docs/ai-pipeline.md
+   ("Level job").
 
-Check after the first run: the job ends green and its log prints the counts; in **SQL
-Editor**, `select count(*) from public.ref_word_levels where tr_checked_at is not null;`
-grows each night.
+Step 1 needs only the project's service-role key: set the `SUPABASE_SERVICE_ROLE_KEY` secret
+(step 4), or let the job read it through the Management API with `SUPABASE_ACCESS_TOKEN` (a
+personal token has this access; a scoped token needs "API keys: read"). The key is masked in
+the log and never stored. Step 2 also needs `GEMINI_API_KEY`; without it the run still ends
+green, with a warning that the AI steps were skipped. If an AI step fails, the job still
+resolves what was stored, then ends red.
+
+The schedule only runs from `main`, and GitHub may start a scheduled run late or (rarely) drop
+it. The level job reached `main` on 22 October after that day's 02:30 slot, so its first
+scheduled run was the night of 23 October; until then all `lexicon_terms.zipf` were empty.
+Nothing depends on that: the picture jobs read frequencies from the reference data directly
+(decision 0037). See "Job health" (step 13) for how a job that stopped running shows up.
+
+Check after the first run: the job ends green and its summary prints the counts; in **SQL
+Editor**, `select count(*) filter (where zipf is not null), count(*) from public.lexicon_terms;`
+shows most terms with a frequency, and
+`select count(*) from public.ref_word_levels where tr_checked_at is not null;` grows each night.
 
 To give guests and offline devices the corrections too (they use the level file shipped
 with the app): `SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… node scripts/system-jobs.ts
@@ -258,8 +273,18 @@ button answers that pictures are not available.
    the report is kept as the run's `pilot-report` artifact. Judge them in the app's review
    screen before letting the nightly job run on its own.
 6. **Nightly.** `.github/workflows/images.yml` runs every night at 01:30 UTC: it collects the
-   previous night's batch (checks, stores pictures for review), scores new words and sends the
-   next batch (half price). Other jobs by hand: `visualize`, `submit`, `collect`.
+   previous night's batch (checks, stores pictures for review) and scores new words. It sends
+   the next batch (half price) only when the repository variable **`IMAGE_BULK`** is `true`:
+   set it (**Settings → Secrets and variables → Actions → Variables**) after you approved the
+   pilot (plan: at least 80 % good). Without it the run ends with a notice and nothing new is
+   drawn; to stop bulk drawing again, delete the variable or set it to `false`. Other jobs by
+   hand: `visualize`, `submit` (sends a batch even without `IMAGE_BULK`), `collect`.
+7. **Bulk order (İP9).** The nightly batch takes queued senses in this order: senses in your
+   cards, then in other users' cards, then words within your level ±1 (your level in
+   **Ayarlar → Seviye**) most frequent first, then the rest of the 5,000 most frequent words.
+   Only meanings scored 2 or 3 for "can be drawn" are queued; a user request and a redraw from
+   the review screen always come first. About 200 pictures a night (`count` / `--max`), so the
+   2,000–2,500 planned senses take 1–2 months inside the monthly cap (decision 0037).
 
 Optional variables: `IMAGE_DAILY_LIMIT` (pictures per user per day, default 10),
 `CLAUDE_IMAGE_MODEL`, `CLAUDE_CHECK_MODEL` (defaults in `_shared/image-models.ts`). The picture
@@ -268,6 +293,53 @@ workflow also needs the service-role key, exactly like the level job (step 9).
 Check: **Edge Functions** lists `ai-image`; in **SQL Editor**,
 `select * from public.image_budget_status();` shows this month's cap and spending, and
 `select status, count(*) from public.lexicon_images group by 1;` grows after each night.
+
+## 13. Job health (v0.4)
+
+Both nightly jobs (Level job, Picture jobs) write a heartbeat at the end of every run into
+`public.job_runs` (service role only, no user data). Each run reads the others' rows: a job
+without a good run for 36 hours shows a **warning** in the next run's log and summary
+(`Job 'images' has not finished well for 49 hours`). By hand, in **SQL Editor**:
+`select job, status, last_run_at, last_ok_at, runs, details from public.job_runs;`.
+
+When a job is late: **Actions → the workflow** — is it disabled (GitHub disables schedules in
+a repository without activity for 60 days: **Enable workflow**), did the last run fail (open
+its log), is a secret missing? A run started by hand writes the heartbeat too.
+
+Also nightly, by pg_cron: `engapp-purge-usage` (03:27 UTC) deletes read-aloud and picture
+usage counters older than 90 days, as the privacy policy says. **Integrations → Cron** lists
+it next to `engapp-purge-tombstones`; without pg_cron run
+`select public.purge_usage_counters(90);` now and then.
+## 14. Kelime Bankası (v0.4)
+
+The word bank (decision 0038) is filled once by a job: Turkish meanings and an example sentence
+for every word of the level lists (~10,000 rows), written to the shared `public.word_bank`
+table that every device, guests too, downloads. Until it has run, the app's Kelime Bankası
+screen says it is still empty (nothing else is affected).
+
+Needs: the migration `20261026001100_word_bank.sql` deployed (step 5), `ANTHROPIC_API_KEY`
+(step 12.1), and the service-role key exactly like the level job (step 9). It spends from the
+same monthly Claude credit as the pictures (`CLAUDE_MONTHLY_CREDIT_USD`, 80 % cap); the whole
+list is expected to cost about **$2** (upper bound reserved per batch ≈ $8).
+
+1. **Plan.** **Actions → Word bank job → Run workflow**, job `plan`. Sends nothing; the log
+   shows how many words are left, how many the shared dictionary already covers and the
+   estimated cost. A `submit` with **dry_run** ticked also shows the reserved amount.
+2. **Run.** Same workflow, job `run`: collects finished batches (none the first time), stores
+   the words the dictionary covers, sends the rest as one Message Batch (half price) and
+   prints the plan again.
+3. **Collect.** A batch usually ends within an hour (at most 24 h). Run job `run` again: it
+   checks the answers, stores the rows and sends again the few that were rejected. Repeat
+   until `plan` shows 0 words left (normally two or three runs). Words rejected three times are
+   left out (counted as `failed` in the log and in `word_bank_jobs`).
+4. Optional: set the repository variable `WORD_BANK_NIGHTLY` to `true` to run step 3 every
+   night at 03:45 UTC (useful when the lists change); leave it unset otherwise.
+
+Optional variable: `CLAUDE_WORDBANK_MODEL` (else `CLAUDE_CHECK_MODEL`, else the default Haiku).
+
+Check in **SQL Editor**: `select cefr, count(*) from public.word_bank group by 1 order by 1;`
+and `select state, count(*) from public.word_bank_jobs group by 1;`. In the app, open
+Ekle → "Kelime Bankası'nı aç": the list downloads once and then works offline.
 
 ## Manual deploy without GitHub (alternative)
 

@@ -59,6 +59,14 @@ const children: RouteObject[] = [
     }),
   },
   {
+    // Kelime Bankası (decision 0038): the leveled list words, ready to add.
+    path: 'kelime-bankasi',
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/wordbank/WordBankPage')).WordBankPage,
+    }),
+  },
+  {
     path: 'library',
     HydrateFallback: () => null,
     lazy: async () => ({ Component: (await import('@/features/cards/LibraryPage')).LibraryPage }),
@@ -116,7 +124,13 @@ const children: RouteObject[] = [
   },
   {
     path: 'admin/images',
-    handle: { immersive: true } satisfies RouteHandle,
+    // Entered from Ayarlar → Gelişmiş: the top bar's ✕ goes back there (the page has no
+    // back arrow of its own, like every other immersive screen).
+    handle: {
+      immersive: true,
+      exitTo: '/settings#gelismis',
+      exitLabelKey: 'imageReview.close',
+    } satisfies RouteHandle,
     HydrateFallback: () => null,
     lazy: async () => ({
       Component: (await import('@/features/imageReview/ImageReviewPage')).ImageReviewRoute,

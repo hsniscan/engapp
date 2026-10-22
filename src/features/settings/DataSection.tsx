@@ -21,6 +21,18 @@ interface PendingRestore {
 const nf = new Intl.NumberFormat('tr-TR');
 
 /**
+ * A performance.measure entry (read by the restore timing e2e test, also visible in the
+ * browser's performance panel). Never throws.
+ */
+function timing(name: string, start: number): void {
+  try {
+    performance.measure(name, { start });
+  } catch {
+    // Old browsers without measure options: no timing, nothing else changes.
+  }
+}
+
+/**
  * "Veri": JSON backup and restore, CSV export, last backup, persistent storage and usage,
  * and "Çalışma geçmişini sıfırla".
  */
@@ -76,9 +88,11 @@ export function DataSection() {
   const onFile = async (file: File | undefined) => {
     if (!file) return;
     setBusy('read');
+    const started = performance.now();
     try {
       const json = await file.text();
       const res = await verifyBackup(json);
+      timing('engapp:restore-read', started);
       if (!res.ok) {
         toast({
           title: t('restore.invalidTitle'),
@@ -110,8 +124,10 @@ export function DataSection() {
   const restore = async (mode: RestoreMode) => {
     if (!pending) return;
     setBusy(mode);
+    const started = performance.now();
     try {
       const res = await restoreBackup(pending.json, mode);
+      timing('engapp:restore-apply', started);
       setPending(null);
       toast({
         title: t('restore.done'),

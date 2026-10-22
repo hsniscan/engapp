@@ -5,7 +5,7 @@ import { PULL_BACKFILL_KEY } from './backfill';
 import { EngDb } from './db';
 
 /** The current schema version; bump with every new Dexie version. */
-const LATEST = 21;
+const LATEST = 25;
 
 describe('Dexie schema', () => {
   it('opens with every table and the indexes the queries rely on', async () => {
@@ -13,7 +13,7 @@ describe('Dexie schema', () => {
     await d.open();
     expect(d.verno).toBe(LATEST);
     expect(d.tables.map((t) => t.name).sort()).toEqual(
-      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs', 'decks', 'theme_previews', 'level_tests', 'known_terms', 'anki_imports', 'lexicon_pair_notes', 'weekly_reports', 'report_drafts', 'images'].sort(),
+      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs', 'decks', 'theme_previews', 'level_tests', 'known_terms', 'anki_imports', 'lexicon_pair_notes', 'weekly_reports', 'report_drafts', 'images', 'word_bank'].sort(),
     );
     const idx = (table: string) => d.table(table).schema.indexes.map((i) => i.name);
     expect(idx('decks')).toEqual(expect.arrayContaining(['sort', 'deleted_at']));
@@ -424,7 +424,7 @@ describe('Dexie schema', () => {
     for (const [name, cursor, expected] of [
       // 'sources' comes from v12 (Anki import), 'notes' from v19 (contrast cards) and
       // 'weekly_reports' from v20, which also run on this v11 database.
-      ['upgrade-v17-synced', 77, ['sources', 'settings', 'notes', 'weekly_reports']],
+      ['upgrade-v17-synced', 77, ['sources', 'settings', 'notes', 'weekly_reports', 'cards']],
       ['upgrade-v17-fresh', 0, undefined],
     ] as const) {
       const old = new Dexie(name);
@@ -450,7 +450,7 @@ describe('Dexie schema', () => {
   it('v19 upgrade re-pulls notes once for contrast cards, only on devices that pulled', async () => {
     for (const [name, cursor, expected] of [
       // v20 (weekly reports) runs after v19 and adds its own tables.
-      ['upgrade-v19-synced', 77, ['notes', 'settings', 'weekly_reports']],
+      ['upgrade-v19-synced', 77, ['notes', 'settings', 'weekly_reports', 'cards']],
       ['upgrade-v19-fresh', 0, undefined],
     ] as const) {
       const old = new Dexie(name);
@@ -474,7 +474,7 @@ describe('Dexie schema', () => {
 
   it('v20 upgrade adds the weekly report tables, keeps settings and re-pulls reports and settings once', async () => {
     for (const [name, cursor, expected] of [
-      ['upgrade-v20-synced', 91, ['settings', 'weekly_reports']],
+      ['upgrade-v20-synced', 91, ['settings', 'weekly_reports', 'cards']],
       ['upgrade-v20-fresh', 0, undefined],
     ] as const) {
       // A database as İP6 left it (version 19), with the backfill of v12–v19 already done.
@@ -503,7 +503,8 @@ describe('Dexie schema', () => {
   });
   it('v21 upgrade adds the picture cache, keeps settings and user content, and re-pulls settings once', async () => {
     for (const [name, cursor, expected] of [
-      ['upgrade-v21-synced', 93, ['settings']],
+      // v22 (picture cards) runs after v21 and re-pulls cards as well.
+      ['upgrade-v21-synced', 93, ['settings', 'cards']],
       ['upgrade-v21-fresh', 0, undefined],
     ] as const) {
       // A database as v0.3 left it (version 20), with every earlier backfill done.
@@ -527,6 +528,97 @@ describe('Dexie schema', () => {
       expect(await d.images.count()).toBe(0);
       expect(d.images.schema.primKey.name).toBe('id');
       expect(d.images.schema.indexes.map((i) => i.name)).toEqual(expect.arrayContaining(['sense_id', 'fetched_at']));
+      expect(await d.outbox.count()).toBe(0);
+      d.close();
+      await d.delete();
+    }
+  });
+
+  it('v22 upgrade keeps cards and settings untouched and re-pulls them once for picture cards', async () => {
+    for (const [name, cursor, expected] of [
+      ['upgrade-v22-synced', 120, ['cards', 'settings']],
+      ['upgrade-v22-fresh', 0, undefined],
+    ] as const) {
+      // A database as İP3 left it (version 21), with every earlier backfill done.
+      const old = new Dexie(name);
+      old.version(1).stores({
+        cards: 'id, note_id, sense_id, [state+due], due, card_type, deleted_at',
+        settings: 'id',
+        meta: 'key',
+      });
+      old.version(21).stores({ images: 'id, sense_id, fetched_at' });
+      await old.open();
+      const card = makeCard({ id: 'c1', note_id: 'n1', sense_id: 's1', card_type: 'production', unlocked: false });
+      await old.table('cards').add(card);
+      await old.table('settings').add({ id: 'settings', theme: 'dark', show_image_front: true });
+      await old.table('images').add({ id: 'i1', sense_id: 'lx1', variant: 0, svg: '<svg/>', alt_tr: 'x', status: 'approved', created_at: 'x', fetched_at: 1 });
+      await old.table('meta').put({ key: 'sync_cursor', value: cursor });
+      old.close();
+
+      const d = new EngDb(name);
+      await d.open();
+      expect(d.verno).toBe(LATEST);
+      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
+      // No image_cards key means "on"; no row is rewritten and nothing is queued.
+      expect(await d.settings.get('settings')).toEqual({ id: 'settings', theme: 'dark', show_image_front: true });
+      expect(await d.cards.get('c1')).toEqual(card);
+      expect(await d.images.count()).toBe(1);
+      expect(d.cards.schema.indexes.map((i) => i.name)).toEqual(expect.arrayContaining(['card_type', 'sense_id']));
+      expect(await d.outbox.count()).toBe(0);
+      d.close();
+      await d.delete();
+    }
+  });
+
+  it('v24 upgrade adds the word bank copy and leaves everything else alone', async () => {
+    // A database as the picture-card package left it (version 22), with notes and settings.
+    // (From 21 the v22 step would add its own pull backfill.)
+    const old = new Dexie('upgrade-v24');
+    old.version(1).stores({ notes: 'id, term_norm', settings: 'id', meta: 'key' });
+    old.version(22).stores({ images: 'id, sense_id, fetched_at' });
+    await old.open();
+    await old.table('notes').add({ id: 'n1', term: 'apple', term_norm: 'apple' });
+    await old.table('settings').add({ id: 'settings', level: 'B1' });
+    await old.table('meta').put({ key: 'sync_cursor', value: 12 });
+    old.close();
+
+    const d = new EngDb('upgrade-v24');
+    await d.open();
+    expect(d.verno).toBe(LATEST);
+    expect(await d.notes.get('n1')).toEqual({ id: 'n1', term: 'apple', term_norm: 'apple' });
+    expect(await d.settings.get('settings')).toEqual({ id: 'settings', level: 'B1' });
+    expect((await d.meta.get('sync_cursor'))?.value).toBe(12);
+    // v24 itself queues no re-pull; only the later v25 step adds settings.
+    expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(['settings']);
+    expect(await d.word_bank.count()).toBe(0);
+    expect(d.word_bank.schema.primKey.name).toBe('id');
+    expect(d.word_bank.schema.indexes.map((i) => i.name)).toEqual(expect.arrayContaining(['cefr', 'lemma_norm']));
+    expect(await d.outbox.count()).toBe(0);
+    d.close();
+    await d.delete();
+  });
+
+  it('v25 upgrade keeps settings and re-pulls them once for new_card_order', async () => {
+    for (const [name, cursor, expected] of [
+      ['upgrade-v25-synced', 95, ['settings']],
+      ['upgrade-v25-fresh', 0, undefined],
+    ] as const) {
+      // A database as the word-bank package left it (version 24), with every earlier backfill
+      // done (from 21 the v22 step would add cards to the backfill as well).
+      const old = new Dexie(name);
+      old.version(1).stores({ settings: 'id', meta: 'key' });
+      old.version(24).stores({ word_bank: 'id, cefr, lemma_norm' });
+      await old.open();
+      await old.table('settings').add({ id: 'settings', theme: 'dark', show_image_front: true });
+      await old.table('meta').put({ key: 'sync_cursor', value: cursor });
+      old.close();
+
+      const d = new EngDb(name);
+      await d.open();
+      expect(d.verno).toBe(LATEST);
+      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
+      // No new_card_order key means "smart"; the row is untouched.
+      expect(await d.settings.get('settings')).toEqual({ id: 'settings', theme: 'dark', show_image_front: true });
       expect(await d.outbox.count()).toBe(0);
       d.close();
       await d.delete();

@@ -28,7 +28,7 @@ export interface DeleteDialogProps {
   onDone?: (path: string) => void;
 }
 
-const ITEMS = ['cards', 'history', 'settings', 'reports', 'notifications', 'account'] as const;
+const ITEMS = ['cards', 'history', 'settings', 'reports', 'notifications', 'pictures', 'account'] as const;
 
 /**
  * "Hesabımı ve verilerimi sil" / "Bu cihazdaki verileri sil": what goes, an optional JSON

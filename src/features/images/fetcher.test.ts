@@ -125,4 +125,23 @@ describe('fetchImages', () => {
     await fetchImages(s.deps);
     expect(await db.images.count()).toBe(0);
   });
+
+  it('v0.4 İP8: a fetched approved picture makes the picture card; the server dropping it takes the card away', async () => {
+    const picture = async () => (await db.cards.where('card_type').equals('image').toArray()).filter((c) => c.deleted_at === null);
+    const s = server([row(0, { status: 'review' })]);
+    await fetchImages(s.deps);
+    expect(await picture()).toHaveLength(0);
+    s.rows.splice(0, 1, row(0));
+    s.tick(IMAGE_REFRESH_MS + 1);
+    await fetchImages(s.deps);
+    expect(await picture()).toHaveLength(1);
+    // Offline the cache stays and so does the card.
+    expect(await fetchImages({ ...s.deps, isOnline: () => false })).toEqual({ status: 'offline' });
+    expect(await picture()).toHaveLength(1);
+    s.rows.splice(0, 1);
+    s.tick(IMAGE_REFRESH_MS + 1);
+    await fetchImages(s.deps);
+    expect(await db.images.count()).toBe(0);
+    expect(await picture()).toHaveLength(0);
+  });
 });

@@ -20,11 +20,11 @@ select is_empty($$ select table_name from public.user_owned_columns() where not 
 select is_empty($$
   select table_name::text || '.' || column_name::text from information_schema.columns
   where table_schema = 'public'
-    and (table_name like 'lexicon\_%' or table_name like 'ref\_%'
-         or table_name in ('ai_system_usage', 'sync_tables', 'push_cron_config'))
+    and (table_name like 'lexicon\_%' or table_name like 'ref\_%' or table_name like 'word\_bank%'
+         or table_name in ('ai_system_usage', 'sync_tables', 'push_cron_config', 'job_runs'))
     and (column_name in ('user_id', 'owner', 'owner_id', 'created_by', 'requested_by', 'email', 'device_id')
          or column_name like '%user%')
-$$, 'shared tables (lexicon, reference data, system budget) have no user column');
+$$, 'shared tables (lexicon, reference data, word bank, job runs, system budget) have no user column');
 select is_empty($$
   select table_name from public.user_owned_columns()
   where table_name like 'lexicon\_%' or table_name like 'ref\_%'

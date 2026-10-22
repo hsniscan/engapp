@@ -74,6 +74,7 @@ describe('DeleteDialog (account)', () => {
       /Çalışma geçmişin/,
       /Ayarların/,
       /Haftalık raporların/,
+      /Görsel isteklerin/,
       /Bildirim kayıtların/,
     ])
       expect(within(dialog).getByText(text)).toBeInTheDocument();

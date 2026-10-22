@@ -3,8 +3,10 @@
 # visual-v1, then submit the next batch. On demand: one of the jobs, or the pilot (50 random
 # concrete senses drawn now and stored for review, with their cost). Every model call is
 # reserved against the monthly picture budget first (80 % of CLAUDE_MONTHLY_CREDIT_USD).
-# Without the ANTHROPIC_API_KEY secret the run is skipped with a notice. Details:
-# docs/ai-image.md, docs/setup-backend.md.
+# Without the ANTHROPIC_API_KEY secret the run is skipped with a notice. The nightly run
+# submits a new batch only when the repository variable IMAGE_BULK is 'true' (set after the
+# owner approves the pilot); queue order: decision 0037. Every step ends with a heartbeat
+# (public.job_runs). Details: docs/ai-image.md, docs/setup-backend.md (steps 12, 13).
 #
 # Repository secrets:
 #   ANTHROPIC_API_KEY          Claude API key (optional until the owner adds it)
@@ -12,7 +14,7 @@
 #                              Without it the key is read through the Management API with
 #   SUPABASE_ACCESS_TOKEN      (needs the "API keys: Read" permission / a full-access token).
 # Repository variables (optional): CLAUDE_IMAGE_MODEL, CLAUDE_CHECK_MODEL,
-#   CLAUDE_MONTHLY_CREDIT_USD (default 100)
+#   CLAUDE_MONTHLY_CREDIT_USD (default 100), IMAGE_BULK ('true': nightly bulk drawing on)
 name: Picture jobs
 
 on:

@@ -53,6 +53,8 @@ export const BACKUP_FORMAT = 'engapp-backup';
 //    not defaulted, so files of every version restore and keep their checksum.
 // 9 (v0.3 İP7): weekly_reports (insert-only) and the optional settings.goals. Older files
 //    have no reports (restored as none) and no goals (none set).
+// v0.4 adds optional settings fields (show_image_front, new_card_order) without a version
+//    bump, like show_easy_candidates: absent means the default.
 export const BACKUP_SCHEMA_VERSION = 9;
 
 export interface BackupTables {

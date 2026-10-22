@@ -98,14 +98,33 @@ In this order; the first failure decides the redraw sentence:
 ## Nightly jobs
 
 `.github/workflows/images.yml`, 01:30 UTC: `collect`, then `visualize`, then `submit`
-(`scripts/img-batch.ts`). On demand one job, or the pilot (`scripts/img-pilot.ts`: N random
-nouns, verbs and adjectives with zipf ≥ 3, scored first when needed, drawn now, stored as
-`review`, with the cost of each picture and the total; the report is kept as a workflow
-artifact). Without `ANTHROPIC_API_KEY` the workflow ends with a notice.
+(`scripts/img-batch.ts`). `submit` runs in the nightly run only when the repository variable
+`IMAGE_BULK` is `true` (the owner sets it after approving the pilot; by hand, `submit` always
+sends). On demand one job, or the pilot (`scripts/img-pilot.ts`: N random nouns, verbs and
+adjectives with zipf ≥ 3 — no frequency floor while no term has a zipf yet — scored first when
+needed, drawn now, stored as `review`, with the cost of each picture and the total; the report
+is kept as a workflow artifact). Without `ANTHROPIC_API_KEY` the workflow ends with a notice.
+Every step that ends well writes a heartbeat (`public.job_runs`, setup-backend.md step 13).
 
-Queue priority (higher first): 4000 owner "redraw"; 3000 + 100 per distinct user for user
-requests; automatic ones 2000 in an admin's cards, 1000 + users in anyone's cards, otherwise
-zipf × 10. The plan's CEFR-proximity ranking comes with İP9.
+Queue priority (higher first; decision 0037, `20261026001010_image_priority.sql`, TypeScript
+twin `_shared/image-priority.ts`):
+
+| Priority | Who |
+|---|---|
+| 4000 | owner "redraw" from the review screen |
+| 3000 + 100 per user | user requests |
+| 2000 + users | auto: in an app admin's (the owner's) cards |
+| 1000 + users | auto: in anyone's cards |
+| 500 + zipf × 10 | auto: within the owner's CEFR level ±1 (`settings.level` of the admins) |
+| 100 + zipf × 10 | auto: the rest of the 5,000 most frequent lemmas (`ref_word_freq`) |
+| — | anything else is not queued automatically |
+
+Only senses with visualizability ≥ 2 are auto-queued. Zipf is `lexicon_terms.zipf`, else
+`ref_word_freq` directly (correct before the level job has filled `lexicon_terms.zipf`); with
+no frequency data at all every sense counts as "top 5,000". Each night `image_queue_auto`
+re-ranks the queued auto requests (a sense that entered someone's cards moves up; redraws and
+user requests are never touched) and queues new ones; `visual-v1` scores senses in the same
+order.
 
 ## Model calls
 

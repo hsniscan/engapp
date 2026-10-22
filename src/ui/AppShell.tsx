@@ -15,6 +15,12 @@ export interface AppShellProps {
    * close link instead. Feature routes opt in through their route `handle`.
    */
   immersive?: boolean;
+  /**
+   * Where the immersive bar's close (✕) link goes and what it is called. Default: home,
+   * "Oturumu bitir" (review, practice, level test). One close control per screen: immersive
+   * pages do not draw their own back link.
+   */
+  exit?: { to: string; label: string };
   /** Override the routed content (used by tests/the gallery); defaults to the router outlet. */
   children?: ReactNode;
 }
@@ -23,7 +29,7 @@ export interface AppShellProps {
  * Application frame. Phones: top bar (logo, sync, settings) + bottom tab bar.
  * ≥768 px: left rail; ≥1024 px: the rail widens to a labelled sidebar.
  */
-export function AppShell({ syncSlot, immersive = false, children }: AppShellProps) {
+export function AppShell({ syncSlot, immersive = false, exit, children }: AppShellProps) {
   const { t } = useTranslation();
   const location = useLocation();
   const outlet = useOutlet();
@@ -114,10 +120,10 @@ export function AppShell({ syncSlot, immersive = false, children }: AppShellProp
       <header className="safe-top sticky top-0 z-20 border-b border-border bg-canvas">
         <div className="mx-auto flex h-14 items-center gap-2 px-2 sm:px-4">
           {immersive ? (
-            <Tooltip content={t('review.endSession')}>
+            <Tooltip content={exit?.label ?? t('review.endSession')}>
               <Link
-                to="/"
-                aria-label={t('review.endSession')}
+                to={exit?.to ?? '/'}
+                aria-label={exit?.label ?? t('review.endSession')}
                 className="inline-flex size-11 items-center justify-center rounded-control text-fg-muted hover:bg-hover hover:text-fg"
               >
                 <Icon name="x" size={22} />

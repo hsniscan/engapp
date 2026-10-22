@@ -172,7 +172,8 @@
     },
     "moreStudy": "Study a bit more",
     "aheadBadge": "Tomorrow's cards",
-    "aheadEmptyTitle": "Tomorrow's cards are done"
+    "aheadEmptyTitle": "Tomorrow's cards are done",
+    "promptImage": "Find the word in the picture"
   },
   "examples": {
     "title": "Example sentences",
@@ -682,7 +683,12 @@
       "level": "Estimated level",
       "levelHint": "AI skips very basic words below this level.",
       "showEasy": "Show easy candidates open",
-      "showEasyHint": "When words are extracted from a text, those below your level come in a closed section. Turn this on to always show it open."
+      "showEasyHint": "When words are extracted from a text, those below your level come in a closed section. Turn this on to always show it open.",
+      "newOrder": "New word order",
+      "newOrderSmart": "Smart (recommended)",
+      "newOrderAdded": "Order added",
+      "newOrderSmartHint": "Words that fit your level and are common come first; words you added yourself and words of the text you are working on move ahead. Words that are easy to mix up never come on the same day.",
+      "newOrderAddedHint": "New cards come in the order you added them."
     },
     "levels": {
       "A1": "Beginner",
@@ -953,7 +959,8 @@
     "cardType": {
       "recognition": "Recognition",
       "production": "Production",
-      "cloze": "Cloze"
+      "cloze": "Cloze",
+      "image": "Picture recall"
     },
     "state": {
       "new": "New",
@@ -1251,6 +1258,7 @@
       "settings": "Your settings, goals and decks",
       "reports": "Your weekly reports",
       "notifications": "Your notification records and this device's notification subscription",
+      "pictures": "Your picture requests, your answers about pictures and your daily picture counter",
       "account": "Your account: Google sign-in, name, e-mail and profile photo link"
     },
     "device": "The copy on this device is deleted too and you are signed out.",
@@ -1656,7 +1664,9 @@
       "license": "CC BY-SA 4.0 (derived data, shared alike)."
     },
     "aiTitle": "AI estimates",
-    "aiBody": "Levels of words outside the lists and the corrections for Turkish learners are made with Google Gemini. They are estimates: a correction moves a list level by at most one step, and an estimate is bounded by the word's frequency. You can always change a word's level yourself."
+    "aiBody": "Levels of words outside the lists and the corrections for Turkish learners are made with Google Gemini. They are estimates: a correction moves a list level by at most one step, and an estimate is bounded by the word's frequency. You can always change a word's level yourself.",
+    "wordBankTitle": "Word bank",
+    "wordBankBody": "The word bank shows the words of the CEFR-J and Octanove lists. Their Turkish meanings and example sentences were generated once with Claude (Anthropic); where the shared dictionary already had a meaning, that one is used. Being derived from the Octanove data, the word bank is licensed CC BY-SA 4.0 too."
   },
   "levelTest": {
     "title": "Level test",
@@ -2214,6 +2224,22 @@
     "cleared": "Your goals are removed.",
     "clearAll": "Remove goals"
   },
+  "imageCard": {
+    "pos": "Part of speech: {{pos}}",
+    "settings": {
+      "label": "Picture recall cards",
+      "hint": "Once you recognise a meaning that has an approved picture, a new card opens: the picture on the front, you recall the English word. Pictures you hid or turned down never make a card."
+    },
+    "progress": {
+      "title": "What picture cards do",
+      "with": "Meanings with a picture card",
+      "without": "Meanings without one",
+      "sentence": "You recall the English word of meanings with a picture card {{with}} of the time; without one, {{without}}.",
+      "few": "The comparison needs at least {{min}} answers on each side. It will show up here as you study.",
+      "own": "The picture cards themselves: {{rate}} · {{answers}}",
+      "hint": "Counts the answers of your Turkish → English cards. Meanings with pictures are mostly concrete words, so the difference may not come from the picture alone."
+    }
+  },
   "images": {
     "newBadge": "New",
     "newBadgeLabel": "New picture, not reviewed yet",
@@ -2284,6 +2310,7 @@
     }
   },
   "imageReview": {
+    "close": "Leave picture review",
     "title": "Picture review",
     "intro": "Swipe right: approve. Left: reject. Down: redraw.",
     "shortcuts": "Keyboard: → approve, ← reject, ↓ redraw, Z undo.",
@@ -2312,5 +2339,58 @@
     },
     "undone": "Last decision undone: {{lemma}}",
     "failed": "The decision could not be saved; the picture is back in the queue."
+  },
+  "wordBank": {
+    "title": "Word bank",
+    "description": "Over 8,800 words from the CEFR-J and Octanove lists, by level, ready with their Turkish meaning and an example sentence: add the ones you like and get their cards.",
+    "level": "Level",
+    "search": "Search a word or meaning",
+    "pos": "Part of speech",
+    "posAll": "All parts of speech",
+    "showOwned": "Also show words I know or have cards for",
+    "countLevel_one": "{{level}}: {{count}} word",
+    "countLevel_other": "{{level}}: {{count}} words",
+    "countSearch_one": "{{count}} word found",
+    "countSearch_other": "{{count}} words found",
+    "listLabel": "Words",
+    "quickTitle_one": "Add {{count}} word from this level",
+    "quickTitle_other": "Add {{count}} words from this level",
+    "quickHint": "Mostly {{level}}, the rest easier words; at most one from the next level. Words you know or have cards for never come.",
+    "quickAction_one": "Add {{count}} word",
+    "quickAction_other": "Add {{count}} words",
+    "quickNone": "No new words left at this level.",
+    "add": "Add",
+    "addLabel": "Add {{term}}",
+    "select": "Select {{term}}",
+    "details": "{{term}}: meanings and examples",
+    "meaningsPick": "Meanings to add",
+    "known": "I know it",
+    "carded": "You have a card",
+    "selected_one": "{{count}} word selected",
+    "selected_other": "{{count}} words selected",
+    "selectionBar": "Selected words",
+    "addSelected": "Add selected",
+    "clearSelection": "Clear",
+    "addedOne": "{{term}} added",
+    "addedMany_one": "{{count}} word added",
+    "addedMany_other": "{{count}} words added",
+    "cardsCreated_one": "{{count}} card created.",
+    "cardsCreated_other": "{{count}} cards created.",
+    "nothingNew": "These words are already in your cards.",
+    "failed": "Could not add. Try again.",
+    "more_one": "Show {{count}} more word",
+    "more_other": "Show more ({{count}} more words)",
+    "noMatch": "No words for this selection.",
+    "loading": "Downloading the word bank…",
+    "emptyTitle": "The word bank is not downloaded yet",
+    "emptyOffline": "The first time needs the internet. Once downloaded it works offline.",
+    "emptyFailed": "The download did not work just now. Try again in a moment.",
+    "emptyNoBackend": "This installation has no word bank.",
+    "retry": "Try again",
+    "credit": "Word lists: CEFR-J Wordlist 1.5 (© Tono Laboratory, TUFS) and Octanove Vocabulary Profile C1/C2 (Octanove Labs, CC BY-SA 4.0). Meanings and example sentences were generated once with AI.",
+    "creditLink": "Sources",
+    "entryTitle": "Not sure what to add?",
+    "entryBody": "The word bank has thousands of words for your level, with meanings and examples.",
+    "entryLink": "Open the word bank"
   }
 }

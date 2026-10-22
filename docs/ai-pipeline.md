@@ -11,7 +11,8 @@ prompt or a response schema bumps the version (the chunk cache is keyed by it) a
 copied here; `src/ai/docs-sync.test.ts` fails when this file and the code differ.
 
 Pictures (v0.4: `image-v1`, `visual-v1`, `imagecheck-v1`) use Claude, not Gemini, and have
-their own page: [ai-image.md](ai-image.md) (decisions 0029, 0030).
+their own page: [ai-image.md](ai-image.md) (decisions 0029, 0030). The word bank job
+(`wordbank-v1`, decision 0038) also uses Claude: see "Word bank" below.
 
 ## Rules
 
@@ -713,8 +714,10 @@ Its report, `docs/quality/golden-extract.md`, is a file snapshot (`pnpm vitest r
 **system AI budget** (`ai_system_consume()`, `AI_SYSTEM_DAILY_LIMIT`, default 100 calls per
 UTC day, table `ai_system_usage`), never a user's `ai_usage`. About 100 items per call.
 
-1. **Resolve** every lexicon sense with the rule (no AI); only changed rows are written
-   (`lexicon_set_levels()`), and each write moves the row's lexicon cursor, so devices pull it.
+1. **Resolve** every lexicon sense with the rule, and every term's `zipf` from the reference
+   data (no AI; runs on every run, also without `GEMINI_API_KEY`); only changed rows are
+   written (`lexicon_set_levels()`), and each write moves the row's lexicon cursor, so devices
+   pull it.
 2. **Guess** (`level-guess-v1`) for senses outside the lists that were never asked
    (`cefr_guess_at` is null: senses from before `extract-v3`).
 3. **Turkish-learner check** (`level-tr-v1`) of the list entries, words the lexicon has
@@ -728,10 +731,14 @@ UTC day, table `ai_system_usage`), never a user's `ai_usage`. About 100 items pe
    (`clampTrCorrection()`, again in `listLevel()`, and by a CHECK on
    `ref_word_levels`). Results are stored once per list entry (`tr_*` columns), for the
    list level they were made for (`tr_base_cefr`); a new list version ignores them.
-4. **Resolve** again, so the corrections reach the lexicon at once.
+4. **Resolve** again, so the corrections reach the lexicon at once (also after an AI error).
 
-The run stops calling the model when the budget is used up, the provider answers with a
-quota error, or a call fails; the next run continues. `--dry-run` reports counts without
+Steps 2–3 are skipped with a warning when `GEMINI_API_KEY` is missing (or `--no-ai`). The run
+stops calling the model when the budget is used up, the provider answers with a quota error, a
+call fails, or `--max-minutes` (40 in the workflow) has passed; the next run continues. An
+unexpected error in steps 2–3 still runs step 4, then ends the run red. Orchestration and
+tests: `scripts/lib/level-run.ts`; every run ends with a heartbeat (`public.job_runs`,
+decision 0037). `--dry-run` reports counts without
 writing or calling the model. `node scripts/system-jobs.ts export-tr` writes the stored
 corrections to `data/levels/level-tr.tsv`; `node scripts/build-levels.ts` then adds them to
 the client level file (guests and offline see them after the next app release).
@@ -1075,5 +1082,103 @@ Rules:
   "required": [
     "items"
   ]
+}
+```
+
+## Word bank (`wordbank-v1`)
+
+The Kelime Bankası job (decision 0038), a system job with no user input:
+`scripts/word-bank.ts` (logic `scripts/lib/word-bank-jobs.ts`, prompt
+`scripts/lib/word-bank-prompt.ts`), run by the "Word bank job" workflow. Claude, not Gemini.
+
+- **Input.** One list word per request: `{lemma, pos, level}`, plus `given` (the shared
+  lexicon's meanings for that word and part of speech that still need an example, numbered)
+  and on a retry a `note` naming the previous answer's problem. Nothing else is sent.
+- **Lexicon first (rule 6).** Words whose lexicon senses all have a fitting shared example are
+  stored without a model call. With `given` meanings the model only writes their examples.
+  Only words with no lexicon sense get new meanings, which are stored in the lexicon through
+  `lexicon_upsert` before the bank row links them.
+- **Model.** `CLAUDE_WORDBANK_MODEL`, else `CLAUDE_CHECK_MODEL`, else the default check model
+  of `_shared/image-models.ts` (Haiku), via the **Message Batches API** (half price),
+  `max_tokens` 3000, adaptive thinking, effort `low`, structured output with the schema below,
+  the system prompt cached.
+- **Budget.** The batch's upper bound is reserved on the monthly Claude budget (purpose
+  `wordbank`, 80 % of `CLAUDE_MONTHLY_CREDIT_USD`, shared with pictures) before it is sent and
+  settled with the real cost at collect. Expected ≈ $0.0002 per word.
+- **Checks** (`parseWordAnswer`): the schema; Turkish meaning ≤ 120 characters of clean text;
+  English definition present; example ≤ 20 words, clean, containing the word (exact, a
+  separable phrasal verb, or a regular ending: `exampleSpan`); a Turkish translation that is not
+  the English sentence; no two meanings that are near-duplicates (`isDuplicateSense`, same
+  gloss key); at most 3. A failing meaning is dropped; an answer with none left is asked again
+  (at most 3 attempts).
+
+### System prompt
+
+```text
+You write flashcard content for Turkish speakers who learn English words.
+
+You receive one English word as JSON: lemma, pos (part of speech), level (CEFR level of the word) and sometimes given: meanings from our dictionary, each with a number n and a Turkish meaning.
+
+If given is present: write one example for each given meaning, exactly as that Turkish meaning says. Do not add other meanings and do not change the given ones.
+
+If given is absent: list the 1 to 3 most common meanings of the word for this part of speech, most common first. Meanings must really differ; never split synonyms into separate meanings: put up to three Turkish equivalents of one meaning together, separated by ", " (for "invitation": "davet, davetiye", not two meanings). Skip rare, technical and slang meanings. For each meaning give:
+- meaning_tr: the Turkish meaning, short, lower case unless a proper noun, no explanations in brackets.
+- gloss_en: a short English definition of that meaning (at most 12 words).
+
+For every meaning write:
+- example_en: one natural, simple English sentence of at most 12 words that a learner at the given level understands. It must contain the word itself, either unchanged or with a regular ending (-s, -es, -ed, -d, -ing, -er, -est). Do not use irregular forms (went, children, better). The sentence must show this meaning, not another one.
+- example_tr: a natural Turkish translation of example_en.
+
+Content: everyday, neutral situations. No real people, brands, politics, religion, violence or adult topics.
+
+Answer with JSON only: {"lemma": string, "senses": [{"given": number, "meaning_tr": string, "gloss_en": string, "example_en": string, "example_tr": string}]}. lemma: the word as it is normally written (capital letter only for days, months, languages and the like). given: the number n of the given meaning, or 0 for a meaning you listed yourself; for a given meaning, meaning_tr and gloss_en may be "".
+```
+
+### Response schema
+
+```json
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "lemma",
+    "senses"
+  ],
+  "properties": {
+    "lemma": {
+      "type": "string"
+    },
+    "senses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "given",
+          "meaning_tr",
+          "gloss_en",
+          "example_en",
+          "example_tr"
+        ],
+        "properties": {
+          "given": {
+            "type": "integer"
+          },
+          "meaning_tr": {
+            "type": "string"
+          },
+          "gloss_en": {
+            "type": "string"
+          },
+          "example_en": {
+            "type": "string"
+          },
+          "example_tr": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
 }
 ```

@@ -33,6 +33,8 @@ export interface TodayFacts {
   reviewedNoteIds: Set<Id>;
   /** Cards whose first non-undone answer is today. */
   newIntroducedToday: number;
+  /** Notes of those cards, in the order they were introduced (smart new-card order). */
+  introducedNoteIds: Id[];
   timeMs: number;
 }
 
@@ -43,21 +45,29 @@ export async function loadTodayFacts(cfg: DayConfig, now: Millis): Promise<Today
   const all = await logsByCard(cardIds);
   const answers: ReviewLog[] = [];
   let newIntroducedToday = 0;
+  const introduced: ReviewLog[] = [];
   for (const logs of all.values()) {
     const eff = effectiveLogs(logs);
-    if (eff.length && eff[0]!.reviewed_at >= bounds.start && eff[0]!.reviewed_at < bounds.end) newIntroducedToday++;
+    if (eff.length && eff[0]!.reviewed_at >= bounds.start && eff[0]!.reviewed_at < bounds.end) {
+      newIntroducedToday++;
+      introduced.push(eff[0]!);
+    }
     for (const l of eff) if (l.reviewed_at >= bounds.start && l.reviewed_at < bounds.end) answers.push(l);
   }
   answers.sort((a, b) => a.reviewed_at - b.reviewed_at);
   const reviewedCardIds = new Set(answers.map((l) => l.card_id));
   const cards = await db.cards.bulkGet([...reviewedCardIds]);
-  const reviewedNoteIds = new Set(cards.filter((c): c is Card => !!c).map((c) => c.note_id));
+  const noteOf = new Map(cards.filter((c): c is Card => !!c).map((c) => [c.id, c.note_id]));
+  const reviewedNoteIds = new Set(noteOf.values());
+  introduced.sort((a, b) => a.reviewed_at - b.reviewed_at || (a.id < b.id ? -1 : 1));
+  const introducedNoteIds = [...new Set(introduced.map((l) => noteOf.get(l.card_id)).filter((x): x is Id => !!x))];
   return {
     bounds,
     answers,
     reviewedCardIds,
     reviewedNoteIds,
     newIntroducedToday,
+    introducedNoteIds,
     timeMs: answers.reduce((a, l) => a + l.duration_ms, 0),
   };
 }

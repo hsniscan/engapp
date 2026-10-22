@@ -10,7 +10,7 @@ only from `@/data` (`src/data/index.ts`).
 | --- | --- | --- | --- |
 | notes | yes | `id`, `term_norm`, `lexicon_term_id`, `updated_at`, `deleted_at`, `*tags` | One live note per `term_norm` (enforced in actions, not by a unique index, so account merges can keep duplicates flagged `possible_duplicate`). `level_override` (A1–C2 or null) is the user's own level for the word; null = the computed one (Dexie v4 filled null on old rows). |
 | senses | yes | `id`, `note_id`, `[note_id+lexicon_sense_id]`, `lexicon_sense_id`, `deleted_at` | `sense_no` is the display order. `meaning_tr_override` beats `meaning_tr`. `span` is `[start, end)` in `source_sentence`. `source_sentence_tr` is the user's Turkish translation of that sentence (AI or typed; null when none, dropped with its sentence; never in the shared lexicon; Dexie v2 filled null on old rows). |
-| cards | yes | `id`, `note_id`, `sense_id`, `[state+due]`, `due`, `card_type`, `deleted_at` | FSRS fields in UTC ms. `unlocked`, `suspended`. |
+| cards | yes | `id`, `note_id`, `sense_id`, `[state+due]`, `due`, `card_type`, `deleted_at` | FSRS fields in UTC ms. `unlocked`, `suspended`. `card_type`: `recognition` (per note, or per sense after a split), `production`, `cloze`, `image` (v0.4 İP8, decision 0036: picture recall, one per sense, id derived from the sense id; see "Picture recall cards"). |
 | review_logs | yes, insert-only | `id`, `card_id`, `reviewed_at`, `undo_of` | Never updated or deleted. An undo is a new row with `undo_of`. `origin` (v0.3 İP1): `anki` for answers imported from an Anki revlog; absent/null = `app` (not indexed, Dexie v12 fills nothing). Imported answers are never offered for undo. |
 | practice_logs | yes, insert-only | `id`, `card_id`, `practiced_at`, `session_id` | One row per answer in a practice round: `result` (`known`/`unknown`), `mode` (the source: `hard`, `recent`, `tag`; free text, 1–32 chars), `session_id`, `duration_ms` (≤ 60 s), `device_id`. Never read by scheduling, `daily_activity` or the streak (Dexie v3, decision 0010). |
 | decks | yes | `id`, `sort`, `deleted_at` | Smart decks (Dexie v8, ADR 0016): `name` (1–60 chars on the client), `filter` (versioned JSON, see "Smart decks"), `sort` (1..n). The deck is a saved filter: no note ids are stored, membership is computed on the device. |
@@ -20,16 +20,17 @@ only from `@/data` (`src/data/index.ts`).
 | report_drafts | no | `week` | A report waiting for its AI comment: `report` (the future `weekly_reports` row), `attempts`, `next_attempt_at`, `last_error`. Local only and cleared with the account's data. |
 | known_terms | yes | `id`, `term_norm`, `deleted_at` | Words the user knows without a card: `term_norm` (same key as `notes.term_norm`), `source` (`test`/`preview`/`manual`/`auto`), `cefr_at_mark`. One live row per `term_norm`; removing is a tombstone, marking again revives the row. |
 | sources | metadata | `id`, `created_at`, `*topics` | `kind`: `text`, `pdf` or (v0.3 İP1) `anki` (one row per imported file name, reused on a re-import; Dexie v12 re-pulls sources once). `topics`: topic keys of the text (`domain/topics.ts`, from the extract call; absent/null = unknown, `[]` = none; Dexie v7, decision 0015). |
-| settings | yes | `id = 'settings'` | Defaults: `daily_new_limit 10`, `request_retention 0.9`, `timezone` from the device, `day_start_hour 4`, `theme 'system'`, `voice 'en-US'`, `level 'B1'`. `interests` (picked topic keys; absent/null = never asked, `[]` = asked) and `muted_topics` (weight 0). Topic weights are computed on the device (`domain/profile.ts`), never stored (decision 0015). Level (decision 0017): `level_source` (`default`/`test`/`auto`/`manual`), `level_updated_at`, `level_locked`, `level_change` (the last automatic change and its reason, with `dismissed`). Dexie v9 set `level_source` to `manual` when the level was not B1. `show_easy_candidates` (default false; v0.2 İP4: open the import preview's "Kolay" section; absent or null = false, so older rows and backups need no change). v0.3 İP3 (decision 0021, all optional, absent = default): `daily_capacity_min` (20), `catchup_auto` (true), `vacation` (`{start, end}` local day keys, both included; null = none) and `vacation_history` (earlier vacations, for the streak). Personal FSRS parameters (v0.3 İP4, decision 0022): `fsrs_params` (21 FSRS-6 weights; null = ts-fsrs defaults), `fsrs_params_prev` (the params before the last adoption, for "Eski ayara dön"; null = defaults / nothing to revert) and `fsrs_opt_at` (epoch ms of the last check, adopted or not; drives the monthly offer); the last two are optional (absent = null) and Dexie v15 re-pulls settings once for them. A change of `fsrs_params` (here or pulled) replays every card from its logs. `goals` (v0.3 İP7, decision 0027; optional, absent or null = none): `{week_active_days?, week_minutes?, month_new_terms?}`. Dexie v20 re-pulls settings once for it. `show_image_front` (v0.4 İP3, decision 0031; optional, absent or null = off): also show the sense's picture on card fronts. Dexie v21 re-pulls settings once for it. |
+| settings | yes | `id = 'settings'` | Defaults: `daily_new_limit 10`, `request_retention 0.9`, `timezone` from the device, `day_start_hour 4`, `theme 'system'`, `voice 'en-US'`, `level 'B1'`. `interests` (picked topic keys; absent/null = never asked, `[]` = asked) and `muted_topics` (weight 0). Topic weights are computed on the device (`domain/profile.ts`), never stored (decision 0015). Level (decision 0017): `level_source` (`default`/`test`/`auto`/`manual`), `level_updated_at`, `level_locked`, `level_change` (the last automatic change and its reason, with `dismissed`). Dexie v9 set `level_source` to `manual` when the level was not B1. `show_easy_candidates` (default false; v0.2 İP4: open the import preview's "Kolay" section; absent or null = false, so older rows and backups need no change). v0.3 İP3 (decision 0021, all optional, absent = default): `daily_capacity_min` (20), `catchup_auto` (true), `vacation` (`{start, end}` local day keys, both included; null = none) and `vacation_history` (earlier vacations, for the streak). Personal FSRS parameters (v0.3 İP4, decision 0022): `fsrs_params` (21 FSRS-6 weights; null = ts-fsrs defaults), `fsrs_params_prev` (the params before the last adoption, for "Eski ayara dön"; null = defaults / nothing to revert) and `fsrs_opt_at` (epoch ms of the last check, adopted or not; drives the monthly offer); the last two are optional (absent = null) and Dexie v15 re-pulls settings once for them. A change of `fsrs_params` (here or pulled) replays every card from its logs. `goals` (v0.3 İP7, decision 0027; optional, absent or null = none): `{week_active_days?, week_minutes?, month_new_terms?}`. Dexie v20 re-pulls settings once for it. `show_image_front` (v0.4 İP3, decision 0031; optional, absent or null = off): also show the sense's picture on card fronts. Dexie v21 re-pulls settings once for it. `image_cards` (v0.4 İP8, decision 0036; optional, absent or null = on, false = off): picture recall cards. Dexie v22 re-pulls settings (and cards) once for it. `new_card_order` (v0.4, decision 0039; optional, absent or null = `smart`): `smart` or `added` ("Yeni kelime sırası"). Dexie v25 re-pulls settings once for it. |
 | outbox | no | `++seq`, `[table+row_id]`, `next_attempt_at` | Rows waiting to be pushed. |
 | daily_activity | no (derived) | `date` (local `YYYY-MM-DD`) | `reviews`, `new_cards`, `time_ms`, `review_answers`, `review_passed`, `completed`. |
-| meta | no | `key` | `device_id`, `user_id`, `hlc`, `sync_cursor`, `lexicon_cursor`, `lexicon_examples_cursor`, `server_practice_logs` (the server answered with `sync_pull_v3`), `server_examples`, `extra_new:<YYYY-MM-DD>` (extra new cards allowed that day, this device only), `family_dismissed_morphemes` (root/affix card suggestions the user closed), `server_tables` / `server_tables_checked_at` (late sync tables the server registry confirmed; when it was last asked), `pull_backfill` (tables to re-pull once, see sync-strategy.md; Dexie v11 adds notes, settings and sources on updated devices for the columns v0.1/İP1 stripped), `level_week:<user or guest>` (the week the weekly level update last ran), `level_test_offer_dismissed`, `load_warning_dismissed` (the day the home load warning was hidden; it stays hidden 7 days, decision 0021), `report_seen:<user or guest>` (the week whose report the user opened or whose home note they closed, decision 0027). |
+| meta | no | `key` | `device_id`, `user_id`, `hlc`, `sync_cursor`, `lexicon_cursor`, `lexicon_examples_cursor`, `server_practice_logs` (the server answered with `sync_pull_v3`), `server_examples`, `extra_new:<YYYY-MM-DD>` (extra new cards allowed that day, this device only), `family_dismissed_morphemes` (root/affix card suggestions the user closed), `server_tables` / `server_tables_checked_at` (late sync tables the server registry confirmed; when it was last asked), `pull_backfill` (tables to re-pull once, see sync-strategy.md; Dexie v11 adds notes, settings and sources on updated devices for the columns v0.1/İP1 stripped), `level_week:<user or guest>` (the week the weekly level update last ran), `level_test_offer_dismissed`, `load_warning_dismissed` (the day the home load warning was hidden; it stays hidden 7 days, decision 0021), `report_seen:<user or guest>` (the week whose report the user opened or whose home note they closed, decision 0027), `word_bank_cursor` / `word_bank_synced_at` (Kelime Bankası download, decision 0038). |
 | error_log | no | `++id`, `at` | Newest 200 rows are kept. |
 | lexicon_cache | no | `id`, `term_id`, `lemma_norm`, `updated_at` | Shared lexicon senses the user's senses reference (sync layer). Since Dexie v4 also `cefr`, `cefr_source`, `cefr_list`, `cefr_reason_tr`, `zipf` (word level, see "Word levels"); the v4 upgrade set `lexicon_cursor` back to 0 so they are pulled again with levels. |
 | chunk_cache, import_jobs, import_candidates | no | | Owned by the AI layer. Since Dexie v10 (v0.2 İP4, smart extraction) a candidate also has `cefr` / `cefr_source` (its sense's level), `bucket` (`for_you` / `easy` / `known` / `too_hard`; null until the job's last chunk is in), `from_list` (from a vocabulary-list chunk) and `rank` (display order); the v10 upgrade put rows of older jobs in `known` ("zaten var") or `for_you` with their selection unchanged. Decision 0018. |
 | anki_imports | no | `id` (= the import's source id), `created_at` | v0.3 İP1 (Dexie v12, decision 0019): one Anki import's counts, the note ids it created and the "Sözlükle eşleştir" queue (`enrich`: status, pending note ids, matched / term-only / unmatched, `paused_until`). Local only; cleared with the account's data. |
 | ref_cache | no | `key` | Static reference files fetched lazily, with their checksum. Currently `morphology`: word families, roots and affixes (decision 0014). Device-level: kept when switching or copying accounts (Dexie v6). |
 | images | no (read-only cache) | `id`, `sense_id`, `fetched_at` | v0.4 İP3 (Dexie v21, decision 0031): copies of `public.lexicon_images` rows the user may see (`approved`, and `review` rows of senses in their cards): `sense_id` (a **lexicon** sense id), `variant`, `svg` (stored light palette, sanitized again before it is shown), `alt_tr`, `status`, `created_at`, plus `fetched_at`. Capped at ~20 MB. Kept when switching or copying accounts; not in backups. |
+| word_bank | no (read-only copy) | `id` (`lemma_norm|pos`), `cefr`, `lemma_norm` | v0.4 Kelime Bankası (Dexie v24, decision 0038): copies of `public.word_bank` rows: `lemma_norm`, `pos`, `lemma`, `cefr`, `list_source`, `zipf`, `lexicon_term_id`, `senses` (1–3 `{meaning_tr, example_en, example_tr, sense_id}`). Pulled after `word_bank_cursor`; retired rows are deleted. Device-level: kept when switching or copying accounts; not in backups. |
 
 Every synced mutable row has `id` (UUID v7), `user_id` (null in guest mode), `created_at`,
 `updated_at`, `deleted_at` and `hlc`.
@@ -51,8 +52,8 @@ Every synced mutable row has `id` (UUID v7), `user_id` (null in guest mode), `cr
    `(reviewed_at, id)` and replay from an empty card created at `created_at`. The fuzz
    seed is `card id | review time | reps`, so replays match on every device.
    `recomputeAllCards` and `repairIntegrity` restore this invariant.
-4. **Unlock rule.** Recognition cards are always unlocked. A production or cloze card
-   is unlocked when the note's recognition card is in Review or Relearning, or when the
+4. **Unlock rule.** Recognition cards are always unlocked. A production, cloze or picture
+   (`image`) card is unlocked when the note's recognition card is in Review or Relearning, or when the
    card has its own history (`deriveUnlocked`). This rule is re-derived after answers,
    undo, sync and restore. When a note has more than one recognition card (a split or a
    reset, v0.3 İP6), the rule follows its primary one (`primaryRecognition`: live,
@@ -63,7 +64,8 @@ Every synced mutable row has `id` (UUID v7), `user_id` (null in guest mode), `cr
    card (decision 0014), and so has a contrast note (`term_type = 'contrast'`, "affect ↔
    effect", decision 0026). Split senses (one recognition card per sense, `sense_id` set)
    and reset copies are extra cards the user asked for; the card they replace stays,
-   suspended, with its logs.
+   suspended, with its logs. A sense with a usable picture also has 1 picture card (v0.4
+   İP8, decision 0036; not for root/affix or contrast notes).
 6. **HLC.** The format is `"<ms:15>:<counter:5>:<device_id>"`, and the strings compare
    lexicographically. The clock is stored in `meta.hlc` and advanced inside each write
    transaction. Remote and restored stamps are merged with `receive`, so the next local
@@ -87,8 +89,9 @@ ordinary `answerCard` calls.
 The queue is built in this order:
 1. Due (re)learning steps.
 2. Reviews due before the end of the day, oldest due first.
-3. New cards, by `created_at`. One new card follows every 5 reviews; this rhythm is kept
-   across rebuilds through the session counts.
+3. New cards, in the smart order (`domain/newOrder.ts`, decision 0039) or, with
+   `settings.new_card_order = 'added'`, by `created_at`. One new card follows every 5
+   reviews; this rhythm is kept across rebuilds through the session counts.
 
 Rules:
 - New cards are limited to `daily_new_limit + extra_new:<today>` minus the cards first
@@ -99,6 +102,17 @@ Rules:
 - Suspended, deleted and locked cards are excluded.
 - When nothing else is left, learning cards due within 20 minutes are shown early. Rebuild
   the queue after every answer.
+
+Smart new-card order (decision 0039): words typed in by hand in the last 7 days first (oldest
+first); then a mix by level against the learner's level X (about 60 % at X, 30 % below,
+at most 10 % at X+1, unknown level = X+1, nothing above X+1 while the pool allows), inside a
+band the active source (imported in the last 14 days, or a word started from it in the 7 days
+before today), word frequency, waiting time and a per-user daily jitter
+(`seed = hash(user id | day)`). Two confusable notes (same family or lemma, a derivation, a
+shared Turkish meaning, near spelling, a reported confusion, a contrast card and its terms, a
+cached false friend) are not introduced on one day while another card can take the place. The
+cards first answered today (`loadTodayFacts().introducedNoteIds`) seed the day's shares and
+conflicts, so a rebuilt queue continues the same sequence. Nothing of the order is stored.
 
 ## Practice rounds (`domain/practice.ts`)
 
@@ -302,6 +316,23 @@ Copying cards to another account does not copy them (decision 0009).
   lexicon sense id, `content_key` = "<smaller>|<larger>", `content = {a, b, difference_tr}`
   with each side `{sense_id, lemma, sentence_en, span, sentence_tr}`. Never user text.
 
+## Kelime Bankası (v0.4, decision 0038)
+
+- Dexie v24: the `word_bank` table (above) and the meta keys `word_bank_cursor` (highest
+  `server_seq` stored; 0 when the table is empty) and `word_bank_synced_at` (last finished
+  download; the screen asks again after 24 h). Nothing is pushed.
+- Server (migration `20261026001100_word_bank.sql`): `public.word_bank` (primary key
+  `(lemma_norm, pos)`; device columns as above plus `retired` and `server_seq`, readable by
+  `anon` and `authenticated`; bookkeeping columns `model`, `prompt_version`, `cost_usd`,
+  `created_at`, `updated_at` service-only), `word_bank_jobs` and `word_bank_batches` (service
+  role only), `word_bank_pending(limit)` and `word_bank_put(rows)` (service role only).
+  `image_budget_holds.purpose` gains `wordbank`.
+- Adding a word (`data/wordBank.ts` `addFromWordBank`) calls `addNoteWithSenses` with the term,
+  `lexicon_term_id` and per chosen sense `pos`, `meaning_tr`, `lexicon_sense_id`,
+  `source_sentence` (the example), `source_sentence_tr` and `span`. A word that already has a
+  live note gains only the senses it lacks. The rows are ordinary user notes from then on.
+- "Known" and "carded" (`getOwnedTerms`): live `known_terms` and live notes, by `term_norm`.
+
 ## Pictures (v0.4 İP3 and İP4, decisions 0031 and 0032)
 
 - Dexie v21: the `images` cache table (above) and a one-time re-pull of `settings` for
@@ -325,6 +356,31 @@ Copying cards to another account does not copy them (decision 0009).
   review, by variant, skipping rejected ones.
 - None of these rows is copied to another account (decision 0009).
 
+## Picture recall cards (v0.4 İP8, decision 0036)
+
+- `cards.card_type = 'image'`, `sense_id` = the user's sense; ordinary FSRS fields and review
+  logs. Id = UUID v8 of SHA-256 over ("cards", "image", sense id), so devices agree on it.
+- Exists (live) while `settings.image_cards` is not false, the sense and note are live, the
+  note is not recognition-only, the sense has a `lexicon_sense_id`, and a picture the card may
+  show is cached: the chosen one, else the first approved one not rejected
+  (`domain/imageCards.ts` `imageCardPicture`; a picture in review alone never counts).
+  Hidden / all rejected / only in review / none on the server / setting off → tombstoned
+  (revived with its FSRS state when the picture is back). Nothing cached and the server not
+  asked → left as it is. Rule: `planImageCards`; applied by `data/imageCards.ts`
+  `reconcileImageCards` after every picture fetch run, after a choice, hide or verdict, and
+  when the setting changes.
+- Created locked; `unlocked` follows `deriveUnlocked` like production cards (the recognition
+  card first reaches Review). A New card: counts against the daily new-card limit.
+- `getStudyQueue` leaves out picture cards whose picture is not cached (offline); the review
+  session also skips one whose picture cannot be shown.
+- Server: migration `20261026000800_image_cards.sql` widens the `cards.card_type` check and
+  adds `settings.image_cards boolean` (null = on). Dexie v22: no schema change; one re-pull of
+  `cards` and `settings`.
+- Gelişim: `domain/retention.ts` `pictureRecallComparison` compares production-card retention
+  of senses with and without a live picture card (same counting rule, ≥ 20 answers per side).
+- Copying cards to another account copies no picture card; the next run makes a new one (New,
+  locked, no logs).
+
 ## Pictures, server side (v0.4 İP2, decision 0030)
 
 Migration `20261025000200_images.sql`. No Dexie change in İP2 (the device cache of pictures is
@@ -344,11 +400,15 @@ Migration `20261025000200_images.sql`. No Dexie change in İP2 (the device cache
 - `image_requests` (one row per sense: `source` auto/user, `priority`, `requesters`, `state`
   queued/submitted/done/skipped, `batch_id`, `attempt` 1–2, `problem`, `hold_id`,
   `last_error`) and `image_request_users` (who asked). Service role only; users go through
-  `image_request(p_sense_id)`.
+  `image_request(p_sense_id)`. Auto-queue order (İP9, decision 0037): `image_auto_priority()`
+  / `image_sense_priorities()` in `20261026001010_image_priority.sql`.
 - `image_budget` (month, `cap_usd`, `spent_usd`, `reserved_usd`) and `image_budget_holds`
   (one per in-flight call, `purpose` instant/batch/check/visual/pilot). Service role only.
-- `image_usage` (user, UTC day, count) for `IMAGE_DAILY_LIMIT`; `image_feedback` (the review
+- `image_usage` (user, UTC day, count) for `IMAGE_DAILY_LIMIT`, purged after 90 days with
+  `tts_usage` by `purge_usage_counters()` (decision 0037); `image_feedback` (the review
   screen's decisions: approve / reject / redraw with the reason).
+- `job_runs` (`job` pk, `status`, `last_run_at`, `last_ok_at`, `runs`, `details` counters):
+  heartbeats of the nightly jobs (decision 0037). Service role only, no user data.
 - `app_admins` (`user_id`): who may use the review screen (`is_app_admin()`,
   `image_review_queue`, `image_review_decide`). Filled by the deploy workflow from
   `APP_ADMIN_USER_ID`, never seeded in a migration.

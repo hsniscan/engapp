@@ -258,6 +258,8 @@ export interface RetentionCardFacts {
   sources: readonly Id[];
   /** Parts of speech of the card's sense(s), lower case. */
   pos: readonly string[];
+  /** The card's own sense (production, cloze, picture cards); absent or null for recognition. */
+  sense_id?: Id | null;
 }
 
 export interface GroupRetention extends RetentionStat {
@@ -276,7 +278,7 @@ export interface WindowOptions {
 const NATURAL_ORDER: Partial<Record<RetentionDimension, readonly string[]>> = {
   term_type: ['word', 'phrase', 'pattern', 'affix', 'contrast'],
   level: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'],
-  card_type: ['recognition', 'production', 'cloze'],
+  card_type: ['recognition', 'production', 'cloze', 'image'],
 };
 
 /** The groups one card belongs to (several for topics, sources and pos; NONE_KEY when none). */
@@ -515,6 +517,66 @@ function compareGaps(a: NoteGap, b: NoteGap): number {
 /** Note ids for the "biggest gaps" practice round. */
 export function biggestGapNoteIds(gap: RecognitionProductionGap, limit = GAP_LIST_SIZE): Id[] {
   return gap.notes.slice(0, limit).map((n) => n.note_id);
+}
+
+// ------------------------------------------------------------------ with vs. without picture cards
+
+export interface PictureRecall {
+  /** Live picture cards (v0.4 İP8). */
+  pictureCards: number;
+  /** "Türkçeden İngilizceye" answers of senses that have a picture card. */
+  withPicture: RetentionStat;
+  /** The same answers of senses without one. */
+  withoutPicture: RetentionStat;
+  /** The picture cards' own answers. */
+  pictureAnswers: RetentionStat;
+  /** withPicture − withoutPicture when both have enough answers (MIN_ANSWERS); else null. */
+  diff: number | null;
+}
+
+/**
+ * Does a picture card help? Recall of the English word (production cards: the Turkish meaning
+ * shown, the word asked) for senses that have a live picture card against senses that do not,
+ * by the same counting rule as everything else here. Production cards are the fair comparison:
+ * both groups have one, and they ask the same thing the picture card asks. An observation, not
+ * an experiment: senses with pictures are the concrete ones.
+ */
+export function pictureRecallComparison(
+  data: Pick<RetentionData, 'events'>,
+  facts: ReadonlyMap<Id, RetentionCardFacts>,
+  window: WindowOptions = {},
+): PictureRecall {
+  const withCard = new Set<Id>();
+  let pictureCards = 0;
+  for (const f of facts.values()) {
+    if (f.card_type !== 'image') continue;
+    pictureCards++;
+    if (f.sense_id) withCard.add(f.sense_id);
+  }
+  const t = { with: { n: 0, p: 0 }, without: { n: 0, p: 0 }, image: { n: 0, p: 0 } };
+  for (const [cardId, c] of tallyCards(data, facts, window)) {
+    const f = facts.get(cardId)!;
+    const slot =
+      f.card_type === 'image'
+        ? t.image
+        : f.card_type === 'production'
+          ? f.sense_id && withCard.has(f.sense_id)
+            ? t.with
+            : t.without
+          : null;
+    if (!slot) continue;
+    slot.n += c.n;
+    slot.p += c.passed;
+  }
+  const withPicture = retentionStat(t.with.p, t.with.n);
+  const withoutPicture = retentionStat(t.without.p, t.without.n);
+  return {
+    pictureCards,
+    withPicture,
+    withoutPicture,
+    pictureAnswers: retentionStat(t.image.p, t.image.n),
+    diff: withPicture.enough && withoutPicture.enough ? withPicture.rate! - withoutPicture.rate! : null,
+  };
 }
 
 // ------------------------------------------------------------------ weekly series

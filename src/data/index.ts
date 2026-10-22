@@ -8,6 +8,13 @@ export * from './examples';
 export * from './mnemonics';
 export * from './images';
 export {
+  imageCardsSignature,
+  imageCardsWithoutPicture,
+  reconcileImageCards,
+  setImageCardsEnabled,
+  type ReconcileOptions,
+} from './imageCards';
+export {
   computeWeeklySummary,
   deferReportDraft,
   draftExpired,
@@ -158,6 +165,19 @@ export {
   type AnkiImportResult,
 } from './anki';
 export { getKnownTermKeys, listKnownTerms, markKnown, unmarkKnown } from './knownTerms';
+export {
+  addFromWordBank,
+  applyWordBankPage,
+  bankNoteInput,
+  countWordBank,
+  getOwnedTerms,
+  getWordBankCursor,
+  getWordBankSyncedAt,
+  listWordBank,
+  markWordBankSynced,
+  WORD_BANK_META,
+  type BankAddResult,
+} from './wordBank';
 export {
   BAND_SIZES,
   countOutsideWords,

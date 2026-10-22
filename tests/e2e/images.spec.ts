@@ -224,7 +224,9 @@ test.describe('Görsel onayı (admin)', () => {
     await expect(page.getByTestId('review-left')).toHaveText('1 görsel kaldı');
 
     // Leaving sends the decision held back for undo.
-    await page.getByRole('link', { name: 'Geri' }).click();
+    // One close control (the top bar's ✕), back to Ayarlar.
+    await expect(page.getByRole('link', { name: 'Geri' })).toHaveCount(0);
+    await page.getByRole('link', { name: 'Görsel onayından çık' }).click();
     await expect(page).toHaveURL(/\/settings/);
     await expect.poll(() => backend.reviewDecisions.length).toBe(5);
     expect(backend.reviewDecisions).toEqual([

@@ -50,6 +50,18 @@ describe('settings', () => {
     });
   });
 
+  it('switches the new word order between smart (default) and the order added', async () => {
+    const user = userEvent.setup();
+    renderRoute(<SettingsPage />, { path: '/settings' });
+    const group = await screen.findByRole('group', { name: 'Yeni kelime sırası' });
+    expect(within(group).getByRole('radio', { name: 'Akıllı (önerilen)' })).toBeChecked();
+    await user.click(within(group).getByRole('radio', { name: 'Eklenme sırası' }));
+    await waitFor(async () => expect((await getSettings()).new_card_order).toBe('added'));
+    expect(await screen.findByText('Yeni kartlar eklediğin sırayla gelir.')).toBeInTheDocument();
+    await user.click(within(group).getByRole('radio', { name: 'Akıllı (önerilen)' }));
+    await waitFor(async () => expect((await getSettings()).new_card_order).toBe('smart'));
+  });
+
   it('shows the zod-verified backup summary and merges it', async () => {
     const t0 = Date.UTC(2026, 9, 1, 9);
     const { createdCards } = await addNoteWithSenses(

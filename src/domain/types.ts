@@ -23,7 +23,11 @@ export type NoteTermType = TermType | 'affix' | 'contrast';
 
 /** Notes with only a recognition card (no production or cloze cards for their senses). */
 export const recognitionOnly = (t: NoteTermType): boolean => t === 'affix' || t === 'contrast';
-export type CardType = 'recognition' | 'production' | 'cloze';
+/**
+ * 'image' (v0.4 İP8, decision 0036): the sense's picture on the front, the English word to
+ * recall. One per sense with an approved (or chosen) picture; locked like production.
+ */
+export type CardType = 'recognition' | 'production' | 'cloze' | 'image';
 
 /** FSRS card states (numeric values match ts-fsrs State enum). */
 export const CardState = { New: 0, Learning: 1, Review: 2, Relearning: 3 } as const;
@@ -80,7 +84,7 @@ export interface Card extends SyncedRow, FsrsFields {
   sense_id: Id | null; // null for recognition cards (they belong to the note)
   card_type: CardType;
   suspended: boolean;
-  /** Production/cloze cards stay locked until the note's recognition card reaches Review. */
+  /** Production/cloze/image cards stay locked until the note's recognition card reaches Review. */
   unlocked: boolean;
 }
 
@@ -389,7 +393,17 @@ export interface Settings extends SyncedRow {
     week_minutes?: number | null;
   } | null;  /** v0.4 İP3: show the sense's picture on the front of the card too (absent/null = off). */
   show_image_front?: boolean | null;
+  /**
+   * v0.4 İP8: picture cards ("Görselden hatırlama", decision 0036). Absent/null = on; only a
+   * stored false turns them off.
+   */
+  image_cards?: boolean | null;
+  /** v0.4: order of new cards (docs/decisions/0039); absent/null = 'smart'. */
+  new_card_order?: NewCardOrder | null;
 }
+
+/** "Yeni kelime sırası": smart (level, frequency, own signals, interference) or as added. */
+export type NewCardOrder = 'smart' | 'added';
 
 /** settings.notify (domain/notify.ts). */
 export interface NotifySetting {
