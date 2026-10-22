@@ -133,7 +133,7 @@ function GapSection({ view }: { view: ProgressView }) {
               notes: ids,
             })}
             className={buttonClasses({
-              className: 'h-auto min-h-11 py-2 text-center whitespace-normal',
+              className: 'h-auto! min-h-11 max-w-full py-2 text-center whitespace-normal!',
             })}
           >
             {t('progress.gap.practice', { count: ids.length })}

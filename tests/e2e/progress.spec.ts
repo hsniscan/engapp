@@ -40,7 +40,7 @@ test('progress tab: categories, gap practice and the 12-week series on a phone',
 
   // The gap list starts a practice round over its notes.
   const gap = page.getByRole('region', { name: 'Tanıma ve üretme' });
-  await expect(gap.getByText('Türkçeden İngilizceye')).toBeVisible();
+  await expect(gap.getByText('Türkçeden İngilizceye', { exact: true })).toBeVisible();
   const start = gap.getByRole('link', { name: /kelimeyle pratik yap$/ });
   if (await start.isVisible()) {
     await start.click();
