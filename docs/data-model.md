@@ -266,6 +266,21 @@ Copying cards to another account does not copy them (decision 0009).
   before v13 (no upgrade needed). Chunk results in `chunk_cache` carry `topics` and, per
   candidate, `false_friend` since extract-v5.
 
+## Account deletion and device wipe (v0.4 İP7, decision 0035)
+
+- Every user-scoped server table has a column referencing `auth.users (id) on delete cascade`;
+  `public.user_owned_columns()` lists them from the catalog and the SQL test
+  `22_account_delete.test.sql` fails for a `user_id` column without one.
+- `public.delete_user_data(user)` (service role only) deletes every row of the user in all those
+  tables in one transaction, under the per-user sync lock, and returns the counts per table.
+  The `account-delete` function calls it between removing the user's Storage files and
+  deleting the auth user. Shared tables (`lexicon_*`, `ref_*`, `ai_system_usage`, `sync_tables`,
+  `push_cron_config`) have no user column and are never touched.
+- Locally, `wipeLocalDatabase()` (`@/data`) clears every Dexie table in one transaction,
+  including `meta` (so `user_id`, the device id and the sync cursors go too: the next start is a
+  fresh guest install). `features/account/deletion.ts` adds the audio cache, the `engapp.*`
+  localStorage keys and the browser's push subscription.
+
 ## Leeches, confusables and contrast cards (v0.3 İP6, decision 0026)
 
 - Nothing is stored for a leech: `lapses ≥ 6` from the effective review logs
