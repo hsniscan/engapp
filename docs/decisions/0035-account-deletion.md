@@ -99,14 +99,15 @@ a JSON export but no deletion, and no privacy policy.
 | Sources keep title, file name, page count only | `sources` table columns |
 | Random per-install device id in logs, not an ad id | `data/meta.ts` `getDeviceId`; `review_logs.device_id` |
 | AI text to Gemini; candidates cached ≤ 90 days | `ai-extract`, `ai_chunk_cache`, purge job |
-| Daily usage counters | `ai_usage`, `tts_usage` |
+| Daily usage counters | `ai_usage`, `tts_usage`, `image_usage` (instant pictures) |
+| Picture answers, choices and requests | `content_feedback` (kind `image`), `user_content` (`image_choice`), `image_request_users` |
 | Push: endpoint, keys, user agent, sent days | `push_subscriptions`, `push_log` |
 | No analytics; error log stays on device | no analytics SDK in `package.json`; `data/errorLog.ts` is Dexie only |
 | Supabase in the EU (Ireland) | project region eu-west-1 |
 | Gemini free tier: Google may use the content, human review | Gemini API terms for unpaid services; config uses the free tier |
-| Word images send only dictionary data to Anthropic | v0.4 İP3 design (plan "Claude API ve maliyet"); **check when İP3 is merged** |
-| Tombstones purged after 30 days; AI cache, AI usage, push log after 90 | `purge_tombstones(30)`, purge functions in migrations |
-| Deletion removes everything and the account | this ADR; `22_account_delete.test.sql` |
+| Word pictures send only dictionary data to Anthropic: lemma, POS, Turkish meaning, drawing hint, a fixed redraw note, and the drawn picture for the check; no user id or user text | `image_sense_inputs` (shared `lexicon_senses.meaning_tr`), `imageUserContent` / `REDRAW_PROBLEMS` (`_shared/image-prompt.ts`), `visualUserContent`, `checkUserText` + PNGs (`_shared/image-check.ts`); no `metadata` on any request. Checked in v0.4 İP10 (ADR 0037) |
+| Tombstones purged after 30 days; AI cache, AI usage, push log after 90 | `purge_tombstones(30)`, push purge in `20261023000600_push.sql`, `purge_usage_counters(90)` for `tts_usage` and `image_usage` (added in İP10, ADR 0037) |
+| Deletion removes everything and the account, including the picture tables (`image_usage`, `image_request_users`, `image_feedback`, `app_admins`) | this ADR; `22_account_delete.test.sql` (seeds all four) |
 | Encrypted in transit; row-level security; keys only on server | HTTPS endpoints; `tables_without_rls()` test; AGENTS.md rules 3–4 |
 | Not for under-18s | Gemini API terms require 18+ users (owner to confirm) |
 
