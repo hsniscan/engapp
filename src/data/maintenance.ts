@@ -40,6 +40,7 @@ import {
 } from '../domain/types';
 import { emptyFsrs } from '../domain/fsrs';
 import { db } from './db';
+import { compactOutbox } from './outbox';
 import { rebuildDailyActivity } from './dailyActivity';
 import { ActionError } from './errors';
 import { groupLogs } from './history';
@@ -559,12 +560,13 @@ export async function repairIntegrity(now: Millis = Date.now()): Promise<RepairR
 
 /**
  * Guest → account: remember the user id, stamp it on every guest row of the mutable
- * tables (queued for push) and queue every review log for its first push. Logs themselves
+ * tables (queued for push) and queue every review log for its first push, then compact
+ * the outbox (one entry per row). Logs themselves
  * are not rewritten; the server takes user_id from the session.
  */
 export async function adoptGuestData(userId: string, now: Millis = Date.now()): Promise<number> {
   await db.transaction('rw', db.meta, () => setMeta(META.userId, userId));
-  return writeTx(allSyncedTables(), now, async (w) => {
+  const queued = await writeTx(allSyncedTables(), now, async (w) => {
     let n = 0;
     for (const table of MUTABLE) {
       const rows = (await db.table(table).toArray()) as MutableRows[MutableTable][];
@@ -589,4 +591,8 @@ export async function adoptGuestData(userId: string, now: Millis = Date.now()): 
     }
     return n;
   });
+  // Before the first push: one entry per row (guest edits and the re-queued logs above
+  // leave several).
+  await compactOutbox();
+  return queued;
 }
