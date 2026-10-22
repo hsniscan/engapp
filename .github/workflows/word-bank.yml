@@ -26,9 +26,9 @@ on:
   workflow_dispatch:
     inputs:
       job:
-        description: 'plan: report only; run: collect finished batches, then submit the rest; collect / submit: one step'
+        description: 'plan: report only; run: collect finished batches, then submit the rest; collect / submit: one step; sample: print the newest rows (max = how many)'
         type: choice
-        options: [plan, run, collect, submit]
+        options: [plan, run, collect, submit, sample]
         default: plan
       max:
         description: 'submit: at most this many words in the batch (empty: 10000)'
@@ -76,7 +76,7 @@ jobs:
           DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
         run: |
           set -euo pipefail
-          case "$JOB" in plan|run|collect|submit) ;; *) echo "::error::Unknown job"; exit 1 ;; esac
+          case "$JOB" in plan|run|collect|submit|sample) ;; *) echo "::error::Unknown job"; exit 1 ;; esac
           if [ -n "$MAX" ] && ! [[ "$MAX" =~ ^[0-9]{1,5}$ ]]; then echo "::error::max must be a whole number"; exit 1; fi
           key="$SERVICE_KEY_SECRET"
           if [ -z "$key" ]; then
@@ -118,5 +118,8 @@ jobs:
               ;;
             submit)
               node scripts/word-bank.ts "${submit_args[@]}"
+              ;;
+            sample)
+              node scripts/word-bank.ts sample ${MAX:+--limit "$MAX"}
               ;;
           esac
