@@ -5,8 +5,13 @@
 # UTC day), never from a user's budget; a run stops when it is used up and the next night
 # continues. Details: docs/ai-pipeline.md ("Level job"), docs/setup-backend.md.
 #
+# The first step (resolve levels and word frequencies from the reference data) needs no AI and
+# runs on every run; without GEMINI_API_KEY only the AI steps are skipped, with a warning
+# (decision 0037). Every run ends with a heartbeat in public.job_runs; a job that stopped running
+# shows up as a warning in the next run of either nightly job ("Job health", setup-backend.md).
+#
 # Repository secrets (same as deploy-supabase.yml):
-#   GEMINI_API_KEY             Google AI Studio API key
+#   GEMINI_API_KEY             Google AI Studio API key (optional: without it no AI steps)
 #   SUPABASE_SERVICE_ROLE_KEY  optional: the project's service_role (or sb_secret_) key.
 #                              Without it the key is read through the Management API with
 #   SUPABASE_ACCESS_TOKEN      (needs the "API keys: Read" permission / a full-access token).
@@ -26,6 +31,10 @@ on:
         description: 'At most this many model calls in this run (empty: up to the daily budget)'
         type: string
         default: ''
+      no_ai:
+        description: 'Only the deterministic part (levels and word frequencies), no model calls'
+        type: boolean
+        default: false
 
 concurrency:
   group: level-jobs
@@ -60,9 +69,10 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
           MAX_CALLS: ${{ inputs.max_calls }}
+          NO_AI: ${{ inputs.no_ai && '--no-ai' || '' }}
         run: |
           set -euo pipefail
-          if [ -z "$GEMINI_API_KEY" ]; then echo "::error::Repository secret GEMINI_API_KEY is not set"; exit 1; fi
+          if [ -n "$MAX_CALLS" ] && ! [[ "$MAX_CALLS" =~ ^[0-9]{1,5}$ ]]; then echo "::error::max_calls must be a whole number"; exit 1; fi
           key="$SERVICE_KEY_SECRET"
           if [ -z "$key" ]; then
             if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
@@ -88,5 +98,8 @@ jobs:
           export SUPABASE_SERVICE_ROLE_KEY="$key"
           args=(levels)
           if [ -n "$DRY_RUN" ]; then args+=("$DRY_RUN"); fi
+          if [ -n "$NO_AI" ]; then args+=("$NO_AI"); fi
           if [ -n "$MAX_CALLS" ]; then args+=(--max-calls "$MAX_CALLS"); fi
+          # AI steps stop after 40 minutes, leaving time for the last resolve inside timeout-minutes.
+          args+=(--max-minutes 40)
           node scripts/system-jobs.ts "${args[@]}"

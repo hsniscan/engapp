@@ -19,6 +19,7 @@
  */
 import { parseArgs } from 'node:util';
 import { runCollect, runSubmit, runVisualize } from './lib/image-jobs.ts';
+import { heartbeat } from './lib/heartbeat.ts';
 import { haveClaudeKey, jobDepsFromEnv, log } from './lib/image-env.ts';
 
 const JOBS = ['visualize', 'submit', 'collect'] as const;
@@ -45,17 +46,23 @@ async function main(): Promise<void> {
     if (!Number.isInteger(n) || n < 1) throw new Error(`--${name} must be a positive integer`);
     return n;
   };
+  let details: Record<string, unknown>;
   if (job === 'visualize') {
-    log('visualize done', await runVisualize(deps, { limit: num(values.limit, 'limit') }));
+    const r = await runVisualize(deps, { limit: num(values.limit, 'limit') });
+    log('visualize done', r);
+    details = { scored: r.scored, stopped: r.stopped };
   } else if (job === 'submit') {
-    log('submit done', await runSubmit(deps, { max: num(values.max, 'max') }));
+    const r = await runSubmit(deps, { max: num(values.max, 'max') });
+    log('submit done', r);
+    details = { queued: r.queued, submitted: r.submitted, stopped: r.stopped };
   } else {
-    log(
-      'collect done',
-      await runCollect(deps, { visionLimit: num(values['vision-limit'], 'vision-limit') }),
-    );
+    const r = await runCollect(deps, { visionLimit: num(values['vision-limit'], 'vision-limit') });
+    log('collect done', r);
+    details = { stored: r.stored, rejected: r.rejected, retried: r.retried };
   }
   log('budget', { ...(await deps.store.budgetStatus()), cap_usd_now: deps.capUsd });
+  // Job health: the last step that ended well (a failing step leaves the heartbeat old).
+  await heartbeat(deps.db, 'images', 'ok', { step: job, ...details }, log);
 }
 
 main().catch((e: unknown) => {

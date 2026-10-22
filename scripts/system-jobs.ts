@@ -4,14 +4,18 @@
  * AI_SYSTEM_DAILY_LIMIT calls per UTC day), never a user's budget. Prompts and pure steps:
  * supabase/functions/_shared/level-job.ts; docs: docs/ai-pipeline.md ("Level job").
  *
- *   node scripts/system-jobs.ts levels [--dry-run] [--max-calls N]
- *       1. resolve: bring every lexicon sense's stored level in line with the rule (no AI)
+ *   node scripts/system-jobs.ts levels [--dry-run] [--no-ai] [--max-calls N] [--max-minutes 40]
+ *       1. resolve: bring every lexicon sense's stored level and every term's zipf in line
+ *                   with the reference data (no AI; always runs)
  *       2. guess:   level-guess-v1 for senses outside the lists that never had a guess
  *       3. tr:      level-tr-v1, the Turkish-learner check of the word lists
  *       4. resolve again, so corrections reach the lexicon (and every device) at once
- *       Stops calling the model when the budget or the provider quota is used up; the next
- *       run continues where this one stopped. --dry-run reads and reports, writes nothing
- *       and calls no model.
+ *       Steps 2-3 need GEMINI_API_KEY: without it (or with --no-ai) they are skipped with a
+ *       warning and the run still succeeds. They stop when the budget, the provider quota or
+ *       --max-minutes is used up; the next run continues where this one stopped. An error in
+ *       them still runs step 4, then fails the run. Logic and tests: scripts/lib/level-run.ts.
+ *       Every run ends with a heartbeat (public.job_runs, scripts/lib/heartbeat.ts).
+ *       --dry-run reads and reports, writes nothing and calls no model.
  *
  *   node scripts/system-jobs.ts export-tr [--out data/levels/level-tr.tsv]
  *       Writes the stored corrections for scripts/build-levels.ts (client level file).
@@ -31,7 +35,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { AiError, createAiProvider, type AiProvider } from '../supabase/functions/_shared/ai-provider.ts';
-import { parseCefr, type Cefr } from '../supabase/functions/_shared/cefr.ts';
+import { parseCefr } from '../supabase/functions/_shared/cefr.ts';
 import { lemmasNeeded, type RefEntry, type RefLookup, type WordRefs } from '../supabase/functions/_shared/level.ts';
 import {
   buildLevelGuessUserPrompt,
@@ -46,12 +50,19 @@ import {
   levelGuessResults,
   levelTrOutput,
   levelTrResults,
-  needsGuess,
   planLevels,
   type GuessTarget,
   type LevelSenseRow,
   type TrPendingItem,
 } from '../supabase/functions/_shared/level-job.ts';
+import { heartbeat, summary } from './lib/heartbeat.ts';
+import {
+  runLevels,
+  type LevelAi,
+  type LevelDb,
+  type LevelRunReport,
+  type ModelRequest,
+} from './lib/level-run.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const env = (k: string) => process.env[k];
@@ -145,10 +156,12 @@ class Budget {
   private readonly c: SupabaseClient | null;
   private readonly dailyLimit: number;
   private readonly maxCalls: number;
-  constructor(c: SupabaseClient | null, dailyLimit: number, maxCalls: number) {
+  private readonly deadline: number;
+  constructor(c: SupabaseClient | null, dailyLimit: number, maxCalls: number, deadline = Infinity) {
     this.c = c;
     this.dailyLimit = dailyLimit;
     this.maxCalls = maxCalls;
+    this.deadline = deadline;
   }
 
   /** Takes one call from the system budget; false (and stopped) when none is left. */
@@ -156,6 +169,11 @@ class Budget {
     if (this.stopped) return false;
     if (this.calls >= this.maxCalls) {
       this.stopped = 'max_calls';
+      return false;
+    }
+    // Leave time for the last resolve inside the workflow's timeout.
+    if (Date.now() > this.deadline) {
+      this.stopped = 'time';
       return false;
     }
     if (this.c) {
@@ -177,7 +195,7 @@ class Budget {
 async function callModel(
   provider: AiProvider,
   budget: Budget,
-  req: { system: string; user: string; schema: Record<string, unknown>; ok: (d: unknown) => boolean },
+  req: ModelRequest,
 ): Promise<{ data: unknown; model: string } | null> {
   if (!(await budget.take())) return null;
   try {
@@ -209,79 +227,75 @@ function dailyLimit(): number {
 // Commands
 // ---------------------------------------------------------------------------
 
-async function levels(dryRun: boolean, maxCalls: number) {
+async function levels(opts: { dryRun: boolean; maxCalls: number; noAi: boolean; maxMinutes: number }) {
+  const { dryRun } = opts;
   const c = db();
-  const budget = new Budget(dryRun ? null : c, dailyLimit(), dryRun ? 0 : maxCalls);
+  // The deterministic part needs no AI: without a key it still runs, and only the AI steps are
+  // skipped (decision 0037).
+  const haveKey = !!env('GEMINI_API_KEY');
+  if (!haveKey && !opts.noAi && !dryRun)
+    console.log('::warning::GEMINI_API_KEY is not set: levels and zipf are resolved, AI steps skipped');
+  const useAi = haveKey && !opts.noAi && !dryRun;
+  const budget = new Budget(
+    useAi ? c : null,
+    dailyLimit(),
+    useAi ? opts.maxCalls : 0,
+    Date.now() + opts.maxMinutes * 60_000,
+  );
   let provider: AiProvider | null = null;
   const getProvider = () => (provider ??= createAiProvider(env));
-
-  // 1. Resolve.
-  let rows = await allSenses(c);
-  let refs = await loadRefs(c, rows);
-  const coverage = () => ({ minZipf: refs.minZipf });
-  const first = await writeLevels(c, planLevels(rows, refs.lookup, coverage()), dryRun);
-  log('resolve', { senses_total: rows.length, ...first, dry_run: dryRun });
-
-  // 2. Guesses for senses outside the lists.
-  const targets = rows.filter((r) => needsGuess(r, refs.lookup));
-  let guessed = 0;
-  log('guess pending', { senses: targets.length });
-  for (let i = 0; i < targets.length && !dryRun; i += LEVEL_JOB_BATCH) {
-    const batch = targets.slice(i, i + LEVEL_JOB_BATCH);
-    const g: GuessTarget[] = batch.map((r) => ({
-      id: r.id,
-      lemma_norm: r.lemma_norm,
-      pos: r.pos,
-      gloss_en: r.gloss_en,
-    }));
-    const res = await callModel(getProvider(), budget, {
-      system: LEVEL_GUESS_SYSTEM_PROMPT,
-      user: buildLevelGuessUserPrompt(g),
-      schema: LEVEL_GUESS_RESPONSE_SCHEMA as unknown as Record<string, unknown>,
-      ok: (d) => levelGuessOutput.safeParse(d).success,
-    });
-    if (!res) break;
-    const guesses = levelGuessResults(g, res.data);
-    const map = new Map<string, Cefr | null>(batch.map((r, k) => [r.id, guesses[k] ?? null]));
-    const plan = planLevels(batch, refs.lookup, coverage(), map);
-    await writeLevels(c, { senses: plan.senses, terms: [] }, false);
-    guessed += guesses.filter(Boolean).length;
+  const levelDb: LevelDb = {
+    senses: () => allSenses(c),
+    refs: (rows) => loadRefs(c, rows),
+    write: (plan, dry) => writeLevels(c, plan, dry),
+    trPending: (limit) => rpc(c, 'ref_level_tr_pending', { p_limit: limit }),
+    trStore: (items) => rpc(c, 'ref_set_level_tr', { p_items: items }),
+  };
+  const ai: LevelAi | null = useAi
+    ? {
+        call: (req) => callModel(getProvider(), budget, req),
+        stopped: () => budget.stopped,
+        calls: () => budget.calls,
+      }
+    : null;
+  let report: LevelRunReport;
+  try {
+    report = await runLevels(levelDb, ai, { dryRun, log });
+  } catch (e) {
+    // The deterministic part failed: record it, then fail the run.
+    if (!dryRun)
+      await heartbeat(c, 'levels', 'failed', { error: String(e instanceof Error ? e.message : e).slice(0, 200) }, log);
+    throw e;
   }
-  log('guess', { guessed, model_calls: budget.calls });
-
-  // 3. Turkish-learner check of the lists.
-  let checked = 0;
-  let corrected = 0;
-  while (!dryRun && !budget.stopped) {
-    const pending: TrPendingItem[] = await rpc(c, 'ref_level_tr_pending', {
-      p_limit: LEVEL_JOB_BATCH,
-    });
-    if (pending.length === 0) break;
-    const res = await callModel(getProvider(), budget, {
-      system: LEVEL_TR_SYSTEM_PROMPT,
-      user: buildLevelTrUserPrompt(pending),
-      schema: LEVEL_TR_RESPONSE_SCHEMA as unknown as Record<string, unknown>,
-      ok: (d) => levelTrOutput.safeParse(d).success,
-    });
-    if (!res) break;
-    const results = levelTrResults(pending, res.data, res.model);
-    const stored: number = await rpc(c, 'ref_set_level_tr', { p_items: results });
-    checked += stored;
-    corrected += results.filter((r) => r.cefr).length;
-    if (stored === 0) break; // nothing moved (the list changed underneath): stop, never loop
+  log('done', { ...report });
+  if (!dryRun) {
+    const status = report.ai === 'error' ? 'partial' : 'ok';
+    await heartbeat(
+      c,
+      'levels',
+      status,
+      {
+        senses: report.senses_total,
+        terms_zipf: report.resolved_first.terms + (report.resolved_last?.terms ?? 0),
+        ai: report.ai,
+        guessed: report.guessed,
+        checked: report.checked,
+        model_calls: report.model_calls,
+        stopped: report.stopped,
+      },
+      log,
+    );
   }
-  if (dryRun) {
-    const pending: TrPendingItem[] = await rpc(c, 'ref_level_tr_pending', { p_limit: 1000 });
-    log('tr pending (first 1000)', { entries: pending.length });
-  }
-  log('tr', { checked, corrected, model_calls: budget.calls, stopped: budget.stopped });
-
-  // 4. Resolve again with the new corrections and guesses.
-  if (!dryRun && (checked > 0 || guessed > 0)) {
-    rows = await allSenses(c);
-    refs = await loadRefs(c, rows);
-    const last = await writeLevels(c, planLevels(rows, refs.lookup, coverage()), false);
-    log('resolve', { senses_total: rows.length, ...last });
+  summary(
+    `Level job: ${report.senses_total} senses; resolved ${report.resolved_first.senses} senses / ` +
+      `${report.resolved_first.terms} term frequencies; AI ${report.ai}` +
+      (report.ai === 'ran' ? ` (${report.model_calls} calls, stopped: ${report.stopped ?? 'done'})` : '') +
+      (dryRun ? ' (dry run)' : ''),
+  );
+  // An AI failure fails the run (visible in Actions) after the deterministic part was stored.
+  if (report.ai === 'error') {
+    console.error(`::error::AI steps failed: ${report.ai_error}`);
+    process.exitCode = 1;
   }
 }
 
@@ -382,6 +396,8 @@ const { positionals, values } = parseArgs({
   options: {
     'dry-run': { type: 'boolean', default: false },
     'max-calls': { type: 'string' },
+    'no-ai': { type: 'boolean', default: false },
+    'max-minutes': { type: 'string', default: '40' },
     out: { type: 'string', default: join(ROOT, 'data/levels/level-tr.tsv') },
     limit: { type: 'string', default: String(LEVEL_JOB_BATCH) },
     offset: { type: 'string', default: '0' },
@@ -391,7 +407,13 @@ const { positionals, values } = parseArgs({
 const cmd = positionals[0];
 if (cmd === 'levels') {
   const max = values['max-calls'] ? Number(values['max-calls']) : Infinity;
-  await levels(values['dry-run'], Number.isFinite(max) && max >= 0 ? max : Infinity);
+  const minutes = Number(values['max-minutes']);
+  await levels({
+    dryRun: values['dry-run'],
+    maxCalls: Number.isFinite(max) && max >= 0 ? max : Infinity,
+    noAi: values['no-ai'],
+    maxMinutes: Number.isFinite(minutes) && minutes > 0 ? minutes : 40,
+  });
 } else if (cmd === 'export-tr') {
   await exportTr(values.out);
 } else if (cmd === 'try-tr') {
@@ -399,6 +421,6 @@ if (cmd === 'levels') {
 } else if (cmd === 'try-guess') {
   await tryGuess();
 } else {
-  console.error('usage: node scripts/system-jobs.ts levels [--dry-run] [--max-calls N] | export-tr [--out FILE] | try-tr [--limit N] [--offset N] | try-guess');
+  console.error('usage: node scripts/system-jobs.ts levels [--dry-run] [--no-ai] [--max-calls N] [--max-minutes N] | export-tr [--out FILE] | try-tr [--limit N] [--offset N] | try-guess');
   process.exit(2);
 }
