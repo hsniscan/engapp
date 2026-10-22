@@ -42,3 +42,4 @@ docs/screenshots/q-*.png
 *.jks
 *.keystore
 *.keystore.base64
+*.jks.base64
