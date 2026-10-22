@@ -28,18 +28,24 @@ const DAY_MS = 86_400_000;
 export const ACTIVE_SOURCE_NEW_DAYS = 14;
 /** …as does a source the user started a word from in this many days before today. */
 export const ACTIVE_SOURCE_STUDY_DAYS = 7;
+// Inside a Dexie transaction, only a function that has just awaited a Dexie request may be
+// awaited: awaiting one that returns at once (a cache hit) can drop Dexie's zone, after which
+// the next query runs outside the transaction and the transaction commits too early. So every
+// cached value below is read synchronously and the loader is awaited only on a miss.
+
 /** Word family of a lemma; undefined = not read yet this app session; null = no file cached. */
 let familyMap: Map<string, number> | null | undefined;
 
-async function familiesForOrder(): Promise<((lemma: string) => number | null) | undefined> {
-  if (familyMap === undefined) {
-    const file = (await db.ref_cache.get('morphology'))?.data as MorphologyFile | undefined;
-    if (file && Array.isArray(file.words)) {
-      const map = new Map<string, number>();
-      for (const [lemma, , family] of file.words) if (family >= 0) map.set(lemma, family);
-      familyMap = map;
-    } else familyMap = null;
-  }
+async function readFamilies(): Promise<void> {
+  const file = (await db.ref_cache.get('morphology'))?.data as MorphologyFile | undefined;
+  if (file && Array.isArray(file.words)) {
+    const map = new Map<string, number>();
+    for (const [lemma, , family] of file.words) if (family >= 0) map.set(lemma, family);
+    familyMap = map;
+  } else familyMap = null;
+}
+
+function familyLookup(): ((lemma: string) => number | null) | undefined {
   const map = familyMap;
   return map ? (lemma) => map.get(lemma) ?? null : undefined;
 }
@@ -70,16 +76,15 @@ let studied: { key: string; sources: Set<Id> } | null = null;
 
 /**
  * Sources the user started a word from (a card's first answer) in the 7 days before today.
- * Only earlier days count, so the answer does not change during the day; cached per day.
+ * Only earlier days count, so the answer does not change during the day; cached per day
+ * (`studied`, keyed by user and day).
  */
-async function recentlyStudiedSources(bounds: DayBounds, userKey: string): Promise<Set<Id>> {
-  const key = `${userKey}|${bounds.key}`;
-  if (studied?.key === key) return studied.sources;
+async function readStudiedSources(bounds: DayBounds, key: string): Promise<void> {
   const from = bounds.start - ACTIVE_SOURCE_STUDY_DAYS * DAY_MS;
   const window = await db.review_logs.where('reviewed_at').between(from, bounds.start, true, false).toArray();
   const cardIds = new Set(window.map((l) => l.card_id));
   const started = new Set<Id>();
-  for (const [cardId, logs] of await logsByCard(cardIds)) {
+  for (const [cardId, logs] of cardIds.size ? await logsByCard(cardIds) : []) {
     const first = effectiveLogs(logs)[0];
     if (first && first.reviewed_at >= from && first.reviewed_at < bounds.start) started.add(cardId);
   }
@@ -93,7 +98,6 @@ async function recentlyStudiedSources(bounds: DayBounds, userKey: string): Promi
     }
   }
   studied = { key, sources };
-  return sources;
 }
 
 // ------------------------------------------------------------------ input
@@ -153,9 +157,8 @@ function listen(): void {
  */
 const SCAN_ABOVE = 300;
 
-async function loadRows(noteIds: Id[], c: FactsCache): Promise<void> {
-  const missing = noteIds.filter((id) => !c.raw.has(id) && !c.absent.has(id));
-  if (missing.length === 0) return;
+/** Reads the rows of `missing` (not empty) into the cache. */
+async function loadRows(missing: Id[], c: FactsCache): Promise<void> {
   const wanted = new Set(missing);
   const scan = missing.length > SCAN_ABOVE;
   const [notes, senseRows] = await Promise.all([
@@ -233,7 +236,8 @@ export async function newOrderInput(
 ): Promise<NewOrderInput> {
   listen();
   const levels = levelDataNow();
-  const familyOf = await familiesForOrder();
+  if (familyMap === undefined) await readFamilies();
+  const familyOf = familyLookup();
   cache ??= { raw: new Map(), levels, families: !!familyOf, facts: new Map(), absent: new Set(), falseFriends: new Map(), confusions: null };
   const c = cache;
   if (c.levels !== levels || c.families !== !!familyOf) {
@@ -243,7 +247,8 @@ export async function newOrderInput(
   }
   const userKey = settings.user_id ?? `guest:${settings.created_at}`;
   const noteIds = [...new Set([...fresh.map((x) => x.note_id), ...today.introducedNoteIds])];
-  await loadRows(noteIds, c);
+  const missing = noteIds.filter((id) => !c.raw.has(id) && !c.absent.has(id));
+  if (missing.length) await loadRows(missing, c);
   for (const id of noteIds) {
     const r = c.raw.get(id);
     if (r && !c.facts.has(id)) c.facts.set(id, noteFacts(r.note, r.senses, (x) => r.lex.get(x), levels, familyOf));
@@ -259,7 +264,11 @@ export async function newOrderInput(
   // Only worth reading the last week's logs when one of these words comes from a source.
   const fromSource = noteIds.some((id) => !!c.facts.get(id)?.source_id);
   const activeSources = new Set<Id>(recent);
-  if (fromSource) for (const s of await recentlyStudiedSources(today.bounds, userKey)) activeSources.add(s);
+  if (fromSource) {
+    const key = `${userKey}|${today.bounds.key}`;
+    if (studied?.key !== key) await readStudiedSources(today.bounds, key);
+    for (const s of studied!.sources) activeSources.add(s);
+  }
 
   const pairs = new Set(c.confusions);
   const notes = new Map<Id, NewNoteFacts>();
