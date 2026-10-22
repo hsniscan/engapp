@@ -15,6 +15,7 @@ import { VocabTile } from '@/features/leveltest/VocabTile';
 import { heatLabel } from '@/features/stats/heatLabel';
 import { buttonClasses, cn, Icon, Page, Skeleton, Surface } from '@/ui';
 import { InterestsPrompt } from '@/features/profile/InterestsPrompt';
+import { FsrsOptOffer } from '@/features/fsrs/FsrsOptOffer';
 import { nextDueText } from './nextDueText';
 import { getHomeDashboard, type ForecastDay, type HomeDashboard } from './queries';
 
@@ -39,6 +40,7 @@ function Dashboard({ data }: { data: HomeDashboard }) {
       <div className="contents lg:col-span-2 lg:flex lg:flex-col lg:gap-5 empty:hidden">
         <LevelChangeLine className="order-0 lg:order-none" />
         <LevelTestOffer className="order-0 lg:order-none" />
+        <FsrsOptOffer className="order-0 lg:order-none" />
       </div>
       <div className="contents lg:flex lg:flex-col lg:gap-5">
         <TodayCard data={data} className="order-2 lg:order-none" />

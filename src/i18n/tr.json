@@ -507,6 +507,50 @@
       "guest": "Örnek cümleler Google hesabıyla çalışır."
     }
   },
+  "fsrsOpt": {
+    "title": "Algoritmayı hafızama göre ayarla",
+    "body": "Uygulama, şimdiye kadarki cevaplarına bakarak kartların ne zaman geleceğini senin hafızana göre ayarlar. Hesap bu cihazda yapılır; cevapların hiçbir yere gönderilmez.",
+    "needMore": "Bunun için en az {{min}} tekrar gerekiyor. Şu an {{count}} tekrarın var.",
+    "progressText": "{{count}} / {{min}} tekrar",
+    "personalActive": "Şu an sana özel ayar kullanılıyor.",
+    "defaultActive": "Şu an herkes için ortak ayar kullanılıyor.",
+    "lastRun": "Son kontrol: {{date}}.",
+    "suggestFirst": "{{count}} tekrarın birikti. Artık kartların zamanlamasını senin hafızana göre ayarlayabilirim.",
+    "suggestAgain": "Son kontrolden bu yana {{count}} yeni tekrar yaptın; yeniden ayarlamanın zamanı geldi.",
+    "run": "Ayarla",
+    "runAgain": "Yeniden ayarla",
+    "runningLabel": "Ayarlama",
+    "running": "Hesaplanıyor… %{{pct}}",
+    "runningHint": "Genellikle birkaç saniye sürer.",
+    "adopted": "Senin hafızan için tahmin isabeti %{{gain}} iyileşti. Yeni ayar kullanılıyor.",
+    "workloadDown": "Yeni ayarla günlük tekrarın ~%{{pct}} azalacak.",
+    "workloadUp": "Yeni ayarla günlük tekrarın ~%{{pct}} artacak; böylece hedeflediğin oranda hatırlarsın.",
+    "workloadSame": "Günlük tekrar sayın aşağı yukarı aynı kalacak.",
+    "adoptedRevert": "Beğenmezsen “Eski ayara dön” ile tek dokunuşla geri alabilirsin.",
+    "kept": "Denediğim yeni ayar, cevaplarını şimdikinden daha iyi tahmin etmedi. Bu yüzden hiçbir şeyi değiştirmedim.",
+    "tooFew": "Karşılaştırma için farklı günlere yayılmış yeterince tekrar yok. Biraz daha çalıştıktan sonra yeniden dene. Hiçbir şey değişmedi.",
+    "failed": "Hesaplama tamamlanamadı; hiçbir şey değişmedi. Biraz sonra yeniden dene.",
+    "unavailable": "Hesaplama aracı yüklenemedi. İnternete bağlanıp uygulamayı bir kez yenile, sonra yeniden dene.",
+    "revert": "Eski ayara dön",
+    "reverted": "Eski ayara dönüldü.",
+    "saveFailed": "Ayar kaydedilemedi.",
+    "helper": {
+      "title": "Hedef orana göre günlük tekrar",
+      "hint": "Şu anki kartlarına göre kaba bir tahmin. Oranı yükseltirsen daha az unutursun ama daha sık tekrar yaparsın.",
+      "retention": "%{{pct}} hatırlama",
+      "reviews": "~{{count}}/gün",
+      "current": "Şu anki hedefin",
+      "empty": "Kart tekrar etmeye başlayınca burada tahmini göreceksin."
+    },
+    "offer": {
+      "title": "Algoritmayı hafızana göre ayarlayalım mı?",
+      "body": "{{count}} tekrarın birikti. Uygulama artık kartların ne zaman geleceğini senin hafızana göre ayarlayabilir. Birkaç saniye sürer; istersen geri alırsın.",
+      "bodyAgain": "Son ayardan bu yana bir ay geçti ve {{count}} yeni tekrar yaptın. Ayarı yenilemek ister misin?",
+      "go": "Ayarla",
+      "later": "Sonra",
+      "dismissed": "Tamam, bir ay sonra yeniden hatırlatırım."
+    }
+  },
   "auth": {
     "title": "Giriş",
     "heading": "Kelimelerin seninle gelsin",
