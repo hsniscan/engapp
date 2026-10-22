@@ -3,6 +3,9 @@
 // exist for the user's lexicon senses (a small listing without SVG), downloads only the ones
 // the device lacks, sanitizes them and stores them in Dexie (`images`), within ~20 MB. Offline
 // or signed out it does nothing: cards then simply show no picture (or the cached one).
+// After each run the picture cards (v0.4 İP8, data/imageCards.ts) are brought in line with what
+// the device now knows: new approved pictures make cards, pictures gone on the server take
+// theirs away, a setting pulled from another device applies.
 import { liveQuery } from 'dexie';
 import { downloadImages, listImageManifest } from '@/ai/image';
 import {
@@ -12,6 +15,7 @@ import {
   listCachedImageKeys,
   listImageSenseIds,
   logError,
+  reconcileImageCards,
   setMeta,
   type ImageFetchResult,
 } from '@/data';
@@ -70,13 +74,36 @@ export type ImageFetchOutcome =
   | { status: 'done'; result: ImageFetchResult; downloaded: number }
   | { status: 'failed'; error: string };
 
+/** Lexicon senses the server listed no usable picture for (their picture cards may go). */
+export function sensesWithoutPictures(senseIds: readonly string[], manifest: readonly ImageManifestRow[]): Set<string> {
+  const listed = new Set(manifest.filter((m) => m.status === 'approved' || m.status === 'review').map((m) => m.sense_id));
+  return new Set(senseIds.filter((id) => !listed.has(id)));
+}
+
 /**
- * One fetch. Skipped while the last one is fresh for the same senses, unless `force`.
- * Never throws.
+ * One fetch, then the picture cards. The fetch is skipped while the last one is fresh for the
+ * same senses, unless `force`. Never throws.
  */
 export async function fetchImages(
   deps: ImageFetchDeps = defaultImageFetchDeps,
   opts: { force?: boolean } = {},
+): Promise<ImageFetchOutcome> {
+  let serverHasNone: Set<string> | undefined;
+  const outcome = await fetchOnly(deps, opts, (none) => (serverHasNone = none));
+  if (outcome.status !== 'failed') {
+    try {
+      await reconcileImageCards(serverHasNone ? { serverHasNone } : {}, deps.now());
+    } catch (e) {
+      void logError(e, 'images.cards');
+    }
+  }
+  return outcome;
+}
+
+async function fetchOnly(
+  deps: ImageFetchDeps,
+  opts: { force?: boolean },
+  listed: (serverHasNone: Set<string>) => void,
 ): Promise<ImageFetchOutcome> {
   try {
     if (!deps.isOnline()) return { status: 'offline' };
@@ -99,6 +126,7 @@ export async function fetchImages(
     }
     const result = await applyImageFetch(diff, downloaded, deps.capBytes);
     await setMeta(IMAGE_FETCH_META, { at: now, key } satisfies FetchMark);
+    listed(sensesWithoutPictures(senseIds, manifest));
     return { status: 'done', result, downloaded: downloaded.length };
   } catch (e) {
     void logError(e, 'images.fetch');

@@ -10,6 +10,8 @@ import {
   buildProgressReport,
   collectRetention,
   makeDayOf,
+  pictureRecallComparison,
+  type PictureRecall,
   type ProgressReport,
   type RetentionCardFacts,
   type RetentionData,
@@ -117,7 +119,7 @@ export async function loadRetentionInput(
           );
         const sense = card.sense_id ? senseById.get(card.sense_id) : undefined;
         const base = sense ? { ...factsOf(card.note_id, [sense], false), level: nf.level } : nf;
-        facts.set(card.id, { ...base, card_type: card.card_type });
+        facts.set(card.id, { ...base, card_type: card.card_type, sense_id: card.sense_id });
       }
 
       const live = new Set(facts.keys());
@@ -141,6 +143,8 @@ export interface ProgressView {
   gapNoteIds: Id[];
   /** Terms of the first few gap notes, for the sentence under the button. */
   gapTerms: string[];
+  /** v0.4 İP8: recall with vs. without a picture card, over the report's window. */
+  picture: PictureRecall;
 }
 
 /** The whole "Gelişim" tab. */
@@ -161,5 +165,6 @@ export async function getProgressView(
     sourceTitles,
     gapNoteIds,
     gapTerms: gapNoteIds.slice(0, 3).map((id) => input.terms.get(id) ?? ''),
+    picture: pictureRecallComparison(input.data, input.facts, report.window),
   };
 }

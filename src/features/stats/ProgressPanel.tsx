@@ -10,6 +10,7 @@ import { loadLevelData, levelDataNow, logError } from '@/data';
 import { getProgressView, type ProgressView } from '@/data/progress';
 import {
   type GroupRetention,
+  MIN_ANSWERS,
   RETENTION_DIMENSIONS,
   type RetentionDimension,
   type RetentionStat,
@@ -61,6 +62,7 @@ export function ProgressPanel() {
       ) : (
         <>
           <GapSection view={view} />
+          {view.picture.pictureCards > 0 && <PictureSection view={view} />}
           <GroupsSection view={view} />
           <SeriesSection view={view} />
         </>
@@ -142,6 +144,64 @@ function GapSection({ view }: { view: ProgressView }) {
       ) : (
         <p className="mt-3 text-sm text-fg-muted">{t('progress.gap.noList')}</p>
       )}
+    </Surface>
+  );
+}
+
+/**
+ * v0.4 İP8, acceptance criterion 8: recall of the English word for meanings with a picture card
+ * against meanings without one, in plain words (domain/retention.ts pictureRecallComparison).
+ */
+function PictureSection({ view }: { view: ProgressView }) {
+  const { t } = useTranslation();
+  const p = view.picture;
+  const sides = [
+    { key: 'with', label: t('imageCard.progress.with'), stat: p.withPicture },
+    { key: 'without', label: t('imageCard.progress.without'), stat: p.withoutPicture },
+  ] as const;
+  return (
+    <Surface as="section" aria-labelledby="picture-recall-title" padding="lg" data-testid="picture-recall">
+      <h2 id="picture-recall-title" className="font-serif text-xl font-semibold">
+        {t('imageCard.progress.title')}
+      </h2>
+      <dl className="mt-4 grid grid-cols-2 gap-4">
+        {sides.map((d) => (
+          <div key={d.key} className="flex min-w-0 flex-col">
+            <dt className="text-sm text-fg-muted">{d.label}</dt>
+            <dd className="contents">
+              <span
+                className={
+                  d.stat.enough
+                    ? 'tabular mt-1 font-serif text-3xl leading-tight font-semibold'
+                    : 'mt-1 font-serif text-xl leading-tight text-fg-muted'
+                }
+              >
+                {rateText(t, d.stat)}
+              </span>
+              <span className="mt-1 text-xs text-fg-muted">
+                {t('progress.answers', { count: d.stat.n })}
+              </span>
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-4 text-[0.9375rem] text-fg">
+        {p.diff !== null
+          ? t('imageCard.progress.sentence', {
+              with: formatPercent(p.withPicture.rate!),
+              without: formatPercent(p.withoutPicture.rate!),
+            })
+          : t('imageCard.progress.few', { min: MIN_ANSWERS })}
+      </p>
+      {p.pictureAnswers.n > 0 && (
+        <p className="mt-2 text-sm text-fg-muted">
+          {t('imageCard.progress.own', {
+            rate: rateText(t, p.pictureAnswers),
+            answers: t('progress.answers', { count: p.pictureAnswers.n }),
+          })}
+        </p>
+      )}
+      <p className="mt-3 text-xs text-fg-muted">{t('imageCard.progress.hint')}</p>
     </Surface>
   );
 }
