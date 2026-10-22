@@ -56,3 +56,9 @@ export function toast(options: ToastOptions | string): string {
 }
 
 toast.dismiss = dismiss;
+
+/** Empties the queue at once (tests: a toast left open by one test must not leak into the next). */
+export function resetToasts(): void {
+  toasts = [];
+  emit();
+}
