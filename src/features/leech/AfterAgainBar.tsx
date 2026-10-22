@@ -34,24 +34,26 @@ export function AfterAgainBar({
       role="status"
       data-testid={notice.crossed ? 'leech-flag' : 'confusion-prompt'}
       className={cn(
-        'mb-3 flex items-center gap-2 rounded-control py-1.5 pr-1 pl-3 text-sm',
+        'mb-3 flex items-start gap-2 rounded-control py-1.5 pr-1 pl-3 text-sm',
         notice.crossed ? 'bg-warn-soft text-warn-text' : 'bg-surface-sunken text-fg-muted',
       )}
     >
-      {notice.crossed && <Icon name="alert" size={16} className="shrink-0" />}
-      <p className="min-w-0 flex-1">
-        {notice.crossed
-          ? t('leech.afterAgain.crossed', { term: notice.term, count: notice.lapses })
-          : t('leech.afterAgain.confused', { term: notice.term })}
-      </p>
-      <Button
-        size="sm"
-        variant={notice.crossed ? 'secondary' : 'ghost'}
-        className="shrink-0"
-        onClick={notice.crossed ? onOpenSheet : onPickConfusion}
-      >
-        {notice.crossed ? t('leech.afterAgain.crossedAction') : t('leech.afterAgain.confusedAction')}
-      </Button>
+      {notice.crossed && <Icon name="alert" size={16} className="mt-2.5 shrink-0" />}
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1">
+        <p className="min-w-48 flex-1 py-2">
+          {notice.crossed
+            ? t('leech.afterAgain.crossed', { term: notice.term, count: notice.lapses })
+            : t('leech.afterAgain.confused', { term: notice.term })}
+        </p>
+        <Button
+          size="sm"
+          variant={notice.crossed ? 'secondary' : 'ghost'}
+          className={cn('shrink-0', !notice.crossed && '-ml-3')}
+          onClick={notice.crossed ? onOpenSheet : onPickConfusion}
+        >
+          {notice.crossed ? t('leech.afterAgain.crossedAction') : t('leech.afterAgain.confusedAction')}
+        </Button>
+      </div>
       <IconButton icon="x" size="sm" label={t('common.close')} className="shrink-0" onClick={onDismiss} />
     </div>
   );

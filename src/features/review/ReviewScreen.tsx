@@ -167,6 +167,35 @@ export function ReviewScreen() {
     return () => window.removeEventListener('keydown', onKey);
   }, [session, doUndo]);
 
+  // After an "Again" answer: the leech flag or the "mixed it up?" prompt (v0.3 İP6), also
+  // on the summary when that was the last card.
+  const notice = state.notice;
+  const afterAgain = notice ? (
+    <AfterAgainBar
+      notice={notice}
+      onOpenSheet={() => setLeech({ cardId: notice.cardId, startWith: 'paths' })}
+      onPickConfusion={() => setLeech({ cardId: notice.cardId, startWith: 'picker' })}
+      onDismiss={session.dismissNotice}
+    />
+  ) : null;
+  const leechSheet = (
+    <LeechSheet
+      cardId={leech?.cardId ?? null}
+      startWith={leech?.startWith}
+      onOpenChange={(open) => {
+        if (open) return;
+        setLeech(null);
+        void session.refreshCurrent();
+      }}
+      onCardSuspended={(id) => {
+        leechHandled.current.add(id);
+        void session.cardSuspended(id);
+      }}
+      onCardsChanged={() => void session.reloadQueue()}
+      speech={{ available: speech.available, speak: speech.speak }}
+    />
+  );
+
   if (state.phase === 'loading') return <ReviewSkeleton />;
 
   if (state.phase === 'done') {
@@ -174,13 +203,17 @@ export function ReviewScreen() {
     if (answers.length === 0)
       return <ReviewEmpty ahead={ahead} canUndo={state.canUndo} onUndo={doUndo} />;
     return (
-      <SessionSummary
-        answers={answers}
-        start={start}
-        settled={session.settled}
-        canUndo={state.canUndo}
-        onUndo={() => void doUndo()}
-      />
+      <>
+        {afterAgain && <div className="mx-auto w-full max-w-xl px-4 pt-3 sm:px-6">{afterAgain}</div>}
+        <SessionSummary
+          answers={answers}
+          start={start}
+          settled={session.settled}
+          canUndo={state.canUndo}
+          onUndo={() => void doUndo()}
+        />
+        {leechSheet}
+      </>
     );
   }
 
@@ -237,14 +270,7 @@ export function ReviewScreen() {
         </div>
       </div>
 
-      {state.notice && (
-        <AfterAgainBar
-          notice={state.notice}
-          onOpenSheet={() => setLeech({ cardId: state.notice!.cardId, startWith: 'paths' })}
-          onPickConfusion={() => setLeech({ cardId: state.notice!.cardId, startWith: 'picker' })}
-          onDismiss={session.dismissNotice}
-        />
-      )}
+      {afterAgain}
 
       {current ? (
         <div
@@ -314,21 +340,7 @@ export function ReviewScreen() {
         onOpenChange={setEditOpen}
         onSaved={() => void session.refreshCurrent()}
       />
-      <LeechSheet
-        cardId={leech?.cardId ?? null}
-        startWith={leech?.startWith}
-        onOpenChange={(open) => {
-          if (open) return;
-          setLeech(null);
-          void session.refreshCurrent();
-        }}
-        onCardSuspended={(id) => {
-          leechHandled.current.add(id);
-          void session.cardSuspended(id);
-        }}
-        onCardsChanged={() => void session.reloadQueue()}
-        speech={{ available: speech.available, speak: speech.speak }}
-      />
+      {leechSheet}
     </div>
   );
 }
