@@ -12,6 +12,9 @@
  *   node scripts/word-bank.ts collect
  *       Reads finished batches: settles the real cost, checks the answers, stores new meanings
  *       in the lexicon and the bank rows; rejected answers are asked again next run.
+ *   node scripts/word-bank.ts sample [--limit 30]
+ *       Prints the newest model-made bank rows (word, level, meanings, examples) so a person
+ *       can check them by eye. Reads only; needs no Claude key.
  *
  * Environment: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ANTHROPIC_API_KEY (submit/collect;
  * missing: skipped with a notice), CLAUDE_WORDBANK_MODEL (else CLAUDE_CHECK_MODEL, else the
@@ -24,7 +27,7 @@ import { runCollect, runPlan, runSubmit } from './lib/word-bank-jobs.ts';
 import { wordBankDepsFromEnv, wordBankModel } from './lib/word-bank-env.ts';
 import { SupabaseWordBankStore } from './lib/word-bank-store.ts';
 
-const JOBS = ['plan', 'submit', 'collect'] as const;
+const JOBS = ['plan', 'submit', 'collect', 'sample'] as const;
 
 async function main(): Promise<void> {
   const { positionals, values } = parseArgs({
@@ -53,6 +56,23 @@ async function main(): Promise<void> {
       model,
       ...(await runPlan({ store, model }, { limit: num(values.limit, 'limit') })),
     });
+    return;
+  }
+  if (job === 'sample') {
+    const n = values.limit === '20000' ? 30 : Math.min(num(values.limit, 'limit'), 200);
+    const { data, error } = await serviceClient()
+      .from('word_bank')
+      .select('lemma, pos, cefr, senses')
+      .not('model', 'is', null)
+      .order('updated_at', { ascending: false })
+      .limit(n);
+    if (error) throw new Error(`word_bank read failed: ${error.message}`);
+    for (const row of data ?? []) {
+      const senses = row.senses as { meaning_tr: string; example_en: string; example_tr: string }[];
+      console.log(`${row.lemma} (${row.pos}, ${row.cefr})`);
+      for (const s of senses) console.log(`  - ${s.meaning_tr} | ${s.example_en} | ${s.example_tr}`);
+    }
+    log('word bank sample', { rows: data?.length ?? 0 });
     return;
   }
   if (!haveClaudeKey()) return;
