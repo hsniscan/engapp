@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 import { getHeatmap, getStreakSummary } from '@/data';
+import { LeechStatsSection } from '@/features/leech';
 import { VocabTile } from '@/features/leveltest/VocabTile';
 import { WorkloadSection } from '@/features/load/WorkloadChart';
 import { GoalsSection } from '@/features/report/GoalsSection';
@@ -132,6 +133,7 @@ function StatsBody({ weeks, streak: s }: { weeks: HeatmapCell[][]; streak: Strea
         <Heatmap weeks={weeks} />
       </Surface>
       <WorkloadSection />
+      <LeechStatsSection />
 
       <section aria-labelledby="metrics-title">
         <h2 id="metrics-title" className="sr-only">

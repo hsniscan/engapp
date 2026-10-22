@@ -19,6 +19,7 @@ import {
 } from '../../supabase/functions/_shared/report-contracts';
 import { addDays, type DayKey, weekdayMon0 } from './day';
 import { goalProgress, type Goals } from './goals';
+import { isLeech } from './leech';
 import {
   type GroupRetention,
   MIN_ANSWERS,
@@ -41,7 +42,10 @@ import type { DailyActivity, Id, Millis, ReportGroupStat, WeeklyReportSummary } 
 
 export { REPORT_FOCUS_KEYS, type ReportFocusKey };
 
-/** A card with this many lapses is "hard" (a word for a mnemonic). İP6 has its own leech rule. */
+/**
+ * Fallback for the "hard words" focus: while fewer than MIN_FOCUS_NOTES words are leeches
+ * (İP6 rule, domain/leech.ts), a card with this many lapses counts as hard too.
+ */
 export const HARD_LAPSES = 3;
 /** A practice or mnemonic focus needs at least this many words. */
 export const MIN_FOCUS_NOTES = 3;
@@ -148,7 +152,11 @@ export function missedNoteIds(
     .map(([id]) => id);
 }
 
-/** Notes with a hard card (lapses ≥ HARD_LAPSES), most lapses first, then note id. */
+/**
+ * Notes with a hard card, most lapses first, then note id. Hard = a leech (İP6 rule,
+ * `isLeech`; card.lapses equals the lapses counted from the logs, invariant 3). While fewer
+ * than MIN_FOCUS_NOTES notes have a leech, cards with lapses ≥ HARD_LAPSES count as well.
+ */
 export function hardNoteIds(
   cards: readonly { note_id: Id; lapses: number }[],
   limit = FOCUS_LIST_SIZE,
@@ -158,10 +166,9 @@ export function hardNoteIds(
     if (c.lapses < HARD_LAPSES) continue;
     best.set(c.note_id, Math.max(best.get(c.note_id) ?? 0, c.lapses));
   }
-  return [...best]
-    .sort(([a, x], [b, y]) => y - x || (a < b ? -1 : a > b ? 1 : 0))
-    .slice(0, limit)
-    .map(([id]) => id);
+  const ranked = [...best].sort(([a, x], [b, y]) => y - x || (a < b ? -1 : a > b ? 1 : 0));
+  const leeches = ranked.filter(([, lapses]) => isLeech(lapses));
+  return (leeches.length >= MIN_FOCUS_NOTES ? leeches : ranked).slice(0, limit).map(([id]) => id);
 }
 
 function toStat(g: GroupRetention | null): ReportGroupStat | null {

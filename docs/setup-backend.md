@@ -115,7 +115,7 @@ call AI unless added here.
      `GEMINI_FALLBACK_MODEL`, `AI_PROVIDER=gemini`, `AI_DAILY_LIMIT`, `ALLOWED_ORIGINS`
    - on the first run only: a Web Push (VAPID) key pair, stored as the function secrets
      `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` (see step 10; nothing to do)
-   - `supabase functions deploy` (`ai-extract`, `ai-enrich`, `ai-examples`, `ai-themes`, `ai-mnemonic`, `ai-report`, `push-send`; JWT is verified inside the
+   - `supabase functions deploy` (`ai-extract`, `ai-enrich`, `ai-examples`, `ai-themes`, `ai-mnemonic`, `ai-report`, `ai-contrast`, `push-send`; JWT is verified inside the
      functions, so `verify_jwt = false` from `supabase/config.toml` is expected)
    - `select public.push_configure(<push-send URL>)`, which turns on the 15-minute reminder job
 3. Both jobs must end green. If "Check secrets" fails, a secret from step 4 is missing.

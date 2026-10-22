@@ -421,9 +421,9 @@ describe('Dexie schema', () => {
 
   it('v17 upgrade re-pulls settings once for the reminder setting, only on devices that pulled', async () => {
     for (const [name, cursor, expected] of [
-      // 'sources' comes from v12 (Anki import), which also runs on this v11 database, and
-      // 'weekly_reports' from v20.
-      ['upgrade-v17-synced', 77, ['sources', 'settings', 'weekly_reports']],
+      // 'sources' comes from v12 (Anki import), 'notes' from v19 (contrast cards) and
+      // 'weekly_reports' from v20, which also run on this v11 database.
+      ['upgrade-v17-synced', 77, ['sources', 'settings', 'notes', 'weekly_reports']],
       ['upgrade-v17-fresh', 0, undefined],
     ] as const) {
       const old = new Dexie(name);
@@ -446,15 +446,40 @@ describe('Dexie schema', () => {
     }
   });
 
+  it('v19 upgrade re-pulls notes once for contrast cards, only on devices that pulled', async () => {
+    for (const [name, cursor, expected] of [
+      // v20 (weekly reports) runs after v19 and adds its own tables.
+      ['upgrade-v19-synced', 77, ['notes', 'settings', 'weekly_reports']],
+      ['upgrade-v19-fresh', 0, undefined],
+    ] as const) {
+      const old = new Dexie(name);
+      old.version(1).stores({ notes: 'id, term_norm', settings: 'id', meta: 'key' });
+      old.version(17).stores({});
+      await old.open();
+      await old.table('notes').add({ id: 'n1', term: 'affect', term_norm: 'affect', term_type: 'word' });
+      await old.table('meta').put({ key: 'sync_cursor', value: cursor });
+      old.close();
+
+      const d = new EngDb(name);
+      await d.open();
+      expect(d.verno).toBe(LATEST);
+      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
+      expect(await d.notes.get('n1')).toEqual({ id: 'n1', term: 'affect', term_norm: 'affect', term_type: 'word' });
+      expect(await d.outbox.count()).toBe(0);
+      d.close();
+      await d.delete();
+    }
+  });
+
   it('v20 upgrade adds the weekly report tables, keeps settings and re-pulls reports and settings once', async () => {
     for (const [name, cursor, expected] of [
       ['upgrade-v20-synced', 91, ['settings', 'weekly_reports']],
       ['upgrade-v20-fresh', 0, undefined],
     ] as const) {
-      // A database as İP8 left it (version 17), with the backfill of v12–v17 already done.
+      // A database as İP6 left it (version 19), with the backfill of v12–v19 already done.
       const old = new Dexie(name);
       old.version(1).stores({ settings: 'id', meta: 'key' });
-      old.version(17).stores({});
+      old.version(19).stores({});
       await old.open();
       await old.table('settings').add({ id: 'settings', theme: 'dark', notify: null });
       await old.table('meta').put({ key: 'sync_cursor', value: cursor });

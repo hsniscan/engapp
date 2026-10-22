@@ -25,6 +25,8 @@ export {
   type GoalsView,
   type ReportListItem,
 } from './weeklyReport';
+export * from './leech';
+export * from './contrast';
 export { addExtraNew, getMoreStudyOverview, MAX_EXTRA_NEW_STEP, type MoreStudyOverview } from './extraStudy';
 export {
   computeWorkload,

@@ -198,7 +198,18 @@ describe('focus of the week (fixed priority)', () => {
     });
     expect(chooseFocus(focusInput({ newAvailable: 0 })).focus).toBe('add_words');
   });
-  it('hard words: lapses ≥ 3, most lapses first', () => {
+  it('hard words: leeches when there are enough, most lapses first', () => {
+    expect(
+      hardNoteIds([
+        { note_id: 'a', lapses: 6 },
+        { note_id: 'b', lapses: 9 },
+        { note_id: 'c', lapses: 7 },
+        { note_id: 'd', lapses: 5 },
+        { note_id: 'a', lapses: 2 },
+      ]),
+    ).toEqual(['b', 'c', 'a']);
+  });
+  it('hard words: falls back to lapses ≥ 3 while fewer than 3 words are leeches', () => {
     expect(
       hardNoteIds([
         { note_id: 'a', lapses: 3 },

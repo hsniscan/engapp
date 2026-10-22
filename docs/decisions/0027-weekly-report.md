@@ -42,9 +42,9 @@ account and never move to another account (decision 0009).
       those notes.
    4. `practice_gap`: recognition is ahead of production by at least 10 points, with at least
       3 notes. The button opens a practice round.
-   5. `mnemonic_hard`: at least 3 words with a card forgotten at least 3 times. The button
-      opens the first word in the library. İP6 has its own leech rule, which this does not
-      replace.
+   5. `mnemonic_hard`: at least 3 words with a hard card. Hard = a leech (İP6 rule,
+      `domain/leech.ts`: lapses ≥ 6); while fewer than 3 words have a leech, a card forgotten
+      at least 3 times counts too. The button opens the first word in the library.
    6. `add_words`: no new card is waiting. The button opens Add.
    7. `keep_going`: the button opens the review.
 

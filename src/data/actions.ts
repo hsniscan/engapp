@@ -6,22 +6,24 @@ import { applyRating, emptyFsrs, fsrsEqual, pickFsrs } from '../domain/fsrs';
 import { normalizeTerm } from '../domain/normalize';
 import { isDuplicateSense } from '../../supabase/functions/_shared/text';
 import { canHaveCloze, isValidSpan } from '../domain/recognition';
+import { primaryRecognition } from '../domain/leech';
 import { deriveUnlocked, effectiveLogs, recognitionUnlocks, replayCard } from '../domain/recompute';
 import { addAnswerToDay, emptyDay } from '../domain/streak';
-import type {
-  Card,
-  CefrLevel,
-  CardStateValue,
-  CardType,
-  DailyActivity,
-  Id,
-  Millis,
-  Note,
-  RatingValue,
-  ReviewLog,
-  Sense,
-  NoteTermType,
-  Source,
+import {
+  type Card,
+  type CefrLevel,
+  type CardStateValue,
+  type CardType,
+  type DailyActivity,
+  type Id,
+  type Millis,
+  type Note,
+  type RatingValue,
+  type ReviewLog,
+  type Sense,
+  type NoteTermType,
+  recognitionOnly,
+  type Source,
 } from '../domain/types';
 import { isRating } from '../domain/fsrs';
 import { db } from './db';
@@ -83,9 +85,22 @@ function meaningKey(s: Pick<Sense, 'meaning_tr' | 'meaning_tr_override'>): strin
   return normalizeTerm(s.meaning_tr_override?.trim() || s.meaning_tr);
 }
 
+/**
+ * The note's recognition card that drives the unlock rule (domain/leech.ts
+ * primaryRecognition): per-sense recognition cards from a split and a suspended card kept
+ * after a reset never take that role by accident.
+ */
 async function recognitionOf(noteId: Id): Promise<Card | undefined> {
-  const cards = await db.cards.where('note_id').equals(noteId).toArray();
-  return cards.find((c) => c.card_type === 'recognition' && c.deleted_at === null) ?? cards.find((c) => c.card_type === 'recognition');
+  return primaryRecognition(await db.cards.where('note_id').equals(noteId).toArray());
+}
+
+/**
+ * After an answer or undo on a recognition card (or a split/reset, data/leech.ts): unlock or
+ * re-lock the note's production/cloze cards from its primary recognition card.
+ */
+export async function syncFromPrimary(w: SyncWriter, noteId: Id): Promise<Id[]> {
+  const primary = await recognitionOf(noteId);
+  return syncUnlocked(w, noteId, primary?.state ?? null);
 }
 
 /** Bring every production/cloze card of a note in line with the recognition state. */
@@ -115,16 +130,19 @@ async function ensureSenseCards(
 ): Promise<Card[]> {
   const existing = await db.cards.where('sense_id').equals(sense.id).toArray();
   const out: Card[] = [];
-  const wanted: CardType[] = termType === 'affix' ? [] : canHaveCloze(sense) ? ['production', 'cloze'] : ['production'];
+  const wanted: CardType[] = recognitionOnly(termType) ? [] : canHaveCloze(sense) ? ['production', 'cloze'] : ['production'];
   for (const type of ['production', 'cloze'] as const) {
-    const card = existing.find((c) => c.card_type === type);
+    // A reset (v0.3 İP6) leaves the old card suspended next to a fresh copy: all copies count.
+    const ofType = existing.filter((c) => c.card_type === type);
+    const live = ofType.filter((c) => c.deleted_at === null);
     const want = wanted.includes(type);
-    if (want && !card) {
+    if (want && ofType.length === 0) {
       out.push(await w.put('cards', newCard(w, sense.note_id, sense.id, type, recognitionState !== null && recognitionUnlocks(recognitionState))));
-    } else if (want && card && card.deleted_at !== null) {
+    } else if (want && live.length === 0) {
+      const card = ofType[0]!;
       out.push(await w.put('cards', { ...card, deleted_at: null, unlocked: deriveUnlocked(card, recognitionState) }));
-    } else if (!want && card && card.deleted_at === null) {
-      await w.put('cards', { ...card, deleted_at: w.now });
+    } else if (!want) {
+      for (const card of live) await w.put('cards', { ...card, deleted_at: w.now });
     }
   }
   return out;
@@ -333,7 +351,7 @@ export async function editNote(noteId: Id, patch: NotePatch, now: Millis = Date.
     }
     assertNoteFits(next);
     const saved = await w.put('notes', next);
-    if ((note.term_type === 'affix') !== (saved.term_type === 'affix')) {
+    if (recognitionOnly(note.term_type) !== recognitionOnly(saved.term_type)) {
       // Becoming (or no longer being) a root/affix card changes which cards a sense has.
       const rec = await recognitionOf(noteId);
       for (const s of await db.senses.where('note_id').equals(noteId).toArray())
@@ -511,7 +529,7 @@ export async function answerCard(input: AnswerInput, now: Millis = Date.now()): 
     };
     await w.insertLog(log);
     const saved = await w.put('cards', { ...card, ...fsrs, unlocked: true });
-    const unlockedCardIds = card.card_type === 'recognition' ? await syncUnlocked(w, card.note_id, fsrs.state) : [];
+    const unlockedCardIds = card.card_type === 'recognition' ? await syncFromPrimary(w, card.note_id) : [];
 
     const key = dayKeyOf(now, cfg);
     const day = (await db.daily_activity.get(key)) ?? emptyDay(key);
@@ -565,7 +583,7 @@ export async function undoAnswer(logId: Id, now: Millis = Date.now()): Promise<{
     if (!card) throw new ActionError('not_found');
     const { fsrs } = replayCard(scheduler, card, [...allLogs, undo]);
     if (!fsrsEqual(fsrs, pickFsrs(card))) card = await w.put('cards', { ...card, ...fsrs });
-    if (card.card_type === 'recognition') await syncUnlocked(w, card.note_id, fsrs.state);
+    if (card.card_type === 'recognition') await syncFromPrimary(w, card.note_id);
     await refreshDay(dayKeyOf(log.reviewed_at, cfg), cfg, scheduler, now);
     return { card, undone: log };
   });

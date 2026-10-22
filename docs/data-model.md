@@ -53,11 +53,16 @@ Every synced mutable row has `id` (UUID v7), `user_id` (null in guest mode), `cr
 4. **Unlock rule.** Recognition cards are always unlocked. A production or cloze card
    is unlocked when the note's recognition card is in Review or Relearning, or when the
    card has its own history (`deriveUnlocked`). This rule is re-derived after answers,
-   undo, sync and restore.
+   undo, sync and restore. When a note has more than one recognition card (a split or a
+   reset, v0.3 İP6), the rule follows its primary one (`primaryRecognition`: live,
+   note-level and not suspended first; decision 0026).
 5. **Card set per note.** Each live note has 1 recognition card. Each live sense has 1
    production card, plus 1 cloze card only when it has `source_sentence` and a valid
    `span`. A root/affix note (`term_type = 'affix'`, e.g. "-spect-") has only its recognition
-   card (decision 0014).
+   card (decision 0014), and so has a contrast note (`term_type = 'contrast'`, "affect ↔
+   effect", decision 0026). Split senses (one recognition card per sense, `sense_id` set)
+   and reset copies are extra cards the user asked for; the card they replace stays,
+   suspended, with its logs.
 6. **HLC.** The format is `"<ms:15>:<counter:5>:<device_id>"`, and the strings compare
    lexicographically. The clock is stored in `meta.hlc` and advanced inside each write
    transaction. Remote and restored stamps are merged with `receive`, so the next local
@@ -181,6 +186,10 @@ All actions take an optional trailing `now` (ms) for tests. They throw `ActionEr
 | `copyCardsFromOtherAccount(userId, snapshot)` | Another account's data on this device: copies its live notes, senses and referenced sources into `userId` as new rows (new ids, cards New), applies the account's snapshot and drops the other account's rows, logs, settings and import jobs locally. No history crosses accounts (decision 0008). |
 | `resetStudyHistory()` | "Çalışma geçmişini sıfırla": an undo row for every answer that still counts, all cards recomputed (New, re-locked), `daily_activity` rebuilt. Syncs as ordinary log and card rows. |
 | `rebuildDailyActivity()`, `recomputeAllCards()` | Maintenance. |
+| `getCardLapses(cardId)` / `leechAfterAnswer(cardId, logId)` / `listLeechCards()` / `lapsesByNote()` | Leeches (`src/data/leech.ts`, decision 0026): lapses from the card's effective logs; whether an answer was the 6th lapse; the 6+-lapse cards for Stats. |
+| `getLeechSheet(cardId)` / `splitSenses(cardId)` / `resetCard(cardId)` / `undoLeechAction(originalId, createdIds)` | "Bu karta başka yoldan bakalım": the sheet's data; one recognition card per sense or a fresh copy (the original is suspended, logs untouched); undo tombstones the new cards and unsuspends the original. |
+| `getConfusables({noteId, limit, familyOf})` / `getConfusionPicker(noteId, query)` / `reportConfusion` / `hideConfusablePair` / `clearConfusion` | Confusable pairs (`src/data/contrast.ts`): scanned near pairs whose words are forgotten plus reported ones, minus hidden pairs and pairs with a card; the "karıştırdığın kelime" picker; report/hide rows in `user_content` (kind `confusion`). |
+| `getContrastDraft(pair)` / `cachedContrast` / `storeContrastNote(res)` / `createContrastCard(input)` / `getContrastCard(noteId)` / `saveContrastText(noteId, text)` | Contrast cards: the draft from the cached shared content (works offline), caching an `ai-contrast` answer, the recognition-only note, and the user's difference line (`user_content` kind `contrast`). |
 | `logError`, `listErrors`, `clearErrors` | Error log. |
 
 ### Restore semantics
@@ -256,3 +265,23 @@ Copying cards to another account does not copy them (decision 0009).
   last chunk aggregates them into `sources.topics` (`aggregateTopics`). Absent on jobs from
   before v13 (no upgrade needed). Chunk results in `chunk_cache` carry `topics` and, per
   candidate, `false_friend` since extract-v5.
+
+## Leeches, confusables and contrast cards (v0.3 İP6, decision 0026)
+
+- Nothing is stored for a leech: `lapses ≥ 6` from the effective review logs
+  (`domain/leech.ts`). Split and reset add cards and suspend the original; no log changes.
+- Dexie v19: no new table or index. The upgrade re-pulls `notes` once (`pull_backfill`) for
+  contrast notes written by newer devices.
+- `notes.term_type` may be `contrast`: term "a ↔ b" (sorted), sense 1 = the first word,
+  sense 2 = the second (meanings copied from the user's senses, sentences from the shared
+  content or none), one recognition card, no level.
+- `user_content` kind `confusion`: a pair the user reported (`context 'reported'`,
+  `selected: true`) or hid (`'hidden'`); id = UUID v8 of SHA-256 over ("user_content",
+  "confusion", the sorted normalised terms); `text` "a ↔ b"; `sense_id` / `replaces_id` =
+  the two senses. Undo is a tombstone.
+- `user_content` kind `contrast`: the difference line of a contrast note (1–300
+  characters); id from ("user_content", "contrast", note id); `sense_id` = the note's first
+  sense; `replaces_id` = the shared `lexicon_pair_notes` row it came from, or null.
+- `lexicon_pair_notes` kind `contrast` (cache of `ai-contrast`): `sense_id` = the smaller
+  lexicon sense id, `content_key` = "<smaller>|<larger>", `content = {a, b, difference_tr}`
+  with each side `{sense_id, lemma, sentence_en, span, sentence_tr}`. Never user text.
