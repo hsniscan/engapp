@@ -30,6 +30,7 @@ import type {
   WeeklyReport,
 } from '../domain/types';
 import type { CachedImage } from '../domain/images';
+import type { WordBankEntry } from '../domain/wordBank';
 import { addPullBackfill } from './backfill';
 
 /**
@@ -68,6 +69,7 @@ export class EngDb extends Dexie {
   weekly_reports!: EntityTable<WeeklyReport, 'id'>;
   report_drafts!: EntityTable<ReportDraft, 'week'>;
   images!: EntityTable<CachedImage, 'id'>;
+  word_bank!: EntityTable<WordBankEntry, 'id'>;
 
   constructor(name = 'engapp') {
     super(name);
@@ -284,6 +286,11 @@ export class EngDb extends Dexie {
     this.version(21)
       .stores({ images: 'id, sense_id, fetched_at' })
       .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
+    // v24 (v0.4 wave 2, Kelime Bankası, decision 0038; 22, 23 and 25 belong to the other
+    // packages): `word_bank`, the device's copy of public.word_bank (shared system content,
+    // read-only like lexicon_cache; pulled by server_seq into meta.word_bank_cursor). A new
+    // table and nothing synced changes, so no row is rewritten.
+    this.version(24).stores({ word_bank: 'id, cefr, lemma_norm' });
   }
 }
 

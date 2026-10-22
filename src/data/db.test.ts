@@ -5,7 +5,7 @@ import { PULL_BACKFILL_KEY } from './backfill';
 import { EngDb } from './db';
 
 /** The current schema version; bump with every new Dexie version. */
-const LATEST = 21;
+const LATEST = 24;
 
 describe('Dexie schema', () => {
   it('opens with every table and the indexes the queries rely on', async () => {
@@ -13,7 +13,7 @@ describe('Dexie schema', () => {
     await d.open();
     expect(d.verno).toBe(LATEST);
     expect(d.tables.map((t) => t.name).sort()).toEqual(
-      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs', 'decks', 'theme_previews', 'level_tests', 'known_terms', 'anki_imports', 'lexicon_pair_notes', 'weekly_reports', 'report_drafts', 'images'].sort(),
+      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs', 'decks', 'theme_previews', 'level_tests', 'known_terms', 'anki_imports', 'lexicon_pair_notes', 'weekly_reports', 'report_drafts', 'images', 'word_bank'].sort(),
     );
     const idx = (table: string) => d.table(table).schema.indexes.map((i) => i.name);
     expect(idx('decks')).toEqual(expect.arrayContaining(['sort', 'deleted_at']));
@@ -531,5 +531,30 @@ describe('Dexie schema', () => {
       d.close();
       await d.delete();
     }
+  });
+  it('v24 upgrade adds the word bank copy and leaves everything else alone', async () => {
+    // A database as v0.4 wave 1 left it (version 21), with cards and settings.
+    const old = new Dexie('upgrade-v24');
+    old.version(1).stores({ notes: 'id, term_norm', settings: 'id', meta: 'key' });
+    old.version(21).stores({ images: 'id, sense_id, fetched_at' });
+    await old.open();
+    await old.table('notes').add({ id: 'n1', term: 'apple', term_norm: 'apple' });
+    await old.table('settings').add({ id: 'settings', level: 'B1' });
+    await old.table('meta').put({ key: 'sync_cursor', value: 12 });
+    old.close();
+
+    const d = new EngDb('upgrade-v24');
+    await d.open();
+    expect(d.verno).toBe(LATEST);
+    expect(await d.notes.get('n1')).toEqual({ id: 'n1', term: 'apple', term_norm: 'apple' });
+    expect(await d.settings.get('settings')).toEqual({ id: 'settings', level: 'B1' });
+    expect((await d.meta.get('sync_cursor'))?.value).toBe(12);
+    expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toBeUndefined();
+    expect(await d.word_bank.count()).toBe(0);
+    expect(d.word_bank.schema.primKey.name).toBe('id');
+    expect(d.word_bank.schema.indexes.map((i) => i.name)).toEqual(expect.arrayContaining(['cefr', 'lemma_norm']));
+    expect(await d.outbox.count()).toBe(0);
+    d.close();
+    await d.delete();
   });
 });
