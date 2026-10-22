@@ -47,6 +47,7 @@ export {
   exportBackup,
   exportCsv,
   restoreBackup,
+  RESTORE_CHUNK,
   runIntegrityCheck,
   repairIntegrity,
   adoptGuestData,

@@ -40,7 +40,7 @@ import {
 } from '../domain/types';
 import { emptyFsrs } from '../domain/fsrs';
 import { db } from './db';
-import { compactOutbox } from './outbox';
+import { compactGuestOutbox, compactOutbox } from './outbox';
 import { rebuildDailyActivity } from './dailyActivity';
 import { ActionError } from './errors';
 import { groupLogs } from './history';
@@ -117,17 +117,15 @@ async function recomputeCardsIn(w: SyncWriter, cardIds: Iterable<Id> | 'all'): P
       recognitionState.set(c.note_id, c.state);
     }
   }
-  let changed = 0;
+  const changed: Card[] = [];
   for (const original of cards) {
     let c = updated.get(original.id)!;
     const unlocked = deriveUnlocked(c, recognitionState.get(c.note_id) ?? null);
     if (unlocked !== c.unlocked) c = { ...c, unlocked };
-    if (c !== original) {
-      await w.put('cards', c);
-      changed++;
-    }
+    if (c !== original) changed.push(c);
   }
-  return changed;
+  await w.putMany('cards', changed);
+  return changed.length;
 }
 
 /** Rebuild every card's FSRS state and unlock flag from the review logs. */
@@ -322,20 +320,22 @@ export async function applyRemoteRows(
 
 /** Mark live notes sharing a term_norm as possible duplicates (account merge rule). */
 async function flagDuplicates(w: SyncWriter, termNorms: Iterable<string>): Promise<number> {
-  let n = 0;
-  for (const norm of termNorms) {
-    const live = (await db.notes.where('term_norm').equals(norm).toArray()).filter(
-      (x) => x.deleted_at === null,
-    );
-    if (live.length < 2) continue;
-    for (const note of live) {
-      if (!note.possible_duplicate) {
-        await w.put('notes', { ...note, possible_duplicate: true });
-        n++;
-      }
-    }
+  const norms = [...new Set(termNorms)];
+  if (norms.length === 0) return 0;
+  const byTerm = new Map<string, Note[]>();
+  for (const note of await db.notes.where('term_norm').anyOf(norms).toArray()) {
+    if (note.deleted_at !== null) continue;
+    const list = byTerm.get(note.term_norm) ?? [];
+    list.push(note);
+    byTerm.set(note.term_norm, list);
   }
-  return n;
+  const flag: Note[] = [];
+  for (const live of byTerm.values()) {
+    if (live.length < 2) continue;
+    for (const note of live) if (!note.possible_duplicate) flag.push({ ...note, possible_duplicate: true });
+  }
+  await w.putMany('notes', flag);
+  return flag.length;
 }
 
 // ------------------------------------------------------------------ backup
@@ -398,6 +398,15 @@ function sameRow(a: unknown, b: unknown): boolean {
   );
 }
 
+/** Rows per transaction while restoring (decision 0025). */
+export const RESTORE_CHUNK = 500;
+
+function chunks<T>(rows: readonly T[], size = RESTORE_CHUNK): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < rows.length; i += size) out.push(rows.slice(i, i + size));
+  return out;
+}
+
 /**
  * Restore a backup (a parsed object or the raw JSON string; verified first).
  * - merge: rows missing locally are added as-is; rows present on both sides keep the one
@@ -405,13 +414,20 @@ function sameRow(a: unknown, b: unknown): boolean {
  * - overwrite: the backup's notes/senses/cards/sources/settings replace local ones; local
  *   rows absent from the backup are soft-deleted (so the deletion syncs).
  * Review and practice logs are insert-only in both modes: missing ones are added, none are removed.
- * Afterwards all cards are recomputed and daily_activity is rebuilt.
+ * Afterwards all cards are recomputed and daily_activity is rebuilt; a guest's outbox is
+ * compacted (compactGuestOutbox).
+ *
+ * Writes go in transactions of RESTORE_CHUNK rows with bulkGet/bulkPut (decision 0025:
+ * 10,000 cards in seconds instead of ~90 s). Each chunk is atomic with its outbox rows; an
+ * interrupted restore is finished by running it again (every step is idempotent: rows
+ * already restored compare equal, logs already present are skipped).
  * @throws ActionError('invalid_backup') with the verify error as message.
  */
 export async function restoreBackup(
   file: unknown,
   mode: RestoreMode,
   now: Millis = Date.now(),
+  chunkSize = RESTORE_CHUNK,
 ): Promise<RestoreResult> {
   const verified = await verifyBackup(file);
   if (!verified.ok) throw new ActionError('invalid_backup', verified.error);
@@ -425,72 +441,93 @@ export async function restoreBackup(
     recomputedCards: 0,
   };
 
-  await writeTx(allSyncedTables(), now, async (w) => {
-    const terms = new Set<string>();
-    for (const table of MUTABLE) {
-      // content_feedback / user_content (before schema_version 5), decks (before 7) and
-      // known_terms (before 8) are absent in older files: such a file says nothing about
-      // them, so overwrite leaves the local rows alone.
-      const fromFile = tables[table] as MutableRows[MutableTable][] | undefined;
-      const incoming = fromFile ?? [];
+  const terms = new Set<string>();
+  for (const table of MUTABLE) {
+    // content_feedback / user_content (before schema_version 5), decks (before 7) and
+    // known_terms (before 8) are absent in older files: such a file says nothing about
+    // them, so overwrite leaves the local rows alone.
+    const fromFile = tables[table] as MutableRows[MutableTable][] | undefined;
+    const incoming = fromFile ?? [];
+    for (const chunk of chunks(incoming, chunkSize)) {
+      await writeTx([db.table(table)], now, async (w) => {
+        const existing = (await db.table(table).bulkGet(chunk.map((r) => r.id))) as (
+          MutableRows[MutableTable] | undefined
+        )[];
+        const asIs: MutableRows[MutableTable][] = [];
+        const stamped: MutableRows[MutableTable][] = [];
+        for (const [i, row] of chunk.entries()) {
+          const local = existing[i];
+          if (!local) {
+            asIs.push(row);
+            res.inserted++;
+          } else if (sameRow(local, row)) {
+            res.kept++;
+          } else if (mode === 'overwrite') {
+            stamped.push(row);
+            res.replaced++;
+          } else if (compareHlc(row.hlc, local.hlc) > 0) {
+            asIs.push(row);
+            res.replaced++;
+          } else {
+            res.kept++;
+          }
+          if (table === 'notes') terms.add((row as Note).term_norm);
+        }
+        await w.putManyAsIs(table, asIs);
+        await w.putMany(table, stamped);
+      });
+    }
+    // settings is a single row: a backup without settings keeps the local ones.
+    if (mode === 'overwrite' && fromFile && table !== 'settings') {
       const ids = new Set(incoming.map((r) => r.id));
-      // One bulkGet instead of a get per row: 10,000 cards restore minutes → seconds.
-      const existing = (await db.table(table).bulkGet(incoming.map((r) => r.id))) as (
-        MutableRows[MutableTable] | undefined
-      )[];
-      for (const [i, row] of incoming.entries()) {
-        const local = existing[i];
-        if (!local) {
-          await w.putAsIs(table, row);
-          res.inserted++;
-        } else if (sameRow(local, row)) {
-          res.kept++;
-        } else if (mode === 'overwrite') {
-          await w.put(table, row);
-          res.replaced++;
-        } else if (compareHlc(row.hlc, local.hlc) > 0) {
-          await w.putAsIs(table, row);
-          res.replaced++;
-        } else {
-          res.kept++;
-        }
-        if (table === 'notes') terms.add((row as Note).term_norm);
-      }
-      if (mode === 'overwrite' && fromFile) {
-        const locals = (await db.table(table).toArray()) as MutableRows[MutableTable][];
-        for (const local of locals) {
-          if (ids.has(local.id) || local.deleted_at !== null) continue;
-          if (table === 'settings') continue; // single row; a backup without settings keeps local ones
-          await w.put(table as MutableTable, { ...local, deleted_at: now });
-          res.deleted++;
-        }
+      const localIds = (await db.table(table).toCollection().primaryKeys()) as Id[];
+      for (const chunk of chunks(localIds.filter((id) => !ids.has(id)), chunkSize)) {
+        await writeTx([db.table(table)], now, async (w) => {
+          const locals = (await db.table(table).bulkGet(chunk)) as (MutableRows[MutableTable] | undefined)[];
+          const gone = locals
+            .filter((l): l is MutableRows[MutableTable] => !!l && l.deleted_at === null)
+            .map((l) => ({ ...l, deleted_at: now }) as MutableRows[MutableTable]);
+          await w.putMany(table as MutableTable, gone);
+          res.deleted += gone.length;
+        });
       }
     }
-    const knownLogs = await db.review_logs.bulkGet(tables.review_logs.map((l) => l.id));
-    for (const [i, log] of tables.review_logs.entries()) {
-      if (knownLogs[i]) continue;
-      w.observe(log.hlc);
-      await w.insertLog(log);
-      res.logsAdded++;
-    }
-    const practice = tables.practice_logs ?? [];
-    const knownPractice = await db.practice_logs.bulkGet(practice.map((l) => l.id));
-    for (const [i, log] of practice.entries()) {
-      if (knownPractice[i]) continue;
-      w.observe(log.hlc);
-      await w.insertPracticeLog(log);
-    }
-    const tests = tables.level_tests ?? [];
-    const knownTests = await db.level_tests.bulkGet(tests.map((t) => t.id));
-    for (const [i, test] of tests.entries()) {
-      if (knownTests[i]) continue;
-      w.observe(test.hlc);
-      await w.insertLevelTest(test);
-    }
+  }
+
+  for (const chunk of chunks(tables.review_logs, chunkSize)) {
+    await writeTx([db.review_logs], now, async (w) => {
+      const known = await db.review_logs.bulkGet(chunk.map((l) => l.id));
+      const fresh = chunk.filter((_, i) => !known[i]);
+      for (const log of fresh) w.observe(log.hlc);
+      // A guest's logs are queued by adoptGuestData at the first sign-in (all of them), so
+      // queuing them now would only fill the outbox (decision 0025).
+      await w.insertLogs(fresh, w.userId !== null);
+      res.logsAdded += fresh.length;
+    });
+  }
+  for (const chunk of chunks(tables.practice_logs ?? [], chunkSize)) {
+    await writeTx([db.practice_logs], now, async (w) => {
+      const known = await db.practice_logs.bulkGet(chunk.map((l) => l.id));
+      const fresh = chunk.filter((_, i) => !known[i]);
+      for (const log of fresh) w.observe(log.hlc);
+      await w.insertPracticeLogs(fresh, w.userId !== null);
+    });
+  }
+  for (const chunk of chunks(tables.level_tests ?? [], chunkSize)) {
+    await writeTx([db.level_tests], now, async (w) => {
+      const known = await db.level_tests.bulkGet(chunk.map((t) => t.id));
+      const fresh = chunk.filter((_, i) => !known[i]);
+      for (const test of fresh) w.observe(test.hlc);
+      await w.insertLevelTests(fresh, w.userId !== null);
+    });
+  }
+
+  await writeTx([db.notes, db.cards, db.review_logs, db.settings], now, async (w) => {
     if (mode === 'merge') await flagDuplicates(w, terms);
     res.recomputedCards = await recomputeCardsIn(w, 'all');
   });
   await rebuildDailyActivity(now);
+  await compactGuestOutbox();
   return res;
 }
 
