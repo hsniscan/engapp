@@ -7,7 +7,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 
-export const PAIR_NOTE_KINDS = ['false_friend', 'mnemonic_suggestion'] as const;
+export const PAIR_NOTE_KINDS = ['false_friend', 'mnemonic_suggestion', 'contrast'] as const;
 export type PairNoteKind = (typeof PAIR_NOTE_KINDS)[number];
 export type LangPair = 'en-tr';
 

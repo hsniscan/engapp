@@ -828,7 +828,8 @@
       "word": "Kelime",
       "phrase": "Söz öbeği",
       "pattern": "Kalıp",
-      "affix": "Kök/ek"
+      "affix": "Kök/ek",
+      "contrast": "Fark kartı"
     },
     "cardType": {
       "recognition": "Tanıma",

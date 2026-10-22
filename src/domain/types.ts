@@ -15,8 +15,14 @@ export interface SyncedRow {
 }
 
 export type TermType = 'word' | 'phrase' | 'pattern';
-/** A note can also be a root or affix card ("-spect-", "re-"): recognition card only. */
-export type NoteTermType = TermType | 'affix';
+/**
+ * A note can also be a root or affix card ("-spect-", "re-") or a contrast card for two
+ * terms the learner mixes up ("affect ↔ effect", v0.3 İP6): recognition card only.
+ */
+export type NoteTermType = TermType | 'affix' | 'contrast';
+
+/** Notes with only a recognition card (no production or cloze cards for their senses). */
+export const recognitionOnly = (t: NoteTermType): boolean => t === 'affix' || t === 'contrast';
 export type CardType = 'recognition' | 'production' | 'cloze';
 
 /** FSRS card states (numeric values match ts-fsrs State enum). */
@@ -361,7 +367,7 @@ export interface LexiconPairNote {
   /** lexicon_senses.id (not the user's sense id); null for a note about the whole term. */
   sense_id: Id | null;
   lang_pair: 'en-tr';
-  kind: 'false_friend' | 'mnemonic_suggestion';
+  kind: 'false_friend' | 'mnemonic_suggestion' | 'contrast';
   content_key: string;
   content: Record<string, unknown>;
   curated: boolean;

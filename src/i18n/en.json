@@ -828,7 +828,8 @@
       "word": "Word",
       "phrase": "Phrase",
       "pattern": "Pattern",
-      "affix": "Root/affix"
+      "affix": "Root/affix",
+      "contrast": "Contrast card"
     },
     "cardType": {
       "recognition": "Recognition",

@@ -5,7 +5,7 @@
 import { normalizeTerm } from './normalize.ts';
 
 export type LangPair = 'en-tr';
-export type PairNoteKind = 'false_friend' | 'mnemonic_suggestion';
+export type PairNoteKind = 'false_friend' | 'mnemonic_suggestion' | 'contrast';
 
 export interface FalseFriendContent {
   /** The Turkish look-alike ("aktüel"). */

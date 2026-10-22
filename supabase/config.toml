@@ -416,6 +416,9 @@ verify_jwt = false
 [functions.ai-mnemonic]
 verify_jwt = false
 
+[functions.ai-contrast]
+verify_jwt = false
+
 # Web Push (v0.3 İP8): /config is public, /test checks the user's JWT itself, and the
 # scheduled job (pg_cron + pg_net) authenticates with the database's own token.
 [functions.push-send]

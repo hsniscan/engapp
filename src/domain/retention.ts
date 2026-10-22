@@ -274,7 +274,7 @@ export interface WindowOptions {
 }
 
 const NATURAL_ORDER: Partial<Record<RetentionDimension, readonly string[]>> = {
-  term_type: ['word', 'phrase', 'pattern', 'affix'],
+  term_type: ['word', 'phrase', 'pattern', 'affix', 'contrast'],
   level: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'],
   card_type: ['recognition', 'production', 'cloze'],
 };

@@ -110,6 +110,8 @@ export function senseLevel(
   lex: LexiconSense | undefined,
   data: LevelData | null,
 ): ResolvedLevel | null {
+  // A contrast card (v0.3 İP6) is two words, not one: no level of its own.
+  if (note.term_type === 'contrast') return null;
   const stored = storedLevel(lex);
   if (stored) return stored;
   if (!data) return null;

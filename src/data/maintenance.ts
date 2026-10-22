@@ -13,6 +13,7 @@ import { compareHlc } from '../domain/hlc';
 import { checkIntegrity, type IntegrityReport } from '../domain/integrity';
 import { keepProfileFields } from '../domain/profile';
 import { fillLateColumns } from '../domain/syncMerge';
+import { primaryRecognition } from '../domain/leech';
 import { deriveUnlocked, effectiveLogs, replayCard } from '../domain/recompute';
 import {
   cardSchema,
@@ -111,14 +112,18 @@ export async function recomputeCardsIn(w: SyncWriter, cardIds: Iterable<Id> | 'a
     const { fsrs } = replayCard(scheduler, c, byCard.get(c.id) ?? []);
     updated.set(c.id, fsrsEqual(fsrs, pickFsrs(c)) ? c : { ...c, ...fsrs });
   }
-  const recognitionState = new Map<Id, CardStateValue>();
+  // The primary recognition card of each note drives the unlock rule (domain/leech.ts).
+  const recognitionByNote = new Map<Id, Card[]>();
   for (const c of updated.values()) {
-    if (
-      c.card_type === 'recognition' &&
-      (c.deleted_at === null || !recognitionState.has(c.note_id))
-    ) {
-      recognitionState.set(c.note_id, c.state);
-    }
+    if (c.card_type !== 'recognition') continue;
+    const list = recognitionByNote.get(c.note_id);
+    if (list) list.push(c);
+    else recognitionByNote.set(c.note_id, [c]);
+  }
+  const recognitionState = new Map<Id, CardStateValue>();
+  for (const [noteId, list] of recognitionByNote) {
+    const primary = primaryRecognition(list);
+    if (primary) recognitionState.set(noteId, primary.state);
   }
   let changed = 0;
   for (const original of cards) {
