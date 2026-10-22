@@ -61,14 +61,7 @@ function GoalRing({ progress: p }: { progress: GoalProgress }) {
         role="img"
         aria-label={t('goals.ringLabel', { label, value: formatNumber(p.value), target })}
       >
-        <circle
-          cx="32"
-          cy="32"
-          r={R}
-          fill="none"
-          strokeWidth="7"
-          className="stroke-surface-sunken"
-        />
+        <circle cx="32" cy="32" r={R} fill="none" strokeWidth="7" className="stroke-border" />
         <circle
           cx="32"
           cy="32"

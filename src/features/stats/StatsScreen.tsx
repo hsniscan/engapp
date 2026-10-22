@@ -58,11 +58,7 @@ export function StatsScreen() {
         value={tab}
         onValueChange={(v) =>
           setSearch(
-            v === 'progress'
-              ? { tab: PROGRESS_TAB_PARAM }
-              : v === 'report'
-                ? { tab: REPORT_TAB_PARAM }
-                : {},
+            v === 'progress' ? { tab: PROGRESS_TAB_PARAM } : v === 'report' ? { tab: REPORT_TAB_PARAM } : {},
             { replace: true },
           )
         }
@@ -82,46 +78,45 @@ function StatsBody({ weeks, streak: s }: { weeks: HeatmapCell[][]; streak: Strea
   const active = flat.filter((c) => c.level > 0).length;
   const completed = flat.filter((c) => c.level === 2).length;
 
-  const metrics: { label: string; value: string; detail: string; hint?: string; hero?: boolean }[] =
-    [
-      {
-        label: t('stats.currentStreak'),
-        value: formatNumber(s.currentStreak),
-        detail: s.todayActive ? t('stats.currentStreakToday') : t('stats.currentStreakPending'),
-        hero: true,
-      },
-      {
-        label: t('stats.longestStreak'),
-        value: formatNumber(s.longestStreak),
-        detail: t('stats.daysUnit', { count: s.longestStreak }),
-      },
-      {
-        label: t('stats.totalActiveDays'),
-        value: formatNumber(s.totalActiveDays),
-        detail: t('stats.totalActiveDetail'),
-      },
-      {
-        label: t('stats.last30'),
-        value: formatPercent(s.last30Ratio),
-        detail: t('stats.last30Detail', { count: s.last30ActiveDays }),
-      },
-      {
-        label: t('stats.avgTime'),
-        value: s.avgDailyTimeMs ? formatDuration(s.avgDailyTimeMs) : '—',
-        detail: t('stats.avgTimeDetail'),
-      },
-      {
-        label: t('stats.retention'),
-        value: s.retentionRate === null ? '—' : formatPercent(s.retentionRate),
-        detail: s.retentionRate === null ? t('stats.retentionNone') : t('stats.retentionDetail'),
-        hint: t('stats.retentionHint'),
-      },
-      {
-        label: t('stats.learned'),
-        value: formatNumber(s.learnedCards),
-        detail: t('stats.learnedDetail'),
-      },
-    ];
+  const metrics: { label: string; value: string; detail: string; hint?: string; hero?: boolean }[] = [
+    {
+      label: t('stats.currentStreak'),
+      value: formatNumber(s.currentStreak),
+      detail: s.todayActive ? t('stats.currentStreakToday') : t('stats.currentStreakPending'),
+      hero: true,
+    },
+    {
+      label: t('stats.longestStreak'),
+      value: formatNumber(s.longestStreak),
+      detail: t('stats.daysUnit', { count: s.longestStreak }),
+    },
+    {
+      label: t('stats.totalActiveDays'),
+      value: formatNumber(s.totalActiveDays),
+      detail: t('stats.totalActiveDetail'),
+    },
+    {
+      label: t('stats.last30'),
+      value: formatPercent(s.last30Ratio),
+      detail: t('stats.last30Detail', { count: s.last30ActiveDays }),
+    },
+    {
+      label: t('stats.avgTime'),
+      value: s.avgDailyTimeMs ? formatDuration(s.avgDailyTimeMs) : '—',
+      detail: t('stats.avgTimeDetail'),
+    },
+    {
+      label: t('stats.retention'),
+      value: s.retentionRate === null ? '—' : formatPercent(s.retentionRate),
+      detail: s.retentionRate === null ? t('stats.retentionNone') : t('stats.retentionDetail'),
+      hint: t('stats.retentionHint'),
+    },
+    {
+      label: t('stats.learned'),
+      value: formatNumber(s.learnedCards),
+      detail: t('stats.learnedDetail'),
+    },
+  ];
 
   return (
     <div className="flex flex-col gap-5">

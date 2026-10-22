@@ -21,9 +21,15 @@ import { practiceHref } from '@/features/extra/links';
 import { formatDayMonth, formatNumber, formatPercent } from '@/features/stats/format';
 import { groupLabel } from '@/features/stats/groupLabel';
 import { Button, buttonClasses, Skeleton, Surface, toast } from '@/ui';
+import { kickReports } from './queue';
 
-export function ReportPanel() {
+/**
+ * `onOpen` runs once when the tab opens (default: the report runner, so this week's report and
+ * a missing comment are made now instead of at the next hourly run).
+ */
+export function ReportPanel({ onOpen = kickReports }: { onOpen?: () => void }) {
   const { t } = useTranslation();
+  useEffect(() => onOpen(), [onOpen]);
   const view = useLiveQuery(async () => {
     const [reports, sources] = await Promise.all([listWeeklyReports(), db.sources.toArray()]);
     return { reports, sourceTitles: Object.fromEntries(sources.map((s) => [s.id, s.title])) };

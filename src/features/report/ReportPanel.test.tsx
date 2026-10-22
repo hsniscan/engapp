@@ -50,13 +50,15 @@ function report(
   };
 }
 
+const noop = () => {};
+
 beforeEach(async () => {
   await resetDb();
 });
 
 describe('weekly report tab', () => {
   it('says when the first report comes', async () => {
-    renderRoute(<ReportPanel />);
+    renderRoute(<ReportPanel onOpen={noop} />);
     expect(await screen.findByText(/İlk raporun/)).toBeInTheDocument();
   });
 
@@ -68,7 +70,7 @@ describe('weekly report tab', () => {
       ),
       report('2026-10-05', 'Önceki haftanın yorumu.', { active_days: 3, reviews: 90 }),
     ]);
-    renderRoute(<ReportPanel />);
+    renderRoute(<ReportPanel onOpen={noop} />);
     const card = await screen.findByRole('region', { name: 'Geçen haftanın raporu' });
     expect(within(card).getByText('12 Ekim – 18 Ekim')).toBeInTheDocument();
     expect(within(card).getByText('5 / 7')).toBeInTheDocument();
@@ -106,7 +108,7 @@ describe('weekly report tab', () => {
     };
     await db.report_drafts.put(draft);
     await updateSettings({ daily_new_limit: 10 });
-    renderRoute(<ReportPanel />);
+    renderRoute(<ReportPanel onOpen={noop} />);
     expect(await screen.findByTestId('report-comment-missing')).toHaveTextContent(
       'Yorum, internete bağlanınca eklenecek.',
     );
@@ -121,7 +123,7 @@ describe('weekly report tab', () => {
     await db.weekly_reports.put(
       report('2026-10-12', null, { focus: 'something_new', focus_note_ids: [] }),
     );
-    renderRoute(<ReportPanel />);
+    renderRoute(<ReportPanel onOpen={noop} />);
     const focus = await screen.findByTestId('report-focus');
     expect(within(focus).getByText('Her şey yolunda. Böyle devam et.')).toBeInTheDocument();
     expect(within(focus).getByRole('link', { name: 'Tekrara başla' })).toHaveAttribute(
