@@ -21,6 +21,7 @@ import { findSpan, isValidSpan } from '@/domain/recognition';
 import type { Id, Sense } from '@/domain/types';
 import { useAuth } from '@/features/auth/session';
 import { useOnline } from '@/features/import/shared';
+import { usePronunciationBusy } from '@/features/review/pronunciation';
 import { flags } from '@/features/settings/platform';
 import { Badge, Button, cn, Dialog, DropdownMenu, Icon, IconButton, TextArea, toast } from '@/ui';
 import { prioritizeExamples, requestExamples, type ExampleRequestError } from './queue';
@@ -398,6 +399,7 @@ function SentenceCard({
   onRegenerate: () => void;
 }) {
   const { t } = useTranslation();
+  const speaking = usePronunciationBusy();
   const [showTr, setShowTr] = useState(trVisible);
   const [editing, setEditing] = useState(false);
   const liked = item.verdict === 'like';
@@ -434,8 +436,9 @@ function SentenceCard({
             size="sm"
             label={speech.available ? t('examples.speak') : t('review.noVoice')}
             aria-disabled={!speech.available || undefined}
-            className={cn('shrink-0', !speech.available && 'opacity-45')}
-            onClick={() => speech.available && speech.speak(item.text)}
+            aria-busy={speaking.busy || undefined}
+            className={cn('shrink-0', !speech.available && 'opacity-45', speaking.busy && 'animate-pulse')}
+            onClick={() => speech.available && speaking.run(() => speech.speak(item.text))}
           />
         )}
       </div>
