@@ -6,7 +6,9 @@ server contract (implemented) and the rules the sync engine must follow (the eng
 itself lives in `src/sync/` and is built on `src/sync/api.ts`).
 
 Sign-in is Google only. Guests sync nothing; on first sign-in all local rows get the
-user's id and go through the outbox.
+user's id and go through the outbox. A guest's outbox is compacted (decision 0025): one entry
+per mutable row and no log entries, since the first sign-in (`adoptGuestData`) queues every
+log again and compacts once more before the first push.
 Data that belongs to another account is never re-stamped: the device offers to copy its
 cards without study history, or to start with the signed-in account's data (decision 0008).
 
