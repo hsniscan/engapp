@@ -18,6 +18,7 @@ import { SegmentedControl, Select, Skeleton, Switch, toast } from '@/ui';
 import {
   disableReminder,
   enableReminder,
+  upcoming,
   useReminderState,
   type NotifierPort,
   type WebPushCleaner,
@@ -100,13 +101,13 @@ export function NativeNotifySection({
     hours.push({ value: String(h), label: hourLabel(h) });
   const mode: NotifyMode = pref?.mode ?? 'auto';
   const hour = pref?.hour ?? DEFAULT_NOTIFY_HOUR;
-  const upcoming = state.scheduled && state.scheduled.at > now() ? state.scheduled.at : null;
-  const when = upcoming
+  const nextAt = upcoming(state, now());
+  const when = nextAt
     ? new Intl.DateTimeFormat(i18n.language, {
         weekday: 'long',
         hour: '2-digit',
         minute: '2-digit',
-      }).format(new Date(upcoming))
+      }).format(new Date(nextAt))
     : null;
 
   return (

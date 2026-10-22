@@ -27,8 +27,8 @@ function fakePort(perm: Permission = 'granted') {
     checkPermission: vi.fn(async () => (perm === 'granted' ? 'granted' : 'prompt')),
     requestPermission: vi.fn(async () => perm),
     ensureChannel: vi.fn(async () => {}),
-    schedule: vi.fn(async (n: ScheduledNotification) => {
-      scheduled.push(n);
+    schedule: vi.fn(async (list: ScheduledNotification[]) => {
+      scheduled.push(...list);
     }),
     cancel: vi.fn(async () => {}),
     clearShown: vi.fn(async () => {}),
@@ -68,7 +68,8 @@ describe('native reminder', () => {
     });
     expect(r).toEqual({ ok: true, webRemoved: 2, webFailed: false });
     expect(port.ensureChannel).toHaveBeenCalled();
-    expect(port.scheduled).toHaveLength(1);
+    // Today and the following days (if the app is not opened), one a day.
+    expect(port.scheduled.length).toBeGreaterThan(1);
     expect(port.scheduled[0]).toMatchObject({
       id: REMINDER_ID,
       at: Date.UTC(2026, 9, 20, 16),
@@ -121,9 +122,10 @@ describe('native reminder', () => {
       facts: async () => facts({ lastReviewAt: later - 1000 }),
       now: () => later,
     });
-    expect(port.cancel).toHaveBeenLastCalledWith(REMINDER_ID);
-    expect(port.clearShown).toHaveBeenCalledWith(REMINDER_ID);
-    expect(port.scheduled.at(-1)!.at).toBe(Date.UTC(2026, 9, 21, 16));
+    expect(port.cancel).toHaveBeenLastCalledWith(expect.arrayContaining([REMINDER_ID]));
+    expect(port.clearShown).toHaveBeenCalledWith(expect.arrayContaining([REMINDER_ID]));
+    const last = vi.mocked(port.schedule).mock.calls.at(-1)![0];
+    expect(last[0]!.at).toBe(Date.UTC(2026, 9, 21, 16));
   });
 
   it('never twice a day: after today’s reminder was shown the next one is tomorrow', async () => {
@@ -136,8 +138,8 @@ describe('native reminder', () => {
       now: () => NOW,
     });
     const after = Date.UTC(2026, 9, 20, 17); // 20:00 local, reminder was at 19:00
-    const plan = await rescheduleReminder({ port, facts: async () => facts(), now: () => after });
-    expect(plan?.day).toBe('2026-10-21');
+    const plans = await rescheduleReminder({ port, facts: async () => facts(), now: () => after });
+    expect(plans[0]?.day).toBe('2026-10-21');
     expect(readReminderState().lastShownDay).toBe('2026-10-20');
   });
 
@@ -151,8 +153,8 @@ describe('native reminder', () => {
       now: () => NOW,
     });
     await disableReminder({ port, facts: async () => facts(), now: () => NOW });
-    expect(port.cancel).toHaveBeenLastCalledWith(REMINDER_ID);
-    expect(readReminderState()).toMatchObject({ enabled: false, scheduled: null });
+    expect(port.cancel).toHaveBeenLastCalledWith(expect.arrayContaining([REMINDER_ID]));
+    expect(readReminderState()).toMatchObject({ enabled: false, scheduled: [] });
   });
 
   it('retries the Web Push cleanup after a failure, and does it once per account', async () => {

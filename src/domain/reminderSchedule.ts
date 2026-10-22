@@ -24,8 +24,14 @@ import { wallClock } from './day';
 import type { Millis } from './types';
 
 const HOUR_MS = 3_600_000;
-/** How far ahead a reminder is planned (a week and a day; the app reschedules long before). */
-export const REMINDER_HORIZON_DAYS = 8;
+/** How far ahead reminders are planned (the app reschedules whenever it is opened). */
+export const REMINDER_HORIZON_DAYS = 30;
+/**
+ * Reminders planned in advance: the next one plus the following days', so a user who does not
+ * open the app still gets one a day (as Web Push would send). Each is the rule's answer assuming
+ * the earlier ones were shown and nothing was studied; studying replaces them all.
+ */
+export const REMINDER_CHAIN = 7;
 /** Never fire right away: the user is in the app when this runs. */
 export const REMINDER_MIN_DELAY_MS = 60_000;
 
@@ -85,4 +91,27 @@ export function nextReminder(input: ReminderInput): PlannedReminder | null {
     if (decision.send) return { at: t, day: decision.day, due, message: decision.message };
   }
   return null;
+}
+
+/**
+ * The next `count` reminders: each is nextReminder() after the previous one, with the previous
+ * one's day counted as already reminded (at most one a day). Days strictly increase.
+ */
+export function planReminders(input: ReminderInput, count = REMINDER_CHAIN): PlannedReminder[] {
+  const out: PlannedReminder[] = [];
+  const end = input.now + (input.horizonDays ?? REMINDER_HORIZON_DAYS) * 86_400_000;
+  let step: ReminderInput = input;
+  while (out.length < count) {
+    const days = Math.max(0, (end - step.now) / 86_400_000);
+    const next = nextReminder({ ...step, horizonDays: days });
+    if (!next) break;
+    out.push(next);
+    step = {
+      ...step,
+      now: next.at,
+      minDelayMs: 1,
+      candidate: { ...step.candidate, last_push_day: next.day },
+    };
+  }
+  return out;
 }

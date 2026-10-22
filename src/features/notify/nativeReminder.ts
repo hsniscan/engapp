@@ -1,4 +1,4 @@
-// Daily reminder in the Android app: one local notification, planned on the phone
+// Daily reminder in the Android app: local notifications planned on the phone, at most one a day
 // (docs/decisions/0033-android-capacitor.md). The switch is per device and kept on the device;
 // hour and mode come from the synced settings.notify (the same choice as on the web), the rule is
 // the shared one (src/domain/reminderSchedule.ts → decidePush). Turning it on removes this
@@ -10,11 +10,13 @@ import { useSyncExternalStore } from 'react';
 import { getReminderFacts, type ReminderFacts } from '@/data/reminder';
 import { dayKeyOf } from '@/domain/day';
 import { parseNotify } from '@/domain/notify';
-import { nextReminder, type PlannedReminder } from '@/domain/reminderSchedule';
+import { planReminders, REMINDER_CHAIN, type PlannedReminder } from '@/domain/reminderSchedule';
 import type { Millis } from '@/domain/types';
 import { dayConfig } from '@/data/settings';
 
+/** Notification ids REMINDER_ID … REMINDER_ID + REMINDER_CHAIN - 1, one per planned day. */
 export const REMINDER_ID = 1001;
+const REMINDER_IDS = Array.from({ length: REMINDER_CHAIN }, (_, i) => REMINDER_ID + i);
 export const REMINDER_CHANNEL = 'engapp-reminders';
 const STORE_KEY = 'engapp.nativeReminder';
 
@@ -32,10 +34,10 @@ export interface NotifierPort {
   checkPermission(): Promise<Permission>;
   requestPermission(): Promise<Permission>;
   ensureChannel(): Promise<void>;
-  schedule(n: ScheduledNotification): Promise<void>;
-  cancel(id: number): Promise<void>;
-  /** Removes an already shown reminder from the notification shade. */
-  clearShown(id: number): Promise<void>;
+  schedule(n: ScheduledNotification[]): Promise<void>;
+  cancel(ids: number[]): Promise<void>;
+  /** Removes already shown reminders from the notification shade. */
+  clearShown(ids: number[]): Promise<void>;
 }
 
 /** Removes the signed-in account's Web Push subscriptions; resolves to how many, null = failed. */
@@ -43,8 +45,8 @@ export type WebPushCleaner = (userId: string) => Promise<number | null>;
 
 export interface ReminderState {
   enabled: boolean;
-  /** The pending notification (or the last one, once its time has passed). */
-  scheduled: { day: string; at: Millis } | null;
+  /** The planned notifications (their time may have passed: then they were shown). */
+  scheduled: { day: string; at: Millis }[];
   /** User day of the last reminder that was shown (at most one a day). */
   lastShownDay: string | null;
   /** Account whose Web Push subscriptions were removed for this phone's reminder. */
@@ -53,7 +55,7 @@ export interface ReminderState {
 
 const EMPTY: ReminderState = {
   enabled: false,
-  scheduled: null,
+  scheduled: [],
   lastShownDay: null,
   webCleanedFor: null,
 };
@@ -70,6 +72,7 @@ export function readReminderState(): ReminderState {
       localStorage.getItem(STORE_KEY) ?? 'null',
     ) as Partial<ReminderState> | null;
     cache = { ...EMPTY, ...(raw && typeof raw === 'object' ? raw : {}) };
+    if (!Array.isArray(cache.scheduled)) cache.scheduled = [];
   } catch {
     cache = { ...EMPTY };
   }
@@ -110,25 +113,35 @@ export function useReminderState(): ReminderState {
 
 // ------------------------------------------------------------------ planning
 
+/** The last day a reminder was shown: a planned one whose time has passed counts as shown. */
+export function shownDay(state: ReminderState, now: Millis): string | null {
+  let day = state.lastShownDay;
+  for (const p of state.scheduled) if (p.at <= now && (day === null || p.day > day)) day = p.day;
+  return day;
+}
+
+/** The next planned reminder still to come, if any (for the settings screen). */
+export function upcoming(state: ReminderState, now: Millis): Millis | null {
+  const next = state.scheduled.filter((p) => p.at > now).sort((a, b) => a.at - b.at)[0];
+  return next?.at ?? null;
+}
+
 /** The rule's input from the device: this phone's switch, the account's hour and mode. */
 export function planFromFacts(
   facts: ReminderFacts,
   state: ReminderState,
   now: Millis,
-): PlannedReminder | null {
-  if (!state.enabled) return null;
+): PlannedReminder[] {
+  if (!state.enabled) return [];
   const pref = parseNotify(facts.settings.notify);
-  // A reminder whose time has passed was shown (or replaced by the user opening the app).
-  const shown =
-    state.scheduled && state.scheduled.at <= now ? state.scheduled.day : state.lastShownDay;
-  return nextReminder({
+  return planReminders({
     candidate: {
       timezone: facts.settings.timezone,
       day_start_hour: facts.settings.day_start_hour,
       notify: { enabled: true, mode: pref?.mode ?? 'auto', hour: pref?.hour ?? null },
       vacation: facts.settings.vacation ?? null,
       last_review_at: facts.lastReviewAt,
-      last_push_day: shown,
+      last_push_day: shownDay(state, now),
     },
     dueTimes: facts.dueTimes,
     secPerCard: facts.secPerCard,
@@ -142,47 +155,43 @@ export interface RescheduleDeps {
   now?: () => Millis;
 }
 
-let chain: Promise<unknown> = Promise.resolve();
+let queue: Promise<unknown> = Promise.resolve();
 
 /**
- * Replaces the pending reminder with the next one the rule allows (or none). Runs after every
+ * Replaces the planned reminders with what the rule allows now (or none). Runs after every
  * answer, when the app comes to the foreground and when the setting changes. Serialised.
  */
-export function rescheduleReminder(deps: RescheduleDeps): Promise<PlannedReminder | null> {
+export function rescheduleReminder(deps: RescheduleDeps): Promise<PlannedReminder[]> {
   const run = async () => {
     const now = (deps.now ?? Date.now)();
     const state = readReminderState();
-    const lastShownDay =
-      state.scheduled && state.scheduled.at <= now ? state.scheduled.day : state.lastShownDay;
+    const lastShownDay = shownDay(state, now);
+    await deps.port.cancel(REMINDER_IDS);
     if (!state.enabled) {
-      await deps.port.cancel(REMINDER_ID);
-      writeReminderState({ scheduled: null, lastShownDay });
-      return null;
+      writeReminderState({ scheduled: [], lastShownDay });
+      return [];
     }
     const facts = await (deps.facts ?? getReminderFacts)(now);
-    const plan = planFromFacts(facts, state, now);
-    await deps.port.cancel(REMINDER_ID);
-    // Studied today: today's reminder (if it was shown) has done its job.
+    const plans = planFromFacts(facts, state, now);
+    // Studied today: a reminder shown today has done its job.
     const cfg = dayConfig(facts.settings);
     if (facts.lastReviewAt !== null && dayKeyOf(facts.lastReviewAt, cfg) === dayKeyOf(now, cfg))
-      await deps.port.clearShown(REMINDER_ID).catch(() => {});
-    if (plan) {
-      await deps.port.schedule({
-        id: REMINDER_ID,
-        at: plan.at,
-        title: plan.message.title,
-        body: plan.message.body,
-        url: plan.message.url,
-      });
-    }
-    writeReminderState({
-      scheduled: plan ? { day: plan.day, at: plan.at } : null,
-      lastShownDay,
-    });
-    return plan;
+      await deps.port.clearShown(REMINDER_IDS).catch(() => {});
+    if (plans.length)
+      await deps.port.schedule(
+        plans.map((p, i) => ({
+          id: REMINDER_ID + i,
+          at: p.at,
+          title: p.message.title,
+          body: p.message.body,
+          url: p.message.url,
+        })),
+      );
+    writeReminderState({ scheduled: plans.map((p) => ({ day: p.day, at: p.at })), lastShownDay });
+    return plans;
   };
-  const next = chain.then(run, run);
-  chain = next.catch(() => {});
+  const next = queue.then(run, run);
+  queue = next.catch(() => {});
   return next;
 }
 

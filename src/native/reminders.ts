@@ -40,30 +40,28 @@ export const capacitorNotifier: NotifierPort = {
       visibility: 1,
     });
   },
-  async schedule(n) {
+  async schedule(list) {
     await LocalNotifications.schedule({
-      notifications: [
-        {
-          id: n.id,
-          title: n.title,
-          body: n.body,
-          channelId: REMINDER_CHANNEL,
-          smallIcon: 'ic_stat_engapp',
-          autoCancel: true,
-          extra: { url: n.url },
-          // Inexact: a daily nudge does not need the exact-alarm permission (removed in the
-          // manifest; Play allows it only for alarm and calendar apps).
-          isExactNotification: false,
-          schedule: { at: new Date(n.at), allowWhileIdle: true },
-        },
-      ],
+      notifications: list.map((n) => ({
+        id: n.id,
+        title: n.title,
+        body: n.body,
+        channelId: REMINDER_CHANNEL,
+        smallIcon: 'ic_stat_engapp',
+        autoCancel: true,
+        extra: { url: n.url },
+        // Inexact: a daily nudge does not need the exact-alarm permission (removed in the
+        // manifest; Play allows it only for alarm and calendar apps).
+        isExactNotification: false,
+        schedule: { at: new Date(n.at), allowWhileIdle: true },
+      })),
     });
   },
-  async cancel(id) {
-    await LocalNotifications.cancel({ notifications: [{ id }] });
+  async cancel(ids) {
+    await LocalNotifications.cancel({ notifications: ids.map((id) => ({ id })) });
   },
-  async clearShown(id) {
-    await LocalNotifications.removeDeliveredNotificationsById({ ids: [id] });
+  async clearShown(ids) {
+    await LocalNotifications.removeDeliveredNotificationsById({ ids });
   },
 };
 

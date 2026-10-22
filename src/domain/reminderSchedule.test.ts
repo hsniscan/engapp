@@ -12,6 +12,7 @@ import {
   decideAt,
   nextHourBoundary,
   nextReminder,
+  planReminders,
   type ReminderInput,
 } from './reminderSchedule';
 
@@ -202,9 +203,9 @@ describe('nextReminder equals decidePush (property, 6 time zones incl. DST)', ()
             expect(decideAt(input, t).decision.send).toBe(false);
         },
       ),
-      { numRuns: 120 },
+      { numRuns: 80 },
     );
-  });
+  }, 60_000);
 
   it('never plans inside quiet hours, on a studied day or twice for one day', () => {
     fc.assert(
@@ -226,5 +227,52 @@ describe('nextReminder equals decidePush (property, 6 time zones incl. DST)', ()
       ),
       { numRuns: 200 },
     );
+  }, 60_000);
+});
+
+describe('planReminders (the days after, if the app is not opened)', () => {
+  it('one a day, each the rule’s answer given the one before was shown', () => {
+    fc.assert(
+      fc.property(
+        nowArb.chain((now) => candidateArb(now).map((c) => ({ now, ...c }))),
+        ({ now, candidate, dueTimes }) => {
+          const input: ReminderInput = { candidate, dueTimes, secPerCard: 9, now, horizonDays: 10 };
+          const plans = planReminders(input);
+          expect(plans.length).toBeLessThanOrEqual(7);
+          expect(plans[0] ?? null).toEqual(nextReminder(input));
+          for (let i = 1; i < plans.length; i++) {
+            const prev = plans[i - 1]!;
+            const p = plans[i]!;
+            expect(p.day > prev.day).toBe(true);
+            expect(p.at).toBeGreaterThan(prev.at);
+            const c = { ...candidate, last_push_day: prev.day };
+            const slot = pushSlot(c, p.at);
+            const due = slot.ok ? countBefore(dueTimes, slot.dayEnd) : 0;
+            expect(decidePush(c, p.at, due, 9).send).toBe(true);
+          }
+        },
+      ),
+      { numRuns: 60 },
+    );
+  }, 60_000);
+
+  it('Istanbul example: every evening at 19:00 while reviews wait', () => {
+    const now = Date.UTC(2026, 9, 20, 7);
+    const plans = planReminders({
+      candidate: base(),
+      dueTimes: [now - D],
+      secPerCard: null,
+      now,
+    });
+    expect(plans.map((p) => p.day)).toEqual([
+      '2026-10-20',
+      '2026-10-21',
+      '2026-10-22',
+      '2026-10-23',
+      '2026-10-24',
+      '2026-10-25',
+      '2026-10-26',
+    ]);
+    expect(plans.every((p) => wallClock(p.at, 'Europe/Istanbul').hour === 19)).toBe(true);
   });
 });

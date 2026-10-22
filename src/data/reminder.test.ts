@@ -19,7 +19,7 @@ describe('reminder facts from the device', () => {
       makeCard({ note_id: 'n', state: CardState.Review, due: NOW, suspended: true }),
       makeCard({ note_id: 'n', state: CardState.Review, due: NOW, deleted_at: NOW }),
       makeCard({ note_id: 'n', state: CardState.Review, due: NOW, unlocked: false }),
-      makeCard({ note_id: 'n', state: CardState.Review, due: NOW + 30 * D }),
+      makeCard({ note_id: 'n', state: CardState.Review, due: NOW + 40 * D }),
     ]);
     const f = await getReminderFacts(NOW);
     expect(f.dueTimes).toEqual([NOW - 1000, NOW + 1000]);
