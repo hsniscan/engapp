@@ -65,8 +65,9 @@ $$;
 revoke all on function public.contrast_side_ok(jsonb) from public, anon;
 grant execute on function public.contrast_side_ok(jsonb) to authenticated, service_role;
 
+-- coalesce: a missing key makes the conditions NULL, and a CHECK passes on NULL.
 alter table public.lexicon_pair_notes add constraint lexicon_pair_notes_contrast_check check (
-  kind <> 'contrast' or (
+  kind <> 'contrast' or coalesce(
     sense_id is not null
     and content_key ~ '^[0-9a-f-]{36}\|[0-9a-f-]{36}$'
     and split_part(content_key, '|', 1) = sense_id::text
@@ -74,7 +75,8 @@ alter table public.lexicon_pair_notes add constraint lexicon_pair_notes_contrast
     and public.contrast_side_ok(content -> 'a')
     and public.contrast_side_ok(content -> 'b')
     and jsonb_typeof(content -> 'difference_tr') = 'string'
-    and char_length(content ->> 'difference_tr') between 1 and 300
+    and char_length(content ->> 'difference_tr') between 1 and 300,
+    false
   )
 );
 

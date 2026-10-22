@@ -6,7 +6,7 @@
 -- table.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(22);
+select plan(23);
 
 insert into auth.users (id, email, aud, role) values
   ('99999999-9999-4999-8999-999999999a91', 'l1@test.local', 'authenticated', 'authenticated'),
@@ -65,6 +65,10 @@ select throws_ok(
   $$ select public.lexicon_pair_notes_insert(jsonb_build_array(
        (select item #- '{content,difference_tr}' from good))) $$,
   '23514', null, 'the difference line is required');
+select throws_ok(
+  $$ select public.lexicon_pair_notes_insert(jsonb_build_array(
+       (select item #- '{content,b}' from good))) $$,
+  '23514', null, 'both sides are required');
 select throws_ok(
   $$ select public.lexicon_pair_notes_insert(jsonb_build_array(
        (select jsonb_set(item, '{content,difference_tr}', to_jsonb(repeat('a', 301))) from good))) $$,
