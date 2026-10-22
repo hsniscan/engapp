@@ -192,8 +192,9 @@ export function allowedNumbers(req: ReportRequest): Set<number> {
     req.minutes,
     req.new_learned,
     req.streak_days,
-    req.groups_days,
   ]);
+  // "son 28 günde" may be said; 7 (the week itself) is not a number the comment needs.
+  if (req.groups_days === 28) out.add(28);
   if (req.retention_pct !== null) out.add(req.retention_pct);
   for (const g of [req.strongest, req.weakest]) if (g) out.add(g.rate_pct);
   for (const g of req.goals) {
@@ -226,14 +227,16 @@ const NUMBER_WORDS: Record<string, number> = {
   bin: 1000,
 };
 
+const SUFFIXED_STEMS = Object.keys(NUMBER_WORDS).filter((w) => !['on', 'yüz', 'bin'].includes(w));
+
 /**
- * Numbers written in a sentence: digit groups ("1.250", "%80", "80'den", "3,5") and Turkish
- * number words ("beş", "yirmi üç" = 20 and 3 counted separately). A decimal is returned as is,
+ * Numbers written in a sentence: digit groups ("1.250", "%80", "80'den", "3,5"; not the level
+ * names "B1", "C2") and Turkish number words ("beş", "beşinde", "yirmi üç" = 20 and 3). A decimal is returned as is,
  * so it never matches a whole input number.
  */
 export function numbersIn(sentence: string): number[] {
   const out: number[] = [];
-  for (const m of sentence.matchAll(/\d+(?:[.,]\d+)*/g)) {
+  for (const m of sentence.matchAll(/(?<![\p{L}\d])\d+(?:[.,]\d+)*/gu)) {
     const raw = m[0];
     // "1.250" (thousands) vs "3,5" / "3.5" (decimals)
     if (/^\d{1,3}(\.\d{3})+$/.test(raw)) out.push(Number(raw.replace(/\./g, '')));
@@ -244,7 +247,15 @@ export function numbersIn(sentence: string): number[] {
     .toLocaleLowerCase('tr')
     .split(/[^\p{L}\p{M}]+/u)
     .filter(Boolean);
-  for (const w of words) if (w in NUMBER_WORDS) out.push(NUMBER_WORDS[w]!);
+  for (const w of words) {
+    if (w in NUMBER_WORDS) out.push(NUMBER_WORDS[w]!);
+    else {
+      // With a suffix: "beşinde", "yediden", "ikinci". Short or ambiguous stems ("on", "yüz",
+      // "bin") only count alone.
+      const stem = SUFFIXED_STEMS.find((x) => w.startsWith(x));
+      if (stem) out.push(NUMBER_WORDS[stem]!);
+    }
+  }
   return out;
 }
 
