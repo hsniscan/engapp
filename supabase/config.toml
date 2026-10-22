@@ -431,6 +431,10 @@ verify_jwt = false
 [functions.push-send]
 verify_jwt = false
 
+# Account deletion (v0.4 İP7, docs/decisions/0035-account-deletion.md); checks the JWT itself.
+[functions.account-delete]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
