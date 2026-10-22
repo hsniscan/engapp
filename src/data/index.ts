@@ -61,6 +61,14 @@ export {
 } from './maintenance';
 export { getSettings, ensureSettings, updateSettings, defaultSettings, DEFAULT_SETTINGS, type SettingsPatch } from './settings';
 export { rebuildDailyActivity, listDailyActivity } from './dailyActivity';
+export {
+  adoptFsrsParams,
+  countOptimizerReviews,
+  loadOptimizerLogs,
+  markFsrsOptRun,
+  revertFsrsParams,
+  type ReviewCounts,
+} from './fsrsOpt';
 export { repairDuplicateSenses, repairListEntrySentences } from './repairs';
 export { getDeviceId, getCurrentUserId, getMeta, setMeta, META } from './meta';
 export { PULL_BACKFILL_KEY } from './backfill';

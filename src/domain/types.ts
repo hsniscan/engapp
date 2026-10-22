@@ -263,6 +263,13 @@ export interface Settings extends SyncedRow {
   muted_topics?: string[] | null;
   /** v0.2 İP4: open "Kolay olabilir" in the import preview (absent/null = closed). */
   show_easy_candidates?: boolean | null;
+  /**
+   * v0.3 İP4 (docs/decisions/0022): the parameters in use before the last adoption, for "Eski
+   * ayara dön" (null = the defaults were in use, or nothing to go back to).
+   */
+  fsrs_params_prev?: number[] | null;
+  /** When the personal-parameter check last ran (adopted or not); absent/null = never. */
+  fsrs_opt_at?: Millis | null;
 }
 
 /** Shared dictionary entries, read-only on the client (pulled from server). */

@@ -37,6 +37,7 @@ import {
   type Note,
   type PracticeLog,
   type ReviewLog,
+  type Settings,
 } from '../domain/types';
 import { emptyFsrs } from '../domain/fsrs';
 import { db } from './db';
@@ -75,11 +76,14 @@ const allSyncedTables = () => [
 
 // ------------------------------------------------------------------ recompute
 
+const sameParams = (a: number[] | null | undefined, b: number[] | null | undefined): boolean =>
+  JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+
 /**
  * Recompute FSRS fields (from logs) and `unlocked` (from the recognition card) for the given
  * cards, or all cards. Writes only cards that changed. Call inside writeTx.
  */
-async function recomputeCardsIn(w: SyncWriter, cardIds: Iterable<Id> | 'all'): Promise<number> {
+export async function recomputeCardsIn(w: SyncWriter, cardIds: Iterable<Id> | 'all'): Promise<number> {
   const settings = await getSettings(w.now);
   const scheduler = schedulerFor(settings);
   let cards: Card[];
@@ -249,6 +253,8 @@ export async function applyRemoteRows(
   await writeTx(allSyncedTables(), now, async (w) => {
     const touchedCards = new Set<Id>();
     const touchedTerms = new Set<string>();
+    // New FSRS parameters from another device (v0.3 İP4): every card is replayed with them.
+    let paramsChanged = false;
     for (const table of [...MUTABLE, 'review_logs', 'practice_logs', 'level_tests'] as const) {
       for (const raw of batch[table] ?? []) {
         const parsed = rowSchemas[table].safeParse(raw);
@@ -308,11 +314,17 @@ export async function applyRemoteRows(
         }
         await db.table(table).put(keepProfileFields(table, row, local));
         result.applied++;
+        if (
+          table === 'settings' &&
+          !sameParams((local as Settings | undefined)?.fsrs_params, (row as Settings).fsrs_params)
+        ) {
+          paramsChanged = true;
+        }
         if (table === 'cards') touchedCards.add(row.id);
         if (table === 'notes') touchedTerms.add((row as Note).term_norm);
       }
     }
-    result.recomputedCards = await recomputeCardsIn(w, touchedCards);
+    result.recomputedCards = await recomputeCardsIn(w, paramsChanged ? 'all' : touchedCards);
     await flagDuplicates(w, touchedTerms);
   });
   if (logsArrived) await rebuildDailyActivity(now);

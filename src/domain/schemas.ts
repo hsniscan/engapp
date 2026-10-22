@@ -164,6 +164,9 @@ export const settingsSchema: z.ZodType<Settings> = z.object({
     .catch(null),
   // v0.2 İP4; absent in older rows and backups (= false).
   show_easy_candidates: z.boolean().nullish(),
+  // v0.3 İP4; absent in older rows and backups (= nothing to revert, never ran).
+  fsrs_params_prev: z.array(z.number()).nullish(),
+  fsrs_opt_at: millis.nullish(),
 });
 
 export const contentFeedbackSchema: z.ZodType<ContentFeedback> = z.object({
