@@ -134,6 +134,8 @@
     "hint": "İpucu",
     "shownSense": "cümledeki anlam",
     "noVoice": "Sesli okuma yok: bu cihazda İngilizce ses bulunamadı",
+    "voiceFailed": "Ses çıkmadı",
+    "voiceFailedHelp": "Telefonun metin okuma motoru İngilizce okuyamıyor. Android'de: Ayarlar → Erişilebilirlik (veya Genel yönetim) → Metin okuma çıkışı → Tercih edilen motor: Google ses tanıma ve sentez hizmetleri. Ardından İngilizce (ABD) ses verisini indir. Sessiz modu ve medya ses düzeyini de kontrol et.",
     "speakSentence": "Cümleyi seslendir",
     "menu": "Kart seçenekleri",
     "undoLast": "Son cevabı geri al",
