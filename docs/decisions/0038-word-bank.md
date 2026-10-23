@@ -75,7 +75,7 @@ server_seq`); no client writes. This is the first table a guest reads: the conte
 - **Dexie v24**: table `word_bank` (`id = lemma_norm|pos`, indexes `cefr`, `lemma_norm`) and
   meta keys `word_bank_cursor` / `word_bank_synced_at`. Device-level content: kept when
   switching or copying accounts, not in backups, never synced up.
-- **Download** (`features/wordbank/fetcher.ts`): when the screen opens, at most once a day (or
+- **Download** (`features/wordbank/fetcher.ts`): when the screen opens, at most every 15 minutes (or
   on "Tekrar dene"), pages after the cursor; offline or without a backend it does nothing.
   After the first download the screen works fully offline.
 - **Screen `/kelime-bankasi`** (`WordBankPage`), linked from the add screen and from

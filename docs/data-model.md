@@ -320,7 +320,7 @@ Copying cards to another account does not copy them (decision 0009).
 
 - Dexie v24: the `word_bank` table (above) and the meta keys `word_bank_cursor` (highest
   `server_seq` stored; 0 when the table is empty) and `word_bank_synced_at` (last finished
-  download; the screen asks again after 24 h). Nothing is pushed.
+  download; the screen asks again after 15 minutes). Nothing is pushed.
 - Server (migration `20261026001100_word_bank.sql`): `public.word_bank` (primary key
   `(lemma_norm, pos)`; device columns as above plus `retired` and `server_seq`, readable by
   `anon` and `authenticated`; bookkeeping columns `model`, `prompt_version`, `cost_usd`,
