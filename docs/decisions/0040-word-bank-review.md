@@ -64,7 +64,7 @@ The rows are already on devices, and users have made cards from them.
   overwrites a newer row. `public.word_bank` and its device columns are unchanged.
 - **Reaching devices.** Applying a change updates `senses` (or `retired`); the existing stamp
   trigger gives the row a new `server_seq`, so every device pulls it on its next bank download
-  (when the screen opens, at most once a day) and replaces its copy; a retired row is deleted.
+  (when the screen opens, at most every 15 minutes) and replaces its copy; a retired row is deleted.
   A row the review keeps is not written, so it does not move (no needless re-download).
 - **Users' cards are not touched.** Adding a bank word copies its meaning, example, translation
   and `lexicon_sense_id` into the user's own note (decision 0038), so existing cards keep what

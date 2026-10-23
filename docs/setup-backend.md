@@ -364,8 +364,8 @@ secrets as above.
    correction are sent again in the same run; run `review` once more for them. Done when
    `review-plan` shows `pending: 0`.
 
-Changed rows reach devices on their next bank download (at most once a day, when the screen
-opens); rows with nothing left are retired and disappear. Cards users already made keep their
+Changed rows reach devices on their next bank download (when the screen opens, at most every 15 minutes);
+rows with nothing left are retired and disappear. Cards users already made keep their
 own text. Optional variable: `CLAUDE_WORDBANK_REVIEW_MODEL`.
 
 Check in **SQL Editor**: `select state, count(*) from public.word_bank_review group by 1;`

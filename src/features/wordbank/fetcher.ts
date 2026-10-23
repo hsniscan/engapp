@@ -16,8 +16,12 @@ import {
 } from '@/data';
 import { supabase } from '@/lib/supabase';
 
-/** A filled copy is asked for changes again after this long. */
-export const WORD_BANK_REFRESH_MS = 24 * 60 * 60_000;
+/**
+ * A filled copy is asked for changes again after this long. Short on purpose: an up-to-date
+ * copy costs one empty page, and a day-long wait left devices that first opened the screen
+ * mid-fill (or before a clean-up) with a partial bank.
+ */
+export const WORD_BANK_REFRESH_MS = 15 * 60_000;
 /** Safety stop: never more pages than this in one run (~20 000 rows). */
 const MAX_PAGES = 20;
 
