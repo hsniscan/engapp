@@ -273,7 +273,7 @@ button answers that pictures are not available.
    the report is kept as the run's `pilot-report` artifact. Judge them in the app's review
    screen before letting the nightly job run on its own.
 6. **Nightly.** `.github/workflows/images.yml` runs every night at 01:30 UTC: it collects the
-   previous night's batch (checks, stores pictures for review) and scores new words. It sends
+   previous night's batch (checks, stores pictures for review) and scores new words. Extra runs every two hours until 12:45 UTC only collect, so a batch's pictures arrive soon after it finishes. It sends
    the next batch (half price, up to 1,000 pictures) every night: the owner approved bulk drawing
    on 2026-10-24. To pause it, set the repository variable **`IMAGE_BULK`** to `false`
    (**Settings → Secrets and variables → Actions → Variables**). Other jobs by hand:
