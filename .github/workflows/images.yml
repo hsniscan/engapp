@@ -19,7 +19,9 @@ name: Picture jobs
 
 on:
   schedule:
-    - cron: '30 1 * * *' # 01:30 UTC
+    - cron: '30 1 * * *' # 01:30 UTC: nightly (collect, score, submit)
+    # A batch usually finishes within an hour or two: collect it as soon as it is done.
+    - cron: '45 2-12/2 * * *' # 02:45, 04:45 … 12:45 UTC: collect only
   workflow_dispatch:
     inputs:
       job:
@@ -80,7 +82,7 @@ jobs:
           CLAUDE_MONTHLY_CREDIT_USD: ${{ vars.CLAUDE_MONTHLY_CREDIT_USD }}
           SERVICE_KEY_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          JOB: ${{ inputs.job || 'nightly' }}
+          JOB: ${{ inputs.job || (github.event.schedule == '30 1 * * *' && 'nightly') || 'collect' }}
           COUNT: ${{ inputs.count }}
           # Bulk drawing is on (owner, 2026-10-24); IMAGE_BULK=false pauses it.
           IMAGE_BULK: ${{ vars.IMAGE_BULK }}
