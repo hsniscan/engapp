@@ -4,8 +4,8 @@
 # concrete senses drawn now and stored for review, with their cost). Every model call is
 # reserved against the monthly picture budget first (80 % of CLAUDE_MONTHLY_CREDIT_USD).
 # Without the ANTHROPIC_API_KEY secret the run is skipped with a notice. The nightly run
-# submits a new batch only when the repository variable IMAGE_BULK is 'true' (set after the
-# owner approves the pilot); queue order: decision 0037. Every step ends with a heartbeat
+# submits a new batch every night (bulk drawing approved by the owner on 2026-10-24); setting the
+# repository variable IMAGE_BULK to 'false' pauses it. Queue order: decision 0037. Every step ends with a heartbeat
 # (public.job_runs). Details: docs/ai-image.md, docs/setup-backend.md (steps 12, 13).
 #
 # Repository secrets:
@@ -14,7 +14,7 @@
 #                              Without it the key is read through the Management API with
 #   SUPABASE_ACCESS_TOKEN      (needs the "API keys: Read" permission / a full-access token).
 # Repository variables (optional): CLAUDE_IMAGE_MODEL, CLAUDE_CHECK_MODEL,
-#   CLAUDE_MONTHLY_CREDIT_USD (default 100), IMAGE_BULK ('true': nightly bulk drawing on)
+#   CLAUDE_MONTHLY_CREDIT_USD (default 100), IMAGE_BULK ('false': nightly bulk drawing paused)
 name: Picture jobs
 
 on:
@@ -82,7 +82,7 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           JOB: ${{ inputs.job || 'nightly' }}
           COUNT: ${{ inputs.count }}
-          # Bulk drawing starts only after the owner approves the pilot (plan: >= 80 % approved).
+          # Bulk drawing is on (owner, 2026-10-24); IMAGE_BULK=false pauses it.
           IMAGE_BULK: ${{ vars.IMAGE_BULK }}
         run: |
           set -euo pipefail
@@ -115,10 +115,10 @@ jobs:
             nightly)
               node scripts/img-batch.ts collect
               node scripts/img-batch.ts visualize
-              if [ "$IMAGE_BULK" = "true" ]; then
-                node scripts/img-batch.ts submit
+              if [ "$IMAGE_BULK" != "false" ]; then
+                node scripts/img-batch.ts submit --max 1000
               else
-                echo "::notice::IMAGE_BULK is not 'true': no new batch submitted (pilot not approved yet)."
+                echo "::notice::IMAGE_BULK is 'false': no new batch submitted (bulk drawing paused)."
               fi
               ;;
             pilot)

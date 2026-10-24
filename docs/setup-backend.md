@@ -102,7 +102,7 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 | `CLAUDE_MONTHLY_CREDIT_USD` | the monthly Claude credit in USD; pictures may use 80 % of it [`100`]                                     |
 | `APP_ADMIN_USER_ID`         | your Supabase user id (step 12): who may open the picture review screen [none]                            |
 | `IMAGE_DAILY_LIMIT`         | pictures a user may ask for per UTC day [`10`]                                                            |
-| `CLAUDE_IMAGE_MODEL`        | model that draws pictures [`claude-opus-5-5`]                                                             |
+| `CLAUDE_IMAGE_MODEL`        | model that draws pictures [`claude-sonnet-5-5`]                                                             |
 | `CLAUDE_CHECK_MODEL`        | model that scores and checks pictures [`claude-haiku-5-5`]                                                |
 | `CLAUDE_WORDBANK_MODEL`     | model of the word bank job (step 14) [`CLAUDE_CHECK_MODEL`]                                               |
 | `WORD_BANK_NIGHTLY`         | `true`: the word bank job also runs every night (step 14) [off]                                           |
@@ -274,11 +274,10 @@ button answers that pictures are not available.
    screen before letting the nightly job run on its own.
 6. **Nightly.** `.github/workflows/images.yml` runs every night at 01:30 UTC: it collects the
    previous night's batch (checks, stores pictures for review) and scores new words. It sends
-   the next batch (half price) only when the repository variable **`IMAGE_BULK`** is `true`:
-   set it (**Settings → Secrets and variables → Actions → Variables**) after you approved the
-   pilot (plan: at least 80 % good). Without it the run ends with a notice and nothing new is
-   drawn; to stop bulk drawing again, delete the variable or set it to `false`. Other jobs by
-   hand: `visualize`, `submit` (sends a batch even without `IMAGE_BULK`), `collect`.
+   the next batch (half price, up to 1,000 pictures) every night: the owner approved bulk drawing
+   on 2026-10-24. To pause it, set the repository variable **`IMAGE_BULK`** to `false`
+   (**Settings → Secrets and variables → Actions → Variables**). Other jobs by hand:
+   `visualize`, `submit`, `collect`.
 7. **Bulk order (İP9).** The nightly batch takes queued senses in this order: senses in your
    cards, then in other users' cards, then words within your level ±1 (your level in
    **Ayarlar → Seviye**) most frequent first, then the rest of the 5,000 most frequent words.

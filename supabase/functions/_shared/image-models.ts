@@ -4,7 +4,8 @@
 
 type Env = (key: string) => string | undefined;
 
-export const DEFAULT_IMAGE_MODEL = 'claude-opus-5-5';
+// Sonnet since 2026-10-24 (owner's choice): same style B quality in the samples, lower price.
+export const DEFAULT_IMAGE_MODEL = 'claude-sonnet-5-5';
 export const DEFAULT_CHECK_MODEL = 'claude-haiku-5-5';
 /**
  * Reviews the Kelime Bankası rows (decision 0040, CLAUDE_WORDBANK_REVIEW_MODEL): a stronger
