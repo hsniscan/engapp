@@ -99,7 +99,7 @@ In this order; the first failure decides the redraw sentence:
 
 `.github/workflows/images.yml`, 01:30 UTC: `collect`, then `visualize`, then `submit`
 (`scripts/img-batch.ts`). `submit` runs in the nightly run only when the repository variable
-`IMAGE_BULK` is `true` (the owner sets it after approving the pilot; by hand, `submit` always
+`IMAGE_BULK` is not `false` (the owner approved bulk drawing on 2026-10-24; by hand, `submit` always
 sends). On demand one job, or the pilot (`scripts/img-pilot.ts`: N random nouns, verbs and
 adjectives with zipf ≥ 3 — no frequency floor while no term has a zipf yet — scored first when
 needed, drawn now, stored as `review`, with the cost of each picture and the total; the report
@@ -130,7 +130,7 @@ order.
 
 | Prompt | Model (env) | Thinking | Effort | `max_tokens` | Cache | Fallback |
 |---|---|---|---|---|---|---|
-| `image-v1` | `CLAUDE_IMAGE_MODEL` (default `claude-opus-5-5`) | adaptive | medium | 16000 | system, 1 h | server-side (instant and pilot; not batches) |
+| `image-v1` | `CLAUDE_IMAGE_MODEL` (default `claude-sonnet-5-5`) | adaptive | medium | 16000 | system, 1 h | server-side (instant and pilot; not batches) |
 | `visual-v1` | `CLAUDE_CHECK_MODEL` (default `claude-haiku-5-5`) | adaptive | low | 8000 | system, 5 min | none |
 | `imagecheck-v1` | `CLAUDE_CHECK_MODEL` | adaptive | low | 4000 | system, 5 min | none |
 
