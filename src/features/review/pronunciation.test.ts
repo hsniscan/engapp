@@ -1,5 +1,6 @@
+import { createHash } from 'node:crypto';
 import { act, renderHook } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 import {
   createPronouncer,
@@ -37,7 +38,20 @@ class MemoryCache implements AudioCache {
   }
 }
 
-// Several macrotask turns: the object path is a Web Crypto digest, which settles off-thread.
+// Web Crypto's digest settles on a worker thread, so under load it can outlast the flush below
+// and the tests turn flaky. The same SHA-256, computed synchronously, keeps every step in the
+// microtask/macrotask turns that flush() waits for.
+beforeAll(() => {
+  vi.spyOn(crypto.subtle, 'digest').mockImplementation(async (_alg, data) => {
+    const bytes = ArrayBuffer.isView(data)
+      ? new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
+      : new Uint8Array(data as ArrayBuffer);
+    const out = createHash('sha256').update(bytes).digest();
+    return out.buffer.slice(out.byteOffset, out.byteOffset + out.byteLength) as ArrayBuffer;
+  });
+});
+
+// Several macrotask turns, for the chained awaits of a load (digest, cache, fetch).
 const flush = () =>
   act(async () => {
     for (let i = 0; i < 8; i++) await new Promise<void>((r) => setTimeout(r, 0));

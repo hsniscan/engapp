@@ -12,18 +12,18 @@ beforeEach(async () => {
   await ensureSettings();
 });
 
-async function wordAt(term: string, state: number, stability: number) {
+async function wordAt(term: string, state: number, stability: number, ramp_step = 0) {
   const { createdCards } = await addNoteWithSenses({ term, senses: [{ meaning_tr: term }] });
   const rec = createdCards.find((c) => c.card_type === 'recognition')!;
-  await db.cards.update(rec.id, { state: state as never, stability, reps: 3 });
+  await db.cards.update(rec.id, { state: state as never, stability, ramp_step, reps: 3 });
 }
 
 describe('progress page', () => {
   it('shows words by stage, with "Zaten bildiğin kelimeler" apart from the learned count', async () => {
     await wordAt('tide', CardState.Learning, 1);
-    await wordAt('scarce', CardState.Review, 5);
-    await wordAt('curb', CardState.Review, 30);
-    await wordAt('vivid', CardState.Review, 120);
+    await wordAt('scarce', CardState.Review, 5, 1);
+    await wordAt('curb', CardState.Review, 30, 3);
+    await wordAt('vivid', CardState.Review, 120, 5);
     await markKnown('give up', 'test');
     await markKnown('take off', 'preview');
 
