@@ -6,3 +6,5 @@ Review (graduated from learning steps). Stored as `cards.unlocked`, and
 re-derived from review logs on recompute so sync/undo stay consistent.
 **Why.** Producing a word before recognising it is frustrating and inflates
 lapses; recognition-first matches how the user learns new vocabulary.
+
+**Update (decision 0041).** The trigger is now the word reaching Pekişiyor (the recognition card recalled on another day, `ramp_step ≥ 1`), not graduation. Cards that graduation opened before the change stay open.

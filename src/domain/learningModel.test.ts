@@ -17,7 +17,7 @@ import {
 } from './fsrs';
 import { GRAD_CAP, RAMP_CAPS, RAMP_EPOCH } from './fsrsConfig';
 import { replayCard } from './recompute';
-import { cardStage, stageChangeLabel, stageProgress, type WordStage } from './stages';
+import { becameLearned, cardStage, stageChangeLabel, stageProgress, type WordStage } from './stages';
 import { makeLog } from '../test/factories';
 import { CardState, type CardStateValue, type FsrsFields, Rating, type RatingValue } from './types';
 
@@ -251,6 +251,9 @@ describe('the ramp', () => {
     const learnedAt = states[4]!.at; // the fifth answer made it Öğrenildi
     expect(card.learned_at).toBe(learnedAt);
     expect(cardStage(card)).toBe('consolidating');
+    // Only that answer counts for the session summary.
+    const flags = states.map((s, i) => becameLearned(s.card, states[i + 1]?.card ?? card));
+    expect(flags).toEqual([false, false, false, false, true, false, false]);
   });
 
   it('downward fuzz only on table caps of 14 days and more, at most 10 %, the same on every device', () => {

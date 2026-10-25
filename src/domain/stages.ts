@@ -79,3 +79,11 @@ export function stageChangeLabel(from: WordStage, to: WordStage): string | null 
   if (b > a) return to === 'learning' ? null : `↑ ${STAGE_LABEL_TR[to]}`;
   return '↓ yeniden öğren';
 }
+
+/**
+ * The answer made the card Öğrenildi for the first time (session summary: "Bugün 3 kelime
+ * Öğrenildi'ye geçti"; count recognition cards only).
+ */
+export function becameLearned(before: Pick<FsrsFields, 'learned_at'>, after: Pick<FsrsFields, 'learned_at'>): boolean {
+  return (before.learned_at ?? null) === null && (after.learned_at ?? null) !== null;
+}
