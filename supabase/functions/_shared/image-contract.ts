@@ -126,7 +126,7 @@ export const IMAGE_PROMPT_VERSION = 'image-v2';
 /** The style-B prompt: its pictures are replaced by image-v2 ones as those are stored. */
 export const IMAGE_PROMPT_VERSION_FLAT = 'image-v1';
 export const VISUAL_PROMPT_VERSION = 'visual-v1';
-export const IMAGE_CHECK_PROMPT_VERSION = 'imagecheck-v1';
+export const IMAGE_CHECK_PROMPT_VERSION = 'imagecheck-v2';
 
 /** What a generation request may contain. Nothing else ever reaches the model. */
 export const imageRequestInput = z.object({

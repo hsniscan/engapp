@@ -5,17 +5,26 @@
 //
 // The input is tokenised by a small XML subset parser. Anything outside the subset is refused
 // rather than repaired: DOCTYPE, entities (any `&`), CDATA, processing instructions (except a
-// leading XML declaration), unknown elements, unknown attributes, colours outside the palette,
-// `url(`, text content. Harmless metadata is dropped: comments, <title>/<desc> with their text,
-// and the attributes xmlns (svg namespace only), version, role, aria-label, aria-hidden, id.
-// The output is a normalised document: `<svg xmlns=… viewBox="0 0 256 256">` + children, every
-// attribute value re-serialised from its parsed form, self-closing empty elements.
+// leading XML declaration), unknown elements (so <defs>, <filter> and every fe* element),
+// unknown attributes, colours outside the palette, text content, and `url(` anywhere except in
+// the one filter form below. Harmless metadata is dropped: comments, <title>/<desc> with their
+// text, and the attributes xmlns (svg namespace only), version, role, aria-label, aria-hidden,
+// id. The output is a normalised document: `<svg xmlns=… viewBox="0 0 256 256">` + children,
+// every attribute value re-serialised from its parsed form, self-closing empty elements.
+//
+// Watercolour pictures (image-v2): g, path, circle, ellipse, rect, polygon and polyline may
+// carry filter="url(#line)" or filter="url(#wash)", nothing else. The filters themselves are
+// never taken from the input: the output gets the fixed IMAGE_WC_DEFS block right after the
+// root start tag when (and only when) a filter is used. An input whose root starts with that
+// exact block (a stored picture sanitised again by the client) has it removed before parsing,
+// so sanitizeSvg(sanitizeSvg(x).svg) equals sanitizeSvg(x). Any other <defs> is refused.
 
 import {
   IMAGE_ALLOWED_COLORS,
   IMAGE_MAX_BYTES,
   IMAGE_PALETTE,
   IMAGE_VIEWBOX,
+  IMAGE_WC_DEFS,
   type SanitizeResult,
 } from './image-contract.ts';
 
@@ -51,6 +60,7 @@ type Kind =
   | 'linecap'
   | 'linejoin'
   | 'fillrule'
+  | 'filter'
   | 'viewbox';
 
 /** Attribute allowlist (Annex A.4, plus fill-rule and stroke-opacity: decision 0030). */
@@ -81,6 +91,7 @@ const ATTRS: Record<string, Kind> = {
   'fill-opacity': 'unit',
   'stroke-opacity': 'unit',
   'fill-rule': 'fillrule',
+  filter: 'filter',
 };
 
 /** Painted shapes per element: which attributes it may carry besides the shared ones. */
@@ -98,14 +109,14 @@ const SHARED = new Set([
 ]);
 const OWN: Record<string, ReadonlySet<string>> = {
   svg: new Set(['viewBox', 'width', 'height']),
-  g: new Set(),
-  path: new Set(['d']),
-  circle: new Set(['cx', 'cy', 'r']),
-  ellipse: new Set(['cx', 'cy', 'rx', 'ry']),
-  rect: new Set(['x', 'y', 'width', 'height', 'rx', 'ry']),
+  g: new Set(['filter']),
+  path: new Set(['d', 'filter']),
+  circle: new Set(['cx', 'cy', 'r', 'filter']),
+  ellipse: new Set(['cx', 'cy', 'rx', 'ry', 'filter']),
+  rect: new Set(['x', 'y', 'width', 'height', 'rx', 'ry', 'filter']),
   line: new Set(['x1', 'y1', 'x2', 'y2']),
-  polyline: new Set(['points']),
-  polygon: new Set(['points']),
+  polyline: new Set(['points', 'filter']),
+  polygon: new Set(['points', 'filter']),
 };
 
 const MAX_ELEMENTS = 600;
@@ -114,6 +125,14 @@ const NUM = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/;
 const PATH = /^[MmZzLlHhVvCcSsQqTtAa0-9eE.,+\-\s]*$/;
 const TRANSFORM_FN = /^\s*(matrix|translate|scale|rotate|skewX|skewY)\s*\(([^()]*)\)\s*,?/;
 const NAME = /^[A-Za-z_][-A-Za-z0-9_.:]*/;
+/** The only filter values: a reference to one of the two fixed IMAGE_WC_DEFS filters. */
+const FILTER = /^\s*url\(\s*#(line|wash)\s*\)\s*$/;
+/** A filter attribute in the raw input (the parser checks its value, as `value:filter`). */
+const FILTER_ATTR = /\sfilter\s*=\s*(?:"[^"<>]*"|'[^'<>]*')/g;
+/** A filter reference in the output: the only `url(` that may remain there. */
+const FILTER_REF = /\sfilter="url\(#(?:line|wash)\)"/g;
+/** The root start tag (after an optional XML declaration), to find a stored defs block. */
+const ROOT_START = /^﻿?\s*(?:<\?xml\s[^<>?]*\?>)?\s*<svg\b[^<>]*>/;
 const DEFAULT_FILL = IMAGE_PALETTE.ink[0];
 
 interface Node {
@@ -213,6 +232,10 @@ function normValue(kind: Kind, raw: string): string | null {
       return ['miter', 'round', 'bevel'].includes(raw.trim()) ? raw.trim() : null;
     case 'fillrule':
       return ['nonzero', 'evenodd'].includes(raw.trim()) ? raw.trim() : null;
+    case 'filter': {
+      const m = FILTER.exec(raw);
+      return m ? `url(#${m[1]})` : null;
+    }
     case 'viewbox': {
       const n = numbers(raw);
       return n && n.map(fmt).join(' ') === IMAGE_VIEWBOX ? IMAGE_VIEWBOX : null;
@@ -404,14 +427,28 @@ export function sanitizeSvg(svg: string): SanitizeResult {
   if (typeof svg !== 'string' || svg.trim() === '') return fail('empty');
   if (utf8Length(svg) > IMAGE_MAX_BYTES) return fail('too_large');
   if (svg.includes('&')) return fail('entity');
-  if (/url\s*\(/i.test(svg)) return fail('url');
+  // `url(` only inside a filter attribute, whose value the parser then checks strictly.
+  if (/url\s*\(/i.test(svg.replace(FILTER_ATTR, ' '))) return fail('url');
   if (/<!\[CDATA\[/i.test(svg)) return fail('cdata');
-  const parsed = parse(svg);
+  // A stored watercolour picture carries the fixed defs block: take it out (it is put back below).
+  const start = ROOT_START.exec(svg)?.[0].length ?? -1;
+  const src =
+    start > 0 && svg.startsWith(IMAGE_WC_DEFS, start)
+      ? svg.slice(0, start) + svg.slice(start + IMAGE_WC_DEFS.length)
+      : svg;
+  const parsed = parse(src);
   if ('ok' in parsed) return parsed;
   if (parsed.root.name !== 'svg') return fail('root');
-  const out = serialise(parsed.root, true);
+  let out = serialise(parsed.root, true);
   if (typeof out !== 'string') return out;
   if (parsed.root.children.length === 0) return fail('empty');
+  // Defence in depth: the only `url(` left is a reference to one of the fixed filters.
+  const refs = out.match(FILTER_REF)?.length ?? 0;
+  if (/url\s*\(/i.test(out.replace(FILTER_REF, ''))) return fail('url');
+  if (refs > 0) {
+    const end = out.indexOf('>') + 1;
+    out = out.slice(0, end) + IMAGE_WC_DEFS + out.slice(end);
+  }
   if (utf8Length(out) > IMAGE_MAX_BYTES) return fail('too_large');
   return { ok: true, svg: out };
 }

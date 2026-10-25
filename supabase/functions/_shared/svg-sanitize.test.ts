@@ -3,7 +3,12 @@
 // src/domain/svgSanitize.test.ts.
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { IMAGE_ALLOWED_COLORS, IMAGE_MAX_BYTES, IMAGE_PALETTE } from './image-contract.ts';
+import {
+  IMAGE_ALLOWED_COLORS,
+  IMAGE_MAX_BYTES,
+  IMAGE_PALETTE,
+  IMAGE_WC_DEFS,
+} from './image-contract.ts';
 import { IMAGE_REFS } from './image-refs.ts';
 import { sanitizeSvg, svgColors } from './svg-sanitize.ts';
 
@@ -62,6 +67,83 @@ describe('valid variants of the references', () => {
     expect(out.startsWith('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"')).toBe(
       true,
     );
+  });
+});
+
+describe('watercolour filters (image-v2)', () => {
+  const WC = `${H}<path d="M20 120 C20 40 236 40 236 120 C236 200 20 200 20 120 Z" fill="#f1dfc0" opacity="0.8" filter="url(#wash)"/><g filter="url(#line)" stroke="#4a4440" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="128" cy="128" r="50" fill="#c2654a" fill-opacity="0.85"/></g></svg>`;
+
+  it('accepts the two filters and puts the fixed defs block right after the root tag', () => {
+    const out = ok(WC);
+    const root = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="#2b2824">';
+    expect(out.startsWith(root + IMAGE_WC_DEFS + '<path ')).toBe(true);
+    expect(out.split('<defs>').length).toBe(2);
+    expect(out).toContain('filter="url(#wash)"');
+    expect(out).toContain('<g filter="url(#line)"');
+  });
+
+  it('is a fixed point: the stored defs block is taken out and put back', () => {
+    const out = ok(WC);
+    expect(ok(out)).toBe(out);
+    expect(ok(ok(out))).toBe(out);
+  });
+
+  it('normalises whitespace in the filter value', () => {
+    const out = ok(WC.replace('url(#wash)', ' url( #wash ) ').replace('url(#line)', 'url(#line )'));
+    expect(out).toBe(ok(WC));
+  });
+
+  it('adds no defs when no filter is used, and drops a stored block that nothing uses', () => {
+    const flat = `${H}<circle cx="128" cy="128" r="40" fill="#d55e00"/></svg>`;
+    expect(ok(flat)).not.toContain('<defs');
+    expect(ok(flat.replace(H, H + IMAGE_WC_DEFS))).toBe(ok(flat));
+  });
+
+  it('refuses any other filter value', () => {
+    for (const v of [
+      'url(#evil)',
+      'url(https://e.example/x#line)',
+      'url(#line) url(#wash)',
+      'none',
+      'blur(2px)',
+      'url(#LINE)',
+    ]) {
+      expect(reason(WC.replace('url(#wash)', v))).toBe('value:filter');
+    }
+  });
+
+  it('refuses a filter on the root or a line, and url( anywhere else', () => {
+    expect(reason(WC.replace('<svg ', '<svg filter="url(#line)" '))).toBe('attribute:filter');
+    expect(
+      reason(`${H}<line x1="0" y1="0" x2="9" y2="9" stroke="#4a4440" filter="url(#line)"/></svg>`),
+    ).toBe('attribute:filter');
+    expect(reason(WC.replace('fill="#c2654a"', 'fill="url(#line)"'))).toBe('url');
+  });
+
+  it('refuses a defs block the model wrote, or the fixed one anywhere but first', () => {
+    expect(
+      reason(
+        WC.replace(
+          H,
+          `${H}<defs><filter id="line"><feGaussianBlur stdDeviation="9"/></filter></defs>`,
+        ),
+      ),
+    ).toBe('element:defs');
+    expect(reason(WC.replace(H, `${H}${IMAGE_WC_DEFS.replace('scale="4"', 'scale="40"')}`))).toBe(
+      'element:defs',
+    );
+    expect(reason(WC.replace(H, `${H}<g/>${IMAGE_WC_DEFS}`))).toBe('element:defs');
+    expect(reason(WC.replace(H, `${H}<filter id="wash"/>`))).toBe('element:filter');
+    expect(reason(WC.replace(H, `${H}<feTurbulence/>`))).toBe('element:feturbulence');
+  });
+
+  it('counts the defs block against the byte limit of the output', () => {
+    const shape = '<circle cx="128" cy="128" r="50" fill="#c2654a"/>';
+    const fill = (n: number) => `${H}<g filter="url(#line)">${shape.repeat(n)}</g></svg>`;
+    let n = 1;
+    while (new TextEncoder().encode(fill(n + 1)).length <= IMAGE_MAX_BYTES) n++;
+    // The input fits; with the defs block added the output does not.
+    expect(reason(fill(n))).toBe('too_large');
   });
 });
 
@@ -161,6 +243,42 @@ describe('sanitizeSvg details', () => {
           expect(r.svg).not.toMatch(FORBIDDEN);
           expect(sanitizeSvg(r.svg)).toEqual(r);
           for (const c of svgColors(r.svg)) expect(IMAGE_ALLOWED_COLORS.has(c)).toBe(true);
+        }
+      }),
+      { numRuns: 2000 },
+    );
+  });
+
+  it('never throws and keeps watercolour pictures a fixed point (fuzz)', () => {
+    const pieces = [
+      H,
+      '</svg>',
+      IMAGE_WC_DEFS,
+      '<defs>',
+      '</defs>',
+      '<filter id="line">',
+      '</filter>',
+      '<feTurbulence/>',
+      '<g filter="url(#line)" stroke="#4a4440">',
+      '<g filter=" url( #wash ) ">',
+      '</g>',
+      '<path d="M0 0 L9 9" fill="#f1dfc0" filter="url(#wash)"/>',
+      '<circle cx="1" cy="1" r="1" fill="#c2654a" filter="url(#evil)"/>',
+      '<rect width="1" height="1" fill="url(#line)"/>',
+      'url(#line)',
+      'filter="url(#wash)"',
+      '"',
+      ' ',
+      '<',
+      '>',
+    ];
+    fc.assert(
+      fc.property(fc.array(fc.constantFrom(...pieces), { maxLength: 20 }), (parts) => {
+        const r = sanitizeSvg(parts.join(''));
+        if (r.ok) {
+          expect(r.svg.replace(IMAGE_WC_DEFS, '')).not.toMatch(/<defs|<filter|<fe/i);
+          expect(r.svg.replace(/ filter="url\(#(?:line|wash)\)"/g, '')).not.toMatch(FORBIDDEN);
+          expect(sanitizeSvg(r.svg)).toEqual(r);
         }
       }),
       { numRuns: 2000 },

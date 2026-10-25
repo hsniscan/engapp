@@ -147,28 +147,44 @@ export class SupabaseImageStore implements ImageStore {
     );
   }
 
-  async queued(limit: number): Promise<QueuedRequest[]> {
-    return check(
-      await this.db
-        .from('image_requests')
-        .select('sense_id, source, priority, attempt, problem, batch_id, hold_id')
-        .eq('state', 'queued')
-        .order('priority', { ascending: false })
-        .order('updated_at', { ascending: true })
-        .limit(limit),
-      'image_requests queued',
-    );
+  /**
+   * Requests in one state, highest priority first. The API returns at most 1000 rows per
+   * request (max_rows), so a bigger batch is read in pages; sense_id breaks ties so the pages
+   * do not overlap.
+   */
+  private async requests(state: string, limit: number): Promise<QueuedRequest[]> {
+    const PAGE = 1000;
+    const out: QueuedRequest[] = [];
+    const seen = new Set<string>();
+    for (let from = 0; from < limit; from += PAGE) {
+      const to = Math.min(limit, from + PAGE) - 1;
+      const rows = check<QueuedRequest[]>(
+        await this.db
+          .from('image_requests')
+          .select('sense_id, source, priority, attempt, problem, batch_id, hold_id')
+          .eq('state', state)
+          .order('priority', { ascending: false })
+          .order('updated_at', { ascending: true })
+          .order('sense_id', { ascending: true })
+          .range(from, to),
+        `image_requests ${state}`,
+      );
+      for (const r of rows) {
+        if (seen.has(r.sense_id)) continue;
+        seen.add(r.sense_id);
+        out.push(r);
+      }
+      if (rows.length < to - from + 1) break;
+    }
+    return out;
   }
 
-  async submitted(): Promise<QueuedRequest[]> {
-    return check(
-      await this.db
-        .from('image_requests')
-        .select('sense_id, source, priority, attempt, problem, batch_id, hold_id')
-        .eq('state', 'submitted')
-        .limit(10000),
-      'image_requests submitted',
-    );
+  queued(limit: number): Promise<QueuedRequest[]> {
+    return this.requests('queued', limit);
+  }
+
+  submitted(): Promise<QueuedRequest[]> {
+    return this.requests('submitted', 10000);
   }
 
   async queueAuto(min: number, limit: number): Promise<number> {
