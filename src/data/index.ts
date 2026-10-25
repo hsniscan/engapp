@@ -4,6 +4,7 @@ export { wipeLocalDatabase } from './wipe';
 export { loadLevelData, levelDataNow } from './levelData';
 export * from './actions';
 export * from './queries';
+export * from './wordStages';
 export * from './examples';
 export * from './mnemonics';
 export * from './images';
@@ -88,6 +89,9 @@ export {
 } from './practice';
 export {
   recomputeAllCards,
+  backfillLearningModel,
+  stageRuleNoticePending,
+  markStageRuleNoticeSeen,
   applyRemoteRows,
   exportBackup,
   exportCsv,

@@ -130,7 +130,7 @@ export async function reconcileImageCards(opts: ReconcileOptions = {}, now: Mill
     const { plan, senses, cards } = await planNow(opts);
     const done: ImageCardPlan = { create: [], revive: [], remove: [] };
     const recognitionState = async (noteId: Id) =>
-      primaryRecognition(await db.cards.where('note_id').equals(noteId).toArray())?.state ?? null;
+      primaryRecognition(await db.cards.where('note_id').equals(noteId).toArray()) ?? null;
     for (const senseId of plan.create) {
       const id = ids.get(senseId);
       const sense = senses.get(senseId);
@@ -149,7 +149,7 @@ export async function reconcileImageCards(opts: ReconcileOptions = {}, now: Mill
           sense_id: sense.id,
           card_type: 'image',
           suspended: false,
-          unlocked: state !== null && recognitionUnlocks(state),
+          unlocked: recognitionUnlocks(state),
           ...emptyFsrs(w.now),
         } satisfies Card);
       }

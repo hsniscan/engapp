@@ -7,8 +7,9 @@ import { buildQueue, type QueueCounts, type QueueItem, type QueueMode } from '..
 import { type Cloze, firstLetterHint, lastShownSenseId, makeCloze, nextRecognitionSense } from '../domain/recognition';
 import { buildHeatmap, computeStreakSummary, type HeatmapCell, type StreakSummary } from '../domain/streak';
 import { isVacationDay } from '../domain/vacation';
-import { type Card, CardState, type Id, type LexiconSense, type Millis, type Note, type RatingValue, type Sense } from '../domain/types';
+import { type Card, type Id, type LexiconSense, type Millis, type Note, type RatingValue, type Sense } from '../domain/types';
 import { db } from './db';
+import { getWordStages } from './wordStages';
 import { exampleTables, senseExamplesFor } from './examples';
 import { cardImageOf, type CardImage } from './images';
 import { imageCardReadTables, imageCardsWithoutPicture } from './imageCards';
@@ -209,9 +210,10 @@ export interface HomeSummary {
 export async function getStreakSummary(now: Millis = Date.now()): Promise<StreakSummary> {
   const settings = await getSettings(now);
   const cfg = dayConfig(settings);
+  // "Öğrendiğin kelime" (ADR 0041): words, not cards; only Öğrenildi and Kalıcı count.
   const [activity, learned] = await Promise.all([
     db.daily_activity.toArray(),
-    db.cards.where('[state+due]').between([CardState.Review, -Infinity], [CardState.Review, Infinity]).filter((c) => c.deleted_at === null).count(),
+    getWordStages(now).then((s) => s.learnedTotal),
   ]);
   return computeStreakSummary(activity, {
     today: dayKeyOf(now, cfg),

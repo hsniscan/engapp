@@ -273,6 +273,7 @@ export async function getWorkloadInput(now: Millis = Date.now()): Promise<Worklo
         stability: c.stability,
         difficulty: c.difficulty,
         last_review: c.last_review,
+        ramp_step: c.ramp_step ?? 0,
       })),
       bounds,
       days,

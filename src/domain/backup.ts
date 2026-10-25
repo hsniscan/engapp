@@ -55,7 +55,10 @@ export const BACKUP_FORMAT = 'engapp-backup';
 //    have no reports (restored as none) and no goals (none set).
 // v0.4 adds optional settings fields (show_image_front, new_card_order) without a version
 //    bump, like show_easy_candidates: absent means the default.
-export const BACKUP_SCHEMA_VERSION = 9;
+// 10 (redesign, learning model, decision 0041): cards.ramp_step and cards.learned_at, derived
+//    from the logs. Older files have neither (restored as 0 / null, then the restore's replay
+//    fills them); the checksum is tried without them.
+export const BACKUP_SCHEMA_VERSION = 10;
 
 export interface BackupTables {
   notes: Note[];
@@ -222,14 +225,27 @@ export async function verifyBackup(input: unknown): Promise<VerifyResult> {
  * as they are, then as such older files had them.
  */
 async function checksumMatches(t: BackupTables, checksum: string): Promise<boolean> {
-  const v3 = { ...t, notes: t.notes.map((n) => withoutNull(n, 'level_override')) };
-  const v1 = { ...v3, senses: t.senses.map((s) => withoutNull(s, 'source_sentence_tr')) };
-  for (const tables of [t, v3, v1]) {
-    if ((await backupChecksum(tables)) === checksum) return true;
-    const pre9 = { ...tables, settings: tables.settings.map(withoutLevelDefaults) };
-    if ((await backupChecksum(pre9)) === checksum) return true;
+  // Before version 10 cards had no ramp_step / learned_at.
+  for (const cards of [t.cards, t.cards.map(withoutRampDefaults)]) {
+    const base = { ...t, cards };
+    const v3 = { ...base, notes: t.notes.map((n) => withoutNull(n, 'level_override')) };
+    const v1 = { ...v3, senses: t.senses.map((s) => withoutNull(s, 'source_sentence_tr')) };
+    for (const tables of [base, v3, v1]) {
+      if ((await backupChecksum(tables)) === checksum) return true;
+      const pre9 = { ...tables, settings: tables.settings.map(withoutLevelDefaults) };
+      if ((await backupChecksum(pre9)) === checksum) return true;
+    }
   }
   return false;
+}
+
+/** A card as a file before version 10 had it (no learning-model fields at their defaults). */
+function withoutRampDefaults(row: Card): Card {
+  if (row.ramp_step !== 0 || row.learned_at !== null) return row;
+  const copy: Partial<Card> = { ...row };
+  delete copy.ramp_step;
+  delete copy.learned_at;
+  return copy as Card;
 }
 
 /** Settings as a file before version 9 had them (the level fields at their defaults). */

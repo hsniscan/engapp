@@ -77,6 +77,14 @@ export interface FsrsFields {
   lapses: number;
   state: CardStateValue;
   last_review: Millis | null;
+  /**
+   * Counted reviews since graduation or the last lapse (the "sağlam tekrar" counter of the
+   * learning model, docs/decisions/0041). Derived from the logs by replay; drives the ramp caps
+   * and the word stages (domain/stages.ts).
+   */
+  ramp_step: number;
+  /** First time the card reached Öğrenildi (never cleared by a later lapse). Derived by replay. */
+  learned_at: Millis | null;
 }
 
 export interface Card extends SyncedRow, FsrsFields {

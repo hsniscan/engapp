@@ -116,7 +116,7 @@ export async function buildSeedBackup(cards: number, now = Date.now()): Promise<
 
     // Newer notes are partly unstudied; older ones have a history.
     const studied = i < nNotes * 0.85;
-    let recognitionState: Card['state'] | null = null;
+    let recognitionState: Pick<Card, 'state' | 'ramp_step' | 'last_review'> | null = null;
     for (const type of ['recognition', 'production', 'cloze'] as CardType[]) {
       const cardId = id('card');
       let f = emptyFsrs(created);
@@ -143,7 +143,7 @@ export async function buildSeedBackup(cards: number, now = Date.now()): Promise<
           t = Math.max(f.due, t + 60_000) + (rand() < 0.2 ? Math.floor(rand() * 2 * DAY) : 0);
         }
       }
-      if (type === 'recognition') recognitionState = f.state;
+      if (type === 'recognition') recognitionState = f;
       const last =
         logs.length && logs[logs.length - 1]!.card_id === cardId
           ? logs[logs.length - 1]!.reviewed_at

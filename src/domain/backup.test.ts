@@ -70,6 +70,25 @@ describe('backup file', () => {
     expect(await verifyBackup({ ...b, schema_version: 99 })).toMatchObject({ ok: false, error: 'unsupported_version' });
   });
 
+  it('accepts version 9 files whose cards have no ramp_step / learned_at (ADR 0041)', async () => {
+    const t = tables();
+    const legacy = {
+      ...t,
+      cards: t.cards.map((c) => {
+        const { ramp_step: _r, learned_at: _l, ...rest } = c;
+        return rest as typeof c;
+      }),
+    };
+    const b = await buildBackup(legacy, { exported_at: 1, device_id: 'd' });
+    const r = await verifyBackup(JSON.stringify({ ...b, schema_version: 9 }));
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.backup.tables.cards[0]).toMatchObject({ ramp_step: 0, learned_at: null });
+    // A current file with derived values keeps its own checksum.
+    const now = await buildBackup({ ...t, cards: t.cards.map((c) => ({ ...c, ramp_step: 3, learned_at: 5 })) }, { exported_at: 1, device_id: 'd' });
+    expect(now.schema_version).toBe(10);
+    expect((await verifyBackup(JSON.stringify(now))).ok).toBe(true);
+  });
+
   it('accepts version 1 files whose senses have no source_sentence_tr', async () => {
     const t = tables();
     const legacy = {

@@ -33,24 +33,35 @@ function note(band: CefrLevel | null, ratings: RatingValue[], at: number, practi
     practice,
   };
 }
-/** n words of `band` learned without a lapse, finished around `at`. */
+/** n words of `band` that reached Öğrenildi without a lapse, at `at` + 2 h. */
 const learned = (band: CefrLevel, n: number, at: number) =>
-  Array.from({ length: n }, () => note(band, [Rating.Good, Rating.Good, Rating.Good], at));
+  Array.from({ length: n }, () => ({
+    ...note(band, [Rating.Good, Rating.Good, Rating.Good], at),
+    learned: { at: at + 2 * H, lapsedBefore: false },
+  }));
 
 describe('evidence', () => {
   it('reads the first answers of the recognition card', () => {
     const at = MON;
     expect(cardEvidence([makeLog({ card_id: 'c', rating: Rating.Easy, reviewed_at: at })])).toMatchObject({ known: 1, kind: 'easy_first' });
     expect(cardEvidence([Rating.Good, Rating.Good].map((r, i) => makeLog({ card_id: 'c', rating: r, reviewed_at: at + i })))).toBeNull();
-    expect(
-      cardEvidence([Rating.Good, Rating.Hard, Rating.Good].map((r, i) => makeLog({ card_id: 'c', rating: r, reviewed_at: at + i }))),
-    ).toMatchObject({ known: 1, kind: 'learned', at: at + 2 });
+    // Three answers on one day are no longer "learned" (ADR 0041): it takes Öğrenildi.
+    const three = [Rating.Good, Rating.Hard, Rating.Good].map((r, i) => makeLog({ card_id: 'c', rating: r, reviewed_at: at + i }));
+    expect(cardEvidence(three)).toBeNull();
+    expect(cardEvidence(three, { at: at + 11 * D, lapsedBefore: false })).toMatchObject({ known: 1, kind: 'learned', at: at + 11 * D });
+    // A lapse before Öğrenildi: no evidence either way.
+    expect(cardEvidence(three, { at: at + 20 * D, lapsedBefore: true })).toBeNull();
+    // Not yet at `until`.
+    expect(cardEvidence(three, { at: at + 11 * D, lapsedBefore: false }, at + 10 * D)).toBeNull();
     expect(
       cardEvidence([Rating.Again, Rating.Good, Rating.Again].map((r, i) => makeLog({ card_id: 'c', rating: r, reviewed_at: at + i }))),
     ).toMatchObject({ unknown: 1, kind: 'lapses', at: at + 2 });
-    // Later lapses do not change the evidence of the first three answers.
+    // Later lapses do not change the evidence of a word learned before them.
     expect(
-      cardEvidence([Rating.Good, Rating.Good, Rating.Good, Rating.Again, Rating.Again].map((r, i) => makeLog({ card_id: 'c', rating: r, reviewed_at: at + i }))),
+      cardEvidence(
+        [Rating.Good, Rating.Good, Rating.Good, Rating.Again, Rating.Again].map((r, i) => makeLog({ card_id: 'c', rating: r, reviewed_at: at + i })),
+        { at: at + 2, lapsedBefore: false },
+      ),
     ).toMatchObject({ known: 1 });
   });
 

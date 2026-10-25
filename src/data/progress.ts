@@ -106,6 +106,7 @@ export async function loadRetentionInput(
         };
       };
 
+      const dayOf = makeDayOf(cfg);
       const facts = new Map<Id, RetentionCardFacts>();
       for (const card of cards) {
         if (!notesById.has(card.note_id)) continue;
@@ -119,13 +120,18 @@ export async function loadRetentionInput(
           );
         const sense = card.sense_id ? senseById.get(card.sense_id) : undefined;
         const base = sense ? { ...factsOf(card.note_id, [sense], false), level: nf.level } : nf;
-        facts.set(card.id, { ...base, card_type: card.card_type, sense_id: card.sense_id });
+        facts.set(card.id, {
+          ...base,
+          card_type: card.card_type,
+          sense_id: card.sense_id,
+          learned_day: card.learned_at != null ? dayOf(card.learned_at) : null,
+        });
       }
 
       const live = new Set(facts.keys());
       const byCard = groupLogs(logs.filter((l) => live.has(l.card_id)));
       return {
-        data: collectRetention(byCard.values(), makeDayOf(cfg)),
+        data: collectRetention(byCard.values(), dayOf),
         facts,
         today: dayKeyOf(now, cfg),
         sourceTitles: new Map(sources.map((s) => [s.id, s.title])),

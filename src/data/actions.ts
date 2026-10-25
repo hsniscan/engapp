@@ -7,12 +7,17 @@ import { normalizeTerm } from '../domain/normalize';
 import { isDuplicateSense } from '../../supabase/functions/_shared/text';
 import { canHaveCloze, isValidSpan } from '../domain/recognition';
 import { primaryRecognition } from '../domain/leech';
-import { deriveUnlocked, effectiveLogs, recognitionUnlocks, replayCard } from '../domain/recompute';
+import {
+  deriveUnlocked,
+  effectiveLogs,
+  type RecognitionUnlockInput,
+  recognitionUnlocks,
+  replayCard,
+} from '../domain/recompute';
 import { addAnswerToDay, emptyDay } from '../domain/streak';
 import {
   type Card,
   type CefrLevel,
-  type CardStateValue,
   type CardType,
   type DailyActivity,
   type Id,
@@ -100,16 +105,16 @@ async function recognitionOf(noteId: Id): Promise<Card | undefined> {
  */
 export async function syncFromPrimary(w: SyncWriter, noteId: Id): Promise<Id[]> {
   const primary = await recognitionOf(noteId);
-  return syncUnlocked(w, noteId, primary?.state ?? null);
+  return syncUnlocked(w, noteId, primary ?? null);
 }
 
 /** Bring every production/cloze card of a note in line with the recognition state. */
-async function syncUnlocked(w: SyncWriter, noteId: Id, recognitionState: CardStateValue | null): Promise<Id[]> {
+async function syncUnlocked(w: SyncWriter, noteId: Id, recognition: RecognitionUnlockInput | null): Promise<Id[]> {
   const changed: Id[] = [];
   const cards = await db.cards.where('note_id').equals(noteId).toArray();
   for (const c of cards) {
     if (c.card_type === 'recognition' || c.deleted_at !== null) continue;
-    const unlocked = deriveUnlocked(c, recognitionState);
+    const unlocked = deriveUnlocked(c, recognition);
     if (unlocked !== c.unlocked) {
       await w.put('cards', { ...c, unlocked });
       changed.push(c.id);
@@ -125,7 +130,7 @@ async function syncUnlocked(w: SyncWriter, noteId: Id, recognitionState: CardSta
 async function ensureSenseCards(
   w: SyncWriter,
   sense: Sense,
-  recognitionState: CardStateValue | null,
+  recognition: RecognitionUnlockInput | null,
   termType: NoteTermType,
 ): Promise<Card[]> {
   const existing = await db.cards.where('sense_id').equals(sense.id).toArray();
@@ -137,10 +142,10 @@ async function ensureSenseCards(
     const live = ofType.filter((c) => c.deleted_at === null);
     const want = wanted.includes(type);
     if (want && ofType.length === 0) {
-      out.push(await w.put('cards', newCard(w, sense.note_id, sense.id, type, recognitionState !== null && recognitionUnlocks(recognitionState))));
+      out.push(await w.put('cards', newCard(w, sense.note_id, sense.id, type, recognitionUnlocks(recognition))));
     } else if (want && live.length === 0) {
       const card = ofType[0]!;
-      out.push(await w.put('cards', { ...card, deleted_at: null, unlocked: deriveUnlocked(card, recognitionState) }));
+      out.push(await w.put('cards', { ...card, deleted_at: null, unlocked: deriveUnlocked(card, recognition) }));
     } else if (!want) {
       for (const card of live) await w.put('cards', { ...card, deleted_at: w.now });
     }
@@ -266,7 +271,7 @@ export async function addNoteWithSenses(input: AddNoteInput, now: Millis = Date.
       recognition = await w.put('cards', { ...recognition, deleted_at: null, unlocked: true });
       createdCards.push(recognition);
     }
-    const recState = recognition.state;
+    const recState: RecognitionUnlockInput = recognition;
 
     const senses = await db.senses.where('note_id').equals(note.id).toArray();
     let nextNo = Math.max(0, ...senses.filter((s) => s.deleted_at === null).map((s) => s.sense_no)) + 1;
@@ -355,7 +360,7 @@ export async function editNote(noteId: Id, patch: NotePatch, now: Millis = Date.
       // Becoming (or no longer being) a root/affix card changes which cards a sense has.
       const rec = await recognitionOf(noteId);
       for (const s of await db.senses.where('note_id').equals(noteId).toArray())
-        if (s.deleted_at === null) await ensureSenseCards(w, s, rec?.state ?? null, saved.term_type);
+        if (s.deleted_at === null) await ensureSenseCards(w, s, rec ?? null, saved.term_type);
     }
     return saved;
   });
@@ -406,7 +411,7 @@ export async function editSense(senseId: Id, patch: SensePatch, now: Millis = Da
     if (saved.deleted_at === null) {
       const rec = await recognitionOf(saved.note_id);
       const termType = (await db.notes.get(saved.note_id))?.term_type ?? 'word';
-      await ensureSenseCards(w, saved, rec?.state ?? null, termType);
+      await ensureSenseCards(w, saved, rec ?? null, termType);
     }
     return saved;
   });

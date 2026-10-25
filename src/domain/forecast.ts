@@ -8,8 +8,12 @@
 // day they are opened and their reviews afterwards, from a profile of one new card.
 //
 // It uses the same FSRS model as the scheduler (ts-fsrs, via domain/fsrs.ts) without fuzz,
-// is deterministic, and never changes a card. ~10–40 ms for 5 000 cards.
-import { applyRating, emptyFsrs, type Scheduler } from './fsrs';
+// is deterministic, and never changes a card. ~10–40 ms for 5 000 cards. Intervals follow the
+// learning model's ramp (docs/decisions/0041): the walk tracks each branch's ramp_step and
+// caps its interval exactly like applyRating does for answers after RAMP_EPOCH (the forecast
+// is always about the future, so the ramp always applies).
+import { applyRating, emptyFsrs, nextRampStep, rampCap, type Scheduler } from './fsrs';
+import { GRAD_CAP, RAMP_EPOCH } from './fsrsConfig';
 import { CardState, type CardStateValue, type FsrsFields, type Millis, Rating } from './types';
 
 export const FORECAST_DAYS = 30;
@@ -30,6 +34,8 @@ export interface ForecastCard {
   stability: number;
   difficulty: number;
   last_review: Millis | null;
+  /** Learning-model ramp counter (absent = 0). */
+  ramp_step?: number;
 }
 
 export interface ForecastInput {
@@ -98,8 +104,9 @@ function makeSim(scheduler: Scheduler, days: number, skip?: readonly boolean[]):
   };
 }
 
-function interval(sim: Sim, s: number): number {
-  return Math.min(sim.maxIvl, Math.max(1, Math.round(s * sim.ivlFactor)));
+function interval(sim: Sim, s: number, cap: number | null = null): number {
+  const ivl = Math.min(sim.maxIvl, Math.max(1, Math.round(s * sim.ivlFactor)));
+  return cap === null ? ivl : Math.min(ivl, cap);
 }
 
 interface Mem {
@@ -126,10 +133,11 @@ function walk(
   p0: number,
   out: number[],
   reviews: number[] | null,
+  ramp0 = 0,
 ): void {
   const engine = sim.scheduler.engine;
-  const stack: { mem: Mem; last: number; due: number; p: number; depth: number }[] = [
-    { mem: valid(mem0), last: lastDay0, due: dueDay0, p: p0, depth: 0 },
+  const stack: { mem: Mem; last: number; due: number; p: number; depth: number; ramp: number }[] = [
+    { mem: valid(mem0), last: lastDay0, due: dueDay0, p: p0, depth: 0, ramp: ramp0 },
   ];
   while (stack.length) {
     const n = stack.pop()!;
@@ -141,6 +149,9 @@ function walk(
     out[day]! += n.p;
     if (reviews) reviews[day]! += n.p;
     const good = valid(engine.next_state(n.mem, elapsed, GOOD, r));
+    const gap = at - n.last;
+    const cap = rampCap(CardState.Review, GOOD, n.ramp, gap);
+    const goodRamp = nextRampStep(CardState.Review, GOOD, n.ramp, gap, n.due - n.last);
     const pFail = n.p * (1 - r);
     // The relearning step after "Again" is one more answer the same day.
     out[day]! += pFail;
@@ -148,9 +159,10 @@ function walk(
     stack.push({
       mem: good,
       last: at,
-      due: day + interval(sim, good.stability),
+      due: day + interval(sim, good.stability, cap?.days ?? null),
       p: split ? n.p - pFail : n.p,
       depth: n.depth + 1,
+      ramp: goodRamp,
     });
     if (split) {
       const lapsed = valid(engine.next_state(n.mem, elapsed, AGAIN, r));
@@ -158,9 +170,10 @@ function walk(
       stack.push({
         mem: relearned,
         last: at,
-        due: day + interval(sim, relearned.stability),
+        due: day + interval(sim, relearned.stability, GRAD_CAP.Good),
         p: pFail,
         depth: n.depth + 1,
+        ramp: nextRampStep(CardState.Review, AGAIN, n.ramp, gap, n.due - n.last),
       });
     }
   }
@@ -168,7 +181,7 @@ function walk(
 
 /** One new card answered "Good" through its learning steps: answers on day 0, then its state. */
 function newCardPath(scheduler: Scheduler): { answers: number; fsrs: FsrsFields } {
-  const t0 = 0;
+  const t0 = RAMP_EPOCH;
   let f = emptyFsrs(t0);
   let t = t0;
   let answers = 0;
@@ -195,7 +208,7 @@ export function forecastWorkload(scheduler: Scheduler, input: ForecastInput): Wo
     const dueDay = dayIndexOf(bounds, c.due);
     if (c.state === CardState.Review) {
       const last = c.last_review === null ? dueDay - 1 : (c.last_review - start) / DAY_MS;
-      walk(sim, c, last, dueDay, 1, base, baseReviews);
+      walk(sim, c, last, dueDay, 1, base, baseReviews, c.ramp_step ?? 0);
     } else if (c.state === CardState.Learning || c.state === CardState.Relearning) {
       // One more step (answered "Good"), then the card is in review.
       const day = sim.nextOpen[dueDay]!;
@@ -203,7 +216,8 @@ export function forecastWorkload(scheduler: Scheduler, input: ForecastInput): Wo
       base[day]! += 1;
       const mem =
         c.stability > 0 ? valid(engine.next_state(valid(c), 0, GOOD)) : valid({ difficulty: engine.init_difficulty(GOOD), stability: engine.init_stability(GOOD) });
-      walk(sim, mem, day + 0.5, day + interval(sim, mem.stability), 1, base, null);
+      // Graduation is capped at one day; (re)learning never moves the ramp counter.
+      walk(sim, mem, day + 0.5, day + interval(sim, mem.stability, GRAD_CAP.Good), 1, base, null, c.ramp_step ?? 0);
     }
   }
 
@@ -212,7 +226,7 @@ export function forecastWorkload(scheduler: Scheduler, input: ForecastInput): Wo
   for (let j = 0; j < days; j++) {
     const row = new Array<number>(days).fill(0);
     row[j] = path.answers;
-    walk(sim, path.fsrs, j + 0.5, j + Math.max(1, path.fsrs.scheduled_days), 1, row, null);
+    walk(sim, path.fsrs, j + 0.5, j + Math.max(1, path.fsrs.scheduled_days), 1, row, null, path.fsrs.ramp_step);
     newProfile.push(row);
   }
 

@@ -110,12 +110,17 @@ describe('saving a level test', () => {
   });
 });
 
+/**
+ * Learn a word to Öğrenildi (ADR 0041): two learning steps, then recalled 15 days later. The
+ * 15-day gap proves ramp level 3 at once, and stability passes 14 days: learned at `at` + 15 d.
+ */
 async function learnWord(term: string, at: number): Promise<void> {
   const r = await addNoteWithSenses({ term, senses: [{ meaning_tr: 'x' }] }, at);
   const rec = (await db.cards.where('note_id').equals(r.note.id).toArray()).find((c: Card) => c.card_type === 'recognition')!;
-  for (let i = 0; i < 3; i++) {
-    await answerCard({ card_id: rec.id, rating: Rating.Good, duration_ms: 1000 }, at + (i + 1) * 30 * 60_000 + i * D);
+  for (const t of [at + 30 * 60_000, at + 45 * 60_000, at + 15 * D]) {
+    await answerCard({ card_id: rec.id, rating: Rating.Good, duration_ms: 1000 }, t);
   }
+  expect((await db.cards.get(rec.id))!.learned_at).toBe(at + 15 * D);
 }
 
 describe('weekly update', () => {
@@ -133,7 +138,8 @@ describe('weekly update', () => {
       },
       MON - 28 * D,
     );
-    for (let i = 0; i < 40; i++) await learnWord(`btwo${i}`, MON - 20 * D);
+    // Learned at MON − 12 d: evidence at this week's start and at last week's.
+    for (let i = 0; i < 40; i++) await learnWord(`btwo${i}`, MON - 27 * D);
     const out = await runWeeklyLevelUpdate(MON + 2 * H);
     expect(out).toMatchObject({ status: 'changed', change: { from: 'B1', to: 'B2', band: 'B2', known: 40 } });
     const s = await getSettings();
@@ -160,7 +166,7 @@ describe('weekly update', () => {
 describe('vocabulary counter', () => {
   it('Σ size × ratio plus learned words outside the list; "to next" from the next level', async () => {
     // Before the test: outside the list, but no evidence after the prior.
-    await learnWord('quokka', MON - 5 * D);
+    await learnWord('quokka', MON - 20 * D);
     await markKnown('zzyzx', 'manual', MON - D);
     await saveLevelTest(
       {

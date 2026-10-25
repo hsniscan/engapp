@@ -6,8 +6,8 @@
 // prior: the last level test's ratio (w = 20); without a test 0.9 for levels up to the
 // current one and 0.3 above (w = 10). Evidence since the prior, each word counted once in
 // its own level:
-//   known   (+1)   the first answer on the word's recognition card was "Kolay", or its first
-//                  three answers had no "Tekrar" (the card was learned without a lapse);
+//   known   (+1)   the first answer on the word's recognition card was "Kolay", or the card
+//                  reached Öğrenildi (learned_at, ADR 0041) without a lapse before it;
 //                  a word marked "Biliyorum" in a preview or by hand (known_terms)
 //   unknown (+1)   two or more "Tekrar" within the first three answers
 //   practice (0.5) the last practice answer on the word, either way, when nothing above applies
@@ -17,8 +17,8 @@
 // down when the own level's ratio is < 0.60 at both. At most one step per week, never while
 // the level is locked, and both instants must come after the last change of the level.
 import { addDays, type DayConfig, dayKeyOf, dayStartMs, weekdayMon0 } from './day';
-import { effectiveLogs } from './recompute';
-import { type CefrLevel, type Id, type LevelSourceKind, type Millis, Rating, type ReviewLog } from './types';
+import { effectiveLogs, type ReplayStep } from './recompute';
+import { CardState, type CefrLevel, type Id, type LevelSourceKind, type Millis, Rating, type ReviewLog } from './types';
 import { LEVELS, levelIndex } from './levelTest';
 
 export const PRIOR_WEIGHT_TEST = 20;
@@ -77,6 +77,28 @@ export interface EvidenceNote {
   logs: readonly ReviewLog[];
   /** The note's practice answers, any card. */
   practice: readonly { practiced_at: Millis; result: 'known' | 'unknown' }[];
+  /** When the recognition card first reached Öğrenildi (learnedEvidence); absent/null = not yet. */
+  learned?: LearnedEvidence | null;
+}
+
+/** The recognition card's first time at Öğrenildi and whether it lapsed before that. */
+export interface LearnedEvidence {
+  at: Millis;
+  lapsedBefore: boolean;
+}
+
+/**
+ * From a replay of the recognition card (domain/recompute.ts replayCard): the first answer
+ * after which the card was at Öğrenildi (its learned_at), and whether an answer before it was
+ * a lapse ("Tekrar" while in Review). null when the card never reached Öğrenildi.
+ */
+export function learnedEvidence(steps: readonly ReplayStep[]): LearnedEvidence | null {
+  let lapsed = false;
+  for (const s of steps) {
+    if (s.after.learned_at !== null) return { at: s.after.learned_at, lapsedBefore: lapsed };
+    if (s.before.state === CardState.Review && s.log.rating === Rating.Again) lapsed = true;
+  }
+  return null;
 }
 
 export interface EvidenceKnownTerm {
@@ -86,15 +108,23 @@ export interface EvidenceKnownTerm {
   band: CefrLevel | null;
 }
 
-/** Card-based evidence of one note, with the moment it became true; null = none yet. */
-export function cardEvidence(logs: readonly ReviewLog[]): Pick<EvidenceItem, 'known' | 'unknown' | 'at' | 'kind'> | null {
+/**
+ * Card-based evidence of one note, with the moment it became true; null = none yet. `learned`
+ * is the recognition card's first time at Öğrenildi (learnedEvidence); "known" from it needs
+ * no lapse before it. Three answers on one day no longer count (ADR 0041).
+ */
+export function cardEvidence(
+  logs: readonly ReviewLog[],
+  learned: LearnedEvidence | null = null,
+  until: Millis = Infinity,
+): Pick<EvidenceItem, 'known' | 'unknown' | 'at' | 'kind'> | null {
   const eff = effectiveLogs(logs);
   if (!eff.length) return null;
   const first3 = eff.slice(0, 3);
   const agains = first3.filter((l) => l.rating === Rating.Again);
   if (agains.length >= 2) return { known: 0, unknown: 1, at: agains[1]!.reviewed_at, kind: 'lapses' };
   if (eff[0]!.rating === Rating.Easy) return { known: 1, unknown: 0, at: eff[0]!.reviewed_at, kind: 'easy_first' };
-  if (first3.length === 3 && agains.length === 0) return { known: 1, unknown: 0, at: first3[2]!.reviewed_at, kind: 'learned' };
+  if (learned && !learned.lapsedBefore && learned.at <= until) return { known: 1, unknown: 0, at: learned.at, kind: 'learned' };
   return null;
 }
 
@@ -114,7 +144,7 @@ export function collectEvidence(
   for (const n of notes) {
     if (!n.band) continue;
     const logs = n.logs.filter((l) => l.reviewed_at <= until);
-    const card = cardEvidence(logs);
+    const card = cardEvidence(logs, n.learned ?? null, until);
     if (card && card.at <= until) {
       counted.add(n.term_norm);
       if (card.at > since) out.push({ key: n.id, band: n.band, ...card });

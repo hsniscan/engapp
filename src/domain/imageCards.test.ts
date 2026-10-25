@@ -12,7 +12,8 @@ import {
   type PictureState,
 } from './imageCards';
 import { deriveUnlocked } from './recompute';
-import { CardState, type NoteTermType } from './types';
+import { RAMP_EPOCH } from './fsrsConfig';
+import { CardState, type CardStateValue, type NoteTermType } from './types';
 
 const pic = (id: string, status: 'approved' | 'review' = 'approved', variant = 0) => ({ id, status, variant });
 const shown = { imageId: null, hidden: false };
@@ -189,15 +190,18 @@ describe('planImageCards', () => {
 });
 
 describe('unlock rule (acceptance criterion 8)', () => {
-  it('a picture card opens only once the recognition card has reached Review, like production', () => {
+  it('a picture card opens only once the word reaches Pekişiyor, like production (ADR 0041)', () => {
     const fresh = { card_type: 'image' as const, state: CardState.New, reps: 0 };
+    const at = RAMP_EPOCH + 86_400_000;
+    const rec = (state: CardStateValue, ramp_step = 0) => ({ state, ramp_step, last_review: at });
     expect(deriveUnlocked(fresh, null)).toBe(false);
-    expect(deriveUnlocked(fresh, CardState.New)).toBe(false);
-    expect(deriveUnlocked(fresh, CardState.Learning)).toBe(false);
-    expect(deriveUnlocked(fresh, CardState.Review)).toBe(true);
-    expect(deriveUnlocked(fresh, CardState.Relearning)).toBe(true);
+    expect(deriveUnlocked(fresh, rec(CardState.New))).toBe(false);
+    expect(deriveUnlocked(fresh, rec(CardState.Learning))).toBe(false);
+    expect(deriveUnlocked(fresh, rec(CardState.Review))).toBe(false);
+    expect(deriveUnlocked(fresh, rec(CardState.Review, 1))).toBe(true);
+    expect(deriveUnlocked(fresh, rec(CardState.Relearning, 1))).toBe(true);
     // Studied once, it stays open after an undo on the recognition card.
-    expect(deriveUnlocked({ ...fresh, reps: 1, state: CardState.Learning }, CardState.Learning)).toBe(true);
+    expect(deriveUnlocked({ ...fresh, reps: 1, state: CardState.Learning }, rec(CardState.Learning))).toBe(true);
   });
 });
 

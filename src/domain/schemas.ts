@@ -93,6 +93,11 @@ export const cardSchema: z.ZodType<Card> = z.object({
   lapses: z.number().int().min(0),
   state: cardState,
   last_review: millis.nullable(),
+  // Learning model (ADR 0041). Absent in backups and server rows from before the columns
+  // existed, and dropped by older app versions: derived from the logs, so the next recompute
+  // (data/maintenance.ts) fills them in.
+  ramp_step: z.number().int().min(0).default(0),
+  learned_at: millis.nullable().default(null),
 });
 
 export const reviewLogSchema: z.ZodType<ReviewLog> = z.object({

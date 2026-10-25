@@ -16,6 +16,7 @@ import {
   META,
   updateSettings,
 } from '@/data';
+import { BACKUP_SCHEMA_VERSION } from '@/domain/backup';
 import { Rating } from '@/domain/types';
 import { resetDb } from '@/test/db';
 import { REGISTRY_RECHECK_MS, runSync } from './engine';
@@ -183,7 +184,7 @@ describe('backups', () => {
     await makeReport(MON, 'Yedekteki yorum. İkinci cümle. Üçüncü cümle.');
     await setGoals({ week_minutes: 90 }, MON);
     const backup = await exportBackup(MON + MIN);
-    expect(backup.schema_version).toBe(9);
+    expect(backup.schema_version).toBe(BACKUP_SCHEMA_VERSION);
     expect(backup.tables.weekly_reports).toHaveLength(1);
     expect(backup.tables.settings[0]?.goals).toEqual({ week_minutes: 90 });
 

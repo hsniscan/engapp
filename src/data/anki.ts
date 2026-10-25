@@ -12,7 +12,7 @@ import { ankiLogId, matchLexiconSense, sameMeaning, type AnkiPlan, type PlannedC
 import { emptyFsrs } from '../domain/fsrs';
 import { LIMITS, truncateCodePoints } from '../domain/limits';
 import { canHaveCloze } from '../domain/recognition';
-import { deriveUnlocked, replayCard } from '../domain/recompute';
+import { deriveUnlocked, type RecognitionUnlockInput, replayCard } from '../domain/recompute';
 import type {
   AnkiImportCounts,
   AnkiImportRecord,
@@ -73,7 +73,7 @@ function buildCard(
   base: { note_id: Id; sense_id: Id | null; card_type: CardType; created_at: Millis },
   planned: PlannedCard | null,
   shownSenseId: Id | null,
-  recognitionState: Card['state'] | null,
+  recognition: RecognitionUnlockInput | null,
 ): CardRows {
   const id = w.newId();
   const created_at = planned?.created_at ?? base.created_at;
@@ -92,7 +92,7 @@ function buildCard(
     origin: 'anki',
   }));
   const fsrs = logs.length ? replayCard(scheduler, { id, created_at }, logs).fsrs : emptyFsrs(created_at);
-  const unlocked = deriveUnlocked({ card_type: base.card_type, ...fsrs }, recognitionState);
+  const unlocked = deriveUnlocked({ card_type: base.card_type, ...fsrs }, recognition);
   const card: Card = {
     ...w.base(id),
     created_at,
@@ -146,9 +146,9 @@ function buildNote(w: SyncWriter, scheduler: ReturnType<typeof schedulerFor>, p:
   const out: CardRows[] = [rec];
   p.senses.forEach((ps, i) => {
     const sense = senses[i]!;
-    out.push(buildCard(w, scheduler, { note_id: note.id, sense_id: sense.id, card_type: 'production', created_at: p.created_at }, ps.production, null, rec.card.state));
+    out.push(buildCard(w, scheduler, { note_id: note.id, sense_id: sense.id, card_type: 'production', created_at: p.created_at }, ps.production, null, rec.card));
     if (canHaveCloze(sense))
-      out.push(buildCard(w, scheduler, { note_id: note.id, sense_id: sense.id, card_type: 'cloze', created_at: p.created_at }, null, null, rec.card.state));
+      out.push(buildCard(w, scheduler, { note_id: note.id, sense_id: sense.id, card_type: 'cloze', created_at: p.created_at }, null, null, rec.card));
   });
   return { note, senses, cards: out.map((c) => c.card), logs: out.flatMap((c) => c.logs) };
 }

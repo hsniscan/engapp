@@ -112,6 +112,7 @@ export interface StreakSummary {
   avgDailyTimeMs: number;
   /** Non-Again share of answers on Review-state cards in the last 30 days; null without data. */
   retentionRate: number | null;
+  /** Learned words (Öğrendiğin kelime, ADR 0041): words whose recognition card is Öğrenildi or Kalıcı. The name is historical. */
   learnedCards: number;
 }
 
@@ -124,7 +125,7 @@ export interface StreakOptions {
   isFrozenDay?: (day: DayKey) => boolean;
   /** Local day the account (or guest data) was created; older activity also extends it. */
   accountStartDay: DayKey | null;
-  /** Cards currently in state Review. */
+  /** Learned words (data/wordStages.ts learnedTotal; ADR 0041). */
   learnedCards: number;
 }
 

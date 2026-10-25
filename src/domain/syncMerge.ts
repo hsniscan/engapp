@@ -17,6 +17,9 @@
 /** Columns added after v0.1 per table, with their unset value. */
 const LATE_COLUMNS: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
   notes: { level_override: null },
+  // Learning model (ADR 0041): derived from the logs, so a recompute heals them anyway; taking
+  // the server's value keeps the row equal to it until then.
+  cards: { ramp_step: 0, learned_at: null },
   sources: { topics: null },
   settings: {
     interests: null,
