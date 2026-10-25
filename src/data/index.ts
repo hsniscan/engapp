@@ -89,6 +89,9 @@ export {
 } from './practice';
 export {
   recomputeAllCards,
+  backfillLearningModel,
+  stageRuleNoticePending,
+  markStageRuleNoticeSeen,
   applyRemoteRows,
   exportBackup,
   exportCsv,

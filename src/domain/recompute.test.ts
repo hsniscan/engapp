@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { applyRating, createScheduler, emptyFsrs } from './fsrs';
 import { deriveUnlocked, effectiveLogs, replayCard } from './recompute';
 import { makeLog } from '../test/factories';
-import { CardState, type RatingValue, type ReviewLog } from './types';
+import { RAMP_EPOCH } from './fsrsConfig';
+import { CardState, type CardStateValue, type RatingValue, type ReviewLog } from './types';
 
 const sched = createScheduler({ request_retention: 0.9, fsrs_params: null });
 const T = Date.UTC(2026, 0, 1, 9);
@@ -96,16 +97,29 @@ describe('deriveUnlocked', () => {
   it('recognition is always unlocked', () => {
     expect(deriveUnlocked({ card_type: 'recognition', state: 0, reps: 0 }, null)).toBe(true);
   });
-  it('production/cloze unlock once recognition has reached Review', () => {
+  const after = RAMP_EPOCH + 86_400_000;
+  const rec = (state: CardStateValue, ramp_step = 0, last_review: number | null = after) => ({ state, ramp_step, last_review });
+  it('production/cloze unlock at Pekişiyor (ramp_step ≥ 1), not at graduation', () => {
     const fresh = { card_type: 'production' as const, state: CardState.New, reps: 0 };
-    expect(deriveUnlocked(fresh, CardState.New)).toBe(false);
-    expect(deriveUnlocked(fresh, CardState.Learning)).toBe(false);
-    expect(deriveUnlocked(fresh, CardState.Review)).toBe(true);
-    expect(deriveUnlocked(fresh, CardState.Relearning)).toBe(true);
+    expect(deriveUnlocked(fresh, rec(CardState.New, 0, null))).toBe(false);
+    expect(deriveUnlocked(fresh, rec(CardState.Learning))).toBe(false);
+    expect(deriveUnlocked(fresh, rec(CardState.Review, 0))).toBe(false);
+    expect(deriveUnlocked(fresh, rec(CardState.Review, 1))).toBe(true);
+    expect(deriveUnlocked(fresh, rec(CardState.Review, 4))).toBe(true);
+    // A lapse at Öğrenildi drops the counter to 1: the short relearning step keeps them open.
+    expect(deriveUnlocked(fresh, rec(CardState.Relearning, 1))).toBe(true);
+    // A lapse before Pekişiyor resets it to 0: unstudied cards wait for the next recall.
+    expect(deriveUnlocked(fresh, rec(CardState.Relearning, 0))).toBe(false);
     expect(deriveUnlocked({ ...fresh, card_type: 'cloze' }, null)).toBe(false);
   });
+  it('keeps the cards the old rule opened (Review before RAMP_EPOCH, not answered since)', () => {
+    const fresh = { card_type: 'cloze' as const, state: CardState.New, reps: 0 };
+    expect(deriveUnlocked(fresh, rec(CardState.Review, 0, RAMP_EPOCH - 1))).toBe(true);
+    expect(deriveUnlocked(fresh, rec(CardState.Relearning, 0, RAMP_EPOCH - 1))).toBe(true);
+    expect(deriveUnlocked(fresh, rec(CardState.Learning, 0, RAMP_EPOCH - 1))).toBe(false);
+  });
   it('a card with its own history stays unlocked', () => {
-    expect(deriveUnlocked({ card_type: 'cloze', state: CardState.Learning, reps: 1 }, CardState.Learning)).toBe(true);
+    expect(deriveUnlocked({ card_type: 'cloze', state: CardState.Learning, reps: 1 }, rec(CardState.Learning))).toBe(true);
   });
 });
 

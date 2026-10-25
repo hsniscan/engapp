@@ -270,6 +270,7 @@ function VocabCounter({
           <span className="font-serif text-xl text-fg-muted">{t('level.vocabUnit')}</span>
         </p>
         <p className="mt-1 text-sm text-fg-muted">{t('level.vocabCaption')}</p>
+        <p className="mt-1 text-xs text-fg-muted">{t('level.vocabDisclaimer')}</p>
 
         {!wide && ladder}
 

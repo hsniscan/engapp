@@ -195,25 +195,30 @@ export function provenLevel(gapDays: number): number {
   return PROVEN.filter((d) => gapDays >= d).length;
 }
 
+/** A ramp cap: `days` the upper bound; only a table cap (`fromTable`) gets the downward fuzz,
+ * and never below `min`, the proven-gap floor of the answer. */
+export interface RampCap {
+  days: number;
+  fromTable: boolean;
+  min: number;
+}
+
 /**
- * The ramp's cap (days) for an answer, or null when FSRS is free. `fromTable` is true when the
- * cap is the table value itself (not the graduation cap, not raised by the proven-gap floor):
- * only such caps get the downward fuzz.
+ * The ramp's cap (days) for an answer, or null when FSRS is free. Leaving (re)learning: 1 day
+ * (Hard, Good) or 3 (Easy). In Review, by ramp_step from RAMP_CAPS; Good and Easy never get a
+ * shorter interval than the gap the word has just survived (Easy one day more, so a long gap
+ * never makes Good and Easy equal). `fromTable` is false for the graduation cap and when the
+ * floor raised the cap.
  */
-export function rampCap(
-  before: CardStateValue,
-  rating: RatingValue,
-  rampStep: number,
-  gapDays: number,
-): { days: number; fromTable: boolean } | null {
+export function rampCap(before: CardStateValue, rating: RatingValue, rampStep: number, gapDays: number): RampCap | null {
   if (rating === Rating.Again) return null;
   const key = RATING_KEY[rating];
-  if (before !== CardState.Review) return { days: GRAD_CAP[key], fromTable: false };
+  if (before !== CardState.Review) return { days: GRAD_CAP[key], fromTable: false, min: 0 };
   if (rampStep >= RAMP_LEN) return null;
   const table = RAMP_CAPS[key][rampStep]!;
-  // Good/Easy never get a shorter interval than the gap the word has just survived.
-  if (rating !== Rating.Hard && Math.floor(gapDays) > table) return { days: Math.floor(gapDays), fromTable: false };
-  return { days: table, fromTable: true };
+  const floor = rating === Rating.Hard ? 0 : Math.floor(gapDays) + (rating === Rating.Easy ? 1 : 0);
+  if (floor > table) return { days: floor, fromTable: false, min: floor };
+  return { days: table, fromTable: true, min: floor };
 }
 
 /**
@@ -256,7 +261,7 @@ export function applyRating(
     if (cap !== null && fsrs.scheduled_days > cap.days) {
       let days = cap.days;
       if (scheduler.fuzz && cap.fromTable && days >= RAMP_FUZZ_MIN_DAYS) {
-        days -= seededInt(`${card.id}|${at}|${card.reps}`, 0, Math.floor(days * 0.1));
+        days = Math.max(cap.min, days - seededInt(`${card.id}|${at}|${card.reps}`, 0, Math.floor(days * 0.1)));
       }
       fsrs.scheduled_days = days;
       fsrs.due = at + days * DAY;

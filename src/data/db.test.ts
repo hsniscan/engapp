@@ -2,10 +2,10 @@ import Dexie from 'dexie';
 import { describe, expect, it } from 'vitest';
 import { makeCard, makeSense } from '../test/factories';
 import { PULL_BACKFILL_KEY } from './backfill';
-import { EngDb } from './db';
+import { EngDb, STAGE_RULE_NOTICE_KEY } from './db';
 
 /** The current schema version; bump with every new Dexie version. */
-const LATEST = 25;
+const LATEST = 26;
 
 describe('Dexie schema', () => {
   it('opens with every table and the indexes the queries rely on', async () => {
@@ -623,5 +623,43 @@ describe('Dexie schema', () => {
       d.close();
       await d.delete();
     }
+  });
+
+  it('v26 upgrade gives cards ramp_step 0 / learned_at null, queues nothing, and asks for the rule note', async () => {
+    // A database as the new-card-order package left it (version 25), with every backfill done.
+    const old = new Dexie('upgrade-v26');
+    old.version(1).stores({
+      cards: 'id, note_id, sense_id, [state+due], due, card_type, deleted_at',
+      settings: 'id',
+      meta: 'key',
+    });
+    old.version(25).stores({ word_bank: 'id, cefr, lemma_norm' });
+    await old.open();
+    const { ramp_step: _r, learned_at: _l, ...oldCard } = makeCard({ id: 'c1', note_id: 'n1', state: 2, stability: 30, reps: 5 });
+    await old.table('cards').add(oldCard);
+    await old.table('meta').put({ key: 'sync_cursor', value: 40 });
+    old.close();
+
+    const d = new EngDb('upgrade-v26');
+    await d.open();
+    expect(d.verno).toBe(LATEST);
+    expect(await d.cards.get('c1')).toEqual({ ...oldCard, ramp_step: 0, learned_at: null });
+    expect((await d.meta.get(STAGE_RULE_NOTICE_KEY))?.value).toBe(false);
+    expect(await d.meta.get(PULL_BACKFILL_KEY)).toBeUndefined();
+    expect(await d.outbox.count()).toBe(0);
+    d.close();
+    await d.delete();
+
+    // A device without cards gets no note.
+    const empty = new Dexie('upgrade-v26-empty');
+    empty.version(1).stores({ cards: 'id, note_id, sense_id, [state+due], due, card_type, deleted_at', meta: 'key' });
+    empty.version(25).stores({ word_bank: 'id, cefr, lemma_norm' });
+    await empty.open();
+    empty.close();
+    const e = new EngDb('upgrade-v26-empty');
+    await e.open();
+    expect(await e.meta.get(STAGE_RULE_NOTICE_KEY)).toBeUndefined();
+    e.close();
+    await e.delete();
   });
 });

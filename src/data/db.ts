@@ -34,6 +34,12 @@ import type { WordBankEntry } from '../domain/wordBank';
 import { addPullBackfill } from './backfill';
 
 /**
+ * Meta key of the one-time Bugün note "Öğrenilmiş sayma kuralı değişti" (ADR 0041): false =
+ * still to show (set by the v26 upgrade on devices that had cards), true = seen, absent = never.
+ */
+export const STAGE_RULE_NOTICE_KEY = 'stage_rule_v1_seen';
+
+/**
  * Local database. The source of truth for the UI: screens read and write only here,
  * the sync engine and AI client work in the background and write their results here.
  *
@@ -308,6 +314,27 @@ export class EngDb extends Dexie {
     this.version(25)
       .stores({})
       .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
+    // v26 (redesign, learning model, docs/decisions/0041; 27 is the reserve): cards gain
+    // ramp_step and learned_at. Both are derived from the review logs, so the upgrade only
+    // gives existing rows the "unset" values (0, null) and leaves the real values to the
+    // one-off replay after start-up (data/maintenance.ts backfillLearningModel), which needs
+    // the scheduler and the sync writer. No re-pull: no older app version stored them. A
+    // device that already has cards gets the one-time "the counting rule changed" note on
+    // Bugün (meta stage_rule_v1_seen = false); a fresh install does not.
+    this.version(26)
+      .stores({})
+      .upgrade(async (tx) => {
+        let cards = 0;
+        await tx
+          .table('cards')
+          .toCollection()
+          .modify((row: { ramp_step?: number; learned_at?: number | null }) => {
+            cards++;
+            if (row.ramp_step === undefined) row.ramp_step = 0;
+            if (row.learned_at === undefined) row.learned_at = null;
+          });
+        if (cards > 0) await tx.table('meta').put({ key: STAGE_RULE_NOTICE_KEY, value: false });
+      });
   }
 }
 

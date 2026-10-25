@@ -61,22 +61,26 @@ describe('weekly numbers', () => {
     const learn = (card: string, d: number): ReviewLog[] => [
       makeLog({ card_id: card, reviewed_at: noon(d), rating: 4 }),
     ];
+    // A word is learned on the day its recognition card first reached Öğrenildi (ADR 0041).
     const facts = new Map<string, RetentionCardFacts>(
-      [
-        ['ca', 'note-a'],
-        ['ca2', 'note-a'],
-        ['cb', 'note-b'],
-        ['cc', 'note-c'],
-      ].map(([c, n]) => [
-        c!,
+      (
+        [
+          ['ca', 'note-a', '2026-10-13'],
+          ['ca2', 'note-a', '2026-10-15'],
+          ['cb', 'note-b', '2026-10-02'],
+          ['cc', 'note-c', '2026-10-20'],
+        ] as const
+      ).map(([c, n, learned]) => [
+        c,
         {
-          note_id: n!,
+          note_id: n,
           card_type: 'recognition',
           term_type: 'word',
           level: null,
           topics: [],
           sources: [],
           pos: [],
+          learned_day: learned,
         },
       ]),
     );

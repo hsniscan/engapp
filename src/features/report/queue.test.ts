@@ -221,10 +221,16 @@ describe('goals', () => {
     // Study on Tuesday of this week.
     const card = (await db.cards.toArray())[0]!;
     await answerCard({ card_id: card.id, rating: Rating.Good, duration_ms: 5000 }, MON + DAY);
+    // Last week's words were recalled on two days only: none is learned yet (ADR 0041). A word
+    // first studied in September and recalled again on Tuesday after 30 days is learned now.
+    const { note } = await addNoteWithSenses({ term: 'orchard', senses: [{ meaning_tr: 'meyve bahçesi' }] }, MON - 31 * DAY);
+    const rec = (await db.cards.where('note_id').equals(note.id).toArray()).find((c) => c.card_type === 'recognition')!;
+    for (const at of [MON - 30 * DAY, MON - 30 * DAY + 12 * 60_000, MON + DAY + 60_000])
+      await answerCard({ card_id: rec.id, rating: Rating.Good, duration_ms: 5000 }, at);
     view = await getGoalsView(MON + 2 * DAY);
     expect(view.progress.map((p) => [p.key, p.target, p.value])).toEqual([
       ['week_active_days', 5, 1],
-      ['month_new_terms', 20, 3],
+      ['month_new_terms', 20, 1],
     ]);
 
     await setGoals(null, MON + 3 * DAY);

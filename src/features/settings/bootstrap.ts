@@ -1,6 +1,7 @@
 // App startup: settings row, theme, error log, storage persistence, install prompt, integrity.
 import { liveQuery } from 'dexie';
 import {
+  backfillLearningModel,
   db,
   ensureSettings,
   getCurrentUserId,
@@ -90,6 +91,9 @@ export function bootstrap(): void {
     } catch (e) {
       void logError(e, 'bootstrap.settings');
     }
+    // Learning model (ADR 0041): fill ramp_step / learned_at from the logs once, before the
+    // first answer, so the ramp and the stages start from the real history.
+    await backfillLearningModel().catch((e: unknown) => void logError(e, 'bootstrap.learningModel'));
     watchFirstCard();
     void refreshStorageInfo();
     const inReview = () => /^\/review(\/|$)/.test(window.location.pathname);
