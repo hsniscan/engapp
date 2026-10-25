@@ -6,7 +6,7 @@ import { useTopicProfile } from './useTopicProfile';
 
 const SHOWN = 3;
 
-/** Ayarlar → Profil: a one-line summary and the way to the profile screen. */
+/** Ayarlar → Kartlar ve içerik → İlgi alanları: a one-line summary and the way to the profile screen. */
 export function ProfileSettingsSection() {
   const { t } = useTranslation();
   const profile = useTopicProfile();
@@ -25,7 +25,7 @@ export function ProfileSettingsSection() {
         label={t('profile.settingsLabel')}
         description={profile ? summary : <Skeleton className="h-4 w-40" />}
       >
-        <Link to="/settings/profile" className={buttonClasses({ variant: 'secondary' })}>
+        <Link to="/settings/ilgi-alanlari" className={buttonClasses({ variant: 'secondary' })}>
           {t('profile.settingsOpen')}
           <Icon name="chevron-right" size={18} />
         </Link>

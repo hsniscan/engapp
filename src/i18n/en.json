@@ -566,7 +566,44 @@
     "tabContinuity": "Consistency",
     "tabProgress": "Progress",
     "retentionHint": "Retention on the Progress tab is a different measure: there only the first answer of the day to each card counts, over 90 days.",
-    "tabReport": "Weekly report"
+    "tabReport": "Weekly report",
+    "overview": {
+      "title": "Progress",
+      "tabsLabel": "Progress sections",
+      "tabGeneral": "Overview",
+      "stagesTitle": "Words you learned",
+      "stagesRule": "Words you got right on at least 3 separate days",
+      "weekDelta": "This week +{{count}}",
+      "stagesBarLabel": "Your words by stage",
+      "stage": {
+        "learning": "Learning",
+        "consolidating": "Consolidating",
+        "learned": "Learned",
+        "mastered": "Durable"
+      },
+      "stageHint": {
+        "learning": "First day; not asked on another day yet",
+        "consolidating": "Right on 1–2 separate days",
+        "learned": "Right on 3 separate days, memory of 2+ weeks",
+        "mastered": "Right on 5+ separate days, memory of 3+ months"
+      },
+      "stagesEmpty": "As you study, the stages of your words show here.",
+      "active_one": "{{count}} active word: you can also recall the English from the Turkish.",
+      "active_other": "{{count}} active words: you can also recall the English from the Turkish.",
+      "alreadyKnown": "Words you already know",
+      "alreadyKnownHint": "The words you marked “I know” in the level test or while adding a text. They have no cards and never count as learned.",
+      "continuity": "Continuity",
+      "streak": "Streak",
+      "longest": "Longest",
+      "activeDays": "Active days",
+      "hardTitle": "Struggling words",
+      "hardPractice": "Practise",
+      "hardNone": "None right now",
+      "recallTitle": "Recall",
+      "recallDetail": "Last 30 days, in reviews",
+      "reportLink": "Your weekly report",
+      "reportHint": "This week in short: words learned, struggles, time spent"
+    }
   },
   "progress": {
     "loading": "Calculating progress…",
@@ -688,7 +725,10 @@
       "newOrderSmart": "Smart (recommended)",
       "newOrderAdded": "Order added",
       "newOrderSmartHint": "Words that fit your level and are common come first; words you added yourself and words of the text you are working on move ahead. Words that are easy to mix up never come on the same day.",
-      "newOrderAddedHint": "New cards come in the order you added them."
+      "newOrderAddedHint": "New cards come in the order you added them.",
+      "groupNew": "New cards",
+      "groupRecall": "Recall",
+      "groupDay": "Day and display"
     },
     "levels": {
       "A1": "Beginner",
@@ -788,6 +828,95 @@
         "not_configured": "Notifications are not ready on the server yet. Try again a little later.",
         "error": "The reminder could not be turned on. Check your connection and try again."
       }
+    },
+    "importGroup": "Import",
+    "index": {
+      "back": "Profile",
+      "search": "Search settings",
+      "results": "Search results",
+      "noResults": "No setting matches “{{query}}”.",
+      "groups": {
+        "learning": "Learning",
+        "cards": "Cards and appearance",
+        "account": "Account and data"
+      },
+      "version": "engapp · version {{version}}",
+      "savedNote": "Changes are saved at once; when signed in they reach your other devices too."
+    },
+    "pages": {
+      "calisma": {
+        "title": "Study",
+        "keywords": "new cards daily limit order smart added target retention algorithm fsrs day start easy candidates",
+        "lead": "How many new words you see each day and how often reviews come back."
+      },
+      "yuk": {
+        "title": "Review load and vacation",
+        "keywords": "daily minutes capacity catch-up vacation load"
+      },
+      "bildirim": {
+        "title": "Reminders",
+        "keywords": "notification reminder time auto fixed test push"
+      },
+      "seviye": {
+        "title": "Level",
+        "keywords": "level cefr lock level test known words"
+      },
+      "kartlar": {
+        "title": "Cards and content",
+        "keywords": "voice pronunciation accent american british example sentences contexts translation interests topics"
+      },
+      "gorunum": {
+        "title": "Appearance",
+        "keywords": "theme dark light system picture image cards"
+      },
+      "hesap": {
+        "title": "Account and sync",
+        "keywords": "account sign in sign out google sync delete device data delete account"
+      },
+      "veri": {
+        "title": "Backup and data",
+        "keywords": "backup json restore csv export persistent storage reset history anki import apkg"
+      },
+      "hakkinda": {
+        "title": "About and help",
+        "keywords": "sources licences privacy install app version"
+      },
+      "gelismis": {
+        "title": "Advanced",
+        "keywords": "integrity repair error log version image review"
+      },
+      "ilgi-alanlari": {
+        "title": "Your interests",
+        "keywords": "interests topics profile muted",
+        "lead": "The topics you pick decide which context comes first in example sentences and suggested decks."
+      }
+    },
+    "summary": {
+      "study_one": "{{count}} new a day · target {{pct}}%",
+      "study_other": "{{count}} new a day · target {{pct}}%",
+      "studyNone": "No new cards · target {{pct}}%",
+      "load_one": "{{count}} min a day",
+      "load_other": "{{count}} min a day",
+      "loadVacation_one": "{{count}} min a day · vacation planned",
+      "loadVacation_other": "{{count}} min a day · vacation planned",
+      "notifyOff": "Off",
+      "notifyAuto": "Every day, automatic time",
+      "notifyFixed": "Every day at {{time}}",
+      "level": "{{level}} · not locked",
+      "levelLocked": "{{level}} · locked",
+      "cards_one": "{{voice}} · {{count}} context",
+      "cards_other": "{{voice}} · {{count}} contexts",
+      "theme": {
+        "system": "System theme",
+        "light": "Light theme",
+        "dark": "Dark theme"
+      },
+      "accountGoogle": "Signed in with Google",
+      "accountGuest": "Guest · data on this device only",
+      "backupLast": "Last backup {{when}}",
+      "backupNever": "No backup yet",
+      "about": "Sources, privacy, install the app",
+      "advanced": "Data integrity, error log"
     }
   },
   "fsrsOpt": {
@@ -1734,9 +1863,9 @@
     "changeOk": "OK",
     "changeUndo": "Undo (keep {{from}})",
     "changeUndone": "Your level is {{level}} again.",
-    "vocabTitle": "Your vocabulary",
+    "vocabTitle": "Estimated vocabulary",
     "vocabUnit": "words",
-    "vocabCaption": "Estimated words you know",
+    "vocabCaption": "An estimate based on the level test, the words you marked “I know” and your study. It is not the number of words you learned.",
     "vocabLevel": "Your level {{level}}",
     "toNext": "~{{count}} words to {{next}}",
     "reachedNext": "You know 80% of the {{next}} words",
@@ -1890,7 +2019,46 @@
     "settingsNone": "No topics yet.",
     "settingsMore_one": "{{list}} and {{count}} more topic",
     "settingsMore_other": "{{list}} and {{count}} more topics",
-    "settingsOpen": "Open profile"
+    "settingsOpen": "Open profile",
+    "home": {
+      "title": "Profile",
+      "guestName": "Guest",
+      "signedInGoogle": "Signed in with Google",
+      "guestLine": "Your data is on this device only",
+      "signIn": "Sign in",
+      "settings": "Settings",
+      "levelLabel": "Level",
+      "vocabLabel": "Estimated vocabulary",
+      "vocabNone": "No estimate yet",
+      "vocabDisclaimer": "An estimate based on the level test, the words you marked “I know” and your study. It is not the number of words you learned.",
+      "source": {
+        "default": "Not measured yet",
+        "test": "Source: level test · {{date}}",
+        "auto": "Updated from your study · {{date}}",
+        "manual": "Your choice · {{date}}"
+      },
+      "testAgain": "Retake the test",
+      "testStart": "Take the level test",
+      "streakTitle": "Streak",
+      "streakValue_one": "{{count}} day",
+      "streakValue_other": "{{count}} days",
+      "longest": "Longest",
+      "learned": "Words learned",
+      "goalsTitle": "Your goals",
+      "goalsEdit": "Edit",
+      "goalsSet": "Set a goal",
+      "goalsNone": "Choose how many days or minutes a week to study, or how many new words a month to learn.",
+      "interestsTitle": "Your interests",
+      "interestsEdit": "Edit",
+      "interestsChosen": "Chosen interests",
+      "interestsNone": "You have not picked a topic yet.",
+      "interestsHint": "Suggested decks and example sentences follow these topics.",
+      "shortcuts": "Shortcuts",
+      "allWords": "All my words",
+      "knownWords": "Words I know",
+      "sync": "Sync",
+      "settingsHint": "Study, reminders, appearance, backup"
+    }
   },
   "decks": {
     "title": "Decks",

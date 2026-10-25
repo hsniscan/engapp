@@ -566,7 +566,44 @@
     "tabContinuity": "Süreklilik",
     "tabProgress": "Gelişim",
     "retentionHint": "Gelişim sekmesindeki tutma oranı başka bir ölçüdür: orada her kartın günün ilk cevabı, son 90 gün sayılır.",
-    "tabReport": "Haftalık rapor"
+    "tabReport": "Haftalık rapor",
+    "overview": {
+      "title": "İlerleme",
+      "tabsLabel": "İlerleme bölümleri",
+      "tabGeneral": "Genel",
+      "stagesTitle": "Öğrendiğin kelimeler",
+      "stagesRule": "En az 3 ayrı günde doğru bildiğin kelimeler",
+      "weekDelta": "Bu hafta +{{count}}",
+      "stagesBarLabel": "Kelimelerin aşamalara göre dağılımı",
+      "stage": {
+        "learning": "Öğreniyor",
+        "consolidating": "Pekişiyor",
+        "learned": "Öğrenildi",
+        "mastered": "Kalıcı"
+      },
+      "stageHint": {
+        "learning": "İlk gün; henüz başka bir günde sorulmadı",
+        "consolidating": "1–2 ayrı günde doğru bildin",
+        "learned": "3 ayrı günde bildin, hafızan en az 2 hafta",
+        "mastered": "5+ ayrı günde bildin, hafızan en az 3 ay"
+      },
+      "stagesEmpty": "Kelime çalıştıkça burada aşamalarını görürsün.",
+      "active_one": "Aktif {{count}} kelime: Türkçesinden İngilizcesini de çıkarabiliyorsun.",
+      "active_other": "Aktif {{count}} kelime: Türkçesinden İngilizcesini de çıkarabiliyorsun.",
+      "alreadyKnown": "Zaten bildiğin kelimeler",
+      "alreadyKnownHint": "Seviye testinde ya da metin eklerken “Biliyorum” dediklerin. Kartları yok, öğrendiğin kelime sayısına eklenmez.",
+      "continuity": "Devamlılık",
+      "streak": "Seri",
+      "longest": "En uzun",
+      "activeDays": "Aktif gün",
+      "hardTitle": "Zorlandıkların",
+      "hardPractice": "Pratik yap",
+      "hardNone": "Şu an yok",
+      "recallTitle": "Hatırlama",
+      "recallDetail": "Son 30 gün, tekrarlarda",
+      "reportLink": "Haftalık raporun",
+      "reportHint": "Bu haftanın özeti: öğrendiklerin, zorlandıkların, sürelerin"
+    }
   },
   "progress": {
     "loading": "Gelişim hesaplanıyor…",
@@ -688,7 +725,10 @@
       "newOrderSmart": "Akıllı (önerilen)",
       "newOrderAdded": "Eklenme sırası",
       "newOrderSmartHint": "Önce seviyene uyan ve sık kullanılan kelimeler; elle eklediklerin ve üzerinde çalıştığın metnin kelimeleri öne geçer. Birbirine karışabilecek kelimeler aynı gün gelmez.",
-      "newOrderAddedHint": "Yeni kartlar eklediğin sırayla gelir."
+      "newOrderAddedHint": "Yeni kartlar eklediğin sırayla gelir.",
+      "groupNew": "Yeni kartlar",
+      "groupRecall": "Hatırlama",
+      "groupDay": "Gün ve gösterim"
     },
     "levels": {
       "A1": "Başlangıç",
@@ -788,6 +828,95 @@
         "not_configured": "Bildirimler sunucuda henüz hazır değil. Biraz sonra tekrar dene.",
         "error": "Hatırlatma açılamadı. İnternet bağlantını kontrol edip tekrar dene."
       }
+    },
+    "importGroup": "İçe aktar",
+    "index": {
+      "back": "Profil",
+      "search": "Ayarlarda ara",
+      "results": "Arama sonuçları",
+      "noResults": "“{{query}}” ile ilgili bir ayar bulunamadı.",
+      "groups": {
+        "learning": "Öğrenme",
+        "cards": "Kartlar ve görünüm",
+        "account": "Hesap ve veri"
+      },
+      "version": "engapp · sürüm {{version}}",
+      "savedNote": "Değişiklikler hemen kaydedilir; giriş yaptıysan diğer cihazlarına da geçer."
+    },
+    "pages": {
+      "calisma": {
+        "title": "Çalışma",
+        "keywords": "yeni kart günlük sınır sıra akıllı eklenme hedef hatırlama oranı algoritma fsrs hafıza kişisel gün başlangıcı saat kolay adaylar",
+        "lead": "Her gün ne kadar yeni kelime göreceğini ve tekrarların ne sıklıkla geleceğini belirler."
+      },
+      "yuk": {
+        "title": "Tekrar yükü ve tatil",
+        "keywords": "günlük süre dakika kapasite telafi birikme tatil ara yük"
+      },
+      "bildirim": {
+        "title": "Hatırlatmalar",
+        "keywords": "bildirim hatırlatma saat otomatik sabit deneme push"
+      },
+      "seviye": {
+        "title": "Seviye",
+        "keywords": "seviye cefr kilitle seviye testi bildiğim kelimeler biliyorum"
+      },
+      "kartlar": {
+        "title": "Kartlar ve içerik",
+        "keywords": "ses telaffuz aksan amerikan ingiliz dinle örnek cümle bağlam türkçesi hazırla ilgi alanı profil konu"
+      },
+      "gorunum": {
+        "title": "Görünüm",
+        "keywords": "tema karanlık koyu açık sistem görsel resim ön yüz resimli kart"
+      },
+      "hesap": {
+        "title": "Hesap ve senkron",
+        "keywords": "hesap giriş çıkış google senkron eşitle cihaz verileri sil hesabı sil"
+      },
+      "veri": {
+        "title": "Yedek ve veri",
+        "keywords": "yedek json geri yükle csv dışa aktar kalıcı depolama alan sıfırla geçmiş anki içe aktar apkg"
+      },
+      "hakkinda": {
+        "title": "Hakkında ve yardım",
+        "keywords": "kaynaklar lisans gizlilik uygulamayı yükle ana ekrana ekle sürüm"
+      },
+      "gelismis": {
+        "title": "Gelişmiş",
+        "keywords": "veri bütünlüğü onar hata kaydı sürüm görsel inceleme"
+      },
+      "ilgi-alanlari": {
+        "title": "İlgi alanların",
+        "keywords": "ilgi alanı konu profil kapalı konular",
+        "lead": "Seçtiğin konular, örnek cümlelerde ve önerilen destelerde hangi bağlamın önce geleceğini belirler."
+      }
+    },
+    "summary": {
+      "study_one": "Günde {{count}} yeni · hedef %{{pct}}",
+      "study_other": "Günde {{count}} yeni · hedef %{{pct}}",
+      "studyNone": "Yeni kart yok · hedef %{{pct}}",
+      "load_one": "Günde {{count}} dk",
+      "load_other": "Günde {{count}} dk",
+      "loadVacation_one": "Günde {{count}} dk · tatil planlı",
+      "loadVacation_other": "Günde {{count}} dk · tatil planlı",
+      "notifyOff": "Kapalı",
+      "notifyAuto": "Her gün, otomatik saat",
+      "notifyFixed": "Her gün {{time}}",
+      "level": "{{level}} · kilitli değil",
+      "levelLocked": "{{level}} · kilitli",
+      "cards_one": "{{voice}} · {{count}} bağlam",
+      "cards_other": "{{voice}} · {{count}} bağlam",
+      "theme": {
+        "system": "Sistem teması",
+        "light": "Açık tema",
+        "dark": "Koyu tema"
+      },
+      "accountGoogle": "Google ile giriş yapıldı",
+      "accountGuest": "Misafir · veriler yalnızca bu cihazda",
+      "backupLast": "Son yedek {{when}}",
+      "backupNever": "Henüz yedek alınmadı",
+      "about": "Kaynaklar, gizlilik, uygulamayı yükle",
+      "advanced": "Veri bütünlüğü, hata kaydı"
     }
   },
   "fsrsOpt": {
@@ -1734,9 +1863,9 @@
     "changeOk": "Tamam",
     "changeUndo": "Geri al ({{from}} kalsın)",
     "changeUndone": "Seviyen yeniden {{level}}.",
-    "vocabTitle": "Kelime hazinen",
+    "vocabTitle": "Tahmini kelime hazinen",
     "vocabUnit": "kelime",
-    "vocabCaption": "Tahmini bildiğin kelime",
+    "vocabCaption": "Seviye testi, “Biliyorum” dediklerin ve çalışmana dayanan bir tahmin. Öğrendiğin kelime sayısı değildir.",
     "vocabLevel": "Seviyen {{level}}",
     "toNext": "{{nextTo}} ~{{count}} kelime kaldı",
     "reachedNext": "{{next}} kelimelerinin %80'ini biliyorsun",
@@ -1890,7 +2019,46 @@
     "settingsNone": "Henüz bir konu yok.",
     "settingsMore_one": "{{list}} ve {{count}} konu daha",
     "settingsMore_other": "{{list}} ve {{count}} konu daha",
-    "settingsOpen": "Profili aç"
+    "settingsOpen": "Profili aç",
+    "home": {
+      "title": "Profil",
+      "guestName": "Misafir",
+      "signedInGoogle": "Google hesabıyla giriş yapıldı",
+      "guestLine": "Verilerin yalnızca bu cihazda",
+      "signIn": "Giriş yap",
+      "settings": "Ayarlar",
+      "levelLabel": "Seviye",
+      "vocabLabel": "Tahmini kelime hazinen",
+      "vocabNone": "Henüz tahmin yok",
+      "vocabDisclaimer": "Seviye testi, “Biliyorum” dediklerin ve çalışmana dayanan bir tahmin. Öğrendiğin kelime sayısı değildir.",
+      "source": {
+        "default": "Henüz ölçülmedi",
+        "test": "Kaynak: seviye testi · {{date}}",
+        "auto": "Çalışmana göre güncellendi · {{date}}",
+        "manual": "Senin seçimin · {{date}}"
+      },
+      "testAgain": "Testi yeniden çöz",
+      "testStart": "Seviye testini çöz",
+      "streakTitle": "Seri",
+      "streakValue_one": "{{count}} gün",
+      "streakValue_other": "{{count}} gün",
+      "longest": "En uzun",
+      "learned": "Öğrendiğin kelime",
+      "goalsTitle": "Hedeflerin",
+      "goalsEdit": "Düzenle",
+      "goalsSet": "Hedef koy",
+      "goalsNone": "Haftada kaç gün, kaç dakika çalışmak ya da ayda kaç yeni kelime öğrenmek istediğini seç.",
+      "interestsTitle": "İlgi alanların",
+      "interestsEdit": "Düzenle",
+      "interestsChosen": "Seçili ilgi alanları",
+      "interestsNone": "Henüz bir konu seçmedin.",
+      "interestsHint": "Önerilen desteler ve örnek cümleler bu konulara göre seçilir.",
+      "shortcuts": "Kısayollar",
+      "allWords": "Tüm kelimelerim",
+      "knownWords": "Bildiğim kelimeler",
+      "sync": "Senkron",
+      "settingsHint": "Çalışma, hatırlatmalar, görünüm, yedek"
+    }
   },
   "decks": {
     "title": "Desteler",

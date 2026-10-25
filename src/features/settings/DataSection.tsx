@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { exportCsv, logError, resetStudyHistory, restoreBackup, type RestoreMode } from '@/data';
 import { verifyBackup, type BackupError, type BackupSummary } from '@/domain/backup';
 import { ConfirmDialog } from '@/features/cards/ConfirmDialog';
-import { Badge, Button, Dialog, DialogClose, Icon, toast } from '@/ui';
+import { Link } from 'react-router';
+import { Badge, Button, buttonClasses, Dialog, DialogClose, Icon, toast } from '@/ui';
 import { downloadBackup } from './backupActions';
 import { csvFileName, downloadText, formatBytes, relativeDays } from './download';
 import { refreshStorageInfo, requestPersistence, useStorageInfo } from './platform';
@@ -365,6 +366,24 @@ export function DataSection() {
           </div>
         )}
       </Dialog>
+    </SettingsSection>
+  );
+}
+
+/** "İçe aktar": Anki decks with their history (the Add sheet links the same page). */
+export function ImportSection() {
+  const { t } = useTranslation();
+  return (
+    <SettingsSection id="ice-aktar" title={t('settings.importGroup')}>
+      <SettingsRow label={t('anki.title')} description={t('anki.description')}>
+        <Link
+          to="/import/anki"
+          className={buttonClasses({ variant: 'secondary', className: 'shrink-0' })}
+        >
+          {t('anki.entry.link')}
+          <Icon name="chevron-right" size={18} />
+        </Link>
+      </SettingsRow>
     </SettingsSection>
   );
 }

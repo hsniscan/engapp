@@ -1,4 +1,4 @@
-import { createBrowserRouter, type RouteObject } from 'react-router';
+import { createBrowserRouter, redirect, type RouteObject } from 'react-router';
 import { RootLayout, type RouteHandle } from './RootLayout';
 import { AuthPage } from '@/features/auth/AuthPage';
 import { HomeScreen } from '@/features/home/HomeScreen';
@@ -82,15 +82,37 @@ const children: RouteObject[] = [
     lazy: async () => ({ Component: (await import('@/features/decks/ThemesPage')).ThemesPage }),
   },
   {
+    // Old "İstatistik" address: the tabs (?tab=gelisim|rapor) carry over.
     path: 'stats',
+    loader: ({ request }) => redirect(`/progress${new URL(request.url).search}`),
+  },
+  {
+    path: 'progress',
     HydrateFallback: () => null,
-    lazy: async () => ({ Component: (await import('@/features/stats/StatsScreen')).StatsScreen }),
+    lazy: async () => ({
+      Component: (await import('@/features/stats/ProgressPage')).ProgressPage,
+    }),
+  },
+  {
+    path: 'profile',
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/profile/ProfilePage')).ProfilePage,
+    }),
   },
   {
     path: 'settings',
     HydrateFallback: () => null,
     lazy: async () => ({
-      Component: (await import('@/features/settings/SettingsPage')).SettingsPage,
+      Component: (await import('@/features/settings/SettingsIndexPage')).SettingsIndexPage,
+    }),
+  },
+  {
+    // One settings sub-page; old slugs (/settings/profile) are redirected by the page itself.
+    path: 'settings/:section',
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/settings/SettingsSectionPage')).SettingsSectionPage,
     }),
   },
   {
@@ -116,19 +138,12 @@ const children: RouteObject[] = [
     }),
   },
   {
-    path: 'settings/profile',
-    HydrateFallback: () => null,
-    lazy: async () => ({
-      Component: (await import('@/features/profile/ProfilePage')).ProfilePage,
-    }),
-  },
-  {
     path: 'admin/images',
-    // Entered from Ayarlar → Gelişmiş: the top bar's ✕ goes back there (the page has no
+    // Entered from Ayarlar → Gelişmiş (/settings/gelismis): the top bar's ✕ goes back there (the page has no
     // back arrow of its own, like every other immersive screen).
     handle: {
       immersive: true,
-      exitTo: '/settings#gelismis',
+      exitTo: '/settings/gelismis',
       exitLabelKey: 'imageReview.close',
     } satisfies RouteHandle,
     HydrateFallback: () => null,

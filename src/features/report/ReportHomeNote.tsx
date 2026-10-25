@@ -25,7 +25,7 @@ export function ReportHomeNote({ className }: { className?: string }) {
       <p className="min-w-0 flex-1 text-[0.9375rem] text-fg">
         {t('report.homeNote')}{' '}
         <Link
-          to={`/stats?tab=${REPORT_TAB_PARAM}`}
+          to={`/progress?tab=${REPORT_TAB_PARAM}`}
           className="font-medium text-accent-text underline underline-offset-4 hover:no-underline"
         >
           {t('report.homeOpen')}

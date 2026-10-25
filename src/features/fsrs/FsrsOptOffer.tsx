@@ -48,7 +48,7 @@ export function FsrsOptOffer({ className }: { className?: string }) {
         </p>
       </div>
       <div className="flex shrink-0 flex-col gap-2 sm:w-44">
-        <Link to="/settings#calisma" className={buttonClasses({ fullWidth: true })}>
+        <Link to="/settings/calisma" className={buttonClasses({ fullWidth: true })}>
           {t('fsrsOpt.offer.go')}
         </Link>
         <Button variant="ghost" fullWidth onClick={later}>
