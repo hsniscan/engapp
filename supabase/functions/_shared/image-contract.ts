@@ -81,7 +81,11 @@ export const IMAGE_WC_PALETTE = {
 export type ImageWcRole = keyof typeof IMAGE_WC_PALETTE;
 
 /** The backdrop washes: every image-v2 picture starts with one of these under the wash filter. */
-export const IMAGE_WC_WASHES = ['washSand', 'washSky', 'washSage'] as const satisfies readonly ImageWcRole[];
+export const IMAGE_WC_WASHES = [
+  'washSand',
+  'washSky',
+  'washSage',
+] as const satisfies readonly ImageWcRole[];
 
 /** Both palettes, light → dark. */
 const ALL_PAIRS: readonly (readonly [string, string])[] = [

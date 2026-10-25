@@ -6,16 +6,18 @@ import { randomUUID } from 'node:crypto';
 import { buildImageRequest } from '../supabase/functions/_shared/image-prompt.ts';
 
 const WORDS: [string, string, string, string | null][] = [
-  ['apple', 'noun', 'elma', null],
-  ['bridge', 'noun', 'köprü', 'a bridge over a river'],
-  ['climb', 'verb', 'tırmanmak', 'a person climbing a steep mountain'],
-  ['angry', 'adjective', 'kızgın', 'an angry face'],
-  ['between', 'preposition', 'arasında', 'a ball between two boxes'],
-  ['umbrella', 'noun', 'şemsiye', 'an open umbrella in the rain'],
-  ['kitchen', 'noun', 'mutfak', 'a small kitchen with a stove and a pot'],
-  ['teacher', 'noun', 'öğretmen', 'a teacher pointing at a board in front of students'],
-  ['heavy', 'adjective', 'ağır', 'a person struggling to lift a heavy box'],
-  ['rain', 'noun', 'yağmur', 'rain falling from a cloud'],
+  ['run', 'verb', 'koşmak', 'a person running'],
+  ['family', 'noun', 'aile', 'parents and two children together'],
+  ['cook', 'verb', 'yemek pişirmek', 'a person stirring a pot on a stove'],
+  ['cold', 'adjective', 'soğuk', 'a person shivering in a scarf in the snow'],
+  ['behind', 'preposition', 'arkasında', 'a cat behind a box'],
+  ['happy', 'adjective', 'mutlu', 'a smiling happy face'],
+  ['doctor', 'noun', 'doktor', 'a doctor with a stethoscope'],
+  ['market', 'noun', 'pazar', 'a market stall with fruit and vegetables'],
+  ['tired', 'adjective', 'yorgun', 'a tired person yawning'],
+  ['freedom', 'noun', 'özgürlük', 'a bird flying out of an open cage'],
+  ['bread', 'noun', 'ekmek', null],
+  ['borrow', 'verb', 'ödünç almak', 'one person handing a book to another'],
 ];
 const only = process.env.ONLY || '';
 const client = new Anthropic();

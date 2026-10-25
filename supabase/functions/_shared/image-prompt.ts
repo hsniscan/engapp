@@ -75,7 +75,11 @@ Soft hand-drawn illustration, like a light watercolour sketch in a good picture 
 - Then the drawing: shapes inside one or a few <g filter="url(#line)" stroke="${IMAGE_WC_PALETTE.pencil[0]}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"> groups, so every shape gets a thin, slightly wobbly pencil outline. Fills are flat palette colours, often a little transparent (opacity 0.8–0.95), like a watercolour wash inside the lines.
 - Shading: a few extra shapes in a darker colour of the same family at low opacity (0.15–0.3), without outlines (stroke="none" or outside the pencil group), on the shade side. Highlights: white at low opacity. No gradients.
 - Thick limbs and poles are two strokes on top of each other: a wider pencil stroke and a narrower coloured stroke, so they read as outlined tubes.
+<<<<<<< HEAD
 - One clear subject, large and centred, filling about two thirds of the canvas. A tiny scene with a person or context is welcome when it makes the meaning clearer (a child holding a parent's hand for "child"), but at most one or two supporting cues.
+=======
+- One clear subject, large and centred, filling about two thirds of the canvas. Keep every shape at least 16 units inside the canvas edge (the pencil wobble needs room). A tiny scene with a person or context is welcome when it makes the meaning clearer (a child holding a parent's hand for "child"), but at most one or two supporting cues.
+>>>>>>> wc-work
 - People: simple and friendly, round heads in skin colour with dot eyes, a few strokes of hair, simple clothes in calm colours; no detailed faces unless the meaning is a feeling. Adults look like adults.
 - Feelings are a clear face or posture; actions are a figure in mid-action; relations (between, under, behind) are simple objects with one faint arrow; abstract-but-drawable meanings use the most common everyday scene.
 - No text of any kind: no letters, digits, words, labels, signs with writing, speech bubbles with words, or symbols that stand for letters.
