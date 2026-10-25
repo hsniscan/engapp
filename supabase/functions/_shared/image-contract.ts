@@ -45,18 +45,82 @@ export const IMAGE_PALETTE = {
 
 export type ImagePaletteRole = keyof typeof IMAGE_PALETTE;
 
+/**
+ * Watercolour palette (image-v2, owner's choice on 2026-10-25): muted washes with pencil
+ * outlines. Same rules as IMAGE_PALETTE (role → [light, dark], unique light values); the two
+ * palettes share no hex value, so style-B pictures keep rendering until they are redrawn.
+ */
+export const IMAGE_WC_PALETTE = {
+  pencil: ['#4a4440', '#e6ded2'],
+  pencilSoft: ['#8f857a', '#a39a8e'],
+  washSand: ['#f1dfc0', '#4b4335'],
+  washSky: ['#d6e6ec', '#33434b'],
+  washSage: ['#e1e9d2', '#3a4331'],
+  paper: ['#fbf6ec', '#47423a'],
+  white: ['#fefefe', '#f4f1eb'],
+  skin: ['#ecc9a6', '#d8b08c'],
+  skinShade: ['#d9a77f', '#bb9068'],
+  hair: ['#6b4a35', '#a8825f'],
+  terracotta: ['#c2654a', '#d47b60'],
+  rust: ['#8e4a36', '#b06650'],
+  coral: ['#e88a7a', '#ea9a8b'],
+  ochre: ['#e0a06e', '#e4ad7e'],
+  mustard: ['#f0c45a', '#e6c264'],
+  sage: ['#7f9e6a', '#8fb07a'],
+  leaf: ['#5d7d4e', '#7c9c69'],
+  teal: ['#8fb3a6', '#86aa9d'],
+  slate: ['#5b6b80', '#8496ad'],
+  waterBlue: ['#7fa9c4', '#7aa5c0'],
+  plum: ['#a98aa8', '#bea0bd'],
+  wood: ['#a87a52', '#bb8d63'],
+  sand: ['#d9c3a0', '#8f826b'],
+  stone: ['#b3a690', '#7a6f5d'],
+  metal: ['#9a958e', '#8b867f'],
+} as const satisfies Record<string, readonly [string, string]>;
+
+export type ImageWcRole = keyof typeof IMAGE_WC_PALETTE;
+
+/** The backdrop washes: every image-v2 picture starts with one of these under the wash filter. */
+export const IMAGE_WC_WASHES = ['washSand', 'washSky', 'washSage'] as const satisfies readonly ImageWcRole[];
+
+/** Both palettes, light → dark. */
+const ALL_PAIRS: readonly (readonly [string, string])[] = [
+  ...Object.values(IMAGE_PALETTE),
+  ...Object.values(IMAGE_WC_PALETTE),
+];
+
 /** The light hex values a stored SVG may use. */
-export const IMAGE_ALLOWED_COLORS: ReadonlySet<string> = new Set(
-  Object.values(IMAGE_PALETTE).map(([light]) => light),
-);
+export const IMAGE_ALLOWED_COLORS: ReadonlySet<string> = new Set(ALL_PAIRS.map(([light]) => light));
 
 /** light hex → dark hex. */
 export const IMAGE_DARK_SWAP: ReadonlyMap<string, string> = new Map(
-  Object.values(IMAGE_PALETTE).map(([light, dark]) => [light, dark]),
+  ALL_PAIRS.map(([light, dark]) => [light, dark]),
 );
 
+/**
+ * The two watercolour filters of image-v2, fixed byte for byte. The model only refers to them
+ * (filter="url(#line)" on pencil-drawn groups, filter="url(#wash)" on the backdrop wash); the
+ * sanitizer puts this block in when a picture uses them, and no other <defs> is ever accepted.
+ * Pictures are shown through <img>, so the ids never meet another picture's.
+ */
+export const IMAGE_WC_FILTERS = ['line', 'wash'] as const;
+export const IMAGE_WC_DEFS =
+  '<defs>' +
+  '<filter id="line" x="-5%" y="-5%" width="110%" height="110%">' +
+  '<feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="3"/>' +
+  '<feDisplacementMap in="SourceGraphic" scale="4"/>' +
+  '</filter>' +
+  '<filter id="wash" x="-15%" y="-15%" width="130%" height="130%">' +
+  '<feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" seed="7"/>' +
+  '<feDisplacementMap in="SourceGraphic" scale="18"/>' +
+  '<feGaussianBlur stdDeviation="3"/>' +
+  '</filter>' +
+  '</defs>';
+
 /** Prompt versions (part of what is stored with each row). */
-export const IMAGE_PROMPT_VERSION = 'image-v1';
+export const IMAGE_PROMPT_VERSION = 'image-v2';
+/** The style-B prompt: its pictures are replaced by image-v2 ones as those are stored. */
+export const IMAGE_PROMPT_VERSION_FLAT = 'image-v1';
 export const VISUAL_PROMPT_VERSION = 'visual-v1';
 export const IMAGE_CHECK_PROMPT_VERSION = 'imagecheck-v1';
 
@@ -79,7 +143,9 @@ export const generatedImage = z.object({
 export type GeneratedImage = z.infer<typeof generatedImage>;
 
 /** Visualizability score: 0 abstract … 3 concrete scene. Auto-queued from 2 up. */
-export const VISUAL_AUTO_MIN = 2;
+// 1 since 2026-10-25: the owner wants every word drawn; the model still declines (drawable:
+// false) where no picture fits, and 0 ("a picture would mislead") is never queued.
+export const VISUAL_AUTO_MIN = 1;
 
 export const IMAGE_STATUSES = ['checking', 'review', 'approved', 'rejected'] as const;
 export type ImageStatus = (typeof IMAGE_STATUSES)[number];
