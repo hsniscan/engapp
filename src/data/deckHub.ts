@@ -4,7 +4,13 @@
 // the same duplicate rules, and the new cards enter the normal queue, where the smart new-card
 // order (decision 0039) and the daily new limit decide when each one is introduced.
 import { dayBounds } from '../domain/day';
-import { deckNoteIds, orderDecks, parseDeckFilter, type DeckFilter } from '../domain/deckFilter';
+import {
+  deckNoteIds,
+  type DeckFilter,
+  type DeckNoteFacts,
+  orderDecks,
+  parseDeckFilter,
+} from '../domain/deckFilter';
 import { normalizeTerm } from '../domain/normalize';
 import { cardStage, type WordStage } from '../domain/stages';
 import { deckWordStatus, type OwnedIndex } from '../domain/suggestedDecks';
@@ -41,6 +47,9 @@ function addStage(mix: WordStageMix, stage: WordStage | null) {
   else if (stage === 'learning' || stage === 'consolidating') mix.studying++;
   else mix.fresh++;
 }
+
+/** loadDeckFacts keeps the whole card rows (typed narrower for the filter evaluator). */
+const fullCards = (f: DeckNoteFacts): readonly Card[] => f.cards as readonly Card[];
 
 const emptyMix = (): WordStageMix => ({ total: 0, learned: 0, studying: 0, fresh: 0 });
 
@@ -102,14 +111,14 @@ export async function getMyDecks(now: Millis = Date.now()): Promise<MyDecksOverv
   const dueOf = new Map<Id, number>();
   let cardCount = 0;
   for (const f of facts) {
-    const c = stageCard(f.cards);
+    const cards = fullCards(f);
+    const c = stageCard(cards);
     stageOf.set(f.note.id, c ? cardStage(c, at) : null);
-    cardCount += f.cards.length;
+    cardCount += cards.length;
     dueOf.set(
       f.note.id,
-      f.cards.filter(
-        (x) => !x.suspended && x.state !== CardState.New && (x as Card).unlocked !== false && (x as Card).due < end,
-      ).length,
+      cards.filter((x) => !x.suspended && x.unlocked && x.state !== CardState.New && x.due < end)
+        .length,
     );
   }
   const all = { ...emptyMix(), cards: cardCount, dueToday: 0 };
@@ -165,7 +174,7 @@ export async function getDeckWords(
   const words = chosen
     .map((f): DeckWordRow => {
       const s = first.get(f.note.id);
-      const c = stageCard(f.cards);
+      const c = stageCard(fullCards(f));
       return {
         note: f.note as Note,
         meaning: s ? (s.meaning_tr_override ?? s.meaning_tr) : null,

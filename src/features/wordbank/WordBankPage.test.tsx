@@ -5,15 +5,21 @@ import { addNoteWithSenses, applyWordBankPage, db, markKnown, updateSettings } f
 import { resetDb } from '@/test/db';
 import { renderRoute } from '@/test/ui';
 import type { WordBankRow } from '../../../supabase/functions/_shared/wordbank-contract';
-import { WordBankPage } from './WordBankPage';
+import { WordBankPage, WordBankPanel } from './WordBankPage';
 
 // The full suite runs many jsdom files at once; give the live queries room.
 configure({ asyncUtilTimeout: 5000 });
 
 let seq = 0;
-const row = (lemma: string, cefr: WordBankRow['cefr'], meaning: string, zipf = 4): WordBankRow => ({
+const row = (
+  lemma: string,
+  cefr: WordBankRow['cefr'],
+  meaning: string,
+  zipf = 4,
+  pos: WordBankRow['pos'] = 'noun',
+): WordBankRow => ({
   lemma_norm: lemma,
-  pos: 'noun',
+  pos,
   lemma,
   cefr,
   list_source: 'cefrj',
@@ -38,13 +44,15 @@ const rowTerms = () =>
 
 const noteTerms = async () => (await db.notes.toArray()).map((n) => n.term).sort();
 
+const renderBank = () => renderRoute(<WordBankPanel />, { path: '/decks', url: '/decks?tab=bank' });
+
 beforeEach(async () => {
   seq = 0;
   await resetDb();
   await updateSettings({ level: 'A2' });
 });
 
-describe('word bank screen', () => {
+describe('word bank (Desteler › Kelime bankası)', () => {
   it('opens on the user level and hides words already known or carded', async () => {
     await applyWordBankPage([
       row('garden', 'A2', 'bahçe', 5),
@@ -58,28 +66,58 @@ describe('word bank screen', () => {
     await addNoteWithSenses({ term: 'village', senses: [{ meaning_tr: 'köy' }] });
 
     const user = userEvent.setup();
-    renderRoute(<WordBankPage />, { path: '/kelime-bankasi' });
+    renderBank();
     await waitFor(() => expect(rowTerms()).toEqual(['garden', 'kitchen']));
-    expect(screen.getByRole('radio', { name: 'A2' })).toBeChecked();
+    expect(screen.getByRole('button', { name: 'A2', pressed: true })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'A2 · 2 kelime' })).toBeInTheDocument();
     expect(screen.getByText('bahçe')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Kaynaklar' })).toHaveAttribute(
       'href',
       '/settings/kaynaklar',
     );
+    expect(screen.getByRole('link', { name: 'Deste yap' })).toHaveAttribute(
+      'href',
+      '/decks/suggested/level-a2',
+    );
 
-    await user.click(screen.getByRole('switch', { name: /Bildiğim ve kartı olan/ }));
+    await user.click(screen.getByRole('switch', { name: 'Bildiklerimi gizle' }));
     await waitFor(() => expect(rowTerms()).toEqual(['garden', 'ticket', 'kitchen', 'village']));
     expect(screen.getByText('Biliyorum')).toBeInTheDocument();
-    expect(screen.getByText('Kartın var')).toBeInTheDocument();
+    expect(screen.getByText('Eklendi')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('radio', { name: 'B1' }));
+    await user.click(screen.getByRole('button', { name: 'B1', pressed: false }));
     await waitFor(() => expect(rowTerms()).toEqual(['opinion']));
+    // Pressing the level again shows every level.
+    await user.click(screen.getByRole('button', { name: 'B1', pressed: true }));
+    await waitFor(() => expect(rowTerms()).toHaveLength(6));
+    expect(screen.getByRole('heading', { name: 'Tüm seviyeler · 6 kelime' })).toBeInTheDocument();
+  });
+
+  it('filters by part of speech, sorts A–Z and offers the matching suggested deck', async () => {
+    await applyWordBankPage([
+      row('garden', 'A2', 'bahçe', 5),
+      row('suggest', 'A2', 'önermek', 4.9, 'verb'),
+      row('avoid', 'A2', 'kaçınmak', 4.6, 'verb'),
+      row('quickly', 'A2', 'hızlıca', 4.4, 'adverb'),
+    ]);
+    const user = userEvent.setup();
+    renderBank();
+    await waitFor(() => expect(rowTerms()).toHaveLength(4));
+    const pos = screen.getByRole('group', { name: 'Kelime türü' });
+    await user.click(within(pos).getByRole('button', { name: /fiil\s*2/i }));
+    await waitFor(() => expect(rowTerms()).toEqual(['suggest', 'avoid']));
+    expect(screen.getByRole('link', { name: 'Deste yap' })).toHaveAttribute(
+      'href',
+      '/decks/suggested/a2-verb',
+    );
+    await user.click(screen.getByRole('button', { name: 'Alfabetik' }));
+    await waitFor(() => expect(rowTerms()).toEqual(['avoid', 'suggest']));
   });
 
   it('searches English words and Turkish meanings across levels', async () => {
     await applyWordBankPage([row('garden', 'A2', 'bahçe'), row('village', 'B2', 'köy')]);
     const user = userEvent.setup();
-    renderRoute(<WordBankPage />, { path: '/kelime-bankasi' });
+    renderBank();
     await screen.findByRole('list', { name: 'Kelimeler' });
     await user.type(screen.getByRole('searchbox'), 'KOY');
     await waitFor(() => expect(rowTerms()).toEqual(['village']));
@@ -88,16 +126,18 @@ describe('word bank screen', () => {
     await waitFor(() => expect(rowTerms()).toEqual(['garden']));
   });
 
-  it('adds one word with "Ekle" and several with the selection bar', async () => {
+  it('adds one word from its details and several with the selection bar', async () => {
     await applyWordBankPage([
       row('garden', 'A2', 'bahçe', 5),
       row('kitchen', 'A2', 'mutfak', 4.5),
       row('village', 'A2', 'köy', 4.2),
     ]);
     const user = userEvent.setup();
-    renderRoute(<WordBankPage />, { path: '/kelime-bankasi' });
+    renderBank();
     await screen.findByRole('list', { name: 'Kelimeler' });
 
+    await user.click(screen.getByRole('button', { name: 'garden: anlamlar ve örnekler' }));
+    expect(screen.getByText('I like the garden here.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'garden ekle' }));
     await waitFor(async () => expect(await noteTerms()).toEqual(['garden']));
     const note = (await db.notes.toArray())[0]!;
@@ -105,10 +145,15 @@ describe('word bank screen', () => {
     expect(senses.map((s) => s.source_sentence)).toEqual(['I like the garden here.']);
     await waitFor(() => expect(rowTerms()).toEqual(['kitchen', 'village']));
 
-    await user.click(screen.getByRole('checkbox', { name: 'kitchen seç' }));
-    await user.click(screen.getByRole('checkbox', { name: 'village seç' }));
+    await user.click(screen.getByRole('button', { name: 'kitchen seç' }));
+    await user.click(screen.getByRole('button', { name: 'village seç' }));
+    expect(screen.getByRole('button', { name: 'village seç' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
     const bar = screen.getByRole('region', { name: 'Seçilen kelimeler' });
     expect(within(bar).getByText('2 kelime seçildi')).toBeInTheDocument();
+    expect(within(bar).getByText("Tüm kelimelerim'e eklenecek")).toBeInTheDocument();
     await user.click(within(bar).getByRole('button', { name: 'Seçilenleri ekle' }));
     await waitFor(async () => expect(await noteTerms()).toEqual(['garden', 'kitchen', 'village']));
     await waitFor(() =>
@@ -125,7 +170,7 @@ describe('word bank screen', () => {
     ];
     await applyWordBankPage(rows);
     const user = userEvent.setup();
-    renderRoute(<WordBankPage />, { path: '/kelime-bankasi' });
+    renderBank();
     const quick = await screen.findByTestId('word-bank-quick');
     await user.click(within(quick).getByRole('button', { name: /10 kelime ekle/ }));
     await waitFor(async () => expect(await noteTerms()).toHaveLength(10));
@@ -137,7 +182,13 @@ describe('word bank screen', () => {
   });
 
   it('explains an empty bank when this installation has no backend', async () => {
-    renderRoute(<WordBankPage />, { path: '/kelime-bankasi' });
+    renderBank();
     expect(await screen.findByText('Bu kurulumda kelime bankası yok.')).toBeInTheDocument();
+  });
+
+  it('the old /kelime-bankasi page sends to the bank segment', async () => {
+    const { router } = renderRoute(<WordBankPage />, { path: '/kelime-bankasi' });
+    await waitFor(() => expect(router.state.location.search).toBe('?tab=bank'));
+    expect(router.state.location.pathname).toBe('/decks');
   });
 });

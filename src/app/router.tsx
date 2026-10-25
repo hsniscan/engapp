@@ -1,4 +1,4 @@
-import { createBrowserRouter, type RouteObject } from 'react-router';
+import { createBrowserRouter, Navigate, type RouteObject } from 'react-router';
 import { RootLayout, type RouteHandle } from './RootLayout';
 import { AuthPage } from '@/features/auth/AuthPage';
 import { HomeScreen } from '@/features/home/HomeScreen';
@@ -58,14 +58,8 @@ const children: RouteObject[] = [
       Component: (await import('@/features/import/ImportPreviewPage')).ImportPreviewPage,
     }),
   },
-  {
-    // Kelime Bankası (decision 0038): the leveled list words, ready to add.
-    path: 'kelime-bankasi',
-    HydrateFallback: () => null,
-    lazy: async () => ({
-      Component: (await import('@/features/wordbank/WordBankPage')).WordBankPage,
-    }),
-  },
+  // Kelime Bankası (decision 0038) is the third segment of Desteler now.
+  { path: 'kelime-bankasi', element: <Navigate to="/decks?tab=bank" replace /> },
   {
     path: 'library',
     HydrateFallback: () => null,
@@ -75,6 +69,20 @@ const children: RouteObject[] = [
     path: 'decks',
     HydrateFallback: () => null,
     lazy: async () => ({ Component: (await import('@/features/decks/DecksPage')).DecksPage }),
+  },
+  {
+    path: 'decks/suggested/:key',
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/decks/SuggestedDeckPage')).SuggestedDeckPage,
+    }),
+  },
+  {
+    path: 'decks/:id',
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/decks/DeckDetailPage')).DeckDetailPage,
+    }),
   },
   {
     path: 'decks/themes',
