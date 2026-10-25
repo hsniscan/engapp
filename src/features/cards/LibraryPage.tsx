@@ -35,7 +35,7 @@ import {
   toast,
 } from '@/ui';
 import { ConfirmDialog } from './ConfirmDialog';
-import { STATE_KEYS, stateKey, type StateKey } from './labels';
+import { STATE_KEYS, type StateKey } from './labels';
 import {
   activeFilterCount,
   buildRows,
@@ -52,9 +52,10 @@ import {
 } from './libraryFilter';
 import { NoteDetailSheet } from './NoteDetailSheet';
 import { useNow } from '@/features/settings/useNow';
-import { DeckChips } from '@/features/decks/DeckChips';
 import { DeckEditorDialog } from '@/features/decks/DeckEditorDialog';
 import { describeDeckFilter } from '@/features/decks/describe';
+import { BackBar, StatusPill, type PillTone } from '@/features/decks/parts';
+import { cardStage, STAGE_LABEL_TR, type WordStage } from '@/domain/stages';
 import { TagSheet } from '@/features/decks/TagSheet';
 import { practiceHref } from '@/features/extra/links';
 
@@ -102,18 +103,6 @@ export function LibraryPage() {
   );
   const activeDeck = decks?.find((d) => d.deck.id === deckId) ?? null;
   const [editDeck, setEditDeck] = useState(false);
-  const selectDeck = useCallback(
-    (id: string | null) =>
-      setParams(
-        (p) => {
-          if (id) p.set('deck', id);
-          else p.delete('deck');
-          return p;
-        },
-        { replace: true },
-      ),
-    [setParams],
-  );
 
   // The search box is local state (instant typing); the URL follows without adding history entries.
   const [q, setQ] = useState(filters.q);
@@ -209,8 +198,10 @@ export function LibraryPage() {
   const nf = new Intl.NumberFormat('tr-TR');
 
   return (
+    <>
+    <BackBar to="/decks" parent={t('deckHub.library.parent')} />
     <Page
-      title={t('library.title')}
+      title={t('deckHub.library.title')}
       width="wide"
       description={
         rows && rows.length > 0
@@ -250,12 +241,22 @@ export function LibraryPage() {
         </Surface>
       ) : (
         <div className="flex flex-col gap-4">
-          {decks && (
+          {decks && activeDeck && (
             <div className="flex flex-col gap-2">
-              <DeckChips decks={decks} active={deckId} onSelect={selectDeck} />
               {activeDeck && (
                 <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-fg-muted">
-                  <span className="min-w-0">{describeDeckFilter(t, activeDeck.filter)}</span>
+                  <span className="min-w-0">
+                    <strong className="font-semibold text-fg">
+                      {t('deckHub.library.deckLine', { name: activeDeck.deck.name })}
+                    </strong>{' '}
+                    · {describeDeckFilter(t, activeDeck.filter)}
+                  </span>
+                  <Link
+                    to={`/decks/${encodeURIComponent(activeDeck.deck.id)}`}
+                    className="inline-flex min-h-11 items-center font-medium text-accent-text underline-offset-4 hover:underline"
+                  >
+                    {t('deckHub.library.deckOpen')}
+                  </Link>
                   {activeDeck.count !== null && activeDeck.count > 0 && (
                     <Link
                       to={practiceHref({ source: 'deck', size: 10, tag: null, deck: activeDeck.deck.id })}
@@ -412,16 +413,18 @@ export function LibraryPage() {
         deck={activeDeck?.deck ?? null}
       />
     </Page>
+    </>
   );
 }
 
 const rtf = new Intl.RelativeTimeFormat('tr', { numeric: 'auto' });
 
-const STATE_TONE: Record<StateKey, 'neutral' | 'accent' | 'success' | 'warn'> = {
-  new: 'neutral',
-  learning: 'accent',
-  review: 'success',
-  relearning: 'warn',
+const STAGE_TONE: Record<WordStage, PillTone> = {
+  new: 'outline',
+  learning: 'warn',
+  consolidating: 'accent',
+  learned: 'success',
+  mastered: 'success',
 };
 
 /** One note. The checkbox selects; the rest of the row opens the detail sheet. */
@@ -492,11 +495,6 @@ const NoteRow = memo(function NoteRow({
             {senses.length ? meanings : t('library.noSenses')}
           </span>
           <span className="mt-1 flex flex-wrap items-center gap-1.5">
-            {recognition && (
-              <Badge tone={STATE_TONE[stateKey(recognition.state)]} dot>
-                {t(`cards.state.${stateKey(recognition.state)}`)}
-              </Badge>
-            )}
             {allSuspended ? (
               <Badge tone="outline">{t('cards.suspended')}</Badge>
             ) : (
@@ -518,11 +516,11 @@ const NoteRow = memo(function NoteRow({
           <span className="tabular text-fg">{t('library.cardCount', { count: cards.length })}</span>
           {nextDue !== null && <span className="tabular text-fg-muted">{dueLabel(nextDue)}</span>}
         </span>
-        <Icon
-          name="chevron-right"
-          size={18}
-          className="shrink-0 text-fg-subtle group-hover:text-fg-muted"
-        />
+        {recognition && (
+          <StatusPill tone={STAGE_TONE[cardStage(recognition)]}>
+            {STAGE_LABEL_TR[cardStage(recognition)]}
+          </StatusPill>
+        )}
       </button>
     </li>
   );

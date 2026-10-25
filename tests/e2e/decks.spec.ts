@@ -1,4 +1,4 @@
-// İP8 part 1: bulk tags on a phone, a smart deck as a Cards filter and a practice source,
+// İP8 part 1: bulk tags on a phone, a smart deck with its own page and a practice source,
 // and "Kelimelerimi temalara ayır" through the real ai-themes pipeline.
 import { addWord, dumpTables, expect, reviewAll, test, type Word } from './support/app.ts';
 import { FakeBackend } from './support/backend.ts';
@@ -42,10 +42,9 @@ test('phone: bulk tag two words, make a deck of them, filter Cards and practise 
     .map((n) => n.term);
   expect(tagged.sort()).toEqual(['colleague', 'deadline']);
 
-  // Deck: from the Cards screen to the deck screen, name + tag, live count, create.
-  await page.getByRole('link', { name: 'Deste oluştur' }).click();
-  await expect(page).toHaveURL(/\/decks$/);
-  await page.getByRole('button', { name: 'İlk desteni oluştur' }).click();
+  // Deck: Desteler → "Yeni deste · Kurallarla", name + tag, live count, create.
+  await page.goto('/decks');
+  await page.getByRole('button', { name: /Kurallarla/ }).click();
   const editor = page.getByRole('dialog', { name: 'Yeni deste' });
   await editor.getByRole('textbox', { name: 'Adı' }).fill('İş kelimeleri');
   await expect(editor.getByText('Şu an 4 kelime bu desteye giriyor.')).toBeVisible();
@@ -58,17 +57,28 @@ test('phone: bulk tag two words, make a deck of them, filter Cards and practise 
     expect.objectContaining({ name: 'İş kelimeleri', filter: { v: 1, tags: ['iş'] }, sort: 1 }),
   ]);
 
-  // Deck chip on the Cards screen filters the list.
-  await page.goto('/library');
-  const chips = page.getByRole('group', { name: 'Desteler' });
-  await chips.getByRole('button', { name: /İş kelimeleri/ }).click();
-  await expect(page).toHaveURL(/\/library\?deck=/);
+  // Saving opens the deck's own page: its two words, by stage.
+  await expect(page).toHaveURL(/\/decks\/[^/?]+$/);
+  const deckUrl = page.url();
+  await expect(page.getByRole('heading', { level: 1, name: 'İş kelimeleri' })).toBeVisible();
+  const words = page.getByRole('list', { name: 'Destedeki kelimeler' });
+  await expect(words.getByRole('listitem')).toHaveCount(2);
+  await expect(words.getByText('thrive')).toHaveCount(0);
+
+  // Destelerim lists it; "Tüm kelimelerim" filtered to the deck shows the same two words.
+  await page.goto('/decks');
+  await expect(page.getByRole('link', { name: 'İş kelimeleri', exact: true })).toHaveAttribute(
+    'href',
+    new URL(deckUrl).pathname,
+  );
+  await page.goto(`/library?deck=${new URL(deckUrl).pathname.split('/').pop()}`);
   const list = page.getByRole('list', { name: 'Notlar' });
   await expect(list.getByRole('listitem')).toHaveCount(2);
-  await expect(list.getByText('thrive')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Desteyi aç' })).toBeVisible();
 
-  // Practice that deck: only its two words come up.
-  await page.getByRole('link', { name: 'Pratik yap' }).click();
+  // Practice that deck from its page: only its two words come up.
+  await page.goto(deckUrl);
+  await page.getByRole('link', { name: 'Çalış' }).click();
   await expect(page).toHaveURL(/\/practice\?source=deck&size=10&deck=/);
   const done = page.getByRole('heading', { name: 'Pratik bitti' });
   let answers = 0;
@@ -116,7 +126,7 @@ test('themes: preview, rename, remove a word, reject a group → tags, with only
   for (const w of THEME_WORDS) await addWord(page, w);
 
   await page.goto('/decks');
-  await page.getByRole('link', { name: 'Kelimelerimi temalara ayır' }).click();
+  await page.getByRole('link', { name: /AI ile temalara ayır/ }).click();
   await expect(page).toHaveURL(/\/decks\/themes$/);
   await expect(page.getByText('Etiketi olmayan 9 kelimen var.')).toBeVisible();
   await expect(page.getByText('Günlük AI hakkından 1 çağrı kullanır.')).toBeVisible();
@@ -149,7 +159,7 @@ test('themes: preview, rename, remove a word, reject a group → tags, with only
 
   // The preview survives leaving the page.
   await page.goto('/decks');
-  await page.getByRole('link', { name: 'Önizlemeye dön' }).click();
+  await page.getByRole('link', { name: /Bekleyen bir önerin var/ }).click();
   await expect(page.getByRole('region', { name: /His ve duygu/ })).toBeVisible();
   expect(backend.count('ai-themes')).toBe(1);
 

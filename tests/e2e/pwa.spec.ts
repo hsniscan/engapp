@@ -34,7 +34,8 @@ test.describe('PWA', () => {
     await context.setOffline(true);
     for (const [path, heading] of [
       ['/', 'Bugün'],
-      ['/library', 'Kartlar'],
+      ['/library', 'Tüm kelimelerim'],
+      ['/decks', 'Desteler'],
       ['/add', 'Kart ekle'],
       ['/stats', 'İstatistik'],
       ['/settings', 'Ayarlar'],
@@ -67,5 +68,5 @@ test('a screen whose code cannot be downloaded shows a friendly error inside the
   await expect(page.getByRole('navigation', { name: 'Ana gezinme' }).first()).toBeVisible();
   await page.unroute(/\/assets\/LibraryPage-.*\.js$/);
   await page.getByRole('button', { name: 'Sayfayı yenile' }).click();
-  await expect(page.getByRole('heading', { name: 'Kartlar', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Tüm kelimelerim', level: 1 })).toBeVisible();
 });
