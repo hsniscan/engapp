@@ -175,6 +175,94 @@
     "aheadEmptyTitle": "Tomorrow's cards are done",
     "promptImage": "Find the word in the picture"
   },
+  "study": {
+    "title": "Study",
+    "pickerTitle": "Study",
+    "leftToday": "{{count}} cards left today · about {{min}} min",
+    "allDone": "Every study type is done for today",
+    "mainBadge": "Main",
+    "cardsUnit": "cards",
+    "split": "{{due}} reviews · {{new}} new",
+    "minutes": "~{{count}} min",
+    "mixed": "Mixed study",
+    "mixedHint": "Mixes the three types in one session",
+    "start": {
+      "word": "Start word study",
+      "production": "Start production",
+      "cloze": "Start fill in the blank",
+      "mixed": "Start mixed study"
+    },
+    "mode": {
+      "word": {
+        "name": "Word study",
+        "dir": "English → Turkish",
+        "desc": "You see the word and recall its meaning. New words start here."
+      },
+      "production": {
+        "name": "Production",
+        "dir": "Turkish → English",
+        "desc": "You see the Turkish and type or recall the English.",
+        "note": "Words you know in word study unlock here"
+      },
+      "cloze": {
+        "name": "Fill in the blank",
+        "dir": "In a sentence",
+        "desc": "You pick or type the word that fits the blank.",
+        "note": "Strengthens the word in context"
+      },
+      "mixed": {
+        "name": "Mixed study"
+      }
+    },
+    "recallHint": "Try to recall the meaning, then turn the card",
+    "tapCard": "or tap the card",
+    "spaceKey": "or press Space",
+    "answerShown": "Answer shown",
+    "scrollCard": "Card, scrollable",
+    "suggested": "Our suggestion:",
+    "stage": {
+      "newWord": "New word",
+      "relearning": "Relearning",
+      "explain": "A word counts as learned once you know it on three separate days, with growing gaps."
+    },
+    "firstLetter": "Show the first letter",
+    "firstLetterShown": "First letter: {{hint}}",
+    "dontKnow": "I don't know, show me",
+    "typeAnswer": "Type the English",
+    "check": "Check",
+    "blank": "blank",
+    "result": {
+      "correct": "Correct",
+      "close_one": "Almost: one letter off",
+      "close_other": "Almost: {{count}} letters off",
+      "wrong": "Not this time",
+      "skipped": "Here is the answer",
+      "yours": "Your answer",
+      "right": "Correct answer"
+    },
+    "cloze": {
+      "showTr": "Show the Turkish",
+      "choices": "Choices",
+      "typeInstead": "Type instead of choosing",
+      "chooseInstead": "Choose from the options",
+      "typeAnswer": "Type the word for the blank",
+      "correctTag": "Correct",
+      "yourPick": "Your pick",
+      "pickedWord": "The word you picked",
+      "pickFirst": "Pick or type an answer first"
+    },
+    "empty": {
+      "word": "Word study is done for today",
+      "production": "No production cards today",
+      "cloze": "No fill-in-the-blank cards today",
+      "productionBody": "Words you also know on another day in word study open up here.",
+      "others": "Other study types have cards waiting",
+      "otherCount": "{{mode}}: {{count}} cards",
+      "pickMode": "Study types"
+    },
+    "learnedToday_one": "{{count}} word reached Learned today.",
+    "learnedToday_other": "{{count}} words reached Learned today."
+  },
   "examples": {
     "title": "Example sentences",
     "count": "{{count}} sentences",

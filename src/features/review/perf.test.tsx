@@ -113,7 +113,7 @@ describe('1,000-card performance', () => {
 
   it('renders the first card and switches to the prefetched next card', async () => {
     const t0 = performance.now();
-    renderRoute(<ReviewScreen />, { path: '/review' });
+    renderRoute(<ReviewScreen studyMode="word" />, { path: '/review' });
     await screen.findByRole('button', { name: 'Cevabı göster' }, { timeout: 5000 });
     await waitFor(() => expect(document.querySelector('[data-card-type]')).not.toBeNull(), {
       timeout: 5000,
