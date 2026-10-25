@@ -31,6 +31,7 @@ import type {
 } from '../domain/types';
 import type { CachedImage } from '../domain/images';
 import type { WordBankEntry } from '../domain/wordBank';
+import type { EncounterRow, ReaderText } from '../domain/texts';
 import { addPullBackfill } from './backfill';
 
 /**
@@ -76,6 +77,8 @@ export class EngDb extends Dexie {
   report_drafts!: EntityTable<ReportDraft, 'week'>;
   images!: EntityTable<CachedImage, 'id'>;
   word_bank!: EntityTable<WordBankEntry, 'id'>;
+  texts!: EntityTable<ReaderText, 'id'>;
+  encounters!: EntityTable<EncounterRow, 'id'>;
 
   constructor(name = 'engapp') {
     super(name);
@@ -335,6 +338,14 @@ export class EngDb extends Dexie {
           });
         if (cards > 0) await tx.table('meta').put({ key: STAGE_RULE_NOTICE_KEY, value: false });
       });
+    // v28 (v0.5 reading texts, decision 0043; 26–27 belong to the UI redesign, 29–36 to the
+    // other v0.5 packages): `texts`, the user's reading texts (domain/texts.ts), and
+    // `encounters`, how often the user met each note per day and source. Both are new tables,
+    // so no row is rewritten.
+    this.version(28).stores({
+      texts: 'id, kind, updated_at, deleted_at, graded_id',
+      encounters: 'id, note_id, day',
+    });
   }
 }
 
