@@ -3,12 +3,16 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   createPronouncer,
+  fetchPregeneratedAudio,
   LOADING_DELAY_MS,
   usePronunciationBusy,
   type AudioCache,
   type PronunciationDeps,
 } from './pronunciation';
 import type { TtsResponse } from '@/ai/tts';
+import { ttsObjectPath, ttsPublicUrl } from '../../../supabase/functions/_shared/tts-contract';
+
+const BASE = 'https://p.supabase.co';
 
 class FakeAudio {
   src = '';
@@ -33,7 +37,11 @@ class MemoryCache implements AudioCache {
   }
 }
 
-const flush = () => act(async () => new Promise<void>((r) => setTimeout(r, 0)));
+// Several macrotask turns: the object path is a Web Crypto digest, which settles off-thread.
+const flush = () =>
+  act(async () => {
+    for (let i = 0; i < 8; i++) await new Promise<void>((r) => setTimeout(r, 0));
+  });
 
 function setup(over: Partial<PronunciationDeps> = {}) {
   const audio = new FakeAudio();
@@ -48,6 +56,9 @@ function setup(over: Partial<PronunciationDeps> = {}) {
       cached: true,
     })),
     fetchBlob: vi.fn(async () => new Blob(['RIFF'], { type: 'audio/wav' })),
+    publicUrl: (path) => ttsPublicUrl(BASE, path),
+    // Default: nothing pre-generated (Storage answers 4xx), so the edge function is asked.
+    fetchPregenerated: vi.fn(async (): Promise<Blob | null> => null),
     cache: () => cache,
     createAudio: vi.fn(() => audio as unknown as HTMLAudioElement),
     createObjectURL: vi.fn(() => `blob:${++urls}`),
@@ -208,5 +219,124 @@ describe('playPronunciation', () => {
     resolve({ url: 'https://s.example/x.wav', cached: true });
     await flush();
     expect(a.result.current.busy).toBe(false);
+  });
+});
+
+describe('pre-generated audio (fast path)', () => {
+  const mp3 = () => new Blob([new Uint8Array([0xff, 0xfb, 0x90])], { type: 'audio/mpeg' });
+
+  it('plays the pre-generated file straight from Storage, without the edge function', async () => {
+    const url = ttsPublicUrl(BASE, await ttsObjectPath('en-GB', 'reluctant'));
+    const fetchPregenerated = vi.fn(async (u: string) => (u === url ? mp3() : null));
+    const { p, deps, audio, cache } = setup({ fetchPregenerated });
+    p.play(' reluctant ', 'en-GB');
+    await flush();
+    expect(fetchPregenerated).toHaveBeenCalledWith(url);
+    expect(url).toMatch(/\/storage\/v1\/object\/public\/tts\/en-GB\/[0-9a-f]{64}\.mp3$/);
+    expect(deps.request).not.toHaveBeenCalled();
+    expect(audio.played.at(-1)).toBe('blob:1');
+    expect(cache.map.size).toBe(1); // kept for offline replays
+  });
+
+  it('falls back to the edge function when the file is not there (404)', async () => {
+    const { p, deps, audio } = setup();
+    p.play('brand-new word', 'en-US');
+    await flush();
+    expect(deps.fetchPregenerated).toHaveBeenCalledTimes(1);
+    expect(deps.request).toHaveBeenCalledWith('brand-new word', 'en-US');
+    expect(audio.played.at(-1)).toBe('blob:1');
+  });
+
+  it('falls back to the edge function when Storage cannot be reached', async () => {
+    const { p, deps } = setup({
+      fetchPregenerated: vi.fn(async () => Promise.reject(new Error('network'))),
+    });
+    p.play('word', 'en-US');
+    await flush();
+    expect(deps.request).toHaveBeenCalledTimes(1);
+    expect(deps.fallback).not.toHaveBeenCalled();
+  });
+
+  it('tries the lower-case headword file for a capitalised word', async () => {
+    const lower = ttsPublicUrl(BASE, await ttsObjectPath('en-US', 'monday'));
+    const fetchPregenerated = vi.fn(async (u: string) => (u === lower ? mp3() : null));
+    const { p, deps } = setup({ fetchPregenerated });
+    p.play('MONDAY', 'en-US');
+    await flush();
+    expect(fetchPregenerated).toHaveBeenCalledTimes(2);
+    expect(fetchPregenerated).toHaveBeenLastCalledWith(lower);
+    expect(deps.request).not.toHaveBeenCalled();
+  });
+
+  it('asks the edge function directly when no backend URL is known', async () => {
+    const { p, deps } = setup({ publicUrl: () => null });
+    p.play('word', 'en-US');
+    await flush();
+    expect(deps.fetchPregenerated).not.toHaveBeenCalled();
+    expect(deps.request).toHaveBeenCalledTimes(1);
+  });
+
+  it('prefetches into memory, so the tap plays synchronously', async () => {
+    const fetchPregenerated = vi.fn(async () => mp3());
+    const { p, deps, audio } = setup({ fetchPregenerated });
+    await expect(p.prefetch(['thorough', 'run out of'], 'en-US')).resolves.toBe(2);
+    p.play('thorough', 'en-US');
+    expect(audio.played).toEqual(['blob:1']); // no silent unlock clip: already in memory
+    expect(deps.request).not.toHaveBeenCalled();
+  });
+
+  it('never spends the server budget on a prefetch', async () => {
+    const { p, deps } = setup();
+    await expect(p.prefetch(['private sentence of mine'], 'en-US')).resolves.toBe(0);
+    expect(deps.request).not.toHaveBeenCalled();
+  });
+
+  it('prefetches nothing for guests or offline', async () => {
+    const guest = setup({ serverAllowed: () => false });
+    await expect(guest.p.prefetch(['word'], 'en-US')).resolves.toBe(0);
+    const offline = setup({ online: () => false });
+    await expect(offline.p.prefetch(['word'], 'en-US')).resolves.toBe(0);
+    expect(guest.deps.fetchPregenerated).not.toHaveBeenCalled();
+    expect(offline.deps.fetchPregenerated).not.toHaveBeenCalled();
+  });
+
+  it('a tap during a missing prefetch still reaches the edge function', async () => {
+    let miss!: (b: Blob | null) => void;
+    const fetchPregenerated = vi.fn(() => new Promise<Blob | null>((r) => (miss = r)));
+    const { p, deps, audio } = setup({ fetchPregenerated });
+    const pre = p.prefetch(['word'], 'en-US');
+    await flush();
+    p.play('word', 'en-US');
+    miss(null);
+    await flush();
+    await pre;
+    expect(fetchPregenerated).toHaveBeenCalledTimes(1);
+    expect(deps.request).toHaveBeenCalledTimes(1);
+    expect(audio.played.at(-1)).toBe('blob:1');
+  });
+});
+
+describe('fetchPregeneratedAudio', () => {
+  const reply = (status: number, body = 'ID3') =>
+    vi.fn(async () => new Response(status === 204 ? null : body, { status }));
+
+  it('returns the audio on 200', async () => {
+    const blob = await fetchPregeneratedAudio('u', reply(200) as unknown as typeof fetch);
+    expect(blob?.size).toBe(3);
+  });
+
+  it('treats 400 and 404 as "not generated yet"', async () => {
+    await expect(fetchPregeneratedAudio('u', reply(404) as unknown as typeof fetch)).resolves.toBe(
+      null,
+    );
+    await expect(fetchPregeneratedAudio('u', reply(400) as unknown as typeof fetch)).resolves.toBe(
+      null,
+    );
+  });
+
+  it('throws on server errors, so the caller can try the edge function', async () => {
+    await expect(
+      fetchPregeneratedAudio('u', reply(503) as unknown as typeof fetch),
+    ).rejects.toThrow('HTTP 503');
   });
 });

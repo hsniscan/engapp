@@ -6,19 +6,32 @@
 // and play()ed synchronously in the gesture (with a short silent clip while the real audio
 // loads), which unlocks it on iOS; Chrome's sticky activation then allows the later play().
 //
-// Caches: object URLs in memory (instant replays), and the WAV files in Cache Storage so
-// replays work offline and after a reload.
+// Where the audio comes from (docs/decisions/0042-pregenerated-tts.md), first hit wins:
+//   1. memory (object URLs: instant replays) and Cache Storage (offline, after a reload);
+//   2. the pre-generated MP3 in the public `tts` bucket, fetched straight from Storage: the
+//      client computes the object path itself (same key as the server, tts-contract.ts), so
+//      a dictionary word or sentence plays with no edge-function round trip;
+//   3. the `tts` edge function, only when that file is not there (a 4xx): private text and
+//      dictionary entries newer than the last pre-generation run;
+//   4. the device voice, on any failure.
+// The review screen prefetches the current card's word (prefetchPronunciations), so the tap
+// usually finds it in memory.
 
 import { useRef, useSyncExternalStore } from 'react';
 
 import { requestPronunciation } from '@/ai/tts';
 import { getAuthState } from '@/features/auth/session';
+import { backendConfig } from '@/lib/supabase';
 import { isNativeApp } from '@/native/platform';
 import {
   normalizeTtsText,
   TTS_CACHE_VERSION,
   ttsKeyMaterial,
   TTS_MAX_CHARS,
+  ttsObjectPath,
+  ttsPublicUrl,
+  ttsSha256Hex,
+  ttsTextCandidates,
   type TtsResponse,
 } from '../../../supabase/functions/_shared/tts-contract';
 import { speakEnglish, type VoicePref } from './useSpeech';
@@ -45,6 +58,13 @@ export interface PronunciationDeps {
   online: () => boolean;
   request: (text: string, voice: VoicePref) => Promise<TtsResponse>;
   fetchBlob: (url: string) => Promise<Blob>;
+  /** Public URL of an object in the `tts` bucket; null when no backend is configured. */
+  publicUrl: (path: string) => string | null;
+  /**
+   * Fetches a pre-generated file: the audio, or null when it is not there (any 4xx: Storage
+   * answers 400 or 404 for a missing object). Throws on network errors.
+   */
+  fetchPregenerated: (url: string) => Promise<Blob | null>;
   cache: () => AudioCache | null;
   createAudio: () => HTMLAudioElement;
   createObjectURL: (b: Blob) => string;
@@ -59,11 +79,7 @@ const SILENCE =
   'data:audio/wav;base64,UklGRrQBAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YZABAACA' +
   'gICA'.repeat(133);
 
-/** sha256 hex, for the Cache Storage key. */
-async function sha256Hex(s: string): Promise<string> {
-  const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
-  return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
+const sha256Hex = ttsSha256Hex;
 
 function base64ToBlob(b64: string, type: string): Blob {
   const bin = atob(b64);
@@ -76,7 +92,7 @@ function base64ToBlob(b64: string, type: string): Blob {
 export function cacheStorageAudioCache(): AudioCache | null {
   if (typeof caches === 'undefined' || typeof location === 'undefined') return null;
   const url = async (key: string) =>
-    `${location.origin}/__tts/${TTS_CACHE_VERSION}/${await sha256Hex(key)}.wav`;
+    `${location.origin}/__tts/${TTS_CACHE_VERSION}/${await sha256Hex(key)}`;
   return {
     async get(key) {
       try {
@@ -91,7 +107,7 @@ export function cacheStorageAudioCache(): AudioCache | null {
         const c = await caches.open(CACHE_NAME);
         await c.put(
           await url(key),
-          new Response(blob, { headers: { 'content-type': 'audio/wav' } }),
+          new Response(blob, { headers: { 'content-type': blob.type || 'audio/mpeg' } }),
         );
         const keys = await c.keys();
         for (const k of keys.slice(0, Math.max(0, keys.length - DISK_MAX))) await c.delete(k);
@@ -146,6 +162,12 @@ export function usePronunciationBusy(): { busy: boolean; run: (fn: () => void) =
 
 export interface Pronouncer {
   play(text: string, voice: VoicePref, opts?: PlayOptions): boolean;
+  /**
+   * Fetches the pre-generated audio of these texts into the caches ahead of a tap. Never calls
+   * the edge function (no budget is spent on audio nobody asked for). Resolves to how many
+   * texts are now ready.
+   */
+  prefetch(texts: readonly string[], voice: VoicePref): Promise<number>;
   /** For tests: forget the in-memory URLs. */
   reset(): void;
 }
@@ -166,11 +188,60 @@ export function createPronouncer(deps: PronunciationDeps): Pronouncer {
     }
   };
 
-  async function loadBlob(key: string, text: string, voice: VoicePref): Promise<Blob | string> {
+  /** The pre-generated file of `text` (or of its lower-case headword form), or null. */
+  async function fetchPregenerated(text: string, voice: VoicePref): Promise<Blob | null> {
+    for (const t of ttsTextCandidates(text)) {
+      const url = deps.publicUrl(await ttsObjectPath(voice, t));
+      if (!url) return null;
+      try {
+        const blob = await deps.fetchPregenerated(url);
+        if (blob) return blob;
+      } catch {
+        return null; // network trouble: let the edge function (or the device voice) decide
+      }
+    }
+    return null;
+  }
+
+  // One load per key at a time, shared by a tap and a prefetch of the same text. A tap that
+  // finds a prefetch (Storage only) still in flight goes on to the server if that misses.
+  const inflight = new Map<string, { p: Promise<Blob | string>; viaServer: boolean }>();
+  function load(
+    key: string,
+    text: string,
+    voice: VoicePref,
+    viaServer: boolean,
+  ): Promise<Blob | string> {
+    const running = inflight.get(key);
+    if (running && (running.viaServer || !viaServer)) return running.p;
+    const p: Promise<Blob | string> = (
+      running
+        ? running.p.catch(() => loadBlob(key, text, voice, true, false))
+        : loadBlob(key, text, voice, viaServer)
+    ).finally(() => {
+      if (inflight.get(key)?.p === p) inflight.delete(key);
+    });
+    inflight.set(key, { p, viaServer });
+    return p;
+  }
+
+  async function loadBlob(
+    key: string,
+    text: string,
+    voice: VoicePref,
+    viaServer: boolean,
+    tryStorage = true,
+  ): Promise<Blob | string> {
     const cache = deps.cache();
     const cached = await cache?.get(key);
     if (cached) return cached;
     if (!deps.online() || !deps.serverAllowed()) throw new Error('no server audio');
+    const pre = tryStorage ? await fetchPregenerated(text, voice) : null;
+    if (pre) {
+      void cache?.put(key, pre);
+      return pre;
+    }
+    if (!viaServer) throw new Error('not pre-generated');
     const res = await deps.request(text, voice);
     if ('audio_b64' in res) {
       const blob = base64ToBlob(res.audio_b64, res.mime);
@@ -190,7 +261,32 @@ export function createPronouncer(deps: PronunciationDeps): Pronouncer {
     reset() {
       for (const u of memory.values()) deps.revokeObjectURL(u);
       memory.clear();
+      inflight.clear();
       el = null;
+    },
+
+    async prefetch(texts, voice) {
+      if (!deps.serverAllowed() || !deps.online()) return 0;
+      let ready = 0;
+      for (const raw of texts) {
+        const text = normalizeTtsText(raw);
+        if (!text || text.length > TTS_MAX_CHARS) continue;
+        const key = ttsKeyMaterial(voice, text);
+        if (memory.has(key)) {
+          ready++;
+          continue;
+        }
+        try {
+          const blob = await load(key, text, voice, false);
+          if (typeof blob !== 'string' && !memory.has(key)) {
+            remember(key, deps.createObjectURL(blob));
+          }
+          ready++;
+        } catch {
+          // not pre-generated (or offline): the tap will ask the server
+        }
+      }
+      return ready;
     },
 
     play(rawText, voice, opts = {}) {
@@ -256,7 +352,7 @@ export function createPronouncer(deps: PronunciationDeps): Pronouncer {
         if (!done && owner) setLoadingOwner(owner);
       }, LOADING_DELAY_MS);
 
-      loadBlob(key, text, voice).then(
+      load(key, text, voice, true).then(
         (blobOrUrl) => {
           if (id !== seq) return;
           if (loadingTimer !== null) deps.clearTimeout(loadingTimer);
@@ -265,7 +361,7 @@ export function createPronouncer(deps: PronunciationDeps): Pronouncer {
           let src: string;
           if (typeof blobOrUrl === 'string') src = blobOrUrl;
           else {
-            src = deps.createObjectURL(blobOrUrl);
+            src = memory.get(key) ?? deps.createObjectURL(blobOrUrl);
             remember(key, src);
           }
           start(src);
@@ -311,6 +407,8 @@ const defaultPronouncer = createPronouncer({
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     return r.blob();
   },
+  publicUrl: (path) => (backendConfig ? ttsPublicUrl(backendConfig.url, path) : null),
+  fetchPregenerated: fetchPregeneratedAudio,
   cache: (() => {
     let c: AudioCache | null | undefined;
     return () => (c === undefined ? (c = cacheStorageAudioCache()) : c);
@@ -323,6 +421,39 @@ const defaultPronouncer = createPronouncer({
   setTimeout: (fn, ms) => window.setTimeout(fn, ms),
   clearTimeout: (id) => window.clearTimeout(id as number),
 });
+
+/**
+ * Fetch for the pre-generated files: the blob on 2xx, null on 4xx (not generated yet), an
+ * error otherwise. A short timeout: the edge function is the next step, not a long wait.
+ */
+export async function fetchPregeneratedAudio(
+  url: string,
+  doFetch: typeof fetch = fetch,
+  timeoutMs = 6000,
+): Promise<Blob | null> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const r = await doFetch(url, { signal: ctrl.signal });
+    if (r.status >= 400 && r.status < 500) return null;
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const blob = await r.blob();
+    return blob.size > 0 ? blob : null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * Prefetches the pre-generated audio of these texts (e.g. the card on screen), so the next tap
+ * plays from memory. Quietly does nothing for guests, offline, or when data saver is on.
+ */
+export function prefetchPronunciations(texts: readonly string[], voice: VoicePref): void {
+  const conn = (globalThis.navigator as { connection?: { saveData?: boolean } } | undefined)
+    ?.connection;
+  if (conn?.saveData) return;
+  void defaultPronouncer.prefetch(texts, voice).catch(() => {});
+}
 
 /**
  * Plays `text` in the chosen accent: server audio when possible, else the browser voice.

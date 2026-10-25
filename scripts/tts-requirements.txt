@@ -1,0 +1,21 @@
+# Python packages of the Kokoro-82M worker (scripts/tts-kokoro.py, decision 0042), Python 3.12.
+# Installed only in the tts-pregen workflow; the app does not use Python.
+#   kokoro-onnx (MIT)  runs Kokoro-82M (Apache-2.0) with onnxruntime (MIT) on CPU
+#   misaki (Apache-2.0) English G2P that Kokoro was trained with, US and GB dialects;
+#                       needs spaCy (MIT) + en_core_web_sm (MIT) and num2words (LGPL)
+#   lameenc (LGPL)      MP3 encoder (LAME), used as a build tool only
+# spaCy's helper packages are pinned: spaCy 3.8.16 with preshed 3.0.14 crashes on load
+# ("Python int too large to convert to C ssize_t"); this set works (tested Oct 2026).
+kokoro-onnx==0.6.1
+misaki==0.7.4
+num2words==0.5.14
+lameenc==1.9.0
+spacy==3.8.7
+thinc==8.3.6
+preshed==3.0.10
+cymem==2.0.11
+murmurhash==1.0.13
+blis==1.3.0
+# spaCy 3.8.7 imports click, which newer typer releases no longer pull in.
+click==8.5.0
+en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl#sha256=1932429db727d4bff3deed6b34cfc05df17794f4a52eeb26cf8928f7c1a0fb85

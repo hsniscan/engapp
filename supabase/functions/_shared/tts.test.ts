@@ -3,8 +3,20 @@ import { describe, expect, it, vi } from 'vitest';
 import { AiError } from './ai-provider.ts';
 import { ApiError } from './errors.ts';
 import { createGeminiTts, ttsPrompt, type SpeechSynth } from './gemini-tts.ts';
-import { runTts, ttsObjectPath, type TtsStore, type TtsTextSource } from './tts.ts';
-import { normalizeTtsText, TTS_MAX_CHARS, TTS_SAMPLE_TEXT, ttsRequest } from './tts-contract.ts';
+import { runTts, type TtsStore, type TtsTextSource } from './tts.ts';
+import {
+  normalizeTtsText,
+  TTS_CACHE_VERSION,
+  TTS_MAX_CHARS,
+  TTS_SAMPLE_TEXT,
+  ttsKeyMaterial,
+  ttsObjectPath,
+  ttsOnDemandObjectPath,
+  ttsPublicUrl,
+  ttsRequest,
+  ttsSha256Hex,
+  ttsTextCandidates,
+} from './tts-contract.ts';
 import { base64ToBytes, bytesToBase64, isWav, pcmRateFromMime, pcmToWav, toWav } from './wav.ts';
 
 // ------------------------------------------------------------------ WAV
@@ -128,12 +140,47 @@ function setup(limit = 5) {
 }
 
 describe('runTts', () => {
-  it('generates public text once, then serves it from the shared cache', async () => {
+  it('serves a pre-generated MP3 without touching the budget or the model', async () => {
+    const { store, synthesize, deps } = setup();
+    store.sources.set('reluctant', 'public');
+    const mp3 = await ttsObjectPath('en-GB', 'reluctant');
+    store.objects.set(mp3, new Uint8Array([0xff, 0xfb]));
+    const res = await runTts({ text: 'reluctant', voice: 'en-GB' }, deps);
+    expect(res).toEqual({ url: store.publicUrl(mp3), cached: true });
+    expect(synthesize).not.toHaveBeenCalled();
+    expect(store.used.size).toBe(0);
+  });
+
+  it('finds the pre-generated headword in its lower-case form', async () => {
+    const { store, synthesize, deps } = setup();
+    store.sources.set('MONDAY', 'public');
+    const mp3 = await ttsObjectPath('en-US', 'monday');
+    store.objects.set(mp3, new Uint8Array([0xff, 0xfb]));
+    await expect(runTts({ text: 'MONDAY', voice: 'en-US' }, deps)).resolves.toEqual({
+      url: store.publicUrl(mp3),
+      cached: true,
+    });
+    expect(synthesize).not.toHaveBeenCalled();
+  });
+
+  it('prefers the pre-generated MP3 over an older on-demand WAV', async () => {
+    const { store, deps } = setup();
+    store.sources.set('word', 'public');
+    store.objects.set(await ttsOnDemandObjectPath('en-US', 'word'), new Uint8Array(4));
+    const mp3 = await ttsObjectPath('en-US', 'word');
+    store.objects.set(mp3, new Uint8Array(4));
+    await expect(runTts({ text: 'word', voice: 'en-US' }, deps)).resolves.toMatchObject({
+      url: store.publicUrl(mp3),
+    });
+  });
+
+  it('generates a public miss once (on-demand WAV), then serves it from the cache', async () => {
     const { store, synthesize, deps } = setup();
     store.sources.set('reluctant', 'public');
     const first = await runTts({ text: 'reluctant', voice: 'en-US' }, deps);
-    const path = await ttsObjectPath('en-US', 'reluctant');
+    const path = await ttsOnDemandObjectPath('en-US', 'reluctant');
     expect(path).toMatch(/^en-US\/[0-9a-f]{64}\.wav$/);
+    expect(path).not.toBe((await ttsObjectPath('en-US', 'reluctant')).replace('.mp3', '.wav'));
     expect(first).toEqual({ url: store.publicUrl(path), cached: false });
     const again = await runTts({ text: ' reluctant ', voice: 'en-US' }, { ...deps, userId: 'u2' });
     expect(again).toEqual({ url: store.publicUrl(path), cached: true });
@@ -328,5 +375,43 @@ describe('createGeminiTts', () => {
     });
     await expect(tts.synthesize('word', 'en-US')).rejects.toMatchObject({ code: 'ai_failed' });
     expect(fetch).toHaveBeenCalledTimes(2);
+  });
+});
+
+// ------------------------------------------------------------------ cache keys
+
+describe('tts cache keys', () => {
+  // Pinned: the client, the edge function and scripts/tts-pregen.ts must agree byte for byte,
+  // and every file already in the bucket is named by this. Changing it orphans them all.
+  it('names the pre-generated MP3 by sha256 of version, voice and normalised text', async () => {
+    expect(TTS_CACHE_VERSION).toBe('tts-v3');
+    expect(ttsKeyMaterial('en-US', '  Run\t out\nof ')).toBe('tts-v3\nen-US\nRun out of');
+    const hash = await ttsSha256Hex('tts-v3\nen-US\nreluctant');
+    expect(await ttsObjectPath('en-US', ' reluctant ')).toBe(`en-US/${hash}.mp3`);
+    expect(await ttsSha256Hex('abc')).toBe(
+      'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
+    );
+  });
+
+  it('keeps the on-demand WAV under the earlier version (old files stay usable)', async () => {
+    const hash = await ttsSha256Hex('tts-v2\nen-GB\nreluctant');
+    expect(await ttsOnDemandObjectPath('en-GB', 'reluctant')).toBe(`en-GB/${hash}.wav`);
+  });
+
+  it('normalises to NFC, so composed and decomposed text share one file', async () => {
+    expect(await ttsObjectPath('en-US', 'cafe\u0301')).toBe(await ttsObjectPath('en-US', 'café'));
+  });
+
+  it('adds the lower-case form only for texts that could be a headword', () => {
+    expect(ttsTextCandidates('monday')).toEqual(['monday']);
+    expect(ttsTextCandidates(' Monday ')).toEqual(['Monday', 'monday']);
+    expect(ttsTextCandidates('I like it.'.padEnd(121, '!'))).toHaveLength(1);
+    expect(ttsTextCandidates('   ')).toEqual([]);
+  });
+
+  it('builds the public Storage URL', () => {
+    expect(ttsPublicUrl('https://p.supabase.co/', 'en-US/ab.mp3')).toBe(
+      'https://p.supabase.co/storage/v1/object/public/tts/en-US/ab.mp3',
+    );
   });
 });

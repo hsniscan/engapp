@@ -106,6 +106,7 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 | `CLAUDE_CHECK_MODEL`        | model that scores and checks pictures [`claude-haiku-5-5`]                                                |
 | `CLAUDE_WORDBANK_MODEL`     | model of the word bank job (step 14) [`CLAUDE_CHECK_MODEL`]                                               |
 | `WORD_BANK_NIGHTLY`         | `true`: the word bank job also runs every night (step 14) [off]                                           |
+| `TTS_PREGEN_WEEKLY`         | `true`: the pronunciation audio job also runs every Sunday for new words (step 15) [off]                  |
 
 `ALLOWED_ORIGINS` is the list of web origins allowed to call the AI functions
 (comma-separated, exact, no trailing slash). Preview deploys on other origins cannot
@@ -370,6 +371,32 @@ own text. Optional variable: `CLAUDE_WORDBANK_REVIEW_MODEL`.
 Check in **SQL Editor**: `select state, count(*) from public.word_bank_review group by 1;`
 and, for the changes, `select lemma_norm, pos, outcome from public.word_bank_review where
 previous_senses is not null limit 50;` (`previous_senses` holds the row before the change).
+
+## 15. Pronunciation audio (pre-generated)
+
+Every dictionary word and public example sentence is read aloud from an MP3 file made in
+advance (decision 0042), in both accents, by Kokoro-82M running on the GitHub runners (no paid
+API, no Gemini quota). The app fetches the file straight from the public `tts` bucket, so a
+tap plays at once; only text that has no file yet goes to the `tts` function (Gemini, as
+before). Until the job has run, everything works as before, just slower.
+
+Needs: the migration `20261027000100_tts_mp3.sql` deployed (step 5; the job also lets the
+bucket take MP3 files itself) and the service-role key exactly like the word bank job.
+
+1. **Plan.** **Actions → Pronunciation audio → Run workflow** with **plan_only** ticked. Makes
+   nothing; the log shows the number of words and sentences, what the bucket holds now
+   (`mp3MB`, `wavMB`), what is missing, and the estimated size and CPU time.
+2. **Run.** Same workflow, plan_only off, shards `8`: eight parallel jobs, about 1.5 hours for
+   ~40,000 clips, ~550 MB (free on a public repository). Each clip is uploaded as soon as it is
+   made, so a cancelled or failed job is simply run again: it skips everything already there.
+3. **Optional clean-up.** Run once more with **prune_ondemand** ticked: deletes the older
+   Gemini WAV files that an MP3 now replaces (they are no longer played).
+4. Optional: set the repository variable `TTS_PREGEN_WEEKLY` to `true` to pick up new words
+   every Sunday at 04:30 UTC (one job, at most 4,000 clips).
+
+Check: `plan_only` again shows `missing: 0`. In the app, a speaker tap on a dictionary word
+plays without the spinner; in the browser's network tab the request goes to
+`/storage/v1/object/public/tts/<accent>/<hash>.mp3`, not to `/functions/v1/tts`.
 
 ## Manual deploy without GitHub (alternative)
 
