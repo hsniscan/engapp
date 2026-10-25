@@ -14,7 +14,8 @@ import { CardState, type FsrsFields, type RatingValue } from './types';
 
 const DAY = 86_400_000;
 const MIN = 60_000;
-const T0 = Date.UTC(2026, 9, 22, 1); // start of "today" (04:00 Istanbul)
+// After RAMP_EPOCH: the ground truth answers with the learning-model ramp, like the forecast.
+const T0 = Date.UTC(2027, 0, 11, 1); // start of "today" (04:00 Istanbul)
 const NOW = T0 + 8 * 3_600_000;
 const bounds = Array.from({ length: FORECAST_DAYS + 1 }, (_, i) => T0 + i * DAY);
 

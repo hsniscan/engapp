@@ -23,9 +23,10 @@ describe('fsrs wrapper', () => {
 
   it('converts between our fields and ts-fsrs cards losslessly', () => {
     const f = { ...emptyFsrs(T), last_review: T - 1000, state: CardState.Review, stability: 3.3, reps: 4 };
-    expect(fromTsCard(toTsCard('c1', f))).toEqual(f);
-    const n = emptyFsrs(T);
-    expect(fromTsCard(toTsCard('c1', n))).toEqual(n);
+    const { ramp_step: _r, learned_at: _l, ...engineFields } = f;
+    expect(fromTsCard(toTsCard('c1', f))).toEqual(engineFields);
+    const { ramp_step: _r2, learned_at: _l2, ...empty } = emptyFsrs(T);
+    expect(fromTsCard(toTsCard('c1', emptyFsrs(T)))).toEqual(empty);
   });
 
   it('uses learning steps 1m / 10m for a new card', () => {
