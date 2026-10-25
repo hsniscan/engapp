@@ -119,11 +119,13 @@ test('vacation: no new cards, streak frozen, new cards ramp back 0 → ½ → fu
   await expect(page.getByText('Bugünlük bitti')).toBeVisible();
   await expect(streak()).toHaveText('1');
 
-  // First day back: still no new cards, streak still 1.
+  // First day back: still no new cards, streak still 1. The first word ("Kolay" on day 1) is
+  // due: a new word's Easy goes at most 3 days out (learning model, decision 0041).
   await page.clock.setSystemTime(at('2026-11-06'));
   await page.goto('/');
   await expect(page.getByTestId('load-ramp')).toContainText('Tekrar hoş geldin');
-  await expect(page.getByText('Bugünlük bitti')).toBeVisible();
+  await expect(todayCount(page, 'Yeni')).toHaveText('0');
+  await expect(todayCount(page, 'Vadesi gelen')).toHaveText('1');
   await expect(streak()).toHaveText('1');
 
   // Second day back: half the limit (5 of 10).
@@ -132,17 +134,18 @@ test('vacation: no new cards, streak frozen, new cards ramp back 0 → ½ → fu
   await expect(page.getByTestId('load-ramp')).toContainText('bugün 5 yeni kart');
   await expect(todayCount(page, 'Yeni')).toHaveText('5');
 
-  // Then the full limit: all six waiting words, plus the first word's production card unless
-  // its recognition card is due today. "Easy" gives it a fuzzed first interval of 6–10 days,
-  // so on 6 days it is a review today and its sibling waits (one card per note per day).
+  // Then the full limit: the six waiting words. The first word's recognition card (due since
+  // the 5th) is a review today; its production card stays locked until the word is recalled
+  // on another day (Pekişiyor, decision 0041).
   await page.clock.setSystemTime(at('2026-11-08'));
   await page.goto('/');
   const { cards, notes } = await dumpTables(page, ['cards', 'notes']);
   const first = (notes as Note[]).find((n) => n.term === VOCAB[0]!.term)!;
   const recognition = (cards as Card[]).find((c) => c.note_id === first.id && c.card_type === 'recognition')!;
   const recognitionDueToday = recognition.due < at('2026-11-09').getTime();
-  await expect(todayCount(page, 'Yeni')).toHaveText(recognitionDueToday ? '6' : '7');
-  await expect(todayCount(page, 'Vadesi gelen')).toHaveText(recognitionDueToday ? '1' : '0');
+  expect(recognitionDueToday).toBe(true);
+  await expect(todayCount(page, 'Yeni')).toHaveText('6');
+  await expect(todayCount(page, 'Vadesi gelen')).toHaveText('1');
   await expect(page.getByTestId('load-ramp')).toHaveCount(0);
 });
 
