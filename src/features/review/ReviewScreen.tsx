@@ -28,6 +28,7 @@ import { CardBack, CardFront } from './CardFaces';
 import { EditSheet } from './EditSheet';
 import { SessionSummary } from './SessionSummary';
 import { useReviewSession } from './useReviewSession';
+import { prefetchPronunciations } from './pronunciation';
 import { useSpeech } from './useSpeech';
 
 const ratingValue: Record<Rating, RatingValue> = {
@@ -67,6 +68,13 @@ export function ReviewScreen() {
 
   const current = state.current;
   const currentId = current?.view.card.id ?? null;
+
+  // The word on screen: fetch its pre-generated audio now, so the speaker plays at once.
+  const term = current?.view.note.term;
+  const voice = settings?.voice;
+  useEffect(() => {
+    if (term && voice) prefetchPronunciations([term], voice);
+  }, [term, voice]);
 
   // A card deleted or suspended elsewhere (another tab, sync) while on screen is skipped.
   const watched = useLiveQuery(

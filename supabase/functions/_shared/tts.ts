@@ -1,5 +1,6 @@
-// The tts pipeline (docs/decisions/0028-server-tts.md): validate, check that the text is one
-// the user can have on a card, serve shared audio from the Storage cache, and only call the
+// The tts pipeline (docs/decisions/0028-server-tts.md, 0042-pregenerated-tts.md): validate,
+// check that the text is one the user can have on a card, serve shared audio from the Storage
+// cache (the pre-generated Kokoro MP3 first, then an earlier on-demand WAV), and only call the
 // model on a miss (counted against the user's daily TTS budget). Environment-neutral: the
 // store and the synthesizer are passed in.
 
@@ -8,10 +9,11 @@ import { ApiError } from './errors.ts';
 import type { SpeechSynth } from './gemini-tts.ts';
 import {
   TTS_SAMPLE_TEXT,
-  ttsKeyMaterial,
+  ttsObjectPath,
+  ttsOnDemandObjectPath,
   ttsRequest,
+  ttsTextCandidates,
   type TtsResponse,
-  type TtsVoice,
 } from './tts-contract.ts';
 import { bytesToBase64 } from './wav.ts';
 
@@ -30,8 +32,8 @@ export interface TtsStore {
     limit: number,
   ): Promise<{ allowed: boolean; used: number; limit: number }>;
   exists(path: string): Promise<boolean>;
-  /** Stores the WAV; false when it could not be stored (the audio is then sent inline). */
-  upload(path: string, wav: Uint8Array): Promise<boolean>;
+  /** Stores the audio (type from the extension); false when it could not be stored. */
+  upload(path: string, audio: Uint8Array): Promise<boolean>;
   publicUrl(path: string): string;
 }
 
@@ -50,16 +52,6 @@ export function ttsDailyLimit(env: (k: string) => string | undefined): number {
   return Number.isInteger(n) && n > 0 ? n : DEFAULT_TTS_DAILY_LIMIT;
 }
 
-export async function sha256Hex(s: string): Promise<string> {
-  const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
-  return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-/** Object path of a voice + text in the `tts` bucket. */
-export async function ttsObjectPath(voice: TtsVoice, text: string): Promise<string> {
-  return `${voice}/${await sha256Hex(ttsKeyMaterial(voice, text))}.wav`;
-}
-
 export async function runTts(body: unknown, deps: TtsDeps): Promise<TtsResponse> {
   const parsed = ttsRequest.safeParse(body);
   if (!parsed.success) throw new ApiError('invalid_input', 'Invalid tts request');
@@ -69,10 +61,21 @@ export async function runTts(body: unknown, deps: TtsDeps): Promise<TtsResponse>
     text === TTS_SAMPLE_TEXT ? 'public' : await deps.store.textSource(deps.userId, text);
   if (!source) throw new ApiError('invalid_input', 'Text is not on any of your cards');
 
-  const path = source === 'public' ? await ttsObjectPath(voice, text) : null;
-  if (path && (await deps.store.exists(path))) {
-    deps.log?.('tts cache hit', { voice, chars: text.length });
-    return { url: deps.store.publicUrl(path), cached: true };
+  let path: string | null = null;
+  if (source === 'public') {
+    // The pre-generated MP3 (same voice for every word), then an earlier on-demand WAV.
+    for (const t of ttsTextCandidates(text)) {
+      const mp3 = await ttsObjectPath(voice, t);
+      if (await deps.store.exists(mp3)) {
+        deps.log?.('tts cache hit', { voice, chars: text.length, kind: 'pregen' });
+        return { url: deps.store.publicUrl(mp3), cached: true };
+      }
+    }
+    path = await ttsOnDemandObjectPath(voice, text);
+    if (await deps.store.exists(path)) {
+      deps.log?.('tts cache hit', { voice, chars: text.length, kind: 'ondemand' });
+      return { url: deps.store.publicUrl(path), cached: true };
+    }
   }
 
   const usage = await deps.store.consume(deps.userId, deps.dailyLimit);

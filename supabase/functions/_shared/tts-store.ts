@@ -1,10 +1,19 @@
 // Real TtsStore: SQL functions from migration 20261024000100_tts.sql (service role) and the
-// public `tts` Storage bucket.
+// public `tts` Storage bucket (pre-generated MP3 and on-demand WAV, decisions 0028 and 0042).
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { TtsStore, TtsTextSource } from './tts.ts';
+import { TTS_BUCKET, ttsPublicUrl } from './tts-contract.ts';
 
-export const TTS_BUCKET = 'tts';
+export { TTS_BUCKET };
+
+/** Audio types the bucket accepts (migration 20261027000100_tts_mp3.sql). */
+export const TTS_BUCKET_MIME_TYPES = ['audio/wav', 'audio/mpeg'];
+
+/** Content type of an object in the bucket, from its extension. */
+export function ttsContentType(path: string): string {
+  return path.endsWith('.mp3') ? 'audio/mpeg' : 'audio/wav';
+}
 
 export class SupabaseTtsStore implements TtsStore {
   private readonly db: SupabaseClient;
@@ -32,12 +41,13 @@ export class SupabaseTtsStore implements TtsStore {
     return !error && data === true;
   }
 
-  async upload(path: string, wav: Uint8Array): Promise<boolean> {
+  async upload(path: string, audio: Uint8Array): Promise<boolean> {
+    const contentType = ttsContentType(path);
     const put = () =>
       this.db.storage
         .from(TTS_BUCKET)
-        .upload(path, new Blob([wav.slice()], { type: 'audio/wav' }), {
-          contentType: 'audio/wav',
+        .upload(path, new Blob([audio.slice()], { type: contentType }), {
+          contentType,
           // Content-addressed (the path is a hash of version + voice + text): never changes.
           cacheControl: '31536000',
           upsert: true,
@@ -48,7 +58,7 @@ export class SupabaseTtsStore implements TtsStore {
       await this.db.storage.createBucket(TTS_BUCKET, {
         public: true,
         fileSizeLimit: 4 * 1024 * 1024,
-        allowedMimeTypes: ['audio/wav'],
+        allowedMimeTypes: TTS_BUCKET_MIME_TYPES,
       });
       ({ error } = await put());
     }
@@ -59,6 +69,6 @@ export class SupabaseTtsStore implements TtsStore {
   }
 
   publicUrl(path: string): string {
-    return `${this.baseUrl}/storage/v1/object/public/${TTS_BUCKET}/${path}`;
+    return ttsPublicUrl(this.baseUrl, path);
   }
 }

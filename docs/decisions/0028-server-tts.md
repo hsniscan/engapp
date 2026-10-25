@@ -1,5 +1,9 @@
 # 0028 — Server pronunciation audio (tts)
 
+> **Update 2026-10-25:** dictionary words and sentences are now pre-generated as MP3 with
+> Kokoro-82M and played straight from Storage; this function serves only the misses. See
+> [0042-pregenerated-tts.md](0042-pregenerated-tts.md).
+
 **Context.** Read-aloud used the browser's `speechSynthesis`. On some Android phones it stays
 silent even after the fix in `fix/mobile-tts` (speak with `lang` only, error toast) and even
 with a TTS engine and English voice data installed. Device speech is outside our control, so
