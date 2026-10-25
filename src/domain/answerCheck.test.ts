@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { checkAnswer, diffLetters, editDistance, normalizeAnswer, suggestRating } from './answerCheck';
+import {
+  checkAnswer,
+  diffLetters,
+  editDistance,
+  normalizeAnswer,
+  suggestRating,
+} from './answerCheck';
 import { Rating } from './types';
 
 describe('normalizeAnswer', () => {
@@ -26,8 +32,12 @@ describe('diffLetters', () => {
 
   it('rebuilds both strings from the operations', () => {
     const ops = diffLetters('recieve', 'receive');
-    const typed = ops.map((o) => (o.kind === 'same' ? o.ch : o.kind === 'missing' ? '' : o.typed)).join('');
-    const expected = ops.map((o) => (o.kind === 'same' ? o.ch : o.kind === 'extra' ? '' : o.expected)).join('');
+    const typed = ops
+      .map((o) => (o.kind === 'same' ? o.ch : o.kind === 'missing' ? '' : o.typed))
+      .join('');
+    const expected = ops
+      .map((o) => (o.kind === 'same' ? o.ch : o.kind === 'extra' ? '' : o.expected))
+      .join('');
     expect(typed).toBe('recieve');
     expect(expected).toBe('receive');
     expect(editDistance('recieve', 'receive')).toBe(2);

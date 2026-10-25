@@ -11,16 +11,22 @@ import { ratingLines, ratingValue } from './study';
 
 const look: Record<Rating, { button: string; ring: string }> = {
   again: {
-    button: 'bg-danger-soft text-danger-text border-[color-mix(in_oklab,var(--danger-text)_22%,transparent)]',
+    button:
+      'bg-danger-soft text-danger-text border-[color-mix(in_oklab,var(--danger-text)_22%,transparent)]',
     ring: 'ring-danger-text',
   },
   hard: {
-    button: 'bg-warn-soft text-warn-text border-[color-mix(in_oklab,var(--warn-text)_22%,transparent)]',
+    button:
+      'bg-warn-soft text-warn-text border-[color-mix(in_oklab,var(--warn-text)_22%,transparent)]',
     ring: 'ring-warn-text',
   },
-  good: { button: 'bg-accent text-accent-fg border-accent hover:bg-accent-hover', ring: 'ring-accent-text' },
+  good: {
+    button: 'bg-accent text-accent-fg border-accent hover:bg-accent-hover',
+    ring: 'ring-accent-text',
+  },
   easy: {
-    button: 'bg-success-soft text-success-text border-[color-mix(in_oklab,var(--success-text)_22%,transparent)]',
+    button:
+      'bg-success-soft text-success-text border-[color-mix(in_oklab,var(--success-text)_22%,transparent)]',
     ring: 'ring-success-text',
   },
 };
@@ -47,7 +53,8 @@ export const RatingBar = forwardRef<HTMLDivElement, RatingBarProps>(function Rat
         {suggestedName && (
           <span id={hintId}>
             {' · '}
-            {t('study.suggested')} <strong className="font-semibold text-fg">{t(`rating.${suggestedName}`)}</strong>
+            {t('study.suggested')}{' '}
+            <strong className="font-semibold text-fg">{t(`rating.${suggestedName}`)}</strong>
           </span>
         )}
       </p>
@@ -75,8 +82,13 @@ export const RatingBar = forwardRef<HTMLDivElement, RatingBarProps>(function Rat
                 <span className="sr-only">{t('rating.nextReview')} </span>
                 {interval}
               </span>
-              {change && <span className="text-[0.6875rem] leading-tight font-semibold">{change}</span>}
-              <span aria-hidden="true" className="absolute top-1 right-1 hidden md:pointer-fine:flex">
+              {change && (
+                <span className="text-[0.6875rem] leading-tight font-semibold">{change}</span>
+              )}
+              <span
+                aria-hidden="true"
+                className="absolute top-1 right-1 hidden md:pointer-fine:flex"
+              >
                 <Kbd size="sm">{String(i + 1)}</Kbd>
               </span>
             </button>

@@ -23,7 +23,16 @@ export interface KindProps {
 }
 
 /** Kelime çalışma: the word, then its meaning, then the four buttons. */
-export function RecognitionStudy({ view, speech, revealed, onReveal, onAnswer, ratingRef, showRef, frame }: KindProps) {
+export function RecognitionStudy({
+  view,
+  speech,
+  revealed,
+  onReveal,
+  onAnswer,
+  ratingRef,
+  showRef,
+  frame,
+}: KindProps) {
   const { t } = useTranslation();
   if (revealed) {
     return frame(

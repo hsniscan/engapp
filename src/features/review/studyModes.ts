@@ -24,10 +24,16 @@ export function countOf(q: Pick<StudyQueue, 'counts' | 'load'>): StudyModeCount 
   const due = q.counts.learning + q.counts.review;
   const total = due + q.counts.new;
   const sec = q.load?.secPerCard ?? FALLBACK_SEC_PER_CARD;
-  return { due, newCount: q.counts.new, estMinutes: total ? Math.max(1, Math.ceil((total * sec) / 60)) : 0 };
+  return {
+    due,
+    newCount: q.counts.new,
+    estMinutes: total ? Math.max(1, Math.ceil((total * sec) / 60)) : 0,
+  };
 }
 
-export async function getStudyModeCounts(now: Millis = Date.now()): Promise<Record<StudyMode, StudyModeCount>> {
+export async function getStudyModeCounts(
+  now: Millis = Date.now(),
+): Promise<Record<StudyMode, StudyModeCount>> {
   const queues = await Promise.all(
     STUDY_MODES.map((studyMode) => getStudyQueue({ studyMode, learnAheadMs: 0 }, now)),
   );

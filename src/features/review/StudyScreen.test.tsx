@@ -30,7 +30,10 @@ beforeEach(async () => {
     t,
   );
   for (const [i, term] of ['eager', 'willing', 'curious', 'happy'].entries())
-    await addNoteWithSenses({ term, senses: [{ meaning_tr: `anlam ${i}`, pos: 'adjective' }] }, t + 1000 + i);
+    await addNoteWithSenses(
+      { term, senses: [{ meaning_tr: `anlam ${i}`, pos: 'adjective' }] },
+      t + 1000 + i,
+    );
   // Only the word under test has open production and cloze cards; recognition cards wait.
   const notes = await db.notes.toArray();
   const reluctant = notes.find((n) => n.term === 'reluctant')!;

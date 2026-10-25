@@ -129,7 +129,10 @@ export function SessionSummary({
           {after ? nextDueText(t, after.next, after.now, after.timezone) : ' '}
         </p>
         {learnedToday > 0 && (
-          <p className="mt-1 text-[0.9375rem] font-medium text-success-text" data-testid="learned-today">
+          <p
+            className="mt-1 text-[0.9375rem] font-medium text-success-text"
+            data-testid="learned-today"
+          >
             {t('study.learnedToday', { count: learnedToday })}
           </p>
         )}

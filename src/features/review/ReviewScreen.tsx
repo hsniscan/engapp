@@ -57,7 +57,11 @@ export interface ReviewScreenProps {
 
 export function ReviewScreen({ studyMode, ahead = false }: ReviewScreenProps) {
   const { t } = useTranslation();
-  const { state, start, actions: session } = useReviewSession(ahead ? 'ahead' : 'normal', studyMode);
+  const {
+    state,
+    start,
+    actions: session,
+  } = useReviewSession(ahead ? 'ahead' : 'normal', studyMode);
   const settings = useLiveQuery(() => getSettings(), []);
   const speech = useSpeech(settings?.voice ?? 'en-US');
   const [editOpen, setEditOpen] = useState(false);
@@ -218,10 +222,14 @@ export function ReviewScreen({ studyMode, ahead = false }: ReviewScreenProps) {
   if (state.phase === 'done') {
     const answers = session.getAnswers();
     if (answers.length === 0)
-      return <StudyEmpty studyMode={studyMode} ahead={ahead} canUndo={state.canUndo} onUndo={doUndo} />;
+      return (
+        <StudyEmpty studyMode={studyMode} ahead={ahead} canUndo={state.canUndo} onUndo={doUndo} />
+      );
     return (
       <>
-        {afterAgain && <div className="mx-auto w-full max-w-xl px-4 pt-3 sm:px-6">{afterAgain}</div>}
+        {afterAgain && (
+          <div className="mx-auto w-full max-w-xl px-4 pt-3 sm:px-6">{afterAgain}</div>
+        )}
         <SessionSummary
           answers={answers}
           start={start}
@@ -245,7 +253,9 @@ export function ReviewScreen({ studyMode, ahead = false }: ReviewScreenProps) {
 
   const top = (
     <div className="flex flex-col gap-1 pt-2 pb-2">
-      <h1 className="sr-only">{studyMode ? t(`study.mode.${studyMode}.name`) : t('review.title')}</h1>
+      <h1 className="sr-only">
+        {studyMode ? t(`study.mode.${studyMode}.name`) : t('review.title')}
+      </h1>
       {ahead && (
         <div className="flex">
           <Badge tone="accent">{t('review.aheadBadge')}</Badge>
@@ -280,7 +290,8 @@ export function ReviewScreen({ studyMode, ahead = false }: ReviewScreenProps) {
               {
                 label: t('leech.menu'),
                 icon: 'layers',
-                onSelect: () => current && setLeech({ cardId: current.view.card.id, startWith: 'paths' }),
+                onSelect: () =>
+                  current && setLeech({ cardId: current.view.card.id, startWith: 'paths' }),
               },
               { label: t('review.suspend'), icon: 'pause', onSelect: () => void doSuspend() },
             ]}
@@ -299,7 +310,12 @@ export function ReviewScreen({ studyMode, ahead = false }: ReviewScreenProps) {
 
   let content: ReactNode;
   if (!current) {
-    content = frame(<CardPlaceholder />, <Button size="lg" fullWidth disabled>{t('review.showAnswer')}</Button>);
+    content = frame(
+      <CardPlaceholder />,
+      <Button size="lg" fullWidth disabled>
+        {t('review.showAnswer')}
+      </Button>,
+    );
   } else {
     const kp: KindProps = {
       view: current.view,
@@ -440,7 +456,9 @@ function StudyEmpty({
       : nextDueText(t, info.next, info.now, info.tz);
   return (
     <div className="mx-auto w-full max-w-xl px-4 pt-10 sm:px-6 md:pt-16">
-      <h1 className="sr-only">{studyMode ? t(`study.mode.${studyMode}.name`) : t('review.title')}</h1>
+      <h1 className="sr-only">
+        {studyMode ? t(`study.mode.${studyMode}.name`) : t('review.title')}
+      </h1>
       <EmptyState
         icon={info.hasCards ? 'check' : 'cards'}
         title={title}
@@ -473,4 +491,3 @@ function StudyEmpty({
     </div>
   );
 }
-

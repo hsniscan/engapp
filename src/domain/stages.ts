@@ -46,6 +46,7 @@ export function stageLevel(stage: WordStage): number {
 export function stageChangeLabel(from: WordStage, to: WordStage): string | null {
   if (from === to) return null;
   if (stageLevel(to) < stageLevel(from)) return '↓ yeniden öğren';
-  if (to === 'consolidating' || to === 'learned' || to === 'mastered') return `↑ ${STAGE_LABEL_TR[to]}`;
+  if (to === 'consolidating' || to === 'learned' || to === 'mastered')
+    return `↑ ${STAGE_LABEL_TR[to]}`;
   return null;
 }

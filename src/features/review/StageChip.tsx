@@ -18,7 +18,10 @@ export function StageChip({ card }: { card: Card }) {
   useEffect(() => {
     if (!open) return;
     const close = (e: Event) => {
-      if (e instanceof KeyboardEvent ? e.key === 'Escape' : !ref.current?.contains(e.target as Node)) setOpen(false);
+      if (
+        e instanceof KeyboardEvent ? e.key === 'Escape' : !ref.current?.contains(e.target as Node)
+      )
+        setOpen(false);
     };
     document.addEventListener('pointerdown', close);
     document.addEventListener('keydown', close);
@@ -47,7 +50,9 @@ export function StageChip({ card }: { card: Card }) {
               key={i}
               className={cn(
                 'h-2.5 w-[5px] rounded-[2px]',
-                i < level ? 'bg-accent-text' : 'bg-[color-mix(in_oklab,var(--accent-text)_35%,transparent)]',
+                i < level
+                  ? 'bg-accent-text'
+                  : 'bg-[color-mix(in_oklab,var(--accent-text)_35%,transparent)]',
               )}
             />
           ))}

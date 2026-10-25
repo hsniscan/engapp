@@ -56,7 +56,11 @@ export function diffLetters(typed: string, expected: string): DiffOp[] {
     if (i > 0 && j > 0) {
       const same = a[i - 1]!.toLowerCase() === b[j - 1]!.toLowerCase();
       if (d[i]![j] === d[i - 1]![j - 1]! + (same ? 0 : 1)) {
-        ops.push(same ? { kind: 'same', ch: b[j - 1]! } : { kind: 'sub', typed: a[i - 1]!, expected: b[j - 1]! });
+        ops.push(
+          same
+            ? { kind: 'same', ch: b[j - 1]! }
+            : { kind: 'sub', typed: a[i - 1]!, expected: b[j - 1]! },
+        );
         i--;
         j--;
         continue;
@@ -106,7 +110,11 @@ export function checkAnswer(typed: string, term: string): AnswerCheck {
   // "Doğrusu" shows the term as stored, unless the shorter form ("go" for "to go") matched better.
   const expected = best.form === normalizeAnswer(term) ? shown : best.form;
   const verdict: AnswerVerdict =
-    best.distance === 0 ? 'correct' : best.distance <= closeLimit(best.form) && [...t].length > 1 ? 'close' : 'wrong';
+    best.distance === 0
+      ? 'correct'
+      : best.distance <= closeLimit(best.form) && [...t].length > 1
+        ? 'close'
+        : 'wrong';
   return { verdict, distance: best.distance, expected, typed: typed.trim() };
 }
 

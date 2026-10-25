@@ -48,14 +48,31 @@ function ModeIcon({ mode }: { mode: StudyMode }) {
 
 function ClockIcon() {
   return (
-    <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+    <svg
+      aria-hidden="true"
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    >
       <circle cx="12" cy="12" r="8.5" />
       <path d="M12 7.5V12l3 2" />
     </svg>
   );
 }
 
-function ModeCard({ mode, count, main }: { mode: StudyMode; count: StudyModeCount; main: boolean }) {
+function ModeCard({
+  mode,
+  count,
+  main,
+}: {
+  mode: StudyMode;
+  count: StudyModeCount;
+  main: boolean;
+}) {
   const { t } = useTranslation();
   const n = left(count);
   const note =
@@ -121,20 +138,30 @@ export function StudyModesPage() {
 
   const total = counts ? STUDY_MODES.reduce((n, m) => n + left(counts[m]), 0) : 0;
   const minutes = counts ? STUDY_MODES.reduce((n, m) => n + counts[m].estMinutes, 0) : 0;
-  const main: StudyMode = counts ? (STUDY_MODES.find((m) => left(counts[m]) > 0) ?? 'word') : 'word';
+  const main: StudyMode = counts
+    ? (STUDY_MODES.find((m) => left(counts[m]) > 0) ?? 'word')
+    : 'word';
   const startTo = mixed ? '/study?mode=mixed' : `/study?mode=${main}`;
 
   return (
     <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] w-full max-w-xl flex-col gap-3.5 px-4 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6">
       <div className="flex flex-col gap-1 px-1">
-        <h1 className="font-serif text-[1.75rem] leading-tight font-semibold">{t('study.pickerTitle')}</h1>
+        <h1 className="font-serif text-[1.75rem] leading-tight font-semibold">
+          {t('study.pickerTitle')}
+        </h1>
         <p className="text-sm text-fg-muted" aria-live="polite">
-          {!counts ? ' ' : total > 0 ? t('study.leftToday', { count: total, min: minutes }) : t('study.allDone')}
+          {!counts
+            ? ' '
+            : total > 0
+              ? t('study.leftToday', { count: total, min: minutes })
+              : t('study.allDone')}
         </p>
       </div>
 
       {counts ? (
-        STUDY_MODES.map((m) => <ModeCard key={m} mode={m} count={counts[m]} main={m === main && !mixed} />)
+        STUDY_MODES.map((m) => (
+          <ModeCard key={m} mode={m} count={counts[m]} main={m === main && !mixed} />
+        ))
       ) : (
         <>
           <Skeleton className="h-36 w-full rounded-[20px]" />

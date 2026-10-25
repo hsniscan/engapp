@@ -177,7 +177,11 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
   /** Rebuild the queue; applied only if nothing newer happened in the meantime. */
   const rebuild = useCallback(
     async (mySeq: number) => {
-      const q = await getStudyQueue({ session: { ...counts.current }, mode, ...(studyMode ? { studyMode } : {}) });
+      const q = await getStudyQueue({
+        session: { ...counts.current },
+        mode,
+        ...(studyMode ? { studyMode } : {}),
+      });
       if (mySeq !== seq.current || !alive.current) return;
       const currentId = stateRef.current.current?.view.card.id;
       upcoming.current = q.items
@@ -206,7 +210,10 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
     alive.current = true;
     let cancelled = false;
     void (async () => {
-      const [q, streak] = await Promise.all([getStudyQueue({ mode, ...(studyMode ? { studyMode } : {}) }), getStreakSummary()]);
+      const [q, streak] = await Promise.all([
+        getStudyQueue({ mode, ...(studyMode ? { studyMode } : {}) }),
+        getStreakSummary(),
+      ]);
       if (cancelled) return;
       setStart({ todayActive: streak.todayActive, streak: streak.currentStreak });
       skipped.current.clear();

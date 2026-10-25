@@ -5,13 +5,21 @@ import { type CardView, getChoiceCandidates, logError } from '@/data';
 import type { ChoiceCandidate } from '@/domain/clozeChoices';
 import { formatNextInterval, type IntervalPreview } from '@/domain/fsrs';
 import { findSpan, isValidSpan } from '@/domain/recognition';
-import { cardStage, isRelearning, STAGE_LABEL_TR, stageChangeLabel, stageProgress, type WordStage } from '@/domain/stages';
+import {
+  cardStage,
+  isRelearning,
+  STAGE_LABEL_TR,
+  stageChangeLabel,
+  stageProgress,
+  type WordStage,
+} from '@/domain/stages';
 import { studyModeOf } from '@/domain/studyMode';
 import { type Card, type Id, Rating as R, type RatingValue, type Sense } from '@/domain/types';
 import type { Rating } from '@/ui';
 import type { SessionAnswer } from './useReviewSession';
 
-export const meaningOf = (s: Pick<Sense, 'meaning_tr' | 'meaning_tr_override'>) => s.meaning_tr_override ?? s.meaning_tr;
+export const meaningOf = (s: Pick<Sense, 'meaning_tr' | 'meaning_tr_override'>) =>
+  s.meaning_tr_override ?? s.meaning_tr;
 
 export const ratingValue: Record<Rating, RatingValue> = {
   again: R.Again,
@@ -26,7 +34,10 @@ export function stageAfterOf(p: IntervalPreview): WordStage | null {
 }
 
 /** Under a rating button: "yarın", and "↑ Öğrenildi" when the answer changes the stage. */
-export function ratingLines(view: CardView, rating: RatingValue): { interval: string; change: string | null } {
+export function ratingLines(
+  view: CardView,
+  rating: RatingValue,
+): { interval: string; change: string | null } {
   const p = view.previews[rating];
   const after = stageAfterOf(p);
   return {
@@ -36,7 +47,10 @@ export function ratingLines(view: CardView, rating: RatingValue): { interval: st
 }
 
 /** "Yeni kelime", "Öğreniyor", "Yeniden öğreniyor", "Pekişiyor · 1/3", "Öğrenildi", "Kalıcı". */
-export function stageChipLabel(card: Card, t: (k: 'study.stage.newWord' | 'study.stage.relearning') => string): string {
+export function stageChipLabel(
+  card: Card,
+  t: (k: 'study.stage.newWord' | 'study.stage.relearning') => string,
+): string {
   const stage = cardStage(card);
   if (stage === 'new') return t('study.stage.newWord');
   if (stage === 'learning' && isRelearning(card)) return t('study.stage.relearning');
@@ -75,7 +89,8 @@ export function learnedInSession(answers: readonly SessionAnswer[]): number {
   const high = (s: WordStage | null) => s === 'learned' || s === 'mastered';
   for (const a of answers) {
     if (a.view.card.card_type !== 'recognition') continue;
-    if (!high(cardStage(a.view.card)) && high(stageAfterOf(a.view.previews[a.rating]))) reached.add(a.view.note.id);
+    if (!high(cardStage(a.view.card)) && high(stageAfterOf(a.view.previews[a.rating])))
+      reached.add(a.view.note.id);
   }
   return reached.size;
 }

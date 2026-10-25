@@ -26,7 +26,9 @@ function useViewportBox(anchor: RefObject<HTMLDivElement | null>): Box {
     };
     const update = () => {
       if (!vv) {
-        setBox((b) => (b.top === anchorTop && b.height === null ? b : { top: anchorTop, height: null }));
+        setBox((b) =>
+          b.top === anchorTop && b.height === null ? b : { top: anchorTop, height: null },
+        );
         return;
       }
       const top = Math.max(anchorTop, vv.offsetTop);
@@ -71,7 +73,9 @@ export function StudyFrame({ top, children, footer, scrollLabel }: StudyFramePro
       <div
         data-testid="study-frame"
         className="fixed inset-x-0 z-10 flex flex-col bg-canvas"
-        style={box.height === null ? { top: box.top, bottom: 0 } : { top: box.top, height: box.height }}
+        style={
+          box.height === null ? { top: box.top, bottom: 0 } : { top: box.top, height: box.height }
+        }
       >
         <div className="mx-auto w-full max-w-xl shrink-0 px-4 sm:px-6">{top}</div>
         <div
@@ -81,7 +85,9 @@ export function StudyFrame({ top, children, footer, scrollLabel }: StudyFramePro
           role={scrollLabel ? 'region' : undefined}
           aria-label={scrollLabel}
         >
-          <div className="mx-auto flex min-h-full w-full max-w-xl flex-col px-4 pt-1 pb-6 sm:px-6">{children}</div>
+          <div className="mx-auto flex min-h-full w-full max-w-xl flex-col px-4 pt-1 pb-6 sm:px-6">
+            {children}
+          </div>
         </div>
         {footer && (
           <div className="shrink-0 border-t border-border bg-canvas">

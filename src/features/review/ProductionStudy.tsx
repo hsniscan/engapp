@@ -13,7 +13,15 @@ import { cn, Icon } from '@/ui';
 import { Ipa } from './CardFaces';
 import type { KindProps } from './kinds';
 import { RatingBar } from './RatingBar';
-import { BackExtras, BulbIcon, CardHeader, CardSurface, MeaningBlock, PrimarySpeak, SentencePanel } from './StudyCards';
+import {
+  BackExtras,
+  BulbIcon,
+  CardHeader,
+  CardSurface,
+  MeaningBlock,
+  PrimarySpeak,
+  SentencePanel,
+} from './StudyCards';
 import { blankSpan, useModeLabel } from './study';
 
 /** The typed-answer row pinned above the keyboard: field and "Kontrol et". */
@@ -76,7 +84,15 @@ export function AnswerInput({
 }
 
 /** The sentence with the term blanked (the board's underline), or null without a usable span. */
-export function BlankedSentence({ view, fill, className }: { view: CardView; fill?: string | null; className?: string }) {
+export function BlankedSentence({
+  view,
+  fill,
+  className,
+}: {
+  view: CardView;
+  fill?: string | null;
+  className?: string;
+}) {
   const { t } = useTranslation();
   const s = view.sentence;
   const span = blankSpan(view);
@@ -84,7 +100,10 @@ export function BlankedSentence({ view, fill, className }: { view: CardView; fil
   const answer = s.text.slice(span[0], span[1]);
   const width = `${Math.max(3, Math.min(14, [...answer].length)) * 0.62}em`;
   return (
-    <p lang="en" className={cn('font-serif text-[1.1875rem] leading-relaxed text-fg italic', className)}>
+    <p
+      lang="en"
+      className={cn('font-serif text-[1.1875rem] leading-relaxed text-fg italic', className)}
+    >
       {s.text.slice(0, span[0])}
       {fill ? (
         <span
@@ -94,7 +113,10 @@ export function BlankedSentence({ view, fill, className }: { view: CardView; fil
           {fill}
         </span>
       ) : (
-        <span className="mx-0.5 inline-block translate-y-[0.15em] border-b-2 border-accent-text align-baseline" style={{ width }}>
+        <span
+          className="mx-0.5 inline-block translate-y-[0.15em] border-b-2 border-accent-text align-baseline"
+          style={{ width }}
+        >
           <span className="sr-only">{t('study.blank')}</span>
         </span>
       )}
@@ -107,25 +129,35 @@ export function BlankedSentence({ view, fill, className }: { view: CardView; fil
 export function LetterDiff({ check }: { check: AnswerCheck }) {
   const { t } = useTranslation();
   const ops = diffLetters(check.typed, check.expected);
+  // Letters are marked only when the answer was close; a wrong word is shown whole.
+  const marked = check.verdict === 'close';
   return (
     <div className="grid grid-cols-[auto_1fr] items-baseline gap-x-4 gap-y-2">
       {check.typed && (
         <>
           <span className="text-[0.8125rem] text-fg-muted">{t('study.result.yours')}</span>
-          <span lang="en" aria-label={check.typed} className="font-serif text-[1.375rem] tracking-[0.02em] break-all text-fg">
+          <span
+            lang="en"
+            aria-label={check.typed}
+            className="font-serif text-[1.375rem] tracking-[0.02em] break-words text-fg"
+          >
             <span aria-hidden="true">
-              {ops.map((o, i) =>
-                o.kind === 'same' ? (
-                  <span key={i}>{o.ch}</span>
-                ) : o.kind === 'missing' ? null : (
-                  <span
-                    key={i}
-                    data-diff="wrong"
-                    className="rounded-[3px] bg-danger-soft px-px text-danger-text line-through decoration-2"
-                  >
-                    {o.typed}
-                  </span>
-                ),
+              {!marked ? (
+                <span className="text-danger-text line-through decoration-2">{check.typed}</span>
+              ) : (
+                ops.map((o, i) =>
+                  o.kind === 'same' ? (
+                    <span key={i}>{o.ch}</span>
+                  ) : o.kind === 'missing' ? null : (
+                    <span
+                      key={i}
+                      data-diff="wrong"
+                      className="rounded-[3px] bg-danger-soft px-px text-danger-text line-through decoration-2"
+                    >
+                      {o.typed}
+                    </span>
+                  ),
+                )
               )}
             </span>
           </span>
@@ -136,10 +168,10 @@ export function LetterDiff({ check }: { check: AnswerCheck }) {
         lang="en"
         aria-label={check.expected}
         data-testid="right-answer"
-        className="font-serif text-[1.875rem] leading-tight font-semibold tracking-[0.02em] break-all text-fg"
+        className="font-serif text-[1.875rem] leading-tight font-semibold tracking-[0.02em] break-words text-fg"
       >
         <span aria-hidden="true">
-          {check.verdict === 'skipped' || check.verdict === 'correct'
+          {!marked
             ? check.expected
             : ops.map((o, i) =>
                 o.kind === 'same' ? (
@@ -161,9 +193,21 @@ export function LetterDiff({ check }: { check: AnswerCheck }) {
 }
 
 const verdictLook = {
-  correct: { box: 'border-[color-mix(in_oklab,var(--success-text)_30%,transparent)] bg-success-soft', text: 'text-success-text', icon: 'check' },
-  close: { box: 'border-[color-mix(in_oklab,var(--warn-text)_30%,transparent)] bg-warn-soft', text: 'text-warn-text', icon: 'minus' },
-  wrong: { box: 'border-[color-mix(in_oklab,var(--danger-text)_30%,transparent)] bg-danger-soft', text: 'text-danger-text', icon: 'x' },
+  correct: {
+    box: 'border-[color-mix(in_oklab,var(--success-text)_30%,transparent)] bg-success-soft',
+    text: 'text-success-text',
+    icon: 'check',
+  },
+  close: {
+    box: 'border-[color-mix(in_oklab,var(--warn-text)_30%,transparent)] bg-warn-soft',
+    text: 'text-warn-text',
+    icon: 'minus',
+  },
+  wrong: {
+    box: 'border-[color-mix(in_oklab,var(--danger-text)_30%,transparent)] bg-danger-soft',
+    text: 'text-danger-text',
+    icon: 'x',
+  },
   skipped: { box: 'border-border bg-canvas', text: 'text-fg', icon: 'info' },
 } as const;
 
@@ -175,9 +219,22 @@ export function VerdictLine({ check }: { check: Pick<AnswerCheck, 'verdict' | 'd
       ? t('study.result.close', { count: check.distance })
       : t(`study.result.${check.verdict}`);
   return (
-    <span role="status" data-verdict={check.verdict} className={cn('flex items-center gap-2 text-sm font-semibold', look.text)}>
+    <span
+      role="status"
+      data-verdict={check.verdict}
+      className={cn('flex items-center gap-2 text-sm font-semibold', look.text)}
+    >
       {look.icon === 'minus' ? (
-        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+        <svg
+          aria-hidden="true"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        >
           <circle cx="12" cy="12" r="9" />
           <path d="M8 12h8" />
         </svg>
@@ -193,7 +250,15 @@ function verdictBox(verdict: AnswerCheck['verdict']): string {
   return verdictLook[verdict].box;
 }
 
-export function ProductionStudy({ view, speech, revealed, onReveal, onAnswer, ratingRef, frame }: KindProps) {
+export function ProductionStudy({
+  view,
+  speech,
+  revealed,
+  onReveal,
+  onAnswer,
+  ratingRef,
+  frame,
+}: KindProps) {
   const { t } = useTranslation();
   const [typed, setTyped] = useState('');
   const [hintShown, setHintShown] = useState(false);
@@ -215,16 +280,21 @@ export function ProductionStudy({ view, speech, revealed, onReveal, onAnswer, ra
           {picture ? (
             <div className="flex flex-col items-center gap-2">
               <CardPicture image={picture} showNew={false} className="size-44 sm:size-56" />
-              {sense?.pos && <p className="font-serif text-[0.9375rem] text-fg-muted italic">{posLabel(t, sense.pos)}</p>}
+              {sense?.pos && (
+                <p className="font-serif text-[0.9375rem] text-fg-muted italic">
+                  {posLabel(t, sense.pos)}
+                </p>
+              )}
             </div>
           ) : (
             <MeaningBlock view={view} />
           )}
-          {!picture && view.sentence && (
-            <BlankedSentenceBox view={view} />
-          )}
+          {!picture && view.sentence && <BlankedSentenceBox view={view} />}
           {hintShown && view.hint && (
-            <p className="font-serif text-2xl tracking-[0.18em] text-fg-muted" data-testid="first-letter">
+            <p
+              className="font-serif text-2xl tracking-[0.18em] text-fg-muted"
+              data-testid="first-letter"
+            >
               <span className="sr-only">{t('review.firstLetter')} </span>
               <span lang="en">{view.hint}</span>
             </p>
@@ -250,7 +320,13 @@ export function ProductionStudy({ view, speech, revealed, onReveal, onAnswer, ra
           </button>
         </div>
       </CardSurface>,
-      <AnswerInput value={typed} onChange={setTyped} onSubmit={() => submit(typed)} placeholder={t('study.typeAnswer')} autoFocus />,
+      <AnswerInput
+        value={typed}
+        onChange={setTyped}
+        onSubmit={() => submit(typed)}
+        placeholder={t('study.typeAnswer')}
+        autoFocus
+      />,
     );
   }
 
@@ -266,7 +342,12 @@ export function ProductionStudy({ view, speech, revealed, onReveal, onAnswer, ra
         ) : (
           <MeaningBlock view={view} size="md" />
         )}
-        <div className={cn('flex flex-col gap-3 rounded-[16px] border px-4 py-3.5', verdictBox(result.verdict))}>
+        <div
+          className={cn(
+            'flex flex-col gap-3 rounded-[16px] border px-4 py-3.5',
+            verdictBox(result.verdict),
+          )}
+        >
           <VerdictLine check={result} />
           <LetterDiff check={result} />
           <div className="flex items-center gap-2">

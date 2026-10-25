@@ -76,7 +76,12 @@ export function ClozeStudy(kp: KindProps) {
       if (picked === null || !choices) return;
       const right = choices[picked]!.correct;
       setResult({
-        check: { verdict: right ? 'correct' : 'wrong', distance: right ? 0 : 1, expected: cloze.answer, typed: choices[picked]!.term },
+        check: {
+          verdict: right ? 'correct' : 'wrong',
+          distance: right ? 0 : 1,
+          expected: cloze.answer,
+          typed: choices[picked]!.term,
+        },
         picked,
       });
     }
@@ -90,7 +95,10 @@ export function ClozeStudy(kp: KindProps) {
       <CardSurface className="min-h-full flex-1 gap-3.5" testId="study-front">
         <CardHeader view={view} label={label} />
         <div className="flex flex-1 flex-col justify-center gap-3.5">
-          <p lang="en" className="font-serif text-2xl leading-normal text-fg italic sm:text-[1.5625rem]">
+          <p
+            lang="en"
+            className="font-serif text-2xl leading-normal text-fg italic sm:text-[1.5625rem]"
+          >
             {cloze.before}
             {fill ? (
               <span className="mx-0.5 inline-block min-w-[6.5rem] border-b-2 border-dashed border-accent-text px-1 text-center font-semibold text-accent-text not-italic">
@@ -107,7 +115,10 @@ export function ClozeStudy(kp: KindProps) {
             {cloze.after}
           </p>
           {hintShown && (
-            <p className="font-serif text-xl tracking-[0.18em] text-fg-muted" data-testid="first-letter">
+            <p
+              className="font-serif text-xl tracking-[0.18em] text-fg-muted"
+              data-testid="first-letter"
+            >
               <span className="sr-only">{t('review.firstLetter')} </span>
               <span lang="en">{firstLetterHint(cloze.answer)}</span>
             </p>
@@ -141,7 +152,11 @@ export function ClozeStudy(kp: KindProps) {
           <LeechHint view={view} />
         </div>
         {!typingMode && choices && (
-          <div role="group" aria-label={t('study.cloze.choices')} className="grid grid-cols-2 gap-2">
+          <div
+            role="group"
+            aria-label={t('study.cloze.choices')}
+            className="grid grid-cols-2 gap-2"
+          >
             {choices.map((c, i) => (
               <button
                 key={c.term}
@@ -172,7 +187,13 @@ export function ClozeStudy(kp: KindProps) {
         )}
       </CardSurface>,
       typingMode ? (
-        <AnswerInput value={typed} onChange={setTyped} onSubmit={submit} placeholder={t('study.cloze.typeAnswer')} autoFocus={typing} />
+        <AnswerInput
+          value={typed}
+          onChange={setTyped}
+          onSubmit={submit}
+          placeholder={t('study.cloze.typeAnswer')}
+          autoFocus={typing}
+        />
       ) : (
         <button
           type="button"
@@ -188,7 +209,8 @@ export function ClozeStudy(kp: KindProps) {
 
   const r = result ?? { check: checkAnswer('', cloze.answer), picked: null };
   const suggested = suggestRating(r.check.verdict, hintShown);
-  const pickedWrong = r.picked !== null && choices && !choices[r.picked]!.correct ? choices[r.picked]! : null;
+  const pickedWrong =
+    r.picked !== null && choices && !choices[r.picked]!.correct ? choices[r.picked]! : null;
   const sense = view.sense;
   return frame(
     <div className="flex flex-col gap-3">
@@ -196,12 +218,17 @@ export function ClozeStudy(kp: KindProps) {
         <CardHeader view={view} label={label} />
         <VerdictLine check={r.check} />
         <div className="flex items-start gap-2">
-          <p lang="en" className="min-w-0 flex-1 font-serif text-[1.375rem] leading-snug text-fg italic">
+          <p
+            lang="en"
+            className="min-w-0 flex-1 font-serif text-[1.375rem] leading-snug text-fg italic"
+          >
             {cloze.before}
             <mark
               className={cn(
                 'rounded-[4px] px-1 font-semibold not-italic',
-                r.check.verdict === 'correct' ? 'bg-success-soft text-success-text' : 'bg-accent-soft text-fg',
+                r.check.verdict === 'correct'
+                  ? 'bg-success-soft text-success-text'
+                  : 'bg-accent-soft text-fg',
               )}
             >
               {cloze.answer}
@@ -263,7 +290,11 @@ export function ClozeStudy(kp: KindProps) {
               <span lang="en" className="font-serif text-[1.375rem] font-semibold text-fg">
                 {view.note.term}
               </span>
-              {sense?.pos && <span className="text-[0.8125rem] text-fg-muted italic">{posLabel(t, sense.pos)}</span>}
+              {sense?.pos && (
+                <span className="text-[0.8125rem] text-fg-muted italic">
+                  {posLabel(t, sense.pos)}
+                </span>
+              )}
             </span>
             {sense && <span className="text-[0.9375rem] text-fg">{meaningOf(sense)}</span>}
             <Ipa ipa={view.note.ipa} />
@@ -273,7 +304,9 @@ export function ClozeStudy(kp: KindProps) {
       </CardSurface>
       {pickedWrong?.meaning && (
         <section className="flex flex-col gap-1 rounded-[18px] border border-border bg-surface px-4 py-3">
-          <span className="text-[0.8125rem] font-semibold text-fg-muted">{t('study.cloze.pickedWord')}</span>
+          <span className="text-[0.8125rem] font-semibold text-fg-muted">
+            {t('study.cloze.pickedWord')}
+          </span>
           <p className="text-[0.9375rem]">
             <span lang="en" className="font-serif font-semibold">
               {pickedWrong.term}

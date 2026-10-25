@@ -1,11 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { type ChoiceCandidate, pickClozeChoices } from './clozeChoices';
 
-const c = (term: string, pos: string | null = 'adverb'): ChoiceCandidate => ({ term, pos, meaning: null });
+const c = (term: string, pos: string | null = 'adverb'): ChoiceCandidate => ({
+  term,
+  pos,
+  meaning: null,
+});
 
 describe('pickClozeChoices', () => {
   const answer = c('eventually');
-  const pool = [c('recently'), c('rarely'), c('immediately'), c('table', 'noun'), c('Eventually'), c('give up', 'verb')];
+  const pool = [
+    c('recently'),
+    c('rarely'),
+    c('immediately'),
+    c('table', 'noun'),
+    c('Eventually'),
+    c('give up', 'verb'),
+  ];
 
   it('gives the answer and three distinct distractors', () => {
     const choices = pickClozeChoices(answer, pool, 'card-1')!;
@@ -18,7 +29,12 @@ describe('pickClozeChoices', () => {
 
   it('prefers the same part of speech', () => {
     const choices = pickClozeChoices(answer, pool, 'card-1')!;
-    expect(choices.filter((x) => !x.correct).map((x) => x.term).sort()).toEqual(['immediately', 'rarely', 'recently']);
+    expect(
+      choices
+        .filter((x) => !x.correct)
+        .map((x) => x.term)
+        .sort(),
+    ).toEqual(['immediately', 'rarely', 'recently']);
   });
 
   it('is deterministic for a seed', () => {

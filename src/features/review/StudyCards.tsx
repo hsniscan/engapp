@@ -114,7 +114,9 @@ export function ExamplesCard({ view, speech }: StudyCardProps) {
         term={view.note.term}
         senses={view.senses}
         initialSenseId={view.sense?.id ?? null}
-        speech={speech.speakText ? { available: speech.available, speak: speech.speakText } : undefined}
+        speech={
+          speech.speakText ? { available: speech.available, speak: speech.speakText } : undefined
+        }
       />
     </section>
   );
@@ -155,7 +157,11 @@ export function BackExtras({ view, speech }: StudyCardProps) {
 
 // ------------------------------------------------------------------ Kelime çalışma
 
-export function RecognitionFront({ view, speech, onFlip }: StudyCardProps & { onFlip: () => void }) {
+export function RecognitionFront({
+  view,
+  speech,
+  onFlip,
+}: StudyCardProps & { onFlip: () => void }) {
   const { t } = useTranslation();
   const label = useModeLabel(view, true);
   const { note } = view;
@@ -194,7 +200,12 @@ export function RecognitionFront({ view, speech, onFlip }: StudyCardProps & { on
           </div>
         </div>
         {view.sentence && (
-          <Sentence sentence={view.sentence.text} span={view.sentence.span} term={note.term} className="max-w-md" />
+          <Sentence
+            sentence={view.sentence.text}
+            span={view.sentence.span}
+            term={note.term}
+            className="max-w-md"
+          />
         )}
         <LeechHint view={view} />
       </div>
@@ -263,7 +274,10 @@ export function TermRow({ view, speech, size = 'lg' }: StudyCardProps & { size?:
         </div>
       </div>
       {view.image && (
-        <CardPicture image={view.image} className="size-[76px] overflow-hidden rounded-[12px] bg-surface-sunken" />
+        <CardPicture
+          image={view.image}
+          className="size-[76px] overflow-hidden rounded-[12px] bg-surface-sunken"
+        />
       )}
     </div>
   );
@@ -276,7 +290,9 @@ export function MeaningBlock({ view, size = 'lg' }: { view: CardView; size?: 'lg
   if (!sense) return null;
   return (
     <div className="flex flex-col gap-1">
-      {sense.pos && <span className="text-[0.8125rem] text-fg-muted italic">{posLabel(t, sense.pos)}</span>}
+      {sense.pos && (
+        <span className="text-[0.8125rem] text-fg-muted italic">{posLabel(t, sense.pos)}</span>
+      )}
       <p
         className={cn(
           'font-serif leading-tight font-semibold break-words text-fg',
