@@ -1,7 +1,9 @@
 // Automatic picture check (decision 0030, docs/ai-image.md):
 //   1. token contrast: every colour the SVG uses, against the backdrop, in both themes (pure);
-//   2. pixel coverage of the rendered PNGs (the Node job renders them, see scripts/lib/render.ts);
-//   3. prompt imagecheck-v1 (Haiku, vision): does the picture show the meaning, any text, clutter?
+//      the backdrop is the flat circle (style B, image-v1) or the first wash (image-v2);
+//   2. pixel coverage of the rendered PNGs (the Node job renders them, see
+//      scripts/lib/image-render.ts), against the same backdrop;
+//   3. prompt imagecheck-v2 (Haiku, vision): does the picture show the meaning, any text, clutter?
 // A failure gives one redraw with the matching REDRAW_PROBLEMS sentence; a second failure rejects.
 
 import type Anthropic from '@anthropic-ai/sdk';
@@ -10,6 +12,8 @@ import {
   IMAGE_CHECK_PROMPT_VERSION,
   IMAGE_DARK_SWAP,
   IMAGE_PALETTE,
+  IMAGE_WC_PALETTE,
+  IMAGE_WC_WASHES,
   type ImageRequestInput,
 } from './image-contract.ts';
 import { answerText, type ModelMessage, type RedrawProblem } from './image-prompt.ts';
@@ -17,8 +21,31 @@ import { svgColors } from './svg-sanitize.ts';
 
 export { IMAGE_CHECK_PROMPT_VERSION };
 
+/** Style B (image-v1): the flat backdrop circle. */
 export const BACKDROP = IMAGE_PALETTE.soft;
 export const BACKDROP_CIRCLE = `<circle cx="128" cy="128" r="114" fill="${BACKDROP[0]}"/>`;
+
+/** Light → [light, dark] of the image-v2 backdrop washes. */
+const WASHES: ReadonlyMap<string, readonly [string, string]> = new Map(
+  IMAGE_WC_WASHES.map((role) => [IMAGE_WC_PALETTE[role][0], IMAGE_WC_PALETTE[role]] as const),
+);
+
+/**
+ * The backdrop of a sanitised SVG as [light, dark], or null when it has none. Style B: the flat
+ * BACKDROP_CIRCLE. Watercolour (image-v2): the first shape that is filled with one of the
+ * IMAGE_WC_WASHES colours and blurred by filter="url(#wash)".
+ */
+export function findBackdrop(svg: string): readonly [string, string] | null {
+  if (svg.includes(BACKDROP_CIRCLE)) return BACKDROP;
+  for (const m of svg.matchAll(/<(?:g|path|circle|ellipse|rect|polygon|polyline)\s[^>]*>/g)) {
+    const tag = m[0];
+    if (!tag.includes(' filter="url(#wash)"')) continue;
+    const fill = / fill="(#[0-9a-f]{6})"/.exec(tag)?.[1];
+    const pair = fill && WASHES.get(fill);
+    if (pair) return pair;
+  }
+  return null;
+}
 
 /** Below this ratio against the backdrop a colour is a detail colour (only on other shapes). */
 export const DETAIL_CONTRAST = 1.4;
@@ -61,8 +88,9 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
 
 /** Token contrast check of a sanitised SVG. Pure; runs in the edge function too. */
 export function contrastCheck(svg: string): ContrastReport {
-  const [bgLight] = BACKDROP;
-  const bgDark = IMAGE_DARK_SWAP.get(bgLight)!;
+  const backdrop = findBackdrop(svg);
+  // Without a backdrop the ratios are still reported, against the style-B circle's colours.
+  const [bgLight, bgDark] = backdrop ?? BACKDROP;
   // The root's fill is only the sanitizer's default for shapes without one: not a drawn colour.
   const colors = svgColors(svg.replace(/^<svg[^>]*>/, ''))
     .filter((c) => c !== bgLight)
@@ -74,7 +102,7 @@ export function contrastCheck(svg: string): ContrastReport {
   const detail = colors
     .filter((c) => c.light < DETAIL_CONTRAST || c.dark < DETAIL_CONTRAST)
     .map((c) => c.color);
-  const hasBackdrop = svg.includes(BACKDROP_CIRCLE);
+  const hasBackdrop = backdrop !== null;
   const subject = colors.some((c) => c.light >= SUBJECT_CONTRAST && c.dark >= SUBJECT_CONTRAST);
   const problem = !hasBackdrop ? 'no_backdrop' : !subject ? 'low_contrast' : null;
   return { ok: problem === null, problem, colors, detail };
@@ -89,10 +117,18 @@ export const MIN_COVERAGE = 0.04;
 
 /**
  * Fraction of the pixels inside the backdrop circle whose colour differs from the backdrop by
- * at least DETAIL_CONTRAST. `rgba` is a size×size RGBA buffer rendered with no background.
+ * at least DETAIL_CONTRAST. `rgba` is a size×size premultiplied RGBA buffer (as resvg renders
+ * it) with no background; pixels below half opacity count as not visible.
+ * `backdrop` is the picture's [light, dark] backdrop (findBackdrop). The watercolour wash is
+ * irregular and blurred, so the same r=110 circle is sampled for both styles.
  */
-export function visibleCoverage(rgba: Uint8Array, size: number, theme: 'light' | 'dark'): number {
-  const bg = theme === 'light' ? BACKDROP[0] : BACKDROP[1];
+export function visibleCoverage(
+  rgba: Uint8Array,
+  size: number,
+  theme: 'light' | 'dark',
+  backdrop: readonly [string, string] = BACKDROP,
+): number {
+  const bg = theme === 'light' ? backdrop[0] : backdrop[1];
   const bgL = luminance(bg);
   const s = size / 256;
   let inside = 0;
@@ -106,8 +142,9 @@ export function visibleCoverage(rgba: Uint8Array, size: number, theme: 'light' |
       const i = (y * size + x) * 4;
       const a = rgba[i + 3]! / 255;
       if (a < 0.5) continue;
+      // resvg's pixels are premultiplied: undo it, or a semi-transparent wash reads as darker.
       const lin = (v: number) => {
-        const c = v / 255;
+        const c = Math.min(1, v / 255 / a);
         return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
       };
       const l = 0.2126 * lin(rgba[i]!) + 0.7152 * lin(rgba[i + 1]!) + 0.0722 * lin(rgba[i + 2]!);
@@ -119,7 +156,7 @@ export function visibleCoverage(rgba: Uint8Array, size: number, theme: 'light' |
 }
 
 // ---------------------------------------------------------------------------
-// imagecheck-v1 (vision)
+// imagecheck-v2 (vision)
 // ---------------------------------------------------------------------------
 
 export const CHECK_MAX_TOKENS = 4000;
@@ -127,6 +164,8 @@ export const CHECK_MAX_TOKENS = 4000;
 export const IMAGE_CHECK_SYSTEM_PROMPT = `You review small flashcard pictures for Turkish speakers learning English words. Each picture should let a learner recall one meaning of one English word from the picture alone.
 
 You get the meaning as JSON (lemma: the English word, pos: part of speech, gloss_tr: the Turkish meaning) and the same picture twice: on the light theme, then on the dark theme.
+
+The pictures are soft watercolour with pencil outlines: wobbly edges, uneven lines and soft, blurred washes of colour are the intended style, not clutter and not a flaw.
 
 Answer with JSON only: {"depicts_sense": boolean, "has_text": boolean, "clutter": boolean, "confidence": number}.
 - depicts_sense: true if a learner who knows the meaning would name this word (or an obvious synonym) from the picture, in this meaning; false if it shows another meaning or nothing recognisable.

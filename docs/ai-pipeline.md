@@ -10,7 +10,7 @@ Prompt versions: **`extract-v5`**, **`enrich-v2`** (`_shared/prompts.ts`); the l
 prompt or a response schema bumps the version (the chunk cache is keyed by it) and is
 copied here; `src/ai/docs-sync.test.ts` fails when this file and the code differ.
 
-Pictures (v0.4: `image-v1`, `visual-v1`, `imagecheck-v1`) use Claude, not Gemini, and have
+Pictures (v0.4: `image-v2`, `visual-v1`, `imagecheck-v2`) use Claude, not Gemini, and have
 their own page: [ai-image.md](ai-image.md) (decisions 0029, 0030). The word bank job
 (`wordbank-v1`, decision 0038) also uses Claude: see "Word bank" below.
 

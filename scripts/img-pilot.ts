@@ -1,7 +1,7 @@
 /**
  * Picture pilot (v0.4 İP2, decision 0030): draws N (default 50) random concrete senses now,
  * one by one through the instant path with the renderer (image-v1 on Opus with the server-side
- * fallback, sanitizer, contrast, coverage, imagecheck-v1), and stores every picture as
+ * fallback, sanitizer, contrast, coverage, imagecheck-v2), and stores every picture as
  * 'review' for the owner to judge in the review screen. Prints each picture's cost and the
  * total; --out also writes the report as JSON. Run by .github/workflows/images.yml (job=pilot).
  *

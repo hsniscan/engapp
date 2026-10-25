@@ -77,6 +77,19 @@ concurrency without a separate lock service. Deferring the vision check keeps th
 fast and inside the edge limits while still ensuring that only the requester sees an unchecked
 picture.
 
+**Amendment (2026-10-25, watercolour `image-v2`).** The sanitizer also accepts
+`filter="url(#line)"` and `filter="url(#wash)"` on `g`, `path`, `circle`, `ellipse`, `rect`,
+`polygon` and `polyline` (no other `url(`, no `<defs>`, `<filter>` or `fe*` from the model). When a
+filter is used, it puts the fixed `IMAGE_WC_DEFS` block (`_shared/image-contract.ts`) right after
+the root tag, and takes that exact block out again before parsing, so sanitising stays
+idempotent; the 8 KB limit counts the block. The backdrop of an `image-v2` picture is its first
+shape filled with a wash colour (`IMAGE_WC_WASHES`) under `filter="url(#wash)"`; token contrast
+and pixel coverage are measured against that wash (its dark twin on the dark theme), the flat
+circle for `image-v1`. The vision prompt is `imagecheck-v2` (wobbly pencil lines and soft washes
+are the style, not clutter). A stored `image-v2` picture in `review` or `approved` rejects the
+sense's older live pictures (`checks.replaced_by`); senses with only flat pictures are queued
+again (migration `20261026001400_image_watercolour.sql`).
+
 **Consequences.** The owner sets `ANTHROPIC_API_KEY` (secret) and optionally
 `CLAUDE_MONTHLY_CREDIT_USD`, `CLAUDE_IMAGE_MODEL`, `CLAUDE_CHECK_MODEL`, `IMAGE_DAILY_LIMIT` and
 `APP_ADMIN_USER_ID` (variables); `docs/setup-backend.md` §12. Without the key every picture job
