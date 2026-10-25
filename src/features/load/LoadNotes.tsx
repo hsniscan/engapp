@@ -187,7 +187,7 @@ function LoadWarningNote({ view }: { view: WorkloadView }) {
           {to !== null ? (
             <Button onClick={apply}>{t('load.warningApply', { to })}</Button>
           ) : (
-            <Link to="/settings#yuk" className={buttonClasses({ variant: 'secondary' })}>
+            <Link to="/settings/yuk" className={buttonClasses({ variant: 'secondary' })}>
               {t('load.warningSettings')}
             </Link>
           )}

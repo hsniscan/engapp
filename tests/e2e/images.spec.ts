@@ -173,7 +173,7 @@ test.describe('Görsel onayı (admin)', () => {
   test('not an admin: no entry in Ayarlar and the page says so', async ({ page, context, backend }) => {
     backend.reviewQueue.push(...queue());
     await FakeBackend.signIn(context);
-    await page.goto('/settings#gelismis');
+    await page.goto('/settings/gelismis');
     await expect.poll(() => backend.count('is_app_admin')).toBeGreaterThan(0);
     await expect(page.getByRole('link', { name: /Görsel onayı/ })).toHaveCount(0);
     await page.goto('/admin/images');
@@ -185,7 +185,7 @@ test.describe('Görsel onayı (admin)', () => {
     backend.imageAdmin = true;
     backend.reviewQueue.push(...queue());
     await FakeBackend.signIn(context);
-    await page.goto('/settings#gelismis');
+    await page.goto('/settings/gelismis');
     await page.getByRole('link', { name: /Görsel onayı|Aç/ }).click();
     await expect(page).toHaveURL(/\/admin\/images$/);
     const card = page.getByTestId('review-card');

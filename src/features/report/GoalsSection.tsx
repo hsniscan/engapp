@@ -96,7 +96,7 @@ function validate(key: GoalKey, raw: string): number | null | 'invalid' {
   return n;
 }
 
-function GoalsDialog({ view, onClose }: { view: GoalsView; onClose: () => void }) {
+export function GoalsDialog({ view, onClose }: { view: GoalsView; onClose: () => void }) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState<Draft>(() => {
     const d = {} as Draft;

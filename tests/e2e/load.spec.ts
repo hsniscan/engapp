@@ -12,7 +12,7 @@ const DAY = 86_400_000;
 
 async function restoreFile(page: Page, file: unknown) {
   const buffer = Buffer.from(JSON.stringify(file));
-  await page.goto('/settings#veri');
+  await page.goto('/settings/veri');
   await expect(page.getByText('Henüz yedek alınmadı')).toBeVisible();
   const chooser = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: 'Geri yükle' }).click();
@@ -103,7 +103,7 @@ test('vacation: no new cards, streak frozen, new cards ramp back 0 → ½ → fu
   for (const w of VOCAB.slice(1)) await addWord(page, w);
 
   // Vacation 3–5 November.
-  await page.goto('/settings#yuk');
+  await page.goto('/settings/yuk');
   await page.getByLabel('Başlangıç', { exact: true }).fill('2026-11-03');
   await page.getByLabel('Bitiş', { exact: true }).fill('2026-11-05');
   await page.getByRole('button', { name: 'Tatili kaydet' }).click();
@@ -152,7 +152,7 @@ test('vacation: no new cards, streak frozen, new cards ramp back 0 → ½ → fu
 test('stats: 30-day forecast with the capacity line and a text summary', async ({ page }) => {
   await page.goto('/');
   await addWord(page, VOCAB[0]!);
-  await page.goto('/stats');
+  await page.goto('/progress');
   const section = page.getByRole('region', { name: 'Önümüzdeki 30 gün' });
   await expect(section.getByRole('img', { name: /beklenen tekrar sayısı/ })).toBeVisible();
   await expect(section.getByText(/günde ortalama \d+ tekrar bekleniyor/)).toBeVisible();

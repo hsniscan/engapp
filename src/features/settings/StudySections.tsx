@@ -50,81 +50,86 @@ export function StudySection() {
         ? t('settings.study.retentionHigh')
         : t('settings.study.retentionMid');
 
-  return (
-    <SettingsSection
-      id="calisma"
-      title={t('settings.sections.calisma')}
-      description={t('settings.study.description')}
-    >
-      {!settings ? (
+  if (!settings) {
+    return (
+      <SettingsSection id="calisma" title={t('settings.study.groupNew')}>
         <div className="p-5">
           <Skeleton lines={4} />
         </div>
-      ) : (
-        <>
-          <SettingsRow stack>
-            <Slider
-              label={t('settings.study.dailyNew')}
-              value={limit ?? 10}
-              min={0}
-              max={Math.max(50, limit ?? 0)}
-              step={1}
-              onValueChange={setLimit}
-              format={(v) =>
-                v === 0 ? t('settings.study.noNew') : t('settings.study.cardsPerDay', { count: v })
-              }
-            />
-            <p className="-mt-1 text-sm text-fg-muted">{t('settings.study.dailyNewHint')}</p>
-          </SettingsRow>
-          <NewOrderRow
-            value={settings.new_card_order ?? 'smart'}
-            onChange={(v) => update({ new_card_order: v })}
+      </SettingsSection>
+    );
+  }
+
+  // Three groups, as on the "Çalışma" board: new cards, recall, the day and display.
+  return (
+    <>
+      <SettingsSection id="calisma" title={t('settings.study.groupNew')}>
+        <SettingsRow stack>
+          <Slider
+            label={t('settings.study.dailyNew')}
+            value={limit ?? 10}
+            min={0}
+            max={Math.max(50, limit ?? 0)}
+            step={1}
+            onValueChange={setLimit}
+            format={(v) =>
+              v === 0 ? t('settings.study.noNew') : t('settings.study.cardsPerDay', { count: v })
+            }
           />
-          <SettingsRow stack>
-            <Slider
-              label={t('settings.study.retention')}
-              value={pct}
-              min={80}
-              max={95}
-              step={1}
-              onValueChange={(v) => setRetention(v / 100)}
-              format={(v) => `%${v}`}
-            />
-            <div className="-mt-1 flex flex-col gap-1 text-sm text-fg-muted" aria-live="polite">
-              <p>{t('settings.study.retentionExplain', { pct })}</p>
-              <p className="text-fg">{retentionNote}</p>
-            </div>
-          </SettingsRow>
-          <RetentionHelper settings={settings} />
-          <FsrsOptimizerRow />
-          <SettingsRow
+          <p className="-mt-1 text-sm text-fg-muted">{t('settings.study.dailyNewHint')}</p>
+        </SettingsRow>
+        <NewOrderRow
+          value={settings.new_card_order ?? 'smart'}
+          onChange={(v) => update({ new_card_order: v })}
+        />
+      </SettingsSection>
+      <SettingsSection id="hatirlama" title={t('settings.study.groupRecall')}>
+        <SettingsRow stack>
+          <Slider
+            label={t('settings.study.retention')}
+            value={pct}
+            min={80}
+            max={95}
+            step={1}
+            onValueChange={(v) => setRetention(v / 100)}
+            format={(v) => `%${v}`}
+          />
+          <div className="-mt-1 flex flex-col gap-1 text-sm text-fg-muted" aria-live="polite">
+            <p>{t('settings.study.retentionExplain', { pct })}</p>
+            <p className="text-fg">{retentionNote}</p>
+          </div>
+        </SettingsRow>
+        <RetentionHelper settings={settings} />
+        <FsrsOptimizerRow />
+      </SettingsSection>
+      <SettingsSection id="gun" title={t('settings.study.groupDay')}>
+        <SettingsRow
+          label={t('settings.study.dayStart')}
+          description={t('settings.study.dayStartHint')}
+        >
+          <Select
             label={t('settings.study.dayStart')}
-            description={t('settings.study.dayStartHint')}
-          >
-            <Select
-              label={t('settings.study.dayStart')}
-              hideLabel
-              className="sm:w-36"
-              value={String(settings.day_start_hour)}
-              onValueChange={(v) => void update({ day_start_hour: Number(v) })}
-              options={Array.from({ length: 24 }, (_, h) => ({
-                value: String(h),
-                label: `${pad(h)}:00`,
-              }))}
-            />
-          </SettingsRow>
-          <SettingsRow className="py-2">
-            <Switch
-              className="w-full"
-              label={t('settings.study.showEasy')}
-              description={t('settings.study.showEasyHint')}
-              checked={settings.show_easy_candidates === true}
-              onCheckedChange={(v) => void update({ show_easy_candidates: v })}
-            />
-          </SettingsRow>
-        </>
-      )}
-    </SettingsSection>
+            hideLabel
+            className="sm:w-36"
+            value={String(settings.day_start_hour)}
+            onValueChange={(v) => void update({ day_start_hour: Number(v) })}
+            options={Array.from({ length: 24 }, (_, h) => ({
+              value: String(h),
+              label: `${pad(h)}:00`,
+            }))}
+          />
+        </SettingsRow>
+        <SettingsRow className="py-2">
+          <Switch
+            className="w-full"
+            label={t('settings.study.showEasy')}
+            description={t('settings.study.showEasyHint')}
+            checked={settings.show_easy_candidates === true}
+            onCheckedChange={(v) => void update({ show_easy_candidates: v })}
+          />
+        </SettingsRow>
+      </SettingsSection>
+    </>
   );
 }
 

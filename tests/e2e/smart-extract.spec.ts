@@ -142,7 +142,7 @@ test('show_easy_candidates: "Kolay" opens by default (synced setting)', async ({
   page,
   backend,
 }) => {
-  await page.goto('/settings');
+  await page.goto('/settings/calisma');
   const toggle = page.getByRole('switch', { name: /Kolay adayları açık göster/ });
   await toggle.click();
   await expect(toggle).toBeChecked();

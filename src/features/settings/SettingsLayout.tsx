@@ -1,7 +1,6 @@
-import { useId, type ReactNode } from 'react';
+import { useContext, useId, type ReactNode } from 'react';
 import { cn } from '@/ui';
-
-import type { SectionId } from './sections';
+import { SoloSectionContext } from './soloSection';
 
 /** A titled group of rows on one surface. */
 export function SettingsSection({
@@ -10,16 +9,21 @@ export function SettingsSection({
   description,
   children,
 }: {
-  id: SectionId;
+  /** Anchor id: old deep links (/settings#veri) and in-page links land here. */
+  id: string;
   title: string;
   description?: ReactNode;
   children: ReactNode;
 }) {
   const headingId = useId();
+  const solo = useContext(SoloSectionContext);
   return (
     <section id={id} aria-labelledby={headingId} className="scroll-mt-20">
-      <div className="mb-3 flex flex-col gap-1 px-1">
-        <h2 id={headingId} className="font-serif text-xl font-semibold text-fg">
+      <div className={cn('mb-2 flex flex-col gap-1 px-1.5', solo && !description && 'mb-0')}>
+        <h2
+          id={headingId}
+          className={cn('text-[0.8125rem] font-semibold text-fg-muted', solo && 'sr-only')}
+        >
           {title}
         </h2>
         {description && <p className="text-sm text-fg-muted">{description}</p>}

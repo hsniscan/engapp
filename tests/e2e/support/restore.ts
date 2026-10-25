@@ -10,7 +10,7 @@ import { buildSeedBackup } from './seed.ts';
 export async function restoreSeed(page: Page, cards: number, opts: { timeoutMs?: number } = {}) {
   const backup = await buildSeedBackup(cards);
   const buffer = Buffer.from(JSON.stringify(backup));
-  await page.goto('/settings#veri');
+  await page.goto('/settings/veri');
   await expect(page.getByText('Henüz yedek alınmadı')).toBeVisible();
   const chooser = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: 'Geri yükle' }).click();

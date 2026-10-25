@@ -12,7 +12,7 @@ import {
 import { HomeScreen } from '@/features/home/HomeScreen';
 import { resetDb } from '@/test/db';
 import { renderRoute } from '@/test/ui';
-import { ProfilePage } from './ProfilePage';
+import { InterestsBody } from './InterestsPage';
 
 beforeEach(async () => {
   await resetDb();
@@ -58,13 +58,13 @@ describe('first-run interests question on the home screen', () => {
   });
 });
 
-describe('profile page', () => {
+describe('interests page', () => {
   it('shows weights with reasons, and turns a topic off and on', async () => {
     const s = await createSource({ kind: 'text', title: 'a' });
     await setSourceTopics(s.id, ['technology']);
     await db.settings.update('settings', { interests: ['travel'] });
     const user = userEvent.setup();
-    renderRoute(<ProfilePage />, { path: '/settings/profile' });
+    renderRoute(<InterestsBody />, { path: '/settings/ilgi-alanlari' });
 
     const weights = await screen.findByRole('region', { name: 'Profilin' });
     const bars = within(weights).getAllByRole('progressbar');
@@ -86,7 +86,7 @@ describe('profile page', () => {
 
   it('picks topics with the chips', async () => {
     const user = userEvent.setup();
-    renderRoute(<ProfilePage />, { path: '/settings/profile' });
+    renderRoute(<InterestsBody />, { path: '/settings/ilgi-alanlari' });
     expect(await screen.findByText(/Henüz bir şey yok/)).toBeInTheDocument();
     const pick = screen.getByRole('region', { name: 'İlgi alanların' });
     await user.click(within(pick).getByRole('button', { name: 'Hukuk' }));

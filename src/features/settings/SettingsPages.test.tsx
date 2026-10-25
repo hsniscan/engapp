@@ -1,5 +1,6 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { createMemoryRouter, RouterProvider } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   addNoteWithSenses,
@@ -10,8 +11,15 @@ import {
   getSettings,
 } from '@/data';
 import { resetDb } from '@/test/db';
-import { renderRoute } from '@/test/ui';
-import { SettingsPage } from './SettingsPage';
+import { installDomPolyfills, renderRoute } from '@/test/ui';
+import { TooltipProvider } from '@/ui';
+import { SettingsIndexPage } from './SettingsIndexPage';
+import { LEGACY } from './settingsPages';
+import { SettingsSectionPage } from './SettingsSectionPage';
+
+/** One settings sub-page, as the router mounts it at /settings/:section. */
+const renderSection = (section: string) =>
+  renderRoute(<SettingsSectionPage />, { path: '/settings/:section', url: `/settings/${section}` });
 
 beforeEach(async () => {
   await resetDb();
@@ -22,18 +30,22 @@ beforeEach(async () => {
 describe('settings', () => {
   it('persists study, voice and theme settings to the settings table', async () => {
     const user = userEvent.setup();
-    renderRoute(<SettingsPage />, { path: '/settings' });
+    const appearance = renderSection('gorunum');
 
     await user.click(await screen.findByRole('radio', { name: 'Koyu' }));
     await waitFor(async () => expect((await getSettings()).theme).toBe('dark'));
     expect(document.documentElement.dataset.theme).toBe('dark');
     expect(localStorage.getItem('engapp.theme')).toBe('dark'); // pre-paint cache
+    appearance.unmount();
 
-    await user.click(screen.getByRole('radio', { name: 'İngiliz' }));
+    const cards = renderSection('kartlar');
+    await user.click(await screen.findByRole('radio', { name: 'İngiliz' }));
     await waitFor(async () => expect((await getSettings()).voice).toBe('en-GB'));
+    cards.unmount();
 
+    renderSection('calisma');
     // Sliders are keyboard operable; the value is saved once, after the last change.
-    const retention = screen.getByRole('slider', { name: 'Hedef hatırlama oranı' });
+    const retention = await screen.findByRole('slider', { name: 'Hedef hatırlama oranı' });
     retention.focus();
     await user.keyboard('{ArrowRight}{ArrowRight}');
     expect(retention).toHaveAttribute('aria-valuetext', '%92');
@@ -52,7 +64,7 @@ describe('settings', () => {
 
   it('switches the new word order between smart (default) and the order added', async () => {
     const user = userEvent.setup();
-    renderRoute(<SettingsPage />, { path: '/settings' });
+    renderSection('calisma');
     const group = await screen.findByRole('group', { name: 'Yeni kelime sırası' });
     expect(within(group).getByRole('radio', { name: 'Akıllı (önerilen)' })).toBeChecked();
     await user.click(within(group).getByRole('radio', { name: 'Eklenme sırası' }));
@@ -79,7 +91,7 @@ describe('settings', () => {
     await ensureSettings();
 
     const user = userEvent.setup();
-    renderRoute(<SettingsPage />, { path: '/settings' });
+    renderSection('veri');
     const input = await screen.findByTestId('restore-input');
     const file = new File([backup], 'engapp-yedek-2026-10-01.json', { type: 'application/json' });
     fireEvent.change(input, { target: { files: [file] } });
@@ -103,7 +115,7 @@ describe('settings', () => {
     const rec = createdCards.find((c) => c.card_type === 'recognition')!;
     await answerCard({ card_id: rec.id, rating: 4, duration_ms: 2000 });
     const user = userEvent.setup();
-    renderRoute(<SettingsPage />, { path: '/settings' });
+    renderSection('veri');
     await user.click(await screen.findByRole('button', { name: 'Sıfırla' }));
     const dialog = await screen.findByRole('dialog', { name: 'Çalışma geçmişi sıfırlansın mı?' });
     expect(dialog).toHaveTextContent(
@@ -118,7 +130,7 @@ describe('settings', () => {
   });
 
   it('rejects a file that is not a valid backup without changing data', async () => {
-    renderRoute(<SettingsPage />, { path: '/settings' });
+    renderSection('veri');
     const input = await screen.findByTestId('restore-input');
     const toastSpy = vi.spyOn(await import('@/ui'), 'toast');
     const bad = new File(['{"format":"engapp-backup","schema_version":1}'], 'x.json', {
@@ -140,11 +152,103 @@ describe('settings', () => {
     ) {
       created.push(this.download);
     });
-    renderRoute(<SettingsPage />, { path: '/settings' });
+    renderSection('veri');
     expect(await screen.findByText('Henüz yedek alınmadı')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Yedek al' }));
     await waitFor(() => expect(created[0]).toMatch(/^engapp-yedek-\d{4}-\d{2}-\d{2}\.json$/));
     expect(await screen.findByText('Son yedek: bugün')).toBeInTheDocument();
     click.mockRestore();
+  });
+});
+
+describe('settings index and sub-pages', () => {
+  /** The app's two settings routes, so links and redirects between them really navigate. */
+  function renderSettings(url: string) {
+    installDomPolyfills();
+    const router = createMemoryRouter(
+      [
+        { path: '/settings', element: <SettingsIndexPage /> },
+        { path: '/settings/:section', element: <SettingsSectionPage /> },
+        { path: '*', element: <p>elsewhere</p> },
+      ],
+      { initialEntries: [url] },
+    );
+    render(
+      <TooltipProvider>
+        <RouterProvider router={router} />
+      </TooltipProvider>,
+    );
+    return router;
+  }
+
+  it('lists every sub-page with its current state, and opens one', async () => {
+    const user = userEvent.setup();
+    const router = renderSettings('/settings');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Ayarlar' })).toBeInTheDocument();
+    const learning = screen.getByRole('list', { name: 'Öğrenme' });
+    expect(
+      await within(learning).findByRole('link', { name: /Günde 10 yeni · hedef %90/ }),
+    ).toHaveTextContent('Çalışma');
+    for (const name of [
+      'Tekrar yükü ve tatil',
+      'Hatırlatmalar',
+      'Seviye',
+      'Kartlar ve içerik',
+      'Görünüm',
+      'Hesap ve senkron',
+      'Yedek ve veri',
+      'Hakkında ve yardım',
+      'Gelişmiş',
+    ]) {
+      expect(screen.getByRole('link', { name: new RegExp(name) })).toBeInTheDocument();
+    }
+    expect(screen.getByRole('link', { name: /Görünüm/ })).toHaveTextContent('Sistem teması');
+    await user.click(screen.getByRole('link', { name: /Yedek ve veri/ }));
+    expect(router.state.location.pathname).toBe('/settings/veri');
+    expect(await screen.findByRole('button', { name: 'Yedek al' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Anki dosyası/ })).toHaveAttribute(
+      'href',
+      '/import/anki',
+    );
+  });
+
+  it('searches titles, states and keywords', async () => {
+    const user = userEvent.setup();
+    renderSettings('/settings');
+    const box = await screen.findByRole('searchbox', { name: 'Ayarlarda ara' });
+    await user.type(box, 'telaffuz');
+    const results = screen.getByRole('list', { name: 'Arama sonuçları' });
+    expect(within(results).getAllByRole('link')).toHaveLength(1);
+    expect(within(results).getByRole('link', { name: /Kartlar ve içerik/ })).toBeInTheDocument();
+    await user.clear(box);
+    await user.type(box, 'zzz');
+    expect(screen.getByText('“zzz” ile ilgili bir ayar bulunamadı.')).toBeInTheDocument();
+  });
+
+  it('sends old anchors and slugs to where that group lives now', async () => {
+    const cases: [string, string, string][] = [
+      ['/settings#veri', '/settings/veri', ''],
+      ['/settings#ornekler', '/settings/kartlar', '#ornekler'],
+      ['/settings#senkron', '/settings/hesap', '#senkron'],
+      ['/settings#uygulama', '/settings/hakkinda', '#uygulama'],
+      ['/settings/profile', '/settings/ilgi-alanlari', ''],
+      ['/settings/nope', '/settings', ''],
+    ];
+    for (const [from, path, hash] of cases) {
+      const router = renderSettings(from);
+      await waitFor(() => expect(router.state.location.pathname).toBe(path));
+      expect(router.state.location.hash).toBe(hash);
+      cleanup();
+    }
+  });
+
+  it('keeps every group of the old single page on some sub-page', async () => {
+    // Each old anchor must exist as an element on the page it now points to.
+    for (const [key, { page, anchor }] of Object.entries(LEGACY)) {
+      if (key === 'profile') continue; // a page of its own, not a group
+      renderSection(page);
+      await waitFor(() => expect(document.getElementById(anchor ?? key)).not.toBeNull());
+      cleanup();
+    }
   });
 });
