@@ -391,7 +391,12 @@ export async function runCollect(
       (await deps.store.senseInputs(rows.map((r) => r.sense_id))).map((i) => [i.sense_id, i]),
     );
     const seen = new Set<string>();
-    for await (const res of await deps.batches.results(batchId)) {
+    // Read every result first: checking a picture takes seconds, and a results stream left open
+    // for half an hour is cut by the server ("terminated"). Rows done before a cut are skipped
+    // on the next run (no longer 'submitted').
+    const results: BatchResult[] = [];
+    for await (const res of await deps.batches.results(batchId)) results.push(res);
+    for (const res of results) {
       const row = bySense.get(res.custom_id);
       if (!row) continue;
       seen.add(row.sense_id);
