@@ -20,7 +20,9 @@ import { IMAGE_REFS } from './image-refs.ts';
 export { IMAGE_PROMPT_VERSION };
 
 /** Room for adaptive thinking plus an SVG of at most IMAGE_MAX_BYTES. */
-export const IMAGE_MAX_TOKENS = 16000;
+// 8000 since 2026-10-25: Sonnet drawings use ~1k output tokens; a lower cap lets the budget guard
+// reserve for 1,000+ pictures a night.
+export const IMAGE_MAX_TOKENS = 8000;
 
 /** What each palette role is for (the prompt's colour table). */
 const ROLE_USE: Record<keyof typeof IMAGE_PALETTE, string> = {

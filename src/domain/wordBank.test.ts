@@ -172,7 +172,8 @@ describe('pickLevelMix', () => {
           }
           const up = got.filter((e) => levelRank(e.cefr) === x + 1).length;
           expect(up).toBeLessThanOrEqual(Math.floor(n * 0.1));
-          // Availability per level (distinct lemmas, best entry each, not owned).
+          // Availability per level (distinct lemmas, best entry each among those at most X+1
+          // and not owned: a higher-level homograph does not hide the word at the learner's level).
           const free = new Map<string, number>();
           for (const e of [...bank].sort(
             (a, b) =>
@@ -180,7 +181,7 @@ describe('pickLevelMix', () => {
               a.lemma_norm.localeCompare(b.lemma_norm, 'en') ||
               a.pos.localeCompare(b.pos),
           ))
-            if (!free.has(e.lemma_norm) && !ownedStatus(e, owned))
+            if (!free.has(e.lemma_norm) && !ownedStatus(e, owned) && levelRank(e.cefr) <= x + 1)
               free.set(e.lemma_norm, levelRank(e.cefr));
           const avail = (pred: (r: number) => boolean) => [...free.values()].filter(pred).length;
           const ownAvail = avail((r) => r === x);

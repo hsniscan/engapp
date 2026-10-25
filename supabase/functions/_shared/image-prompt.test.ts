@@ -54,7 +54,7 @@ describe('image-v1 request (privacy, acceptance criterion 5)', () => {
     const req = buildImageRequest(INPUT, { model: 'm' });
     expect(req).toEqual({
       model: 'm',
-      max_tokens: 16000,
+      max_tokens: 8000,
       thinking: { type: 'adaptive' },
       output_config: {
         effort: 'medium',

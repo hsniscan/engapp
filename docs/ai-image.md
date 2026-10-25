@@ -130,7 +130,7 @@ order.
 
 | Prompt | Model (env) | Thinking | Effort | `max_tokens` | Cache | Fallback |
 |---|---|---|---|---|---|---|
-| `image-v1` | `CLAUDE_IMAGE_MODEL` (default `claude-sonnet-5-5`) | adaptive | medium | 16000 | system, 1 h | server-side (instant and pilot; not batches) |
+| `image-v1` | `CLAUDE_IMAGE_MODEL` (default `claude-sonnet-5-5`) | adaptive | medium | 8000 | system, 1 h | server-side (instant and pilot; not batches) |
 | `visual-v1` | `CLAUDE_CHECK_MODEL` (default `claude-haiku-5-5`) | adaptive | low | 8000 | system, 5 min | none |
 | `imagecheck-v1` | `CLAUDE_CHECK_MODEL` | adaptive | low | 4000 | system, 5 min | none |
 
