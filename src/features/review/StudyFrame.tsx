@@ -5,52 +5,39 @@
 import { type ReactNode, type RefObject, useLayoutEffect, useRef, useState } from 'react';
 import { cn } from '@/ui';
 
-interface Box {
-  top: number;
-  height: number | null;
-}
-
 /**
- * Where the fixed frame goes: from the page position it would naturally start at (under the app
- * header) to the bottom of the visual viewport. When the keyboard opens, the visual viewport
- * shrinks (and on iOS scrolls), and the frame shrinks with it.
+ * Height of the frame: from where it starts on the page (under the app header) to the bottom of
+ * the visual viewport. When the keyboard opens, the visual viewport shrinks (and on iOS
+ * scrolls), and the frame shrinks with it, so its bottom bar sits right above the keyboard.
+ * The frame stays in the normal flow (no position: fixed, which a transformed ancestor such as
+ * the page-enter animation would capture).
  */
-function useViewportBox(anchor: RefObject<HTMLDivElement | null>): Box {
-  const [box, setBox] = useState<Box>({ top: 0, height: null });
+function useViewportHeight(frame: RefObject<HTMLDivElement | null>): number | null {
+  const [height, setHeight] = useState<number | null>(null);
   useLayoutEffect(() => {
     const vv = window.visualViewport;
-    let anchorTop = 0;
-    const measure = () => {
-      const el = anchor.current;
-      if (el) anchorTop = Math.max(0, el.getBoundingClientRect().top + window.scrollY);
-    };
     const update = () => {
-      if (!vv) {
-        setBox((b) =>
-          b.top === anchorTop && b.height === null ? b : { top: anchorTop, height: null },
-        );
-        return;
-      }
-      const top = Math.max(anchorTop, vv.offsetTop);
-      const height = Math.max(0, Math.round(vv.offsetTop + vv.height - top));
-      setBox((b) => (b.top === top && b.height === height ? b : { top, height }));
+      const el = frame.current;
+      if (!el) return;
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      const bottom = window.scrollY + (vv ? vv.offsetTop + vv.height : window.innerHeight);
+      const h = Math.max(240, Math.round(bottom - top));
+      setHeight((prev) => (prev === h ? prev : h));
     };
-    const onResize = () => {
-      measure();
-      update();
-    };
-    measure();
     update();
-    window.addEventListener('resize', onResize);
+    window.addEventListener('resize', update);
+    // The page-enter animation shifts the frame for a moment: measure again when it ends.
+    document.addEventListener('animationend', update);
     vv?.addEventListener('resize', update);
     vv?.addEventListener('scroll', update);
     return () => {
-      window.removeEventListener('resize', onResize);
+      window.removeEventListener('resize', update);
+      document.removeEventListener('animationend', update);
       vv?.removeEventListener('resize', update);
       vv?.removeEventListener('scroll', update);
     };
-  }, [anchor]);
-  return box;
+  }, [frame]);
+  return height;
 }
 
 export interface StudyFrameProps {
@@ -65,17 +52,15 @@ export interface StudyFrameProps {
 }
 
 export function StudyFrame({ top, children, footer, scrollLabel }: StudyFrameProps) {
-  const anchor = useRef<HTMLDivElement>(null);
-  const box = useViewportBox(anchor);
+  const ref = useRef<HTMLDivElement>(null);
+  const height = useViewportHeight(ref);
   return (
     <>
-      <div ref={anchor} aria-hidden="true" />
       <div
+        ref={ref}
         data-testid="study-frame"
-        className="fixed inset-x-0 z-10 flex flex-col bg-canvas"
-        style={
-          box.height === null ? { top: box.top, bottom: 0 } : { top: box.top, height: box.height }
-        }
+        className="flex h-[calc(100dvh-3.5rem-env(safe-area-inset-top))] flex-col overflow-hidden bg-canvas"
+        style={height === null ? undefined : { height }}
       >
         <div className="mx-auto w-full max-w-xl shrink-0 px-4 sm:px-6">{top}</div>
         <div

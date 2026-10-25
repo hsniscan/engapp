@@ -16,10 +16,12 @@ test('first open: add 3 words, review with the keyboard (Space, 1–4, Z), strea
   await expect(page.getByRole('heading', { name: 'Bugün', level: 1 })).toBeVisible();
   await page.getByRole('link', { name: 'Tekrara başla' }).click();
   await expect(page).toHaveURL(/\/review$/);
+  await expect(page.locator('[data-card-type]')).toHaveAttribute('data-card-type', 'recognition');
 
   // First card: answer, then undo with Z and answer again.
   await expect(page.getByRole('button', { name: 'Cevabı göster' })).toBeEnabled();
-  const card = page.locator('[data-card-type]');
+  // The word on the front (the level badge beside it may load a moment later).
+  const card = page.getByTestId('study-front').locator('p[lang="en"]').first();
   const firstCard = await card.textContent();
   await page.locator('body').press('Space');
   await page.locator('body').press('1');
