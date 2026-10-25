@@ -50,7 +50,16 @@ function ProfileHeader() {
   return (
     <header className="flex items-center justify-between gap-3 pl-1">
       <div className="flex min-w-0 items-center gap-3.5">
-        <Avatar src={signedIn ? auth.user!.avatarUrl : null} name={name} size={60} />
+        {signedIn ? (
+          <Avatar src={auth.user!.avatarUrl} name={name} size={60} />
+        ) : (
+          <span
+            aria-hidden="true"
+            className="flex size-[3.75rem] shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent-text"
+          >
+            <Icon name="user" size={28} />
+          </span>
+        )}
         <div className="flex min-w-0 flex-col gap-0.5">
           <h1 className="truncate font-serif text-[1.75rem] leading-tight font-semibold text-fg">
             {name}
@@ -147,8 +156,8 @@ function LevelCard() {
           value={streak ? t('profile.home.streakValue', { count: streak.longestStreak }) : '—'}
         />
         <MiniStat
-          label={t('profile.home.learned')}
-          value={stages ? formatNumber(stages.learnedTotal) : '—'}
+          label={t('profile.home.learnedShort')}
+          value={stages ? t('profile.home.wordsValue', { count: stages.learnedTotal }) : '—'}
         />
       </dl>
       <div className="flex items-center justify-between gap-3 border-t border-border pt-3.5">
@@ -260,8 +269,7 @@ function GoalRing({ progress: p }: { progress: GoalProgress }) {
         </span>
       </span>
       <span aria-hidden="true" className="text-[0.8125rem] leading-snug text-fg-muted">
-        {label}
-        <br />/ {target}
+        {t(`profile.home.goalCaption.${p.key}`, { count: p.target })}
       </span>
     </li>
   );

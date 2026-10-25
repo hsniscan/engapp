@@ -2057,7 +2057,18 @@
       "allWords": "All my words",
       "knownWords": "Words I know",
       "sync": "Sync",
-      "settingsHint": "Study, reminders, appearance, backup"
+      "settingsHint": "Study, reminders, appearance, backup",
+      "learnedShort": "Learned",
+      "wordsValue_one": "{{count}} word",
+      "wordsValue_other": "{{count}} words",
+      "goalCaption": {
+        "week_active_days_one": "{{count}} day a week",
+        "week_active_days_other": "{{count}} days a week",
+        "week_minutes_one": "{{count}} min a week",
+        "week_minutes_other": "{{count}} min a week",
+        "month_new_terms_one": "{{count}} new word a month",
+        "month_new_terms_other": "{{count}} new words a month"
+      }
     }
   },
   "decks": {

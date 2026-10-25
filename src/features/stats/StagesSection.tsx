@@ -12,7 +12,7 @@ type Stage = (typeof STAGES)[number];
 
 const SWATCH: Record<Stage, string> = {
   learning: 'bg-border-strong',
-  consolidating: 'bg-accent/40',
+  consolidating: 'bg-accent-text/55',
   learned: 'bg-accent',
   mastered: 'bg-success',
 };

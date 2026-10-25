@@ -2057,7 +2057,18 @@
       "allWords": "Tüm kelimelerim",
       "knownWords": "Bildiğim kelimeler",
       "sync": "Senkron",
-      "settingsHint": "Çalışma, hatırlatmalar, görünüm, yedek"
+      "settingsHint": "Çalışma, hatırlatmalar, görünüm, yedek",
+      "learnedShort": "Öğrendiğin",
+      "wordsValue_one": "{{count}} kelime",
+      "wordsValue_other": "{{count}} kelime",
+      "goalCaption": {
+        "week_active_days_one": "Haftada {{count}} gün",
+        "week_active_days_other": "Haftada {{count}} gün",
+        "week_minutes_one": "Haftada {{count}} dk",
+        "week_minutes_other": "Haftada {{count}} dk",
+        "month_new_terms_one": "Ayda {{count}} yeni kelime",
+        "month_new_terms_other": "Ayda {{count}} yeni kelime"
+      }
     }
   },
   "decks": {

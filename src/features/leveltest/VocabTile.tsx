@@ -256,7 +256,7 @@ function VocabCounter({
           <h2 id="vocab-title" className="font-serif text-lg font-semibold text-fg">
             {t('level.vocabTitle')}
           </h2>
-          <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-sm font-semibold text-accent-text">
+          <span className="shrink-0 rounded-full bg-accent-soft px-2.5 py-0.5 text-sm font-semibold whitespace-nowrap text-accent-text">
             {t('level.vocabLevel', { level: o.level })}
           </span>
         </div>
