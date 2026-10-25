@@ -88,6 +88,19 @@ describe('deckWords', () => {
       'vivid|adjective',
       'rare|adjective',
     ]);
+    // Function words and auxiliaries stay out, even with a content reading.
+    const withFn = [
+      ...bank,
+      entry('in', 'A1', 7.5, 'preposition'),
+      entry('in', 'A2', 7.5, 'adverb'),
+      entry('can', 'A1', 6.4, 'verb'),
+      entry('can', 'A2', 6.4, 'noun'),
+      entry('is', 'A1', 7.6, 'verb'),
+    ];
+    expect(deckWords(withFn, { kind: 'level', level: 'A1' }).map((w) => w.lemma)).not.toContain('is');
+    expect(deckWords(withFn, { kind: 'top', size: 100 }).map((w) => w.lemma)).not.toContain('in');
+    expect(deckWords(withFn, { kind: 'top', size: 100 }).map((w) => w.lemma)).not.toContain('can');
+    expect(deckWords(withFn, { kind: 'level', level: 'A1' }).map((w) => w.lemma)).toContain('in');
     const big = Array.from({ length: 150 }, (_, i) => entry(`w${i}`, 'A2', 5 - i / 100));
     expect(deckWords(big, { kind: 'top', size: 100 })).toHaveLength(100);
     expect(deckWords(big, { kind: 'top', size: 100 })[0]!.lemma).toBe('w0');

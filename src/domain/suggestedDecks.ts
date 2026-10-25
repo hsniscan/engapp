@@ -71,10 +71,75 @@ export interface DeckWordOptions {
   falseFriends?: ReadonlySet<string>;
 }
 
-function matches(spec: SuggestedSpec, e: WordBankEntry, opts: DeckWordOptions): boolean {
+/** Parts of speech that make a word a function word ("in", "that", "all"), whatever else it is. */
+const FUNCTION_POS: ReadonlySet<string> = new Set([
+  'preposition',
+  'conjunction',
+  'pronoun',
+  'determiner',
+  'interjection',
+]);
+/** Auxiliary and modal verbs: listed as verbs, but grammar rather than vocabulary. */
+export const AUXILIARIES: ReadonlySet<string> = new Set([
+  'be',
+  'have',
+  'do',
+  'can',
+  'could',
+  'will',
+  'would',
+  'shall',
+  'should',
+  'may',
+  'might',
+  'must',
+]);
+
+/**
+ * Inflected and contracted forms the CEFR-J list carries as separate verbs ("is", "'re"): never
+ * a card of their own in a suggested deck (the base word "be" is).
+ */
+export const AUXILIARY_FORMS: ReadonlySet<string> = new Set([
+  'am',
+  'is',
+  'are',
+  'was',
+  'were',
+  'been',
+  'being',
+  'has',
+  'had',
+  'having',
+  'does',
+  'did',
+  'doing',
+  "'m",
+  "'re",
+  "'s",
+  "'ve",
+  "'d",
+  "'ll",
+]);
+
+/**
+ * Lemmas that never count as content words for the frequency decks: any word the lists also
+ * give a function-word reading (so "in" as an adverb does not top the list) and auxiliaries.
+ */
+export function functionLemmas(entries: readonly WordBankEntry[]): Set<string> {
+  const out = new Set<string>(AUXILIARIES);
+  for (const e of entries) if (FUNCTION_POS.has(e.pos)) out.add(e.lemma_norm);
+  return out;
+}
+
+function matches(
+  spec: SuggestedSpec,
+  e: WordBankEntry,
+  opts: DeckWordOptions,
+  fn: ReadonlySet<string> | null,
+): boolean {
   switch (spec.kind) {
     case 'top':
-      return isPos(e.pos);
+      return isPos(e.pos) && !fn?.has(e.lemma_norm);
     case 'level':
       return e.cefr === spec.level;
     case 'pos':
@@ -88,16 +153,18 @@ function matches(spec: SuggestedSpec, e: WordBankEntry, opts: DeckWordOptions): 
 
 /**
  * The words of a deck, most frequent first, one row per word (a lemma listed as both noun and
- * verb counts once, under its more frequent row). A 'top' deck keeps its first N.
+ * verb counts once, under its more frequent row). A 'top' deck keeps its first N content words.
  */
 export function deckWords(
   entries: readonly WordBankEntry[],
   spec: SuggestedSpec,
   opts: DeckWordOptions = {},
 ): WordBankEntry[] {
+  const fn = spec.kind === 'top' ? functionLemmas(entries) : null;
   const seen = new Set<string>();
   const out: WordBankEntry[] = [];
-  for (const e of entries.filter((x) => matches(spec, x, opts)).sort(byFrequency)) {
+  const kept = entries.filter((x) => !AUXILIARY_FORMS.has(x.lemma_norm) && matches(spec, x, opts, fn));
+  for (const e of kept.sort(byFrequency)) {
     if (seen.has(e.lemma_norm)) continue;
     seen.add(e.lemma_norm);
     out.push(e);
