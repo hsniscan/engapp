@@ -1,5 +1,13 @@
 # Picture style (v0.4, style B "düz renk")
 
+> **Superseded on 2026-10-25 by watercolour (`image-v2`).** New pictures are soft watercolour
+> washes with pencil outlines (`IMAGE_WC_PALETTE` in `supabase/functions/_shared/image-contract.ts`).
+> Each starts with a light wash (`washSand`, `washSky` or `washSage`) under `filter="url(#wash)"`
+> instead of the backdrop circle; outlined shapes sit in groups with `filter="url(#line)"`. The
+> model never writes `<defs>`: the sanitizer adds the fixed filter block. Contrast and coverage
+> are measured against the wash. Flat pictures below stay valid and are shown until their sense
+> is redrawn. Decision 0030 (amendment).
+
 The owner picked style **B** from the three samples (A line, B flat, C scene tile) on
 22 Oct 2026. This page is the human-readable style guide; the model reads the same rules in the
 `image-v1` system prompt (`supabase/functions/_shared/image-prompt.ts`, text in

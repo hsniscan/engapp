@@ -75,8 +75,9 @@ plain update.
 lexicon: senses only exist for words someone added, so tier 3 covers the lexicon's senses whose
 lemma is in the top 5,000. Pre-creating lexicon senses for the rest of the top 5,000 (an AI
 enrichment job) is out of scope; the bulk run therefore draws ~what the lexicon holds, and grows
-as users add words. Bulk submission stays behind the repository variable `IMAGE_BULK=true`
-(wave 1); documented in setup-backend.md step 12.
+as users add words. Bulk submission stayed behind the repository variable `IMAGE_BULK=true`
+in wave 1; since the watercolour switch (2026-10-25) it is on by default and `IMAGE_BULK=false`
+pauses it. Documented in setup-backend.md step 12.
 
 ## 3. Review screen close control
 

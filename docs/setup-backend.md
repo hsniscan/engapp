@@ -274,16 +274,19 @@ button answers that pictures are not available.
    screen before letting the nightly job run on its own.
 6. **Nightly.** `.github/workflows/images.yml` runs every night at 01:30 UTC: it collects the
    previous night's batch (checks, stores pictures for review) and scores new words. Extra runs every two hours until 12:45 UTC only collect, so a batch's pictures arrive soon after it finishes. It sends
-   the next batch (half price, up to 1,500 pictures) every night: the owner approved bulk drawing
-   on 2026-10-24. To pause it, set the repository variable **`IMAGE_BULK`** to `false`
+   the next batch (half price, up to 2,000 pictures) every night: bulk drawing is on by default
+   since the switch to watercolour pictures (`image-v2`, 2026-10-25), which also redraws every
+   flat `image-v1` picture. To pause it, set the repository variable **`IMAGE_BULK`** to `false`
    (**Settings → Secrets and variables → Actions → Variables**). Other jobs by hand:
    `visualize`, `submit`, `collect`.
 7. **Bulk order (İP9).** The nightly batch takes queued senses in this order: senses in your
    cards, then in other users' cards, then words within your level ±1 (your level in
    **Ayarlar → Seviye**) most frequent first, then the rest of the 5,000 most frequent words.
-   Only meanings scored 2 or 3 for "can be drawn" are queued; a user request and a redraw from
-   the review screen always come first. About 200 pictures a night (`count` / `--max`), so the
-   2,000–2,500 planned senses take 1–2 months inside the monthly cap (decision 0037).
+   Only meanings scored 1 to 3 for "can be drawn" are queued (`VISUAL_AUTO_MIN`; the model may
+   still decline); a user request and a redraw from the review screen always come first. Up to
+   2,000 pictures a night (`count` / `--max`), always inside the monthly cap (decision 0037).
+   `node scripts/img-report.ts` (job `report`) prints the counts that size the redraw: senses
+   by visualizability, requests by state, pictures by prompt version and status.
 
 Optional variables: `IMAGE_DAILY_LIMIT` (pictures per user per day, default 10),
 `CLAUDE_IMAGE_MODEL`, `CLAUDE_CHECK_MODEL` (defaults in `_shared/image-models.ts`). The picture

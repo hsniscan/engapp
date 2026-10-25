@@ -1,8 +1,16 @@
-// Read-only summary of the pictures: how many are in each status, and every review decision
-// (lemma, decision, reason). For the owner's pilot review; prints no user data.
+// Read-only summary of the pictures: how many are in each status, the counts that size the
+// watercolour redraw (senses by visualizability, requests by state, pictures by prompt version
+// and status), and every review decision (lemma, decision, reason). For the owner's review;
+// prints no user data.
 //
 //   node scripts/img-report.ts
 
+import type { SupabaseClient } from '@supabase/supabase-js';
+import {
+  IMAGE_PROMPT_VERSION,
+  IMAGE_PROMPT_VERSION_FLAT,
+  IMAGE_STATUSES,
+} from '../supabase/functions/_shared/image-contract.ts';
 import { log, serviceClient } from './lib/image-env.ts';
 
 async function main(): Promise<void> {
@@ -13,6 +21,7 @@ async function main(): Promise<void> {
   for (const r of imgs.data as { status: string }[])
     byStatus[r.status] = (byStatus[r.status] ?? 0) + 1;
   log('pictures by status', byStatus);
+  await redrawSize(db);
 
   const fb = await db
     .from('image_feedback')
@@ -40,6 +49,51 @@ async function main(): Promise<void> {
     },
   );
 }
+
+/**
+ * Counts that size the watercolour redraw: senses by visualizability, requests by state,
+ * pictures by prompt version and status. Exact head counts (no rows are fetched), so they are
+ * not capped by the API's row limit.
+ */
+async function redrawSize(db: SupabaseClient): Promise<void> {
+  const count = async (
+    table: string,
+    filter: (q: CountQuery) => CountQuery = (q) => q,
+  ): Promise<number> => {
+    const r = await filter(db.from(table).select('*', { count: 'exact', head: true }));
+    if (r.error) throw new Error(`${table}: ${r.error.message}`);
+    return r.count ?? 0;
+  };
+
+  const byScore: Record<string, number> = {
+    null: await count('lexicon_senses', (q) => q.is('visualizability', null)),
+  };
+  for (const n of [0, 1, 2, 3])
+    byScore[n] = await count('lexicon_senses', (q) => q.eq('visualizability', n));
+  log('senses by visualizability', byScore);
+
+  const byState: Record<string, number> = {};
+  for (const s of ['queued', 'submitted', 'done', 'skipped'])
+    byState[s] = await count('image_requests', (q) => q.eq('state', s));
+  log('requests by state', byState);
+
+  const byVersion: Record<string, Record<string, number>> = {};
+  for (const v of [IMAGE_PROMPT_VERSION_FLAT, IMAGE_PROMPT_VERSION, 'other']) byVersion[v] = {};
+  for (const s of IMAGE_STATUSES) {
+    const all = await count('lexicon_images', (q) => q.eq('status', s));
+    let known = 0;
+    for (const v of [IMAGE_PROMPT_VERSION_FLAT, IMAGE_PROMPT_VERSION]) {
+      const n = await count('lexicon_images', (q) => q.eq('status', s).eq('prompt_version', v));
+      byVersion[v]![s] = n;
+      known += n;
+    }
+    byVersion.other![s] = all - known;
+  }
+  log('pictures by prompt version and status', byVersion);
+}
+
+// The filter builder of a head count (only the filters used above).
+type CountQuery = ReturnType<ReturnType<SupabaseClient['from']>['select']>;
 
 async function report(
   rows: { decision: string; reason: string | null; sense_id: string }[],

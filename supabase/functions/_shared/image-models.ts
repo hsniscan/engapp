@@ -16,7 +16,7 @@ export const DEFAULT_WORDBANK_REVIEW_MODEL = 'claude-sonnet-5-5';
 export interface ImageModels {
   /** Draws the pictures (image-v1). */
   image: string;
-  /** Scores visualizability (visual-v1) and checks rendered pictures (imagecheck-v1). */
+  /** Scores visualizability (visual-v1) and checks rendered pictures (imagecheck-v2). */
   check: string;
 }
 

@@ -1,7 +1,9 @@
-# Pictures (`image-v1`, `visual-v1`, `imagecheck-v1`)
+# Pictures (`image-v2`, `visual-v1`, `imagecheck-v2`)
 
-Small style-B pictures on the cards of concrete meanings (v0.4 İP1 + İP2; decisions 0029 and
-0030; style: [image-style.md](image-style.md)). Claude draws each picture as SVG; the server
+Small watercolour-and-pencil pictures on the cards of concrete meanings (v0.4 İP1 + İP2;
+decisions 0029 and 0030; the owner switched from style B, [image-style.md](image-style.md), to
+watercolour on 2026-10-25: `image-v2`; flat `image-v1` pictures are replaced as the new ones are
+stored). Claude draws each picture as SVG; the server
 sanitizes and checks it, and the owner approves it in the review screen before every user sees
 it. Pictures belong to a lexicon sense, so one picture serves every user who has that meaning.
 
@@ -10,9 +12,9 @@ Code (all under `supabase/functions/_shared/` unless noted):
 | File | What |
 |---|---|
 | `image-contract.ts` | shared contract with the client (palette, row shape, `ai-image` request/response, `IMAGE_RPC`) |
-| `image-prompt.ts` | `image-v1`: system prompt, schema, `buildImageRequest`, `parseImageResponse`, redraw sentences |
+| `image-prompt.ts` | `image-v2`: system prompt, schema, `buildImageRequest`, `parseImageResponse`, redraw sentences |
 | `visual-prompt.ts` | `visual-v1`: visualizability score and drawing hint |
-| `image-check.ts` | contrast check, pixel coverage, `imagecheck-v1` (vision) |
+| `image-check.ts` | contrast check, pixel coverage, `imagecheck-v2` (vision) |
 | `svg-sanitize.ts` | allowlist sanitizer (also used by the client: `src/domain/svgSanitize.ts`) |
 | `image-models.ts` | model ids from the environment, the one price map, cost and reservation math |
 | `image-pipeline.ts` | `evaluateDrawing` (every check of one answer), `drawSense` (synchronous drawing) |
@@ -31,9 +33,9 @@ visual-v1 (nightly, Haiku) ──► lexicon_senses.visualizability / visual_hin
 image_requests (queue) ◄── image_request(sense) RPC from the app ("Resim iste")
         │                ◄── image_review_decide(..., 'redraw')
         ▼
-submit (nightly): Message Batch of image-v1 requests (half price)
+submit (nightly): Message Batch of image-v2 requests (half price)
         ▼
-collect (next night): sanitize → contrast → render light/dark → coverage → imagecheck-v1
+collect (next night): sanitize → contrast → render light/dark → coverage → imagecheck-v2
         │ pass                         │ fail (first time)        │ fail again
         ▼                              ▼                          ▼
 lexicon_images 'review'        stored 'rejected',          stored 'rejected', done
@@ -59,7 +61,7 @@ review screen.
    daily picture.
 3. `image_consume`: at most `IMAGE_DAILY_LIMIT` (default 10) per user per UTC day, else
    `daily_limit`.
-4. `drawSense`: `image-v1` on `CLAUDE_IMAGE_MODEL` with the server-side refusal fallback,
+4. `drawSense`: `image-v2` on `CLAUDE_IMAGE_MODEL` with the server-side refusal fallback,
    sanitize, contrast; one redraw after a failed check. The model declining or a refusal (after
    the fallback) → `not_visual`; two failures → `failed`.
 5. Success: `{"ok": true, "image": LexiconImageRow}` with status `review`.
@@ -87,12 +89,16 @@ In this order; the first failure decides the redraw sentence:
 1. **Sanitizer** (`svg-sanitize.ts`, plan A.4): allowlisted elements and attributes only,
    palette colours only, `viewBox="0 0 256 256"`, no entities, `url(`, scripts, styles, links,
    text or foreign namespaces; at most 8 KB, 600 elements, depth 12. Refused → `invalid_svg`.
-2. **Contrast** (`contrastCheck`): the backdrop circle must be there; a subject colour must reach
+   The one exception to `url(`: `filter="url(#line)"` / `filter="url(#wash)"` on shapes and
+   groups; the sanitizer then adds the fixed `IMAGE_WC_DEFS` filter block (the model never writes
+   `<defs>`), and removes it again before re-parsing, so sanitizing stays idempotent.
+2. **Contrast** (`contrastCheck`): the backdrop must be there (the flat circle, or for `image-v2`
+   the first wash shape under `filter="url(#wash)"`); a subject colour must reach
    2:1 against the backdrop in both themes; colours under 1.4:1 (white, yellow, paper …) are
    allowed only on top of another shape. → `low_contrast`.
 3. **Coverage** (Node only): rendered on the theme's backdrop, at least 4 % of the circle must
    differ visibly from it in both themes. → `low_contrast`.
-4. **`imagecheck-v1`** (Node only, Haiku vision on both PNGs): text → `has_text`; wrong meaning
+4. **`imagecheck-v2`** (Node only, Haiku vision on both PNGs): text → `has_text`; wrong meaning
    or confidence < 0.6 → `wrong_meaning`; too busy → `clutter`; no verdict → `other`.
 
 ## Nightly jobs
@@ -130,22 +136,22 @@ order.
 
 | Prompt | Model (env) | Thinking | Effort | `max_tokens` | Cache | Fallback |
 |---|---|---|---|---|---|---|
-| `image-v1` | `CLAUDE_IMAGE_MODEL` (default `claude-sonnet-5-5`) | adaptive | medium | 8000 | system, 1 h | server-side (instant and pilot; not batches) |
+| `image-v2` | `CLAUDE_IMAGE_MODEL` (default `claude-sonnet-5-5`) | adaptive | medium | 8000 | system, 1 h | server-side (instant and pilot; not batches) |
 | `visual-v1` | `CLAUDE_CHECK_MODEL` (default `claude-haiku-5-5`) | adaptive | low | 8000 | system, 5 min | none |
-| `imagecheck-v1` | `CLAUDE_CHECK_MODEL` | adaptive | low | 4000 | system, 5 min | none |
+| `imagecheck-v2` | `CLAUDE_CHECK_MODEL` | adaptive | low | 4000 | system, 5 min | none |
 
 All three use structured output (`output_config.format`, JSON schema), no temperature and no
-prefill. The model may decline: `image-v1` answers `drawable: false` when nothing sensible can be
+prefill. The model may decline: `image-v2` answers `drawable: false` when nothing sensible can be
 drawn, and a refusal (`stop_reason: "refusal"`) is treated the same (`not_visual`). Model ids are
 read only from the environment (`imageModels`); no other file names a model.
 
-**Privacy.** The user turn of `image-v1` is exactly
+**Privacy.** The user turn of `image-v2` is exactly
 `{"lemma", "pos", "gloss_tr", "visual_hint"}` (plus `previous_problem`, one of the fixed
 sentences below, on a redraw); `visual-v1` gets numbered `{n, lemma, pos, gloss_tr}`;
-`imagecheck-v1` gets `{lemma, pos, gloss_tr}` and the two PNGs. No ids, user data, card text or
+`imagecheck-v2` gets `{lemma, pos, gloss_tr}` and the two PNGs. No ids, user data, card text or
 example sentences reach the model. A snapshot test pins this.
 
-## `image-v1`
+## `image-v2`
 
 ### User turn
 
@@ -159,7 +165,7 @@ On a redraw, `previous_problem` is added with one of these sentences:
 |---|---|
 | `wrong_meaning` | The previous drawing did not show this meaning clearly; a learner guessed another word. |
 | `unclear` | The previous drawing was hard to read at a small size; use fewer, larger shapes. |
-| `ugly` | The previous drawing did not match the style; follow the style rules and the parts library closely. |
+| `ugly` | The previous drawing did not match the style; follow the style rules and the examples closely. |
 | `has_text` | The previous drawing contained text or letter-like marks; use no text at all. |
 | `clutter` | The previous drawing was too busy; keep one large subject and at most two cues. |
 | `low_contrast` | The previous drawing used colours that vanish on the backdrop; put light colours only on top of other shapes. |
@@ -169,113 +175,61 @@ On a redraw, `previous_problem` is added with one of these sentences:
 ### System prompt
 
 ```text
-You draw small flashcard pictures for Turkish speakers learning English words. Each picture shows one meaning of one English word so that a learner who sees only the picture can recall the word.
+You draw small flashcard pictures for Turkish speakers learning English words. Each picture shows one meaning of one English word so that a learner who sees only the picture can recall the word. The learners are adults: the pictures are warm and friendly but never childish.
 
 You receive one meaning as JSON: lemma (the English word), pos (part of speech), gloss_tr (the Turkish meaning; draw exactly this meaning, not another sense of the word) and visual_hint (an optional English idea of what to draw, or null). A redraw also has previous_problem: what was wrong with the last attempt; avoid it.
 
-## Style B: flat colour
+## Style: watercolour and pencil
 
-- Flat filled shapes in the palette below. No outlines around shapes, no gradients, no shadows, no texture, no 3D.
-- Lines appear only as shapes of their own (limbs, stems, handles, waves) with round caps and joins.
-- Every picture starts with the soft backdrop circle (cx 128, cy 128, r 114). Keep everything inside it; a ground or a slope may be cut to the circle's edge with an arc.
-- One clear subject, large and centred, filling about two thirds of the circle. At most one or two supporting cues (raindrops for an umbrella, water under a bridge).
-- No text of any kind: no letters, digits, words, labels, signs with writing, speech bubbles with words, or symbols that stand for letters.
-- People are simple figures: a skin-coloured circle head, limbs as thick blue strokes (stroke-width 12), far-side limbs in dark blue, no facial features unless the meaning is a feeling. No hair styles, no clothing details, no skin tones other than the skin colour.
-- Feelings are a big round face; actions are a figure in mid-action; relations (between, under, behind) are simple blocks or balls with one faint arrow; abstract-but-drawable meanings use the most common everyday scene.
+Soft hand-drawn illustration, like a light watercolour sketch in a good picture book.
+- Start with one backdrop wash: a large irregular blob (not a circle, not a rectangle) behind the subject, filled with one of the wash colours (#f1dfc0, #d6e6ec, #e1e9d2), opacity 0.7–0.85, with filter="url(#wash)". It softly covers roughly the middle 70–85 % of the canvas.
+- Then the drawing: shapes inside one or a few <g filter="url(#line)" stroke="#4a4440" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"> groups, so every shape gets a thin, slightly wobbly pencil outline. Fills are flat palette colours, often a little transparent (opacity 0.8–0.95), like a watercolour wash inside the lines.
+- Shading: a few extra shapes in a darker colour of the same family at low opacity (0.15–0.3), without outlines (stroke="none" or outside the pencil group), on the shade side. Highlights: white at low opacity. No gradients.
+- Thick limbs and poles are two strokes on top of each other: a wider pencil stroke and a narrower coloured stroke, so they read as outlined tubes.
+- One clear subject, large and centred, filling about two thirds of the canvas. Keep every shape at least 16 units inside the canvas edge (the pencil wobble needs room). A tiny scene with a person or context is welcome when it makes the meaning clearer (a child holding a parent's hand for "child"), but at most one or two supporting cues.
+- People: simple and friendly, round heads in skin colour with dot eyes, a few strokes of hair, simple clothes in calm colours; no detailed faces unless the meaning is a feeling. Adults look like adults.
+- Feelings are a clear face or posture; actions are a figure in mid-action; relations (between, under, behind) are simple objects with one faint arrow; abstract-but-drawable meanings use the most common everyday scene.
+- No text of any kind: no letters, digits, words, labels, signs with writing, speech bubbles with words, or symbols that stand for letters. That includes sound effects: no "Z" for sleep, no "!" or "?"; show sleep or surprise with the face and posture.
 - Draw nothing frightening, violent, sexual, religious or political; for such words show a calm, neutral cue or decline.
 
 ## Colours
 
 Use only these hex values (light theme; the app swaps each for its dark-theme twin). Each role has a purpose:
-- #2b2824 ink: darkest detail: eyes, small marks on light shapes
-- #5a5249 inkFlat: dark grey parts: handles, poles, tools, wheels
-- #b8ae9f inkFaint: faint helpers: arrows, ground lines, steam, motion strokes
-- #3a1a08 inkOnRed: features drawn on top of red or orange shapes
-- #fffdf8 paper: off-white inner parts on top of a coloured shape (pages, plates)
-- #e6edf5 soft: the backdrop circle only
-- #ffffff white: snow, highlights (with opacity), teeth; only on top of another shape
-- #d55e00 red: red things, danger, anger, heat, roofs
-- #e69f00 orange: oranges, fire, warmth, bags, balls, the sun
-- #f0e442 yellow: lemons, light, stars; only on top of a darker shape
-- #009e73 green: leaves, plants, grass, "go"
-- #56b4e9 sky: water drops, ice, sky, glass
-- #2a6fb0 blue: main colour of people's clothes, water, cold, calm objects
-- #1d5490 blueDark: shade side of blue things, far-side limbs
-- #cc79a7 purple: flowers, fabric, magic, special objects
-- #6b4a2b stem: wood, trunks, stems, brown hair, bread crust
-- #cdbfa8 stone: stone, sand, walls, paper bags, light ground
-- #a8977c stoneDark: shade side of stone, railings, metal
-- #e9b98c skin: skin of hands and heads
+- #4a4440 pencil: every outline (the stroke of the pencil group), eyes, small dark marks
+- #8f857a pencilSoft: faint helpers: arrows, ground lines, motion and steam strokes, distant outlines
+- #f1dfc0 washSand: backdrop wash for indoor, warm or neutral scenes and single objects
+- #d6e6ec washSky: backdrop wash for sky, weather, water, cold and outdoor air
+- #e1e9d2 washSage: backdrop wash for nature, plants, gardens and fields
+- #fbf6ec paper: off-white inner parts on top of a coloured shape (pages, plates, screens)
+- #fefefe white: clouds, snow, highlights (with opacity); only on top of another shape
+- #ecc9a6 skin: skin of faces and hands
+- #d9a77f skinShade: shade side of skin, ears, a blush
+- #6b4a35 hair: hair, beards, dark brown things
+- #c2654a terracotta: red things, warm clothes, roofs, apples, anger
+- #8e4a36 rust: shade of red and brown things (low opacity glazes)
+- #e88a7a coral: pink and light red: lips, blossoms, soft warm clothes
+- #e0a06e ochre: orange things, oranges, warm light, bread, bags
+- #f0c45a mustard: yellow: the sun, lemons, stars, lamps
+- #7f9e6a sage: grass, leaves, light green things, "go"
+- #5d7d4e leaf: darker leaves, trees, shade of green things
+- #8fb3a6 teal: calm clothes, glass, cool objects
+- #5b6b80 slate: trousers, deep water, dark blue objects, shade of blue things
+- #7fa9c4 waterBlue: water, rain, ice, sky details, blue objects
+- #a98aa8 plum: purple: flowers, fabric, special objects
+- #a87a52 wood: wood, trunks, furniture, baskets, bread crust
+- #d9c3a0 sand: sand, paths, paper bags, light stone, floors
+- #b3a690 stone: stone, walls, mountains, shade of sand
+- #9a958e metal: metal, tools, cars, wheels, grey objects
 
-Contrast: white, paper, yellow and soft are almost invisible on the backdrop, and ink-on-red is invisible in the dark theme: use them only on top of another shape, never directly on the backdrop.
+Contrast: the outlines carry the drawing on both themes. white, paper and the wash colours are only for the wash itself or on top of another shape, never as a subject on its own.
 
 ## SVG rules
 
 - Exactly one root: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">. No width or height.
-- Elements: g, path, circle, ellipse, rect, line, polyline, polygon. Nothing else: no defs, use, clipPath, mask, gradient, filter, pattern, text, image, style, title.
-- Attributes: d, points, cx, cy, r, rx, ry, x, y, x1, y1, x2, y2, width, height, fill, stroke, stroke-width, stroke-linecap, stroke-linejoin, transform, opacity, fill-opacity, stroke-opacity, fill-rule. No id, class, style or href.
-- fill and stroke are always one of the palette hex values or none. Give every shape an explicit fill.
-- Whole numbers or one decimal. Keep the SVG under 6 KB; around 1–3 KB is typical.
-
-## Parts library
-
-Reuse and adapt these parts (move, scale, recolour within the palette) so pictures look like one family.
-
-### backdrop
-Always the first element: the soft circle every picture sits on.
-<circle cx="128" cy="128" r="114" fill="#e6edf5"/>
-
-### ground
-A faint floor line under standing things.
-<rect x="34" y="202" width="188" height="8" rx="4" fill="#b8ae9f"/>
-
-### person
-A standing figure, front view: skin head, blue body and near limbs, dark-blue far limbs. Move the limb paths for actions.
-<circle cx="128" cy="62" r="15" fill="#e9b98c"/><path d="M128 140 L116 186 M128 140 L140 186" fill="none" stroke="#1d5490" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/><path d="M128 86 V140" fill="none" stroke="#2a6fb0" stroke-width="18" stroke-linecap="round"/><path d="M128 94 L104 124 M128 94 L152 124" fill="none" stroke="#2a6fb0" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-
-### face
-Feelings and states: a big round face in the feeling's colour; features in ink-on-red on red, ink on other colours.
-<circle cx="128" cy="134" r="80" fill="#e69f00"/><circle cx="104" cy="126" r="7.5" fill="#2b2824"/><circle cx="152" cy="126" r="7.5" fill="#2b2824"/><path d="M100 160 C 112 176, 144 176, 156 160" fill="none" stroke="#2b2824" stroke-width="9" stroke-linecap="round"/>
-
-### arrow
-Direction, movement into or out of something, cause → effect. Faint, never the main shape.
-<path d="M128 108 V 142 M116 131 L128 143 L140 131" fill="none" stroke="#b8ae9f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-
-### motion
-Speed or a quick movement: three short faint strokes behind the moving thing.
-<path d="M52 110 H84 M44 128 H80 M52 146 H84" fill="none" stroke="#b8ae9f" stroke-width="6" stroke-linecap="round"/>
-
-### water
-Water, rivers, the sea: blue wave lines.
-<path d="M70 202 q 14 -9 28 0 t 28 0 t 28 0 t 28 0" fill="none" stroke="#2a6fb0" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-
-### raindrop
-Rain, wetness, liquid.
-<path d="M64 27 C 67 34, 71 38, 71 43 A 7 7 0 0 1 57 43 C 57 38, 61 34, 64 27 Z" fill="#56b4e9"/>
-
-### sun
-Sun, heat, daytime, summer.
-<circle cx="128" cy="128" r="40" fill="#e69f00"/><path d="M128 64 V76 M128 180 V192 M64 128 H76 M180 128 H192 M83 83 L91 91 M165 165 L173 173 M83 173 L91 165 M165 91 L173 83" fill="none" stroke="#e69f00" stroke-width="8" stroke-linecap="round"/>
-
-### tree
-Trees, forests, nature, plants.
-<rect x="120" y="138" width="16" height="64" rx="4" fill="#6b4a2b"/><circle cx="128" cy="104" r="44" fill="#009e73"/><circle cx="98" cy="128" r="26" fill="#009e73"/><circle cx="158" cy="128" r="26" fill="#009e73"/>
-
-### house
-Home, building, living somewhere.
-<path d="M72 120 L128 74 L184 120 Z" fill="#d55e00"/><rect x="84" y="118" width="88" height="80" fill="#cdbfa8"/><rect x="116" y="150" width="24" height="48" rx="3" fill="#6b4a2b"/>
-
-### highlight
-A shine on round or glossy things. White with opacity, only on top of another shape.
-<path d="M84 112 C 86 98, 96 90, 106 88" fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round" opacity="0.55"/>
-
-### emphasis
-Anger, shock, pain, a loud moment: a small red burst mark beside the subject.
-<g fill="none" stroke="#d55e00" stroke-width="6" stroke-linecap="round"><path d="M186 40 C 188 50, 192 54, 202 56"/><path d="M218 40 C 216 50, 212 54, 202 56"/><path d="M186 72 C 188 62, 192 58, 202 56"/><path d="M218 72 C 216 62, 212 58, 202 56"/></g>
-
-### no
-Forbidden, not allowed, without: a red ring with a bar, drawn over the thing.
-<circle cx="128" cy="128" r="72" fill="none" stroke="#d55e00" stroke-width="14"/><path d="M77 77 L179 179" fill="none" stroke="#d55e00" stroke-width="14" stroke-linecap="round"/>
+- Elements: g, path, circle, ellipse, rect, line, polyline, polygon. Nothing else: no defs, filter, use, clipPath, mask, gradient, pattern, text, image, style, title. The two filters are added by the app; only refer to them with filter="url(#wash)" (the backdrop wash, once) and filter="url(#line)" (the pencil groups).
+- Attributes: d, points, cx, cy, r, rx, ry, x, y, x1, y1, x2, y2, width, height, fill, stroke, stroke-width, stroke-linecap, stroke-linejoin, transform, opacity, fill-opacity, stroke-opacity, fill-rule, filter. No id, class, style or href.
+- fill and stroke are always one of the palette hex values or none. Give every shape an explicit fill (fill="none" for open strokes).
+- Whole numbers or one decimal. Keep the SVG under 5 KB; around 2–4 KB is typical.
 
 ## Answer
 
@@ -289,33 +243,33 @@ Answer with JSON only: {"drawable": boolean, "svg": string, "alt_tr": string, "c
 
 ### apple (noun)
 Input: {"lemma":"apple","pos":"noun","gloss_tr":"elma","visual_hint":null}
-Idea: One whole object, centred and large: red body, green leaf, brown stem, a translucent white highlight.
-Output: {"drawable":true,"svg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\" fill=\"#2b2824\"><circle cx=\"128\" cy=\"128\" r=\"114\" fill=\"#e6edf5\"/><path d=\"M128 86 C 108 70, 62 72, 58 122 C 54 170, 92 214, 116 207 C 123 205, 133 205, 140 207 C 164 214, 202 170, 198 122 C 194 72, 148 70, 128 86 Z\" fill=\"#d55e00\"/><path d=\"M84 112 C 86 98, 96 90, 106 88\" fill=\"none\" stroke=\"#ffffff\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" opacity=\"0.55\"/><path d=\"M128 88 C 128 72, 131 60, 138 48\" fill=\"none\" stroke=\"#6b4a2b\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M136 66 C 146 46, 172 42, 184 50 C 174 68, 152 76, 136 66 Z\" fill=\"#009e73\"/></svg>","alt_tr":"Yeşil yapraklı kırmızı bir elma","confidence":0.9}
-
-### bridge (noun)
-Input: {"lemma":"bridge","pos":"noun","gloss_tr":"köprü","visual_hint":null}
-Idea: The object in its minimal setting: a stone arch with a railing over two blue water lines.
-Output: {"drawable":true,"svg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\" fill=\"#2b2824\"><circle cx=\"128\" cy=\"128\" r=\"114\" fill=\"#e6edf5\"/><path d=\"M30 110 H226 V180 H202 C 202 146, 170 124, 128 124 C 86 124, 54 146, 54 180 H30 Z\" fill=\"#cdbfa8\"/><path d=\"M30 110 H226 V122 H30 Z\" fill=\"#a8977c\"/><path d=\"M34 84 H222 M40 84 V110 M72 84 V110 M104 84 V110 M152 84 V110 M184 84 V110 M216 84 V110\" fill=\"none\" stroke=\"#a8977c\" stroke-width=\"7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M70 202 q 14 -9 28 0 t 28 0 t 28 0 t 28 0\" fill=\"none\" stroke=\"#2a6fb0\" stroke-width=\"6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M96 224 q 14 -9 28 0 t 28 0\" fill=\"none\" stroke=\"#2a6fb0\" stroke-width=\"6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>","alt_tr":"Suyun üzerinde taş kemerli bir köprü","confidence":0.9}
-
-### climb (verb)
-Input: {"lemma":"climb","pos":"verb","gloss_tr":"tırmanmak","visual_hint":"a person going up a steep mountain"}
-Idea: An action: a small figure (skin head, blue limbs, darker far-side limbs, orange backpack) mid-step on a slope that ends at a flag on the summit; the slope is cut to the backdrop circle.
-Output: {"drawable":true,"svg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\" fill=\"#2b2824\"><circle cx=\"128\" cy=\"128\" r=\"114\" fill=\"#e6edf5\"/><path d=\"M43.7 204.7 L200 64 L241.9 122.3 A114 114 0 0 1 43.7 204.7 Z\" fill=\"#cdbfa8\"/><path d=\"M200 64 L186 79 L194 77 L199 85 L206 76 L214 80 Z\" fill=\"#ffffff\"/><path d=\"M200 66 V30\" fill=\"none\" stroke=\"#5a5249\" stroke-width=\"5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M200 31 L226 38 L200 45 Z\" fill=\"#d55e00\"/><path d=\"M118 90 L134 127\" fill=\"none\" stroke=\"#6b4a2b\" stroke-width=\"5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><rect x=\"77\" y=\"92\" width=\"18\" height=\"28\" rx=\"5\" transform=\"rotate(22 86 106)\" fill=\"#e69f00\"/><path d=\"M92 126 L 86 150 L 79 172\" fill=\"none\" stroke=\"#1d5490\" stroke-width=\"12\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M102 100 L 92 114\" fill=\"none\" stroke=\"#1d5490\" stroke-width=\"12\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M92 126 L 112 125 L 113 145\" fill=\"none\" stroke=\"#2a6fb0\" stroke-width=\"12\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M92 126 L 104 95\" fill=\"none\" stroke=\"#2a6fb0\" stroke-width=\"16\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M104 96 L 116 108 L 123 106\" fill=\"none\" stroke=\"#2a6fb0\" stroke-width=\"12\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><circle cx=\"111\" cy=\"78\" r=\"13\" fill=\"#e9b98c\"/></svg>","alt_tr":"Sırt çantalı biri dik bir dağa tırmanıyor","confidence":0.9}
-
-### angry (adjective)
-Input: {"lemma":"angry","pos":"adjective","gloss_tr":"kızgın","visual_hint":null}
-Idea: A feeling as a face: a red round face with dark slanted brows and a downturned mouth, a red anger mark and two steam curls.
-Output: {"drawable":true,"svg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\" fill=\"#2b2824\"><circle cx=\"128\" cy=\"128\" r=\"114\" fill=\"#e6edf5\"/><circle cx=\"128\" cy=\"134\" r=\"80\" fill=\"#d55e00\"/><path d=\"M86 104 L 114 118 M170 104 L 142 118\" fill=\"none\" stroke=\"#3a1a08\" stroke-width=\"9\" stroke-linecap=\"round\"/><circle cx=\"104\" cy=\"136\" r=\"7.5\" fill=\"#3a1a08\"/><circle cx=\"152\" cy=\"136\" r=\"7.5\" fill=\"#3a1a08\"/><path d=\"M100 184 C 112 168, 144 168, 156 184\" fill=\"none\" stroke=\"#3a1a08\" stroke-width=\"9\" stroke-linecap=\"round\"/><g fill=\"none\" stroke=\"#d55e00\" stroke-width=\"6\" stroke-linecap=\"round\"><path d=\"M186 40 C 188 50, 192 54, 202 56\"/><path d=\"M218 40 C 216 50, 212 54, 202 56\"/><path d=\"M186 72 C 188 62, 192 58, 202 56\"/><path d=\"M218 72 C 216 62, 212 58, 202 56\"/></g><path d=\"M46 70 c -8 -10 6 -18 0 -28 M62 58 c -8 -10 6 -18 0 -28\" fill=\"none\" stroke=\"#b8ae9f\" stroke-width=\"5\" stroke-linecap=\"round\"/></svg>","alt_tr":"Kaşları çatık, kızgın kırmızı bir yüz","confidence":0.9}
-
-### between (preposition)
-Input: {"lemma":"between","pos":"preposition","gloss_tr":"arasında","visual_hint":"an object in the middle of two others"}
-Idea: A relation: two identical blue blocks with an orange ball in the gap, a faint arrow pointing into the gap, a faint ground line.
-Output: {"drawable":true,"svg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\" fill=\"#2b2824\"><circle cx=\"128\" cy=\"128\" r=\"114\" fill=\"#e6edf5\"/><rect x=\"34\" y=\"202\" width=\"188\" height=\"8\" rx=\"4\" fill=\"#b8ae9f\"/><rect x=\"30\" y=\"86\" width=\"52\" height=\"116\" rx=\"8\" fill=\"#2a6fb0\"/><rect x=\"174\" y=\"86\" width=\"52\" height=\"116\" rx=\"8\" fill=\"#2a6fb0\"/><circle cx=\"128\" cy=\"178\" r=\"22\" fill=\"#e69f00\"/><path d=\"M116 170 a 14 14 0 0 1 10 -8\" fill=\"none\" stroke=\"#ffffff\" opacity=\"0.55\" stroke-width=\"5\" stroke-linecap=\"round\"/><g fill=\"none\" stroke=\"#b8ae9f\" stroke-width=\"5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M128 108 V 142 M116 131 L128 143 L140 131\"/></g></svg>","alt_tr":"İki mavi blok arasında turuncu bir top","confidence":0.9}
+Idea: One whole object, centred and large on a sage wash: red body with a darker glaze on the shade side, a white highlight, brown stem, green leaf.
+Output: {"drawable":true,"svg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\"><path d=\"M45 100 C55 50 120 30 170 40 C225 52 235 110 220 160 C205 215 140 232 90 220 C40 205 35 150 45 100Z\" fill=\"#e1e9d2\" opacity=\"0.78\" filter=\"url(#wash)\"/><ellipse cx=\"128\" cy=\"212\" rx=\"60\" ry=\"7\" fill=\"#b3a690\" opacity=\"0.35\"/><g filter=\"url(#line)\" stroke=\"#4a4440\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M128 96 C110 76 66 84 66 138 C66 186 98 214 118 208 C124 206 132 206 138 208 C158 214 190 186 190 138 C190 84 146 76 128 96Z\" fill=\"#c2654a\" fill-opacity=\"0.9\"/><path d=\"M128 94 C128 80 130 70 138 58\" fill=\"none\" stroke-width=\"6\"/><path d=\"M128 94 C128 80 130 70 138 58\" fill=\"none\" stroke=\"#a87a52\" stroke-width=\"3\"/><path d=\"M140 70 C150 46 180 44 196 54 C186 76 162 84 140 70Z\" fill=\"#7f9e6a\" fill-opacity=\"0.9\"/><path d=\"M144 68 C160 62 174 58 190 55\" fill=\"none\" stroke-width=\"1.5\"/></g><path d=\"M160 100 C186 112 192 160 168 196 C186 190 196 150 188 124 C184 108 172 100 160 100Z\" fill=\"#8e4a36\" opacity=\"0.25\"/><path d=\"M84 118 C86 102 98 94 108 94 C98 102 92 112 90 128Z\" fill=\"#fefefe\" opacity=\"0.4\"/></svg>","alt_tr":"Yeşil yapraklı ve saplı kırmızı bir elma","confidence":0.9}
 
 ### umbrella (noun)
-Input: {"lemma":"umbrella","pos":"noun","gloss_tr":"şemsiye","visual_hint":null}
-Idea: The object with one cue of its use: an open blue umbrella with darker panels, a dark handle and a few sky-blue raindrops.
-Output: {"drawable":true,"svg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\" fill=\"#2b2824\"><circle cx=\"128\" cy=\"128\" r=\"114\" fill=\"#e6edf5\"/><path d=\"M64 27 C 67 34, 71 38, 71 43 A 7 7 0 0 1 57 43 C 57 38, 61 34, 64 27 Z\" fill=\"#56b4e9\"/><path d=\"M200 17 C 203 24, 207 28, 207 33 A 7 7 0 0 1 193 33 C 193 28, 197 24, 200 17 Z\" fill=\"#56b4e9\"/><path d=\"M36 81.6 C 38.4 87.2, 41.6 90.4, 41.6 94.4 A 5.6000000000000005 5.6000000000000005 0 0 1 30.4 94.4 C 30.4 90.4, 33.6 87.2, 36 81.6 Z\" fill=\"#56b4e9\"/><path d=\"M222 75.6 C 224.4 81.2, 227.6 84.4, 227.6 88.4 A 5.6000000000000005 5.6000000000000005 0 0 1 216.4 88.4 C 216.4 84.4, 219.6 81.2, 222 75.6 Z\" fill=\"#56b4e9\"/><path d=\"M128 52 V 194 C 128 214, 102 214, 102 196\" fill=\"none\" stroke=\"#5a5249\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M36 134 C 36 82, 80 52, 128 52 C 176 52, 220 82, 220 134 Q 197 116 174 134 Q 151 116 128 134 Q 105 116 82 134 Q 59 116 36 134 Z\" fill=\"#2a6fb0\"/><path d=\"M82 132 C 84 92, 104 62, 128 54 C 104 70, 92 100, 92 126 Z\" fill=\"#1d5490\"/><path d=\"M174 132 C 172 92, 152 62, 128 54 C 152 70, 164 100, 164 126 Z\" fill=\"#1d5490\"/><path d=\"M128 52 V 38\" fill=\"none\" stroke=\"#5a5249\" stroke-width=\"7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>","alt_tr":"Yağmurda açık mavi bir şemsiye","confidence":0.9}
+Input: {"lemma":"umbrella","pos":"noun","gloss_tr":"şemsiye","visual_hint":"an open umbrella in the rain"}
+Idea: The object large and centred on a sky wash; rain strokes around it are the one supporting cue.
+Output: {"drawable":true,"svg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\"><path d=\"M38 110 C30 60 90 28 140 32 C200 36 232 80 224 140 C216 200 160 232 105 224 C55 216 46 160 38 110Z\" fill=\"#d6e6ec\" opacity=\"0.8\" filter=\"url(#wash)\"/><ellipse cx=\"128\" cy=\"222\" rx=\"70\" ry=\"6\" fill=\"#7fa9c4\" opacity=\"0.3\"/><g filter=\"url(#line)\" stroke=\"#4a4440\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M128 100 L128 200 Q128 216 114 214 Q106 212 106 204\" fill=\"none\" stroke-width=\"7\"/><path d=\"M128 100 L128 200 Q128 216 114 214 Q106 212 106 204\" fill=\"none\" stroke=\"#a87a52\" stroke-width=\"3.5\"/><path d=\"M52 108 C52 60 90 38 128 38 C166 38 204 60 204 108 Q191 96 178 108 Q165 96 153 108 Q140 96 128 108 Q116 96 103 108 Q90 96 78 108 Q65 96 52 108Z\" fill=\"#c2654a\" opacity=\"0.9\"/><path d=\"M128 38 L103 108 M128 38 L153 108\" fill=\"none\" stroke-width=\"1.8\"/><path d=\"M128 38 L128 30\" fill=\"none\"/></g><path d=\"M150 44 C182 54 200 80 202 106 L178 106 C178 80 168 58 150 44Z\" fill=\"#8e4a36\" opacity=\"0.2\"/><path d=\"M76 80 Q86 58 108 48\" stroke=\"#fefefe\" stroke-opacity=\"0.4\" stroke-width=\"4\" fill=\"none\" stroke-linecap=\"round\"/><g stroke=\"#7fa9c4\" stroke-width=\"3\" stroke-linecap=\"round\" fill=\"none\"><path d=\"M52 130 L47 146\"/><path d=\"M82 142 L77 158\"/><path d=\"M176 134 L171 150\"/><path d=\"M206 128 L201 144\"/><path d=\"M66 170 L61 186\"/><path d=\"M190 168 L185 184\"/><path d=\"M154 150 L149 166\"/></g></svg>","alt_tr":"Yağmur altında açık duran kırmızı bir şemsiye","confidence":0.9}
+
+### angry (adjective)
+Input: {"lemma":"angry","pos":"adjective","gloss_tr":"kızgın","visual_hint":"an angry face"}
+Idea: A feeling: one big face filling the wash, frowning brows, a flushed glaze on the cheeks, a few short anger strokes.
+Output: {"drawable":true,"svg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\"><path d=\"M40 90 C55 40 120 25 175 38 C230 52 240 120 222 170 C205 220 140 236 90 224 C40 210 25 140 40 90Z\" fill=\"#f1dfc0\" opacity=\"0.78\" filter=\"url(#wash)\"/><g filter=\"url(#line)\" stroke=\"#4a4440\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M82 238 Q86 190 112 184 L144 184 Q170 190 174 238 Z\" fill=\"#5b6b80\" opacity=\"0.9\"/><path d=\"M116 172 L116 188 L140 188 L140 172\" fill=\"#ecc9a6\"/><ellipse cx=\"128\" cy=\"114\" rx=\"52\" ry=\"58\" fill=\"#ecc9a6\"/><path d=\"M76 106 Q70 52 128 50 Q186 52 180 106 Q170 74 128 72 Q86 74 76 106Z\" fill=\"#6b4a35\"/><path d=\"M76 116 Q70 118 72 130 Q78 134 80 126\" fill=\"#d9a77f\"/><path d=\"M180 116 Q186 118 184 130 Q178 134 176 126\" fill=\"#d9a77f\"/><path d=\"M92 96 L120 108 M164 96 L136 108\" fill=\"none\" stroke-width=\"4\"/><circle cx=\"107\" cy=\"116\" r=\"3.5\" fill=\"#4a4440\"/><circle cx=\"149\" cy=\"116\" r=\"3.5\" fill=\"#4a4440\"/><path d=\"M106 158 Q128 140 150 158\" fill=\"none\" stroke-width=\"3.5\"/><path d=\"M112 152 L144 152\" fill=\"none\" stroke-width=\"1.8\"/></g><ellipse cx=\"90\" cy=\"138\" rx=\"12\" ry=\"8\" fill=\"#c2654a\" opacity=\"0.3\"/><ellipse cx=\"166\" cy=\"138\" rx=\"12\" ry=\"8\" fill=\"#c2654a\" opacity=\"0.3\"/><path d=\"M150 70 Q172 80 176 106 Q180 130 170 150 Q178 120 168 96 Q162 80 150 70Z\" fill=\"#c2654a\" opacity=\"0.18\"/><g stroke=\"#8f857a\" stroke-width=\"2.5\" stroke-linecap=\"round\" fill=\"none\"><path d=\"M188 52 L200 40 M200 66 L216 62 M68 52 L56 40 M56 66 L40 62\"/></g></svg>","alt_tr":"Kaşları çatık, yanakları kızarmış, öfkeli bir yüz","confidence":0.9}
+
+### climb (verb)
+Input: {"lemma":"climb","pos":"verb","gloss_tr":"tırmanmak","visual_hint":"a person climbing a steep mountain"}
+Idea: An action: a figure in mid-climb on a steep stone slope, reaching up; a faint arrow shows the direction.
+Output: {"drawable":true,"svg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\"><path d=\"M35 90 C60 35 150 25 205 55 C240 85 230 165 205 205 C170 240 90 235 52 200 C20 165 20 120 35 90Z\" fill=\"#d6e6ec\" opacity=\"0.78\" filter=\"url(#wash)\"/><g filter=\"url(#line)\" stroke=\"#4a4440\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M30 222 L140 50 L170 100 L190 80 L238 222 Z\" fill=\"#b3a690\" fill-opacity=\"0.9\"/><path d=\"M140 50 L124 78 L136 74 L142 88 L154 76 Z\" fill=\"#fefefe\" fill-opacity=\"0.9\"/><path d=\"M140 50 L170 100 L190 80 L238 222 L150 222 Z\" fill=\"#8e4a36\" fill-opacity=\"0.15\" stroke=\"none\"/><path d=\"M82 170 L100 166 L112 150\" fill=\"none\" stroke=\"#8f857a\" stroke-width=\"2\"/><path d=\"M96 196 L100 160 L120 162 L118 198 Z\" fill=\"#5b6b80\" fill-opacity=\"0.9\"/><path d=\"M98 198 L90 212 M118 198 L124 210\" fill=\"none\" stroke-width=\"5\"/><path d=\"M96 130 Q112 122 126 132 L122 168 L98 166 Z\" fill=\"#c2654a\" fill-opacity=\"0.85\"/><path d=\"M124 134 L138 112 M100 134 L88 150\" fill=\"none\" stroke-width=\"8\"/><path d=\"M124 134 L138 112 M100 134 L88 150\" fill=\"none\" stroke=\"#c2654a\" stroke-width=\"4\"/><circle cx=\"140\" cy=\"109\" r=\"4.5\" fill=\"#ecc9a6\"/><circle cx=\"87\" cy=\"152\" r=\"4.5\" fill=\"#ecc9a6\"/><circle cx=\"110\" cy=\"114\" r=\"14\" fill=\"#ecc9a6\"/><path d=\"M96 112 Q98 98 112 99 Q126 100 125 112 Q116 105 106 108 Q100 108 96 112Z\" fill=\"#6b4a35\"/><circle cx=\"116\" cy=\"115\" r=\"1.5\" fill=\"#4a4440\"/></g><path d=\"M150 160 L168 140\" stroke=\"#8f857a\" stroke-width=\"2\" fill=\"none\" stroke-linecap=\"round\"/><path d=\"M168 140 L160 142 M168 140 L167 148\" stroke=\"#8f857a\" stroke-width=\"2\" fill=\"none\" stroke-linecap=\"round\"/><path d=\"M60 60 Q75 50 90 60 Q105 58 100 70 L62 70 Q52 66 60 60Z\" fill=\"#fefefe\" opacity=\"0.8\"/></svg>","alt_tr":"Dik bir dağın yamacına tırmanan bir kişi","confidence":0.9}
+
+### between (preposition)
+Input: {"lemma":"between","pos":"preposition","gloss_tr":"arasında","visual_hint":"a ball between two boxes"}
+Idea: A relation: a ball between two wooden boxes, a faint double arrow above; nothing else.
+Output: {"drawable":true,"svg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\"><path d=\"M32 100 C40 55 100 30 150 38 C205 46 238 90 226 142 C216 195 160 220 110 216 C60 212 25 160 32 100Z\" fill=\"#f1dfc0\" opacity=\"0.78\" filter=\"url(#wash)\"/><ellipse cx=\"128\" cy=\"208\" rx=\"96\" ry=\"6\" fill=\"#b3a690\" opacity=\"0.35\"/><g filter=\"url(#line)\" stroke=\"#4a4440\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"28\" y=\"130\" width=\"62\" height=\"76\" fill=\"#a87a52\" fill-opacity=\"0.85\"/><path d=\"M28 150 L90 150\" fill=\"none\"/><path d=\"M48 130 L48 150 M70 130 L70 150\" fill=\"none\" stroke-width=\"2\"/><rect x=\"166\" y=\"130\" width=\"62\" height=\"76\" fill=\"#a87a52\" fill-opacity=\"0.85\"/><path d=\"M166 150 L228 150\" fill=\"none\"/><path d=\"M186 130 L186 150 M208 130 L208 150\" fill=\"none\" stroke-width=\"2\"/><circle cx=\"128\" cy=\"170\" r=\"36\" fill=\"#c2654a\" fill-opacity=\"0.88\"/><path d=\"M94 170 Q128 150 162 170\" fill=\"none\" stroke-width=\"2\"/><path d=\"M104 146 Q128 190 152 196\" fill=\"none\" stroke-width=\"2\"/></g><path d=\"M28 190 L90 190 L90 206 L28 206Z\" fill=\"#8e4a36\" opacity=\"0.2\"/><path d=\"M166 190 L228 190 L228 206 L166 206Z\" fill=\"#8e4a36\" opacity=\"0.2\"/><path d=\"M112 150 Q108 158 108 166\" stroke=\"#fefefe\" stroke-opacity=\"0.5\" stroke-width=\"5\" fill=\"none\" stroke-linecap=\"round\"/><path d=\"M96 90 L160 90 M96 90 L106 82 M96 90 L106 98 M160 90 L150 82 M160 90 L150 98\" stroke=\"#8f857a\" stroke-width=\"2.5\" fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>","alt_tr":"İki kutunun ortasında duran kırmızı bir top","confidence":0.9}
+
+### heavy (adjective)
+Input: {"lemma":"heavy","pos":"adjective","gloss_tr":"ağır","visual_hint":"a person struggling to lift a heavy box"}
+Idea: A property shown by a person: a man straining to lift a big box, a faint down arrow for the weight.
+Output: {"drawable":true,"svg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\"><path d=\"M38 110 C35 65 95 32 145 38 C200 44 238 85 228 140 C220 195 165 226 112 222 C62 218 42 165 38 110Z\" fill=\"#f1dfc0\" opacity=\"0.8\" filter=\"url(#wash)\"/><ellipse cx=\"128\" cy=\"224\" rx=\"85\" ry=\"6\" fill=\"#b3a690\" opacity=\"0.35\"/><g filter=\"url(#line)\" stroke=\"#4a4440\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M62 170 L58 218 M82 170 L86 218\" fill=\"none\" stroke-width=\"9\"/><path d=\"M62 170 L58 218 M82 170 L86 218\" fill=\"none\" stroke=\"#5b6b80\" stroke-width=\"5\"/><path d=\"M50 221 h14 M82 221 h14\" stroke-width=\"4\"/><path d=\"M52 108 Q74 96 96 108 L100 174 L48 174 Z\" fill=\"#8fb3a6\" opacity=\"0.9\"/><path d=\"M62 98 L62 108 L82 108 L82 98\" fill=\"#ecc9a6\"/><circle cx=\"72\" cy=\"80\" r=\"19\" fill=\"#ecc9a6\"/><path d=\"M54 76 Q56 56 74 58 Q90 58 91 78 Q82 66 70 68 Q60 68 54 76Z\" fill=\"#6b4a35\"/><path d=\"M76 78 L82 76 M64 76 L70 77\" fill=\"none\" stroke-width=\"2\"/><circle cx=\"80\" cy=\"82\" r=\"1.6\" fill=\"#4a4440\"/><circle cx=\"66\" cy=\"82\" r=\"1.6\" fill=\"#4a4440\"/><path d=\"M66 92 Q73 87 80 92\" fill=\"none\"/><path d=\"M96 116 L130 150 M58 120 L100 158\" fill=\"none\" stroke-width=\"9\"/><path d=\"M96 116 L130 150 M58 120 L100 158\" fill=\"none\" stroke=\"#8fb3a6\" stroke-width=\"5\"/><rect x=\"108\" y=\"128\" width=\"98\" height=\"84\" fill=\"#a87a52\" opacity=\"0.9\"/><path d=\"M108 150 L206 150\" fill=\"none\"/><path d=\"M142 128 L142 150 M172 128 L172 150\" fill=\"none\" stroke-width=\"2\"/><circle cx=\"110\" cy=\"152\" r=\"5\" fill=\"#ecc9a6\"/><circle cx=\"130\" cy=\"148\" r=\"5\" fill=\"#ecc9a6\"/></g><path d=\"M108 188 L206 188 L206 212 L108 212Z\" fill=\"#8e4a36\" opacity=\"0.25\"/><path d=\"M118 134 L196 134\" stroke=\"#fefefe\" stroke-opacity=\"0.3\" stroke-width=\"3\" fill=\"none\" stroke-linecap=\"round\"/><path d=\"M156 108 L156 122 M150 116 L156 124 L162 116\" stroke=\"#8f857a\" stroke-width=\"2\" fill=\"none\" stroke-linecap=\"round\"/><path d=\"M52 62 q-6 4 -4 10 M92 60 q4 -2 6 2\" stroke=\"#8f857a\" stroke-width=\"2\" fill=\"none\" stroke-linecap=\"round\"/></svg>","alt_tr":"Büyük, ağır bir kutuyu zorlanarak kaldıran bir kişi","confidence":0.9}
 ```
 
 ### Response schema
@@ -409,7 +363,7 @@ Answer with JSON only: {"items": [{"n": number, "score": number, "hint": string}
 }
 ```
 
-## `imagecheck-v1`
+## `imagecheck-v2`
 
 ### System prompt
 
@@ -417,6 +371,8 @@ Answer with JSON only: {"items": [{"n": number, "score": number, "hint": string}
 You review small flashcard pictures for Turkish speakers learning English words. Each picture should let a learner recall one meaning of one English word from the picture alone.
 
 You get the meaning as JSON (lemma: the English word, pos: part of speech, gloss_tr: the Turkish meaning) and the same picture twice: on the light theme, then on the dark theme.
+
+The pictures are soft watercolour with pencil outlines: wobbly edges, uneven lines and soft, blurred washes of colour are the intended style, not clutter and not a flaw.
 
 Answer with JSON only: {"depicts_sense": boolean, "has_text": boolean, "clutter": boolean, "confidence": number}.
 - depicts_sense: true if a learner who knows the meaning would name this word (or an obvious synonym) from the picture, in this meaning; false if it shows another meaning or nothing recognisable.

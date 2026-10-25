@@ -1,6 +1,6 @@
-// Prompt image-v1: draws one style-B picture for one lexicon sense (decisions 0029, 0030;
-// docs/ai-image.md). The system prompt is the style guide + parts library + the six approved
-// references: byte-for-byte stable, so it is cached (1-hour TTL). The user turn carries only the
+// Prompt image-v2: draws one watercolour picture for one lexicon sense (decisions 0029, 0030;
+// the owner switched from style B to watercolour on 2026-10-25; docs/ai-image.md). The system
+// prompt is the style guide + the approved watercolour references: byte-for-byte stable, so it is cached (1-hour TTL). The user turn carries only the
 // fields of ImageRequestInput that describe the meaning (lemma, pos, gloss_tr, visual_hint) and,
 // on a redraw, a fixed sentence naming what was wrong. Nothing else reaches the model.
 
@@ -9,13 +9,13 @@ import { z } from 'zod';
 import {
   generatedImage,
   IMAGE_MAX_BYTES,
-  IMAGE_PALETTE,
   IMAGE_PROMPT_VERSION,
+  IMAGE_WC_PALETTE,
+  IMAGE_WC_WASHES,
   type GeneratedImage,
   type ImageRequestInput,
 } from './image-contract.ts';
-import { IMAGE_PARTS } from './image-parts.ts';
-import { IMAGE_REFS } from './image-refs.ts';
+import { IMAGE_WC_REFS } from './image-wc-refs.ts';
 
 export { IMAGE_PROMPT_VERSION };
 
@@ -24,53 +24,61 @@ export { IMAGE_PROMPT_VERSION };
 // reserve for 1,000+ pictures a night.
 export const IMAGE_MAX_TOKENS = 8000;
 
-/** What each palette role is for (the prompt's colour table). */
-const ROLE_USE: Record<keyof typeof IMAGE_PALETTE, string> = {
-  ink: 'darkest detail: eyes, small marks on light shapes',
-  inkFlat: 'dark grey parts: handles, poles, tools, wheels',
-  inkFaint: 'faint helpers: arrows, ground lines, steam, motion strokes',
-  inkOnRed: 'features drawn on top of red or orange shapes',
-  paper: 'off-white inner parts on top of a coloured shape (pages, plates)',
-  soft: 'the backdrop circle only',
-  white: 'snow, highlights (with opacity), teeth; only on top of another shape',
-  red: 'red things, danger, anger, heat, roofs',
-  orange: 'oranges, fire, warmth, bags, balls, the sun',
-  yellow: 'lemons, light, stars; only on top of a darker shape',
-  green: 'leaves, plants, grass, "go"',
-  sky: 'water drops, ice, sky, glass',
-  blue: "main colour of people's clothes, water, cold, calm objects",
-  blueDark: 'shade side of blue things, far-side limbs',
-  purple: 'flowers, fabric, magic, special objects',
-  stem: 'wood, trunks, stems, brown hair, bread crust',
-  stone: 'stone, sand, walls, paper bags, light ground',
-  stoneDark: 'shade side of stone, railings, metal',
-  skin: 'skin of hands and heads',
+/** What each watercolour palette role is for (the prompt's colour table). */
+const ROLE_USE: Record<keyof typeof IMAGE_WC_PALETTE, string> = {
+  pencil: 'every outline (the stroke of the pencil group), eyes, small dark marks',
+  pencilSoft: 'faint helpers: arrows, ground lines, motion and steam strokes, distant outlines',
+  washSand: 'backdrop wash for indoor, warm or neutral scenes and single objects',
+  washSky: 'backdrop wash for sky, weather, water, cold and outdoor air',
+  washSage: 'backdrop wash for nature, plants, gardens and fields',
+  paper: 'off-white inner parts on top of a coloured shape (pages, plates, screens)',
+  white: 'clouds, snow, highlights (with opacity); only on top of another shape',
+  skin: 'skin of faces and hands',
+  skinShade: 'shade side of skin, ears, a blush',
+  hair: 'hair, beards, dark brown things',
+  terracotta: 'red things, warm clothes, roofs, apples, anger',
+  rust: 'shade of red and brown things (low opacity glazes)',
+  coral: 'pink and light red: lips, blossoms, soft warm clothes',
+  ochre: 'orange things, oranges, warm light, bread, bags',
+  mustard: 'yellow: the sun, lemons, stars, lamps',
+  sage: 'grass, leaves, light green things, "go"',
+  leaf: 'darker leaves, trees, shade of green things',
+  teal: 'calm clothes, glass, cool objects',
+  slate: 'trousers, deep water, dark blue objects, shade of blue things',
+  waterBlue: 'water, rain, ice, sky details, blue objects',
+  plum: 'purple: flowers, fabric, special objects',
+  wood: 'wood, trunks, furniture, baskets, bread crust',
+  sand: 'sand, paths, paper bags, light stone, floors',
+  stone: 'stone, walls, mountains, shade of sand',
+  metal: 'metal, tools, cars, wheels, grey objects',
 };
 
-const palette = (Object.keys(IMAGE_PALETTE) as (keyof typeof IMAGE_PALETTE)[])
-  .map((role) => `- ${IMAGE_PALETTE[role][0]} ${role}: ${ROLE_USE[role]}`)
+const palette = (Object.keys(IMAGE_WC_PALETTE) as (keyof typeof IMAGE_WC_PALETTE)[])
+  .map((role) => `- ${IMAGE_WC_PALETTE[role][0]} ${role}: ${ROLE_USE[role]}`)
   .join('\n');
 
-const parts = IMAGE_PARTS.map((p) => `### ${p.name}\n${p.use}\n${p.svg}`).join('\n\n');
+const washes = IMAGE_WC_WASHES.map((w) => IMAGE_WC_PALETTE[w][0]).join(', ');
 
-const examples = IMAGE_REFS.map(
+const examples = IMAGE_WC_REFS.map(
   (r) =>
     `### ${r.lemma} (${r.pos})\nInput: ${JSON.stringify({ lemma: r.lemma, pos: r.pos, gloss_tr: r.gloss_tr, visual_hint: r.visual_hint })}\nIdea: ${r.idea}\nOutput: ${JSON.stringify({ drawable: true, svg: r.svg, alt_tr: r.alt_tr, confidence: 0.9 })}`,
 ).join('\n\n');
 
-export const IMAGE_SYSTEM_PROMPT = `You draw small flashcard pictures for Turkish speakers learning English words. Each picture shows one meaning of one English word so that a learner who sees only the picture can recall the word.
+export const IMAGE_SYSTEM_PROMPT = `You draw small flashcard pictures for Turkish speakers learning English words. Each picture shows one meaning of one English word so that a learner who sees only the picture can recall the word. The learners are adults: the pictures are warm and friendly but never childish.
 
 You receive one meaning as JSON: lemma (the English word), pos (part of speech), gloss_tr (the Turkish meaning; draw exactly this meaning, not another sense of the word) and visual_hint (an optional English idea of what to draw, or null). A redraw also has previous_problem: what was wrong with the last attempt; avoid it.
 
-## Style B: flat colour
+## Style: watercolour and pencil
 
-- Flat filled shapes in the palette below. No outlines around shapes, no gradients, no shadows, no texture, no 3D.
-- Lines appear only as shapes of their own (limbs, stems, handles, waves) with round caps and joins.
-- Every picture starts with the soft backdrop circle (cx 128, cy 128, r 114). Keep everything inside it; a ground or a slope may be cut to the circle's edge with an arc.
-- One clear subject, large and centred, filling about two thirds of the circle. At most one or two supporting cues (raindrops for an umbrella, water under a bridge).
-- No text of any kind: no letters, digits, words, labels, signs with writing, speech bubbles with words, or symbols that stand for letters.
-- People are simple figures: a skin-coloured circle head, limbs as thick blue strokes (stroke-width 12), far-side limbs in dark blue, no facial features unless the meaning is a feeling. No hair styles, no clothing details, no skin tones other than the skin colour.
-- Feelings are a big round face; actions are a figure in mid-action; relations (between, under, behind) are simple blocks or balls with one faint arrow; abstract-but-drawable meanings use the most common everyday scene.
+Soft hand-drawn illustration, like a light watercolour sketch in a good picture book.
+- Start with one backdrop wash: a large irregular blob (not a circle, not a rectangle) behind the subject, filled with one of the wash colours (${washes}), opacity 0.7–0.85, with filter="url(#wash)". It softly covers roughly the middle 70–85 % of the canvas.
+- Then the drawing: shapes inside one or a few <g filter="url(#line)" stroke="${IMAGE_WC_PALETTE.pencil[0]}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"> groups, so every shape gets a thin, slightly wobbly pencil outline. Fills are flat palette colours, often a little transparent (opacity 0.8–0.95), like a watercolour wash inside the lines.
+- Shading: a few extra shapes in a darker colour of the same family at low opacity (0.15–0.3), without outlines (stroke="none" or outside the pencil group), on the shade side. Highlights: white at low opacity. No gradients.
+- Thick limbs and poles are two strokes on top of each other: a wider pencil stroke and a narrower coloured stroke, so they read as outlined tubes.
+- One clear subject, large and centred, filling about two thirds of the canvas. Keep every shape at least 16 units inside the canvas edge (the pencil wobble needs room). A tiny scene with a person or context is welcome when it makes the meaning clearer (a child holding a parent's hand for "child"), but at most one or two supporting cues.
+- People: simple and friendly, round heads in skin colour with dot eyes, a few strokes of hair, simple clothes in calm colours; no detailed faces unless the meaning is a feeling. Adults look like adults.
+- Feelings are a clear face or posture; actions are a figure in mid-action; relations (between, under, behind) are simple objects with one faint arrow; abstract-but-drawable meanings use the most common everyday scene.
+- No text of any kind: no letters, digits, words, labels, signs with writing, speech bubbles with words, or symbols that stand for letters. That includes sound effects: no "Z" for sleep, no "!" or "?"; show sleep or surprise with the face and posture.
 - Draw nothing frightening, violent, sexual, religious or political; for such words show a calm, neutral cue or decline.
 
 ## Colours
@@ -78,21 +86,15 @@ You receive one meaning as JSON: lemma (the English word), pos (part of speech),
 Use only these hex values (light theme; the app swaps each for its dark-theme twin). Each role has a purpose:
 ${palette}
 
-Contrast: white, paper, yellow and soft are almost invisible on the backdrop, and ink-on-red is invisible in the dark theme: use them only on top of another shape, never directly on the backdrop.
+Contrast: the outlines carry the drawing on both themes. white, paper and the wash colours are only for the wash itself or on top of another shape, never as a subject on its own.
 
 ## SVG rules
 
 - Exactly one root: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">. No width or height.
-- Elements: g, path, circle, ellipse, rect, line, polyline, polygon. Nothing else: no defs, use, clipPath, mask, gradient, filter, pattern, text, image, style, title.
-- Attributes: d, points, cx, cy, r, rx, ry, x, y, x1, y1, x2, y2, width, height, fill, stroke, stroke-width, stroke-linecap, stroke-linejoin, transform, opacity, fill-opacity, stroke-opacity, fill-rule. No id, class, style or href.
-- fill and stroke are always one of the palette hex values or none. Give every shape an explicit fill.
-- Whole numbers or one decimal. Keep the SVG under ${Math.floor(IMAGE_MAX_BYTES / 1024) - 2} KB; around 1–3 KB is typical.
-
-## Parts library
-
-Reuse and adapt these parts (move, scale, recolour within the palette) so pictures look like one family.
-
-${parts}
+- Elements: g, path, circle, ellipse, rect, line, polyline, polygon. Nothing else: no defs, filter, use, clipPath, mask, gradient, pattern, text, image, style, title. The two filters are added by the app; only refer to them with filter="url(#wash)" (the backdrop wash, once) and filter="url(#line)" (the pencil groups).
+- Attributes: d, points, cx, cy, r, rx, ry, x, y, x1, y1, x2, y2, width, height, fill, stroke, stroke-width, stroke-linecap, stroke-linejoin, transform, opacity, fill-opacity, stroke-opacity, fill-rule, filter. No id, class, style or href.
+- fill and stroke are always one of the palette hex values or none. Give every shape an explicit fill (fill="none" for open strokes).
+- Whole numbers or one decimal. Keep the SVG under ${Math.floor(IMAGE_MAX_BYTES / 1024) - 3} KB; around 2–4 KB is typical.
 
 ## Answer
 
@@ -124,7 +126,7 @@ export const REDRAW_PROBLEMS = {
   wrong_meaning:
     'The previous drawing did not show this meaning clearly; a learner guessed another word.',
   unclear: 'The previous drawing was hard to read at a small size; use fewer, larger shapes.',
-  ugly: 'The previous drawing did not match the style; follow the style rules and the parts library closely.',
+  ugly: 'The previous drawing did not match the style; follow the style rules and the examples closely.',
   has_text: 'The previous drawing contained text or letter-like marks; use no text at all.',
   clutter: 'The previous drawing was too busy; keep one large subject and at most two cues.',
   low_contrast:

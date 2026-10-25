@@ -4,8 +4,10 @@
 # concrete senses drawn now and stored for review, with their cost). Every model call is
 # reserved against the monthly picture budget first (80 % of CLAUDE_MONTHLY_CREDIT_USD).
 # Without the ANTHROPIC_API_KEY secret the run is skipped with a notice. The nightly run
-# submits a new batch only while the repository variable IMAGE_BULK is 'true': paused on 2026-10-25
-# because the owner switched the card style to watercolour (no more flat drawings). Queue order: decision 0037. Every step ends with a heartbeat
+# submits a new batch of up to 2000 senses every night: bulk drawing is on by default now that
+# pictures are watercolour (image-v2, owner, 2026-10-25), and it also redraws every flat
+# (image-v1) picture. Setting the repository variable IMAGE_BULK to 'false' pauses it.
+# Queue order: decision 0037. Every step ends with a heartbeat
 # (public.job_runs). Details: docs/ai-image.md, docs/setup-backend.md (steps 12, 13).
 #
 # Repository secrets:
@@ -14,7 +16,7 @@
 #                              Without it the key is read through the Management API with
 #   SUPABASE_ACCESS_TOKEN      (needs the "API keys: Read" permission / a full-access token).
 # Repository variables (optional): CLAUDE_IMAGE_MODEL, CLAUDE_CHECK_MODEL,
-#   CLAUDE_MONTHLY_CREDIT_USD (default 100), IMAGE_BULK ('true': nightly bulk drawing on)
+#   CLAUDE_MONTHLY_CREDIT_USD (default 100), IMAGE_BULK ('false': nightly bulk drawing paused)
 name: Picture jobs
 
 on:
@@ -84,7 +86,7 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           JOB: ${{ inputs.job || (github.event.schedule == '30 1 * * *' && 'nightly') || 'collect' }}
           COUNT: ${{ inputs.count }}
-          # Paused (owner switched to watercolour, 2026-10-25); IMAGE_BULK=true turns it on.
+          # Bulk drawing is on by default (watercolour, owner, 2026-10-25); IMAGE_BULK=false pauses it.
           IMAGE_BULK: ${{ vars.IMAGE_BULK }}
         run: |
           set -euo pipefail
@@ -117,10 +119,10 @@ jobs:
             nightly)
               node scripts/img-batch.ts collect
               node scripts/img-batch.ts visualize
-              if [ "$IMAGE_BULK" = "true" ]; then
-                node scripts/img-batch.ts submit --max 1500
+              if [ "$IMAGE_BULK" != "false" ]; then
+                node scripts/img-batch.ts submit --max 2000
               else
-                echo "::notice::IMAGE_BULK is not 'true': no new batch submitted (bulk drawing paused)."
+                echo "::notice::IMAGE_BULK is 'false': no new batch submitted (bulk drawing paused)."
               fi
               ;;
             pilot)

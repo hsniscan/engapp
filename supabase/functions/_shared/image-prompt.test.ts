@@ -9,7 +9,11 @@ import {
   verdictProblem,
   BACKDROP_CIRCLE,
 } from './image-check.ts';
-import { IMAGE_PALETTE, IMAGE_PROMPT_VERSION, type ImageRequestInput } from './image-contract.ts';
+import {
+  IMAGE_PROMPT_VERSION,
+  IMAGE_WC_PALETTE,
+  type ImageRequestInput,
+} from './image-contract.ts';
 import {
   callCostUsd,
   imageModels,
@@ -30,6 +34,7 @@ import {
   SERVER_FALLBACK_BETA,
 } from './image-prompt.ts';
 import { IMAGE_REFS } from './image-refs.ts';
+import { IMAGE_WC_REFS } from './image-wc-refs.ts';
 import { sanitizeSvg } from './svg-sanitize.ts';
 import { buildVisualRequest, parseVisualResponse, VISUAL_SYSTEM_PROMPT } from './visual-prompt.ts';
 
@@ -104,13 +109,15 @@ describe('image-v1 request (privacy, acceptance criterion 5)', () => {
     expect(req.fallbacks).toBe('default');
   });
 
-  it('the system prompt carries the style, the parts and the references, and nothing variable', () => {
-    for (const p of IMAGE_PARTS) expect(IMAGE_SYSTEM_PROMPT).toContain(p.svg);
-    for (const r of IMAGE_REFS) expect(IMAGE_SYSTEM_PROMPT).toContain(JSON.stringify(r.svg));
-    for (const [light] of Object.values(IMAGE_PALETTE))
+  it('the system prompt carries the watercolour style and references, and nothing variable', () => {
+    for (const r of IMAGE_WC_REFS) expect(IMAGE_SYSTEM_PROMPT).toContain(JSON.stringify(r.svg));
+    for (const [light] of Object.values(IMAGE_WC_PALETTE))
       expect(IMAGE_SYSTEM_PROMPT).toContain(light);
+    expect(IMAGE_SYSTEM_PROMPT).toContain('filter="url(#wash)"');
+    expect(IMAGE_SYSTEM_PROMPT).toContain('filter="url(#line)"');
+    expect(IMAGE_SYSTEM_PROMPT).not.toContain('<defs>');
     expect(IMAGE_SYSTEM_PROMPT).not.toMatch(/\d{4}-\d{2}-\d{2}/);
-    expect(IMAGE_PROMPT_VERSION).toBe('image-v1');
+    expect(IMAGE_PROMPT_VERSION).toBe('image-v2');
   });
 });
 
@@ -126,6 +133,17 @@ describe('parts library and references', () => {
   it.each(IMAGE_REFS.map((r) => [r.slug, r] as const))('%s passes the contrast check', (_s, r) => {
     expect(contrastCheck(r.svg)).toMatchObject({ ok: true, problem: null });
   });
+
+  it.each(IMAGE_WC_REFS.map((r) => [r.slug, r] as const))(
+    'watercolour %s passes the sanitizer and the contrast check',
+    (_s, r) => {
+      const clean = sanitizeSvg(r.svg);
+      expect(clean.ok).toBe(true);
+      if (!clean.ok) return;
+      expect(clean.svg).toContain('<defs>');
+      expect(contrastCheck(clean.svg)).toMatchObject({ ok: true, problem: null });
+    },
+  );
 });
 
 describe('parseImageResponse', () => {

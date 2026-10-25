@@ -10,7 +10,7 @@
  *       run stops at the monthly cap (80 % of CLAUDE_MONTHLY_CREDIT_USD).
  *   node scripts/img-batch.ts collect [--vision-limit 200]
  *       Reads finished batches: settles the real cost, sanitizes, renders, runs the contrast
- *       and imagecheck-v1 checks, stores passing pictures as 'review'; one redraw after a failed
+ *       and imagecheck-v2 checks, stores passing pictures as 'review'; one redraw after a failed
  *       check. Also runs the vision check the ai-image edge function left pending.
  *
  * Environment: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ANTHROPIC_API_KEY (missing: the job
