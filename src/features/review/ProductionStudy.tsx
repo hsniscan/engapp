@@ -15,6 +15,7 @@ import type { KindProps } from './kinds';
 import { RatingBar } from './RatingBar';
 import {
   BackExtras,
+  BackRegion,
   BulbIcon,
   CardHeader,
   CardSurface,
@@ -138,9 +139,9 @@ export function LetterDiff({ check }: { check: AnswerCheck }) {
           <span className="text-[0.8125rem] text-fg-muted">{t('study.result.yours')}</span>
           <span
             lang="en"
-            aria-label={check.typed}
             className="font-serif text-[1.375rem] tracking-[0.02em] break-words text-fg"
           >
+            <span className="sr-only">{check.typed}</span>
             <span aria-hidden="true">
               {!marked ? (
                 <span className="text-danger-text line-through decoration-2">{check.typed}</span>
@@ -166,10 +167,11 @@ export function LetterDiff({ check }: { check: AnswerCheck }) {
       <span className="text-[0.8125rem] text-fg-muted">{t('study.result.right')}</span>
       <span
         lang="en"
-        aria-label={check.expected}
         data-testid="right-answer"
+        data-answer={check.expected}
         className="font-serif text-[1.875rem] leading-tight font-semibold tracking-[0.02em] break-words text-fg"
       >
+        <span className="sr-only">{check.expected}</span>
         <span aria-hidden="true">
           {!marked
             ? check.expected
@@ -280,9 +282,15 @@ export function ProductionStudy({
           {picture ? (
             <div className="flex flex-col items-center gap-2">
               <CardPicture image={picture} showNew={false} className="size-44 sm:size-56" />
+              <p className="text-[0.9375rem] text-fg-muted">{t('review.promptImage')}</p>
               {sense?.pos && (
-                <p className="font-serif text-[0.9375rem] text-fg-muted italic">
-                  {posLabel(t, sense.pos)}
+                <p className="text-[0.9375rem] text-fg-muted">
+                  <span className="sr-only">
+                    {t('imageCard.pos', { pos: posLabel(t, sense.pos) })}
+                  </span>
+                  <span aria-hidden="true" className="font-serif italic">
+                    {posLabel(t, sense.pos)}
+                  </span>
                 </p>
               )}
             </div>
@@ -334,11 +342,20 @@ export function ProductionStudy({
   const result = check ?? checkAnswer('', note.term);
   const suggested = suggestRating(result.verdict, hintShown);
   return frame(
-    <div className="flex flex-col gap-3">
+    <BackRegion>
       <CardSurface className="gap-4" testId="study-back">
         <CardHeader view={view} label={label} />
-        {picture ? (
-          <CardPicture image={picture} showNew={false} className="size-28 self-center" />
+        {view.image ? (
+          <div data-testid="meaning-with-picture" className="flex items-center gap-4">
+            <CardPicture
+              image={view.image}
+              showNew={!picture}
+              className="size-[76px] overflow-hidden rounded-[12px] bg-surface-sunken"
+            />
+            <div className="min-w-0 flex-1">
+              <MeaningBlock view={view} size="md" />
+            </div>
+          </div>
         ) : (
           <MeaningBlock view={view} size="md" />
         )}
@@ -358,7 +375,7 @@ export function ProductionStudy({
         <SentencePanel view={view} speech={speech} />
       </CardSurface>
       <BackExtras view={view} speech={speech} />
-    </div>,
+    </BackRegion>,
     <RatingBar ref={ratingRef} view={view} onAnswer={onAnswer} suggested={suggested} />,
     t('study.scrollCard'),
   );

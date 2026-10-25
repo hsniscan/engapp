@@ -7,7 +7,7 @@ import type { RatingValue } from '@/domain/types';
 import { Button } from '@/ui';
 import type { SpeakProps } from './CardFaces';
 import { RatingBar } from './RatingBar';
-import { RecognitionBack, RecognitionFront } from './StudyCards';
+import { BackRegion, RecognitionBack, RecognitionFront } from './StudyCards';
 
 export interface KindProps {
   view: CardView;
@@ -36,12 +36,12 @@ export function RecognitionStudy({
   const { t } = useTranslation();
   if (revealed) {
     return frame(
-      <div className="flex flex-col gap-3">
+      <BackRegion>
         <p className="sr-only" role="status">
           {t('study.answerShown')}
         </p>
         <RecognitionBack view={view} speech={speech} />
-      </div>,
+      </BackRegion>,
       <RatingBar ref={ratingRef} view={view} onAnswer={onAnswer} />,
       t('study.scrollCard'),
     );

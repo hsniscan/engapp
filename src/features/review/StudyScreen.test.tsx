@@ -57,7 +57,7 @@ describe('Üretim session', () => {
 
     await user.type(screen.getByTestId('answer-input'), 'reluctent{Enter}');
     expect(await screen.findByText('Neredeyse: bir harf farklı')).toBeInTheDocument();
-    expect(screen.getByTestId('right-answer')).toHaveAttribute('aria-label', 'reluctant');
+    expect(screen.getByTestId('right-answer')).toHaveAttribute('data-answer', 'reluctant');
     expect(document.querySelector('[data-diff="wrong"]')).toHaveTextContent('e');
     expect(document.querySelector('[data-diff="right"]')).toHaveTextContent('a');
     expect(screen.getByText(/Önerimiz:/)).toHaveTextContent('Zor');

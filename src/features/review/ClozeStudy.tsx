@@ -14,7 +14,14 @@ import { Ipa, SpeakButton } from './CardFaces';
 import type { KindProps } from './kinds';
 import { AnswerInput, LetterDiff, VerdictLine } from './ProductionStudy';
 import { RatingBar } from './RatingBar';
-import { BackExtras, BulbIcon, CardHeader, CardSurface, PrimarySpeak } from './StudyCards';
+import {
+  BackExtras,
+  BackRegion,
+  BulbIcon,
+  CardHeader,
+  CardSurface,
+  PrimarySpeak,
+} from './StudyCards';
 import { loadChoiceCandidates, meaningOf, useModeLabel } from './study';
 
 /** undefined while loading; null when the collection is too small for choices. */
@@ -213,7 +220,7 @@ export function ClozeStudy(kp: KindProps) {
     r.picked !== null && choices && !choices[r.picked]!.correct ? choices[r.picked]! : null;
   const sense = view.sense;
   return frame(
-    <div className="flex flex-col gap-3">
+    <BackRegion>
       <CardSurface className="gap-3.5" testId="study-back">
         <CardHeader view={view} label={label} />
         <VerdictLine check={r.check} />
@@ -316,7 +323,7 @@ export function ClozeStudy(kp: KindProps) {
         </section>
       )}
       <BackExtras view={view} speech={speech} />
-    </div>,
+    </BackRegion>,
     <RatingBar ref={ratingRef} view={view} onAnswer={onAnswer} suggested={suggested} />,
     t('study.scrollCard'),
   );

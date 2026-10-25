@@ -47,11 +47,14 @@ export function CardSurface({
   children: ReactNode;
   className?: string;
   onClick?: () => void;
-  testId?: string;
+  testId?: 'study-front' | 'study-back';
 }) {
+  const { t } = useTranslation();
   return (
     <section
       data-testid={testId}
+      // The front is a region ("Ön yüz"); the answer side's wrapper is "Arka yüz" (BackRegion).
+      aria-label={testId === 'study-front' ? t('review.front') : undefined}
       onClick={onClick}
       className={cn(
         'flex flex-col rounded-[20px] border border-border bg-surface px-[18px] pt-4 pb-[18px] shadow-[0_1px_2px_var(--shadow-color)]',
@@ -59,6 +62,16 @@ export function CardSurface({
         className,
       )}
     >
+      {children}
+    </section>
+  );
+}
+
+/** The answer side: the card and what follows it, one region ("Arka yüz"), as on the old flip card. */
+export function BackRegion({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
+  return (
+    <section aria-label={t('review.back')} className="flex flex-col gap-3">
       {children}
     </section>
   );
@@ -243,9 +256,14 @@ export function RecognitionBack({ view, speech }: StudyCardProps) {
     <>
       <CardSurface className="gap-4" testId="study-back">
         <CardHeader view={view} label={label} />
-        <TermRow view={view} speech={speech} />
-        <div className="h-px bg-surface-sunken" />
-        <SenseList view={view} align="start" />
+        <div
+          className="flex flex-col gap-4"
+          data-testid={view.image ? 'meaning-with-picture' : undefined}
+        >
+          <TermRow view={view} speech={speech} />
+          <div className="h-px bg-surface-sunken" />
+          <SenseList view={view} align="start" />
+        </div>
         <SentencePanel view={view} speech={speech} />
       </CardSurface>
       <BackExtras view={view} speech={speech} />

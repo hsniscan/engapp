@@ -126,8 +126,8 @@ test.describe('picture recall card', () => {
     await expect.poll(() => cachedImageIds(page), { timeout: 30_000 }).toEqual([pictureRow('apple').id]);
     await expect.poll(() => pictureCards(page), { timeout: 30_000 }).toBe(1);
 
-    await page.goto('/');
-    await page.getByRole('link', { name: 'Tekrara başla' }).click();
+    // Picture cards are part of Üretim (redesign: one session per study type).
+    await page.goto('/study?mode=production');
     await expect(page.getByText('Görseldeki kelimeyi bul')).toBeVisible();
     const front = page.getByRole('img', { name: ALT.apple });
     await expect(front).toHaveAttribute('src', /^data:image\/svg\+xml,/);
@@ -136,8 +136,11 @@ test.describe('picture recall card', () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(PHONE.width);
     await shots(page, 'image-card-front-360');
 
-    await page.locator('body').press('Space');
-    await expect(page.getByRole('group', { name: 'Ne kadar iyi hatırladın?' })).toBeVisible();
+    // The English is typed; the result says so and suggests a button.
+    await page.getByTestId('answer-input').fill('apple');
+    await page.getByTestId('answer-input').press('Enter');
+    await expect(page.getByRole('group', { name: /Ne kadar iyi hatırladın\?/ })).toBeVisible();
+    await expect(page.getByText('Doğru', { exact: true })).toBeVisible();
     await expect(page.getByText('apple', { exact: true }).first()).toBeVisible();
     await expect(page.getByTestId('meaning-with-picture').getByText('elma', { exact: true })).toBeVisible();
     await shots(page, 'image-card-back-360');
