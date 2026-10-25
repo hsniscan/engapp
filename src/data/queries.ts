@@ -4,6 +4,7 @@ import { bandFor, type CardSentence, pickRotation, rotationSentences, selectedCo
 import { previewIntervals, type IntervalPreview } from '../domain/fsrs';
 import { normalizeTerm } from '../domain/normalize';
 import { buildQueue, type QueueCounts, type QueueItem, type QueueMode } from '../domain/queue';
+import { STUDY_MODE_CARD_TYPES, type StudyMode } from '../domain/studyMode';
 import { type Cloze, firstLetterHint, lastShownSenseId, makeCloze, nextRecognitionSense } from '../domain/recognition';
 import { buildHeatmap, computeStreakSummary, type HeatmapCell, type StreakSummary } from '../domain/streak';
 import { isVacationDay } from '../domain/vacation';
@@ -45,6 +46,11 @@ export interface StudyQueueOptions {
   learnAheadMs?: number;
   /** 'ahead': tomorrow's reviews now ("Yarının kartlarını şimdi tekrar et"). Default 'normal'. */
   mode?: QueueMode;
+  /**
+   * Study mode (redesign): only this mode's card types, with its own first-time counter and
+   * burying (domain/queue.ts). Absent = the old mixed queue of every card type.
+   */
+  studyMode?: StudyMode;
 }
 
 /**
@@ -72,10 +78,15 @@ export async function getStudyQueue(opts: StudyQueueOptions = {}, now: Millis = 
     // v0.4 İP8: a picture card whose picture is not on this device is left out of this session.
     const noPicture = await imageCardsWithoutPicture([...studied, ...fresh]);
     const cards = noPicture.size ? [...studied, ...fresh].filter((c) => !noPicture.has(c.id)) : [...studied, ...fresh];
-    const freshShown = noPicture.size ? fresh.filter((c) => !noPicture.has(c.id)) : fresh;
+    const types = opts.studyMode ? STUDY_MODE_CARD_TYPES[opts.studyMode] : null;
+    const freshShown = fresh.filter((c) => !noPicture.has(c.id) && (!types || types.includes(c.card_type)));
     // "Yeni kelime sırası": smart unless the user chose insertion order.
     const smart = !ahead && settings.new_card_order !== 'added' && freshShown.length > 0;
     const newOrder = smart ? await newOrderInput(freshShown, facts, settings) : null;
+    // Each mode counts its own first-time cards against the same daily limit; "+5 yeni kart"
+    // is extra Kelime çalışma.
+    const introduced = types ? types.reduce((n, t) => n + facts.introducedByType[t], 0) : facts.newIntroducedToday;
+    const extra = !types || opts.studyMode === 'word' ? extraNewToday : 0;
     const q = buildQueue(cards, {
       now,
       dayEnd: facts.bounds.end,
@@ -84,8 +95,9 @@ export async function getStudyQueue(opts: StudyQueueOptions = {}, now: Millis = 
       dailyNewLimit: load ? load.newLimitToday : settings.daily_new_limit,
       reviewCap: load?.plan.reviewCap ?? null,
       newOrder,
-      extraNewToday,
-      newIntroducedToday: facts.newIntroducedToday,
+      extraNewToday: extra,
+      newIntroducedToday: introduced,
+      ...(types ? { cardTypes: types, recognitionReviewedTodayNoteIds: facts.recognitionNoteIds } : {}),
       reviewedTodayCardIds: facts.reviewedCardIds,
       reviewedTodayNoteIds: facts.reviewedNoteIds,
       ...(opts.session ? { session: opts.session } : {}),
@@ -97,7 +109,7 @@ export async function getStudyQueue(opts: StudyQueueOptions = {}, now: Millis = 
       counts: q.counts,
       nextLearningDue: q.nextLearningDue,
       doneToday: facts.answers.length,
-      newToday: facts.newIntroducedToday,
+      newToday: introduced,
       extraNewToday,
       day: facts.bounds.key,
       dayEnd: facts.bounds.end,

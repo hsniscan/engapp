@@ -203,3 +203,18 @@ export function formatInterval(ms: number): string {
   if (days < 365) return `${trNumber(days / 30)} ay`;
   return `${trNumber(days / 365)} yıl`;
 }
+
+// STUB (agent C): the learning-model branch owns formatNextInterval (spec 5.1); its version wins.
+/** Plain button label: "10 dk", "3 sa", "yarın", "3 gün", "1 hafta", "1 ay", "1,5 ay", "1 yıl". */
+export function formatNextInterval(ms: number): string {
+  if (ms < HOUR) return `${Math.max(1, Math.round(ms / MINUTE))} dk`;
+  const days = ms / DAY;
+  if (days < 0.75) return `${Math.round(ms / HOUR)} sa`;
+  const d = Math.round(days);
+  if (d <= 1) return 'yarın';
+  if (d < 7) return `${d} gün`;
+  if (d < 30) return d % 7 === 0 ? `${d / 7} hafta` : `${d} gün`;
+  if (d < 90) return `${trNumber(Math.round((d / 30) * 2) / 2)} ay`;
+  if (d < 365) return `${Math.round(d / 30)} ay`;
+  return `${trNumber(Math.round((d / 365) * 2) / 2)} yıl`;
+}

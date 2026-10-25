@@ -2,7 +2,7 @@
 import Dexie from 'dexie';
 import { type DayBounds, type DayConfig, dayBounds } from '../domain/day';
 import { effectiveLogs } from '../domain/recompute';
-import { type Card, CardState, type Id, type Millis, type ReviewLog } from '../domain/types';
+import { type Card, CardState, type CardType, type Id, type Millis, type ReviewLog } from '../domain/types';
 import { db } from './db';
 
 /** All logs (including undo rows) of the given cards, grouped by card id. */
@@ -35,6 +35,10 @@ export interface TodayFacts {
   newIntroducedToday: number;
   /** Notes of those cards, in the order they were introduced (smart new-card order). */
   introducedNoteIds: Id[];
+  /** newIntroducedToday by card type (each study mode has its own first-time counter). */
+  introducedByType: Record<CardType, number>;
+  /** Notes whose recognition card was answered today (study-mode burying). */
+  recognitionNoteIds: Set<Id>;
   timeMs: number;
 }
 
@@ -57,8 +61,16 @@ export async function loadTodayFacts(cfg: DayConfig, now: Millis): Promise<Today
   answers.sort((a, b) => a.reviewed_at - b.reviewed_at);
   const reviewedCardIds = new Set(answers.map((l) => l.card_id));
   const cards = await db.cards.bulkGet([...reviewedCardIds]);
-  const noteOf = new Map(cards.filter((c): c is Card => !!c).map((c) => [c.id, c.note_id]));
+  const live = cards.filter((c): c is Card => !!c);
+  const noteOf = new Map(live.map((c) => [c.id, c.note_id]));
+  const typeOf = new Map(live.map((c) => [c.id, c.card_type]));
   const reviewedNoteIds = new Set(noteOf.values());
+  const recognitionNoteIds = new Set(live.filter((c) => c.card_type === 'recognition').map((c) => c.note_id));
+  const introducedByType: Record<CardType, number> = { recognition: 0, production: 0, cloze: 0, image: 0 };
+  for (const l of introduced) {
+    const type = typeOf.get(l.card_id);
+    if (type) introducedByType[type]++;
+  }
   introduced.sort((a, b) => a.reviewed_at - b.reviewed_at || (a.id < b.id ? -1 : 1));
   const introducedNoteIds = [...new Set(introduced.map((l) => noteOf.get(l.card_id)).filter((x): x is Id => !!x))];
   return {
@@ -68,6 +80,8 @@ export async function loadTodayFacts(cfg: DayConfig, now: Millis): Promise<Today
     reviewedNoteIds,
     newIntroducedToday,
     introducedNoteIds,
+    introducedByType,
+    recognitionNoteIds,
     timeMs: answers.reduce((a, l) => a + l.duration_ms, 0),
   };
 }

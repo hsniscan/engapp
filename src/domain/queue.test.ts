@@ -201,3 +201,45 @@ describe("review ahead (tomorrow's cards)", () => {
     expect(isDayComplete([review('t1', DAY_END + MIN)], ctx())).toBe(true);
   });
 });
+
+describe('buildQueue study modes', () => {
+  const typed = (c: Card, card_type: Card['card_type']): Card => ({ ...c, card_type });
+
+  it('keeps only the mode card types', () => {
+    const cards = [
+      typed(review('rec', NOW - MIN, 'a'), 'recognition'),
+      typed(review('prod', NOW - MIN, 'b'), 'production'),
+      typed(review('img', NOW - MIN, 'c'), 'image'),
+      typed(review('clz', NOW - MIN, 'd'), 'cloze'),
+    ];
+    const ids = (types: Card['card_type'][]) =>
+      buildQueue(cards, ctx({ cardTypes: types })).items.map((i) => i.card_id).sort();
+    expect(ids(['recognition'])).toEqual(['rec']);
+    expect(ids(['production', 'image'])).toEqual(['img', 'prod']);
+    expect(ids(['cloze'])).toEqual(['clz']);
+  });
+
+  it('never buries due cards; buries first-time cards whose recognition sibling was answered today', () => {
+    const cards = [
+      typed(review('prodDue', NOW - MIN, 'n1'), 'production'),
+      typed(fresh('prodNew', 1, 'n2'), 'production'),
+      typed(fresh('prodNew3', 2, 'n3'), 'production'),
+    ];
+    const q = buildQueue(
+      cards,
+      ctx({
+        cardTypes: ['production', 'image'],
+        reviewedTodayNoteIds: new Set(['n1', 'n2']),
+        recognitionReviewedTodayNoteIds: new Set(['n1', 'n2']),
+      }),
+    );
+    expect(q.items.map((i) => i.card_id)).toEqual(['prodDue', 'prodNew3']);
+  });
+
+  it('uses the mode first-time counter for the new limit', () => {
+    const cards = Array.from({ length: 6 }, (_, i) => typed(fresh(`c${i}`, i), 'cloze'));
+    expect(
+      buildQueue(cards, ctx({ cardTypes: ['cloze'], dailyNewLimit: 5, newIntroducedToday: 2 })).counts.new,
+    ).toBe(3);
+  });
+});

@@ -191,3 +191,4 @@ export {
   type LevelOverview,
   type SaveLevelTestInput,
 } from './levelModel';
+export { getChoiceCandidates } from './clozeChoices';

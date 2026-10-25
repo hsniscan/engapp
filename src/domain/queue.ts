@@ -17,9 +17,16 @@
 // by domain/newOrder.ts (level fit, frequency, the user's own signals, no confusable pair on
 // one day, a per-user daily jitter); without it, by insertion order ("Eklenme sırası"). The
 // limit, the 1-per-note rule and the 5:1 rhythm are the same either way.
+//
+// Study modes (redesign, plan/ogrenme-modeli.md §4): with `cardTypes` set, the queue holds only
+// those card types ("Kelime çalışma" = recognition, "Üretim" = production + image, "Boşluk
+// doldurma" = cloze). `newIntroducedToday` is then that mode's own first-time counter, and
+// burying changes: due cards are never buried, and only a first-time production / cloze /
+// picture card whose recognition sibling was answered today waits until tomorrow. Without
+// `cardTypes` the queue is the old mixed one.
 import { relativeOverdueness } from './catchup';
 import { type NewOrderInput, type NewReason, selectNewCards } from './newOrder';
-import { type Card, CardState, type Id, type Millis } from './types';
+import { type Card, CardState, type CardType, type Id, type Millis } from './types';
 
 export type QueueCard = Pick<
   Card,
@@ -62,6 +69,10 @@ export interface QueueContext {
   reviewCap?: number | null;
   /** Smart new-card order (domain/newOrder.ts); absent/null = insertion order. */
   newOrder?: NewOrderInput | null;
+  /** Study mode: only these card types (see the header). Absent = every type, old burying. */
+  cardTypes?: readonly CardType[] | null;
+  /** Study mode: notes whose recognition card was answered today (non-undone). */
+  recognitionReviewedTodayNoteIds?: ReadonlySet<Id>;
 }
 
 export type QueueKind = 'learning' | 'review' | 'new';
@@ -104,6 +115,21 @@ export function isBuried(c: QueueCard, ctx: Pick<QueueContext, 'reviewedTodayCar
   return ctx.reviewedTodayNoteIds.has(c.note_id) && !ctx.reviewedTodayCardIds.has(c.id);
 }
 
+/**
+ * Study-mode burying: a first-time production / cloze / picture card waits a day after its
+ * recognition sibling was answered (no same-day hint). Due cards are never buried.
+ */
+export function isBuriedInMode(
+  c: QueueCard,
+  ctx: Pick<QueueContext, 'recognitionReviewedTodayNoteIds'>,
+): boolean {
+  return (
+    c.state === CardState.New &&
+    c.card_type !== 'recognition' &&
+    !!ctx.recognitionReviewedTodayNoteIds?.has(c.note_id)
+  );
+}
+
 const byDue = (a: QueueCard, b: QueueCard): number => a.due - b.due || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 const byCreated = (a: QueueCard, b: QueueCard): number =>
   a.created_at - b.created_at || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
@@ -118,8 +144,11 @@ export function buildQueue(cards: Iterable<QueueCard>, ctx: QueueContext): Queue
   const fresh: QueueCard[] = [];
   let nextLearningDue: Millis | null = null;
 
+  const types = ctx.cardTypes ? new Set<CardType>(ctx.cardTypes) : null;
+  const buried = (c: QueueCard) => (types ? isBuriedInMode(c, ctx) : isBuried(c, ctx));
   for (const c of cards) {
-    if (!isStudiable(c) || isBuried(c, ctx)) continue;
+    if (types && !types.has(c.card_type)) continue;
+    if (!isStudiable(c) || buried(c)) continue;
     if (isLearning(c)) {
       if (c.due <= ctx.now) learningDue.push(c);
       else if (c.due <= ctx.now + learnAhead) learningSoon.push(c);
