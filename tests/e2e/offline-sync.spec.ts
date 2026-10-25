@@ -40,8 +40,8 @@ test('offline: review, add a card and open stats; back online the outbox is push
   await addWord(page, WORDS[2]!);
 
   await page.getByRole('link', { name: 'İstatistik' }).first().click();
-  await expect(page.getByRole('heading', { name: 'İstatistik', level: 1 })).toBeVisible();
-  await expect(page.getByText('Güncel seri')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'İlerleme', level: 1 })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Devamlılık' })).toBeVisible();
   await expect(page.getByRole('grid', { name: /Günlük tekrar takvimi/ })).toBeVisible();
 
   const localLogs: string[] = await page.evaluate(async () => {

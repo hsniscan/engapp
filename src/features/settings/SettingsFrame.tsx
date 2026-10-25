@@ -30,9 +30,7 @@ export function SettingsFrame({
         <h1 className="mx-1 font-serif text-[1.875rem] leading-tight font-semibold tracking-[-0.01em] text-fg">
           {title}
         </h1>
-        {description && (
-          <p className="mx-1 mt-1 text-[0.9375rem] text-fg-muted">{description}</p>
-        )}
+        {description && <p className="mx-1 mt-1 text-[0.9375rem] text-fg-muted">{description}</p>}
       </header>
       {children}
     </div>

@@ -86,6 +86,8 @@ test.describe('public pages, signed out', () => {
 
   test('Settings → Hakkında links to the privacy policy', async ({ page }) => {
     await page.goto('/settings');
+    await page.getByRole('link', { name: /Hakkında ve yardım/ }).click();
+    await expect(page).toHaveURL(/\/settings\/hakkinda$/);
     await page.getByRole('link', { name: /Gizlilik politikası/ }).click();
     await expect(page).toHaveURL(/\/gizlilik$/);
     await expect(page.getByRole('heading', { level: 1, name: 'Gizlilik politikası' })).toBeVisible();
@@ -104,7 +106,7 @@ test('signed in: Ayarlar → Hesap → "Hesabımı ve verilerimi sil" deletes th
   await addWord(page, WORDS[0]!);
   await expect.poll(() => backend.pushedIds('notes').length, { timeout: 15_000 }).toBe(1);
 
-  await page.goto('/settings');
+  await page.goto('/settings/hesap');
   await page.getByRole('button', { name: 'Hesabı sil' }).click();
   const dialog = page.getByRole('dialog', { name: 'Hesabın ve verilerin silinsin mi?' });
   await expect(dialog).toBeVisible();
@@ -138,13 +140,13 @@ test('signed in: a failed deletion keeps everything and says so', async ({ page,
   await addWord(page, WORDS[1]!);
   await expect.poll(() => backend.pushedIds('notes').length, { timeout: 15_000 }).toBe(1);
 
-  await page.goto('/settings');
+  await page.goto('/settings/hesap');
   await page.getByRole('button', { name: 'Hesabı sil' }).click();
   const dialog = page.getByRole('dialog', { name: 'Hesabın ve verilerin silinsin mi?' });
   await dialog.getByLabel('Onaylamak için SİL yaz').fill('sil');
   await dialog.getByRole('button', { name: 'Hesabımı kalıcı olarak sil' }).click();
   await expect(dialog.getByRole('alert')).toContainText('Silme tamamlanamadı');
-  await expect(page).toHaveURL(/\/settings$/);
+  await expect(page).toHaveURL(/\/settings\/hesap$/);
   expect(await localCount(page, 'notes')).toBe(1);
 });
 
@@ -153,7 +155,7 @@ test('guest: "Bu cihazdaki verileri sil" wipes only this device', async ({ page,
   await addWord(page, WORDS[2]!);
   expect(await localCount(page, 'notes')).toBe(1);
 
-  await page.goto('/settings');
+  await page.goto('/settings/hesap');
   await page.getByRole('button', { name: 'Verileri sil' }).click();
   const dialog = page.getByRole('dialog', { name: 'Bu cihazdaki veriler silinsin mi?' });
   await dialog.getByLabel('Onaylamak için SİL yaz').fill('SIL'); // a keyboard without İ

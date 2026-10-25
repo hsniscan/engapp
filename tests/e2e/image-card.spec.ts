@@ -154,7 +154,7 @@ test.describe('picture recall card', () => {
     await expect.poll(() => pictureCards(page)).toBe(1);
 
     // The setting (default on) removes every picture card and brings them back; it syncs.
-    await page.goto('/settings#gorunum');
+    await page.goto('/settings/gorunum');
     const toggle = page.getByRole('switch', { name: /Görselden hatırlama kartları/ });
     await expect(toggle).toBeChecked();
     await toggle.click();

@@ -26,7 +26,7 @@ test('backup → restore into an empty browser: notes, cards, review history and
   const before = await dumpTables(page, TABLES);
   expect(before.review_logs!.length).toBeGreaterThan(WORDS.length);
 
-  await page.goto('/settings#veri');
+  await page.goto('/settings/veri');
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Yedek al' }).click();
   const file = await download;
@@ -45,7 +45,7 @@ test('backup → restore into an empty browser: notes, cards, review history and
   const fresh = await ctx.newPage();
   await fresh.goto('/');
   await expect(fresh.getByRole('heading', { name: 'Hoş geldin' })).toBeVisible();
-  await fresh.goto('/settings#veri');
+  await fresh.goto('/settings/veri');
   await expect(fresh.getByText('Henüz yedek alınmadı')).toBeVisible();
   const chooser = fresh.waitForEvent('filechooser');
   await fresh.getByRole('button', { name: 'Geri yükle' }).click();

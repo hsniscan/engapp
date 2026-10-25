@@ -11,7 +11,12 @@ import { Avatar } from '@/features/auth/Avatar';
 import { useAuth } from '@/features/auth/session';
 import { formatDate, useLevelOverview } from '@/features/leveltest/levelText';
 import { GoalsDialog } from '@/features/report/GoalsSection';
-import { Glyph, GlyphTile, type GlyphName, type GlyphTone } from '@/features/settings/SettingsGlyph';
+import {
+  Glyph,
+  GlyphTile,
+  type GlyphName,
+  type GlyphTone,
+} from '@/features/settings/SettingsGlyph';
 import { useAppSettings } from '@/features/settings/useAppSettings';
 import { formatNumber } from '@/features/stats/format';
 import { useWordStages } from '@/features/stats/useWordStages';
@@ -53,12 +58,17 @@ function ProfileHeader() {
           {auth.status === 'loading' ? (
             <Skeleton className="h-4 w-40" />
           ) : signedIn ? (
-            <span className="text-[0.8125rem] text-fg-muted">{t('profile.home.signedInGoogle')}</span>
+            <span className="text-[0.8125rem] text-fg-muted">
+              {t('profile.home.signedInGoogle')}
+            </span>
           ) : (
             <span className="flex flex-wrap items-center gap-x-2 text-[0.8125rem] text-fg-muted">
               {t('profile.home.guestLine')}
               {auth.status === 'guest' && (
-                <Link to="/auth" className="inline-flex min-h-11 items-center font-medium text-accent-text">
+                <Link
+                  to="/auth"
+                  className="inline-flex min-h-11 items-center font-medium text-accent-text"
+                >
                   {t('profile.home.signIn')}
                 </Link>
               )}
@@ -94,14 +104,20 @@ function LevelCard() {
       ? t('profile.home.source.default')
       : t(`profile.home.source.${overview.source}`, { date: formatDate(overview.updatedAt) });
   return (
-    <section aria-labelledby="profile-level" className={cn(card, 'gap-4 px-[1.125rem] pt-5 pb-[1.125rem]')}>
+    <section
+      aria-labelledby="profile-level"
+      className={cn(card, 'gap-4 px-[1.125rem] pt-5 pb-[1.125rem]')}
+    >
       <h2 id="profile-level" className="sr-only">
         {t('profile.home.levelLabel')}
       </h2>
       <dl className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
           <dt className="text-[0.8125rem] text-fg-muted">{t('profile.home.levelLabel')}</dt>
-          <dd className="font-serif text-[2.5rem] leading-none font-semibold text-fg" data-testid="profile-level">
+          <dd
+            className="font-serif text-[2.5rem] leading-none font-semibold text-fg"
+            data-testid="profile-level"
+          >
             {overview.level}
           </dd>
         </div>
@@ -139,7 +155,10 @@ function LevelCard() {
         <span className="text-[0.8125rem] text-fg-muted">{source}</span>
         <Link
           to="/level-test"
-          className={buttonClasses({ variant: 'secondary', className: 'shrink-0 text-accent-text' })}
+          className={buttonClasses({
+            variant: 'secondary',
+            className: 'shrink-0 text-accent-text',
+          })}
         >
           <Icon name="refresh" size={18} />
           {overview.testCount > 0 ? t('profile.home.testAgain') : t('profile.home.testStart')}
@@ -164,7 +183,10 @@ function GoalsCard() {
   const [open, setOpen] = useState(false);
   const has = !!view && view.progress.length > 0;
   return (
-    <section aria-labelledby="profile-goals" className={cn(card, 'gap-3.5 px-[1.125rem] pt-2 pb-[1.125rem]')}>
+    <section
+      aria-labelledby="profile-goals"
+      className={cn(card, 'gap-3.5 px-[1.125rem] pt-2 pb-[1.125rem]')}
+    >
       <div className="flex items-center justify-between gap-3">
         <h2 id="profile-goals" className="font-serif text-[1.1875rem] font-semibold text-fg">
           {t('profile.home.goalsTitle')}
@@ -210,7 +232,14 @@ function GoalRing({ progress: p }: { progress: GoalProgress }) {
           role="img"
           aria-label={t('goals.ringLabel', { label, value: formatNumber(p.value), target })}
         >
-          <circle cx="36" cy="36" r={R} fill="none" strokeWidth="7" className="stroke-surface-sunken" />
+          <circle
+            cx="36"
+            cy="36"
+            r={R}
+            fill="none"
+            strokeWidth="7"
+            className="stroke-surface-sunken"
+          />
           <circle
             cx="36"
             cy="36"
@@ -241,9 +270,14 @@ function GoalRing({ progress: p }: { progress: GoalProgress }) {
 function InterestsCard() {
   const { t } = useTranslation();
   const { settings } = useAppSettings();
-  const chosen = (settings?.interests ?? []).filter((k) => !(settings?.muted_topics ?? []).includes(k));
+  const chosen = (settings?.interests ?? []).filter(
+    (k) => !(settings?.muted_topics ?? []).includes(k),
+  );
   return (
-    <section aria-labelledby="profile-interests" className={cn(card, 'gap-3 px-[1.125rem] pt-2 pb-[1.125rem]')}>
+    <section
+      aria-labelledby="profile-interests"
+      className={cn(card, 'gap-3 px-[1.125rem] pt-2 pb-[1.125rem]')}
+    >
       <div className="flex items-center justify-between gap-3">
         <h2 id="profile-interests" className="font-serif text-[1.1875rem] font-semibold text-fg">
           {t('profile.home.interestsTitle')}
@@ -303,7 +337,13 @@ function Shortcuts() {
     count?: number;
     hint?: string;
   }[] = [
-    { to: '/library', glyph: 'list', tone: 'accent', title: t('profile.home.allWords'), count: counts?.notes },
+    {
+      to: '/library',
+      glyph: 'list',
+      tone: 'accent',
+      title: t('profile.home.allWords'),
+      count: counts?.notes,
+    },
     {
       to: '/settings/bilinen-kelimeler',
       glyph: 'check',
@@ -311,7 +351,13 @@ function Shortcuts() {
       title: t('profile.home.knownWords'),
       count: counts?.known,
     },
-    { to: '/settings/hesap#senkron', glyph: 'cloud', tone: 'accent', title: t('profile.home.sync'), hint: syncLine },
+    {
+      to: '/settings/hesap#senkron',
+      glyph: 'cloud',
+      tone: 'accent',
+      title: t('profile.home.sync'),
+      hint: syncLine,
+    },
     {
       to: '/settings',
       glyph: 'sliders',
@@ -334,10 +380,15 @@ function Shortcuts() {
                 <span className="text-[0.9375rem] font-semibold">
                   {r.title}
                   {r.count !== undefined && (
-                    <span className="tabular font-normal text-fg-muted"> · {formatNumber(r.count)}</span>
+                    <span className="tabular font-normal text-fg-muted">
+                      {' '}
+                      · {formatNumber(r.count)}
+                    </span>
                   )}
                 </span>
-                {r.hint && <span className="truncate text-[0.8125rem] text-fg-muted">{r.hint}</span>}
+                {r.hint && (
+                  <span className="truncate text-[0.8125rem] text-fg-muted">{r.hint}</span>
+                )}
               </span>
               <Icon name="chevron-right" size={18} className="shrink-0 text-fg-subtle" />
             </Link>

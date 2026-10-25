@@ -36,8 +36,10 @@ test.describe('PWA', () => {
       ['/', 'Bugün'],
       ['/library', 'Kartlar'],
       ['/add', 'Kart ekle'],
-      ['/stats', 'İstatistik'],
+      ['/progress', 'İlerleme'],
+      ['/profile', 'Misafir'],
       ['/settings', 'Ayarlar'],
+      ['/settings/calisma', 'Çalışma'],
       ['/more', 'Biraz daha çalış'],
     ] as const) {
       await page.goto(path);

@@ -6,11 +6,13 @@ import { useAuth } from '@/features/auth/session';
 import { relativeDays } from './download';
 import type { SettingsPageId } from './settingsPages';
 import { useAppSettings } from './useAppSettings';
+import { useNow } from './useNow';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
-export function useSettingsSummaries(now: number = Date.now()): Partial<Record<SettingsPageId, string>> {
+export function useSettingsSummaries(): Partial<Record<SettingsPageId, string>> {
   const { t } = useTranslation();
+  const now = useNow();
   const { settings: s } = useAppSettings();
   const auth = useAuth();
   const out: Partial<Record<SettingsPageId, string>> = {

@@ -96,10 +96,20 @@ function StageBar({ s, total }: { s: WordStageCounts; total: number }) {
           <span key={k} className={cn('h-full', SWATCH[k])} style={{ flexGrow: s[k] }} />
         ))}
       </div>
-      <ul aria-label={t('stats.overview.stagesBarLabel')} className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+      <ul
+        aria-label={t('stats.overview.stagesBarLabel')}
+        className="grid grid-cols-2 gap-x-4 gap-y-2.5"
+      >
         {STAGES.map((k) => (
-          <li key={k} className="flex min-w-0 items-start gap-2" title={t(`stats.overview.stageHint.${k}`)}>
-            <span aria-hidden="true" className={cn('mt-1.5 size-2.5 shrink-0 rounded-[3px]', SWATCH[k])} />
+          <li
+            key={k}
+            className="flex min-w-0 items-start gap-2"
+            title={t(`stats.overview.stageHint.${k}`)}
+          >
+            <span
+              aria-hidden="true"
+              className={cn('mt-1.5 size-2.5 shrink-0 rounded-[3px]', SWATCH[k])}
+            />
             <span className="flex min-w-0 flex-col">
               <span className="text-sm text-fg-muted">{t(`stats.overview.stage.${k}`)}</span>
               <span className="tabular text-[0.9375rem] font-semibold text-fg">

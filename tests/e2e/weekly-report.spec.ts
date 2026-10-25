@@ -20,7 +20,7 @@ test('weekly report: numbers offline, comment once online, synced once', async (
 
   // Offline: the report is made from the device's numbers alone.
   backend.offline = true;
-  await page.goto('/stats?tab=rapor');
+  await page.goto('/progress?tab=rapor');
   const report = page.getByRole('region', { name: 'Geçen haftanın raporu' });
   await expect(report).toBeVisible({ timeout: 20_000 });
   await expect(report.getByText('Çalıştığın gün')).toBeVisible();
@@ -85,8 +85,8 @@ test('weekly report: numbers offline, comment once online, synced once', async (
   ).toBeVisible();
   expect(backend.count('ai-report')).toBe(1);
 
-  // Goals on the continuity tab: set one with the suggestion, see its ring.
-  await page.getByRole('tab', { name: 'Süreklilik' }).click();
+  // Goals on the Genel tab: set one with the suggestion, see its ring.
+  await page.getByRole('tab', { name: 'Genel' }).click();
   const goals = page.getByRole('region', { name: 'Hedeflerin' });
   await goals.getByRole('button', { name: 'Hedef koy' }).click();
   const dialog = page.getByRole('dialog', { name: 'Hedeflerin' });

@@ -19,7 +19,7 @@ test('done for today → "Biraz daha çalış": +5 new cards, then a practice ro
   for (const w of MORE) await addWord(page, w); // 8 notes → 8 new recognition cards
 
   // Daily new-card limit 2.
-  await page.goto('/settings#calisma');
+  await page.goto('/settings/calisma');
   const slider = page.getByRole('slider', { name: 'Günlük yeni kart' });
   await slider.focus();
   await page.keyboard.press('Home');

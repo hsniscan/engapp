@@ -18,7 +18,7 @@ test('daily new-card limit in Ayarlar changes the "Yeni" count on the home scree
   const initial = Number(await newCount.textContent());
   expect(initial).toBeGreaterThan(2);
 
-  await page.goto('/settings#calisma');
+  await page.goto('/settings/calisma');
   const slider = page.getByRole('slider', { name: 'Günlük yeni kart' });
   await expect(slider).toHaveAttribute('aria-valuenow', '10');
   await slider.focus();
@@ -31,7 +31,7 @@ test('daily new-card limit in Ayarlar changes the "Yeni" count on the home scree
   await expect(newCount).toHaveText('2');
 
   // 0 = no new cards today.
-  await page.goto('/settings#calisma');
+  await page.goto('/settings/calisma');
   await page.getByRole('slider', { name: 'Günlük yeni kart' }).focus();
   await page.keyboard.press('Home');
   await expect(page.getByText('Yeni kart yok', { exact: true })).toBeVisible();
@@ -44,7 +44,7 @@ test('theme switch persists across a reload (stored before first paint, no flash
   page,
 }) => {
   await page.emulateMedia({ colorScheme: 'light' });
-  await page.goto('/settings#gorunum');
+  await page.goto('/settings/gorunum');
   await page.locator('label', { hasText: 'Koyu' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
@@ -58,4 +58,23 @@ test('theme switch persists across a reload (stored before first paint, no flash
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'system');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'system');
+});
+
+test('Profil → ⚙ → Ayarlar → a sub-page, and old #anchors land on their new page', async ({
+  page,
+}) => {
+  await page.goto('/profile');
+  await page.locator('main a[href="/settings"][aria-label="Ayarlar"]').click();
+  await expect(page).toHaveURL(/\/settings$/);
+  await page.getByRole('link', { name: /Hatırlatmalar/ }).click();
+  await expect(page).toHaveURL(/\/settings\/bildirim$/);
+  await expect(page.getByRole('heading', { name: 'Hatırlatmalar', level: 1 })).toBeVisible();
+  await page.locator('main').getByRole('link', { name: 'Ayarlar', exact: true }).click();
+  await expect(page).toHaveURL(/\/settings$/);
+
+  await page.goto('/settings#ornekler');
+  await expect(page).toHaveURL(/\/settings\/kartlar#ornekler$/);
+  await expect(page.getByRole('region', { name: 'Örnek cümleler' })).toBeVisible();
+  await page.goto('/settings/profile');
+  await expect(page).toHaveURL(/\/settings\/ilgi-alanlari$/);
 });

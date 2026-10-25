@@ -102,7 +102,9 @@ export function SettingsIndexPage() {
             className="mt-4 flex min-h-[3.25rem] items-center gap-3 rounded-card px-3.5 text-fg hover:bg-hover"
           >
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span className="text-[0.9375rem] font-medium">{t('settings.pages.gelismis.title')}</span>
+              <span className="text-[0.9375rem] font-medium">
+                {t('settings.pages.gelismis.title')}
+              </span>
               <span className="text-sm text-fg-muted">{summaries.gelismis}</span>
             </span>
             <Icon name="chevron-right" size={18} className="shrink-0 text-fg-subtle" />
@@ -142,7 +144,9 @@ function RowList({
           >
             <GlyphTile name={PAGE_GLYPH[p].name} tone={PAGE_GLYPH[p].tone} />
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span className="text-[0.9375rem] font-semibold">{t(`settings.pages.${p}.title`)}</span>
+              <span className="text-[0.9375rem] font-semibold">
+                {t(`settings.pages.${p}.title`)}
+              </span>
               {summaries[p] && (
                 <span className="truncate text-[0.8125rem] text-fg-muted">{summaries[p]}</span>
               )}

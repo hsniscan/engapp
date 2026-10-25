@@ -120,12 +120,13 @@ for (const width of [360, 1280]) {
         .nth(1)
         .uncheck();
 
-      await page.goto('/stats');
+      await page.goto('/progress');
       await expect(
-        page.getByRole('heading', { name: 'İstatistik', level: 1, exact: true }),
+        page.getByRole('heading', { name: 'İlerleme', level: 1, exact: true }),
       ).toBeVisible();
-      await check(page, 'stats', tag);
-      await page.goto('/stats?tab=gelisim');
+      await expect(page.getByRole('region', { name: 'Öğrendiğin kelimeler' })).toBeVisible();
+      await check(page, 'progress', tag);
+      await page.goto('/progress?tab=gelisim');
       await expect(
         page.getByRole('region', { name: 'Kategorilere göre tutma oranı' }),
       ).toBeVisible();
@@ -148,13 +149,21 @@ for (const width of [360, 1280]) {
         page.getByRole('heading', { name: 'Ayarlar', level: 1, exact: true }),
       ).toBeVisible();
       await check(page, 'settings', tag);
+      await page.goto('/settings/calisma');
+      await expect(
+        page.getByRole('heading', { name: 'Çalışma', level: 1, exact: true }),
+      ).toBeVisible();
+      await check(page, 'settings-study', tag);
+      await page.goto('/profile');
+      await expect(page.getByRole('navigation', { name: 'Kısayollar' })).toBeVisible();
+      await check(page, 'profile', tag);
 
       await page.goto('/settings/kaynaklar');
       await expect(
         page.getByRole('heading', { name: 'Kaynaklar', level: 1, exact: true }),
       ).toBeVisible();
       await check(page, 'sources', tag);
-      await page.goto('/settings/profile');
+      await page.goto('/settings/ilgi-alanlari');
       const pick = page.getByRole('region', { name: 'İlgi alanların' });
       await pick.getByRole('button', { name: 'Teknoloji' }).click();
       await pick.getByRole('button', { name: 'Bilim' }).click();

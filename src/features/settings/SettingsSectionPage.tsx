@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, useLocation, useParams } from 'react-router';
 import { SettingsFrame } from './SettingsFrame';
-import { SoloSectionContext } from './SettingsLayout';
+import { SoloSectionContext } from './soloSection';
 import { isSettingsPage, legacyTarget, PAGE_CONTENT } from './settingsPages';
 
 /** Scroll to #anchor once the group has rendered (groups load their data first). */

@@ -35,7 +35,11 @@ export function ProgressPage() {
   const tab = TAB_BY_PARAM[search.get('tab') ?? ''] ?? 'general';
   const setTab = (v: string) =>
     setSearch(
-      v === 'progress' ? { tab: PROGRESS_TAB_PARAM } : v === 'report' ? { tab: REPORT_TAB_PARAM } : {},
+      v === 'progress'
+        ? { tab: PROGRESS_TAB_PARAM }
+        : v === 'report'
+          ? { tab: REPORT_TAB_PARAM }
+          : {},
       { replace: true },
     );
 
@@ -46,7 +50,11 @@ export function ProgressPage() {
         value={tab}
         onValueChange={setTab}
         items={[
-          { value: 'general', label: t('stats.overview.tabGeneral'), content: <General onReport={() => setTab('report')} /> },
+          {
+            value: 'general',
+            label: t('stats.overview.tabGeneral'),
+            content: <General onReport={() => setTab('report')} />,
+          },
           {
             value: 'progress',
             label: t('stats.tabProgress'),
@@ -134,7 +142,10 @@ function Continuity({
       </h2>
       <dl className="grid grid-cols-[1.3fr_1fr_1fr] gap-3">
         {stats.map((m, i) => (
-          <div key={m.key} className={cn('flex min-w-0 flex-col gap-1', i > 0 && 'border-l border-border pl-3')}>
+          <div
+            key={m.key}
+            className={cn('flex min-w-0 flex-col gap-1', i > 0 && 'border-l border-border pl-3')}
+          >
             <dt className="text-[0.8125rem] text-fg-muted">{m.label}</dt>
             <dd className="tabular font-serif text-[2rem] leading-none font-semibold text-fg">
               {formatNumber(m.value)}
@@ -202,7 +213,9 @@ function RecallTile({ rate }: { rate: number | null | undefined }) {
   const { t } = useTranslation();
   return (
     <div className="flex min-h-32 flex-col gap-1 rounded-card border border-border bg-surface p-4 sm:p-5">
-      <span className="text-[0.8125rem] font-semibold text-fg-muted">{t('stats.overview.recallTitle')}</span>
+      <span className="text-[0.8125rem] font-semibold text-fg-muted">
+        {t('stats.overview.recallTitle')}
+      </span>
       <span className="tabular font-serif text-[2rem] leading-none font-semibold text-fg">
         {rate === undefined || rate === null ? '—' : formatPercent(rate)}
       </span>

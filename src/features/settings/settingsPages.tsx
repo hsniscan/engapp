@@ -2,7 +2,6 @@
 // of the old single long page lives on exactly one sub-page; nothing was dropped. The old
 // anchors (/settings#veri) and slugs (/settings/profile) resolve through LEGACY below.
 import type { ComponentType } from 'react';
-import { AccountDeleteRow } from '@/features/account/AccountDeleteRow';
 import { LevelSettingsSection } from '@/features/leveltest/LevelSettingsSection';
 import { LoadSettingsSection } from '@/features/load/LoadSettingsSection';
 import { NotifySection } from '@/features/notify/NotifySection';
@@ -14,10 +13,8 @@ import { AppSection } from './AppSection';
 import { DataSection, ImportSection } from './DataSection';
 import { ExamplesSettingsSection } from './ExamplesSettings';
 import type { GlyphName, GlyphTone } from './SettingsGlyph';
-import { SettingsSection } from './SettingsLayout';
-import { settingsSlots } from './slots';
+import { AccountGroup, SyncGroup } from './AccountGroups';
 import { AppearanceSection, StudySection, VoiceSection } from './StudySections';
-import { useTranslation } from 'react-i18next';
 
 export const SETTINGS_PAGES = [
   'calisma',
@@ -62,27 +59,6 @@ export const PAGE_GLYPH: Record<SettingsPageId, { name: GlyphName; tone: GlyphTo
   gelismis: { name: 'advanced', tone: 'neutral' },
   'ilgi-alanlari': { name: 'interests', tone: 'accent' },
 };
-
-function AccountGroup() {
-  const { t } = useTranslation();
-  const Account = settingsSlots.account;
-  return (
-    <SettingsSection id="hesap" title={t('settings.sections.hesap')}>
-      <Account />
-      <AccountDeleteRow />
-    </SettingsSection>
-  );
-}
-
-function SyncGroup() {
-  const { t } = useTranslation();
-  const Sync = settingsSlots.sync;
-  return (
-    <SettingsSection id="senkron" title={t('settings.sections.senkron')}>
-      <Sync />
-    </SettingsSection>
-  );
-}
 
 /**
  * What each sub-page shows. `solo`: one group, so its heading would only repeat the page title.

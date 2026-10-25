@@ -112,7 +112,7 @@ test('guest, offline: the offered level test sets the level, the counter and the
   await dialog.getByRole('button', { name: 'Tamam' }).click();
 
   // Settings → Seviye: where the level came from, and the known words (remove one).
-  await page.goto('/settings#seviye');
+  await page.goto('/settings/seviye');
   await expect(page.getByTestId('level-source')).toContainText('Seviye testinden');
   await page.getByRole('link', { name: 'Listeyi aç' }).click();
   const list = page.getByTestId('known-words');
@@ -126,7 +126,7 @@ test('guest, offline: the offered level test sets the level, the counter and the
 
 test('guessing makes the result unreliable: nothing changes until "Sonucu yine de kullan"', async ({ page }) => {
   test.setTimeout(150_000);
-  await page.goto('/settings#seviye');
+  await page.goto('/settings/seviye');
   await page.getByRole('link', { name: 'Testi çöz' }).click();
   await page.getByRole('button', { name: 'Teste başla', disabled: false }).click();
   await takeTest(page, 'always-yes');

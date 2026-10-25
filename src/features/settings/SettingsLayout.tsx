@@ -1,11 +1,6 @@
-import { createContext, useContext, useId, type ReactNode } from 'react';
+import { useContext, useId, type ReactNode } from 'react';
 import { cn } from '@/ui';
-
-/**
- * Set by a settings sub-page that shows a single group: its own h1 already names the group,
- * so the group's h2 stays for screen readers only.
- */
-export const SoloSectionContext = createContext(false);
+import { SoloSectionContext } from './soloSection';
 
 /** A titled group of rows on one surface. */
 export function SettingsSection({
