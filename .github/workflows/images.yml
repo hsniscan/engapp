@@ -118,7 +118,7 @@ jobs:
               node scripts/img-batch.ts collect
               node scripts/img-batch.ts visualize
               if [ "$IMAGE_BULK" != "false" ]; then
-                node scripts/img-batch.ts submit --max 1000
+                node scripts/img-batch.ts submit --max 1500
               else
                 echo "::notice::IMAGE_BULK is 'false': no new batch submitted (bulk drawing paused)."
               fi
