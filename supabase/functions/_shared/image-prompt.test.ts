@@ -133,6 +133,17 @@ describe('parts library and references', () => {
   it.each(IMAGE_REFS.map((r) => [r.slug, r] as const))('%s passes the contrast check', (_s, r) => {
     expect(contrastCheck(r.svg)).toMatchObject({ ok: true, problem: null });
   });
+
+  it.each(IMAGE_WC_REFS.map((r) => [r.slug, r] as const))(
+    'watercolour %s passes the sanitizer and the contrast check',
+    (_s, r) => {
+      const clean = sanitizeSvg(r.svg);
+      expect(clean.ok).toBe(true);
+      if (!clean.ok) return;
+      expect(clean.svg).toContain('<defs>');
+      expect(contrastCheck(clean.svg)).toMatchObject({ ok: true, problem: null });
+    },
+  );
 });
 
 describe('parseImageResponse', () => {
