@@ -391,7 +391,11 @@ export interface Settings extends SyncedRow {
     week_active_days?: number | null;
     month_new_terms?: number | null;
     week_minutes?: number | null;
-  } | null;  /** v0.4 İP3: show the sense's picture on the front of the card too (absent/null = off). */
+    /** Redesign (home "Hedeflerin"): minutes of study a day (absent/null = no daily goal). */
+    day_minutes?: number | null;
+    /** Redesign: the level the user aims for ("Hedef B2"); absent/null = the next level. */
+    target_level?: CefrLevel | null;
+  } | null; /** v0.4 İP3: show the sense's picture on the front of the card too (absent/null = off). */
   show_image_front?: boolean | null;
   /**
    * v0.4 İP8: picture cards ("Görselden hatırlama", decision 0036). Absent/null = on; only a

@@ -74,6 +74,11 @@ const pairs: [fg: string, bg: string, kind: Kind, note: string][] = [
   ['rating-easy', 'surface', 'ui', 'Kolay hue bar'],
   ['heat-completed', 'canvas', 'ui', 'heatmap: completed day'],
   ['heat-completed', 'heat-active', 'ui', 'heatmap: completed vs active'],
+  ['hero-muted', 'accent', 'text', 'home hero: secondary text'],
+  ['hero-action-fg', 'hero-action', 'text', 'home hero: Devam et'],
+  ['hero-ring', 'accent', 'ui', 'home hero: progress ring, week dots'],
+  ['stage-learned', 'surface', 'ui', 'stage bar: Öğrenildi'],
+  ['stage-mastered', 'surface', 'ui', 'stage bar: Kalıcı'],
 ];
 
 const md = process.argv.includes('--md');

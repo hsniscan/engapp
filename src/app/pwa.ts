@@ -1,13 +1,14 @@
 /// <reference types="vite-plugin-pwa/client" />
 // Service worker registration (registerType 'prompt'). A new version never reloads the page
 // on its own: the user taps "Yenile" on the toast, and the toast is held back while a review
-// session (/review) is open so a session is never interrupted.
+// session (/study, or its old address /review) is open so a session is never interrupted.
 import { registerSW } from 'virtual:pwa-register';
 import i18n from '@/i18n';
 import { toast } from '@/ui';
 import { router } from './router';
 
-const inReview = (path: string) => path === '/review' || path.startsWith('/review/');
+const inReview = (path: string) =>
+  ['/study', '/review', '/practice'].some((p) => path === p || path.startsWith(`${p}/`));
 
 export function registerServiceWorker(): void {
   if (!('serviceWorker' in navigator)) return;
@@ -31,7 +32,11 @@ export function registerServiceWorker(): void {
   // A tapped reminder while the app is open (public/push-sw.js): route in place, no reload.
   navigator.serviceWorker.addEventListener('message', (e: MessageEvent) => {
     const data = e.data as { type?: unknown; url?: unknown } | null;
-    if (data?.type === 'engapp:navigate' && typeof data.url === 'string' && data.url.startsWith('/'))
+    if (
+      data?.type === 'engapp:navigate' &&
+      typeof data.url === 'string' &&
+      data.url.startsWith('/')
+    )
       void router.navigate(data.url);
   });
 

@@ -51,7 +51,7 @@ export function ReviewRoute() {
 export function ReviewScreen() {
   const { t } = useTranslation();
   const [search] = useSearchParams();
-  const ahead = search.get('mode') === 'ahead';
+  const ahead = search.get('mode') === 'ahead' || search.get('queue') === 'ahead';
   const { state, start, actions: session } = useReviewSession(ahead ? 'ahead' : 'normal');
   const settings = useLiveQuery(() => getSettings(), []);
   const speech = useSpeech(settings?.voice ?? 'en-US');

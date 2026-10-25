@@ -301,7 +301,18 @@ export async function getGoalsView(now: Millis = Date.now()): Promise<GoalsView>
 /** Set the goals (null or empty = none). */
 export async function setGoals(goals: Goals | null, now: Millis = Date.now()): Promise<Settings> {
   const clean = goals
-    ? Object.fromEntries(Object.entries(goals).filter(([, v]) => typeof v === 'number'))
+    ? Object.fromEntries(
+        Object.entries(goals).filter(([, v]) => typeof v === 'number' || typeof v === 'string'),
+      )
     : {};
   return updateSettings({ goals: Object.keys(clean).length ? clean : null }, now);
+}
+
+/**
+ * Change some goals and keep the others (null clears one). For editors that show only part
+ * of the goals, e.g. the redesign's daily minutes and target level.
+ */
+export async function updateGoals(patch: Goals, now: Millis = Date.now()): Promise<Settings> {
+  const current = (await getSettings(now)).goals ?? {};
+  return setGoals({ ...current, ...patch }, now);
 }

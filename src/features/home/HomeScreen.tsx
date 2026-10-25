@@ -1,520 +1,278 @@
+// Bugün, the home screen of the redesign (boards Main, HomeDone, HomeDark): today's word
+// study on top, the three study types, goals, the words learned under the stricter rule,
+// shortcuts and decks that suit the user. One column on phones, two from 1024 px.
 import { useLiveQuery } from 'dexie-react-hooks';
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
-import type { HeatmapCell } from '@/domain/streak';
-import {
-  formatDayLong,
-  formatDuration,
-  formatNumber,
-  formatPercent,
-  formatWeekdayShort,
-} from '@/features/stats/format';
-import { LevelChangeLine, LevelTestOffer } from '@/features/leveltest/LevelHomeNotes';
-import { VocabTile } from '@/features/leveltest/VocabTile';
-import { LoadNotes } from '@/features/load/LoadNotes';
-import { heatLabel } from '@/features/stats/heatLabel';
-import { buttonClasses, cn, Icon, Page, Skeleton, Surface } from '@/ui';
-import { InterestsPrompt } from '@/features/profile/InterestsPrompt';
+import { getGoalsView, logError, setMeta } from '@/data';
+import { SyncIndicator } from '@/app/SyncIndicator';
+import { openAddSheet } from '@/features/add/addSheetStore';
+import { useAuth } from '@/features/auth/session';
 import { FsrsOptOffer } from '@/features/fsrs/FsrsOptOffer';
-import { ReportHomeNote } from '@/features/report/ReportHomeNote';
-import { nextDueText } from './nextDueText';
-import { getHomeDashboard, type ForecastDay, type HomeDashboard } from './queries';
+import { LevelChangeLine, LevelTestOffer } from '@/features/leveltest/LevelHomeNotes';
+import { LoadNotes } from '@/features/load/LoadNotes';
+import { InterestsPrompt } from '@/features/profile/InterestsPrompt';
+import { useNow } from '@/features/settings/useNow';
+import { useStudyModeCounts } from '@/features/review/studyModes';
+import { useWordStages } from '@/features/stats/useWordStages';
+import { Button, cn, Icon, IconButton, Logo, Skeleton, Surface } from '@/ui';
+import { DecksForYou } from './DecksForYou';
+import { greetingKey, homeDate } from './greeting';
+import { GoalsCard } from './GoalsCard';
+import { HomeIcon } from './homeIcons';
+import { MoreStudy } from './MoreStudy';
+import { getHomeCore, type HomeCore } from './queries';
+import { Shortcuts } from './Shortcuts';
+import { StudyTypes } from './StudyTypes';
+import { TodayHero } from './TodayHero';
+import {
+  countWords,
+  getHomeDecks,
+  getHomeGoals,
+  getShortcuts,
+  getTodayActivity,
+  type HomeDeck,
+  STAGE_RULE_NOTE_KEY,
+  stageRuleNoteVisible,
+} from './todayQueries';
+import { WordsCard } from './WordsCard';
 
 export function HomeScreen() {
-  const { t } = useTranslation();
-  const data = useLiveQuery(() => getHomeDashboard(), []);
-  const description = data ? formatDayLong(data.summary.streak.today) : ' ';
-
-  if (data && !data.hasCards) return <HomeEmpty />;
-
+  const core = useLiveQuery(() => getHomeCore(), []);
+  if (core && !core.hasCards) return <HomeWelcome />;
   return (
-    <Page title={t('home.title')} description={description} width="wide">
-      {data ? <Dashboard data={data} /> : <DashboardSkeleton />}
-    </Page>
+    <HomeFrame timezone={core?.timezone}>
+      {core ? <Dashboard core={core} /> : <DashboardSkeleton />}
+    </HomeFrame>
   );
 }
 
-/** Phone: one column in priority order. ≥1024 px: today + activity on the left, figures on the right. */
-function Dashboard({ data }: { data: HomeDashboard }) {
-  return (
-    <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-start lg:gap-5">
-      <div className="contents lg:col-span-2 lg:flex lg:flex-col lg:gap-5 empty:hidden">
-        <LevelChangeLine className="order-0 lg:order-none" />
-        <LevelTestOffer className="order-0 lg:order-none" />
-        <LoadNotes className="order-0 lg:order-none" />
-        <FsrsOptOffer className="order-0 lg:order-none" />
-        <ReportHomeNote className="order-0 lg:order-none" />
-      </div>
-      <div className="contents lg:flex lg:flex-col lg:gap-5">
-        <TodayCard data={data} className="order-2 lg:order-none" />
-        <InterestsPrompt className="order-2 lg:order-none" />
-        <ActivityStrip cells={data.strip} className="order-4 lg:order-none" />
-        <RecentWords data={data} className="order-7 lg:order-none" />
-      </div>
-      <div className="contents lg:flex lg:flex-col lg:gap-5">
-        <StreakHero data={data} className="order-1 lg:order-none" />
-        <VocabTile className="order-3 lg:order-none" />
-        <Forecast days={data.forecast} className="order-5 lg:order-none" />
-        <MiniMetrics data={data} className="order-6 lg:order-none" />
-      </div>
-    </div>
-  );
-}
-
-function SectionTitle({
+/** Page frame with the greeting header ("Pazar, 25 Ekim" / "İyi akşamlar, Hasan"). */
+function HomeFrame({
+  timezone,
+  title,
   children,
-  id,
-  action,
 }: {
+  timezone: string | undefined;
+  /** Replaces the greeting (the welcome screen says "Hoş geldin"). */
+  title?: string;
   children: ReactNode;
-  id?: string;
-  action?: ReactNode;
 }) {
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const at = useNow();
+  const first = user?.name?.split(/\s+/)[0] ?? null;
+  const greeting = t(greetingKey(at, timezone));
   return (
-    <div className="mb-4 flex items-baseline justify-between gap-3">
-      <h2 id={id} className="font-serif text-lg font-semibold text-fg">
-        {children}
-      </h2>
-      {action}
+    <div className="mx-auto w-full max-w-2xl px-4 pt-3.5 pb-8 md:pt-8 lg:max-w-5xl">
+      <header className="flex items-center justify-between gap-3 px-1 pb-3 md:pb-5">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <Logo size={34} wordmark={false} className="md:hidden" />
+          <div className="flex min-w-0 flex-col">
+            <span className="text-[0.8125rem] text-fg-muted">{homeDate(at, timezone)}</span>
+            <h1 className="truncate font-serif text-xl font-semibold md:text-3xl">
+              {title ?? (first ? t('today.greetingName', { greeting, name: first }) : greeting)}
+            </h1>
+          </div>
+        </div>
+        <div className="md:hidden">
+          <SyncIndicator compact />
+        </div>
+      </header>
+      {children}
     </div>
   );
 }
 
-function StreakHero({ data, className }: { data: HomeDashboard; className?: string }) {
-  const { t } = useTranslation();
-  const s = data.summary.streak;
-  const caption = s.todayActive
-    ? t('home.streakTodayDone')
-    : s.currentStreak > 0
-      ? t('home.streakTodayPending')
-      : t('home.streakStart');
+function Dashboard({ core }: { core: HomeCore }) {
+  const counts = useStudyModeCounts();
+  const activity = useLiveQuery(() => getTodayActivity(), []);
+  const goals = useLiveQuery(() => getHomeGoals(), []);
+  const goalsView = useLiveQuery(() => getGoalsView(), []);
+  const stages = useWordStages();
+  const totalWords = useLiveQuery(() => countWords(), []);
+  const shortcuts = useLiveQuery(() => getShortcuts(), []);
+  const decks = useHomeDecks();
+
+  const ready = counts && activity;
+  const wordDone = counts ? counts.word.due + counts.word.newCount === 0 : false;
+
   return (
-    <Surface
-      as="section"
-      aria-labelledby="streak-title"
-      padding="none"
-      className={cn('p-5 sm:p-6', className)}
-    >
-      <h2 id="streak-title" className="sr-only">
-        {t('home.streakTitle')}
-      </h2>
-      <div className="flex items-end gap-4">
-        <div className="flex items-baseline gap-2">
-          <span className="tabular font-serif text-6xl leading-[0.9] font-semibold tracking-[-0.02em] text-fg">
-            {s.currentStreak}
-          </span>
-          <span className="font-serif text-xl text-fg">
-            {t('home.streakUnit', { count: s.currentStreak })}
-          </span>
-        </div>
-        <span
-          className={cn(
-            'mb-1 ml-auto inline-flex size-9 items-center justify-center rounded-full',
-            s.todayActive
-              ? 'bg-success-soft text-success-text'
-              : 'border border-border text-fg-subtle',
-          )}
-          aria-hidden="true"
-        >
-          <Icon name="check" size={18} strokeWidth={s.todayActive ? 2 : 1.6} />
-        </span>
+    <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5">
+      <div className="flex flex-col gap-4 lg:gap-5">
+        {ready ? (
+          <TodayHero
+            data={{
+              word: counts.word,
+              activity,
+              streak: core.streak,
+              next: wordDone ? core.next : null,
+              now: core.now,
+              timezone: core.timezone,
+            }}
+          />
+        ) : (
+          <HeroSkeleton />
+        )}
+        {ready && (
+          <StudyTypes counts={counts} answered={activity.answers} finishedHero={wordDone} />
+        )}
+        {wordDone && shortcuts && <MoreStudy more={shortcuts.more} />}
+        <Notes />
       </div>
-      <p className="mt-2 text-sm text-fg-muted">
-        <span className="font-medium text-fg">{t('home.streakTitle')}</span> · {caption}
-      </p>
-      <dl className="mt-5 grid grid-cols-2 border-t border-border pt-4">
-        <div className="flex flex-col gap-0.5">
-          <dt className="text-sm text-fg-muted">{t('home.longest')}</dt>
-          <dd className="tabular font-serif text-2xl font-semibold">
-            {s.longestStreak}{' '}
-            <span className="text-base font-normal text-fg-muted">
-              {t('home.days', { count: s.longestStreak })}
-            </span>
-          </dd>
-        </div>
-        <div className="flex flex-col gap-0.5 border-l border-border pl-4">
-          <dt className="text-sm text-fg-muted">{t('home.totalActive')}</dt>
-          <dd className="tabular font-serif text-2xl font-semibold">
-            {formatNumber(s.totalActiveDays)}{' '}
-            <span className="text-base font-normal text-fg-muted">
-              {t('home.days', { count: s.totalActiveDays })}
-            </span>
-          </dd>
-        </div>
-      </dl>
-    </Surface>
+      <div className="flex flex-col gap-4 lg:gap-5">
+        {goals && activity && (
+          <GoalsCard
+            goals={goals}
+            view={goalsView}
+            todayMinutes={activity.minutes}
+            weekMinutes={activity.weekMinutes}
+          />
+        )}
+        {stages && totalWords !== undefined && goals && (
+          <WordsCard
+            stages={stages}
+            totalWords={totalWords}
+            retention={core.streak.retentionRate}
+            retentionGoal={goals.retentionGoal}
+          />
+        )}
+        {shortcuts && <Shortcuts data={shortcuts} showHard={!wordDone} />}
+        {decks && <DecksForYou decks={decks} />}
+      </div>
+    </div>
   );
 }
 
-function ProgressRing({ done, total }: { done: number; total: number }) {
-  const r = 42;
-  const c = 2 * Math.PI * r;
-  const pct = total > 0 ? Math.min(1, done / total) : 1;
+/** Decks for the user, read once per visit (the word bank is large and rarely changes). */
+function useHomeDecks(): HomeDeck[] | undefined {
+  const [decks, setDecks] = useState<HomeDeck[]>();
+  useEffect(() => {
+    let live = true;
+    getHomeDecks()
+      .then((d) => live && setDecks(d))
+      .catch((e: unknown) => void logError(e, 'home.decks'));
+    return () => {
+      live = false;
+    };
+  }, []);
+  return decks;
+}
+
+/** Occasional notes: the stricter "öğrenildi" rule, level changes, load, FSRS, interests. */
+function Notes() {
   return (
-    <svg
-      viewBox="0 0 100 100"
-      className="size-26 shrink-0 -rotate-90 sm:size-28"
-      aria-hidden="true"
+    <div className="flex flex-col gap-4 empty:hidden lg:gap-5">
+      <StageRuleNote />
+      <LevelChangeLine />
+      <LoadNotes />
+      <FsrsOptOffer />
+      <InterestsPrompt />
+    </div>
+  );
+}
+
+/** Shown once after the update (docs/plan "Öğrenme modeli" 6), until closed. */
+function StageRuleNote() {
+  const { t } = useTranslation();
+  const visible = useLiveQuery(() => stageRuleNoteVisible(), []);
+  if (!visible) return null;
+  return (
+    <aside
+      aria-labelledby="stage-rule-title"
+      className="flex items-start gap-3 rounded-[18px] border border-border bg-surface py-3 pr-1.5 pl-4"
+      data-testid="stage-rule-note"
     >
-      <circle cx="50" cy="50" r={r} fill="none" strokeWidth="8" className="stroke-surface-sunken" />
-      <circle
-        cx="50"
-        cy="50"
-        r={r}
-        fill="none"
-        strokeWidth="8"
-        strokeLinecap="round"
-        strokeDasharray={c}
-        strokeDashoffset={c * (1 - pct)}
-        className={cn(
-          'transition-[stroke-dashoffset] duration-(--duration-large) ease-standard motion-reduce:transition-none',
-          pct >= 1 ? 'stroke-success' : 'stroke-accent',
-          pct === 0 && 'opacity-0',
-        )}
+      <HomeIcon name="info" size={20} strokeWidth={1.8} className="mt-0.5 text-accent-text" />
+      <div className="flex min-w-0 flex-1 flex-col gap-1 py-0.5">
+        <h2 id="stage-rule-title" className="text-[0.9375rem] font-semibold">
+          {t('today.ruleTitle')}
+        </h2>
+        <p className="text-sm text-fg-muted">{t('today.ruleBody')}</p>
+      </div>
+      <IconButton
+        icon="x"
+        label={t('common.close')}
+        tooltip={false}
+        className="-mt-1"
+        onClick={() =>
+          void setMeta(STAGE_RULE_NOTE_KEY, true).catch(
+            (e: unknown) => void logError(e, 'home.ruleNote'),
+          )
+        }
       />
-    </svg>
+    </aside>
   );
 }
 
-function TodayCard({ data, className }: { data: HomeDashboard; className?: string }) {
-  const { t } = useTranslation();
-  const { summary } = data;
-  const remaining = summary.queue.total;
-  const due = summary.queue.review + summary.queue.learning;
-  const finished = remaining === 0;
-  const pct = summary.plannedToday
-    ? Math.round((summary.doneToday / summary.plannedToday) * 100)
-    : 100;
-
+function HeroSkeleton() {
   return (
-    <Surface
-      as="section"
-      aria-labelledby="today-title"
-      padding="none"
-      className={cn('p-5 sm:p-6', className)}
-    >
-      <h2 id="today-title" className="sr-only">
-        {t('home.todayTitle')}
-      </h2>
-      <div className="flex items-center gap-4 sm:gap-6">
-        <div
-          className="relative"
-          role="img"
-          aria-label={t('home.progressValue', {
-            done: summary.doneToday,
-            total: summary.plannedToday,
-          })}
-        >
-          <ProgressRing done={summary.doneToday} total={summary.plannedToday} />
-          <div
-            className="absolute inset-0 flex flex-col items-center justify-center"
-            aria-hidden="true"
-          >
-            {finished ? (
-              <Icon name="check" size={28} strokeWidth={2} className="text-success-text" />
-            ) : (
-              <>
-                <span className="tabular font-serif text-2xl leading-none font-semibold">
-                  {formatPercent(pct / 100)}
-                </span>
-                <span className="tabular mt-1 text-xs text-fg-muted">
-                  {summary.doneToday}/{summary.plannedToday}
-                </span>
-              </>
-            )}
-          </div>
-        </div>
-
-        {finished ? (
-          <div className="flex min-w-0 flex-col gap-1">
-            <p className="font-serif text-xl font-semibold text-fg sm:text-2xl">
-              {t('home.doneTitle')}
-            </p>
-            <p className="text-[0.9375rem] text-fg-muted">
-              {summary.doneToday > 0
-                ? t('home.doneBody', { count: summary.doneToday })
-                : t('home.doneNothing')}
-            </p>
-          </div>
-        ) : (
-          <dl className="grid min-w-0 flex-1 grid-cols-2 gap-x-4 gap-y-3">
-            <div className="flex flex-col">
-              <dt className="text-sm whitespace-nowrap text-fg-muted">{t('home.due')}</dt>
-              <dd className="tabular font-serif text-4xl leading-tight font-semibold">{due}</dd>
-            </div>
-            <div className="flex flex-col">
-              <dt className="text-sm whitespace-nowrap text-fg-muted">{t('home.new')}</dt>
-              <dd className="tabular font-serif text-4xl leading-tight font-semibold">
-                {summary.queue.new}
-              </dd>
-            </div>
-            <div className="col-span-2 text-sm text-fg-muted">
-              <dt className="sr-only">{t('home.estimate')}</dt>
-              <dd>
-                {t('home.estimateValue', {
-                  time: formatDuration(Math.max(60_000, remaining * data.msPerCard)),
-                })}
-              </dd>
-            </div>
-          </dl>
-        )}
+    <div aria-busy="true" className="flex flex-col gap-4 rounded-[20px] bg-surface p-5">
+      <div className="flex items-center gap-5">
+        <Skeleton className="size-23 rounded-full" />
+        <Skeleton lines={3} className="flex-1" />
       </div>
-
-      <div className="mt-6 flex flex-col gap-2">
-        {finished ? (
-          <>
-            <Link to="/more" className={buttonClasses({ size: 'lg', fullWidth: true })}>
-              {t('home.moreStudy')}
-              <Icon name="chevron-right" size={20} />
-            </Link>
-            <p className="text-center text-sm text-fg-muted" role="status">
-              {nextDueText(t, data.next, data.now, data.timezone)}
-            </p>
-          </>
-        ) : (
-          <Link to="/review" className={buttonClasses({ size: 'lg', fullWidth: true })}>
-            {t('home.startReview')}
-            <Icon name="chevron-right" size={20} />
-          </Link>
-        )}
-        <Link to="/add" className={buttonClasses({ variant: 'ghost', fullWidth: true })}>
-          <Icon name="plus" size={18} />
-          {t('home.addCard')}
-        </Link>
-      </div>
-    </Surface>
-  );
-}
-
-const heatBg = ['bg-heat-empty', 'bg-heat-active', 'bg-heat-completed'] as const;
-
-function ActivityStrip({ cells, className }: { cells: HeatmapCell[]; className?: string }) {
-  const { t } = useTranslation();
-  const active = cells.filter((c) => c.level > 0).length;
-  return (
-    <Surface
-      as="section"
-      aria-labelledby="strip-title"
-      padding="none"
-      className={cn('p-5 sm:p-6', className)}
-    >
-      <SectionTitle
-        id="strip-title"
-        action={
-          <Link
-            to="/stats"
-            className="text-sm font-medium text-accent-text underline-offset-4 hover:underline"
-          >
-            {t('home.seeStats')}
-          </Link>
-        }
-      >
-        {t('home.last14')}
-      </SectionTitle>
-      <ol
-        className="grid grid-cols-14 gap-1 sm:gap-1.5"
-        aria-label={t('home.stripLabel', { active })}
-      >
-        {cells.map((c, i) => {
-          const isToday = i === cells.length - 1;
-          return (
-            <li key={c.date} className="flex flex-col items-center gap-1.5">
-              <span
-                role="img"
-                aria-label={heatLabel(t, c) + (isToday ? `, ${t('stats.today')}` : '')}
-                className={cn(
-                  'aspect-square w-full max-w-8 rounded-[4px]',
-                  heatBg[c.level],
-                  isToday && 'outline-2 outline-offset-2 outline-fg',
-                )}
-              />
-              <span
-                aria-hidden="true"
-                className={cn(
-                  'text-[0.6875rem] leading-none',
-                  isToday ? 'font-semibold text-fg' : 'text-fg-subtle',
-                )}
-              >
-                {Number(c.date.slice(8))}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
-      <p className="mt-4 text-sm text-fg-muted">
-        {t('home.stripSummary', { active, total: cells.length })}
-      </p>
-    </Surface>
-  );
-}
-
-function Forecast({ days, className }: { days: ForecastDay[]; className?: string }) {
-  const { t } = useTranslation();
-  const max = Math.max(1, ...days.map((d) => d.count));
-  return (
-    <Surface
-      as="section"
-      aria-labelledby="forecast-title"
-      padding="none"
-      className={cn('p-5 sm:p-6', className)}
-    >
-      <SectionTitle id="forecast-title">{t('home.forecast')}</SectionTitle>
-      <ul className="flex h-32 items-end gap-2">
-        {days.map((d) => {
-          const label = d.today ? t('home.forecastToday') : formatWeekdayShort(d.date);
-          return (
-            <li
-              key={d.date}
-              className="flex h-full flex-1 flex-col items-center justify-end gap-1.5"
-              aria-label={t('home.forecastItem', {
-                day: d.today ? label : formatDayLong(d.date),
-                count: d.count,
-              })}
-            >
-              <span aria-hidden="true" className="tabular text-xs text-fg-muted">
-                {d.count}
-              </span>
-              <span
-                aria-hidden="true"
-                className={cn(
-                  'w-full max-w-9 rounded-t-[4px]',
-                  d.today ? 'bg-accent' : 'bg-border-strong/45',
-                )}
-                style={{ height: `${d.count ? Math.max(6, (d.count / max) * 100) : 3}%` }}
-              />
-              <span
-                aria-hidden="true"
-                className={cn('text-xs', d.today ? 'font-semibold text-fg' : 'text-fg-muted')}
-              >
-                {label}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-    </Surface>
-  );
-}
-
-function MiniMetrics({ data, className }: { data: HomeDashboard; className?: string }) {
-  const { t } = useTranslation();
-  const s = data.summary.streak;
-  const items = [
-    {
-      label: t('home.learned'),
-      value: formatNumber(s.learnedCards),
-      detail: t('home.learnedDetail'),
-    },
-    {
-      label: t('home.retention'),
-      value: s.retentionRate === null ? '—' : formatPercent(s.retentionRate),
-      detail: t('home.retentionDetail'),
-    },
-  ];
-  return (
-    <section
-      aria-label={t('home.metrics')}
-      className={cn('grid grid-cols-2 gap-4 lg:gap-5', className)}
-    >
-      {items.map((m) => (
-        <Surface key={m.label} padding="none" className="flex flex-col gap-1 p-5">
-          <span className="text-sm text-fg-muted">{m.label}</span>
-          <span className="tabular font-serif text-3xl leading-tight font-semibold">{m.value}</span>
-          <span className="text-xs text-fg-subtle">{m.detail}</span>
-        </Surface>
-      ))}
-    </section>
-  );
-}
-
-function RecentWords({ data, className }: { data: HomeDashboard; className?: string }) {
-  const { t } = useTranslation();
-  return (
-    <Surface
-      as="section"
-      aria-labelledby="recent-title"
-      padding="none"
-      className={cn('p-5 sm:p-6', className)}
-    >
-      <SectionTitle
-        id="recent-title"
-        action={
-          <Link
-            to="/library"
-            className="text-sm font-medium text-accent-text underline-offset-4 hover:underline"
-          >
-            {t('home.seeAll')}
-          </Link>
-        }
-      >
-        {t('home.recent')}
-      </SectionTitle>
-      <ul className="-mx-2 flex flex-col">
-        {data.recent.map((n) => (
-          <li key={n.id}>
-            <Link
-              to={`/library?note=${encodeURIComponent(n.id)}`}
-              className="flex min-h-11 items-baseline gap-3 rounded-control px-2 py-2 hover:bg-hover"
-            >
-              <span lang="en" className="shrink-0 font-serif text-lg font-semibold text-fg">
-                {n.term}
-              </span>
-              <span className="min-w-0 truncate text-[0.9375rem] text-fg-muted">{n.meaning}</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </Surface>
+      <Skeleton className="h-13 rounded-[14px]" />
+    </div>
   );
 }
 
 function DashboardSkeleton() {
   return (
-    <div aria-busy="true" className="flex flex-col gap-4 lg:grid lg:grid-cols-[7fr_5fr] lg:gap-5">
-      <Surface padding="lg" className="flex flex-col gap-6">
-        <div className="flex items-center gap-6">
-          <Skeleton className="size-28 rounded-full" />
-          <Skeleton lines={3} className="flex-1" />
-        </div>
-        <Skeleton className="h-14 rounded-control" />
-      </Surface>
+    <div aria-busy="true" className="flex flex-col gap-4">
+      <HeroSkeleton />
+      <div className="grid grid-cols-3 gap-2.5">
+        {[0, 1, 2].map((i) => (
+          <Skeleton key={i} className="h-37 rounded-[18px]" />
+        ))}
+      </div>
       <Surface padding="lg">
-        <Skeleton className="h-14 w-32" />
-        <Skeleton lines={2} className="mt-6" />
+        <Skeleton lines={3} />
       </Surface>
     </div>
   );
 }
 
-function HomeEmpty() {
+/** No words yet: three steps, the Add sheet, the level test and decks to start from. */
+function HomeWelcome() {
   const { t } = useTranslation();
+  const decks = useHomeDecks();
+  // A first-time user learns the counting rule as it is: the "rule changed" note is not for them.
+  useEffect(() => {
+    void setMeta(STAGE_RULE_NOTE_KEY, true).catch(
+      (e: unknown) => void logError(e, 'home.ruleNote'),
+    );
+  }, []);
   const steps = [t('home.emptyStep1'), t('home.emptyStep2'), t('home.emptyStep3')];
   return (
-    <Page title={t('home.emptyTitle')} description={t('home.emptyBody')}>
-      <Surface padding="lg" className="flex flex-col gap-8">
-        <ol className="flex flex-col gap-5">
-          {steps.map((s, i) => (
-            <li key={s} className="flex items-start gap-4">
-              <span
-                aria-hidden="true"
-                className={cn(
-                  'flex size-9 shrink-0 items-center justify-center rounded-full font-serif text-lg font-semibold',
-                  i === 0 ? 'bg-accent text-accent-fg' : 'border border-border text-fg-muted',
-                )}
-              >
-                {i + 1}
-              </span>
-              <p className="pt-1.5 text-[0.9375rem] text-fg">{s}</p>
-            </li>
-          ))}
-        </ol>
-        <Link to="/add" className={buttonClasses({ size: 'lg', fullWidth: true })}>
-          <Icon name="plus" size={20} />
-          {t('home.emptyAction')}
-        </Link>
-      </Surface>
-      <LevelTestOffer className="mt-4" />
-    </Page>
+    <HomeFrame timezone={undefined} title={t('home.emptyTitle')}>
+      <div className="flex flex-col gap-4">
+        <Surface padding="lg" className="flex flex-col gap-6 rounded-[20px]">
+          <p className="text-[0.9375rem] text-fg-muted">{t('home.emptyBody')}</p>
+          <ol className="flex flex-col gap-5">
+            {steps.map((s, i) => (
+              <li key={s} className="flex items-start gap-4">
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    'flex size-9 shrink-0 items-center justify-center rounded-full font-serif text-lg font-semibold',
+                    i === 0 ? 'bg-accent text-accent-fg' : 'border border-border text-fg-muted',
+                  )}
+                >
+                  {i + 1}
+                </span>
+                <p className="pt-1.5 text-[0.9375rem] text-fg">{s}</p>
+              </li>
+            ))}
+          </ol>
+          <Button size="lg" fullWidth onClick={openAddSheet} aria-haspopup="dialog">
+            <Icon name="plus" size={20} />
+            {t('home.emptyAction')}
+          </Button>
+        </Surface>
+        <LevelTestOffer />
+        {decks && <DecksForYou decks={decks} />}
+      </div>
+    </HomeFrame>
   );
 }

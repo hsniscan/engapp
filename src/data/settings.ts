@@ -7,7 +7,7 @@ import {
 import { type DayConfig, deviceTimeZone, isValidTimeZone } from '../domain/day';
 import { CAPACITY_MIN_LIMITS } from '../domain/capacity';
 import { createScheduler, RETENTION_MAX, RETENTION_MIN, type Scheduler } from '../domain/fsrs';
-import { GOAL_LIMITS, type GoalKey } from '../domain/goals';
+import { DAY_MINUTES_LIMITS, GOAL_LIMITS, type GoalKey } from '../domain/goals';
 import { FIRST_NOTIFY_HOUR, LAST_NOTIFY_HOUR } from '../domain/notify';
 import { isValidRange, MAX_VACATION_HISTORY } from '../domain/vacation';
 import { HLC_ZERO } from '../domain/hlc';
@@ -114,6 +114,15 @@ export const settingsPatchSchema = z
         week_active_days: goalValue('week_active_days'),
         month_new_terms: goalValue('month_new_terms'),
         week_minutes: goalValue('week_minutes'),
+        // Redesign home goals ("Hedeflerin"): minutes a day and the level aimed for.
+        day_minutes: z
+          .number()
+          .int()
+          .min(DAY_MINUTES_LIMITS.min)
+          .max(DAY_MINUTES_LIMITS.max)
+          .nullable()
+          .optional(),
+        target_level: z.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']).nullable().optional(),
       })
       .nullable(),
   })
@@ -122,7 +131,10 @@ export const settingsPatchSchema = z
 export type SettingsPatch = z.infer<typeof settingsPatchSchema>;
 
 /** Validate and save a partial settings change. Throws ZodError on invalid input. */
-export async function updateSettings(patch: SettingsPatch, now: Millis = Date.now()): Promise<Settings> {
+export async function updateSettings(
+  patch: SettingsPatch,
+  now: Millis = Date.now(),
+): Promise<Settings> {
   const clean = settingsPatchSchema.parse(patch);
   return writeTx([db.settings], now, async (w) => {
     const current = (await db.settings.get(SETTINGS_ID)) ?? defaultSettings(now, w.userId);
@@ -141,7 +153,10 @@ export async function updateSettings(patch: SettingsPatch, now: Millis = Date.no
 }
 
 export function dayConfig(s: Pick<Settings, 'timezone' | 'day_start_hour'>): DayConfig {
-  return { timezone: isValidTimeZone(s.timezone) ? s.timezone : 'UTC', day_start_hour: s.day_start_hour };
+  return {
+    timezone: isValidTimeZone(s.timezone) ? s.timezone : 'UTC',
+    day_start_hour: s.day_start_hour,
+  };
 }
 
 let cached: { key: string; scheduler: Scheduler } | null = null;
@@ -154,7 +169,10 @@ export function schedulerFor(s: Pick<Settings, 'request_retention' | 'fsrs_param
   try {
     scheduler = createScheduler(s);
   } catch {
-    scheduler = createScheduler({ request_retention: DEFAULT_SETTINGS.request_retention, fsrs_params: null });
+    scheduler = createScheduler({
+      request_retention: DEFAULT_SETTINGS.request_retention,
+      fsrs_params: null,
+    });
   }
   cached = { key, scheduler };
   return scheduler;
