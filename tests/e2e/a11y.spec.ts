@@ -63,6 +63,29 @@ for (const width of [360, 1280]) {
         await expect(page.getByTestId('level-explanation')).toBeHidden();
       }
 
+      // Redesign: the study-type picker, and an Üretim and a Boşluk doldurma card (front and
+      // result) when the seed has one due.
+      await page.goto('/study');
+      await expect(page.getByTestId('study-start')).toBeVisible();
+      await check(page, 'study-modes', tag);
+      for (const mode of ['production', 'cloze'] as const) {
+        await page.goto(`/study?mode=${mode}`);
+        const front = page.getByTestId('study-front');
+        const empty = page.getByRole('heading', { level: 2 });
+        await expect(front.or(empty).first()).toBeVisible();
+        if (!(await front.isVisible())) continue;
+        await check(page, `study-${mode}`, tag);
+        if (mode === 'production') await page.getByRole('button', { name: 'Bilmiyorum, göster' }).click();
+        else {
+          const choices = page.getByRole('group', { name: 'Seçenekler' }).getByRole('button');
+          if (await choices.count()) await choices.first().click();
+          else await page.getByTestId('answer-input').fill('x');
+          await page.getByRole('button', { name: 'Kontrol et' }).click();
+        }
+        await expect(page.getByRole('group', { name: /Ne kadar iyi hatırladın\?/ })).toBeVisible();
+        await check(page, `study-${mode}-result`, tag);
+      }
+
       for (const [tab, label] of [
         ['manual', 'Elle'],
         ['paste', 'Metin yapıştır'],

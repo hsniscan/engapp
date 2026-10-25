@@ -7,7 +7,8 @@ import i18n from '@/i18n';
 import { toast } from '@/ui';
 import { router } from './router';
 
-const inReview = (path: string) => path === '/review' || path.startsWith('/review/');
+const inReview = (path: string) =>
+  path === '/review' || path.startsWith('/review/') || path === '/study' || path.startsWith('/study/');
 
 export function registerServiceWorker(): void {
   if (!('serviceWorker' in navigator)) return;

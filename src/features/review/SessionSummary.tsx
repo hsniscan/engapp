@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from 'motion/react';
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { getSettings, getStreakSummary } from '@/data';
@@ -39,6 +39,10 @@ export interface SessionSummaryProps {
   settled: () => Promise<void>;
   canUndo: boolean;
   onUndo: () => void;
+  /** Words whose recognition card reached Öğrenildi with this session's answers (spec 5.2). */
+  learnedToday?: number;
+  /** Links to the other study modes that still have cards today. */
+  continueWith?: ReactNode;
 }
 
 interface After {
@@ -48,7 +52,15 @@ interface After {
   timezone: string;
 }
 
-export function SessionSummary({ answers, start, settled, canUndo, onUndo }: SessionSummaryProps) {
+export function SessionSummary({
+  answers,
+  start,
+  settled,
+  canUndo,
+  onUndo,
+  learnedToday = 0,
+  continueWith,
+}: SessionSummaryProps) {
   const { t } = useTranslation();
   const reduce = useReducedMotion();
   const [after, setAfter] = useState<After | null>(null);
@@ -116,6 +128,14 @@ export function SessionSummary({ answers, start, settled, canUndo, onUndo }: Ses
         <p className="mt-2 text-[0.9375rem] text-fg-muted" aria-live="polite">
           {after ? nextDueText(t, after.next, after.now, after.timezone) : ' '}
         </p>
+        {learnedToday > 0 && (
+          <p
+            className="mt-1 text-[0.9375rem] font-medium text-success-text"
+            data-testid="learned-today"
+          >
+            {t('study.learnedToday', { count: learnedToday })}
+          </p>
+        )}
       </motion.div>
 
       <motion.dl
@@ -166,6 +186,12 @@ export function SessionSummary({ answers, start, settled, canUndo, onUndo }: Ses
           </span>
         </div>
       </motion.div>
+
+      {continueWith && (
+        <motion.div {...item(4)} className="mt-4">
+          {continueWith}
+        </motion.div>
+      )}
 
       <motion.div {...item(4)} className="mt-8 flex flex-col gap-2">
         <Link to="/" className={buttonClasses({ size: 'lg', fullWidth: true })}>

@@ -16,6 +16,7 @@ import {
   type CardView,
 } from '@/data';
 import type { QueueItem, QueueKind, QueueMode } from '@/domain/queue';
+import type { StudyMode } from '@/domain/studyMode';
 import { Rating, type Id, type RatingValue } from '@/domain/types';
 import type { LeechNotice } from '@/features/leech';
 import { canShowPicture, preloadPicture } from '@/features/images/picture';
@@ -72,7 +73,8 @@ export function canShow(view: CardView | null | undefined): boolean {
   return view.card.card_type !== 'image' || canShowPicture(view.image);
 }
 
-export function useReviewSession(mode: QueueMode = 'normal') {
+/** `studyMode` absent: the mixed queue of every card type ("Karışık çalış", review ahead). */
+export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMode) {
   const [state, setState] = useState<SessionState>({
     phase: 'loading',
     current: null,
@@ -175,7 +177,11 @@ export function useReviewSession(mode: QueueMode = 'normal') {
   /** Rebuild the queue; applied only if nothing newer happened in the meantime. */
   const rebuild = useCallback(
     async (mySeq: number) => {
-      const q = await getStudyQueue({ session: { ...counts.current }, mode });
+      const q = await getStudyQueue({
+        session: { ...counts.current },
+        mode,
+        ...(studyMode ? { studyMode } : {}),
+      });
       if (mySeq !== seq.current || !alive.current) return;
       const currentId = stateRef.current.current?.view.card.id;
       upcoming.current = q.items
@@ -189,7 +195,7 @@ export function useReviewSession(mode: QueueMode = 'normal') {
         prefetch();
       }
     },
-    [advance, finish, patch, prefetch, mode],
+    [advance, finish, patch, prefetch, mode, studyMode],
   );
 
   const enqueue = useCallback((job: () => Promise<void>) => {
@@ -204,7 +210,10 @@ export function useReviewSession(mode: QueueMode = 'normal') {
     alive.current = true;
     let cancelled = false;
     void (async () => {
-      const [q, streak] = await Promise.all([getStudyQueue({ mode }), getStreakSummary()]);
+      const [q, streak] = await Promise.all([
+        getStudyQueue({ mode, ...(studyMode ? { studyMode } : {}) }),
+        getStreakSummary(),
+      ]);
       if (cancelled) return;
       setStart({ todayActive: streak.todayActive, streak: streak.currentStreak });
       skipped.current.clear();
@@ -215,7 +224,7 @@ export function useReviewSession(mode: QueueMode = 'normal') {
       cancelled = true;
       alive.current = false;
     };
-  }, [advance, finish, mode]);
+  }, [advance, finish, mode, studyMode]);
 
   const flip = useCallback(() => {
     const s = stateRef.current;

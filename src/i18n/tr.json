@@ -175,6 +175,94 @@
     "aheadEmptyTitle": "Yarının kartları bitti",
     "promptImage": "Görseldeki kelimeyi bul"
   },
+  "study": {
+    "title": "Çalış",
+    "pickerTitle": "Çalış",
+    "leftToday": "Bugün {{count}} kart kaldı · yaklaşık {{min}} dk",
+    "allDone": "Bugünlük bütün türler bitti",
+    "mainBadge": "Ana",
+    "cardsUnit": "kart",
+    "split": "{{due}} tekrar · {{new}} yeni",
+    "minutes": "~{{count}} dk",
+    "mixed": "Karışık çalış",
+    "mixedHint": "Üç türü tek oturumda sırayla karıştırır",
+    "start": {
+      "word": "Kelime çalışmaya başla",
+      "production": "Üretime başla",
+      "cloze": "Boşluk doldurmaya başla",
+      "mixed": "Karışık çalışmaya başla"
+    },
+    "mode": {
+      "word": {
+        "name": "Kelime çalışma",
+        "dir": "İngilizce → Türkçe",
+        "desc": "Kelimeyi görürsün, anlamını hatırlarsın. Yeni kelimeler burada başlar."
+      },
+      "production": {
+        "name": "Üretim",
+        "dir": "Türkçe → İngilizce",
+        "desc": "Türkçesini görürsün, İngilizcesini yazarsın ya da aklından söylersin.",
+        "note": "Kelime çalışmada oturan kelimeler açılır"
+      },
+      "cloze": {
+        "name": "Boşluk doldurma",
+        "dir": "Cümle içinde",
+        "desc": "Cümledeki boşluğa uyan kelimeyi seçer ya da yazarsın.",
+        "note": "Kelimeyi bağlamında pekiştirir"
+      },
+      "mixed": {
+        "name": "Karışık çalışma"
+      }
+    },
+    "recallHint": "Anlamını hatırlamaya çalış, sonra çevir",
+    "tapCard": "ya da karta dokun",
+    "spaceKey": "ya da Boşluk tuşuna bas",
+    "answerShown": "Cevap gösterildi",
+    "scrollCard": "Kart, kaydırılabilir",
+    "suggested": "Önerimiz:",
+    "stage": {
+      "newWord": "Yeni kelime",
+      "relearning": "Yeniden öğreniyor",
+      "explain": "Bir kelime üç ayrı günde, aralar açılarak doğru bilinince öğrenilmiş sayılır."
+    },
+    "firstLetter": "İlk harfi göster",
+    "firstLetterShown": "İlk harf: {{hint}}",
+    "dontKnow": "Bilmiyorum, göster",
+    "typeAnswer": "İngilizcesini yaz",
+    "check": "Kontrol et",
+    "blank": "boşluk",
+    "result": {
+      "correct": "Doğru",
+      "close_one": "Neredeyse: bir harf farklı",
+      "close_other": "Neredeyse: {{count}} harf farklı",
+      "wrong": "Bu sefer olmadı",
+      "skipped": "Doğrusu bu",
+      "yours": "Senin cevabın",
+      "right": "Doğrusu"
+    },
+    "cloze": {
+      "showTr": "Türkçesini göster",
+      "choices": "Seçenekler",
+      "typeInstead": "Seçenek yerine yazarak cevapla",
+      "chooseInstead": "Seçeneklerden seç",
+      "typeAnswer": "Boşluğa gelen kelimeyi yaz",
+      "correctTag": "Doğrusu",
+      "yourPick": "Senin seçimin",
+      "pickedWord": "Seçtiğin kelime",
+      "pickFirst": "Önce bir seçenek seç ya da yaz"
+    },
+    "empty": {
+      "word": "Kelime çalışma bugünlük bitti",
+      "production": "Üretimde bugün kart yok",
+      "cloze": "Boşluk doldurmada bugün kart yok",
+      "productionBody": "Kelime çalışmada başka bir günde de doğru bildiğin kelimeler burada açılır.",
+      "others": "Başka türlerde bekleyen kartlar var",
+      "otherCount": "{{mode}}: {{count}} kart",
+      "pickMode": "Çalışma türleri"
+    },
+    "learnedToday_one": "Bugün {{count}} kelime Öğrenildi'ye geçti.",
+    "learnedToday_other": "Bugün {{count}} kelime Öğrenildi'ye geçti."
+  },
   "examples": {
     "title": "Örnek cümleler",
     "count": "{{count}} cümle",

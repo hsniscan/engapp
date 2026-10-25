@@ -6,7 +6,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 import { RouteErrorPage } from './pages/RouteErrorPage';
 
 /** The review session is the most used screen: its chunk is fetched while the browser is idle. */
-const loadReview = () => import('@/features/review/ReviewScreen');
+const loadReview = () => import('@/features/review/StudyRoute');
 if (typeof window !== 'undefined') {
   const idle = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 1500));
   idle(() => void loadReview().catch(() => {}));
@@ -23,6 +23,13 @@ const children: RouteObject[] = [
     handle: { immersive: true } satisfies RouteHandle,
     HydrateFallback: () => null,
     lazy: async () => ({ Component: (await loadReview()).ReviewRoute }),
+  },
+  {
+    // Redesign: /study?mode=word|production|cloze|mixed, no mode = the StudyModes picker.
+    path: 'study',
+    handle: { immersive: true } satisfies RouteHandle,
+    HydrateFallback: () => null,
+    lazy: async () => ({ Component: (await loadReview()).StudyRoute }),
   },
   {
     path: 'more',
