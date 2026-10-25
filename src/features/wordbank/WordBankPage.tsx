@@ -389,7 +389,6 @@ function BankRow({
           type="button"
           aria-expanded={open}
           aria-controls={detailsId}
-          aria-label={t('wordBank.details', { term: entry.lemma })}
           onClick={() => setOpen((o) => !o)}
           className="flex min-w-0 flex-1 flex-col gap-0.5 rounded-control text-left"
         >

@@ -302,7 +302,6 @@ function WordRow({ row }: { row: DeckWordRow }) {
     <li className="border-b border-surface-sunken last:border-b-0">
       <Link
         to={`/library?note=${encodeURIComponent(row.note.id)}`}
-        aria-label={t('deckHub.detail.openWord', { term: row.note.term })}
         className="flex min-h-[58px] items-center gap-2.5 px-4 py-2.5 hover:bg-hover"
       >
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">

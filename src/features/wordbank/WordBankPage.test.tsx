@@ -136,7 +136,7 @@ describe('word bank (Desteler › Kelime bankası)', () => {
     renderBank();
     await screen.findByRole('list', { name: 'Kelimeler' });
 
-    await user.click(screen.getByRole('button', { name: 'garden: anlamlar ve örnekler' }));
+    await user.click(screen.getByRole('button', { name: /^garden/, expanded: false }));
     expect(screen.getByText('I like the garden here.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'garden ekle' }));
     await waitFor(async () => expect(await noteTerms()).toEqual(['garden']));

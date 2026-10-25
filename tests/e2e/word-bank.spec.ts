@@ -64,10 +64,14 @@ test('Kelime Bankası: guest download, level list, add one, quick-add ten, offli
   const state = { requests: [] as string[], down: false };
   await serveBank(page, state);
 
-  // Reached from the add screen.
+  // Reached from the add screen: the old /kelime-bankasi address opens Desteler's bank segment.
   await page.goto('/add');
   await page.getByRole('link', { name: "Kelime Bankası'nı aç" }).click();
-  await expect(page).toHaveURL(/\/kelime-bankasi$/);
+  await expect(page).toHaveURL(/\/decks\?tab=bank$/);
+  await expect(page.getByRole('link', { name: 'Kelime bankası' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
 
   const list = page.getByRole('list', { name: 'Kelimeler' });
   await expect(list.getByTestId('word-bank-row').first()).toBeVisible();
@@ -75,16 +79,17 @@ test('Kelime Bankası: guest download, level list, add one, quick-add ten, offli
   expect(state.requests[0]).toContain('server_seq=gt.0');
   expect(state.requests[0]).toContain('list_source');
 
-  // The guest's level (B1 by default), most frequent first, with meaning and level badge.
-  await expect(page.getByRole('radio', { name: 'B1' })).toBeChecked();
-  const terms = list.locator('[lang="en"]');
+  // The guest's level (B1 by default), most frequent first, with its meaning.
+  await expect(page.getByRole('button', { name: 'B1', pressed: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'B1 · 15 kelime' })).toBeVisible();
+  const terms = list.getByTestId('word-bank-row').locator('[lang="en"]');
   await expect(terms.first()).toHaveText('opinion');
   const opinion = list.getByTestId('word-bank-row').filter({ hasText: 'opinion' });
   await expect(opinion.getByText('görüş')).toBeVisible();
-  await expect(opinion.getByRole('img', { name: 'Seviye B1, CEFR-J listesi' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Kaynaklar' })).toBeVisible();
 
-  // One word: its card is made through the normal add path, then it leaves the list.
+  // One word, from its details: the card is made through the normal add path, then it leaves.
+  await opinion.getByRole('button', { name: /^opinion/, expanded: false }).click();
   await opinion.getByRole('button', { name: 'opinion ekle' }).click();
   await expect(page.getByText('opinion eklendi', { exact: true })).toBeVisible();
   await expect(terms.first()).toHaveText('journey');
@@ -101,11 +106,56 @@ test('Kelime Bankası: guest download, level list, add one, quick-add ten, offli
 
   // Reopened without the network: the bank comes from the device, nothing is asked.
   state.down = true;
-  await page.goto('/kelime-bankasi');
-  await page.getByRole('radio', { name: 'A2' }).check({ force: true });
-  await expect(page.getByRole('radio', { name: 'A2' })).toBeChecked();
-  await expect(list.locator('[lang="en"]').first()).toBeVisible();
+  await page.goto('/decks?tab=bank');
+  await page.getByRole('button', { name: 'A2', pressed: false }).click();
+  await expect(page.getByRole('heading', { name: /^A2 · \d+ kelime$/ })).toBeVisible();
+  await expect(terms.first()).toBeVisible();
   expect(state.requests).toHaveLength(1);
+});
+
+test('Keşfet: a suggested deck adds only new words, once, and shows up in Destelerim', async ({
+  page,
+}) => {
+  await serveBank(page, { requests: [], down: false });
+  // One word is already on a card, one is "Biliyorum".
+  await page.goto('/decks?tab=bank');
+  const list = page.getByRole('list', { name: 'Kelimeler' });
+  const opinion = list.getByTestId('word-bank-row').filter({ hasText: 'opinion' });
+  await opinion.getByRole('button', { name: /^opinion/, expanded: false }).click();
+  await opinion.getByRole('button', { name: 'opinion ekle' }).click();
+  await expect(page.getByText('opinion eklendi', { exact: true })).toBeVisible();
+
+  await page.getByRole('link', { name: 'Keşfet', exact: true }).click();
+  await page.getByRole('link', { name: /^B1 kelimeleri/ }).click();
+  await expect(page).toHaveURL(/\/decks\/suggested\/level-b1$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'B1 kelimeleri' })).toBeVisible();
+  await page.getByRole('button', { name: /Bildiklerimi işaretle/ }).click();
+  await page.getByRole('button', { name: 'journey: biliyorum' }).click();
+  await page.getByRole('button', { name: 'Taramayı bitir' }).click();
+  await expect(page.getByRole('button', { name: 'Biliyorsun 1' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Kartında 1' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Destemlere ekle' }).click();
+  await expect(page.getByText('“B1 kelimeleri” destelerine eklendi', { exact: true })).toBeVisible();
+  const { notes, decks } = await dumpTables(page, ['notes', 'decks']);
+  const terms = (notes as { term: string; tags: string[] }[]).map((n) => n.term);
+  expect(terms).toHaveLength(14); // 15 B1 words − journey (known); opinion only once
+  expect(terms.filter((t) => t === 'opinion')).toHaveLength(1);
+  expect(terms).not.toContain('journey');
+  expect(
+    (notes as { term: string; tags: string[] }[]).every((n) => n.tags.includes('B1 kelimeleri')),
+  ).toBe(true);
+  expect(decks).toEqual([
+    expect.objectContaining({ name: 'B1 kelimeleri', filter: { v: 1, tags: ['B1 kelimeleri'] } }),
+  ]);
+  await expect(page.getByRole('button', { name: 'Destemlere ekle' })).toHaveCount(0);
+
+  await page.getByRole('link', { name: /Destemde aç/ }).click();
+  await expect(page).toHaveURL(/\/decks\/[^/?]+$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'B1 kelimeleri' })).toBeVisible();
+  await expect(
+    page.getByRole('list', { name: 'Destedeki kelimeler' }).getByRole('listitem'),
+  ).toHaveCount(14);
 });
 
 for (const [width, scheme] of [
@@ -118,12 +168,12 @@ for (const [width, scheme] of [
     await serveBank(page, { requests: [], down: false });
     await page.setViewportSize({ width, height: width < 768 ? 780 : 860 });
     await page.emulateMedia({ colorScheme: scheme });
-    await page.goto('/kelime-bankasi');
+    await page.goto('/decks?tab=bank');
     const list = page.getByRole('list', { name: 'Kelimeler' });
     await expect(list.getByTestId('word-bank-row').first()).toBeVisible();
-    await list.getByRole('button', { name: 'opinion: anlamlar ve örnekler' }).click();
-    await page.getByRole('checkbox', { name: 'journey seç' }).check();
-    await page.getByRole('checkbox', { name: 'festival seç' }).check();
+    await list.getByRole('button', { name: /^opinion/, expanded: false }).click();
+    await page.getByRole('button', { name: 'journey seç' }).click();
+    await page.getByRole('button', { name: 'festival seç' }).click();
     await expect(page.getByRole('region', { name: 'Seçilen kelimeler' })).toBeVisible();
     await page.waitForTimeout(400);
     const { violations } = await new AxeBuilder({ page })
