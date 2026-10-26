@@ -156,9 +156,10 @@ select is(
   pg_temp.push('user_encounters', pg_temp.enc_row('001761000000000:00001:devz', 7, 'devz')) -> 'acked',
   '["0193a000-0000-7000-8000-0000000000aa|2026-11-01|reader|devz"]'::jsonb,
   'the same derived id can exist for another user without touching the first one''s rows');
-select throws_ok(
-  $$ update public.user_texts set title = 'mine' where id = '0193a000-0000-7000-8000-000000000043' returning 1 $$,
-  null, null, 'updating someone else''s text changes nothing');
+-- RLS hides the row: the update matches nothing (no error), and the row stays as it was.
+select lives_ok(
+  $$ update public.user_texts set title = 'mine' where id = '0193a000-0000-7000-8000-000000000043' $$,
+  'updating someone else''s text changes nothing (it matches no row)');
 reset role;
 select is((select sum(n)::int from public.user_encounters where user_id = '43434343-4343-4343-8343-434343434301'), 5,
   'the first user''s counts are unchanged');
