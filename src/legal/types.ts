@@ -26,4 +26,4 @@ export interface LegalDocument {
 export const CONTROLLER_NAME = 'Hasan Basri İşcan';
 
 /** Version date of the privacy policy texts; bump it with every change to them. */
-export const PRIVACY_UPDATED = '2026-10-22';
+export const PRIVACY_UPDATED = '2026-10-26';
