@@ -19,6 +19,7 @@ import { dueStudiedCards, loadTodayFacts, newCards } from './history';
 import { aheadDaysFor, getLoadToday, type LoadToday } from './load';
 import { extraNewKey, getMeta } from './meta';
 import { newOrderInput, newOrderTables } from './newOrder';
+import { readCarry } from './smart';
 import { dayConfig, getSettings, schedulerFor } from './settings';
 
 export interface StudyQueue {
@@ -35,6 +36,8 @@ export interface StudyQueue {
   dayEnd: Millis;
   /** v0.3 İP3: today's catch-up / vacation plan (null in 'ahead' mode). */
   load: LoadToday | null;
+  /** v0.5 İP10: new cards the interference guard held back (rememberPostponed carries them). */
+  postponed: Id[];
 }
 
 /** Today's extra new-card allowance (meta `extra_new:<day>`, this device only). */
@@ -84,19 +87,27 @@ export async function getStudyQueue(opts: StudyQueueOptions = {}, now: Millis = 
     const aheadEnd = dayEndMs(addDays(facts.bounds.key, ahead ? aheadDaysFor(settings, facts.bounds.key) : 1), cfg);
     // Catch-up and the new-card ramp (domain/catchup.ts) shape the normal queue only.
     const load = ahead ? null : await getLoadToday(settings, now);
-    const [studied, fresh, extraNewToday] = await Promise.all([
+    const [studied, fresh, extraNewToday, carry] = await Promise.all([
       dueStudiedCards(ahead ? aheadEnd : facts.bounds.end),
       ahead ? Promise.resolve([]) : newCards(),
       getExtraNewToday(facts.bounds.key),
+      // v0.5 İP10: cards the interference guard postponed earlier (read with the rest).
+      ahead ? Promise.resolve([]) : readCarry(),
     ]);
     const inDeck = (c: Card) => !deckNotes || deckNotes.has(c.note_id);
     const all = deckNotes ? [...studied, ...fresh].filter(inDeck) : [...studied, ...fresh];
     const cards = noPicture.size ? all.filter((c) => !noPicture.has(c.id)) : all;
     const types = opts.studyMode ? STUDY_MODE_CARD_TYPES[opts.studyMode] : null;
     const freshShown = fresh.filter((c) => inDeck(c) && !noPicture.has(c.id) && (!types || types.includes(c.card_type)));
-    // "Yeni kelime sırası": smart unless the user chose insertion order.
-    const smart = !ahead && settings.new_card_order !== 'added' && freshShown.length > 0;
-    const newOrder = smart ? await newOrderInput(freshShown, facts, settings) : null;
+    // "Yeni kelime sırası": smart unless the user chose insertion order. Both orders get the
+    // interference guard and the cards it postponed earlier (v0.5 İP10, decision 0052).
+    const withOrder = !ahead && freshShown.length > 0;
+    const newOrder = withOrder
+      ? await newOrderInput(freshShown, facts, settings, {
+          order: settings.new_card_order === 'added' ? 'added' : 'smart',
+          carry,
+        })
+      : null;
     // Each mode counts its own first-time cards against the same daily limit; "+5 yeni kart"
     // is extra Kelime çalışma.
     const introduced = types ? types.reduce((n, t) => n + facts.introducedByType[t], 0) : facts.newIntroducedToday;
@@ -128,6 +139,7 @@ export async function getStudyQueue(opts: StudyQueueOptions = {}, now: Millis = 
       day: facts.bounds.key,
       dayEnd: facts.bounds.end,
       load,
+      postponed: q.postponed ?? [],
     };
   });
 }

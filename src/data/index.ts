@@ -197,3 +197,4 @@ export {
   type SaveLevelTestInput,
 } from './levelModel';
 export { getChoiceCandidates } from './clozeChoices';
+export * from './smart';
