@@ -31,8 +31,9 @@ export function legacyRedirect(pathname: string, search = ''): string | null {
       return withParams('/study', out);
     }
     case '/more':
-      // "Biraz daha çalış" now lives on the study picker and the finished home screen.
-      return withParams('/study', new URLSearchParams(search));
+      // "Biraz daha çalış" (extra new cards, a practice round, tomorrow's cards) is offered on
+      // the finished home screen and the session summary; its full page is /study/more.
+      return withParams('/study/more', new URLSearchParams(search));
     case '/kelime-bankasi':
       return withParams('/decks', merge(search, { tab: 'bank' }));
     case '/stats':

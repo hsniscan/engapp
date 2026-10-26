@@ -41,6 +41,14 @@ const children: RouteObject[] = [
     lazy: async () => ({ Component: (await loadStudy()).StudyRoute }),
   },
   {
+    // "Biraz daha çalış": extra new cards today, a practice round, tomorrow's cards now (old /more).
+    path: 'study/more',
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/extra/MoreStudyPage')).MoreStudyPage,
+    }),
+  },
+  {
     path: 'practice',
     handle: { immersive: true } satisfies RouteHandle,
     HydrateFallback: () => null,

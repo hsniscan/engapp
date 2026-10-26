@@ -5,7 +5,7 @@ import { isImmersive } from './routeHandle';
 describe('old addresses', () => {
   it('sends each old place to its new home', () => {
     expect(legacyRedirect('/review')).toBe('/study?mode=word');
-    expect(legacyRedirect('/more')).toBe('/study');
+    expect(legacyRedirect('/more')).toBe('/study/more');
     expect(legacyRedirect('/kelime-bankasi')).toBe('/decks?tab=bank');
     expect(legacyRedirect('/stats')).toBe('/progress');
     expect(legacyRedirect('/settings/profile')).toBe('/settings/ilgi-alanlari');

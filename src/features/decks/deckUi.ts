@@ -1,7 +1,6 @@
 // Constants and helpers shared by the Desteler screens (no components here, for fast refresh).
 import type { DeckFilter } from '@/domain/deckFilter';
 import type { CefrLevel } from '@/domain/types';
-import { practiceHref } from '@/features/extra/links';
 
 /**
  * Graphic colours (bars, ring, level ramp) for both themes. Non-text marks, so they live here
@@ -44,11 +43,11 @@ export function freqDots(zipf: number | null): number {
 }
 
 /**
- * "Çalış" of a deck: a practice round over its words (it never changes the schedule). When the
- * study session learns a deck filter (/study?mode=word&deck=<id>), point this at it.
+ * "Çalış" of a deck: today's word study of its words only (due and new cards, under the daily
+ * limits). A practice round over the deck stays on the old address (practiceHref).
  */
 export const deckStudyHref = (deckId: string) =>
-  practiceHref({ source: 'deck', size: 10, tag: null, deck: deckId });
+  `/study?mode=word&deck=${encodeURIComponent(deckId)}`;
 
 /** The single tag of a hand-picked or suggested deck, if the filter is just that. */
 export function soleTag(f: DeckFilter | null): string | null {

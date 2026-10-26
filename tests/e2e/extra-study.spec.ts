@@ -33,7 +33,7 @@ test('done for today → "Biraz daha çalış": +5 new cards, then a practice ro
   await page.getByTestId('start-study').click();
   expect(await reviewAll(page, '4')).toBe(2);
   await page.getByRole('link', { name: 'Biraz daha çalış' }).click();
-  await expect(page).toHaveURL(/\/study$/);
+  await expect(page).toHaveURL(/\/study\/more$/);
   await expect(page.getByRole('heading', { name: 'Biraz daha çalış', level: 1 })).toBeVisible();
   const newCards = page.getByRole('region', { name: 'Yeni kartlar' });
   await expect(newCards.getByText('Bekleyen yeni kart: 6')).toBeVisible();

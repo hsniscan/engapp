@@ -197,7 +197,7 @@ export function SessionSummary({
         <Link to="/" className={buttonClasses({ size: 'lg', fullWidth: true })}>
           {t('review.backHome')}
         </Link>
-        <Link to="/more" className={buttonClasses({ variant: 'secondary', fullWidth: true })}>
+        <Link to="/study/more" className={buttonClasses({ variant: 'secondary', fullWidth: true })}>
           {t('review.moreStudy')}
         </Link>
         {canUndo && (

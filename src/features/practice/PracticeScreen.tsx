@@ -107,7 +107,7 @@ export function PracticeScreen() {
           icon="cards"
           title={t('practice.empty')}
           action={
-            <Link to="/more" className={buttonClasses({ size: 'lg', className: 'min-w-60' })}>
+            <Link to="/study/more" className={buttonClasses({ size: 'lg', className: 'min-w-60' })}>
               {t('practice.backToMore')}
             </Link>
           }

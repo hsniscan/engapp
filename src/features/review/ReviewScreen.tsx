@@ -53,15 +53,21 @@ export interface ReviewScreenProps {
   studyMode?: StudyMode;
   /** "Yarının kartlarını şimdi tekrar et". */
   ahead?: boolean;
+  /** Only this deck's words (Desteler → "Çalış", `&deck=<id>`). */
+  deckId?: Id;
 }
 
-export function ReviewScreen({ studyMode, ahead = false }: ReviewScreenProps) {
+export function ReviewScreen({ studyMode, ahead = false, deckId }: ReviewScreenProps) {
   const { t } = useTranslation();
   const {
     state,
     start,
     actions: session,
-  } = useReviewSession(ahead ? 'ahead' : 'normal', studyMode);
+  } = useReviewSession(ahead ? 'ahead' : 'normal', studyMode, deckId);
+  const deckName = useLiveQuery(
+    async () => (deckId ? ((await db.decks.get(deckId))?.name ?? null) : null),
+    [deckId],
+  );
   const settings = useLiveQuery(() => getSettings(), []);
   const speech = useSpeech(settings?.voice ?? 'en-US');
   const [editOpen, setEditOpen] = useState(false);
@@ -223,7 +229,13 @@ export function ReviewScreen({ studyMode, ahead = false }: ReviewScreenProps) {
     const answers = session.getAnswers();
     if (answers.length === 0)
       return (
-        <StudyEmpty studyMode={studyMode} ahead={ahead} canUndo={state.canUndo} onUndo={doUndo} />
+        <StudyEmpty
+          studyMode={studyMode}
+          ahead={ahead}
+          deckName={deckName ?? null}
+          canUndo={state.canUndo}
+          onUndo={doUndo}
+        />
       );
     return (
       <>
@@ -259,6 +271,13 @@ export function ReviewScreen({ studyMode, ahead = false }: ReviewScreenProps) {
       {ahead && (
         <div className="flex">
           <Badge tone="accent">{t('review.aheadBadge')}</Badge>
+        </div>
+      )}
+      {deckName && (
+        <div className="flex min-w-0">
+          <Badge tone="accent" className="max-w-full truncate" data-testid="study-deck">
+            {t('review.deckBadge', { name: deckName })}
+          </Badge>
         </div>
       )}
       <div className="flex items-center gap-2">
@@ -424,11 +443,14 @@ export function OtherModes({ current }: { current?: StudyMode }) {
 function StudyEmpty({
   studyMode,
   ahead,
+  deckName,
   canUndo,
   onUndo,
 }: {
   studyMode?: StudyMode;
   ahead: boolean;
+  /** A deck-scoped session (Desteler → "Çalış"). */
+  deckName: string | null;
   canUndo: boolean;
   onUndo: () => void;
 }) {
@@ -446,9 +468,11 @@ function StudyEmpty({
     ? t('review.noCardsTitle')
     : ahead
       ? t('review.aheadEmptyTitle')
-      : studyMode
-        ? t(`study.empty.${studyMode}`)
-        : t('review.emptyTitle');
+      : deckName
+        ? t('study.empty.deck', { name: deckName })
+        : studyMode
+          ? t(`study.empty.${studyMode}`)
+          : t('review.emptyTitle');
   const description = !info.hasCards
     ? t('review.noCardsBody')
     : studyMode === 'production'
@@ -468,7 +492,10 @@ function StudyEmpty({
             {info.hasCards ? (
               <>
                 {studyMode && !ahead && <OtherModes current={studyMode} />}
-                <Link to="/more" className={buttonClasses({ size: 'lg', className: 'min-w-60' })}>
+                <Link
+                  to="/study/more"
+                  className={buttonClasses({ size: 'lg', className: 'min-w-60' })}
+                >
                   {t('review.moreStudy')}
                 </Link>
                 <Link to="/" className={buttonClasses({ variant: 'ghost', className: 'min-w-60' })}>

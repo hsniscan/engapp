@@ -296,7 +296,7 @@ function PreviewView({ preview }: { preview: ThemePreview }) {
         </>
       )}
 
-      <div className="sticky bottom-[calc(var(--nav-height)+env(safe-area-inset-bottom)+0.75rem)] z-20 mt-2 grid grid-cols-2 gap-2 rounded-card border border-border bg-surface-raised p-2 shadow-overlay sm:flex sm:items-center sm:justify-end md:bottom-4">
+      <div className="sticky bottom-[calc(var(--nav-height)+var(--nav-fab-rise)+env(safe-area-inset-bottom)+0.5rem)] z-20 mt-2 grid grid-cols-2 gap-2 rounded-card border border-border bg-surface-raised p-2 shadow-overlay sm:flex sm:items-center sm:justify-end md:bottom-4">
         <Button variant="ghost" onClick={() => setDiscard(true)} disabled={busy}>
           {t('themes.discard')}
         </Button>

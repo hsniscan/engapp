@@ -464,7 +464,7 @@ function CandidateList({ job, rows }: { job: ImportJobRecord; rows: ImportCandid
         })}
       </div>
 
-      <div className="sticky bottom-[calc(var(--nav-height)+env(safe-area-inset-bottom))] z-10 -mx-4 mt-6 border-t border-border bg-canvas/95 px-4 py-3 backdrop-blur-sm sm:-mx-6 sm:px-6 md:bottom-0">
+      <div className="sticky bottom-[calc(var(--nav-height)+var(--nav-fab-rise)+env(safe-area-inset-bottom))] z-10 -mx-4 mt-6 border-t border-border bg-canvas/95 px-4 py-3 backdrop-blur-sm sm:-mx-6 sm:px-6 md:bottom-0">
         <div className="flex items-center justify-between gap-3">
           <span className="tabular hidden text-sm text-fg-muted sm:inline">
             {t('importer.preview.summary', { selected: selectedCount, total: counts.all })}

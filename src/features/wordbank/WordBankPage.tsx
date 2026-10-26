@@ -321,7 +321,7 @@ export function WordBankPanel() {
         <div
           role="region"
           aria-label={t('wordBank.selectionBar')}
-          className="fixed inset-x-3 bottom-[calc(var(--nav-height)+env(safe-area-inset-bottom)+0.75rem)] z-20 md:bottom-6"
+          className="fixed inset-x-3 bottom-[calc(var(--nav-height)+var(--nav-fab-rise)+env(safe-area-inset-bottom)+0.5rem)] z-20 md:bottom-6"
         >
           <div className="mx-auto flex max-w-xl items-center gap-2.5 rounded-[18px] bg-fg py-2 pr-2 pl-4 text-fg-inverse shadow-overlay">
             <span className="flex min-w-0 flex-1 flex-col">

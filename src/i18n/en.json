@@ -313,7 +313,8 @@
     "moreStudy": "Study a bit more",
     "aheadBadge": "Tomorrow's cards",
     "aheadEmptyTitle": "Tomorrow's cards are done",
-    "promptImage": "Find the word in the picture"
+    "promptImage": "Find the word in the picture",
+    "deckBadge": "Deck: {{name}}"
   },
   "study": {
     "title": "Study",
@@ -398,7 +399,8 @@
       "productionBody": "Words you also know on another day in word study open up here.",
       "others": "Other study types have cards waiting",
       "otherCount": "{{mode}}: {{count}} cards",
-      "pickMode": "Study types"
+      "pickMode": "Study types",
+      "deck": "Nothing left today in “{{name}}”"
     },
     "learnedToday_one": "{{count}} word reached Learned today.",
     "learnedToday_other": "{{count}} words reached Learned today."

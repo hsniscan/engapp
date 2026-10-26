@@ -1,6 +1,7 @@
 // /study (redesign IA): "?mode=word|production|cloze" starts that study type, "?mode=mixed" all
 // three in one session, no mode shows the StudyModes picker. "/review" stays an alias of
-// mode=word (ReviewRoute), "/review?mode=ahead" is tomorrow's cards.
+// mode=word (ReviewRoute), "/review?mode=ahead" is tomorrow's cards. "&deck=<id>" keeps a
+// session to one smart deck.
 import { useLocation, useSearchParams } from 'react-router';
 import { isStudyMode } from '@/domain/studyMode';
 import { ReviewScreen } from './ReviewScreen';
@@ -15,7 +16,10 @@ export function StudyRoute() {
   const mode = search.get('mode');
   if (mode === 'ahead') return <ReviewScreen key={location.key} ahead />;
   if (mode === 'mixed') return <ReviewScreen key={location.key} />;
-  if (isStudyMode(mode)) return <ReviewScreen key={location.key} studyMode={mode} />;
+  // "&deck=<id>": only that deck's words (Desteler → "Çalış").
+  const deck = search.get('deck');
+  if (isStudyMode(mode))
+    return <ReviewScreen key={location.key} studyMode={mode} {...(deck ? { deckId: deck } : {})} />;
   return <StudyModesPage />;
 }
 

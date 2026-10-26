@@ -83,7 +83,7 @@ export function Toaster() {
       <RadixToast.Viewport
         className={cn(
           'fixed inset-x-0 z-50 mx-auto flex w-full max-w-md flex-col gap-2 px-4 outline-none',
-          'bottom-[calc(var(--nav-height)+env(safe-area-inset-bottom)+12px)] md:right-6 md:bottom-6 md:left-auto md:mx-0 md:px-0',
+          'bottom-[calc(var(--nav-height)+var(--nav-fab-rise)+env(safe-area-inset-bottom)+12px)] md:right-6 md:bottom-6 md:left-auto md:mx-0 md:px-0',
         )}
       />
     </RadixToast.Provider>

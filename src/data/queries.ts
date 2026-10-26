@@ -10,10 +10,11 @@ import { buildHeatmap, computeStreakSummary, type HeatmapCell, type StreakSummar
 import { isVacationDay } from '../domain/vacation';
 import { type Card, type Id, type LexiconSense, type Millis, type Note, type RatingValue, type Sense } from '../domain/types';
 import { db } from './db';
+import { getDeckNoteIds } from './decks';
 import { getWordStages } from './wordStages';
 import { exampleTables, senseExamplesFor } from './examples';
 import { cardImageOf, type CardImage } from './images';
-import { imageCardReadTables, imageCardsWithoutPicture } from './imageCards';
+import { imageCardsWithoutPicture } from './imageCards';
 import { dueStudiedCards, loadTodayFacts, newCards } from './history';
 import { aheadDaysFor, getLoadToday, type LoadToday } from './load';
 import { extraNewKey, getMeta } from './meta';
@@ -52,6 +53,11 @@ export interface StudyQueueOptions {
    * burying (domain/queue.ts). Absent = the old mixed queue of every card type.
    */
   studyMode?: StudyMode;
+  /**
+   * Only the notes of this smart deck (Desteler → "Çalış"): its due and new cards, under the
+   * same daily limits. An unknown or deleted deck leaves the queue empty.
+   */
+  deckId?: Id;
 }
 
 /**
@@ -61,7 +67,14 @@ export interface StudyQueueOptions {
  * introduced today count against it from the logs, so other devices never double count.
  */
 export async function getStudyQueue(opts: StudyQueueOptions = {}, now: Millis = Date.now()): Promise<StudyQueue> {
-  const tables = [db.cards, db.review_logs, db.settings, db.meta, ...imageCardReadTables(), ...newOrderTables()];
+  const tables = [db.cards, db.review_logs, db.settings, db.meta, ...newOrderTables()];
+  // The deck's notes are read first (other tables); a deck that matches nothing studies nothing.
+  const deckNotes = opts.deckId ? ((await getDeckNoteIds(opts.deckId, now)) ?? new Set<Id>()) : null;
+  // v0.4 İP8: picture cards whose picture is not on this device are left out of this session.
+  // Read before the transaction: awaiting the nested picture lookup inside it lost Dexie's
+  // transaction zone when several queues were built at once (the home screen builds five), so
+  // the transaction committed early (PrematureCommitError, seen offline with picture cards).
+  const noPicture = await imageCardsWithoutPicture(await db.cards.where('card_type').equals('image').toArray());
   return db.transaction('r', [...new Set(tables)], async () => {
     const settings = await getSettings(now);
     const cfg = dayConfig(settings);
@@ -76,11 +89,11 @@ export async function getStudyQueue(opts: StudyQueueOptions = {}, now: Millis = 
       ahead ? Promise.resolve([]) : newCards(),
       getExtraNewToday(facts.bounds.key),
     ]);
-    // v0.4 İP8: a picture card whose picture is not on this device is left out of this session.
-    const noPicture = await imageCardsWithoutPicture([...studied, ...fresh]);
-    const cards = noPicture.size ? [...studied, ...fresh].filter((c) => !noPicture.has(c.id)) : [...studied, ...fresh];
+    const inDeck = (c: Card) => !deckNotes || deckNotes.has(c.note_id);
+    const all = deckNotes ? [...studied, ...fresh].filter(inDeck) : [...studied, ...fresh];
+    const cards = noPicture.size ? all.filter((c) => !noPicture.has(c.id)) : all;
     const types = opts.studyMode ? STUDY_MODE_CARD_TYPES[opts.studyMode] : null;
-    const freshShown = fresh.filter((c) => !noPicture.has(c.id) && (!types || types.includes(c.card_type)));
+    const freshShown = fresh.filter((c) => inDeck(c) && !noPicture.has(c.id) && (!types || types.includes(c.card_type)));
     // "Yeni kelime sırası": smart unless the user chose insertion order.
     const smart = !ahead && settings.new_card_order !== 'added' && freshShown.length > 0;
     const newOrder = smart ? await newOrderInput(freshShown, facts, settings) : null;

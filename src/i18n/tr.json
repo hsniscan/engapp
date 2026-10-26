@@ -313,7 +313,8 @@
     "moreStudy": "Biraz daha çalış",
     "aheadBadge": "Yarının kartları",
     "aheadEmptyTitle": "Yarının kartları bitti",
-    "promptImage": "Görseldeki kelimeyi bul"
+    "promptImage": "Görseldeki kelimeyi bul",
+    "deckBadge": "Deste: {{name}}"
   },
   "study": {
     "title": "Çalış",
@@ -398,7 +399,8 @@
       "productionBody": "Kelime çalışmada başka bir günde de doğru bildiğin kelimeler burada açılır.",
       "others": "Başka türlerde bekleyen kartlar var",
       "otherCount": "{{mode}}: {{count}} kart",
-      "pickMode": "Çalışma türleri"
+      "pickMode": "Çalışma türleri",
+      "deck": "“{{name}}” destesinde bugünlük kart kalmadı"
     },
     "learnedToday_one": "Bugün {{count}} kelime Öğrenildi'ye geçti.",
     "learnedToday_other": "Bugün {{count}} kelime Öğrenildi'ye geçti."

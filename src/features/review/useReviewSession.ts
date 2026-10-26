@@ -74,7 +74,7 @@ export function canShow(view: CardView | null | undefined): boolean {
 }
 
 /** `studyMode` absent: the mixed queue of every card type ("Karışık çalış", review ahead). */
-export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMode) {
+export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMode, deckId?: Id) {
   const [state, setState] = useState<SessionState>({
     phase: 'loading',
     current: null,
@@ -181,6 +181,7 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
         session: { ...counts.current },
         mode,
         ...(studyMode ? { studyMode } : {}),
+        ...(deckId ? { deckId } : {}),
       });
       if (mySeq !== seq.current || !alive.current) return;
       const currentId = stateRef.current.current?.view.card.id;
@@ -195,7 +196,7 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
         prefetch();
       }
     },
-    [advance, finish, patch, prefetch, mode, studyMode],
+    [advance, finish, patch, prefetch, mode, studyMode, deckId],
   );
 
   const enqueue = useCallback((job: () => Promise<void>) => {
@@ -211,7 +212,11 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
     let cancelled = false;
     void (async () => {
       const [q, streak] = await Promise.all([
-        getStudyQueue({ mode, ...(studyMode ? { studyMode } : {}) }),
+        getStudyQueue({
+          mode,
+          ...(studyMode ? { studyMode } : {}),
+          ...(deckId ? { deckId } : {}),
+        }),
         getStreakSummary(),
       ]);
       if (cancelled) return;
@@ -224,7 +229,7 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
       cancelled = true;
       alive.current = false;
     };
-  }, [advance, finish, mode, studyMode]);
+  }, [advance, finish, mode, studyMode, deckId]);
 
   const flip = useCallback(() => {
     const s = stateRef.current;

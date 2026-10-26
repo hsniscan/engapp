@@ -25,6 +25,7 @@ import { BACKUP_SCHEMA_VERSION, backupChecksum } from '../domain/backup';
 import { ActionError } from './errors';
 import { exportBackup, restoreBackup } from './maintenance';
 import { getPracticeCards, getPracticeSourceCounts } from './practice';
+import { getStudyQueue } from './queries';
 import { updateSettings } from './settings';
 
 const T = Date.UTC(2026, 9, 21, 9);
@@ -315,5 +316,20 @@ describe('backups (decks since format 7)', () => {
     };
     await restoreBackup(JSON.stringify(v3), 'overwrite', T + 3);
     expect((await listDecks()).map((x) => x.name)).toEqual(['İş']);
+  });
+});
+
+describe('deck-scoped study (/study?mode=word&deck=<id>)', () => {
+  it('builds the word queue from the deck\'s notes only, and nothing for an unknown deck', async () => {
+    const a = await word('deadline', ['iş']);
+    const b = await word('colleague', ['iş']);
+    await word('thrive');
+    const deck = await createDeck({ name: 'İş', filter: { v: 1, tags: ['iş'] } }, T);
+    const all = await getStudyQueue({ studyMode: 'word' }, T);
+    expect(new Set(all.items.map((i) => i.note_id)).size).toBe(3);
+    const scoped = await getStudyQueue({ studyMode: 'word', deckId: deck.id }, T);
+    expect(scoped.items.map((i) => i.note_id).sort()).toEqual([a, b].sort());
+    expect(scoped.counts.new).toBe(2);
+    expect((await getStudyQueue({ studyMode: 'word', deckId: 'nope' }, T)).items).toEqual([]);
   });
 });

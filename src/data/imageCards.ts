@@ -213,5 +213,3 @@ export async function imageCardsWithoutPicture(cards: readonly Pick<Card, 'id' |
   return out;
 }
 
-/** Tables imageCardsWithoutPicture reads. */
-export const imageCardReadTables = () => [db.senses, db.images, db.user_content, db.content_feedback];

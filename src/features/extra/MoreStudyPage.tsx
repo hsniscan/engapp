@@ -43,7 +43,7 @@ export function MoreStudyPage() {
       ) : (
         <div className="flex flex-col gap-4">
           {data.dueNow > 0 && (
-            <Link to="/review" className={buttonClasses({ size: 'lg', fullWidth: true })}>
+            <Link to="/study?mode=word" className={buttonClasses({ size: 'lg', fullWidth: true })}>
               {t('more.startReview')}
               <Icon name="chevron-right" size={20} />
             </Link>
@@ -89,7 +89,7 @@ function NewCardsSection({ data }: { data: MoreStudyOverview }) {
     setBusy(n);
     try {
       await addExtraNew(n);
-      await navigate('/review');
+      await navigate('/study?mode=word');
     } catch (e) {
       void logError(e, 'more:addExtraNew');
       toast({ title: t('more.addFailed'), tone: 'danger' });
@@ -337,7 +337,7 @@ function AheadSection({ data }: { data: MoreStudyOverview }) {
     >
       {n > 0 && (
         <Link
-          to="/review?mode=ahead"
+          to="/study?mode=ahead"
           className={buttonClasses({ variant: 'secondary', fullWidth: true })}
         >
           {t('more.aheadStart')}

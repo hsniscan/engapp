@@ -99,7 +99,7 @@ export function PracticeSummary({ round, views, timeMs, params }: PracticeSummar
         <Button size="lg" fullWidth onClick={() => void navigate(practiceHref(params))}>
           {t('practice.summary.again')}
         </Button>
-        <Link to="/more" className={buttonClasses({ variant: 'secondary', fullWidth: true })}>
+        <Link to="/study/more" className={buttonClasses({ variant: 'secondary', fullWidth: true })}>
           {t('practice.backToMore')}
         </Link>
         <Link to="/" className={buttonClasses({ variant: 'ghost', fullWidth: true })}>

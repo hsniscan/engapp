@@ -76,9 +76,22 @@ test('phone: bulk tag two words, make a deck of them, filter Cards and practise 
   await expect(list.getByRole('listitem')).toHaveCount(2);
   await expect(page.getByRole('link', { name: 'Desteyi aç' })).toBeVisible();
 
-  // Practice that deck from its page: only its two words come up.
+  // "Çalış" on the deck's page is today's word study of the deck only: both words were studied
+  // today, and a new word outside the deck does not come up there (it does in word study).
+  await addWord(page, { term: 'harsh', meaning: 'sert' });
   await page.goto(deckUrl);
   await page.getByRole('link', { name: 'Çalış' }).click();
+  await expect(page).toHaveURL(/\/study\?mode=word&deck=[^&]+$/);
+  await expect(
+    page.getByRole('heading', { name: '“İş kelimeleri” destesinde bugünlük kart kalmadı' }),
+  ).toBeVisible();
+  await page.goto('/study?mode=word');
+  await expect(page.getByRole('button', { name: 'Cevabı göster', disabled: false })).toBeVisible();
+  await expect(page.getByText('harsh', { exact: true }).first()).toBeVisible();
+
+  // A practice round over the deck (Tüm kelimelerim filtered to it): only its two words.
+  await page.goto(`/library?deck=${new URL(deckUrl).pathname.split('/').pop()}`);
+  await page.getByRole('link', { name: 'Pratik yap' }).click();
   await expect(page).toHaveURL(/\/practice\?source=deck&size=10&deck=/);
   const done = page.getByRole('heading', { name: 'Pratik bitti' });
   let answers = 0;

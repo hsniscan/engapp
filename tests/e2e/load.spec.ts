@@ -135,15 +135,15 @@ test('vacation: no new cards, streak frozen, new cards ramp back 0 → ½ → fu
   await page.clock.setSystemTime(at('2026-11-06'));
   await page.goto('/');
   await expect(page.getByTestId('load-ramp')).toContainText('Tekrar hoş geldin');
-  await expect(page.getByTestId('today-hero-done')).toBeVisible();
+  await expect.poll(() => todaySplit(page)).toEqual({ due: 1, fresh: 0 });
   await expect(streak()).toContainText('1 günlük seri');
 
   // Second day back: half the limit (5 of 10).
   await page.clock.setSystemTime(at('2026-11-07'));
   await page.goto('/');
   await expect(page.getByTestId('load-ramp')).toContainText('bugün 5 yeni kart');
-  // Five new cards across the study types (one is the first word's production card).
-  await expect.poll(() => studyTypesTotal(page)).toBe(5);
+  // The first word is still due; its production card stays locked (Pekişiyor, decision 0041).
+  await expect.poll(() => todaySplit(page)).toEqual({ due: 1, fresh: 5 });
 
   // Then the full limit: the six waiting words. The first word's recognition card (due since
   // the 5th) is a review today; its production card stays locked until the word is recalled
@@ -154,10 +154,10 @@ test('vacation: no new cards, streak frozen, new cards ramp back 0 → ½ → fu
   const first = (notes as Note[]).find((n) => n.term === VOCAB[0]!.term)!;
   const recognition = (cards as Card[]).find((c) => c.note_id === first.id && c.card_type === 'recognition')!;
   const recognitionDueToday = recognition.due < at('2026-11-09').getTime();
-  // The hero counts word study (recognition cards); the production card is a separate type.
-  await expect
-    .poll(() => todaySplit(page))
-    .toEqual({ due: recognitionDueToday ? 1 : 0, fresh: 6 });
+  expect(recognitionDueToday).toBe(true);
+  await expect.poll(() => todaySplit(page)).toEqual({ due: 1, fresh: 6 });
+  // Nothing in the other study types yet: production waits for Pekişiyor, cloze too.
+  await expect.poll(() => studyTypesTotal(page)).toBe(7);
   await expect(page.getByTestId('load-ramp')).toHaveCount(0);
 });
 
