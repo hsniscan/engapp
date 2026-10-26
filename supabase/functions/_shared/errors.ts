@@ -15,6 +15,7 @@ const STATUS: Record<ErrorCode, number> = {
   fetch_failed: 502,
   paywalled: 422,
   extract_failed: 422,
+  budget_exhausted: 503,
 };
 
 /** An error that is sent to the client as {error: {code, message}}. */

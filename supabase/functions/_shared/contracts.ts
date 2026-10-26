@@ -40,6 +40,8 @@ export const ERROR_CODES = [
   'fetch_failed', // the site did not answer in time, refused, or redirected too often
   'paywalled', // the page says it is for subscribers only; no attempt is made to get around it
   'extract_failed', // no readable article text on the page
+  // ai-story (v0.5 İP8, decision 0050)
+  'budget_exhausted', // this month's text-AI budget (CLAUDE_TEXT_MONTHLY_USD) is used up
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 

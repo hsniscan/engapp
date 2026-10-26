@@ -443,6 +443,10 @@ verify_jwt = false
 [functions.fetch-article]
 verify_jwt = false
 
+# The daily story (v0.5 İP8, docs/decisions/0050-daily-story.md); checks the JWT itself.
+[functions.ai-story]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
