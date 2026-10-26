@@ -40,7 +40,11 @@ describe('interference guard (data)', () => {
     const q = await getStudyQueue({ studyMode: 'word' }, T);
     const fresh = await terms(q.items.filter((i) => i.kind === 'new').map((i) => i.note_id));
     expect(fresh).toHaveLength(3);
-    expect(fresh.filter((t) => t === 'small' || t === 'little')).toHaveLength(1);
+    const kucuk = fresh.filter((t) => t === 'small' || t === 'little');
+    // Insertion order reaches "small" first; the smart order may rank both A1 words below the
+    // B1 learner's level and pick neither. Either way the guard never lets both in on one day.
+    if (order === 'added') expect(kucuk).toEqual(['small']);
+    else expect(kucuk.length).toBeLessThanOrEqual(1);
   });
 
   it('carries the postponed card to the front of the next day', async () => {
