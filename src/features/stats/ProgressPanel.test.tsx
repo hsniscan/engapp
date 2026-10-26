@@ -74,6 +74,7 @@ describe('progress panel', () => {
     expect(
       within(series).getByRole('img', { name: /öğrenilen kelime sayısı/ }),
     ).toBeInTheDocument();
-    expect(within(series).getByText('Toplam 1 kelime')).toBeInTheDocument();
+    // The same "learned now" number as Genel and Profil (word stages).
+    expect(within(series).getByText(/^Şu an öğrenilmiş: \d+ kelime$/)).toBeInTheDocument();
   });
 });

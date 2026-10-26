@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  activityBasics,
   FIRST_STEPS_ANSWERS,
   isProgressBeginner,
   newLimitAction,
@@ -9,6 +10,20 @@ import {
 } from './progressView';
 
 describe('progressive İlerleme', () => {
+  it('counts all answers and the last 30 days of review answers', () => {
+    const day = (date: string, reviews: number, review_answers: number) => ({
+      date,
+      reviews,
+      review_answers,
+    });
+    expect(
+      activityBasics(
+        [day('2026-09-01', 30, 10), day('2026-10-01', 5, 4), day('2026-10-26', 3, 2)],
+        '2026-10-26',
+      ),
+    ).toEqual({ totalAnswers: 38, last30Answers: 6 });
+  });
+
   it('a new user is a beginner until the first few answers', () => {
     expect(isProgressBeginner(0)).toBe(true);
     expect(isProgressBeginner(FIRST_STEPS_ANSWERS - 1)).toBe(true);

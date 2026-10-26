@@ -4,9 +4,11 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router';
 import { getGoalsView, type GoalsView, logError, setGoals, updateGoals } from '@/data';
 import { CEFR_ORDER } from '@/domain/deckFilter';
 import {
+  dayMinutesGoal,
   DAY_MINUTES_LIMITS,
   GOAL_KEYS,
   GOAL_LIMITS,
@@ -18,12 +20,27 @@ import type { CefrLevel } from '@/domain/types';
 import { formatNumber } from '@/features/stats/format';
 import { Button, Dialog, Select, Surface, TextField, toast } from '@/ui';
 
+/**
+ * The one place goals are set (v0.5.1: Profil and Bugün link here; /progress?edit=goals opens
+ * the dialog at once).
+ */
 export function GoalsSection() {
   const { t } = useTranslation();
   const view = useLiveQuery(() => getGoalsView(Date.now()), []);
-  const [open, setOpen] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const [open, setOpen] = useState(() => params.get('edit') === 'goals');
+  const close = () => {
+    setOpen(false);
+    if (params.has('edit')) {
+      const next = new URLSearchParams(params);
+      next.delete('edit');
+      setParams(next, { replace: true });
+    }
+  };
   if (!view) return null;
-  const hasGoals = view.progress.length > 0;
+  const day = dayMinutesGoal(view.goals);
+  const level = view.goals.target_level ?? null;
+  const hasGoals = view.progress.length > 0 || day !== null || level !== null;
   return (
     <Surface as="section" aria-labelledby="goals-title" padding="lg" data-testid="goals">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -35,15 +52,29 @@ export function GoalsSection() {
         </Button>
       </div>
       {hasGoals ? (
-        <ul className="mt-5 grid grid-cols-1 gap-5 min-[400px]:grid-cols-3">
-          {view.progress.map((p) => (
-            <GoalRing key={p.key} progress={p} />
-          ))}
-        </ul>
+        <>
+          {view.progress.length > 0 && (
+            <ul className="mt-5 grid grid-cols-1 gap-5 min-[400px]:grid-cols-3">
+              {view.progress.map((p) => (
+                <GoalRing key={p.key} progress={p} />
+              ))}
+            </ul>
+          )}
+          {(day !== null || level !== null) && (
+            <p className="mt-4 text-sm text-fg-muted" data-testid="goals-day-level">
+              {[
+                day !== null ? t('goals.dayLine', { count: day }) : null,
+                level !== null ? t('profile.home.goalLevel', { level }) : null,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
+          )}
+        </>
       ) : (
         <p className="mt-3 text-[0.9375rem] text-fg-muted">{t('goals.intro')}</p>
       )}
-      {open ? <GoalsDialog view={view} onClose={() => setOpen(false)} /> : null}
+      {open ? <GoalsDialog view={view} onClose={close} /> : null}
     </Surface>
   );
 }

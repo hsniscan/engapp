@@ -81,6 +81,7 @@ export {
   type ThemeSource,
 } from './themes';
 export {
+  getHardPracticeCount,
   getPracticeCards,
   getPracticeSourceCounts,
   loadPracticeCandidates,

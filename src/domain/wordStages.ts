@@ -57,7 +57,15 @@ export function wordStagesByNote(
     const rec = primaryRecognition(list);
     if (!rec) continue;
     const active = list.some((c) => c.card_type === 'production' && isLearnedStage(cardStage(c)));
-    out.set(note.id, { stage: cardStage(rec), learnedAt: rec.learned_at ?? null, active });
+    // The day a word was learned is its earliest recognition card's learned_at: the same rule
+    // as the weekly series and the weekly report (retention.ts noteLearnedDaysOf), so "son 7
+    // gün", the Gelişim bars and the report count the same words (v0.5.1).
+    let learnedAt: Millis | null = null;
+    for (const c of list) {
+      if (c.card_type !== 'recognition' || c.learned_at == null) continue;
+      if (learnedAt === null || c.learned_at < learnedAt) learnedAt = c.learned_at;
+    }
+    out.set(note.id, { stage: cardStage(rec), learnedAt, active });
   }
   return out;
 }

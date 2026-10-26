@@ -5,6 +5,8 @@
 // - No call to action when there is nothing to do: practice over 0 hard words, a gap practice
 //   when both directions are equal, "Sınırı N yap" when the limit is already N or lower.
 // - A floor for the vocabulary size before any test: the words the user has learned or marked.
+import { addDays, type DayKey } from './day';
+import type { DailyActivity } from './types';
 
 /** Answers before İlerleme shows more than the first-steps card and the calendar. */
 export const FIRST_STEPS_ANSWERS = 10;
@@ -12,6 +14,21 @@ export const FIRST_STEPS_ANSWERS = 10;
 export const RECALL_MIN_ANSWERS = 20;
 /** Answers in each direction before the recognition–production comparison (retention.ts). */
 export const GAP_MIN_ANSWERS = 20;
+
+/** All answers ever and answers on Review cards in the last 30 days (streak.ts's recall base). */
+export function activityBasics(
+  activity: Iterable<Pick<DailyActivity, 'date' | 'reviews' | 'review_answers'>>,
+  today: DayKey,
+): { totalAnswers: number; last30Answers: number } {
+  const from = addDays(today, -29);
+  let totalAnswers = 0;
+  let last30Answers = 0;
+  for (const d of activity) {
+    totalAnswers += d.reviews;
+    if (d.date >= from && d.date <= today) last30Answers += d.review_answers;
+  }
+  return { totalAnswers, last30Answers };
+}
 
 export function isProgressBeginner(totalAnswers: number): boolean {
   return totalAnswers < FIRST_STEPS_ANSWERS;

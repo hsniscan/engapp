@@ -828,11 +828,41 @@
       "activeDays": "Active days",
       "hardTitle": "Struggling words",
       "hardPractice": "Practise",
-      "hardNone": "None right now",
+      "hardNone": "Nothing to practise now",
       "recallTitle": "Recall",
       "recallDetail": "Last 30 days, in reviews",
       "reportLink": "Your weekly report",
       "reportHint": "This week in short: words learned, struggles, time spent"
+    },
+    "unlock": {
+      "title": "Do your first study session",
+      "body": "This page fills up as you study a few words. For now there is only your calendar; each day you study fills a square.",
+      "start": "Start studying",
+      "listTitle": "What opens, and when",
+      "open": "Open",
+      "items": {
+        "stages": {
+          "name": "Word stages, goals and the next 30 days",
+          "when_one": "after {{count}} more answer",
+          "when_other": "after {{count}} more answers"
+        },
+        "recall": {
+          "name": "Recall rate",
+          "when_one": "after {{count}} more answer to cards that come back for review",
+          "when_other": "after {{count}} more answers to cards that come back for review"
+        },
+        "gap": {
+          "name": "Progress: English to Turkish and Turkish to English",
+          "when_one": "after 20 answers in each direction",
+          "when_other": "after 20 answers in each direction"
+        },
+        "report": {
+          "name": "Weekly report",
+          "when_one": "on the Monday after your first week of study",
+          "when_other": "on the Monday after your first week of study"
+        }
+      },
+      "reportLater": "Your weekly report opens here on the Monday after your first week of study."
     }
   },
   "progress": {
@@ -851,7 +881,8 @@
       "practice_one": "Practise the {{count}} word with the biggest gap",
       "practice_other": "Practise the {{count}} words with the biggest gap",
       "practiceHint": "You remember these better from English to Turkish:",
-      "noList": "No word has been reviewed at least 3 times in both directions with a gap yet."
+      "noList": "No word has been reviewed at least 3 times in both directions with a gap yet.",
+      "equal": "You remember about equally well in both directions. No extra practice needed for now."
     },
     "groups": {
       "title": "Retention by category",
@@ -2635,6 +2666,7 @@
     "action": {
       "lower_new_limit": "Set the limit to {{value}}",
       "lower_new_limitDone": "Your daily new-card limit is now {{value}}.",
+      "lower_new_limitAlready": "Your daily new-card limit is already {{limit}}; no change needed.",
       "come_back": "Start reviewing",
       "practice_weakest_one": "Practise {{count}} word",
       "practice_weakest_other": "Practise {{count}} words",
@@ -2653,6 +2685,7 @@
   "goals": {
     "title": "Your goals",
     "intro": "Set yourself a goal and follow your progress here.",
+    "dayLine": "{{count}} min a day",
     "set": "Set a goal",
     "change": "Change goals",
     "dialogTitle": "Your goals",

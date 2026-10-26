@@ -828,11 +828,41 @@
       "activeDays": "Aktif gün",
       "hardTitle": "Zorlandıkların",
       "hardPractice": "Pratik yap",
-      "hardNone": "Şu an yok",
+      "hardNone": "Şu an çalışılacak yok",
       "recallTitle": "Hatırlama",
       "recallDetail": "Son 30 gün, tekrarlarda",
       "reportLink": "Haftalık raporun",
       "reportHint": "Bu haftanın özeti: öğrendiklerin, zorlandıkların, sürelerin"
+    },
+    "unlock": {
+      "title": "İlk çalışmanı yap",
+      "body": "Birkaç kelime çalıştıkça burası dolar. Şimdilik yalnızca takvimin var; her çalıştığın gün bir kare dolar.",
+      "start": "Çalışmaya başla",
+      "listTitle": "Neler, ne zaman açılır",
+      "open": "Açıldı",
+      "items": {
+        "stages": {
+          "name": "Kelime aşamaları, hedefler ve önümüzdeki 30 gün",
+          "when_one": "{{count}} cevap sonra",
+          "when_other": "{{count}} cevap sonra"
+        },
+        "recall": {
+          "name": "Hatırlama oranı",
+          "when_one": "Tekrar zamanı gelen kartlara {{count}} cevap daha verince",
+          "when_other": "Tekrar zamanı gelen kartlara {{count}} cevap daha verince"
+        },
+        "gap": {
+          "name": "Gelişim: İngilizceden Türkçeye ve Türkçeden İngilizceye",
+          "when_one": "İki yönde de 20'şer cevaptan sonra",
+          "when_other": "İki yönde de 20'şer cevaptan sonra"
+        },
+        "report": {
+          "name": "Haftalık rapor",
+          "when_one": "Çalıştığın ilk haftadan sonraki pazartesi",
+          "when_other": "Çalıştığın ilk haftadan sonraki pazartesi"
+        }
+      },
+      "reportLater": "Haftalık raporun, çalıştığın ilk haftadan sonraki pazartesi burada açılır."
     }
   },
   "progress": {
@@ -851,7 +881,8 @@
       "practice_one": "Farkın en büyük olduğu {{count}} kelimeyle pratik yap",
       "practice_other": "Farkın en büyük olduğu {{count}} kelimeyle pratik yap",
       "practiceHint": "Bu kelimeleri İngilizceden Türkçeye daha iyi hatırlıyorsun:",
-      "noList": "İki yönde de en az 3 kez tekrar edilmiş ve arasında fark olan kelime henüz yok."
+      "noList": "İki yönde de en az 3 kez tekrar edilmiş ve arasında fark olan kelime henüz yok.",
+      "equal": "İki yönde de aşağı yukarı aynı oranda hatırlıyorsun. Şimdilik ayrı bir pratik gerekmiyor."
     },
     "groups": {
       "title": "Kategorilere göre tutma oranı",
@@ -2635,6 +2666,7 @@
     "action": {
       "lower_new_limit": "Sınırı {{value}} yap",
       "lower_new_limitDone": "Günlük yeni kart sınırın artık {{value}}.",
+      "lower_new_limitAlready": "Günlük yeni kart sınırın zaten {{limit}}; değiştirmen gerekmiyor.",
       "come_back": "Tekrara başla",
       "practice_weakest_one": "{{count}} kelimeyle pratik yap",
       "practice_weakest_other": "{{count}} kelimeyle pratik yap",
@@ -2653,6 +2685,7 @@
   "goals": {
     "title": "Hedeflerin",
     "intro": "Kendine bir hedef koy; ilerlemeni burada görürsün.",
+    "dayLine": "Günde {{count}} dk",
     "set": "Hedef koy",
     "change": "Hedefleri değiştir",
     "dialogTitle": "Hedeflerin",

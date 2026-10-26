@@ -10,8 +10,10 @@ import { useWorkload } from './useWorkload';
 
 const W = 600;
 const H = 180;
-const PAD_L = 30;
-const PAD_B = 22;
+const PAD_L = 4;
+// Axis labels are HTML below / beside the SVG, so they stay ≥ 12 px at phone width (v0.5.1;
+// SVG text scaled with the chart and shrank to ~6 px at 390 px).
+const PAD_B = 4;
 const PAD_T = 8;
 
 export function WorkloadSection() {
@@ -70,89 +72,87 @@ export function WorkloadChart({ view }: { view: WorkloadView }) {
         })}{' '}
         {over ? t('load.forecastOverDays', { count: over }) : t('load.forecastUnder')}
       </p>
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        className="h-auto w-full"
-        role="img"
-        aria-label={t('load.forecastChartLabel')}
-        onPointerLeave={() => setHover(null)}
-      >
-        <line
-          x1={PAD_L}
-          x2={W}
-          y1={PAD_T + plotH}
-          y2={PAD_T + plotH}
-          className="stroke-border"
-          strokeWidth={1}
-        />
-        <text
-          x={PAD_L - 6}
-          y={PAD_T + plotH}
-          textAnchor="end"
-          dominantBaseline="middle"
-          className="fill-fg-muted text-[11px]"
+      <div className="relative pl-7">
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          className="h-auto w-full"
+          role="img"
+          aria-label={t('load.forecastChartLabel')}
+          onPointerLeave={() => setHover(null)}
         >
-          0
-        </text>
-        <text
-          x={PAD_L - 6}
-          y={capY}
-          textAnchor="end"
-          dominantBaseline="middle"
-          className="fill-fg-muted text-[11px]"
+          <line
+            x1={PAD_L}
+            x2={W}
+            y1={PAD_T + plotH}
+            y2={PAD_T + plotH}
+            className="stroke-border"
+            strokeWidth={1}
+          />
+          {counts.map((c, i) => {
+            const x = PAD_L + i * slot + (slot - barW) / 2;
+            const top = y(c);
+            const h = Math.max(c > 0 ? 2 : 0, PAD_T + plotH - top);
+            return (
+              <g key={view.days[i]} onPointerEnter={() => setHover(i)}>
+                {/* Hit target: the whole column. */}
+                <rect
+                  x={PAD_L + i * slot}
+                  y={PAD_T}
+                  width={slot}
+                  height={plotH}
+                  className="fill-transparent"
+                />
+                <rect
+                  x={x}
+                  y={PAD_T + plotH - h}
+                  width={barW}
+                  height={h}
+                  rx={Math.min(3, barW / 2)}
+                  className={cn(
+                    c > view.capacity ? 'fill-warn' : i === 0 ? 'fill-accent' : 'fill-accent/55',
+                    hover === i && 'opacity-80',
+                  )}
+                />
+              </g>
+            );
+          })}
+          <line
+            x1={PAD_L}
+            x2={W}
+            y1={capY}
+            y2={capY}
+            className="stroke-fg"
+            strokeWidth={1.5}
+            strokeDasharray="5 4"
+            pointerEvents="none"
+          />
+        </svg>
+        <span
+          aria-hidden="true"
+          className="tabular absolute left-0 -translate-y-1/2 text-xs text-fg-muted"
+          style={{ top: `${(capY / H) * 100}%` }}
         >
           {view.capacity}
-        </text>
-        {counts.map((c, i) => {
-          const x = PAD_L + i * slot + (slot - barW) / 2;
-          const top = y(c);
-          const h = Math.max(c > 0 ? 2 : 0, PAD_T + plotH - top);
-          return (
-            <g key={view.days[i]} onPointerEnter={() => setHover(i)}>
-              {/* Hit target: the whole column. */}
-              <rect
-                x={PAD_L + i * slot}
-                y={PAD_T}
-                width={slot}
-                height={plotH}
-                className="fill-transparent"
-              />
-              <rect
-                x={x}
-                y={PAD_T + plotH - h}
-                width={barW}
-                height={h}
-                rx={Math.min(3, barW / 2)}
-                className={cn(
-                  c > view.capacity ? 'fill-warn' : i === 0 ? 'fill-accent' : 'fill-accent/55',
-                  hover === i && 'opacity-80',
-                )}
-              />
-            </g>
-          );
-        })}
-        <line
-          x1={PAD_L}
-          x2={W}
-          y1={capY}
-          y2={capY}
-          className="stroke-fg"
-          strokeWidth={1.5}
-          strokeDasharray="5 4"
-          pointerEvents="none"
-        />
+        </span>
+        <span
+          aria-hidden="true"
+          className="tabular absolute left-0 -translate-y-1/2 text-xs text-fg-muted"
+          style={{ top: `${((PAD_T + plotH) / H) * 100}%` }}
+        >
+          0
+        </span>
+      </div>
+      <div aria-hidden="true" className="relative ml-7 h-4 text-xs text-fg-muted">
         {ticks.map((i) => (
-          <text
+          <span
             key={i}
-            x={PAD_L + i * slot + slot / 2}
-            y={H - 6}
-            textAnchor={i === 0 ? 'start' : 'middle'}
-            className="fill-fg-muted text-[11px]"
+            className={cn('absolute top-0 whitespace-nowrap', i > 0 && '-translate-x-1/2')}
+            style={{ left: `${((PAD_L + i * slot + (i === 0 ? 0 : slot / 2)) / W) * 100}%` }}
           >
             {dayLabel(i)}
-          </text>
+          </span>
         ))}
-      </svg>
+      </div>
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 text-sm">
         <p className="tabular min-h-5 text-fg" aria-hidden="true">
           <span className="font-medium">
