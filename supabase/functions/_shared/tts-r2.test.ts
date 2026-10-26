@@ -1,3 +1,4 @@
+// @vitest-environment node
 // The tts function's R2 tier (decision 0053): order of lookups and uploads, and that any R2
 // failure falls back to Supabase Storage. R2 is a mocked fetch; no network.
 import { describe, expect, it } from 'vitest';

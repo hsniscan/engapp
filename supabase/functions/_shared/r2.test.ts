@@ -1,3 +1,4 @@
+// @vitest-environment node
 // Signing and the R2 client (decision 0053), against AWS's published SigV4 examples and a
 // mocked fetch. No network.
 import { describe, expect, it } from 'vitest';
