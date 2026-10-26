@@ -9,6 +9,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         // App-local plugins must be registered before the bridge is created.
         registerPlugin(ShareTargetPlugin.class);
+        registerPlugin(TextRecognizerPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

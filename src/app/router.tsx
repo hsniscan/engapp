@@ -99,6 +99,12 @@ const children: RouteObject[] = [
     lazy: async () => ({ Component: (await import('@/features/cards/AddPage')).AddPage }),
   },
   {
+    // "Fotoğraftan metin" (v0.5 İP3, decision 0045).
+    path: 'fotograf',
+    HydrateFallback: () => null,
+    lazy: async () => ({ Component: (await import('@/features/ocr/OcrPage')).OcrPage }),
+  },
+  {
     path: 'import/anki',
     HydrateFallback: () => null,
     lazy: async () => ({
