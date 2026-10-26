@@ -3277,5 +3277,10 @@
       "forgot": "I didn't",
       "saved": "Answer saved. It is counted when you open the app."
     }
+  },
+  "smart": {
+    "rotation": {
+      "fromText": "From your text"
+    }
   }
 }

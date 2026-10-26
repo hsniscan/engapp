@@ -1,6 +1,7 @@
 // Read-side API for screens. Safe to wrap in dexie-react-hooks' useLiveQuery.
 import { addDays, type DayKey, dayEndMs, dayKeyOf } from '../domain/day';
-import { bandFor, type CardSentence, pickRotation, rotationSentences, selectedContexts } from '../domain/examples';
+import { bandFor, type CardSentence, rotationSentences, selectedContexts } from '../domain/examples';
+import { pickRotating, sentenceKey } from '../domain/textSentences';
 import { previewIntervals, type IntervalPreview } from '../domain/fsrs';
 import { normalizeTerm } from '../domain/normalize';
 import { buildQueue, type QueueCounts, type QueueItem, type QueueMode } from '../domain/queue';
@@ -20,6 +21,7 @@ import { aheadDaysFor, getLoadToday, type LoadToday } from './load';
 import { extraNewKey, getMeta } from './meta';
 import { newOrderInput, newOrderTables } from './newOrder';
 import { readCarry } from './smart';
+import { cachedTextSentences, loadTextSentences, readLastShown, textSentenceTables, writeLastShown } from './textSentences';
 import { dayConfig, getSettings, schedulerFor } from './settings';
 
 export interface StudyQueue {
@@ -182,7 +184,8 @@ async function lexiconOf(senses: Sense[]): Promise<Map<Id, LexiconSense>> {
 
 /** Everything a review screen needs to render one card. */
 export async function getCardView(cardId: Id, now: Millis = Date.now()): Promise<CardView | null> {
-  return db.transaction('r', [db.cards, db.notes, db.senses, db.review_logs, db.settings, db.lexicon_cache, db.images, ...exampleTables()], async () => {
+  let shown: { reps: number; key: string; changed: boolean } | null = null;
+  const view = await db.transaction('r', [...new Set([db.cards, db.notes, db.senses, db.review_logs, db.settings, db.lexicon_cache, db.images, ...exampleTables(), ...textSentenceTables()])], async () => {
     const card = await db.cards.get(cardId);
     if (!card) return null;
     const note = await db.notes.get(card.note_id);
@@ -211,7 +214,19 @@ export async function getCardView(cardId: Id, now: Millis = Date.now()): Promise
         ? await senseExamplesFor(sense.lexicon_sense_id, bandFor(settings), selected)
         : null;
       const needSpan = card.card_type === 'cloze';
-      const picked = pickRotation(rotationSentences(sense, examples, selected, needSpan), card.reps);
+      // v0.5 İP10: sentences from the user's own texts come right after the card's own one.
+      // Only for a word with one meaning: a found sentence cannot tell two meanings apart.
+      const own =
+        senses.length === 1 && (note.term_type === 'word' || note.term_type === 'phrase')
+          ? (cachedTextSentences(note.term, sense.pos, sense.source_sentence) ??
+            (await loadTextSentences(note.term, sense.pos, sense.source_sentence)))
+          : [];
+      const last = await readLastShown(card.id);
+      const picked = pickRotating(rotationSentences(sense, examples, selected, needSpan, own), card.reps, last, (x) => sentenceKey(x.text));
+      if (picked) {
+        const key = sentenceKey(picked.text);
+        shown = { reps: card.reps, key, changed: last?.reps !== card.reps || last.key !== key };
+      }
       sentence = picked && { ...picked, trOnTap: picked.exampleId !== null && settings.example_tr_visible !== true };
       // A cloze card keeps its own sentence when the source sentence has no usable span
       // (as before) and no example sentence can stand in.
@@ -234,6 +249,10 @@ export async function getCardView(cardId: Id, now: Millis = Date.now()): Promise
       imageOnFront: settings.show_image_front === true,
     };
   });
+  // Outside the read transaction: remember what this showing uses (device-local meta).
+  const remember = shown as { reps: number; key: string; changed: boolean } | null;
+  if (view && remember?.changed) await writeLastShown(view.card.id, { reps: remember.reps, key: remember.key }).catch(() => {});
+  return view;
 }
 
 export interface HomeSummary {
