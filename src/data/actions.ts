@@ -26,11 +26,13 @@ import {
   type RatingValue,
   type ReviewLog,
   type Sense,
+  type Settings,
   type NoteTermType,
   recognitionOnly,
   type Source,
 } from '../domain/types';
 import { isRating } from '../domain/fsrs';
+import { replayTime } from '../domain/notificationAnswer';
 import { db } from './db';
 import { isTodayComplete, refreshDay } from './dailyActivity';
 import { ActionError } from './errors';
@@ -511,37 +513,99 @@ export async function answerCard(input: AnswerInput, now: Millis = Date.now()): 
   if (!isRating(input.rating)) throw new ActionError('invalid_input', 'Invalid rating');
   return writeTx([db.cards, db.review_logs, db.daily_activity, db.settings], now, async (w) => {
     const settings = await getSettings(now);
-    const cfg = dayConfig(settings);
     const card = await db.cards.get(input.card_id);
     if (!card) throw new ActionError('not_found');
     if (card.deleted_at !== null) throw new ActionError('deleted');
+    return writeAnswer(w, settings, card, input, now, w.newId());
+  });
+}
 
-    const before = card.state;
-    const fsrs = applyRating(schedulerFor(settings), card, input.rating, now);
-    const duration = Math.min(MAX_DURATION_MS, Math.max(0, Math.round(input.duration_ms || 0)));
-    const log: ReviewLog = {
-      id: w.newId(),
-      user_id: w.userId,
-      card_id: card.id,
-      rating: input.rating,
-      reviewed_at: now,
-      duration_ms: duration,
-      device_id: w.deviceId,
-      undo_of: null,
-      shown_sense_id: input.shown_sense_id ?? null,
-      created_at: now,
-      hlc: w.nextHlc(),
-    };
-    await w.insertLog(log);
-    const saved = await w.put('cards', { ...card, ...fsrs, unlocked: true });
-    const unlockedCardIds = card.card_type === 'recognition' ? await syncFromPrimary(w, card.note_id) : [];
+/**
+ * The one answer path: log, FSRS state, unlocks and the day's counts. `at` is when the answer
+ * was given: now on the study screen, the button press for an answer from the notification.
+ * An answer older than the card's last review (given offline before an answer that arrived
+ * first) is put in its place in the history: the card is replayed from its logs and that day
+ * recounted, exactly as after a sync that brings an older log.
+ */
+async function writeAnswer(
+  w: SyncWriter,
+  settings: Settings,
+  card: Card,
+  input: AnswerInput,
+  at: Millis,
+  logId: Id,
+): Promise<AnswerResult> {
+  const cfg = dayConfig(settings);
+  const scheduler = schedulerFor(settings);
+  const before = card.state;
+  const inOrder = card.last_review === null || at >= card.last_review;
+  const duration = Math.min(MAX_DURATION_MS, Math.max(0, Math.round(input.duration_ms || 0)));
+  const log: ReviewLog = {
+    id: logId,
+    user_id: w.userId,
+    card_id: card.id,
+    rating: input.rating,
+    reviewed_at: at,
+    duration_ms: duration,
+    device_id: w.deviceId,
+    undo_of: null,
+    shown_sense_id: input.shown_sense_id ?? null,
+    created_at: w.now,
+    hlc: w.nextHlc(),
+  };
+  await w.insertLog(log);
+  const fsrs = inOrder
+    ? applyRating(scheduler, card, input.rating, at)
+    : replayCard(scheduler, card, [...((await logsByCard([card.id])).get(card.id) ?? [])]).fsrs;
+  const saved = await w.put('cards', { ...card, ...fsrs, unlocked: true });
+  const unlockedCardIds = card.card_type === 'recognition' ? await syncFromPrimary(w, card.note_id) : [];
 
-    const key = dayKeyOf(now, cfg);
+  const key = dayKeyOf(at, cfg);
+  const today = dayKeyOf(w.now, cfg) === key;
+  if (inOrder && today) {
     const day = (await db.daily_activity.get(key)) ?? emptyDay(key);
     addAnswerToDay(day, { before_state: before, rating: input.rating, duration_ms: duration });
-    day.completed = await isTodayComplete(cfg, now);
+    day.completed = await isTodayComplete(cfg, w.now);
     await db.daily_activity.put(day);
     return { log, card: saved, unlockedCardIds, day };
+  }
+  const day = (await refreshDay(key, cfg, scheduler, w.now)) ?? emptyDay(key);
+  return { log, card: saved, unlockedCardIds, day };
+}
+
+export type ReplayOutcome =
+  | { status: 'applied'; result: AnswerResult }
+  /** This answer is already in the history (replayed before, or synced from elsewhere). */
+  | { status: 'duplicate' }
+  /** The card is gone, deleted or suspended: nothing to answer. */
+  | { status: 'skipped' };
+
+/**
+ * An answer given on the reminder notification (docs/decisions/0048), replayed once through the
+ * same path as the study screen with the time of the button press. The queued item's id becomes
+ * the log's id, so a second replay (app killed before the queue was cleared) finds it and
+ * changes nothing.
+ */
+export async function replayQueuedAnswer(
+  item: { id: Id; card_id: Id; rating: RatingValue; at: Millis; duration_ms?: number },
+  now: Millis = Date.now(),
+): Promise<ReplayOutcome> {
+  if (!isRating(item.rating)) throw new ActionError('invalid_input', 'Invalid rating');
+  return writeTx([db.cards, db.review_logs, db.daily_activity, db.settings], now, async (w) => {
+    if (await db.review_logs.get(item.id)) return { status: 'duplicate' } as const;
+    const card = await db.cards.get(item.card_id);
+    if (!card || card.deleted_at !== null || card.suspended) return { status: 'skipped' } as const;
+    const settings = await getSettings(now);
+    const at = replayTime(item.at, now);
+    const result = await writeAnswer(
+      w,
+      settings,
+      card,
+      { card_id: card.id, rating: item.rating, duration_ms: item.duration_ms ?? 0 },
+      at,
+      item.id,
+    );
+    return { status: 'applied', result } as const;
   });
 }
 
