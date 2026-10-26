@@ -803,7 +803,7 @@
       "tabGeneral": "Overview",
       "stagesTitle": "Words you learned",
       "stagesRule": "Words you got right on at least 3 separate days",
-      "weekDelta": "This week +{{count}}",
+      "weekDelta": "Last 7 days +{{count}}",
       "stagesBarLabel": "Your words by stage",
       "stage": {
         "learning": "Learning",
@@ -855,7 +855,7 @@
     },
     "groups": {
       "title": "Retention by category",
-      "subtitle": "Last 90 days. A rate is shown from 20 answers.",
+      "subtitle": "A rate is shown once a group has at least 20 answers.",
       "overall": "Retention, last 90 days",
       "dimension": "Category",
       "dimensions": {
@@ -880,15 +880,15 @@
         "pos": "Not given"
       },
       "empty": "No counted answers in the last 90 days.",
-      "overallHint": "\"Recall, last 30 days\" on the Continuity tab counts every answer; this rate counts only the first answer of the day to each card, so the two can differ."
+      "overallHint": "The “Recall” box on Genel counts every answer of the last 30 days; this rate counts only the first answer of the day to each card, so the two can differ."
     },
     "series": {
       "title": "Last 12 weeks",
       "learnedTitle": "Words you learned",
       "learnedLabel": "Words learned each week, last 12 weeks",
-      "learnedTotal_one": "{{count}} word in total",
-      "learnedTotal_other": "{{count}} words in total",
-      "learnedHint": "A word counts as learned once you get it right on three separate days, with growing gaps. It counts in that week.",
+      "learnedTotal_one": "Learned now: {{count}} word",
+      "learnedTotal_other": "Learned now: {{count}} words",
+      "learnedHint": "A word counts as learned once you get it right on three separate days, spaced out; it is added to that week's bar (Monday–Sunday). The weekly report counts the same way.",
       "retentionTitle": "Weekly retention",
       "retentionLabel": "Retention of each week, last 12 weeks",
       "retentionHint": "Gaps in the line are weeks with fewer than 20 answers.",
@@ -913,7 +913,6 @@
       "yuk": "Review load",
       "bildirim": "Notifications",
       "seviye": "Level",
-      "profil": "Profile",
       "gorunum": "Appearance",
       "ses": "Sound",
       "veri": "Data",
@@ -925,7 +924,7 @@
     "saveFailed": "The setting could not be saved.",
     "account": {
       "guest": "Guest",
-      "guestHint": "Your data lives only on this device. With an account it syncs across your devices.",
+      "guestHint": "Your data lives only on this device. Sign in and it syncs across your devices.",
       "signedIn": "Signed in",
       "signIn": "Sign in or create an account"
     },
@@ -991,8 +990,8 @@
       "sourcesHint": "The word lists and data behind word levels, and their licences."
     },
     "level": {
-      "description": "Your level decides which words are suggested to you and drives the vocabulary counter.",
-      "current": "Your level",
+      "description": "Decides which words are suggested to you and drives the vocabulary counter.",
+      "current": "Current level",
       "source": {
         "default": "Default; not measured yet.",
         "test": "From the level test, {{date}}.",
@@ -1000,8 +999,8 @@
         "manual": "Your choice, {{date}}."
       },
       "hint": "The AI does not suggest very basic words below this level.",
-      "lock": "Lock my level",
-      "lockHint": "While locked, your level does not change by itself.",
+      "lock": "Don't change my level by itself",
+      "lockHint": "While on, the level changes only when you pick one or take the test.",
       "test": "Level test",
       "testNone": "5 minutes, at most 70 questions. The result sets your level and the vocabulary counter.",
       "testLast": "Last test: {{date}}, result {{level}}.",
@@ -1046,12 +1045,14 @@
       "disabled": "Reminder turned off.",
       "denied": "Notifications are blocked. Allow them for Engapp in your browser's site settings.",
       "otherDevice": "The reminder is on for another of your devices. Turn it on to get it here too.",
-      "guest": "Notifications need a Google account, because the server sends the reminder. You can sign in in the Account section above.",
+      "guest": "Notifications need a Google account, because the server sends the reminder. Sign in, then turn it on here.",
+      "signIn": "Sign in",
       "unavailable": "Notifications are not available in this build: no server is connected.",
       "unsupported": "This browser does not support notifications. Try a current Chrome, Edge, Firefox or Safari.",
       "iosTitle": "On iPhone, add to Home Screen first",
       "iosWhy": "On iPhone and iPad notifications only work in the app added to the Home Screen (iOS 16.4 or later). Add it, open Engapp from the Home Screen and turn this on there.",
-      "androidInstall": "On Android, install the app to your home screen: reminders then arrive even when the app is closed. The install button is in the App section below.",
+      "androidInstall": "On Android, install the app to your home screen: reminders then arrive even when the app is closed.",
+      "androidInstallLink": "Install the app",
       "errors": {
         "denied": "Permission was not given. Choose “Allow” when the browser asks.",
         "unsupported": "This browser does not support notifications.",
@@ -1093,7 +1094,7 @@
       },
       "kartlar": {
         "title": "Cards and content",
-        "keywords": "voice pronunciation accent american british example sentences contexts translation interests topics"
+        "keywords": "audio pronunciation accent american british listen example sentence context turkish prepare"
       },
       "gorunum": {
         "title": "Appearance",
@@ -1132,8 +1133,8 @@
       "notifyOff": "Off",
       "notifyAuto": "Every day, automatic time",
       "notifyFixed": "Every day at {{time}}",
-      "level": "{{level}} · not locked",
-      "levelLocked": "{{level}} · locked",
+      "level": "{{level}} · updates by itself",
+      "levelLocked": "{{level}} · fixed",
       "cards_one": "{{voice}} · {{count}} context",
       "cards_other": "{{voice}} · {{count}} contexts",
       "theme": {
@@ -1146,7 +1147,7 @@
       "backupLast": "Last backup {{when}}",
       "backupNever": "No backup yet",
       "about": "Sources, privacy, install the app",
-      "advanced": "Data integrity, error log"
+      "advanced": "Data check, error log"
     }
   },
   "fsrsOpt": {
@@ -1469,17 +1470,17 @@
     "created": "Added"
   },
   "storage": {
-    "persistTitle": "Persistent storage",
+    "persistTitle": "Keep data safe in the browser",
     "on": "On",
     "off": "Off",
     "onHint": "The browser will not delete your data to free up space.",
     "offHint": "The browser may delete data to free up space; your data is also in your account.",
-    "deniedTitle": "Persistent storage was not granted",
+    "deniedTitle": "The browser did not agree to keep the data safe",
     "deniedGuest": "Create an account or back up; the browser may delete data to free up space.",
     "deniedHelp": "Installing the app to your home screen or desktop usually grants it.",
-    "granted": "Persistent storage is on",
+    "granted": "Your data is now kept safe in the browser",
     "request": "Ask for it",
-    "unsupported": "This browser does not support persistent storage.",
+    "unsupported": "This browser does not support keeping data safe.",
     "usedTitle": "Storage used",
     "used": "{{used}} used · {{quota}} available",
     "unknown": "This browser does not report storage use."
@@ -1513,7 +1514,7 @@
     "failed": "Couldn't reset the study history."
   },
   "integrity": {
-    "title": "Data integrity",
+    "title": "Data check",
     "hint": "Checks that cards, notes and review records are consistent.",
     "problemsHint": "Some records are inconsistent. Repair recomputes card states from the review history; review records are never deleted.",
     "check": "Check",
@@ -1647,7 +1648,7 @@
     "continueAsGuest": "Continue as guest",
     "done": "Connected to your account",
     "doneCopied": "{{count}} words were copied as new cards.",
-    "doneDuplicates": "{{count}} words were marked “possible duplicate”; you can review them in Cards."
+    "doneDuplicates": "{{count}} words were marked “possible duplicate”; you can review them in Kelimelerim (My words)."
   },
   "accountDelete": {
     "rowTitle": "Delete my account and data",
@@ -1695,18 +1696,18 @@
     "privacyEnLink": "Privacy policy",
     "deleteLink": "Account deletion",
     "updated": "Last updated: {{date}}",
-    "contactMissing": "(contact address not added yet)",
+    "contactFallback": "github.com/hsniscan/engapp/issues",
     "contents": "Contents",
     "deletePage": {
       "title": "Delete your account and data",
       "lead": "Delete your Engapp account and all your data on the server permanently, here or inside the app.",
-      "inApp": "In the app: Ayarlar (Settings) → Hesap (Account) → Hesabımı ve verilerimi sil.",
+      "inApp": "In the app: Profil → ⚙ Ayarlar (Settings) → Hesap ve eşitleme (Account and sync) → Hesabımı ve verilerimi sil.",
       "whatTitle": "What is deleted",
       "what": "Your cards and words, study history and statistics, settings, weekly reports, notification records, AI cache and usage counters, and then the account itself. Deletion is immediate and cannot be undone.",
       "keptTitle": "What stays",
       "kept": "The shared dictionary (word meanings, example sentences, audio) belongs to no one and contains none of your information; it stays as it is. Technical logs of the service providers follow their own retention periods.",
       "guestTitle": "If you use guest mode",
-      "guest": "In guest mode your data is only on your device; there is nothing to delete on the server. Delete it in the app with Ayarlar → Hesap → Bu cihazdaki verileri sil.",
+      "guest": "In guest mode your data is only on your device; there is nothing to delete on the server. Delete it in the app with Profil → ⚙ Ayarlar → Hesap ve eşitleme → Bu cihazdaki verileri sil.",
       "signInLead": "Sign in with Google, with the account you want to delete.",
       "signedInAs": "Signed in as",
       "notYou": "Another account? Sign out",
@@ -1720,7 +1721,7 @@
     }
   },
   "syncPanel": {
-    "localTitle": "Sync is off",
+    "localTitle": "Only on this device",
     "localHint": "In guest mode changes are kept only on this device.",
     "signedOutHint": "Signed out; changes collect on this device and are sent when you sign in.",
     "lastSync": "Last successful sync: {{when}}",
@@ -2130,14 +2131,14 @@
     "offerBody": "A short word test. Suggested words and your vocabulary counter adjust to the result.",
     "offerStart": "Start the test",
     "offerDismiss": "No thanks",
-    "offerDismissed": "You can take the test any time from Settings → Level.",
+    "offerDismissed": "You can take the test any time from Profil.",
     "change": "Your level went from {{from}} to {{to}}.",
     "changeWhy": "Why?",
     "changeTitle": "Your level went from {{from}} to {{to}}",
     "changeUp": "For two weeks you have known about {{pct}}% of the {{band}} words (the week before: {{prev}}%). After two weeks in a row above 80% your level moves up one step.",
     "changeDown": "For two weeks you have known only about {{pct}}% of the {{band}} words (the week before: {{prev}}%). After two weeks in a row below 60% your level moves down one step.",
     "changeEvidence": "{{band}} words counted: {{known}} you know, {{unknown}} you struggled with (your cards, reviews, tests and words you marked as known).",
-    "changeRule": "Your level changes at most one step a week. To stop automatic changes, lock it in Settings → Level.",
+    "changeRule": "Your level changes at most one step a week. To stop automatic changes, turn them off in Profil → ⚙ Ayarlar → Seviye.",
     "changeOk": "OK",
     "changeUndo": "Undo (keep {{from}})",
     "changeUndone": "Your level is {{level}} again.",
@@ -2294,11 +2295,6 @@
     "promptLater": "Not now",
     "saved": "Interests saved",
     "savedHint": "Change them any time in Profile → Your interests.",
-    "settingsLabel": "Interests",
-    "settingsNone": "No topics yet.",
-    "settingsMore_one": "{{list}} and {{count}} more topic",
-    "settingsMore_other": "{{list}} and {{count}} more topics",
-    "settingsOpen": "Open profile",
     "home": {
       "title": "Profile",
       "guestName": "Guest",
@@ -2307,8 +2303,13 @@
       "signIn": "Sign in",
       "settings": "Settings",
       "levelLabel": "Level",
+      "unmeasured": "Not measured yet",
+      "unmeasuredHint": "Find your level with a 2-minute test.",
       "vocabLabel": "Estimated vocabulary",
       "vocabNone": "No estimate yet",
+      "vocabFloor_one": "at least {{value}} word",
+      "vocabFloor_other": "at least {{value}} words",
+      "vocabFloorHint": "Words you learned or marked “I know”. The level test gives a better estimate.",
       "vocabDisclaimer": "An estimate based on the level test, the words you marked “I know” and your study. It is not the number of words you learned.",
       "source": {
         "default": "Not measured yet",
@@ -2317,7 +2318,7 @@
         "manual": "Your choice · {{date}}"
       },
       "testAgain": "Retake the test",
-      "testStart": "Take the level test",
+      "testStart": "Start the test",
       "streakTitle": "Streak",
       "streakValue_one": "{{count}} day",
       "streakValue_other": "{{count}} days",
@@ -3285,6 +3286,11 @@
       "knew": "I knew it",
       "forgot": "I didn't",
       "saved": "Answer saved. It is counted when you open the app."
+    },
+    "explain": {
+      "title": "Home-screen widgets",
+      "body": "Engapp has two widgets for your home screen: “Tekrara başla” counts your waiting cards, “Günün kelimesi” shows one word a day. You see them without opening the app.",
+      "how": "To add one: long-press an empty spot on the home screen → Widgets → Engapp."
     }
   },
   "reader": {

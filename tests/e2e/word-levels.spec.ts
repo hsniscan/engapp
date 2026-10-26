@@ -152,7 +152,7 @@ test('signed in: levels stored with the lexicon by ai-extract; an AI guess has a
   await page.getByRole('option', { name: /^B2/ }).click();
   await expect(page.getByRole('combobox', { name: 'Seviyen' })).toContainText('B2');
   await page.goto('/add?tab=paste');
-  await expect(page.getByRole('status', { name: 'Senkron durumu: Senkronlandı' })).toBeVisible();
+  await expect(page.getByRole('status', { name: 'Eşitleme durumu: Eşitlendi' })).toBeVisible();
   await page.getByLabel('İngilizce metin').fill(specs.map((s) => s.sentence).join(' '));
   await page.getByRole('button', { name: 'Kelimeleri çıkar' }).click();
   await page.getByRole('link', { name: 'Önizlemeyi aç' }).click();

@@ -26,7 +26,7 @@ export function DeleteAccountPage() {
   const [redirecting, setRedirecting] = useState(false);
   const [signInFailed, setSignInFailed] = useState(false);
   const email = contactEmail();
-  const missing = t('legal.contactMissing');
+  const missing = t('legal.contactFallback');
 
   useEffect(() => {
     startAuth();

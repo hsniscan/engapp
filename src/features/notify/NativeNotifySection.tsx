@@ -189,8 +189,26 @@ export function NativeNotifySection({
               />
             </SettingsRow>
           )}
+          <WidgetExplainer />
         </>
       )}
     </SettingsSection>
+  );
+}
+
+/** Android only: the home-screen widgets exist, what they show and how to add one. */
+function WidgetExplainer() {
+  const { t } = useTranslation();
+  return (
+    <SettingsRow stack>
+      <div
+        className="flex flex-col gap-2 rounded-control bg-surface-sunken px-4 py-3"
+        data-testid="widget-explainer"
+      >
+        <p className="font-medium text-fg">{t('widget.explain.title')}</p>
+        <p className="text-sm text-fg-muted">{t('widget.explain.body')}</p>
+        <p className="text-sm text-fg">{t('widget.explain.how')}</p>
+      </div>
+    </SettingsRow>
   );
 }

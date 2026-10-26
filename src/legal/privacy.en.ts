@@ -156,16 +156,16 @@ export const privacyEn: LegalDocument = {
       blocks: [
         {
           ul: [
-            'In the app: **Ayarlar (Settings) → Hesap (Account) → Hesabımı ve verilerimi sil (Delete my account and data).**',
+            'In the app: **Profil → ⚙ Ayarlar (Settings) → Hesap ve eşitleme (Account and sync) → Hesabımı ve verilerimi sil (Delete my account and data).**',
             'On the web: the [account deletion page](/hesap-sil) — sign in with Google and do the same.',
             'By e-mail: write to {{email}}; we delete your account within 30 days.',
           ],
         },
         {
-          p: 'What is deleted: your cards and words, study history and statistics, settings, reports, notification records, AI cache and counters, picture counters, picture requests and picture answers (for an admin also the admin record and picture review decisions), and then the account itself. Pictures in the shared dictionary stay. Deletion cannot be undone; if you like, first download the JSON backup under **Ayarlar → Veri (Data)**.',
+          p: 'What is deleted: your cards and words, study history and statistics, settings, reports, notification records, AI cache and counters, picture counters, picture requests and picture answers (for an admin also the admin record and picture review decisions), and then the account itself. Pictures in the shared dictionary stay. Deletion cannot be undone; if you like, first download the JSON backup under **Profil → ⚙ Ayarlar → Yedek ve veri (Backup and data)**.',
         },
         {
-          p: 'Guest-mode data exists only on your device: delete it with **Ayarlar → Hesap → Bu cihazdaki verileri sil (Delete the data on this device)** or by uninstalling the app.',
+          p: 'Guest-mode data exists only on your device: delete it with **Profil → ⚙ Ayarlar → Hesap ve eşitleme → Bu cihazdaki verileri sil (Delete the data on this device)** or by uninstalling the app.',
         },
       ],
     },
@@ -190,7 +190,7 @@ export const privacyEn: LegalDocument = {
           p: 'Send your request to {{email}}; we answer free of charge within 30 days at the latest. If you are not satisfied with the answer, you may complain to the Turkish Personal Data Protection Board (Kişisel Verileri Koruma Kurulu).',
         },
         {
-          p: 'You can take a copy of your data yourself at any time with **Ayarlar → Veri → JSON yedeğini indir (Download JSON backup)**, and correct a wrong entry in the app.',
+          p: 'You can take a copy of your data yourself at any time with **Profil → ⚙ Ayarlar → Yedek ve veri → Yedek al (Back up)**, and correct a wrong entry in the app.',
         },
       ],
     },

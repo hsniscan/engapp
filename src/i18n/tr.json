@@ -50,16 +50,16 @@
     "nextReview": ", sonraki tekrar:"
   },
   "sync": {
-    "label": "Senkron durumu",
-    "synced": "Senkronlandı",
-    "syncing": "Senkronlanıyor…",
+    "label": "Eşitleme durumu",
+    "synced": "Eşitlendi",
+    "syncing": "Eşitleniyor…",
     "pending_one": "{{count}} değişiklik bekliyor",
     "pending_other": "{{count}} değişiklik bekliyor",
     "offline": "Çevrimdışı — verilerin bu cihazda güvende",
     "offlineShort": "Çevrimdışı",
-    "error": "Senkron başarısız — yeniden denenecek",
-    "errorShort": "Senkron hatası",
-    "syncNow": "Şimdi senkronla"
+    "error": "Eşitleme başarısız — yeniden denenecek",
+    "errorShort": "Eşitleme hatası",
+    "syncNow": "Şimdi eşitle"
   },
   "theme": {
     "label": "Tema",
@@ -803,7 +803,7 @@
       "tabGeneral": "Genel",
       "stagesTitle": "Öğrendiğin kelimeler",
       "stagesRule": "En az 3 ayrı günde doğru bildiğin kelimeler",
-      "weekDelta": "Bu hafta +{{count}}",
+      "weekDelta": "Son 7 günde +{{count}}",
       "stagesBarLabel": "Kelimelerin aşamalara göre dağılımı",
       "stage": {
         "learning": "Öğreniyor",
@@ -855,7 +855,7 @@
     },
     "groups": {
       "title": "Kategorilere göre tutma oranı",
-      "subtitle": "Son 90 gün. Oran, en az 20 cevap olunca gösterilir.",
+      "subtitle": "Oran, bir grupta en az 20 cevap olunca gösterilir.",
       "overall": "Tutma oranı, son 90 gün",
       "dimension": "Kategori",
       "dimensions": {
@@ -880,15 +880,15 @@
         "pos": "Türü belirtilmemiş"
       },
       "empty": "Son 90 günde sayılan cevap yok.",
-      "overallHint": "Süreklilik sekmesindeki \"Hatırlama, son 30 gün\" bütün cevapları sayar; bu oran yalnızca her kartın günün ilk cevabını sayar, o yüzden ikisi farklı çıkabilir."
+      "overallHint": "Genel'deki “Hatırlama” kutusu son 30 gündeki bütün cevapları sayar; bu oran yalnızca her kartın günün ilk cevabını sayar, o yüzden ikisi farklı çıkabilir."
     },
     "series": {
       "title": "Son 12 hafta",
       "learnedTitle": "Öğrendiğin kelimeler",
       "learnedLabel": "Her hafta öğrenilen kelime sayısı, son 12 hafta",
-      "learnedTotal_one": "Toplam {{count}} kelime",
-      "learnedTotal_other": "Toplam {{count}} kelime",
-      "learnedHint": "Bir kelime üç ayrı günde, aralar açılarak doğru bilinince öğrenilmiş sayılır. Kelime o hafta sayılır.",
+      "learnedTotal_one": "Şu an öğrenilmiş: {{count}} kelime",
+      "learnedTotal_other": "Şu an öğrenilmiş: {{count}} kelime",
+      "learnedHint": "Bir kelime üç ayrı günde, aralar açılarak doğru bilinince öğrenilmiş sayılır ve o haftanın (pazartesi–pazar) çubuğuna eklenir. Haftalık rapordaki sayı da aynı kuralla sayılır.",
       "retentionTitle": "Haftalık tutma oranı",
       "retentionLabel": "Her haftanın tutma oranı, son 12 hafta",
       "retentionHint": "Çizgideki boşluklar, 20'den az cevap olan haftalar.",
@@ -908,12 +908,11 @@
     "sectionsNav": "Ayar bölümleri",
     "sections": {
       "hesap": "Hesap",
-      "senkron": "Senkron",
+      "senkron": "Eşitleme",
       "calisma": "Çalışma",
       "yuk": "Tekrar yükü",
       "bildirim": "Bildirim",
       "seviye": "Seviye",
-      "profil": "Profil",
       "gorunum": "Görünüm",
       "ses": "Ses",
       "veri": "Veri",
@@ -925,14 +924,14 @@
     "saveFailed": "Ayar kaydedilemedi.",
     "account": {
       "guest": "Misafir",
-      "guestHint": "Verilerin yalnızca bu cihazda. Hesap açarsan cihazların arasında senkronlanır.",
+      "guestHint": "Verilerin yalnızca bu cihazda. Giriş yaparsan cihazların arasında eşitlenir.",
       "signedIn": "Giriş yapıldı",
       "signIn": "Giriş yap ya da hesap aç"
     },
     "sync": {
-      "off": "Senkron kapalı",
+      "off": "Eşitleme kapalı",
       "offHint": "Misafir modunda değişiklikler yalnızca bu cihazda tutulur.",
-      "lastNever": "Henüz senkronlanmadı"
+      "lastNever": "Henüz eşitlenmedi"
     },
     "study": {
       "description": "Değişiklikler hemen uygulanır.",
@@ -991,17 +990,17 @@
       "sourcesHint": "Kelime seviyelerinin dayandığı listeler, veriler ve lisansları."
     },
     "level": {
-      "description": "Seviyen, sana önerilen kelimeleri ve kelime sayacını belirler.",
-      "current": "Seviyen",
+      "description": "Sana önerilen kelimeleri ve kelime sayacını belirler.",
+      "current": "Şu anki seviye",
       "source": {
         "default": "Varsayılan; henüz ölçülmedi.",
         "test": "Seviye testinden, {{date}}.",
         "auto": "Çalışmana göre güncellendi, {{date}}.",
         "manual": "Senin seçimin, {{date}}."
       },
-      "hint": "AI, bu seviyenin altındaki çok temel kelimeleri önermez.",
-      "lock": "Seviyemi kilitle",
-      "lockHint": "Kilitliyken seviyen çalışmana göre kendiliğinden değişmez.",
+      "hint": "Yapay zekâ bu seviyenin altındaki çok temel kelimeleri önermez.",
+      "lock": "Seviye kendiliğinden değişmesin",
+      "lockHint": "Açıkken seviye yalnızca sen seçince ya da test çözünce değişir.",
       "test": "Seviye testi",
       "testNone": "5 dakika, en çok 70 soru. Sonuç seviyeni ve kelime sayacını ayarlar.",
       "testLast": "Son test: {{date}}, sonuç {{level}}.",
@@ -1046,12 +1045,14 @@
       "disabled": "Hatırlatma kapatıldı.",
       "denied": "Bildirim izni kapalı. Açmak için tarayıcının site ayarlarından Engapp'e bildirim izni ver.",
       "otherDevice": "Hatırlatma başka bir cihazında açık. Bu cihaza da gelsin istersen aç.",
-      "guest": "Bildirimler Google hesabıyla çalışır, çünkü hatırlatmayı sunucu gönderir. Yukarıdaki Hesap bölümünden giriş yapabilirsin.",
+      "guest": "Bildirimler Google hesabıyla çalışır, çünkü hatırlatmayı sunucu gönderir. Giriş yapınca buradan açabilirsin.",
+      "signIn": "Giriş yap",
       "unavailable": "Bu sürümde bildirim yok, çünkü sunucu bağlantısı kurulmamış.",
       "unsupported": "Bu tarayıcı bildirimleri desteklemiyor. Chrome, Edge, Firefox ya da Safari'nin güncel sürümünü dene.",
       "iosTitle": "iPhone'da önce ana ekrana ekle",
       "iosWhy": "iPhone ve iPad'de bildirimler yalnızca ana ekrana eklenen uygulamada çalışır (iOS 16.4 ve sonrası). Ekledikten sonra Engapp'i ana ekrandan aç ve bu ayarı orada aç.",
-      "androidInstall": "Android'de uygulamayı ana ekrana yükle: bildirimler uygulama kapalıyken de gelir. Yükleme düğmesi aşağıdaki Uygulama bölümünde.",
+      "androidInstall": "Android'de uygulamayı ana ekrana yükle: bildirimler uygulama kapalıyken de gelir.",
+      "androidInstallLink": "Uygulamayı yükle",
       "errors": {
         "denied": "İzin verilmedi. Bildirim almak için tarayıcı sorduğunda “İzin ver”i seç.",
         "unsupported": "Bu tarayıcı bildirimleri desteklemiyor.",
@@ -1093,15 +1094,15 @@
       },
       "kartlar": {
         "title": "Kartlar ve içerik",
-        "keywords": "ses telaffuz aksan amerikan ingiliz dinle örnek cümle bağlam türkçesi hazırla ilgi alanı profil konu"
+        "keywords": "ses telaffuz aksan amerikan ingiliz dinle örnek cümle bağlam türkçesi hazırla"
       },
       "gorunum": {
         "title": "Görünüm",
         "keywords": "tema karanlık koyu açık sistem görsel resim ön yüz resimli kart"
       },
       "hesap": {
-        "title": "Hesap ve senkron",
-        "keywords": "hesap giriş çıkış google senkron eşitle cihaz verileri sil hesabı sil"
+        "title": "Hesap ve eşitleme",
+        "keywords": "hesap giriş çıkış google eşitleme senkron eşitle cihaz verileri sil hesabı sil"
       },
       "veri": {
         "title": "Yedek ve veri",
@@ -1132,8 +1133,8 @@
       "notifyOff": "Kapalı",
       "notifyAuto": "Her gün, otomatik saat",
       "notifyFixed": "Her gün {{time}}",
-      "level": "{{level}} · kilitli değil",
-      "levelLocked": "{{level}} · kilitli",
+      "level": "{{level}} · kendiliğinden güncellenir",
+      "levelLocked": "{{level}} · sabit",
       "cards_one": "{{voice}} · {{count}} bağlam",
       "cards_other": "{{voice}} · {{count}} bağlam",
       "theme": {
@@ -1146,7 +1147,7 @@
       "backupLast": "Son yedek {{when}}",
       "backupNever": "Henüz yedek alınmadı",
       "about": "Kaynaklar, gizlilik, uygulamayı yükle",
-      "advanced": "Veri bütünlüğü, hata kaydı"
+      "advanced": "Veri denetimi, hata kaydı"
     }
   },
   "fsrsOpt": {
@@ -1196,15 +1197,15 @@
   "auth": {
     "title": "Giriş",
     "heading": "Kelimelerin seninle gelsin",
-    "lead": "Hesapla tekrarların cihazların arasında senkronlanır ve metinlerden AI ile kart çıkarabilirsin.",
+    "lead": "Hesapla çalışmaların cihazların arasında eşitlenir ve metinlerden yapay zekâ ile kart çıkarabilirsin.",
     "google": "Google ile giriş yap",
     "guest": "Misafir olarak devam et",
     "guestNote": "Misafir modunda her şey bu cihazda çalışır. İstediğin zaman giriş yapabilirsin.",
     "privacy": "Google hesabından yalnızca adın, e-posta adresin ve profil fotoğrafın kullanılır.",
-    "benefitSync": "Cihazlar arası senkron",
+    "benefitSync": "Cihazlar arası eşitleme",
     "benefitAi": "AI ile kart çıkarma",
     "unavailableTitle": "Giriş bu sürümde kapalı",
-    "unavailableBody": "Hesap sunucusu ayarlanmamış. Misafir olarak tekrar, kart ekleme ve istatistikler bu cihazda tam çalışır; senkron ve AI ile kart çıkarma için giriş gerekir.",
+    "unavailableBody": "Hesap sunucusu ayarlanmamış. Misafir olarak çalışma, kart ekleme ve istatistikler bu cihazda tam çalışır; eşitleme ve yapay zekâ ile kart çıkarma için giriş gerekir.",
     "redirecting": "Google'a yönlendiriliyorsun…",
     "finishing": "Giriş tamamlanıyor…",
     "failed": "Giriş tamamlanamadı",
@@ -1214,7 +1215,7 @@
     "toHome": "Ana sayfaya dön",
     "signOut": "Çıkış yap",
     "signOutTitle": "Çıkış yapılsın mı?",
-    "signOutBody": "Verilerin bu cihazda kalır. Çıkış yapınca senkron durur; aynı hesapla tekrar giriş yaptığında kaldığı yerden devam eder.",
+    "signOutBody": "Verilerin bu cihazda kalır. Çıkış yapınca eşitleme durur; aynı hesapla tekrar giriş yaptığında kaldığı yerden devam eder.",
     "signedOut": "Çıkış yapıldı",
     "signOutPending_one": "{{count}} değişiklik henüz hesabına gönderilemedi. Çıkış yaparsan bu cihazda kalır; aynı hesapla yeniden giriş yaptığında gönderilir.",
     "signOutPending_other": "{{count}} değişiklik henüz hesabına gönderilemedi. Çıkış yaparsan bu cihazda kalır; aynı hesapla yeniden giriş yaptığında gönderilir.",
@@ -1222,13 +1223,13 @@
     "signOutFailed": "Çıkış yapılamadı. Tekrar dene.",
     "avatar": "Profil fotoğrafı",
     "noName": "Google hesabı",
-    "lastSync": "Son senkron {{when}}",
-    "lastSyncNever": "Henüz senkronlanmadı",
+    "lastSync": "Son eşitleme {{when}}",
+    "lastSyncNever": "Henüz eşitlenmedi",
     "justNow": "az önce",
     "signedOutLocal": "Oturum kapalı",
-    "signedOutLocalHint": "Verilerin bu cihazda duruyor. Senkron için tekrar giriş yap.",
+    "signedOutLocalHint": "Verilerin bu cihazda duruyor. Eşitlemek için tekrar giriş yap.",
     "guestTitle": "Misafir",
-    "guestHint": "Verilerin yalnızca bu cihazda. Giriş yaparsan cihazların arasında senkronlanır ve AI ile kart çıkarabilirsin.",
+    "guestHint": "Verilerin yalnızca bu cihazda. Giriş yaparsan cihazların arasında eşitlenir ve yapay zekâ ile kart çıkarabilirsin.",
     "signIn": "Giriş yap",
     "or": "ya da"
   },
@@ -1469,17 +1470,17 @@
     "created": "Eklenme tarihi"
   },
   "storage": {
-    "persistTitle": "Kalıcı depolama",
+    "persistTitle": "Verileri tarayıcıda koru",
     "on": "Açık",
     "off": "Kapalı",
     "onHint": "Tarayıcı, yer açmak için verilerini silmez.",
     "offHint": "Tarayıcı yer açmak için verileri silebilir; verilerin hesabında da duruyor.",
-    "deniedTitle": "Kalıcı depolama izni verilmedi",
+    "deniedTitle": "Tarayıcı verileri korumayı kabul etmedi",
     "deniedGuest": "Hesap aç ya da yedek al; tarayıcı yer açmak için verileri silebilir.",
     "deniedHelp": "Uygulamayı ana ekrana ya da masaüstüne yüklemek izni çoğu zaman açar.",
-    "granted": "Kalıcı depolama açıldı",
+    "granted": "Veriler artık tarayıcıda korunuyor",
     "request": "İzin iste",
-    "unsupported": "Bu tarayıcı kalıcı depolama iznini desteklemiyor.",
+    "unsupported": "Bu tarayıcı verileri korumaya alma iznini desteklemiyor.",
     "usedTitle": "Kullanılan alan",
     "used": "{{used}} kullanılıyor · {{quota}} kullanılabilir",
     "unknown": "Bu tarayıcı kullanılan alanı göstermiyor."
@@ -1513,7 +1514,7 @@
     "failed": "Çalışma geçmişi sıfırlanamadı."
   },
   "integrity": {
-    "title": "Veri bütünlüğü",
+    "title": "Veri denetimi",
     "hint": "Kartların, notların ve tekrar kayıtlarının birbiriyle tutarlı olduğunu denetler.",
     "problemsHint": "Bazı kayıtlar tutarsız. Veri onarımı kart durumlarını tekrar geçmişinden yeniden hesaplar; tekrar kayıtları silinmez.",
     "check": "Denetle",
@@ -1647,7 +1648,7 @@
     "continueAsGuest": "Misafir olarak devam et",
     "done": "Hesabına bağlandın",
     "doneCopied": "{{count}} kelime yeni kart olarak kopyalandı.",
-    "doneDuplicates": "{{count}} kelime “olası kopya” olarak işaretlendi; Kartlar'da gözden geçirebilirsin."
+    "doneDuplicates": "{{count}} kelime “olası kopya” olarak işaretlendi; Kelimelerim'de gözden geçirebilirsin."
   },
   "accountDelete": {
     "rowTitle": "Hesabımı ve verilerimi sil",
@@ -1695,18 +1696,18 @@
     "privacyEnLink": "Privacy policy (English)",
     "deleteLink": "Hesap silme",
     "updated": "Son güncelleme: {{date}}",
-    "contactMissing": "(iletişim adresi henüz eklenmedi)",
+    "contactFallback": "github.com/hsniscan/engapp/issues",
     "contents": "İçindekiler",
     "deletePage": {
       "title": "Hesabını ve verilerini sil",
       "lead": "Engapp hesabını ve sunucudaki bütün verilerini buradan ya da uygulamanın içinden kalıcı olarak silebilirsin.",
-      "inApp": "Uygulamada: Ayarlar → Hesap → Hesabımı ve verilerimi sil.",
+      "inApp": "Uygulamada: Profil → ⚙ Ayarlar → Hesap ve eşitleme → Hesabımı ve verilerimi sil.",
       "whatTitle": "Neler silinir",
       "what": "Kartların ve kelimelerin, çalışma geçmişin ve istatistiklerin, ayarların, haftalık raporların, bildirim kayıtların, AI önbelleğin ve kullanım sayaçların, ardından hesabının kendisi. Silme hemen yapılır ve geri alınamaz.",
       "keptTitle": "Neler kalır",
       "kept": "Ortak sözlük (kelime anlamları, örnek cümleler, ses dosyaları) kimseye ait değildir ve senin bilgini içermez; olduğu gibi kalır. Hizmet sağlayıcıların teknik kayıtları kendi sürelerine tabidir.",
       "guestTitle": "Misafir modundaysan",
-      "guest": "Misafir modunda verilerin yalnızca cihazındadır; sunucuda silinecek bir şey yoktur. Uygulamada Ayarlar → Hesap → Bu cihazdaki verileri sil ile silebilirsin.",
+      "guest": "Misafir modunda verilerin yalnızca cihazındadır; sunucuda silinecek bir şey yoktur. Uygulamada Profil → ⚙ Ayarlar → Hesap ve eşitleme → Bu cihazdaki verileri sil ile silebilirsin.",
       "signInLead": "Silmek istediğin hesapla, Google ile giriş yap.",
       "signedInAs": "Giriş yapılan hesap",
       "notYou": "Başka bir hesap mı? Çıkış yap",
@@ -1720,20 +1721,20 @@
     }
   },
   "syncPanel": {
-    "localTitle": "Senkron kapalı",
+    "localTitle": "Yalnızca bu cihazda",
     "localHint": "Misafir modunda değişiklikler yalnızca bu cihazda tutulur.",
     "signedOutHint": "Oturum kapalı; değişiklikler bu cihazda birikir ve giriş yapınca gönderilir.",
-    "lastSync": "Son başarılı senkron: {{when}}",
-    "never": "Henüz senkronlanmadı",
+    "lastSync": "Son başarılı eşitleme: {{when}}",
+    "never": "Henüz eşitlenmedi",
     "stuck_one": "{{count}} değişiklik 10 kez gönderilemedi. Ayrıntılar hata kaydında; sorun sürerse yedek al.",
     "stuck_other": "{{count}} değişiklik 10 kez gönderilemedi. Ayrıntılar hata kaydında; sorun sürerse yedek al.",
-    "done": "Senkron tamamlandı",
-    "offline": "Çevrimdışısın. Bağlantı gelince kendiliğinden senkronlanır.",
-    "failed": "Senkron başarısız. Biraz sonra yeniden denenecek.",
-    "busy": "Başka bir sekme şu an senkronluyor.",
+    "done": "Eşitleme tamamlandı",
+    "offline": "Çevrimdışısın. Bağlantı gelince kendiliğinden eşitlenir.",
+    "failed": "Eşitleme başarısız. Biraz sonra yeniden denenecek.",
+    "busy": "Başka bir sekme şu an eşitliyor.",
     "authFailed": "Oturumun sona ermiş. Tekrar giriş yap.",
     "localIndicator": "Bu cihazda",
-    "localIndicatorFull": "Misafir modu — verilerin bu cihazda güvende. Senkron için giriş yap.",
+    "localIndicatorFull": "Misafir modu — verilerin bu cihazda güvende. Cihazlar arasında eşitlemek için giriş yap.",
     "unavailableIndicatorFull": "Verilerin bu cihazda güvende."
   },
   "importer": {
@@ -2038,7 +2039,7 @@
     "override": "Bu kelimenin seviyesi",
     "overrideAuto": "Otomatik ({{level}})",
     "overrideAutoUnknown": "Otomatik",
-    "overrideHint": "Kendi seçtiğin seviye yalnızca sende görünür ve cihazların arasında senkronlanır.",
+    "overrideHint": "Kendi seçtiğin seviye yalnızca sende görünür ve cihazların arasında eşitlenir.",
     "overrideFailed": "Seviye kaydedilemedi. Tekrar dene."
   },
   "sources": {
@@ -2130,14 +2131,14 @@
     "offerBody": "Kısa bir kelime testi. Sonuca göre sana önerilen kelimeler ve kelime sayacın ayarlanır.",
     "offerStart": "Teste başla",
     "offerDismiss": "Gerek yok",
-    "offerDismissed": "Testi istediğin zaman Ayarlar → Seviye'den çözebilirsin.",
+    "offerDismissed": "Testi istediğin zaman Profil'den çözebilirsin.",
     "change": "Seviyen {{from}} → {{to}} oldu.",
     "changeWhy": "Neden?",
     "changeTitle": "Seviyen {{from}} → {{to}} oldu",
     "changeUp": "Son iki haftadır {{band}} kelimelerinin %{{pct}} kadarını biliyorsun (bir önceki hafta %{{prev}}). İki hafta üst üste %80'i geçince seviyen bir basamak yükselir.",
     "changeDown": "Son iki haftadır {{band}} kelimelerinin yalnızca %{{pct}} kadarını biliyorsun (bir önceki hafta %{{prev}}). İki hafta üst üste %60'ın altında kalınca seviyen bir basamak iner.",
     "changeEvidence": "Hesaba katılan {{band}} kelimeleri: {{known}} bildiğin, {{unknown}} zorlandığın (kartların, tekrarların, testlerin ve “Biliyorum” dediklerin).",
-    "changeRule": "Seviye haftada en çok bir basamak değişir. Kendiliğinden değişmesini istemiyorsan Ayarlar → Seviye'den kilitleyebilirsin.",
+    "changeRule": "Seviye haftada en çok bir basamak değişir. Kendiliğinden değişmesini istemiyorsan Profil → ⚙ Ayarlar → Seviye'den kapatabilirsin.",
     "changeOk": "Tamam",
     "changeUndo": "Geri al ({{from}} kalsın)",
     "changeUndone": "Seviyen yeniden {{level}}.",
@@ -2294,11 +2295,6 @@
     "promptLater": "Şimdi değil",
     "saved": "İlgi alanların kaydedildi",
     "savedHint": "Profil → İlgi alanların'dan istediğin zaman değiştirebilirsin.",
-    "settingsLabel": "İlgi alanları",
-    "settingsNone": "Henüz bir konu yok.",
-    "settingsMore_one": "{{list}} ve {{count}} konu daha",
-    "settingsMore_other": "{{list}} ve {{count}} konu daha",
-    "settingsOpen": "Profili aç",
     "home": {
       "title": "Profil",
       "guestName": "Misafir",
@@ -2307,8 +2303,13 @@
       "signIn": "Giriş yap",
       "settings": "Ayarlar",
       "levelLabel": "Seviye",
+      "unmeasured": "Henüz ölçülmedi",
+      "unmeasuredHint": "2 dakikalık testle seviyeni öğren.",
       "vocabLabel": "Tahmini kelime hazinen",
       "vocabNone": "Henüz tahmin yok",
+      "vocabFloor_one": "en az {{value}} kelime",
+      "vocabFloor_other": "en az {{value}} kelime",
+      "vocabFloorHint": "Öğrendiğin ve “Biliyorum” dediğin kelimeler. Seviye testi daha doğru bir tahmin verir.",
       "vocabDisclaimer": "Seviye testi, “Biliyorum” dediklerin ve çalışmana dayanan bir tahmin. Öğrendiğin kelime sayısı değildir.",
       "source": {
         "default": "Henüz ölçülmedi",
@@ -2317,7 +2318,7 @@
         "manual": "Senin seçimin · {{date}}"
       },
       "testAgain": "Testi yeniden çöz",
-      "testStart": "Seviye testini çöz",
+      "testStart": "Teste başla",
       "streakTitle": "Seri",
       "streakValue_one": "{{count}} gün",
       "streakValue_other": "{{count}} gün",
@@ -2335,7 +2336,7 @@
       "shortcuts": "Kısayollar",
       "allWords": "Tüm kelimelerim",
       "knownWords": "Bildiğim kelimeler",
-      "sync": "Senkron",
+      "sync": "Eşitleme",
       "settingsHint": "Çalışma, hatırlatmalar, görünüm, yedek",
       "learnedShort": "Öğrendiğin",
       "wordsValue_one": "{{count}} kelime",
@@ -3285,6 +3286,11 @@
       "knew": "Bildim",
       "forgot": "Bilemedim",
       "saved": "Cevabın kaydedildi. Uygulamayı açınca işlenir."
+    },
+    "explain": {
+      "title": "Ana ekran araçları",
+      "body": "Engapp'in telefonun ana ekranına koyabileceğin iki aracı var: “Tekrara başla” bekleyen kartlarını sayar, “Günün kelimesi” her gün bir kelime gösterir. Uygulamayı açmadan da görürsün.",
+      "how": "Eklemek için: ana ekranda boş bir yere uzun bas → Widget'lar (Araçlar) → Engapp."
     }
   },
   "reader": {
