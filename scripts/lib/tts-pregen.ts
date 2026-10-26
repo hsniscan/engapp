@@ -70,6 +70,41 @@ export function publicTexts(rows: PublicRows): TextSet {
   return { texts, words: words.size, sentences: sentences.size, skipped };
 }
 
+/**
+ * The graded library's sentences (decision 0047): every English sentence of an approved text,
+ * normalised, unique, sorted. Read aloud in en-US only; each file is named like any other
+ * clip (content-addressed), so a sentence that is also a dictionary example is made once and
+ * the reader plays it by the sentence's audio_key.
+ */
+export function gradedTexts(sentences: readonly string[]): TextSet {
+  const set = new Set<string>();
+  let skipped = 0;
+  for (const raw of sentences) {
+    const t = normalizeTtsText(raw);
+    if (!isSpeakable(t)) {
+      skipped++;
+      continue;
+    }
+    set.add(t);
+  }
+  const texts = [...set].sort();
+  return { texts, words: 0, sentences: texts.length, skipped };
+}
+
+/** Where the texts come from: the shared dictionary (both accents) or the graded library. */
+export type PregenSource = 'dictionary' | 'graded';
+
+export function parseSource(v: string): PregenSource {
+  if (v === 'dictionary' || v === '') return 'dictionary';
+  if (v === 'graded') return 'graded';
+  throw new Error('source must be dictionary or graded');
+}
+
+/** The graded library is read in en-US only (plan A.5). */
+export function voicesFor(source: PregenSource, asked: readonly TtsVoice[]): TtsVoice[] {
+  return source === 'graded' ? ['en-US'] : [...asked];
+}
+
 export interface PregenJob {
   /** File stem for the worker: `<voice>-<hash>`. */
   id: string;

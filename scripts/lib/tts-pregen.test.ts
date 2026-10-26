@@ -7,7 +7,10 @@ import {
 } from '../../supabase/functions/_shared/tts-contract.ts';
 import {
   estimate,
+  gradedTexts,
+  parseSource,
   parseVoices,
+  voicesFor,
   planJobs,
   publicTexts,
   replacedOnDemandFiles,
@@ -246,5 +249,21 @@ describe('estimate', () => {
     const e = estimate([{ text: 'word' }, { text: 'x'.repeat(60) }]);
     expect(e.bytes).toBeGreaterThan(20_000);
     expect(e.bytes).toBeLessThan(35_000);
+  });
+});
+
+describe('graded library audio (decision 0047)', () => {
+  it('reads every approved sentence once, en-US only, with the key the text stores', async () => {
+    const set = gradedTexts(['The train was late.', 'The  train was late.', 'x'.repeat(301), 'Maria smiled.']);
+    expect(set.texts).toEqual(['Maria smiled.', 'The train was late.']);
+    expect(set.skipped).toBe(1);
+    expect(voicesFor(parseSource('graded'), parseVoices('both'))).toEqual(['en-US']);
+    expect(voicesFor(parseSource(''), parseVoices('both'))).toEqual(['en-US', 'en-GB']);
+    expect(() => parseSource('news')).toThrow();
+    const plan = await planJobs(set.texts, new Set(), { voices: ['en-US'], shard: 0, shards: 1, max: 10 });
+    expect(plan.jobs.map((j) => j.path)).toEqual([
+      await ttsObjectPath('en-US', 'Maria smiled.'),
+      await ttsObjectPath('en-US', 'The train was late.'),
+    ]);
   });
 });

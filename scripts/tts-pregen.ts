@@ -11,6 +11,9 @@
  *       Makes the missing MP3 files of this shard and uploads each one as soon as it is made.
  *       Resumable: a later run skips every file already there. Needs --model / --voices (or
  *       KOKORO_MODEL / KOKORO_VOICES) and --python (or KOKORO_PYTHON, default python3).
+ *   node scripts/tts-pregen.ts plan|run --source graded [...]
+ *       The graded library instead (decision 0047): every sentence of an approved text, en-US
+ *       only, named like every other clip (the text stores each sentence's audio_key).
  *   node scripts/tts-pregen.ts prune-ondemand [--dry-run]
  *       Deletes the on-demand Gemini WAV files (decision 0028) whose text now has an MP3.
  *
@@ -21,7 +24,10 @@ import { parseArgs } from 'node:util';
 import { createClient } from '@supabase/supabase-js';
 import {
   estimate,
+  gradedTexts,
+  parseSource,
   parseVoices,
+  voicesFor,
   planJobs,
   publicTexts,
   replacedOnDemandFiles,
@@ -61,6 +67,7 @@ async function main(): Promise<void> {
     allowPositionals: true,
     options: {
       voice: { type: 'string', default: 'both' },
+      source: { type: 'string', default: 'dictionary' },
       shard: { type: 'string', default: '0' },
       shards: { type: 'string', default: '1' },
       max: { type: 'string', default: '100000' },
@@ -78,14 +85,17 @@ async function main(): Promise<void> {
     process.exitCode = 2;
     return;
   }
-  const voices = parseVoices(values.voice);
+  const source = parseSource(values.source);
+  const voices = voicesFor(source, parseVoices(values.voice));
   const shards = int(values.shards, 'shards', 1, 64);
   const shard = int(values.shard, 'shard', 0, shards - 1);
   const max = int(values.max, 'max', 1, 1_000_000);
   const s = store();
 
-  const set = publicTexts(await s.publicRows());
-  log('tts texts', { words: set.words, sentences: set.sentences, skipped: set.skipped });
+  if (source === 'graded' && job === 'prune-ondemand') throw new Error('prune-ondemand is for the dictionary');
+  const set =
+    source === 'graded' ? gradedTexts(await s.gradedSentences()) : publicTexts(await s.publicRows());
+  log('tts texts', { source, words: set.words, sentences: set.sentences, skipped: set.skipped });
   const bucket = await s.listBucket(voices);
   log('tts bucket', {
     mp3: bucket.counts.mp3,

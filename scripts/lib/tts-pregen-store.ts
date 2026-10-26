@@ -53,6 +53,28 @@ export class SupabasePregenStore {
     return { terms, examples };
   }
 
+  /** English sentences of every approved graded text (decision 0047; keyset pages by id). */
+  async gradedSentences(): Promise<string[]> {
+    const out: string[] = [];
+    for (let after = ''; ;) {
+      let q = this.db
+        .from('graded_texts')
+        .select('id, sentences')
+        .eq('status', 'approved')
+        .order('id')
+        .limit(200);
+      if (after) q = q.gt('id', after);
+      const { data, error } = await q;
+      if (error) throw new Error(`graded_texts: ${error.message}`);
+      const rows = (data ?? []) as { id: string; sentences: { en?: unknown }[] }[];
+      for (const r of rows)
+        for (const s of r.sentences ?? []) if (typeof s?.en === 'string') out.push(s.en);
+      if (rows.length < 200) break;
+      after = rows.at(-1)!.id;
+    }
+    return out;
+  }
+
   /** What the bucket holds for these voices (names and sizes; files cannot be listed publicly). */
   async listBucket(voices: readonly TtsVoice[]): Promise<BucketListing> {
     const out: BucketListing = {
