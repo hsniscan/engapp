@@ -6,6 +6,7 @@ import type { Page } from '@playwright/test';
 import { buildBackup } from '../../src/domain/backup.ts';
 import type { Card, Note } from '../../src/domain/types.ts';
 import { addWord, dumpTables, expect, test, type Word } from './support/app.ts';
+import { restoreSeed } from './support/restore.ts';
 import { buildSeedBackup } from './support/seed.ts';
 
 const DAY = 86_400_000;
@@ -161,8 +162,8 @@ test('vacation: no new cards, streak frozen, new cards ramp back 0 → ½ → fu
 });
 
 test('stats: 30-day forecast with the capacity line and a text summary', async ({ page }) => {
-  await page.goto('/');
-  await addWord(page, VOCAB[0]!);
+  // İlerleme shows the forecast once there are 10 answers (v0.5.1, ADR 0058): a small history.
+  await restoreSeed(page, 60);
   await page.goto('/progress');
   const section = page.getByRole('region', { name: 'Önümüzdeki 30 gün' });
   await expect(section.getByRole('img', { name: /beklenen tekrar sayısı/ })).toBeVisible();

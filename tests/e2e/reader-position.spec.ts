@@ -61,7 +61,8 @@ const LONG = Array.from({ length: 40 }, (_, i) =>
 
 async function pasteAndOpen(page: Page, title: string, body: string) {
   await page.goto('/add?tab=paste');
-  await page.getByTestId('reader-paste-open').click();
+  // v0.5.1: Metin ekle › Yapıştır has the box open; "Okuyucuda aç" sits under it.
+  await expect(page.getByTestId('open-in-reader')).toBeVisible();
   await page.getByRole('textbox', { name: 'İngilizce metin' }).fill(body);
   await page.getByRole('textbox', { name: 'Başlık' }).fill(title);
   await page.getByRole('button', { name: 'Okuyucuda aç' }).click();

@@ -3,7 +3,7 @@
 // Kolay, the session counts cards (+n tekrar) and the summary names words, and a new user's
 // Çalış page offers first steps.
 import type { Page } from '@playwright/test';
-import { addWord, expect, test, WORDS } from './support/app.ts';
+import { addWord, dumpTables, expect, test, WORDS } from './support/app.ts';
 import { restoreSeed } from './support/restore.ts';
 
 const SHOTS = process.env.E2E_SHOTS_DIR;
@@ -74,6 +74,7 @@ test('Bugün: Kelime done → the hero leads to Üretim; a wrong typed answer ne
   }
 
   // Üretim: a wrong typed answer. Tekrar is suggested; İyi needs a second tap.
+  const t0 = await page.evaluate(() => Date.now());
   await cta.click();
   await expect(page).toHaveURL(/\/study\?mode=production$/);
   const progress = page.getByTestId('study-progress');
@@ -92,10 +93,16 @@ test('Bugün: Kelime done → the hero leads to Üretim; a wrong typed answer ne
   await shot(page, 'rating-confirm');
   await bar.getByRole('button', { name: /İyi/ }).click();
   // One card answered. The count of cards grows only when a card falls due meanwhile (the
-  // seed's cards come due through the day), never with learning steps.
+  // seed's cards come due through the day; on a slow machine more of them), never with
+  // learning steps: at most one more than the production cards that fell due during the test.
   await expect(progress).toHaveText(/^1 \/ \d+/);
   const after = Number(/\/ (\d+)/.exec((await progress.textContent()) ?? '')?.[1]);
-  expect(after - total).toBeLessThanOrEqual(1);
+  const t1 = await page.evaluate(() => Date.now());
+  const { cards } = await dumpTables(page, ['cards']);
+  const fellDue = (cards as { card_type: string; due: number }[]).filter(
+    (c) => c.card_type === 'production' && c.due > t0 && c.due <= t1,
+  ).length;
+  expect(after - total).toBeLessThanOrEqual(fellDue + 1);
 });
 
 test('a new user’s Çalış page shows first steps; a session counts cards and the summary words', async ({

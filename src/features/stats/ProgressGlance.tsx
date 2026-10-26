@@ -61,13 +61,13 @@ export function ProgressGlance() {
           </dl>
           <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
             <span className="text-[0.8125rem] text-fg-muted">{t('progressGlance.week')}</span>
-            <ol
+            <div
               role="img"
               aria-label={t('progressGlance.weekLabel', { count: active })}
               className="flex gap-1.5"
             >
               {data.days.map((d) => (
-                <li
+                <span
                   key={d.date}
                   className={cn(
                     'size-4 rounded-[4px]',
@@ -75,7 +75,7 @@ export function ProgressGlance() {
                   )}
                 />
               ))}
-            </ol>
+            </div>
           </div>
         </>
       )}

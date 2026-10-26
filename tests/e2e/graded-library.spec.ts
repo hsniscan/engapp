@@ -103,13 +103,13 @@ test('Okuma kitaplığı: catalogue, filters, coverage chip, open and cache', as
     sentences: [expect.objectContaining({ en: 'The train was late.', audio_key: 'en-US/aaa.mp3' }), expect.anything()],
   });
 
-  // Back in the library offline: it lists from the device and the text is marked offline-ready;
-  // opening it again reuses the same reading row.
+  // Back in Okuma offline: the opened text is listed once, under Metinlerim (v0.5.1), and opens
+  // from the device with the same reading row.
   backend.offline = true;
   await page.goto('/kitaplik');
-  const first = list.getByRole('listitem').filter({ hasText: 'The Late Train' });
-  await expect(first.getByText('İnternetsiz okunur')).toBeVisible();
-  await first.getByRole('button').click();
+  await expect(list.getByRole('listitem')).toHaveCount(2);
+  await expect(list).not.toContainText('The Late Train');
+  await page.getByTestId('my-texts').getByRole('link', { name: /The Late Train/ }).click();
   await expect(page).toHaveURL(new RegExp(`/oku/${(texts![0] as { id: string }).id}$`));
   expect((await dumpTables(page, ['texts'])).texts).toHaveLength(1);
 });
