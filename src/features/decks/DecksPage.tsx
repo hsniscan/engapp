@@ -10,6 +10,9 @@ import { MineTab } from './MineTab';
 import { Glyph } from './parts';
 
 const DiscoverTab = lazy(() => import('./DiscoverTab').then((m) => ({ default: m.DiscoverTab })));
+const ReadingTab = lazy(() =>
+  import('@/features/reader/ReadingTab').then((m) => ({ default: m.ReadingTab })),
+);
 const BankTab = lazy(() =>
   import('@/features/wordbank/WordBankPage').then((m) => ({ default: m.WordBankPanel })),
 );
@@ -22,6 +25,7 @@ export function DecksPage() {
     mine: t('deckHub.tabMine'),
     discover: t('deckHub.tabDiscover'),
     bank: t('deckHub.tabBank'),
+    reading: t('reader.tab'),
   };
 
   return (
@@ -41,7 +45,7 @@ export function DecksPage() {
 
       <nav
         aria-label={t('deckHub.segments')}
-        className="mx-4 mt-2 grid grid-cols-3 gap-1 rounded-[14px] bg-surface-sunken p-1"
+        className="mx-4 mt-2 grid grid-cols-4 gap-1 rounded-[14px] bg-surface-sunken p-1"
       >
         {DECK_TABS.map((key) => (
           <Link
@@ -66,7 +70,13 @@ export function DecksPage() {
           <MineTab />
         ) : (
           <Suspense fallback={<Skeleton lines={6} />}>
-            {tab === 'discover' ? <DiscoverTab /> : <BankTab />}
+            {tab === 'discover' ? (
+              <DiscoverTab />
+            ) : tab === 'reading' ? (
+              <ReadingTab />
+            ) : (
+              <BankTab />
+            )}
           </Suspense>
         )}
       </div>

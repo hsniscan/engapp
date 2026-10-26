@@ -113,6 +113,27 @@ export {
 export { compactOutbox, compactGuestOutbox } from './outbox';
 export { isRestoreRunning, subscribeRestoreRunning } from './restoreState';
 export { getSettings, ensureSettings, updateSettings, defaultSettings, DEFAULT_SETTINGS, type SettingsPatch } from './settings';
+// v0.5 İP1 reader (decision 0043).
+export { readingDifficultyOf } from './settings';
+export {
+  deleteText,
+  getText,
+  lastUnfinishedText,
+  listTexts,
+  saveReadingProgress,
+  saveText,
+  setTextFeedback,
+  setTextFinished,
+} from './texts';
+export { getEncounterSummary, recordReaderEncounters } from './encounters';
+export {
+  loadKnowledge,
+  loadReaderKnowledge,
+  readerKnowledgeSignature,
+  type Knowledge,
+  type ReaderKnowledge,
+} from './knowledge';
+export { lookupReaderWord, type ReaderMeaning, type ReaderWordInfo } from './readerLookup';
 export { rebuildDailyActivity, listDailyActivity } from './dailyActivity';
 export {
   adoptFsrsParams,

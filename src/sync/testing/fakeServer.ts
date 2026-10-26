@@ -63,6 +63,10 @@ export class FakeServer implements SyncTransport {
     'level_tests',
     'known_terms',
     'weekly_reports',
+    // v0.5 İP1: the transport's local names (src/sync/api.ts maps them to user_texts /
+    // user_encounters on the wire).
+    'texts',
+    'encounters',
   ]);
   registryAvailable = true;
 

@@ -3277,5 +3277,154 @@
       "forgot": "I didn't",
       "saved": "Answer saved. It is counted when you open the app."
     }
+  },
+  "reader": {
+    "tab": "Reading",
+    "close": "Close the reader",
+    "coverage": "You know {{pct}}% of this text",
+    "words_one": "{{count}} word",
+    "words_other": "{{count}} words",
+    "readMinutes_one": "{{count}} min read",
+    "readMinutes_other": "{{count}} min read",
+    "resumed": "Where you left off",
+    "emptyBody": "This text is not on this device yet.",
+    "notFound": {
+      "title": "Text not found",
+      "body": "It may have been deleted, or it has not arrived from another device yet.",
+      "cta": "Back to my texts"
+    },
+    "listen": {
+      "start": "Read along",
+      "stop": "Stop",
+      "noVoice": "Reading aloud is not available on this device."
+    },
+    "options": {
+      "open": "Reading settings",
+      "title": "Reading settings"
+    },
+    "legend": {
+      "sample": "word",
+      "new": "Probably new",
+      "learning": "Learning",
+      "consolidating": "Consolidating",
+      "known": "Known or learned: no mark"
+    },
+    "finished": {
+      "cta": "I finished",
+      "title": "Finished",
+      "again": "Read again"
+    },
+    "feedback": {
+      "question": "How was this text for you?",
+      "hard": "Too hard",
+      "easy": "Too easy",
+      "thanks": "Thanks. Your next suggestions will take this into account."
+    },
+    "word": {
+      "lemma": "Dictionary form: {{lemma}}",
+      "listen": "Listen",
+      "extendBefore": "← With previous",
+      "extendAfter": "With next →",
+      "guessHint": "Look at the sentence and guess the meaning first. Trying to guess sticks better than looking it up.",
+      "reveal": "Show the meaning",
+      "loading": "Looking up the meaning…",
+      "meanings": "Meanings",
+      "fromOnline": "The meaning came from the shared dictionary.",
+      "inCards": "This word is in your cards.",
+      "addCard": "Add a card",
+      "added": "\"{{term}}\" added to your cards",
+      "addFailed": "The card could not be added. Try again.",
+      "addYourself": "Add the card yourself",
+      "none": {
+        "offline": "You are offline and this word is not in the dictionary on this device.",
+        "signIn": "This word is not in the dictionary on this device. Sign in with Google to look it up in the shared dictionary.",
+        "notFound": "No meaning was found for this word."
+      }
+    },
+    "stage": {
+      "new": "New card",
+      "learning": "Learning",
+      "consolidating": "Consolidating",
+      "learned": "Learned",
+      "mastered": "Mastered"
+    },
+    "pos": {
+      "noun": "noun",
+      "verb": "verb",
+      "adjective": "adjective",
+      "adverb": "adverb",
+      "preposition": "preposition",
+      "pronoun": "pronoun",
+      "conjunction": "conjunction",
+      "determiner": "determiner",
+      "interjection": "interjection",
+      "phrase": "phrase",
+      "phrasal_verb": "phrasal verb",
+      "idiom": "idiom",
+      "other": "other"
+    },
+    "encounters": {
+      "none": "You have not met this word in a card or a text yet.",
+      "line_one": "You have seen this word {{count}} time: {{cards}} in cards, {{texts}} in texts",
+      "line_other": "You have seen this word {{count}} times: {{cards}} in cards, {{texts}} in texts"
+    },
+    "difficulty": {
+      "label": "Reading difficulty",
+      "rahat": "Comfortable",
+      "dengeli": "Balanced",
+      "zorlayici": "Stretch",
+      "hint": "Suggested texts have about {{min}}–{{max}}% words you do not know. Never more than 10%."
+    },
+    "highlight": {
+      "label": "Colour words",
+      "hint": "New words and words you are learning get a light mark. Words you know stay plain."
+    },
+    "settings": {
+      "title": "Reading"
+    },
+    "kind": {
+      "paste": "Pasted text",
+      "pdf": "PDF",
+      "article": "Article",
+      "ocr": "Photo",
+      "subtitle": "Subtitles",
+      "graded": "Library",
+      "story": "Today's story"
+    },
+    "list": {
+      "title": "My texts",
+      "add": "Add a text",
+      "empty": "No texts yet. Paste a text or upload a PDF and choose \"Open in reader\".",
+      "unread": "Not read",
+      "progress": "{{pct}}% read",
+      "finished": "Finished",
+      "delete": "Delete \"{{title}}\"",
+      "confirmTitle": "Delete this text?",
+      "confirmBody": "\"{{title}}\" is deleted from this device and your account. Cards you added from it stay.",
+      "confirm": "Delete",
+      "deleted": "Text deleted",
+      "deleteFailed": "The text could not be deleted. Try again."
+    },
+    "today": {
+      "title": "Today's reading",
+      "continue": "{{pct}}% read, continue where you left off",
+      "start": "Start reading",
+      "suggested": "{{level}} · {{count}} words · fits your difficulty",
+      "open": "Read",
+      "empty": "Paste a text you want to read and its words are coloured by what you know.",
+      "paste": "Add a text"
+    },
+    "open": {
+      "cta": "Open in reader",
+      "defaultTitle": "My text",
+      "failed": "The text could not be opened. Try again.",
+      "tooShort": "Paste some English text to read.",
+      "tooLong": "This text is too long for the reader (300,000 characters at most).",
+      "boxTitle": "Read in the reader",
+      "expand": "Paste a text",
+      "boxBody": "No account or internet needed. The text stays with you.",
+      "textLabel": "English text",
+      "titleLabel": "Title"
+    }
   }
 }

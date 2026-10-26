@@ -224,7 +224,12 @@ describe('guest outbox compaction', () => {
     }
     const before = await db.outbox.count();
     await compactGuestOutbox();
-    const rows = (await db.notes.count()) + (await db.senses.count()) + (await db.cards.count()) + (await db.settings.count());
+    const rows =
+      (await db.notes.count()) +
+      (await db.senses.count()) +
+      (await db.cards.count()) +
+      (await db.settings.count()) +
+      (await db.encounters.count()); // one review encounter row per word and day (decision 0043)
     expect(before).toBeGreaterThan(600);
     expect(await db.outbox.count()).toBe(rows);
   }, 120_000);

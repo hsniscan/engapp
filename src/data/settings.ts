@@ -11,6 +11,7 @@ import { DAY_MINUTES_LIMITS, GOAL_LIMITS, type GoalKey } from '../domain/goals';
 import { FIRST_NOTIFY_HOUR, LAST_NOTIFY_HOUR } from '../domain/notify';
 import { isValidRange, MAX_VACATION_HISTORY } from '../domain/vacation';
 import { HLC_ZERO } from '../domain/hlc';
+import { DEFAULT_DIFFICULTY, READING_OFFSET_MAX, type ReadingDifficulty } from '../domain/texts';
 import type { Millis, Settings } from '../domain/types';
 import { db } from './db';
 import { writeTx } from './writer';
@@ -96,6 +97,10 @@ export const settingsPatchSchema = z
     image_cards: z.boolean(),
     // v0.4: new-card order ("Yeni kelime sırası", docs/decisions/0039).
     new_card_order: z.enum(['smart', 'added']),
+    // v0.5 İP1 reading (decision 0043): difficulty, the feedback correction, word colours.
+    reading_difficulty: z.enum(['rahat', 'dengeli', 'zorlayici']),
+    reading_offset: z.number().min(-READING_OFFSET_MAX).max(READING_OFFSET_MAX),
+    reader_highlight: z.boolean(),
     // v0.3 İP3 load management (domain/capacity.ts, catchup.ts, vacation.ts).
     daily_capacity_min: z.number().int().min(CAPACITY_MIN_LIMITS.min).max(CAPACITY_MIN_LIMITS.max),
     catchup_auto: z.boolean(),
@@ -177,3 +182,7 @@ export function schedulerFor(s: Pick<Settings, 'request_retention' | 'fsrs_param
   cached = { key, scheduler };
   return scheduler;
 }
+
+/** The reading difficulty in use (absent/null = Dengeli, decision 0043). */
+export const readingDifficultyOf = (s: Pick<Settings, 'reading_difficulty'> | undefined): ReadingDifficulty =>
+  s?.reading_difficulty ?? DEFAULT_DIFFICULTY;

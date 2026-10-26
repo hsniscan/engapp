@@ -100,6 +100,18 @@ const children: RouteObject[] = [
     lazy: async () => ({ Component: (await import('@/features/cards/LibraryPage')).LibraryPage }),
   },
 
+  // ---- Reading (v0.5 İP1): every text opens here; the screen draws its own top bar.
+  {
+    path: 'oku/:textId',
+    handle: {
+      immersive: true,
+      ownTopBar: true,
+      exitTo: '/decks?tab=reading',
+    } satisfies RouteHandle,
+    HydrateFallback: () => null,
+    lazy: async () => ({ Component: (await import('@/features/reader/ReaderPage')).ReaderPage }),
+  },
+
   // ---- Adding: the sheet leads into these flows.
   {
     path: 'add',

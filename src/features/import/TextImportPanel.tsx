@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { createImportJob, logError } from '@/data';
 import { chunkText } from '@/domain/chunking';
 import { Button, TextArea, TextField, toast } from '@/ui';
+import { OpenInReaderButton, ReaderPasteFallback } from '@/features/reader/OpenInReader';
 import { ImportGate } from './ImportGate';
 import { ActiveJobs } from './JobCard';
 import { ImportPrivacyNote } from './PrivacyNote';
@@ -22,6 +23,7 @@ export function TextImportPanel({ hidePrivacyNote }: ImportPanelProps) {
       <ImportGate>
         <TextImportForm />
       </ImportGate>
+      <ReaderPasteFallback />
       <ActiveJobs kind="text" />
     </>
   );
@@ -104,16 +106,22 @@ function TextImportForm() {
       />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-fg-muted">{t('importer.level', { level })}</p>
-        <Button
-          type="submit"
-          size="lg"
-          leadingIcon="search"
-          loading={busy}
-          disabled={!trimmed || tooLong}
-          className="sm:min-w-48"
-        >
-          {busy ? t('importer.starting') : t('importer.submit')}
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row-reverse">
+          <Button
+            type="submit"
+            size="lg"
+            leadingIcon="search"
+            loading={busy}
+            disabled={!trimmed || tooLong}
+            className="sm:min-w-48"
+          >
+            {busy ? t('importer.starting') : t('importer.submit')}
+          </Button>
+          <OpenInReaderButton
+            disabled={!trimmed || tooLong}
+            input={() => ({ kind: 'paste', title, body: trimmed })}
+          />
+        </div>
       </div>
     </form>
   );

@@ -168,6 +168,8 @@ export interface Pronouncer {
    * texts are now ready.
    */
   prefetch(texts: readonly string[], voice: VoicePref): Promise<number>;
+  /** The audio of `text` is in memory: play() starts at once and asks no server. */
+  ready(text: string, voice: VoicePref): boolean;
   /** For tests: forget the in-memory URLs. */
   reset(): void;
 }
@@ -263,6 +265,11 @@ export function createPronouncer(deps: PronunciationDeps): Pronouncer {
       memory.clear();
       inflight.clear();
       el = null;
+    },
+
+    ready(rawText, voice) {
+      const text = normalizeTtsText(rawText);
+      return !!text && memory.has(ttsKeyMaterial(voice, text));
     },
 
     async prefetch(texts, voice) {
@@ -453,6 +460,20 @@ export function prefetchPronunciations(texts: readonly string[], voice: VoicePre
     ?.connection;
   if (conn?.saveData) return;
   void defaultPronouncer.prefetch(texts, voice).catch(() => {});
+}
+
+/**
+ * The reader's listen-along (decision 0043): fetches only the pre-generated files of these
+ * sentences (never the edge function, so the user's text is not sent anywhere) and resolves
+ * to how many are ready; then `pronunciationReady` tells which can play from memory.
+ */
+export function prefetchPregenerated(texts: readonly string[], voice: VoicePref): Promise<number> {
+  return defaultPronouncer.prefetch(texts, voice).catch(() => 0);
+}
+
+/** True when `text` plays from memory (pre-generated or already played): no server call. */
+export function pronunciationReady(text: string, voice: VoicePref): boolean {
+  return defaultPronouncer.ready(text, voice);
 }
 
 /**

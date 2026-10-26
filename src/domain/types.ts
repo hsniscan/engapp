@@ -412,6 +412,12 @@ export interface Settings extends SyncedRow {
   image_cards?: boolean | null;
   /** v0.4: order of new cards (docs/decisions/0039); absent/null = 'smart'. */
   new_card_order?: NewCardOrder | null;
+  /** v0.5 İP1 reading difficulty (domain/texts.ts, decision 0043); absent/null = 'dengeli'. */
+  reading_difficulty?: 'rahat' | 'dengeli' | 'zorlayici' | null;
+  /** v0.5 İP1: the "çok zor / çok kolay" correction (−0.5..0.5); absent/null = 0. */
+  reading_offset?: number | null;
+  /** v0.5 İP1: the reader colours words by stage (absent/null = on). */
+  reader_highlight?: boolean | null;
 }
 
 /** "Yeni kelime sırası": smart (level, frequency, own signals, interference) or as added. */
@@ -610,7 +616,10 @@ export type OutboxTable =
   | 'decks'
   | 'level_tests'
   | 'known_terms'
-  | 'weekly_reports';
+  | 'weekly_reports'
+  // v0.5 İP1 (decision 0043): the server tables are user_texts / user_encounters (sync/api.ts).
+  | 'texts'
+  | 'encounters';
 /** Synced tables whose rows are never changed or deleted. */
 export const INSERT_ONLY_TABLES = [
   'review_logs',

@@ -12,6 +12,8 @@ import {
   getCurrentUserId,
   getStreakSummary,
   META,
+  recordReaderEncounters,
+  saveText,
   reconcileImageCards,
   setGoals,
   setImageHidden,
@@ -508,6 +510,36 @@ describe('account linking', () => {
     expect((await db.settings.get('settings'))!.goals).toEqual({ week_active_days: 6, week_minutes: 120 });
     // The waiting report stays on the device and gets its comment later.
     expect(await db.report_drafts.count()).toBe(1);
+  });
+
+  it('v0.5: a guest’s texts and encounters go with the guest data to the account', async () => {
+    await guestDevice();
+    const textId = await saveText({ kind: 'paste', title: 'Walk', body: 'I cope with it.' }, T + 3);
+    const note = (await db.notes.toArray())[0]!;
+    expect(await recordReaderEncounters(textId, 'open-1', [note.id], T + 4)).toBe(1);
+    configureLink({ transport: server, engine: engine() });
+    await linkAccount(USER);
+    expect(getLinkState()).toMatchObject({ phase: 'done' });
+    expect(server.rowsOf('texts').map((r) => [r.id, r.user_id])).toEqual([[textId, USER]]);
+    expect(server.rowsOf('encounters').map((r) => [r.note_id, r.user_id, r.n])).toEqual([[note.id, USER, 1]]);
+  });
+
+  it("v0.5: another account's texts and encounters are never copied with its cards", async () => {
+    await otherAccountDevice();
+    const textId = await saveText({ kind: 'paste', title: 'Private', body: 'My diary: I cope.' }, T + 5);
+    await recordReaderEncounters(textId, 'open-1', (await db.notes.toArray()).map((n) => n.id), T + 6);
+    expect(await db.encounters.count()).toBeGreaterThan(0);
+    const img = await saveDevice();
+    await accountWithData();
+    await loadDevice(img);
+    configureLink({ transport: server, engine: engine() });
+    await linkAccount(USER);
+    await resolveLink('copy_cards');
+    expect(getLinkState()).toMatchObject({ phase: 'done' });
+    expect(await db.texts.count()).toBe(0);
+    expect(server.rowsOf('texts')).toHaveLength(0);
+    expect(JSON.stringify(server.rowsOf('encounters'))).not.toContain('reader');
+    expect((await db.encounters.toArray()).every((r) => r.source === 'review' && r.user_id === USER)).toBe(true);
   });
 
   it("another account's data is never copied silently into an empty account", async () => {

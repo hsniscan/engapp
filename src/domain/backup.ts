@@ -17,7 +17,10 @@ import {
   sourceSchema,
   userContentSchema,
   weeklyReportSchema,
+  readerTextSchema,
+  encounterRowSchema,
 } from './schemas';
+import type { EncounterRow, ReaderText } from './texts';
 import type {
   Card,
   ContentFeedback,
@@ -58,7 +61,10 @@ export const BACKUP_FORMAT = 'engapp-backup';
 // 10 (redesign, learning model, decision 0041): cards.ramp_step and cards.learned_at, derived
 //    from the logs. Older files have neither (restored as 0 / null, then the restore's replay
 //    fills them); the checksum is tried without them.
-export const BACKUP_SCHEMA_VERSION = 10;
+// 11 (v0.5 İP1 reader, decision 0043): texts (reading texts) and encounters (the encounter
+//    counter), and the optional settings reading_difficulty / reading_offset /
+//    reader_highlight. Older files have none (restored as none; overwrite keeps the local ones).
+export const BACKUP_SCHEMA_VERSION = 11;
 
 export interface BackupTables {
   notes: Note[];
@@ -79,6 +85,9 @@ export interface BackupTables {
   known_terms?: KnownTerm[];
   /** Absent in files before schema_version 9; buildBackup always writes it. */
   weekly_reports?: WeeklyReport[];
+  /** Absent in files before schema_version 11; buildBackup always writes them. */
+  texts?: ReaderText[];
+  encounters?: EncounterRow[];
 }
 
 export const backupTablesSchema = z.object({
@@ -96,6 +105,8 @@ export const backupTablesSchema = z.object({
   level_tests: z.array(levelTestSchema).optional(),
   known_terms: z.array(knownTermSchema).optional(),
   weekly_reports: z.array(weeklyReportSchema).optional(),
+  texts: z.array(readerTextSchema).optional(),
+  encounters: z.array(encounterRowSchema).optional(),
 });
 
 export const backupSchema = z.object({
@@ -139,6 +150,8 @@ export function sortTables(t: BackupTables): BackupTables {
     ...(t.level_tests ? { level_tests: byId(t.level_tests) } : {}),
     ...(t.known_terms ? { known_terms: byId(t.known_terms) } : {}),
     ...(t.weekly_reports ? { weekly_reports: byId(t.weekly_reports) } : {}),
+    ...(t.texts ? { texts: byId(t.texts) } : {}),
+    ...(t.encounters ? { encounters: byId(t.encounters) } : {}),
   };
 }
 
@@ -159,6 +172,8 @@ export async function buildBackup(
     level_tests: tables.level_tests ?? [],
     known_terms: tables.known_terms ?? [],
     weekly_reports: tables.weekly_reports ?? [],
+    texts: tables.texts ?? [],
+    encounters: tables.encounters ?? [],
   });
   return {
     format: BACKUP_FORMAT,

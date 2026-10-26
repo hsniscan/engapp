@@ -24,6 +24,8 @@ const MUTABLE: MutableTable[] = [
   'user_content',
   'decks',
   'known_terms',
+  'texts',
+  'encounters',
 ];
 
 /** Data the user created on this device (settings alone do not count). */
@@ -107,6 +109,8 @@ export async function discardAccountData(userId: string, snapshot: RemoteSnapsho
     db.user_content,
     db.decks,
     db.known_terms,
+    db.texts,
+    db.encounters,
   ];
   const n = await writeTx(tables, now, async (w) => {
     let count = 0;
