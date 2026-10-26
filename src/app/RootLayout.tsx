@@ -5,7 +5,7 @@ import { openAddSheet, useAddSheetOpen } from '@/features/add/addSheetStore';
 import { BackupReminder } from '@/features/settings/BackupReminder';
 import { IosInstallGuide } from '@/features/settings/IosInstallGuide';
 import { AppShell } from '@/ui';
-import { isImmersive, isRouteHandle } from './routeHandle';
+import { isImmersive, isRouteHandle, navSectionOf } from './routeHandle';
 import { SyncIndicator, SyncServices } from './SyncIndicator';
 
 export type { RouteHandle } from './routeHandle';
@@ -33,6 +33,7 @@ export function RootLayout() {
         syncSlot={<SyncIndicator />}
         onAdd={openAddSheet}
         addOpen={addOpen}
+        addSection={navSectionOf(handles) === 'add'}
       >
         {/* Guest backup reminder: renders only on the home screen ("/"). */}
         {!immersive && <BackupReminder />}

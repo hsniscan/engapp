@@ -29,13 +29,18 @@ export interface AppShellProps {
   onAdd?: () => void;
   /** The Add sheet is open (for aria-expanded on the (+)). */
   addOpen?: boolean;
+  /**
+   * The current page is one of the (+) flows (/add, /makale, /import/…; route handle
+   * `navSection: 'add'`): no tab is current, the (+) is marked instead.
+   */
+  addSection?: boolean;
   /** Override the routed content (used by tests/the gallery); defaults to the router outlet. */
   children?: ReactNode;
 }
 
 /**
  * Application frame. Phones: no top bar (every screen draws its own header) and a bottom tab
- * bar of five: Bugün · Desteler · (+) · İlerleme · Profil. ≥768 px: a left rail; ≥1024 px the
+ * bar of five: Bugün · Kelimelerim · (+) · Keşfet · Profil. ≥768 px: a left rail; ≥1024 px the
  * rail widens to a labelled sidebar. The (+) opens the Add sheet, it is not a page.
  */
 export function AppShell({
@@ -45,6 +50,7 @@ export function AppShell({
   exit,
   onAdd,
   addOpen,
+  addSection = false,
   children,
 }: AppShellProps) {
   const { t } = useTranslation();
@@ -64,7 +70,7 @@ export function AppShell({
   }, [location.pathname]);
 
   const content = children ?? outlet;
-  const isActive = (item: NavLinkItem) => isNavActive(item, location.pathname);
+  const isActive = (item: NavLinkItem) => !addSection && isNavActive(item, location.pathname);
 
   return (
     <div className={cn('min-h-dvh bg-canvas text-fg', !immersive && 'md:pl-22 lg:pl-60')}>
@@ -98,7 +104,9 @@ export function AppShell({
                       onClick={onAdd}
                       aria-haspopup="dialog"
                       aria-expanded={addOpen ?? false}
+                      aria-current={addSection ? 'page' : undefined}
                       className={cn(
+                        addSection && 'ring-2 ring-accent ring-offset-2 ring-offset-canvas',
                         'flex min-h-14 w-full flex-col items-center justify-center gap-1 rounded-control bg-fg px-2 text-xs font-medium text-fg-inverse',
                         'lg:min-h-11 lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-[0.9375rem]',
                         'transition-opacity duration-(--duration-micro) hover:opacity-90',
@@ -184,8 +192,12 @@ export function AppShell({
                     aria-label={t('nav.addLong')}
                     aria-haspopup="dialog"
                     aria-expanded={addOpen ?? false}
+                    aria-current={addSection ? 'page' : undefined}
                     data-testid="nav-add"
-                    className="-mt-5 flex size-14 items-center justify-center rounded-[18px] bg-fg text-fg-inverse shadow-raised transition-transform duration-(--duration-micro) active:scale-95"
+                    className={cn(
+                      '-mt-5 flex size-14 items-center justify-center rounded-[18px] bg-fg text-fg-inverse shadow-raised transition-transform duration-(--duration-micro) active:scale-95',
+                      addSection && 'ring-2 ring-accent ring-offset-2 ring-offset-surface',
+                    )}
                   >
                     <Icon name={item.icon} size={26} strokeWidth={2} />
                   </button>

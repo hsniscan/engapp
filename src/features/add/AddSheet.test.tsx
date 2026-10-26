@@ -189,4 +189,19 @@ describe('tab bar', () => {
     );
     expect(within(nav).getByRole('link', { name: 'Bugün' })).not.toHaveAttribute('aria-current');
   });
+
+  it('on a (+) page no tab is current; the (+) is', () => {
+    installDomPolyfills();
+    const router = createMemoryRouter([{ path: '*', element: <AppShell addSection>x</AppShell> }], {
+      initialEntries: ['/decks'],
+    });
+    render(
+      <TooltipProvider>
+        <RouterProvider router={router} />
+      </TooltipProvider>,
+    );
+    const nav = screen.getAllByRole('navigation', { name: 'Ana gezinme' })[1]!;
+    expect(within(nav).queryByRole('link', { current: 'page' })).toBeNull();
+    expect(within(nav).getByTestId('nav-add')).toHaveAttribute('aria-current', 'page');
+  });
 });

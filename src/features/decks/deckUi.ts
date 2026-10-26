@@ -74,4 +74,4 @@ export const DISCOVER_DECKS_HREF = '/kesfet?f=desteler';
  * Opens the (+) sheet at its "İçe aktar" group. The sheet takes the group as an optional
  * argument (v0.5.1 Add rework); a sheet without groups ignores it and opens as usual.
  */
-export const openImportSheet = () => (openAddSheet as (section?: 'import') => void)('import');
+export const openImportSheet = () => openAddSheet('import');

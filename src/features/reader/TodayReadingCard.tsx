@@ -43,9 +43,6 @@ function useSuggestion(enabled: boolean): GradedSummary | null | undefined {
   return state && state.key === difficulty ? state.value : undefined;
 }
 
-/** The "Metin ekle" button opens the Add sheet on its text section (v0.5.1). */
-const openTextSheet = openAddSheet as (kind?: 'text') => void;
-
 export function TodayReadingCard() {
   const { t } = useTranslation();
   const last = useLiveQuery(() => lastUnfinishedText(), []);
@@ -113,7 +110,7 @@ export function TodayReadingCard() {
   return frame(
     <div className="flex flex-wrap items-center justify-between gap-3">
       <p className="min-w-0 flex-1 text-[0.9375rem] text-fg-muted">{t('reader.today.empty')}</p>
-      <Button variant="secondary" size="sm" onClick={() => openTextSheet('text')}>
+      <Button variant="secondary" size="sm" onClick={() => openAddSheet('text')}>
         {t('reader.today.paste')}
       </Button>
     </div>,

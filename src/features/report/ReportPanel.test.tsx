@@ -141,7 +141,7 @@ describe('weekly report tab', () => {
     expect(within(focus).getByText('Her şey yolunda. Böyle devam et.')).toBeInTheDocument();
     expect(within(focus).getByRole('link', { name: 'Tekrara başla' })).toHaveAttribute(
       'href',
-      '/review',
+      '/study?mode=word',
     );
     expect(screen.getByText('Bu hafta için yorum yok.')).toBeInTheDocument();
   });

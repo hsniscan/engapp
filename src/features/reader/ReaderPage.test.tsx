@@ -20,7 +20,7 @@ import { renderRoute } from '@/test/ui';
 import { setAuthStateForTesting } from '@/features/auth/session';
 import { DecksPage } from '@/features/decks/DecksPage';
 import { TextImportPanel } from '@/features/import/TextImportPanel';
-import { ReaderPage } from './ReaderPage';
+import { READER_EXIT, ReaderPage } from './ReaderPage';
 import { ReadingTab } from './ReadingTab';
 import { TodayReadingCard } from './TodayReadingCard';
 import { useListenAlong, type ListenAlongDeps } from './useListenAlong';
@@ -431,14 +431,11 @@ describe('Okuma tab and Bugünün okuması', () => {
     expect(library).not.toHaveTextContent('The Late Train');
   });
 
-  it('Desteler has the Okuma segment', async () => {
+  it('Kelimelerim has no Okuma segment any more (it lives in Keşfet › Okuma)', async () => {
     renderRoute(<DecksPage />, { path: '/decks', url: '/decks?tab=reading' });
-    const nav = screen.getByRole('navigation', { name: 'Deste görünümü' });
-    expect(within(nav).getByRole('link', { name: 'Okuma' })).toHaveAttribute(
-      'aria-current',
-      'page',
-    );
-    expect(await screen.findByRole('heading', { name: 'Metinlerim' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Okuma' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Metinlerim' })).toBeNull();
+    expect(READER_EXIT).toBe('/kesfet?f=okuma');
   });
 
   it('Bugün: continue the unfinished text, else invite a paste', async () => {
