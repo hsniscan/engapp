@@ -10,6 +10,7 @@ import { createScheduler, RETENTION_MAX, RETENTION_MIN, type Scheduler } from '.
 import { DAY_MINUTES_LIMITS, GOAL_LIMITS, type GoalKey } from '../domain/goals';
 import { FIRST_NOTIFY_HOUR, LAST_NOTIFY_HOUR } from '../domain/notify';
 import { isValidRange, MAX_VACATION_HISTORY } from '../domain/vacation';
+import { MAX_FREEZE_DAYS } from '../domain/streakFreeze';
 import { HLC_ZERO } from '../domain/hlc';
 import { DEFAULT_DIFFICULTY, READING_OFFSET_MAX, type ReadingDifficulty } from '../domain/texts';
 import type { Millis, Settings } from '../domain/types';
@@ -101,6 +102,8 @@ export const settingsPatchSchema = z
     reading_difficulty: z.enum(['rahat', 'dengeli', 'zorlayici']),
     reading_offset: z.number().min(-READING_OFFSET_MAX).max(READING_OFFSET_MAX),
     reader_highlight: z.boolean(),
+    // v0.5 İP10: days a streak protection covered (domain/streakFreeze.ts, decision 0052).
+    streak_freezes: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).max(MAX_FREEZE_DAYS).nullable(),
     // v0.3 İP3 load management (domain/capacity.ts, catchup.ts, vacation.ts).
     daily_capacity_min: z.number().int().min(CAPACITY_MIN_LIMITS.min).max(CAPACITY_MIN_LIMITS.max),
     catchup_auto: z.boolean(),

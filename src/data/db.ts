@@ -386,6 +386,13 @@ export class EngDb extends Dexie {
       graded_catalog: 'id, level, topic, server_seq',
       graded_bodies: 'id, fetched_at',
     });
+    // v34 (v0.5 İP10 smart review, decision 0052; 32, 33 and 35 belong to the other v0.5
+    // packages): the settings row gains streak_freezes (optional, absent = none). A device that
+    // pulled settings while it ran an older version dropped it: re-pull settings once (equal
+    // HLC → the server's set value, domain/syncMerge.ts). No new table or index.
+    this.version(34)
+      .stores({})
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
   }
 }
 

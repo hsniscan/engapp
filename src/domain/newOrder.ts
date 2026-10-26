@@ -16,6 +16,13 @@
 //      family, same lemma, a shared Turkish meaning, near spelling, a reported confusion or
 //      contrast pair, a false friend) waits for another day while another card can take its
 //      place.
+//   4. Interference guard (v0.5 İP10, docs/decisions/0052): three of those groups are hard.
+//      At most one first-time card a day comes from one confusable pair (reported, contrast
+//      card, false friend), one Turkish meaning (a shared normalised gloss_tr alternative) or
+//      one synonym set, even when nothing else is left. A card the guard holds back is
+//      "postponed" (NewSelection.postponed); the data layer keeps the list and passes it back
+//      as `carry`, and carried cards come first on a later day. The insertion order
+//      ("Eklenme sırası") gets the same guard and carry (selectAddedCards).
 // Stable within a day: every input is fixed for the day (seed from user + day, ages from the
 // day's start), and cards introduced earlier today seed the selection, so re-opening the
 // session continues the same sequence instead of reshuffling.
@@ -67,6 +74,12 @@ export interface NewNoteFacts {
   meanings: readonly string[];
   /** A contrast card: its two terms, normalised. */
   contrast: readonly [string, string] | null;
+  /**
+   * Synonym-set keys (v0.5 İP10): the note's own term and the alternatives of its senses'
+   * English glosses ("large" for big: gloss "large"), normalised. Two notes that share one are
+   * synonyms. Absent = none known.
+   */
+  synonyms?: readonly string[];
 }
 
 export interface NewOrderInput {
@@ -82,6 +95,10 @@ export interface NewOrderInput {
   pairs: ReadonlySet<string>;
   /** Notes of the cards introduced earlier today (they seed the day's quotas and conflicts). */
   introducedToday: readonly Id[];
+  /** Cards the interference guard postponed on an earlier day, oldest first: first in line. */
+  carry?: readonly Id[];
+  /** 'added': insertion order with the guard only (selectAddedCards). Default 'smart'. */
+  order?: 'smart' | 'added';
 }
 
 export type NewBand = 'priority' | 'same' | 'lower' | 'next' | 'above';
@@ -111,6 +128,14 @@ export function noteFacts(
   const meanings = new Set<string>();
   for (const s of senses) for (const m of meaningAlternatives(s.meaning_tr_override?.trim() || s.meaning_tr)) meanings.add(m);
   const pair = note.term_type === CONTRAST_TERM_TYPE ? contrastTerms(note.term) : null;
+  const synonyms = new Set<string>(note.term_norm ? [note.term_norm] : []);
+  for (const s of senses) {
+    const lex = s.lexicon_sense_id ? lexOf(s.lexicon_sense_id) : undefined;
+    for (const g of meaningAlternatives(lex?.gloss_en)) {
+      const k = synonymKey(g);
+      if (k) synonyms.add(k);
+    }
+  }
   return {
     note_id: note.id,
     term_norm: note.term_norm,
@@ -124,7 +149,13 @@ export function noteFacts(
     lemma,
     meanings: [...meanings],
     contrast: pair ? [normalizeTerm(pair[0]), normalizeTerm(pair[1])] : null,
+    synonyms: [...synonyms],
   };
+}
+
+/** A gloss alternative as a synonym key: "to begin" → "begin", "a large house" stays. */
+export function synonymKey(gloss: string): string {
+  return normalizeTerm(gloss.replace(/\(.*?\)/g, ' ')).replace(/^(to|a|an|the) /, '');
 }
 
 // ------------------------------------------------------------------ seed and jitter
@@ -258,6 +289,7 @@ export function confusable(a: NewNoteFacts, b: NewNoteFacts, pairs: ReadonlySet<
   if (a.lemma && a.lemma === b.lemma) return true;
   if (pairs.has(pairKey(a.term_norm, b.term_norm))) return true;
   if (a.meanings.some((m) => b.meanings.includes(m))) return true;
+  if (a.synonyms?.some((m) => b.synonyms?.includes(m))) return true;
   const la = [...a.term_norm].length;
   const lb = [...b.term_norm].length;
   const short = Math.min(la, lb);
@@ -297,6 +329,47 @@ function partnerMap(pairs: ReadonlySet<string>): Map<string, string[]> {
   return out;
 }
 
+/**
+ * The note's hard interference groups (v0.5 İP10): a confusable pair it belongs to, each
+ * Turkish meaning alternative and each synonym key. Two notes that share a key are never
+ * introduced on the same day. Exact keys, so no confirming check is needed.
+ */
+export function interferenceKeys(f: NewNoteFacts, partners: ReadonlyMap<string, readonly string[]>): string[] {
+  if (!f.term_norm) return [];
+  const keys: string[] = [];
+  if (f.contrast) {
+    keys.push(`p:${pairKey(f.contrast[0], f.contrast[1])}`, `t:${f.contrast[0]}`, `t:${f.contrast[1]}`);
+    return keys;
+  }
+  if (!isWord(f)) return keys;
+  keys.push(`t:${f.term_norm}`);
+  for (const p of partners.get(f.term_norm) ?? []) keys.push(`p:${pairKey(f.term_norm, p)}`);
+  for (const m of f.meanings) keys.push(`g:${m}`);
+  for (const y of f.synonyms ?? []) keys.push(`y:${y}`);
+  return keys;
+}
+
+/** Hard groups chosen today and the check against them (shared by both orders). */
+class Guard {
+  private readonly taken = new Set<string>();
+  private readonly cache = new Map<Id, string[]>();
+  private readonly partners: ReadonlyMap<string, readonly string[]>;
+  constructor(partners: ReadonlyMap<string, readonly string[]>) {
+    this.partners = partners;
+  }
+  private keys(f: NewNoteFacts): string[] {
+    let k = this.cache.get(f.note_id);
+    if (!k) this.cache.set(f.note_id, (k = interferenceKeys(f, this.partners)));
+    return k;
+  }
+  blocks(f: NewNoteFacts): boolean {
+    return this.keys(f).some((k) => this.taken.has(k));
+  }
+  add(f: NewNoteFacts): void {
+    for (const k of this.keys(f)) this.taken.add(k);
+  }
+}
+
 // ------------------------------------------------------------------ selection
 
 interface Entry<T> {
@@ -310,11 +383,17 @@ export interface NewSelection<T> {
   cards: T[];
   /** Why each chosen card came today, by card id (for a "neden bu kelime?" hint). */
   reasons: Map<Id, NewReason>;
+  /**
+   * Cards the interference guard held back although they were next in line, in the order
+   * met: to be carried (NewOrderInput.carry) so they come first on a later day.
+   */
+  postponed: Id[];
 }
 
 /**
  * Today's new cards, in introduction order: at most `limit`, skipping cards for which
  * `blocked` is true (their note is already in today's queue). See the header for the rule.
+ * With `input.order === 'added'` the insertion order is kept (selectAddedCards).
  */
 export function selectNewCards<T extends NewCardLike>(
   fresh: readonly T[],
@@ -322,21 +401,29 @@ export function selectNewCards<T extends NewCardLike>(
   blocked: (c: T) => boolean,
   input: NewOrderInput,
 ): NewSelection<T> {
+  if (input.order === 'added') return selectAddedCards(fresh, limit, blocked, input);
   const reasons = new Map<Id, NewReason>();
   const out: T[] = [];
-  if (limit <= 0 || fresh.length === 0) return { cards: out, reasons };
+  const postponed: Id[] = [];
+  if (limit <= 0 || fresh.length === 0) return { cards: out, reasons, postponed };
   const factsOf = (noteId: Id) => input.notes.get(noteId) ?? unknownFacts(noteId);
   const isActive = (f: NewNoteFacts) => f.source_id !== null && input.activeSources.has(f.source_id);
   const partners = partnerMap(input.pairs);
+  const guard = new Guard(partners);
 
-  const lists: Record<NewBand, Entry<T>[]> = { priority: [], same: [], lower: [], next: [], above: [] };
+  type Band = NewBand | 'carry';
+  const lists: Record<Band, Entry<T>[]> = { carry: [], priority: [], same: [], lower: [], next: [], above: [] };
+  const carryRank = new Map((input.carry ?? []).map((id, i) => [id, i]));
   for (const c of fresh) {
     const facts = factsOf(c.note_id);
     const active = isActive(facts);
     const band = bandOf(facts, input.level, active, input.dayStart);
-    lists[band].push({ card: c, facts, band, score: band === 'priority' ? 0 : scoreOf(c, facts, input, active) });
+    const e: Entry<T> = { card: c, facts, band, score: band === 'priority' ? 0 : scoreOf(c, facts, input, active) };
+    lists[band].push(e);
+    if (carryRank.has(c.id)) lists.carry.push(e);
   }
   const byId = (a: Entry<T>, b: Entry<T>) => (a.card.id < b.card.id ? -1 : a.card.id > b.card.id ? 1 : 0);
+  lists.carry.sort((a, b) => carryRank.get(a.card.id)! - carryRank.get(b.card.id)!);
   lists.priority.sort(
     (a, b) =>
       a.facts.created_at - b.facts.created_at ||
@@ -353,6 +440,7 @@ export function selectNewCards<T extends NewCardLike>(
   const counts = { same: 0, lower: 0, next: 0, above: 0 };
   const remember = (f: NewNoteFacts) => {
     chosenNotes.add(f.note_id);
+    guard.add(f);
     // Stored under its own keys; a candidate looks up its partners' terms too.
     for (const k of keysOf(f, NO_PARTNERS)) (chosen.get(k) ?? chosen.set(k, []).get(k)!).push(f);
   };
@@ -382,22 +470,50 @@ export function selectNewCards<T extends NewCardLike>(
   };
 
   const taken = new Set<Id>();
-  const heads: Record<NewBand, number> = { priority: 0, same: 0, lower: 0, next: 0, above: 0 };
+  const held = new Set<Id>();
+  const hold = (e: Entry<T>) => {
+    if (held.has(e.card.id)) return;
+    held.add(e.card.id);
+    postponed.push(e.card.id);
+  };
+  const heads: Record<Band, number> = { carry: 0, priority: 0, same: 0, lower: 0, next: 0, above: 0 };
   const usable = (e: Entry<T>) => !taken.has(e.card.id) && !chosenNotes.has(e.card.note_id) && !blocked(e.card);
-  /** First usable entry of a band (moves the head past used ones); with `strict`, not confusable. */
-  const pick = (band: NewBand, strict: boolean): Entry<T> | null => {
+  // A hard group only fills up during the day, so a blocked card stays blocked: `dead`
+  // (skipped from then on). Met by a look-only scan (hasLeft), it waits in `pending` until a
+  // real pick of its band passes it.
+  const dead = new Set<Id>();
+  const pending: Record<Band, Entry<T>[]> = { carry: [], priority: [], same: [], lower: [], next: [], above: [] };
+  const alive = (e: Entry<T>) => usable(e) && !dead.has(e.card.id);
+  /**
+   * First usable entry of a band that no hard group blocks (moves the head past used ones);
+   * with `strict`, not softly confusable either. `record`: a hard-blocked card met on the way
+   * was next in line, so it is postponed.
+   */
+  const pick = (band: Band, strict: boolean, record = true): Entry<T> | null => {
     const list = lists[band];
-    while (heads[band] < list.length && !usable(list[heads[band]]!)) heads[band]++;
+    if (record && pending[band].length) {
+      for (const e of pending[band]) hold(e);
+      pending[band] = [];
+    }
+    while (heads[band] < list.length && !alive(list[heads[band]]!)) heads[band]++;
     let looked = 0;
     for (let i = heads[band]; i < list.length; i++) {
       const e = list[i]!;
-      if (!usable(e)) continue;
+      if (!alive(e)) continue;
+      if (guard.blocks(e.facts)) {
+        dead.add(e.card.id);
+        if (record) hold(e);
+        else pending[band].push(e);
+        continue;
+      }
       if (!strict || !conflicts(e.facts)) return e;
       if (++looked >= SCAN_LIMIT) return null;
     }
     return null;
   };
-  const hasLeft = (band: NewBand) => pick(band, false) !== null;
+  // Looking at the level band or the one below it is looking at the cards next in line; one
+  // level up only counts once it is really drawn from (its share is capped).
+  const hasLeft = (band: NewBand) => pick(band, false, band === 'same' || band === 'lower') !== null;
 
   /** Mix bands in the order to try now: the largest shortfall against its share first. */
   const mixOrder = (): ('same' | 'lower' | 'next')[] => {
@@ -412,25 +528,26 @@ export function selectNewCards<T extends NewCardLike>(
       lower: wl * (n + 1) - counts.lower,
       next: SHARE_NEXT_MAX * (n + 1) - counts.next,
     };
-    const out: ('same' | 'lower' | 'next')[] = [];
-    if (left.same) out.push('same');
-    if (left.lower) out.push('lower');
+    const order: ('same' | 'lower' | 'next')[] = [];
+    if (left.same) order.push('same');
+    if (left.lower) order.push('lower');
     // X+1 only within its cap (integer test: 10 · next ≤ n), or when nothing at or below the
     // level is left.
-    if (left.next && (10 * (counts.next + 1) <= n + 1 || (!left.same && !left.lower))) out.push('next');
+    if (left.next && (10 * (counts.next + 1) <= n + 1 || (!left.same && !left.lower))) order.push('next');
     const rank = { same: 0, lower: 1, next: 2 };
-    out.sort((a, b) => deficit[b] - deficit[a] || rank[a] - rank[b]);
-    return out;
+    order.sort((a, b) => deficit[b] - deficit[a] || rank[a] - rank[b]);
+    return order;
   };
 
   while (out.length < limit) {
-    let e: Entry<T> | null = pick('priority', true);
+    // A card postponed on an earlier day comes first (still never with a hard group-mate).
+    let e: Entry<T> | null = pick('carry', false) ?? pick('priority', true);
     if (!e) {
       const order = mixOrder();
       for (const b of order) if ((e = pick(b, true))) break;
       // A card one level up rather than a confusable one at the level.
       if (!e && !order.includes('next')) e = pick('next', true);
-      // Only confusable cards left: take the best of them after all.
+      // Only softly confusable cards left: take the best of them after all.
       if (!e) e = pick('priority', false);
       if (!e) for (const b of order) if ((e = pick(b, false))) break;
       if (!e) e = pick('next', false);
@@ -444,7 +561,51 @@ export function selectNewCards<T extends NewCardLike>(
     out.push(e.card);
     reasons.set(e.card.id, reasonOf(e, isActive(e.facts)));
   }
-  return { cards: out, reasons };
+  // Short of the limit: every card the guard held back was within reach.
+  if (out.length < limit) for (const b of Object.keys(pending) as Band[]) for (const e of pending[b]) hold(e);
+  return { cards: out, reasons, postponed: postponed.filter((id) => !taken.has(id)) };
+}
+
+/**
+ * "Eklenme sırası" with the interference guard: carried cards first, then `fresh` in the
+ * given order (the caller sorts it by insertion), skipping a card that shares a hard group
+ * with one chosen or introduced today. No level mix and no soft rule.
+ */
+export function selectAddedCards<T extends NewCardLike>(
+  fresh: readonly T[],
+  limit: number,
+  blocked: (c: T) => boolean,
+  input: NewOrderInput,
+): NewSelection<T> {
+  const out: T[] = [];
+  const postponed: Id[] = [];
+  if (limit <= 0 || fresh.length === 0) return { cards: out, reasons: new Map(), postponed };
+  const factsOf = (noteId: Id) => input.notes.get(noteId) ?? unknownFacts(noteId);
+  const guard = new Guard(partnerMap(input.pairs));
+  const notes = new Set<Id>();
+  for (const id of input.introducedToday) {
+    if (notes.has(id)) continue;
+    notes.add(id);
+    guard.add(factsOf(id));
+  }
+  const carryRank = new Map((input.carry ?? []).map((id, i) => [id, i]));
+  const ordered = [
+    ...fresh.filter((c) => carryRank.has(c.id)).sort((a, b) => carryRank.get(a.id)! - carryRank.get(b.id)!),
+    ...fresh.filter((c) => !carryRank.has(c.id)),
+  ];
+  for (const c of ordered) {
+    if (out.length >= limit) break;
+    if (notes.has(c.note_id) || blocked(c)) continue;
+    const f = factsOf(c.note_id);
+    if (guard.blocks(f)) {
+      postponed.push(c.id);
+      continue;
+    }
+    notes.add(c.note_id);
+    guard.add(f);
+    out.push(c);
+  }
+  return { cards: out, reasons: new Map(), postponed };
 }
 
 function reasonOf(e: Entry<NewCardLike>, active: boolean): NewReason {

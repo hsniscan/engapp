@@ -1,6 +1,7 @@
 // zod schemas for synced rows. Used to validate backup files and (later) sync payloads.
 import { z } from 'zod';
 import { clampNotifyHour } from '../../supabase/functions/_shared/push-rule';
+import { MAX_FREEZE_DAYS } from './streakFreeze';
 import type {
   Card,
   ContentFeedback,
@@ -191,6 +192,8 @@ export const settingsSchema: z.ZodType<Settings> = z.object({
   reading_difficulty: z.enum(['rahat', 'dengeli', 'zorlayici']).nullish().catch(null),
   reading_offset: z.number().min(-READING_OFFSET_MAX).max(READING_OFFSET_MAX).nullish().catch(null),
   reader_highlight: z.boolean().nullish().catch(null),
+  // v0.5 İP10 streak protections (absent = none). A malformed list reads as none.
+  streak_freezes: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).max(MAX_FREEZE_DAYS).nullish().catch(null),
   // v0.3 İP3 load management; absent in older rows and backups (= the defaults). Malformed
   // values (a newer client, a hand-edited backup) fall back to "unset" instead of rejecting
   // the whole settings row.

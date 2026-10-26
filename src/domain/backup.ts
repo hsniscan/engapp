@@ -58,6 +58,7 @@ export const BACKUP_FORMAT = 'engapp-backup';
 //    have no reports (restored as none) and no goals (none set).
 // v0.4 adds optional settings fields (show_image_front, new_card_order) without a version
 //    bump, like show_easy_candidates: absent means the default.
+// v0.5 İP10 adds the optional settings.streak_freezes the same way (absent = none).
 // 10 (redesign, learning model, decision 0041): cards.ramp_step and cards.learned_at, derived
 //    from the logs. Older files have neither (restored as 0 / null, then the restore's replay
 //    fills them); the checksum is tried without them.

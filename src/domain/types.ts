@@ -418,6 +418,11 @@ export interface Settings extends SyncedRow {
   reading_offset?: number | null;
   /** v0.5 İP1: the reader colours words by stage (absent/null = on). */
   reader_highlight?: boolean | null;
+  /**
+   * v0.5 İP10: days a streak protection covered (YYYY-MM-DD, ascending, at most 48;
+   * domain/streakFreeze.ts). Absent/null = none. Never carried to another account.
+   */
+  streak_freezes?: string[] | null;
 }
 
 /** "Yeni kelime sırası": smart (level, frequency, own signals, interference) or as added. */

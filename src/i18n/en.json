@@ -3453,5 +3453,19 @@
       "notEnough": "A story needs at least 5 review words today.",
       "generic": "The story could not be written right now. Try again a little later."
     }
+  },
+  "smart": {
+    "rotation": {
+      "fromText": "From your text"
+    },
+    "freeze": {
+      "title": "Your streak is safe",
+      "body_one": "There was no review yesterday. One of this month's streak protections covered the day automatically.",
+      "body_other": "There were no reviews on the last {{count}} days. This month's streak protections covered them automatically.",
+      "left_one": "{{count}} protection left this month.",
+      "left_other": "{{count}} protections left this month.",
+      "leftNone": "This month's protections are used. Next month there will be {{perMonth}} again.",
+      "rule": "One review a day keeps the streak. A missed day is covered automatically up to {{perMonth}} times a month; vacation days do not count."
+    }
   }
 }

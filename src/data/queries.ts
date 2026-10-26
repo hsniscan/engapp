@@ -1,13 +1,13 @@
 // Read-side API for screens. Safe to wrap in dexie-react-hooks' useLiveQuery.
 import { addDays, type DayKey, dayEndMs, dayKeyOf } from '../domain/day';
-import { bandFor, type CardSentence, pickRotation, rotationSentences, selectedContexts } from '../domain/examples';
+import { bandFor, type CardSentence, rotationSentences, selectedContexts } from '../domain/examples';
+import { pickRotating, sentenceKey } from '../domain/textSentences';
 import { previewIntervals, type IntervalPreview } from '../domain/fsrs';
 import { normalizeTerm } from '../domain/normalize';
 import { buildQueue, type QueueCounts, type QueueItem, type QueueMode } from '../domain/queue';
 import { STUDY_MODE_CARD_TYPES, type StudyMode } from '../domain/studyMode';
 import { type Cloze, firstLetterHint, lastShownSenseId, makeCloze, nextRecognitionSense } from '../domain/recognition';
 import { buildHeatmap, computeStreakSummary, type HeatmapCell, type StreakSummary } from '../domain/streak';
-import { isVacationDay } from '../domain/vacation';
 import { type Card, type Id, type LexiconSense, type Millis, type Note, type RatingValue, type Sense } from '../domain/types';
 import { db } from './db';
 import { getDeckNoteIds } from './decks';
@@ -19,6 +19,9 @@ import { dueStudiedCards, loadTodayFacts, newCards } from './history';
 import { aheadDaysFor, getLoadToday, type LoadToday } from './load';
 import { extraNewKey, getMeta } from './meta';
 import { newOrderInput, newOrderTables } from './newOrder';
+import { readCarry } from './smart';
+import { streakFrozenDay } from './streakFreeze';
+import { cachedTextSentences, loadTextSentences, readLastShown, textSentenceTables, writeLastShown } from './textSentences';
 import { dayConfig, getSettings, schedulerFor } from './settings';
 
 export interface StudyQueue {
@@ -35,6 +38,8 @@ export interface StudyQueue {
   dayEnd: Millis;
   /** v0.3 İP3: today's catch-up / vacation plan (null in 'ahead' mode). */
   load: LoadToday | null;
+  /** v0.5 İP10: new cards the interference guard held back (rememberPostponed carries them). */
+  postponed: Id[];
 }
 
 /** Today's extra new-card allowance (meta `extra_new:<day>`, this device only). */
@@ -84,19 +89,27 @@ export async function getStudyQueue(opts: StudyQueueOptions = {}, now: Millis = 
     const aheadEnd = dayEndMs(addDays(facts.bounds.key, ahead ? aheadDaysFor(settings, facts.bounds.key) : 1), cfg);
     // Catch-up and the new-card ramp (domain/catchup.ts) shape the normal queue only.
     const load = ahead ? null : await getLoadToday(settings, now);
-    const [studied, fresh, extraNewToday] = await Promise.all([
+    const [studied, fresh, extraNewToday, carry] = await Promise.all([
       dueStudiedCards(ahead ? aheadEnd : facts.bounds.end),
       ahead ? Promise.resolve([]) : newCards(),
       getExtraNewToday(facts.bounds.key),
+      // v0.5 İP10: cards the interference guard postponed earlier (read with the rest).
+      ahead ? Promise.resolve([]) : readCarry(),
     ]);
     const inDeck = (c: Card) => !deckNotes || deckNotes.has(c.note_id);
     const all = deckNotes ? [...studied, ...fresh].filter(inDeck) : [...studied, ...fresh];
     const cards = noPicture.size ? all.filter((c) => !noPicture.has(c.id)) : all;
     const types = opts.studyMode ? STUDY_MODE_CARD_TYPES[opts.studyMode] : null;
     const freshShown = fresh.filter((c) => inDeck(c) && !noPicture.has(c.id) && (!types || types.includes(c.card_type)));
-    // "Yeni kelime sırası": smart unless the user chose insertion order.
-    const smart = !ahead && settings.new_card_order !== 'added' && freshShown.length > 0;
-    const newOrder = smart ? await newOrderInput(freshShown, facts, settings) : null;
+    // "Yeni kelime sırası": smart unless the user chose insertion order. Both orders get the
+    // interference guard and the cards it postponed earlier (v0.5 İP10, decision 0052).
+    const withOrder = !ahead && freshShown.length > 0;
+    const newOrder = withOrder
+      ? await newOrderInput(freshShown, facts, settings, {
+          order: settings.new_card_order === 'added' ? 'added' : 'smart',
+          carry,
+        })
+      : null;
     // Each mode counts its own first-time cards against the same daily limit; "+5 yeni kart"
     // is extra Kelime çalışma.
     const introduced = types ? types.reduce((n, t) => n + facts.introducedByType[t], 0) : facts.newIntroducedToday;
@@ -128,6 +141,7 @@ export async function getStudyQueue(opts: StudyQueueOptions = {}, now: Millis = 
       day: facts.bounds.key,
       dayEnd: facts.bounds.end,
       load,
+      postponed: q.postponed ?? [],
     };
   });
 }
@@ -170,7 +184,8 @@ async function lexiconOf(senses: Sense[]): Promise<Map<Id, LexiconSense>> {
 
 /** Everything a review screen needs to render one card. */
 export async function getCardView(cardId: Id, now: Millis = Date.now()): Promise<CardView | null> {
-  return db.transaction('r', [db.cards, db.notes, db.senses, db.review_logs, db.settings, db.lexicon_cache, db.images, ...exampleTables()], async () => {
+  let shown: { reps: number; key: string; changed: boolean } | null = null;
+  const view = await db.transaction('r', [...new Set([db.cards, db.notes, db.senses, db.review_logs, db.settings, db.lexicon_cache, db.images, ...exampleTables(), ...textSentenceTables()])], async () => {
     const card = await db.cards.get(cardId);
     if (!card) return null;
     const note = await db.notes.get(card.note_id);
@@ -199,7 +214,19 @@ export async function getCardView(cardId: Id, now: Millis = Date.now()): Promise
         ? await senseExamplesFor(sense.lexicon_sense_id, bandFor(settings), selected)
         : null;
       const needSpan = card.card_type === 'cloze';
-      const picked = pickRotation(rotationSentences(sense, examples, selected, needSpan), card.reps);
+      // v0.5 İP10: sentences from the user's own texts come right after the card's own one.
+      // Only for a word with one meaning: a found sentence cannot tell two meanings apart.
+      const own =
+        senses.length === 1 && (note.term_type === 'word' || note.term_type === 'phrase')
+          ? (cachedTextSentences(note.term, sense.pos, sense.source_sentence) ??
+            (await loadTextSentences(note.term, sense.pos, sense.source_sentence)))
+          : [];
+      const last = await readLastShown(card.id);
+      const picked = pickRotating(rotationSentences(sense, examples, selected, needSpan, own), card.reps, last, (x) => sentenceKey(x.text));
+      if (picked) {
+        const key = sentenceKey(picked.text);
+        shown = { reps: card.reps, key, changed: last?.reps !== card.reps || last.key !== key };
+      }
       sentence = picked && { ...picked, trOnTap: picked.exampleId !== null && settings.example_tr_visible !== true };
       // A cloze card keeps its own sentence when the source sentence has no usable span
       // (as before) and no example sentence can stand in.
@@ -222,6 +249,10 @@ export async function getCardView(cardId: Id, now: Millis = Date.now()): Promise
       imageOnFront: settings.show_image_front === true,
     };
   });
+  // Outside the read transaction: remember what this showing uses (device-local meta).
+  const remember = shown as { reps: number; key: string; changed: boolean } | null;
+  if (view && remember?.changed) await writeLastShown(view.card.id, { reps: remember.reps, key: remember.key }).catch(() => {});
+  return view;
 }
 
 export interface HomeSummary {
@@ -242,8 +273,9 @@ export async function getStreakSummary(now: Millis = Date.now()): Promise<Streak
   ]);
   return computeStreakSummary(activity, {
     today: dayKeyOf(now, cfg),
-    // Vacation days without reviews neither break nor extend the streak (v0.3 İP3).
-    isFrozenDay: (day) => isVacationDay(settings, day),
+    // Vacation days (v0.3 İP3) and days a streak protection covered (v0.5 İP10) neither break
+    // nor extend the streak.
+    isFrozenDay: streakFrozenDay(settings),
     accountStartDay: dayKeyOf(settings.created_at, cfg),
     learnedCards: learned,
   });

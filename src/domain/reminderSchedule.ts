@@ -94,6 +94,22 @@ export function nextReminder(input: ReminderInput): PlannedReminder | null {
 }
 
 /**
+ * The daily budget (v0.5 İP10, docs/decisions/0052): at most one reminder per user day, and
+ * none on a day one was already shown. A reminder that asks a card (decision 0048) is that
+ * day's reminder, not an extra one. Keeps the earliest of a day; order is kept.
+ */
+export function onePerDay<T extends { day: string }>(plans: readonly T[], shownDay: string | null): T[] {
+  const seen = new Set<string>(shownDay ? [shownDay] : []);
+  const out: T[] = [];
+  for (const p of plans) {
+    if (seen.has(p.day)) continue;
+    seen.add(p.day);
+    out.push(p);
+  }
+  return out;
+}
+
+/**
  * The next `count` reminders: each is nextReminder() after the previous one, with the previous
  * one's day counted as already reminded (at most one a day). Days strictly increase.
  */

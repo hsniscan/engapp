@@ -115,7 +115,7 @@ export const privacyEn: LegalDocument = {
             '**Google**: sign-in with Google; your profile photo is loaded from Google\'s servers. **Google ML Kit** (only in the Android app, when you use "Text from a photo"): the usage and performance information described above; no photo and no text. **Google Gemini** (AI): the text chunks you send to create cards, a word you add by hand, your words and their short English definitions for theme grouping, the word or sentence to be read aloud, and only numbers for the weekly report comment.',
             '**Anthropic Claude** (word pictures): only a word from the shared dictionary, its part of speech and Turkish meaning, a short drawing hint, a fixed correction note when a picture is redrawn, and, for the check, the picture Claude drew. Nothing about your account, your cards or your sentences is sent, and neither is who asked for the picture.',
             "**Anthropic Claude** (AI backup): when Gemini's quota runs out, the same AI requests listed above for Gemini are processed by Claude. **Anthropic Claude** (Today's story): only the word list, level, difficulty and interests described above.",
-            '**Browser push services** (Google, Mozilla, Apple, Microsoft): if you turned on web reminders, the encrypted reminder text (such as "12 reviews are waiting for you today").',
+            '**Browser push services** (Google, Mozilla, Apple, Microsoft): if you turned on web reminders, the encrypted reminder text (such as "12 cards are ready for review today").',
           ],
         },
         {

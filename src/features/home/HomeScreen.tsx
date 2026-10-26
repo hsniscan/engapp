@@ -12,6 +12,7 @@ import { FsrsOptOffer } from '@/features/fsrs/FsrsOptOffer';
 import { LevelChangeLine, LevelTestOffer } from '@/features/leveltest/LevelHomeNotes';
 import { LoadNotes } from '@/features/load/LoadNotes';
 import { InterestsPrompt } from '@/features/profile/InterestsPrompt';
+import { StreakFreezeNote } from '@/features/smart/StreakFreezeNote';
 import { useNow } from '@/features/settings/useNow';
 import { useStudyModeCounts } from '@/features/review/studyModes';
 import { useWordStages } from '@/features/stats/useWordStages';
@@ -174,6 +175,7 @@ function Notes() {
   return (
     <div className="flex flex-col gap-4 empty:hidden lg:gap-5">
       <StageRuleNote />
+      <StreakFreezeNote />
       <LevelChangeLine />
       <LoadNotes />
       <FsrsOptOffer />

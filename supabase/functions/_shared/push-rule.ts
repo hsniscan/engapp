@@ -267,11 +267,15 @@ export function estimateMinutes(due: number, secPerCard: number | null): number 
 /**
  * Notification texts. They are built on the server (the app may be closed), from numbers
  * only; Turkish is the app's language. Not UI strings of the web app (those live in i18n).
+ *
+ * Calm and plain (v0.5 İP10, docs/decisions/0052): what is ready and how long it takes, no
+ * pressure, no guilt, no mascot ("seni bekliyor", "serin bozulacak", "üzüldük" are out;
+ * push-rule.test.ts keeps it so).
  */
 export function dueMessage(due: number, secPerCard: number | null): PushMessage {
   return {
     title: 'Engapp',
-    body: `Bugün ${due} tekrar seni bekliyor (~${estimateMinutes(due, secPerCard)} dk)`,
+    body: `Bugün ${due} kart tekrara hazır, yaklaşık ${estimateMinutes(due, secPerCard)} dk.`,
     url: '/review',
     tag: 'engapp-due',
   };
