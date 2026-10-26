@@ -86,6 +86,14 @@ const children: RouteObject[] = [
     }),
   },
   {
+    // The graded reading library (v0.5 İP5); also shown in Desteler → Okuma.
+    path: 'kitaplik',
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/library/GradedLibraryPage')).GradedLibraryPage,
+    }),
+  },
+  {
     // "Tüm kelimelerim" (reached from Desteler and Profil).
     path: 'library',
     HydrateFallback: () => null,

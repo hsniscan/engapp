@@ -32,6 +32,7 @@ import type {
 import type { CachedImage } from '../domain/images';
 import type { WordBankEntry } from '../domain/wordBank';
 import type { EncounterRow, ReaderText } from '../domain/texts';
+import type { GradedBody, GradedCatalogEntry } from '../domain/library';
 import { addPullBackfill } from './backfill';
 
 /**
@@ -79,6 +80,8 @@ export class EngDb extends Dexie {
   word_bank!: EntityTable<WordBankEntry, 'id'>;
   texts!: EntityTable<ReaderText, 'id'>;
   encounters!: EntityTable<EncounterRow, 'id'>;
+  graded_catalog!: EntityTable<GradedCatalogEntry, 'id'>;
+  graded_bodies!: EntityTable<GradedBody, 'id'>;
 
   constructor(name = 'engapp') {
     super(name);
@@ -345,6 +348,15 @@ export class EngDb extends Dexie {
     this.version(28).stores({
       texts: 'id, kind, updated_at, deleted_at, graded_id',
       encounters: 'id, note_id, day',
+    });
+    // v31 (v0.5 graded library, decision 0047; 29, 30 and 32 belong to the other v0.5
+    // packages): `graded_catalog`, the device's copy of the approved texts' metadata (shared
+    // system content, read-only like word_bank; pulled by server_seq into
+    // meta.graded_cursor), and `graded_bodies`, the sentences of each text the user opened
+    // (kept for offline reading). Both are new tables, so no row is rewritten.
+    this.version(31).stores({
+      graded_catalog: 'id, level, topic, server_seq',
+      graded_bodies: 'id, fetched_at',
     });
   }
 }

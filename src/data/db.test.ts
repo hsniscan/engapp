@@ -5,7 +5,7 @@ import { PULL_BACKFILL_KEY } from './backfill';
 import { EngDb, STAGE_RULE_NOTICE_KEY } from './db';
 
 /** The current schema version; bump with every new Dexie version. */
-const LATEST = 28;
+const LATEST = 31;
 
 describe('Dexie schema', () => {
   it('opens with every table and the indexes the queries rely on', async () => {
@@ -13,7 +13,7 @@ describe('Dexie schema', () => {
     await d.open();
     expect(d.verno).toBe(LATEST);
     expect(d.tables.map((t) => t.name).sort()).toEqual(
-      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs', 'decks', 'theme_previews', 'level_tests', 'known_terms', 'anki_imports', 'lexicon_pair_notes', 'weekly_reports', 'report_drafts', 'images', 'word_bank', 'texts', 'encounters'].sort(),
+      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs', 'decks', 'theme_previews', 'level_tests', 'known_terms', 'anki_imports', 'lexicon_pair_notes', 'weekly_reports', 'report_drafts', 'images', 'word_bank', 'texts', 'encounters', 'graded_catalog', 'graded_bodies'].sort(),
     );
     const idx = (table: string) => d.table(table).schema.indexes.map((i) => i.name);
     expect(idx('decks')).toEqual(expect.arrayContaining(['sort', 'deleted_at']));
@@ -26,6 +26,8 @@ describe('Dexie schema', () => {
     expect(idx('images')).toEqual(expect.arrayContaining(['sense_id', 'fetched_at']));
     expect(idx('texts')).toEqual(expect.arrayContaining(['kind', 'updated_at', 'graded_id']));
     expect(idx('encounters')).toEqual(expect.arrayContaining(['note_id', 'day']));
+    expect(idx('graded_catalog')).toEqual(expect.arrayContaining(['level', 'topic', 'server_seq']));
+    expect(idx('graded_bodies')).toEqual(expect.arrayContaining(['fetched_at']));
     d.close();
     await d.delete();
   });
@@ -663,5 +665,27 @@ describe('Dexie schema', () => {
     expect(await e.meta.get(STAGE_RULE_NOTICE_KEY)).toBeUndefined();
     e.close();
     await e.delete();
+  });
+
+  it('v31 upgrade adds the graded library tables and keeps every existing row', async () => {
+    // A database as the reading-text contract left it (version 28).
+    const old = new Dexie('upgrade-v31');
+    old.version(1).stores({ cards: 'id, note_id, sense_id, [state+due], due, card_type, deleted_at', meta: 'key' });
+    old.version(28).stores({ texts: 'id, kind, updated_at, deleted_at, graded_id', encounters: 'id, note_id, day' });
+    await old.open();
+    await old.table('texts').add({ id: 't1', kind: 'graded', graded_id: 'g1', title: 'A', body: '', updated_at: 1, deleted_at: null });
+    await old.table('meta').put({ key: 'sync_cursor', value: 7 });
+    old.close();
+
+    const d = new EngDb('upgrade-v31');
+    await d.open();
+    expect(d.verno).toBe(LATEST);
+    expect(await d.texts.get('t1')).toMatchObject({ graded_id: 'g1' });
+    expect(await d.graded_catalog.count()).toBe(0);
+    expect(await d.graded_bodies.count()).toBe(0);
+    expect((await d.meta.get('sync_cursor'))?.value).toBe(7);
+    expect(await d.outbox.count()).toBe(0);
+    d.close();
+    await d.delete();
   });
 });

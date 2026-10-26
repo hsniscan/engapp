@@ -5,6 +5,7 @@ import { kickAnkiEnrich, startAnkiEnrichQueue } from '@/features/anki/enrichQueu
 import { kickExampleQueue, startExampleQueue } from '@/features/examples/queue';
 import { kickImportQueue, startImportQueue } from '@/features/import/queue';
 import { kickImageFetch, startImageFetch } from '@/features/images/fetcher';
+import { startGradedCatalog } from '@/features/library/fetcher';
 import { startPushFeatures } from '@/features/notify/start';
 import { kickReports } from '@/features/report/queue';
 import { isBackendConfigured } from '@/lib/supabase';
@@ -40,4 +41,5 @@ export function startConnectedFeatures(): void {
   startExampleQueue();
   startAnkiEnrichQueue();
   startImageFetch();
+  startGradedCatalog();
 }

@@ -3072,5 +3072,67 @@
       "showing": "Showing {{shown}} / {{total}}",
       "quick": "A mix of {{count}} words from your level"
     }
+  },
+  "gradedLibrary": {
+    "title": "Reading library",
+    "description": "Short texts written for your level. Every sentence has its Turkish translation and audio.",
+    "back": "Decks",
+    "forYou": "For you",
+    "forYouHint": "Picked for the {{difficulty}} difficulty from the words you know.",
+    "forYouNone": "No text fits your chosen difficulty right now. Pick one from the list below.",
+    "difficulty": {
+      "rahat": "Comfortable",
+      "dengeli": "Balanced",
+      "zorlayici": "Stretch"
+    },
+    "filters": "Filters",
+    "level": "Level",
+    "topic": "Topic",
+    "all": "All",
+    "listLabel": "Texts",
+    "suggestionsLabel": "Texts for you",
+    "heading": "{{count}} texts",
+    "understood": "{{percent}}% understood",
+    "fit": {
+      "easy": "Easy",
+      "fits": "Fits",
+      "hard": "Hard"
+    },
+    "meta": "{{level}} · {{topic}} · {{minutes}} min",
+    "finished": "Read",
+    "started": "In progress",
+    "offlineReady": "Reads offline",
+    "openFailed": "The text could not be opened. Check your connection and try again.",
+    "noMatch": "No text matches these filters.",
+    "clearFilters": "Clear filters",
+    "more": "Show more ({{count}})",
+    "loading": "Downloading the library…",
+    "emptyTitle": "The library is empty for now",
+    "emptyOffline": "Connect to the internet once to download the library. After that it reads offline.",
+    "emptyNoBackend": "The library is not available in this setup.",
+    "emptySoon": "New texts are being prepared; they will be here soon.",
+    "emptyFailed": "The library could not be downloaded.",
+    "retry": "Try again",
+    "topics": {
+      "business": "Business English",
+      "technology": "Technology",
+      "daily_life": "Everyday life",
+      "travel": "Travel",
+      "science": "Science",
+      "health": "Health",
+      "sports": "Sports",
+      "culture": "Culture",
+      "history": "History",
+      "news": "News",
+      "education": "Education",
+      "food": "Food",
+      "nature": "Nature",
+      "arts": "Arts",
+      "literature": "Literature",
+      "film": "Film and TV",
+      "games": "Games",
+      "politics": "Society and government",
+      "law": "Law"
+    }
   }
 }

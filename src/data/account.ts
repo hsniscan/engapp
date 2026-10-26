@@ -70,8 +70,9 @@ export async function dropLocalSettings(): Promise<void> {
 
 /** "Yerel veriyi at": forget everything on this device and link it to `userId`. */
 export async function discardLocalData(userId: string): Promise<void> {
-  // word_bank: shared content of the device, like ref_cache (its cursor is in meta).
-  const keep = new Set(['meta', 'ref_cache', 'word_bank']);
+  // word_bank, graded_catalog, graded_bodies: shared content of the device, like ref_cache
+  // (their cursors are in meta).
+  const keep = new Set(['meta', 'ref_cache', 'word_bank', 'graded_catalog', 'graded_bodies']);
   await db.transaction('rw', db.tables, async () => {
     for (const t of db.tables) if (!keep.has(t.name)) await t.clear();
     await setMeta(META.userId, userId);
@@ -132,8 +133,9 @@ export async function discardAccountData(userId: string, snapshot: RemoteSnapsho
 // edits (content_feedback, user_content) are personal and are NOT copied (ADR 0009). v0.4:
 // `images` is the shared picture cache and stays; the other account's picture choices, hide
 // flags and verdicts are user_content / content_feedback rows and stay behind (ADR 0031).
-// `word_bank` is the shared word bank (ADR 0038).
-const KEEP_ON_COPY = new Set(['meta', 'chunk_cache', 'lexicon_cache', 'lexicon_examples', 'lexicon_pair_notes', 'error_log', 'ref_cache', 'images', 'word_bank']);
+// `word_bank` is the shared word bank (ADR 0038); `graded_catalog` / `graded_bodies` the
+// shared reading library (ADR 0047). The user's own `texts` rows are never copied.
+const KEEP_ON_COPY = new Set(['meta', 'chunk_cache', 'lexicon_cache', 'lexicon_examples', 'lexicon_pair_notes', 'error_log', 'ref_cache', 'images', 'word_bank', 'graded_catalog', 'graded_bodies']);
 
 /** The user's own content of a live note, as input for the normal add path. */
 function copyInput(note: Note, senses: Sense[], sourceIds: Map<Id, Id>): AddNoteInput {

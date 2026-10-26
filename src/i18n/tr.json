@@ -3072,5 +3072,67 @@
       "showing": "{{shown}} / {{total}} gösteriliyor",
       "quick": "Seviyenden karışık {{count}} kelime"
     }
+  },
+  "gradedLibrary": {
+    "title": "Okuma kitaplığı",
+    "description": "Seviyene göre yazılmış kısa metinler. Her cümlenin Türkçesi ve sesi hazır.",
+    "back": "Desteler",
+    "forYou": "Sana uygun",
+    "forYouHint": "{{difficulty}} zorlukta, bildiğin kelimelere göre seçildi.",
+    "forYouNone": "Şu an seçtiğin zorluğa tam uyan metin yok. Aşağıdaki listeden seçebilirsin.",
+    "difficulty": {
+      "rahat": "Rahat",
+      "dengeli": "Dengeli",
+      "zorlayici": "Zorlayıcı"
+    },
+    "filters": "Süzgeçler",
+    "level": "Seviye",
+    "topic": "Konu",
+    "all": "Tümü",
+    "listLabel": "Metinler",
+    "suggestionsLabel": "Sana uygun metinler",
+    "heading": "{{count}} metin",
+    "understood": "%{{percent}} anlaşılır",
+    "fit": {
+      "easy": "Kolay",
+      "fits": "Uygun",
+      "hard": "Zor"
+    },
+    "meta": "{{level}} · {{topic}} · {{minutes}} dk",
+    "finished": "Okundu",
+    "started": "Yarım kaldı",
+    "offlineReady": "İnternetsiz okunur",
+    "openFailed": "Metin açılamadı. Bağlantını kontrol edip yeniden dene.",
+    "noMatch": "Bu süzgeçlere uyan metin yok.",
+    "clearFilters": "Süzgeçleri temizle",
+    "more": "Daha fazla göster ({{count}})",
+    "loading": "Kitaplık indiriliyor…",
+    "emptyTitle": "Kitaplık henüz boş",
+    "emptyOffline": "Kitaplığı indirmek için bir kez internete bağlan. Sonra internetsiz de okursun.",
+    "emptyNoBackend": "Kitaplık bu kurulumda kullanılamıyor.",
+    "emptySoon": "Yeni metinler hazırlanıyor; kısa süre sonra burada olacak.",
+    "emptyFailed": "Kitaplık indirilemedi.",
+    "retry": "Yeniden dene",
+    "topics": {
+      "business": "İş İngilizcesi",
+      "technology": "Teknoloji",
+      "daily_life": "Günlük yaşam",
+      "travel": "Seyahat",
+      "science": "Bilim",
+      "health": "Sağlık",
+      "sports": "Spor",
+      "culture": "Kültür",
+      "history": "Tarih",
+      "news": "Haberler",
+      "education": "Eğitim",
+      "food": "Yemek",
+      "nature": "Doğa",
+      "arts": "Sanat",
+      "literature": "Edebiyat",
+      "film": "Film ve dizi",
+      "games": "Oyun",
+      "politics": "Toplum ve yönetim",
+      "law": "Hukuk"
+    }
   }
 }
