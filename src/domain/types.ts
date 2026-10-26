@@ -26,8 +26,11 @@ export const recognitionOnly = (t: NoteTermType): boolean => t === 'affix' || t 
 /**
  * 'image' (v0.4 İP8, decision 0036): the sense's picture on the front, the English word to
  * recall. One per sense with an approved (or chosen) picture; locked like production.
+ * 'dictation' (v0.5 İP9, decision 0051): an example sentence is read aloud with the term left
+ * out, the user types it. One per sense with a shared example sentence (pre-generated audio);
+ * opens at Pekişiyor like production and never changes the word's stage.
  */
-export type CardType = 'recognition' | 'production' | 'cloze' | 'image';
+export type CardType = 'recognition' | 'production' | 'cloze' | 'image' | 'dictation';
 
 /** FSRS card states (numeric values match ts-fsrs State enum). */
 export const CardState = { New: 0, Learning: 1, Review: 2, Relearning: 3 } as const;

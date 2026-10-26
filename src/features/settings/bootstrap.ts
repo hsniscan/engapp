@@ -1,4 +1,5 @@
 // App startup: settings row, theme, error log, storage persistence, install prompt, integrity.
+import { reconcileDictationCards } from '@/data/dictation';
 import { liveQuery } from 'dexie';
 import {
   backfillLearningModel,
@@ -94,6 +95,8 @@ export function bootstrap(): void {
     // Learning model (ADR 0041): fill ramp_step / learned_at from the logs once, before the
     // first answer, so the ramp and the stages start from the real history.
     await backfillLearningModel().catch((e: unknown) => void logError(e, 'bootstrap.learningModel'));
+    // Dikte (v0.5 İP9): dictation cards of senses whose shared sentences are already cached.
+    void reconcileDictationCards().catch((e: unknown) => void logError(e, 'bootstrap.dictation'));
     watchFirstCard();
     void refreshStorageInfo();
     const inReview = () => /^\/review(\/|$)/.test(window.location.pathname);

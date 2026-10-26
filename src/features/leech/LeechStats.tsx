@@ -9,6 +9,7 @@ import { getConfusables, listLeechCards } from '@/data';
 import type { ConfusablePair } from '@/domain/confusables';
 import { LEECH_LAPSES } from '@/domain/leech';
 import type { Id } from '@/domain/types';
+import { cardTypeLabel } from '@/features/cards/labels';
 import { MAX_LIST_NOTES, practiceHref } from '@/features/extra/links';
 import { Badge, buttonClasses, Dialog, Surface } from '@/ui';
 import { ContrastEditor } from './ContrastEditor';
@@ -56,7 +57,7 @@ export function LeechStatsSection() {
                     {i.term}
                   </span>
                   <span className="truncate text-sm text-fg-muted">
-                    {[i.meaning, t(`cards.cardType.${i.card_type}`)].filter(Boolean).join(' · ')}
+                    {[i.meaning, cardTypeLabel(t, i.card_type)].filter(Boolean).join(' · ')}
                   </span>
                 </span>
                 <Badge tone="warn">{t('leech.stats.lapses', { count: i.lapses })}</Badge>

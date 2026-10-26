@@ -45,6 +45,11 @@ const CACHE_NAME = 'engapp-tts';
 export interface PlayOptions {
   /** Called once when playback ends, fails, or is replaced by a newer tap. */
   onDone?: () => void;
+  /**
+   * Playback speed, 1 = normal ("Yavaş dinle" in Dikte uses 0.7, v0.5 İP9). Server audio keeps
+   * its pitch; the device voice speaks more slowly.
+   */
+  rate?: number;
 }
 
 export interface AudioCache {
@@ -69,7 +74,7 @@ export interface PronunciationDeps {
   createAudio: () => HTMLAudioElement;
   createObjectURL: (b: Blob) => string;
   revokeObjectURL: (u: string) => void;
-  fallback: (text: string, voice: VoicePref, onDone: () => void) => boolean;
+  fallback: (text: string, voice: VoicePref, onDone: () => void, rate?: number) => boolean;
   setTimeout: (fn: () => void, ms: number) => unknown;
   clearTimeout: (id: unknown) => void;
 }
@@ -308,7 +313,11 @@ export function createPronouncer(deps: PronunciationDeps): Pronouncer {
       };
       const fallback = () => {
         if (id !== seq) return finish();
-        if (!deps.fallback(rawText, voice, finish)) finish();
+        const spoke =
+          opts.rate === undefined
+            ? deps.fallback(rawText, voice, finish)
+            : deps.fallback(rawText, voice, finish, opts.rate);
+        if (!spoke) finish();
       };
 
       // Guests (and texts the server would refuse) use the device voice, still inside the tap.
@@ -330,6 +339,11 @@ export function createPronouncer(deps: PronunciationDeps): Pronouncer {
           if (id === seq && !done) fallback();
         };
         audio.src = src;
+        // The element is shared: every play sets its speed (normal unless asked otherwise).
+        const rate = opts.rate ?? 1;
+        audio.defaultPlaybackRate = rate;
+        audio.playbackRate = rate;
+        if ('preservesPitch' in audio) audio.preservesPitch = true;
         audio.play().catch(() => {
           if (id === seq && !done) fallback();
         });
@@ -386,10 +400,13 @@ export function deviceVoice(
   voice: VoicePref,
   onDone: () => void,
   native: boolean = isNativeApp(),
+  rate?: number,
 ): boolean {
-  if (!native) return speakEnglish(text, voice, { onDone });
+  // The device voice's normal speed is 0.92 (useSpeech, native/tts.ts).
+  const speed = rate === undefined ? undefined : 0.92 * rate;
+  if (!native) return speakEnglish(text, voice, speed === undefined ? { onDone } : { onDone, rate: speed });
   void import('@/native/tts')
-    .then((m) => m.speakNative(text, voice))
+    .then((m) => m.speakNative(text, voice, speed))
     .catch(() => {})
     .finally(onDone);
   return true;
@@ -417,7 +434,7 @@ const defaultPronouncer = createPronouncer({
   createObjectURL: (b) => URL.createObjectURL(b),
   revokeObjectURL: (u) => URL.revokeObjectURL(u),
   // Offline without a cached copy (and every failure) goes straight to the device voice.
-  fallback: (text, voice, onDone) => deviceVoice(text, voice, onDone),
+  fallback: (text, voice, onDone, rate) => deviceVoice(text, voice, onDone, isNativeApp(), rate),
   setTimeout: (fn, ms) => window.setTimeout(fn, ms),
   clearTimeout: (id) => window.clearTimeout(id as number),
 });

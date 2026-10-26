@@ -41,5 +41,6 @@ export function stateKey(state: CardStateValue): StateKey {
 }
 
 export function cardTypeLabel(t: TFunction, type: CardType): string {
-  return t(`cards.cardType.${type}`);
+  // "Dikte" (v0.5 İP9) keeps its strings in the modes namespace.
+  return type === 'dictation' ? t('modes.dictation.cardType') : t(`cards.cardType.${type}`);
 }

@@ -3285,6 +3285,22 @@
       "typeInstead": "Type the answer",
       "flipInstead": "Answer in my head, without typing",
       "flipHint": "Say the word in your head, then look at the answer."
+    },
+    "dictation": {
+      "name": "Dictation",
+      "dir": "Listen and type",
+      "desc": "You hear the sentence and type the missing word. Recognising a word by ear is a skill of its own.",
+      "note": "Words that are settling open with their spoken example sentences",
+      "cardType": "Dictation",
+      "prompt": "Listen and type the missing word",
+      "empty": "No dictation cards today",
+      "emptyBody": "Words that settle in word study open here with their spoken example sentences.",
+      "start": "Start dictation",
+      "replay": "Play again",
+      "slow": "Play slowly",
+      "typeAnswer": "Type the word you hear",
+      "hidden": "The sentence is hidden: listen first",
+      "showSentence": "Show the sentence"
     }
   }
 }

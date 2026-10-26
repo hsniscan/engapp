@@ -15,6 +15,7 @@ import { getWordStages } from './wordStages';
 import { exampleTables, senseExamplesFor } from './examples';
 import { cardImageOf, type CardImage } from './images';
 import { imageCardsWithoutPicture } from './imageCards';
+import { dictationSentencesFor, hiddenDictationCards } from './dictation';
 import { dueStudiedCards, loadTodayFacts, newCards } from './history';
 import { aheadDaysFor, getLoadToday, type LoadToday } from './load';
 import { extraNewKey, getMeta } from './meta';
@@ -75,6 +76,8 @@ export async function getStudyQueue(opts: StudyQueueOptions = {}, now: Millis = 
   // transaction zone when several queues were built at once (the home screen builds five), so
   // the transaction committed early (PrematureCommitError, seen offline with picture cards).
   const noPicture = await imageCardsWithoutPicture(await db.cards.where('card_type').equals('image').toArray());
+  // v0.5 İP9: dictation cards with no sentence to read on this device are left out the same way.
+  if (!opts.studyMode || opts.studyMode === 'dictation') for (const id of await hiddenDictationCards()) noPicture.add(id);
   return db.transaction('r', [...new Set(tables)], async () => {
     const settings = await getSettings(now);
     const cfg = dayConfig(settings);
@@ -193,7 +196,13 @@ export async function getCardView(cardId: Id, now: Millis = Date.now()): Promise
       if (card.card_type === 'production') hint = firstLetterHint(note.term);
     }
     let sentence: CardSentence | null = null;
-    if (sense) {
+    if (sense && card.card_type === 'dictation') {
+      // Dikte (v0.5 İP9): only shared sentences, which have pre-generated audio; a new one
+      // after every answer, like the other cards.
+      const list = sense.lexicon_sense_id ? await dictationSentencesFor(sense.lexicon_sense_id, settings) : [];
+      sentence = pickRotation(list, card.reps);
+      if (sentence?.span) cloze = makeCloze(sentence.text, sentence.span);
+    } else if (sense) {
       const selected = selectedContexts(settings);
       const examples = sense.lexicon_sense_id
         ? await senseExamplesFor(sense.lexicon_sense_id, bandFor(settings), selected)

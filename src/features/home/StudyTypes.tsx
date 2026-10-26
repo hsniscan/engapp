@@ -6,7 +6,8 @@ import type { StudyMode, StudyModeCount } from '@/features/review/studyModes';
 import { cn } from '@/ui';
 import { HomeIcon, type HomeIconName } from './homeIcons';
 
-const MODES: { mode: StudyMode; icon: HomeIconName; tone: string }[] = [
+// The home tiles keep the three main types; "Dikte" (v0.5 İP9) starts from the Çalış picker.
+const MODES: { mode: Exclude<StudyMode, 'dictation'>; icon: HomeIconName; tone: string }[] = [
   { mode: 'word', icon: 'word', tone: 'bg-accent-soft text-accent-text' },
   { mode: 'production', icon: 'production', tone: 'bg-success-soft text-success-text' },
   { mode: 'cloze', icon: 'cloze', tone: 'bg-warn-soft text-warn-text' },

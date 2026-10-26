@@ -358,6 +358,15 @@ export class EngDb extends Dexie {
       graded_catalog: 'id, level, topic, server_seq',
       graded_bodies: 'id, fetched_at',
     });
+    // v33 (v0.5 study modes, decision 0051; 32 and 34–36 belong to the other v0.5 packages):
+    // cards may now have card_type 'dictation' ("Dikte"). No new table or index. An older app
+    // version dropped a pulled dictation card as invalid: re-pull cards once (equal HLC → the
+    // server's row, domain/syncMerge.ts), so a device never makes a fresh copy of a dictation
+    // card another device already studied. The cards themselves are made after start-up
+    // (data/dictation.ts reconcileDictationCards needs the sync writer).
+    this.version(33)
+      .stores({})
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['cards']));
   }
 }
 

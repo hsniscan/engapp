@@ -66,7 +66,7 @@ export async function loadTodayFacts(cfg: DayConfig, now: Millis): Promise<Today
   const typeOf = new Map(live.map((c) => [c.id, c.card_type]));
   const reviewedNoteIds = new Set(noteOf.values());
   const recognitionNoteIds = new Set(live.filter((c) => c.card_type === 'recognition').map((c) => c.note_id));
-  const introducedByType: Record<CardType, number> = { recognition: 0, production: 0, cloze: 0, image: 0 };
+  const introducedByType: Record<CardType, number> = { recognition: 0, production: 0, cloze: 0, image: 0, dictation: 0 };
   for (const l of introduced) {
     const type = typeOf.get(l.card_id);
     if (type) introducedByType[type]++;

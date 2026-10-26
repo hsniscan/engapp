@@ -3,6 +3,7 @@
 // this runner sends them to ai-examples in batches of up to 8 senses × 4 contexts. The
 // shared lexicon answers whatever it already has without an AI call. Offline or signed out,
 // jobs simply wait; the `online` event and new senses wake the runner. One tab runs it.
+import { reconcileDictationCards } from '@/data/dictation';
 import { liveQuery } from 'dexie';
 import { AiClientError } from '@/ai/client';
 import { generateExamples, type ExamplesRequest, type ExamplesResponse } from '@/ai/examples';
@@ -108,6 +109,8 @@ export async function processExampleQueue(deps: ExampleQueueDeps = defaultExampl
         contexts,
       });
       await storeExamples(res.examples);
+      // Dikte (v0.5 İP9): the new sentences may give senses their dictation card.
+      await reconcileDictationCards().catch(() => {});
       if (res.ai_called) await countExampleCall(deps.now());
       await finishExampleJobs(keys, { status: 'done' }, deps.now());
     } catch (e) {
@@ -187,6 +190,7 @@ export async function requestExamples(
       ...(input.fresh ? { fresh: { sense_id: input.lexiconSenseId, context: input.context } } : {}),
     });
     await storeExamples(res.examples);
+    await reconcileDictationCards().catch(() => {});
     return { ok: true, newIds: res.new_ids };
   } catch (e) {
     if (!(e instanceof AiClientError)) void logError(e, 'examples.request');

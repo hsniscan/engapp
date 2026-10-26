@@ -46,6 +46,7 @@ const MODE_OF: Record<CardType, StudyMode> = {
   production: 'production',
   image: 'production',
   cloze: 'cloze',
+  dictation: 'dictation',
 };
 
 /** Monday-to-Sunday dots of the week `today` falls in. */
@@ -77,7 +78,7 @@ export async function getTodayActivity(now: Millis = Date.now()): Promise<TodayA
   const cards = cardIds.length ? await db.cards.bulkGet(cardIds) : [];
   const typeOf = new Map(cards.flatMap((c) => (c ? [[c.id, c.card_type] as const] : [])));
 
-  const answers: Record<StudyMode, number> = { word: 0, production: 0, cloze: 0 };
+  const answers: Record<StudyMode, number> = { word: 0, production: 0, cloze: 0, dictation: 0 };
   const wordCards = new Set<string>();
   for (const l of kept) {
     const type = typeOf.get(l.card_id);
