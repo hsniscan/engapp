@@ -107,6 +107,21 @@ const children: RouteObject[] = [
     lazy: async () => ({ Component: (await import('@/features/cards/AddPage')).AddPage }),
   },
   {
+    // v0.5 İP2 (decision 0044): an article from a link, a subtitle file.
+    path: 'makale',
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/article/ArticlePage')).ArticlePage,
+    }),
+  },
+  {
+    path: 'altyazi',
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/article/SubtitlePage')).SubtitlePage,
+    }),
+  },
+  {
     path: 'import/anki',
     HydrateFallback: () => null,
     lazy: async () => ({

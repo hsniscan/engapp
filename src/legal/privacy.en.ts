@@ -18,7 +18,7 @@ export const privacyEn: LegalDocument = {
           ul: [
             'In guest mode all your data stays on your own device; nothing reaches us.',
             'If you sign in with Google, your cards and study history are stored on our server so that they sync between your devices.',
-            'When you use the AI features, the text you send is processed by Google Gemini. Do not send text that contains confidential or personal information.',
+            "When you use the AI features, the text you send is processed by Google Gemini, or by Anthropic Claude when Gemini's quota runs out. Do not send text that contains confidential or personal information.",
             'No ads, we do not sell your data, and we use no analytics or tracking tools.',
             'You can delete your account and all your data at any time in the app or on the [account deletion page](/hesap-sil).',
           ],
@@ -38,8 +38,12 @@ export const privacyEn: LegalDocument = {
       id: 'data',
       heading: 'What data we process',
       blocks: [
-        { p: '**Guest mode.** Without an account, your cards, history and settings are kept only in this device\'s browser database (or the app\'s own storage). AI and sync are not available in guest mode, and no data is sent to the server.' },
-        { p: '**Google sign-in.** You sign in with your Google account through Supabase Auth. We receive only your name, e-mail address, the link to your profile photo and your Google account ID. Your password never reaches us.' },
+        {
+          p: "**Guest mode.** Without an account, your cards, history and settings are kept only in this device's browser database (or the app's own storage). AI and sync are not available in guest mode, and no data is sent to the server.",
+        },
+        {
+          p: '**Google sign-in.** You sign in with your Google account through Supabase Auth. We receive only your name, e-mail address, the link to your profile photo and your Google account ID. Your password never reaches us.',
+        },
         { p: '**Your study data** (when signed in, stored on the server for sync):' },
         {
           ul: [
@@ -51,12 +55,27 @@ export const privacyEn: LegalDocument = {
             'the title, file name and page count of the sources you import (the full text is not stored on the server).',
           ],
         },
-        { p: '**Device ID.** For sync, the app gives each installation a random device ID and writes it into answer records. It is not an advertising ID; no hardware identifiers of your phone are accessed.' },
-        { p: '**Text processed by AI.** Text you paste into "create cards from text", or that is read from a PDF you import, is sent in chunks to the server and from there to Google Gemini. The candidate words the AI finds in a chunk, with the sentences they appear in, are kept on the server for at most 90 days so the same text is not processed twice.' },
-        { p: '**Usage counters.** To enforce the daily AI, read-aloud and "Görsel üret" (draw a picture) limits, the number of calls per day is counted.' },
-        { p: '**Pictures.** Your yes/no answer about a word picture and the picture you chose or hid are stored with your learning data. When you ask for a picture of a meaning, your request is recorded with your account so that we can count how many people asked for the same picture.' },
-        { p: '**Notifications.** If you turn on reminders: your browser\'s push service address and encryption keys, the device or browser name, and the days a reminder was sent.' },
-        { p: '**What we do not process.** Your location, contacts, photos, microphone and camera are not used. There is no advertising ID and no analytics or tracking tool. The app\'s error log stays on your device and is never sent to us.' },
+        {
+          p: '**Device ID.** For sync, the app gives each installation a random device ID and writes it into answer records. It is not an advertising ID; no hardware identifiers of your phone are accessed.',
+        },
+        {
+          p: '**Text processed by AI.** Text you paste into "create cards from text", or that is read from a PDF you import, is sent in chunks to the server and from there to Google Gemini. The candidate words the AI finds in a chunk, with the sentences they appear in, are kept on the server for at most 90 days so the same text is not processed twice.',
+        },
+        {
+          p: '**Article and subtitle import.** When you import an article from a link, only the address goes to our server; the server downloads the page, extracts its text, sends it to you and keeps neither the address nor the text (the text is saved only on your device and never goes to shared tables or other users), while subtitle files are read only on your device.',
+        },
+        {
+          p: '**Usage counters.** To enforce the daily AI, read-aloud and "Görsel üret" (draw a picture) limits, the number of calls per day is counted.',
+        },
+        {
+          p: '**Pictures.** Your yes/no answer about a word picture and the picture you chose or hid are stored with your learning data. When you ask for a picture of a meaning, your request is recorded with your account so that we can count how many people asked for the same picture.',
+        },
+        {
+          p: "**Notifications.** If you turn on reminders: your browser's push service address and encryption keys, the device or browser name, and the days a reminder was sent.",
+        },
+        {
+          p: "**What we do not process.** Your location, contacts, photos, microphone and camera are not used. There is no advertising ID and no analytics or tracking tool. The app's error log stays on your device and is never sent to us.",
+        },
       ],
     },
     {
@@ -71,32 +90,43 @@ export const privacyEn: LegalDocument = {
             'If you turned it on, to send at most one study reminder a day.',
           ],
         },
-        { p: 'We do not use your data for advertising, marketing or profiling, and we do not sell it to anyone.' },
+        {
+          p: 'We do not use your data for advertising, marketing or profiling, and we do not sell it to anyone.',
+        },
       ],
     },
     {
       id: 'processors',
       heading: 'Where it is processed and who receives it',
       blocks: [
-        { p: 'Engapp uses the following service providers. Some of their servers are outside Türkiye, so your data is transferred abroad (KVKK art. 9).' },
+        {
+          p: 'Engapp uses the following service providers. Some of their servers are outside Türkiye, so your data is transferred abroad (KVKK art. 9).',
+        },
         {
           ul: [
             '**Supabase** (database, sign-in, server functions): your account and study data. The servers are in the European Union, in the Ireland region.',
-            '**Cloudflare** (hosting of the website): processes technical connection data such as your IP address and browser details while serving the app\'s files.',
-            '**Google**: sign-in with Google; your profile photo is loaded from Google\'s servers. **Google Gemini** (AI): the text chunks you send to create cards, a word you add by hand, your words and their short English definitions for theme grouping, the word or sentence to be read aloud, and only numbers for the weekly report comment.',
+            "**Cloudflare** (hosting of the website): processes technical connection data such as your IP address and browser details while serving the app's files.",
+            "**Google**: sign-in with Google; your profile photo is loaded from Google's servers. **Google Gemini** (AI): the text chunks you send to create cards, a word you add by hand, your words and their short English definitions for theme grouping, the word or sentence to be read aloud, and only numbers for the weekly report comment.",
             '**Anthropic Claude** (word pictures): only a word from the shared dictionary, its part of speech and Turkish meaning, a short drawing hint, a fixed correction note when a picture is redrawn, and, for the check, the picture Claude drew. Nothing about your account, your cards or your sentences is sent, and neither is who asked for the picture.',
+            "**Anthropic Claude** (AI backup): when Gemini's quota runs out, the same AI requests listed above for Gemini are processed by Claude.",
             '**Browser push services** (Google, Mozilla, Apple, Microsoft): if you turned on web reminders, the encrypted reminder text (such as "12 reviews are waiting for you today").',
           ],
         },
-        { p: 'We currently use Gemini on its free tier. Under Google\'s terms, text sent on the free tier may be used to improve Google\'s products and may be read by human reviewers. Therefore do not process confidential, business or personal text with the AI features.' },
-        { p: 'Example sentences, memory aid suggestions, notes on confusable words and read-aloud audio files are generated from the shared dictionary content; your own sentences are not sent for them.' },
+        {
+          p: "We currently use Gemini on its free tier. Under Google's terms, text sent on the free tier may be used to improve Google's products and may be read by human reviewers. Therefore do not process confidential, business or personal text with the AI features.",
+        },
+        {
+          p: 'Example sentences, memory aid suggestions, notes on confusable words and read-aloud audio files are generated from the shared dictionary content; your own sentences are not sent for them.',
+        },
       ],
     },
     {
       id: 'shared-dictionary',
       heading: 'The shared dictionary',
       blocks: [
-        { p: 'Word meanings, example sentences, word pictures and the audio of dictionary words are shared by all users. This shared content is not linked to any person: who caused an entry to be added is not recorded, and it contains none of your sentences or personal information. That is why the shared dictionary stays as it is when you delete your account.' },
+        {
+          p: 'Word meanings, example sentences, word pictures and the audio of dictionary words are shared by all users. This shared content is not linked to any person: who caused an entry to be added is not recorded, and it contains none of your sentences or personal information. That is why the shared dictionary stays as it is when you delete your account.',
+        },
       ],
     },
     {
@@ -125,8 +155,12 @@ export const privacyEn: LegalDocument = {
             'By e-mail: write to {{email}}; we delete your account within 30 days.',
           ],
         },
-        { p: 'What is deleted: your cards and words, study history and statistics, settings, reports, notification records, AI cache and counters, picture counters, picture requests and picture answers (for an admin also the admin record and picture review decisions), and then the account itself. Pictures in the shared dictionary stay. Deletion cannot be undone; if you like, first download the JSON backup under **Ayarlar → Veri (Data)**.' },
-        { p: 'Guest-mode data exists only on your device: delete it with **Ayarlar → Hesap → Bu cihazdaki verileri sil (Delete the data on this device)** or by uninstalling the app.' },
+        {
+          p: 'What is deleted: your cards and words, study history and statistics, settings, reports, notification records, AI cache and counters, picture counters, picture requests and picture answers (for an admin also the admin record and picture review decisions), and then the account itself. Pictures in the shared dictionary stay. Deletion cannot be undone; if you like, first download the JSON backup under **Ayarlar → Veri (Data)**.',
+        },
+        {
+          p: 'Guest-mode data exists only on your device: delete it with **Ayarlar → Hesap → Bu cihazdaki verileri sil (Delete the data on this device)** or by uninstalling the app.',
+        },
       ],
     },
     {
@@ -146,29 +180,39 @@ export const privacyEn: LegalDocument = {
             'claim compensation if you suffer damage from unlawful processing.',
           ],
         },
-        { p: 'Send your request to {{email}}; we answer free of charge within 30 days at the latest. If you are not satisfied with the answer, you may complain to the Turkish Personal Data Protection Board (Kişisel Verileri Koruma Kurulu).' },
-        { p: 'You can take a copy of your data yourself at any time with **Ayarlar → Veri → JSON yedeğini indir (Download JSON backup)**, and correct a wrong entry in the app.' },
+        {
+          p: 'Send your request to {{email}}; we answer free of charge within 30 days at the latest. If you are not satisfied with the answer, you may complain to the Turkish Personal Data Protection Board (Kişisel Verileri Koruma Kurulu).',
+        },
+        {
+          p: 'You can take a copy of your data yourself at any time with **Ayarlar → Veri → JSON yedeğini indir (Download JSON backup)**, and correct a wrong entry in the app.',
+        },
       ],
     },
     {
       id: 'security',
       heading: 'Security',
       blocks: [
-        { p: 'All connections between the app and the servers are encrypted (HTTPS). In the database every user can read and write only their own rows (row-level security). AI and server keys are kept only on the server, never in the app.' },
+        {
+          p: 'All connections between the app and the servers are encrypted (HTTPS). In the database every user can read and write only their own rows (row-level security). AI and server keys are kept only on the server, never in the app.',
+        },
       ],
     },
     {
       id: 'children',
       heading: 'Children',
       blocks: [
-        { p: 'Engapp is not designed for people under 18, and we do not knowingly collect data from anyone under 18. If you notice that someone under 18 has created an account, write to {{email}} and we will delete the account and its data.' },
+        {
+          p: 'Engapp is not designed for people under 18, and we do not knowingly collect data from anyone under 18. If you notice that someone under 18 has created an account, write to {{email}} and we will delete the account and its data.',
+        },
       ],
     },
     {
       id: 'changes',
       heading: 'Changes',
       blocks: [
-        { p: 'If this policy changes, the new version is published on this page with its update date. Turkish original: [Gizlilik politikası](/gizlilik). If the two texts differ, the Turkish text prevails.' },
+        {
+          p: 'If this policy changes, the new version is published on this page with its update date. Turkish original: [Gizlilik politikası](/gizlilik). If the two texts differ, the Turkish text prevails.',
+        },
       ],
     },
   ],

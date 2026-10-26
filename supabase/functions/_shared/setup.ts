@@ -1,8 +1,10 @@
 // Wires an edge function from environment variables. Environment-neutral: the caller
 // passes an env getter (Deno.env.get in production, a map in tests/local runs).
 
-import { createAiProvider, type AiProvider } from './ai-provider.ts';
+import type { AiProvider } from './ai-provider.ts';
+import { createTextAiProvider } from './ai.ts';
 import { createHandler, parseOrigins } from './http.ts';
+import { log } from './log.ts';
 import type { PipelineDeps } from './extract.ts';
 import type { AiStore } from './store.ts';
 import {
@@ -11,6 +13,7 @@ import {
   loadServerConfig,
   SupabaseAiStore,
 } from './supabase-store.ts';
+import { SupabaseTextBudgetStore, textMonthlyCapUsd, type TextBudget } from './text-budget.ts';
 
 type Env = (key: string) => string | undefined;
 
@@ -21,10 +24,7 @@ export function dailyLimit(env: Env): number {
   return Number.isInteger(n) && n > 0 ? n : DEFAULT_AI_DAILY_LIMIT;
 }
 
-export function log(fn: string) {
-  return (msg: string, data?: Record<string, unknown>) =>
-    console.log(JSON.stringify({ fn, msg, ...(data ?? {}) }));
-}
+export { log } from './log.ts';
 
 export interface FunctionOverrides {
   store?: AiStore;
@@ -39,12 +39,21 @@ export function createAiFunction<T>(
   overrides: FunctionOverrides = {},
 ): (req: Request) => Promise<Response> {
   const cfg = overrides.store && overrides.authenticate ? null : loadServerConfig(env);
-  const store = overrides.store ?? new SupabaseAiStore(createAdminClient(cfg!));
+  const admin = cfg ? createAdminClient(cfg) : null;
+  const store = overrides.store ?? new SupabaseAiStore(admin!);
+  // The Claude fallback spends from the monthly text budget, shared with the library jobs.
+  const budget: TextBudget | undefined = admin
+    ? { store: new SupabaseTextBudgetStore(admin), capUsd: textMonthlyCapUsd(env) }
+    : undefined;
   const authenticate = overrides.authenticate ?? createAuthenticator(cfg!);
-  let provider: AiProvider | null = null;
-  const getProvider = overrides.provider ?? (() => (provider ??= createAiProvider(env)));
-  const limit = dailyLimit(env);
   const logger = log(name);
+  let provider: AiProvider | null = null;
+  // Gemini, then Claude Haiku on quota exhaustion (decision 0044).
+  const getProvider =
+    overrides.provider ??
+    (() =>
+      (provider ??= createTextAiProvider(env, { log: logger, ...(budget ? { budget } : {}) })));
+  const limit = dailyLimit(env);
   return createHandler({
     cors: { allowedOrigins: parseOrigins(env('ALLOWED_ORIGINS')) },
     authenticate,

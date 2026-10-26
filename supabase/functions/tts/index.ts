@@ -2,7 +2,7 @@
 // design: docs/decisions/0028-server-tts.md.
 import { createTtsFromEnv, type SpeechSynth } from '../_shared/gemini-tts.ts';
 import { createHandler, parseOrigins } from '../_shared/http.ts';
-import { log } from '../_shared/setup.ts';
+import { log } from '../_shared/log.ts';
 import { runTts, ttsDailyLimit } from '../_shared/tts.ts';
 import { SupabaseTtsStore } from '../_shared/tts-store.ts';
 import {

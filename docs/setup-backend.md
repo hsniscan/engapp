@@ -88,7 +88,7 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 | `SUPABASE_DB_PASSWORD`      | the database password from step 3.6                                                                                                                                                                                                 |
 | `GEMINI_API_KEY`            | the key from step 1                                                                                                                                                                                                                 |
 | `SUPABASE_SERVICE_ROLE_KEY` | optional, for the level job (step 9): **Project Settings → API Keys** → the `service_role` key or a secret key (`sb_secret_…`). Without it the job reads the key with `SUPABASE_ACCESS_TOKEN`, which then needs API key read access |
-| `ANTHROPIC_API_KEY`         | optional, for pictures (step 12): `https://console.anthropic.com/settings/keys` → **Create Key** → copy (starts with `sk-ant-`)                                                                                                     |
+| `ANTHROPIC_API_KEY`         | optional, for pictures (step 12) and the text AI fallback (step 16): `https://console.anthropic.com/settings/keys` → **Create Key** → copy (starts with `sk-ant-`)                                                                  |
 
 **Variables** tab → **New repository variable** (all optional; defaults in brackets):
 
@@ -102,7 +102,7 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 | `CLAUDE_MONTHLY_CREDIT_USD` | the monthly Claude credit in USD; pictures may use 80 % of it [`100`]                                     |
 | `APP_ADMIN_USER_ID`         | your Supabase user id (step 12): who may open the picture review screen [none]                            |
 | `IMAGE_DAILY_LIMIT`         | pictures a user may ask for per UTC day [`10`]                                                            |
-| `CLAUDE_IMAGE_MODEL`        | model that draws pictures [`claude-sonnet-5-5`]                                                             |
+| `CLAUDE_IMAGE_MODEL`        | model that draws pictures [`claude-sonnet-5-5`]                                                           |
 | `CLAUDE_CHECK_MODEL`        | model that scores and checks pictures [`claude-haiku-5-5`]                                                |
 | `CLAUDE_WORDBANK_MODEL`     | model of the word bank job (step 14) [`CLAUDE_CHECK_MODEL`]                                               |
 | `WORD_BANK_NIGHTLY`         | `true`: the word bank job also runs every night (step 14) [off]                                           |
@@ -112,6 +112,9 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 | `CLAUDE_GRADED_MODEL`       | model that writes library texts [`claude-sonnet-5-5`]                                                     |
 | `GRADED_PER_CELL`           | library texts per level and core topic [`9`]                                                              |
 | `GRADED_EXTENDED_PER_CELL`  | library texts per level and extended topic [`0`]                                                          |
+| `ARTICLE_DAILY_LIMIT`       | articles a user may import from links per UTC day (step 17) [`30`]                                        |
+| `CLAUDE_TEXT_MODEL`         | model of the text AI fallback when Gemini runs out of quota (step 17) [`claude-haiku-5-5`]                |
+| `AI_CLAUDE_FALLBACK`        | `off`: never use Claude for the text AI tasks (step 17) [`on`]                                            |
 
 `ALLOWED_ORIGINS` is the list of web origins allowed to call the AI functions
 (comma-separated, exact, no trailing slash). Preview deploys on other origins cannot
@@ -131,7 +134,7 @@ call AI unless added here. The deploy workflow always appends the production Pag
      `GEMINI_FALLBACK_MODEL`, `AI_PROVIDER=gemini`, `AI_DAILY_LIMIT`, `ALLOWED_ORIGINS`
    - on the first run only: a Web Push (VAPID) key pair, stored as the function secrets
      `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` (see step 10; nothing to do)
-   - `supabase functions deploy` (`ai-extract`, `ai-enrich`, `ai-examples`, `ai-themes`, `ai-mnemonic`, `ai-report`, `ai-contrast`, `push-send`, `tts`, `account-delete`; JWT is verified inside the
+   - `supabase functions deploy` (`ai-extract`, `ai-enrich`, `ai-examples`, `ai-themes`, `ai-mnemonic`, `ai-report`, `ai-contrast`, `push-send`, `tts`, `account-delete`, `fetch-article`; JWT is verified inside the
      functions, so `verify_jwt = false` from `supabase/config.toml` is expected)
    - `select public.push_configure(<push-send URL>)`, which turns on the 15-minute reminder job
 3. Both jobs must end green. If "Check secrets" fails, a secret from step 4 is missing.
@@ -157,10 +160,10 @@ dashboard auth settings from step 3 with the local-development `config.toml`).
 Cloudflare dashboard → **Workers & Pages → <PAGES_PROJECT> → Settings → Variables and
 Secrets**, for **Production** and **Preview**, then redeploy:
 
-| Name                            | Value                                      |
-| ------------------------------- | ------------------------------------------ |
-| `VITE_SUPABASE_URL`             | `https://bikcjlomrjaxymifxogi.supabase.co` |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | the publishable key from step 3.5          |
+| Name                            | Value                                                                      |
+| ------------------------------- | -------------------------------------------------------------------------- |
+| `VITE_SUPABASE_URL`             | `https://bikcjlomrjaxymifxogi.supabase.co`                                 |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | the publishable key from step 3.5                                          |
 | `VITE_CONTACT_EMAIL`            | the contact address shown in the privacy policy and on `/hesap-sil` (v0.4) |
 
 Locally: create `.env.local` in the repository root with the same two lines
@@ -318,6 +321,7 @@ Also nightly, by pg_cron: `engapp-purge-usage` (03:27 UTC) deletes read-aloud an
 usage counters older than 90 days, as the privacy policy says. **Integrations → Cron** lists
 it next to `engapp-purge-tombstones`; without pg_cron run
 `select public.purge_usage_counters(90);` now and then.
+
 ## 14. Kelime Bankası (v0.4)
 
 The word bank (decision 0038) is filled once by a job: Turkish meanings and an example sentence
@@ -441,6 +445,22 @@ pictures.
 Check: in **SQL Editor**, `select * from public.text_budget_status();` shows this month's cap
 and spending. `select status, count(*) from public.graded_texts group by 1;` grows after each
 night. In the app, **/kitaplik** lists the approved texts.
+
+## 17. Article import and the Claude fallback (v0.5)
+
+Nothing new to create: the deploy (step 5) applies `20261101000200_article_usage.sql` and
+deploys `fetch-article`. Optional variables (step 4): `ARTICLE_DAILY_LIMIT`,
+`CLAUDE_TEXT_MODEL`, `AI_CLAUDE_FALLBACK`.
+
+- **Article import** needs no key: the server downloads the page itself (user agent
+  `EngappReader/1.0`), returns plain text and stores nothing (decision 0044).
+- **Claude fallback**: when Gemini answers "quota exhausted" on both models, ai-extract,
+  ai-enrich, ai-examples, ai-themes, ai-mnemonic, ai-report and ai-contrast retry the same
+  request on Claude Haiku. It uses the `ANTHROPIC_API_KEY` secret that pictures already use;
+  without it the old `quota_exceeded` error remains. Each Claude call is logged as
+  `text spend` in the function logs (USD and tokens) until the text budget lands.
+- Check after deploy: **Edge Functions → fetch-article → Logs** shows `extracted` lines with
+  sizes only, never an address.
 
 ## Manual deploy without GitHub (alternative)
 

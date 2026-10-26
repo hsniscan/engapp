@@ -4,7 +4,7 @@
 import { runAccountDelete } from '../_shared/account-delete.ts';
 import { SupabaseAccountDeleteStore } from '../_shared/account-delete-store.ts';
 import { createHandler, parseOrigins } from '../_shared/http.ts';
-import { log } from '../_shared/setup.ts';
+import { log } from '../_shared/log.ts';
 import {
   createAdminClient,
   createAuthenticator,
