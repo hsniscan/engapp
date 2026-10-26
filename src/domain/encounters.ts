@@ -3,7 +3,14 @@
 // "Bu kelimeyi 7 kez gördün: 4 kartta, 3 metinde." A reader encounter is one opening of a
 // text that contains the word (however often it occurs there); a review encounter is one
 // answer to one of the word's cards. Counting never touches FSRS fields or review_logs.
-import { encounterId, READING_OFFSET_MAX, READING_OFFSET_STEP, type EncounterRow, type EncounterSource, type TextFeedback } from './texts';
+import {
+  encounterId,
+  READING_OFFSET_MAX,
+  READING_OFFSET_STEP,
+  type EncounterRow,
+  type EncounterSource,
+  type TextFeedback,
+} from './texts';
 import type { Id, Millis, SyncedRow } from './types';
 
 export interface EncounterSummary {
@@ -59,8 +66,13 @@ export function summarizeEncounters(rows: readonly EncounterRow[], answers = 0):
  * New settings.reading_offset after the user answered `next` on a text that had `prev`
  * (null = none): the old answer's nudge is taken back, the new one applied, bounded.
  */
-export function nudgeOffset(current: number, prev: TextFeedback | null, next: TextFeedback | null): number {
-  const step = (f: TextFeedback | null) => (f === 'hard' ? READING_OFFSET_STEP : f === 'easy' ? -READING_OFFSET_STEP : 0);
+export function nudgeOffset(
+  current: number,
+  prev: TextFeedback | null,
+  next: TextFeedback | null,
+): number {
+  const step = (f: TextFeedback | null) =>
+    f === 'hard' ? READING_OFFSET_STEP : f === 'easy' ? -READING_OFFSET_STEP : 0;
   const base = Number.isFinite(current) ? current : 0;
   const v = base - step(prev) + step(next);
   const bounded = Math.min(READING_OFFSET_MAX, Math.max(-READING_OFFSET_MAX, v));

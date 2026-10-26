@@ -4,8 +4,21 @@ import { bumpEncounters, nudgeOffset, readingSlice, summarizeEncounters } from '
 import { encounterId, READING_OFFSET_MAX, type EncounterRow, type TextFeedback } from './texts';
 import type { SyncedRow } from './types';
 
-const base = (id: string): SyncedRow => ({ id, user_id: null, created_at: 1, updated_at: 1, deleted_at: null, hlc: 'h' });
-const row = (noteId: string, source: EncounterRow['source'], n: number, device = 'd1', deleted: number | null = null): EncounterRow => ({
+const base = (id: string): SyncedRow => ({
+  id,
+  user_id: null,
+  created_at: 1,
+  updated_at: 1,
+  deleted_at: null,
+  hlc: 'h',
+});
+const row = (
+  noteId: string,
+  source: EncounterRow['source'],
+  n: number,
+  device = 'd1',
+  deleted: number | null = null,
+): EncounterRow => ({
   ...base(encounterId(noteId, '2026-11-01', source, device)),
   note_id: noteId,
   day: '2026-11-01',
@@ -17,16 +30,35 @@ const row = (noteId: string, source: EncounterRow['source'], n: number, device =
 
 describe('bumpEncounters', () => {
   it('starts new rows at 1 and adds 1 to existing ones, once per note', () => {
-    const out = bumpEncounters([row('a', 'reader', 2)], ['a', 'b', 'b'], '2026-11-01', 'reader', 'd1', base);
+    const out = bumpEncounters(
+      [row('a', 'reader', 2)],
+      ['a', 'b', 'b'],
+      '2026-11-01',
+      'reader',
+      'd1',
+      base,
+    );
     expect(out.map((r) => [r.id, r.n])).toEqual([
       ['a|2026-11-01|reader|d1', 3],
       ['b|2026-11-01|reader|d1', 1],
     ]);
-    expect(out[1]).toMatchObject({ note_id: 'b', source: 'reader', device_id: 'd1', day: '2026-11-01' });
+    expect(out[1]).toMatchObject({
+      note_id: 'b',
+      source: 'reader',
+      device_id: 'd1',
+      day: '2026-11-01',
+    });
   });
 
   it('a row of another device or source is not touched', () => {
-    const out = bumpEncounters([row('a', 'reader', 5, 'd2'), row('a', 'review', 4)], ['a'], '2026-11-01', 'reader', 'd1', base);
+    const out = bumpEncounters(
+      [row('a', 'reader', 5, 'd2'), row('a', 'review', 4)],
+      ['a'],
+      '2026-11-01',
+      'reader',
+      'd1',
+      base,
+    );
     expect(out).toHaveLength(1);
     expect(out[0]).toMatchObject({ id: 'a|2026-11-01|reader|d1', n: 1 });
   });
@@ -34,12 +66,22 @@ describe('bumpEncounters', () => {
 
 describe('summarizeEncounters', () => {
   it('adds the devices up, splits cards and texts, ignores tombstones', () => {
-    const rows = [row('a', 'review', 2), row('a', 'review', 1, 'd2'), row('a', 'reader', 3), row('a', 'story', 1), row('a', 'reader', 9, 'd3', 5)];
+    const rows = [
+      row('a', 'review', 2),
+      row('a', 'review', 1, 'd2'),
+      row('a', 'reader', 3),
+      row('a', 'story', 1),
+      row('a', 'reader', 9, 'd3', 5),
+    ];
     expect(summarizeEncounters(rows)).toEqual({ cards: 3, texts: 4, total: 7 });
   });
 
   it('shows the answers from before the counter when they are more', () => {
-    expect(summarizeEncounters([row('a', 'review', 2)], 10)).toEqual({ cards: 10, texts: 0, total: 10 });
+    expect(summarizeEncounters([row('a', 'review', 2)], 10)).toEqual({
+      cards: 10,
+      texts: 0,
+      total: 10,
+    });
     expect(summarizeEncounters([], 0)).toEqual({ cards: 0, texts: 0, total: 0 });
   });
 });

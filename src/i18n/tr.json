@@ -3072,5 +3072,154 @@
       "showing": "{{shown}} / {{total}} gösteriliyor",
       "quick": "Seviyenden karışık {{count}} kelime"
     }
+  },
+  "reader": {
+    "tab": "Okuma",
+    "close": "Okuyucuyu kapat",
+    "coverage": "Bu metnin %{{pct}}'sını biliyorsun",
+    "words_one": "{{count}} kelime",
+    "words_other": "{{count}} kelime",
+    "readMinutes_one": "{{count}} dk okudun",
+    "readMinutes_other": "{{count}} dk okudun",
+    "resumed": "Kaldığın yerden",
+    "emptyBody": "Bu metnin içeriği henüz bu cihazda yok.",
+    "notFound": {
+      "title": "Metin bulunamadı",
+      "body": "Silinmiş olabilir ya da başka bir cihazdan henüz gelmemiş olabilir.",
+      "cta": "Metinlerime dön"
+    },
+    "listen": {
+      "start": "Dinleyerek oku",
+      "stop": "Durdur",
+      "noVoice": "Bu cihazda sesli okuma kullanılamıyor."
+    },
+    "options": {
+      "open": "Okuma ayarları",
+      "title": "Okuma ayarları"
+    },
+    "legend": {
+      "sample": "word",
+      "new": "Muhtemelen yeni",
+      "learning": "Öğreniyorsun",
+      "consolidating": "Pekişiyor",
+      "known": "Biliyorsun ya da öğrendin: işaret yok"
+    },
+    "finished": {
+      "cta": "Bitirdim",
+      "title": "Bitirdin",
+      "again": "Yeniden oku"
+    },
+    "feedback": {
+      "question": "Bu metin sana nasıldı?",
+      "hard": "Çok zor",
+      "easy": "Çok kolay",
+      "thanks": "Teşekkürler. Sonraki öneriler buna göre ayarlanır."
+    },
+    "word": {
+      "lemma": "Sözlükteki hâli: {{lemma}}",
+      "listen": "Dinle",
+      "extendBefore": "← Öncekiyle",
+      "extendAfter": "Sonrakiyle →",
+      "guessHint": "Önce cümleye bak ve anlamını tahmin et. Tahmin etmeye çalışmak, doğrudan bakmaktan daha iyi akılda kalır.",
+      "reveal": "Anlamı göster",
+      "loading": "Anlam aranıyor…",
+      "meanings": "Anlamlar",
+      "fromOnline": "Anlam ortak sözlükten geldi.",
+      "inCards": "Bu kelime kartlarında var.",
+      "addCard": "Karta ekle",
+      "added": "\"{{term}}\" kartlarına eklendi",
+      "addFailed": "Kart eklenemedi. Tekrar dene.",
+      "addYourself": "Kartı kendin ekle",
+      "none": {
+        "offline": "İnternet yok ve bu kelime cihazdaki sözlükte bulunamadı.",
+        "signIn": "Bu kelime cihazdaki sözlükte yok. Ortak sözlüğe bakmak için Google ile giriş yap.",
+        "notFound": "Bu kelimenin anlamı bulunamadı."
+      }
+    },
+    "stage": {
+      "new": "Yeni kart",
+      "learning": "Öğreniyor",
+      "consolidating": "Pekişiyor",
+      "learned": "Öğrenildi",
+      "mastered": "Kalıcı"
+    },
+    "pos": {
+      "noun": "isim",
+      "verb": "fiil",
+      "adjective": "sıfat",
+      "adverb": "zarf",
+      "preposition": "edat",
+      "pronoun": "zamir",
+      "conjunction": "bağlaç",
+      "determiner": "belirleyici",
+      "interjection": "ünlem",
+      "phrase": "kalıp",
+      "phrasal_verb": "öbek fiil",
+      "idiom": "deyim",
+      "other": "diğer"
+    },
+    "encounters": {
+      "none": "Bu kelimeyle henüz bir kartta ya da metinde karşılaşmadın.",
+      "line_one": "Bu kelimeyi {{count}} kez gördün: {{cards}} kartta, {{texts}} metinde",
+      "line_other": "Bu kelimeyi {{count}} kez gördün: {{cards}} kartta, {{texts}} metinde"
+    },
+    "difficulty": {
+      "label": "Okuma zorluğu",
+      "rahat": "Rahat",
+      "dengeli": "Dengeli",
+      "zorlayici": "Zorlayıcı",
+      "hint": "Önerilen metinlerde bilmediğin kelimeler %{{min}}–{{max}} civarında olur. %10'u hiçbir zaman geçmez."
+    },
+    "highlight": {
+      "label": "Kelimeleri renklendir",
+      "hint": "Yeni ve öğrendiğin kelimeler hafifçe işaretlenir. Bildiklerin sade kalır."
+    },
+    "settings": {
+      "title": "Okuma"
+    },
+    "kind": {
+      "paste": "Yapıştırılan metin",
+      "pdf": "PDF",
+      "article": "Makale",
+      "ocr": "Fotoğraf",
+      "subtitle": "Altyazı",
+      "graded": "Kitaplık",
+      "story": "Bugünün hikâyesi"
+    },
+    "list": {
+      "title": "Metinlerim",
+      "add": "Metin ekle",
+      "empty": "Henüz metin yok. Bir metin yapıştır ya da PDF yükle, \"Okuyucuda aç\" de.",
+      "unread": "Okunmadı",
+      "progress": "%{{pct}} okundu",
+      "finished": "Bitti",
+      "delete": "\"{{title}}\" metnini sil",
+      "confirmTitle": "Metin silinsin mi?",
+      "confirmBody": "\"{{title}}\" bu cihazdan ve hesabından silinir. Bu metinden eklediğin kartlar kalır.",
+      "confirm": "Sil",
+      "deleted": "Metin silindi",
+      "deleteFailed": "Metin silinemedi. Tekrar dene."
+    },
+    "today": {
+      "title": "Bugünün okuması",
+      "continue": "%{{pct}} okudun, kaldığın yerden devam et",
+      "start": "Okumaya başla",
+      "suggested": "{{level}} · {{count}} kelime · zorluğuna uygun",
+      "open": "Oku",
+      "empty": "Okumak istediğin bir metni yapıştır, kelimeleri bildiğine göre renklensin.",
+      "paste": "Metin ekle"
+    },
+    "open": {
+      "cta": "Okuyucuda aç",
+      "defaultTitle": "Metnim",
+      "failed": "Metin açılamadı. Tekrar dene.",
+      "tooShort": "Okumak için biraz İngilizce metin yapıştır.",
+      "tooLong": "Bu metin okuyucu için çok uzun (en çok 300.000 karakter).",
+      "boxTitle": "Okuyucuda oku",
+      "expand": "Metin yapıştır",
+      "boxBody": "Hesap ve internet gerekmez. Metin yalnızca sende kalır.",
+      "textLabel": "İngilizce metin",
+      "titleLabel": "Başlık"
+    }
   }
 }

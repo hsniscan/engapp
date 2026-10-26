@@ -110,7 +110,10 @@ export function buildKnowledge(input: KnowledgeInput): KnowledgeModel {
     if (!norm) out = norm;
     else {
       const base = contractionBase(norm);
-      out = base && !isOwn(norm) && !refsOf(norm)?.refs.length ? lemmatizeWord(base) : lemmatizeWord(norm);
+      out =
+        base && !isOwn(norm) && !refsOf(norm)?.refs.length
+          ? lemmatizeWord(base)
+          : lemmatizeWord(norm);
     }
     lemmaMemo.set(norm, out);
     return out;
@@ -153,7 +156,12 @@ export function buildKnowledge(input: KnowledgeInput): KnowledgeModel {
     const stage = stages.get(lemma);
     if (FUNCTION_WORDS.has(lemma)) p = 1;
     else if (stage) {
-      p = stage === 'learning' ? P_LEARNING : stage === 'new' ? Math.min(P_LEARNING, modelP(lemma)) : 1;
+      p =
+        stage === 'learning'
+          ? P_LEARNING
+          : stage === 'new'
+            ? Math.min(P_LEARNING, modelP(lemma))
+            : 1;
     } else if (known.has(lemma)) p = 1;
     else if (lemma.includes('-') && !refsOf(lemma)) {
       // "well-known", "e-mail": as known as its least known part.

@@ -37,6 +37,7 @@ import {
   stageRuleNoteVisible,
 } from './todayQueries';
 import { WordsCard } from './WordsCard';
+import { TodayReadingCard } from '@/features/reader/TodayReadingCard';
 
 export function HomeScreen() {
   const core = useLiveQuery(() => getHomeCore(), []);
@@ -126,6 +127,7 @@ function Dashboard({ core }: { core: HomeCore }) {
           <StudyTypes counts={counts} answered={activity.answers} finishedHero={wordDone} />
         )}
         {wordDone && more && <MoreStudy more={more} />}
+        <TodayReadingCard />
         <Notes />
       </div>
       <div className="flex flex-col gap-4 lg:gap-5">

@@ -56,9 +56,47 @@ const LETTER_RE = /\p{L}/u;
 
 /** Words after which a full stop does not end the sentence. */
 const ABBREVIATIONS = new Set([
-  'mr', 'mrs', 'ms', 'dr', 'prof', 'sr', 'jr', 'st', 'vs', 'etc', 'e.g', 'i.e', 'no', 'inc', 'ltd',
-  'co', 'corp', 'mt', 'ft', 'approx', 'dept', 'est', 'fig', 'gen', 'gov', 'jan', 'feb', 'mar', 'apr',
-  'jun', 'jul', 'aug', 'sep', 'sept', 'oct', 'nov', 'dec', 'u.s', 'u.k', 'a.m', 'p.m',
+  'mr',
+  'mrs',
+  'ms',
+  'dr',
+  'prof',
+  'sr',
+  'jr',
+  'st',
+  'vs',
+  'etc',
+  'e.g',
+  'i.e',
+  'no',
+  'inc',
+  'ltd',
+  'co',
+  'corp',
+  'mt',
+  'ft',
+  'approx',
+  'dept',
+  'est',
+  'fig',
+  'gen',
+  'gov',
+  'jan',
+  'feb',
+  'mar',
+  'apr',
+  'jun',
+  'jul',
+  'aug',
+  'sep',
+  'sept',
+  'oct',
+  'nov',
+  'dec',
+  'u.s',
+  'u.k',
+  'a.m',
+  'p.m',
 ]);
 
 /** "I", "I'm", "I've", "I'd", "I'll": capitalised, never a name. */
@@ -154,11 +192,17 @@ export function tokenizeReaderText(body: string): TokenizedText {
         const gap = slice.slice(prevEnd, m.index);
         prevEnd = m.index + text.length;
         // A word right after an opening quote or a colon starts a sentence of its own.
-        const opensClause = first || /[:;]\s*["“‘']?\s*$/.test(gap) || /^\s*["“‘«]\s*$|[.!?]\s*["“‘«]\s*$/u.test(gap);
+        const opensClause =
+          first || /[:;]\s*["“‘']?\s*$/.test(gap) || /^\s*["“‘«]\s*$|[.!?]\s*["“‘«]\s*$/u.test(gap);
         first = false;
         const number = DIGIT_RE.test(text);
-        const stray = !number && [...text].filter((c) => LETTER_RE.test(c)).length === 1 && norm !== 'a' && norm !== 'i';
-        const acronym = text.length > 1 && !HAS_LOWER_RE.test(text) && LETTER_RE.test(text) && !isPronounI(norm);
+        const stray =
+          !number &&
+          [...text].filter((c) => LETTER_RE.test(c)).length === 1 &&
+          norm !== 'a' &&
+          norm !== 'i';
+        const acronym =
+          text.length > 1 && !HAS_LOWER_RE.test(text) && LETTER_RE.test(text) && !isPronounI(norm);
         const capital = UPPER_START_RE.test(text) && !isPronounI(norm);
         const proper = !number && (acronym || (capital && !opensClause));
         const address = inAddress(start, start + text.length);
@@ -172,7 +216,13 @@ export function tokenizeReaderText(body: string): TokenizedText {
           counted: !number && !stray && !proper && !address,
         });
       }
-      sentences.push({ start: ss, end: se, paragraph: paragraphs.length, firstToken, endToken: tokens.length });
+      sentences.push({
+        start: ss,
+        end: se,
+        paragraph: paragraphs.length,
+        firstToken,
+        endToken: tokens.length,
+      });
     }
     paragraphs.push({ start: ps, end: pe, firstSentence, endSentence: sentences.length });
   }
@@ -186,7 +236,13 @@ export function tokenizeReaderText(body: string): TokenizedText {
     else if (!UPPER_START_RE.test(t.text)) lower.add(t.norm);
   }
   for (const t of tokens) {
-    if (!t.proper && t.counted && UPPER_START_RE.test(t.text) && names.has(t.norm) && !lower.has(t.norm)) {
+    if (
+      !t.proper &&
+      t.counted &&
+      UPPER_START_RE.test(t.text) &&
+      names.has(t.norm) &&
+      !lower.has(t.norm)
+    ) {
       t.proper = true;
       t.counted = false;
     }
@@ -195,7 +251,10 @@ export function tokenizeReaderText(body: string): TokenizedText {
 }
 
 /** Running-word counts per lemma of the counted tokens (the input of measureCoverage). */
-export function lemmaCounts(tokens: readonly ReaderToken[], lemmatize: (norm: string) => string): Map<string, number> {
+export function lemmaCounts(
+  tokens: readonly ReaderToken[],
+  lemmatize: (norm: string) => string,
+): Map<string, number> {
   const out = new Map<string, number>();
   const memo = new Map<string, string>();
   for (const t of tokens) {
@@ -225,4 +284,5 @@ export function sentenceAt(text: TokenizedText, offset: number): number {
 }
 
 /** Counted running words (the length a reader means by "1 000 kelimelik metin"). */
-export const wordCount = (text: TokenizedText): number => text.tokens.filter((t) => t.counted || t.proper).length;
+export const wordCount = (text: TokenizedText): number =>
+  text.tokens.filter((t) => t.counted || t.proper).length;

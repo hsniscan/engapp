@@ -7,6 +7,7 @@ import { LoadSettingsSection } from '@/features/load/LoadSettingsSection';
 import { NotifySection } from '@/features/notify/NotifySection';
 import { InterestsBody } from '@/features/profile/InterestsPage';
 import { ProfileSettingsSection } from '@/features/profile/ProfileSettingsSection';
+import { ReadingSettingsSection } from '@/features/reader/ReadingSettings';
 import { AboutSection } from './AboutSection';
 import { AdvancedSection } from './AdvancedSection';
 import { AppSection } from './AppSection';
@@ -64,7 +65,7 @@ export const PAGE_GLYPH: Record<SettingsPageId, { name: GlyphName; tone: GlyphTo
  * What each sub-page shows. `solo`: one group, so its heading would only repeat the page title.
  */
 export const PAGE_CONTENT: Record<SettingsPageId, { parts: ComponentType[]; solo?: boolean }> = {
-  calisma: { parts: [StudySection] },
+  calisma: { parts: [StudySection, ReadingSettingsSection] },
   yuk: { parts: [LoadSettingsSection], solo: true },
   bildirim: { parts: [NotifySection], solo: true },
   seviye: { parts: [LevelSettingsSection], solo: true },

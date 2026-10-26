@@ -49,7 +49,11 @@ export async function lastUnfinishedText(): Promise<ReaderText | null> {
   return (await listTexts()).find((t) => t.finished_at === null) ?? null;
 }
 
-async function change(id: Id, now: Millis, fn: (t: ReaderText) => ReaderText | null): Promise<ReaderText> {
+async function change(
+  id: Id,
+  now: Millis,
+  fn: (t: ReaderText) => ReaderText | null,
+): Promise<ReaderText> {
   return writeTx([db.texts], now, async (w) => {
     const row = await db.texts.get(id);
     if (!row || row.deleted_at !== null) throw new ActionError('not_found');
@@ -64,7 +68,12 @@ async function change(id: Id, now: Millis, fn: (t: ReaderText) => ReaderText | n
  * or hidden (not on every scroll: one write, one outbox row). Reaching the end does not finish
  * a text; "Bitirdim" does.
  */
-export function saveReadingProgress(id: Id, offset: number, addMs: number, now: Millis = Date.now()): Promise<ReaderText> {
+export function saveReadingProgress(
+  id: Id,
+  offset: number,
+  addMs: number,
+  now: Millis = Date.now(),
+): Promise<ReaderText> {
   return change(id, now, (t) => {
     const progress_offset = Math.max(0, Math.min(Math.round(offset), t.body.length));
     const read_ms = t.read_ms + Math.max(0, Math.round(addMs));
@@ -74,7 +83,11 @@ export function saveReadingProgress(id: Id, offset: number, addMs: number, now: 
 }
 
 /** "Bitirdim" (finished = true) or "Yeniden oku" (false: back to unfinished, from the top). */
-export function setTextFinished(id: Id, finished: boolean, now: Millis = Date.now()): Promise<ReaderText> {
+export function setTextFinished(
+  id: Id,
+  finished: boolean,
+  now: Millis = Date.now(),
+): Promise<ReaderText> {
   return change(id, now, (t) =>
     finished
       ? t.finished_at !== null
@@ -96,7 +109,11 @@ export function deleteText(id: Id, now: Millis = Date.now()): Promise<ReaderText
  * settings' reading_offset moves once per text (domain/encounters.ts nudgeOffset), in the same
  * transaction, so a changed answer never counts twice.
  */
-export async function setTextFeedback(id: Id, feedback: TextFeedback | null, now: Millis = Date.now()): Promise<number> {
+export async function setTextFeedback(
+  id: Id,
+  feedback: TextFeedback | null,
+  now: Millis = Date.now(),
+): Promise<number> {
   return writeTx([db.texts, db.settings], now, async (w) => {
     const text = await db.texts.get(id);
     if (!text || text.deleted_at !== null) throw new ActionError('not_found');

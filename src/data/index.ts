@@ -126,7 +126,14 @@ export {
   setTextFinished,
 } from './texts';
 export { getEncounterSummary, recordReaderEncounters } from './encounters';
-export { loadKnowledge, loadReaderKnowledge, type Knowledge, type ReaderKnowledge } from './knowledge';
+export {
+  loadKnowledge,
+  loadReaderKnowledge,
+  readerKnowledgeSignature,
+  type Knowledge,
+  type ReaderKnowledge,
+} from './knowledge';
+export { lookupReaderWord, type ReaderMeaning, type ReaderWordInfo } from './readerLookup';
 export { rebuildDailyActivity, listDailyActivity } from './dailyActivity';
 export {
   adoptFsrsParams,

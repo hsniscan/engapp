@@ -4,6 +4,7 @@ import { createImportJob, logError } from '@/data';
 import { chunkText } from '@/domain/chunking';
 import { Button, Icon, ProgressBar, Spinner, TextField, cn, toast } from '@/ui';
 import { ImportGate } from './ImportGate';
+import { OpenInReaderButton } from '@/features/reader/OpenInReader';
 import { ActiveJobs } from './JobCard';
 import { MAX_PDF_BYTES, PdfError, extractPdfText, type PdfErrorCode } from './pdf';
 import { ImportPrivacyNote } from './PrivacyNote';
@@ -261,15 +262,20 @@ function PdfImportForm() {
       />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-fg-muted">{t('importer.level', { level })}</p>
-        <Button
-          size="lg"
-          leadingIcon="search"
-          loading={busy}
-          onClick={() => void submit()}
-          className="sm:min-w-48"
-        >
-          {busy ? t('importer.starting') : t('importer.submit')}
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row-reverse">
+          <Button
+            size="lg"
+            leadingIcon="search"
+            loading={busy}
+            onClick={() => void submit()}
+            className="sm:min-w-48"
+          >
+            {busy ? t('importer.starting') : t('importer.submit')}
+          </Button>
+          <OpenInReaderButton
+            input={() => ({ kind: 'pdf', title, body: state.text, source_url: state.name })}
+          />
+        </div>
       </div>
     </div>
   );

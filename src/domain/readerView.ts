@@ -79,7 +79,8 @@ export function findPhrases(
             break;
           }
         }
-        if (ok && (!hit || end - i > hit.end - hit.first)) hit = { first: i, end, term: words.join(' ') };
+        if (ok && (!hit || end - i > hit.end - hit.first))
+          hit = { first: i, end, term: words.join(' ') };
       }
     }
     if (hit) {
@@ -98,7 +99,11 @@ export function markOf(stage: WordStage | null, p: number, counted: boolean): Wo
 }
 
 /** Everything the reader draws, computed once per text and knowledge change. */
-export function buildReaderView(text: TokenizedText, k: KnowledgeModel, noteTerms: Iterable<string>): ReaderView {
+export function buildReaderView(
+  text: TokenizedText,
+  k: KnowledgeModel,
+  noteTerms: Iterable<string>,
+): ReaderView {
   const { tokens } = text;
   const lemmas = tokens.map((t) => k.lemmatize(t.norm));
   const marks: WordMark[] = new Array<WordMark>(tokens.length);
@@ -112,7 +117,8 @@ export function buildReaderView(text: TokenizedText, k: KnowledgeModel, noteTerm
       terms[i] = lemma;
       met.add(lemma);
     }
-    marks[i] = t.proper || !/\p{L}/u.test(t.text) ? 'plain' : markOf(stage, k.pKnown(lemma), t.counted);
+    marks[i] =
+      t.proper || !/\p{L}/u.test(t.text) ? 'plain' : markOf(stage, k.pKnown(lemma), t.counted);
   }
   const phrases = findPhrases(tokens, lemmas, phraseIndex(noteTerms));
   for (const ph of phrases) {
@@ -123,7 +129,10 @@ export function buildReaderView(text: TokenizedText, k: KnowledgeModel, noteTerm
       marks[i] = markOf(stage, 1, true);
     }
   }
-  const coverage = measureCoverage(lemmaCounts(tokens, (n) => k.lemmatize(n)), k.pKnown);
+  const coverage = measureCoverage(
+    lemmaCounts(tokens, (n) => k.lemmatize(n)),
+    k.pKnown,
+  );
   return { lemmas, marks, noteTerms: terms, phrases, coverage, metTerms: [...met] };
 }
 

@@ -6,9 +6,15 @@ import { tokenizeReaderText } from './readerTokens';
 import type { WordStage } from './stages';
 
 const levels = parseClientLevels(
-  ['# @min_zipf 3', 'give\t5.8\tv:A1:j', 'up\t6.3\t', 'walk\t5.1\tv:A1:j', 'dog\t5.0\tn:A1:j', 'cope\t4.1\tv:B1:j', 'quandary\t2.9\tn:C2:o'].join(
-    '\n',
-  ),
+  [
+    '# @min_zipf 3',
+    'give\t5.8\tv:A1:j',
+    'up\t6.3\t',
+    'walk\t5.1\tv:A1:j',
+    'dog\t5.0\tn:A1:j',
+    'cope\t4.1\tv:B1:j',
+    'quandary\t2.9\tn:C2:o',
+  ].join('\n'),
 );
 
 function view(body: string, stages: [string, WordStage][] = []) {
@@ -20,7 +26,14 @@ function view(body: string, stages: [string, WordStage][] = []) {
     offset: 0,
   });
   const text = tokenizeReaderText(body);
-  return { text, v: buildReaderView(text, k, stages.map(([t]) => t)) };
+  return {
+    text,
+    v: buildReaderView(
+      text,
+      k,
+      stages.map(([t]) => t),
+    ),
+  };
 }
 
 describe('markOf', () => {
@@ -78,7 +91,13 @@ describe('phrases', () => {
       ['give', 'up'],
     ]);
     const t = tokenizeReaderText('Never give up on it.');
-    expect(findPhrases(t.tokens, t.tokens.map((x) => x.norm), idx)).toEqual([{ first: 1, end: 4, term: 'give up on' }]);
+    expect(
+      findPhrases(
+        t.tokens,
+        t.tokens.map((x) => x.norm),
+        idx,
+      ),
+    ).toEqual([{ first: 1, end: 4, term: 'give up on' }]);
     expect(findPhrases(t.tokens, [], new Map())).toEqual([]);
   });
 });

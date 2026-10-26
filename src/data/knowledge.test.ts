@@ -17,7 +17,15 @@ beforeEach(async () => {
   await resetDb();
   resetKnowledgeCache();
   setLevelDataForTests(
-    parseClientLevels(['# @min_zipf 3', 'cope\t4.1\tv:B1:j', 'thrive\t3.9\tv:B2:j', 'quandary\t2.9\tn:C2:o', 'walk\t5.1\tv:A1:j'].join('\n')),
+    parseClientLevels(
+      [
+        '# @min_zipf 3',
+        'cope\t4.1\tv:B1:j',
+        'thrive\t3.9\tv:B2:j',
+        'quandary\t2.9\tn:C2:o',
+        'walk\t5.1\tv:A1:j',
+      ].join('\n'),
+    ),
   );
   await updateSettings({ timezone: 'Europe/Istanbul', level: 'B1' }, T);
 });
@@ -25,8 +33,13 @@ afterEach(() => setLevelDataForTests(null));
 
 describe('loadReaderKnowledge', () => {
   it("uses the user's notes, their stages and Biliyorum words", async () => {
-    const cope = await addNoteWithSenses({ term: 'cope', senses: [{ meaning_tr: 'başa çıkmak' }] }, T);
-    const rec = (await db.cards.where('note_id').equals(cope.note.id).toArray()).find((c) => c.card_type === 'recognition')!;
+    const cope = await addNoteWithSenses(
+      { term: 'cope', senses: [{ meaning_tr: 'başa çıkmak' }] },
+      T,
+    );
+    const rec = (await db.cards.where('note_id').equals(cope.note.id).toArray()).find(
+      (c) => c.card_type === 'recognition',
+    )!;
     await answerCard({ card_id: rec.id, rating: Rating.Good, duration_ms: 1000 }, T + 1000);
     await addNoteWithSenses({ term: 'give up', senses: [{ meaning_tr: 'vazgeçmek' }] }, T);
     await markKnown('quandary', 'manual', T);

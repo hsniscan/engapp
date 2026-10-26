@@ -14,7 +14,12 @@ import { type SyncWriter, writeTx } from './writer';
 export const readerOpenKey = (textId: Id): string => `reader_open:${textId}`;
 
 /** +1 for each note on today's row of this device and `source`. Call inside writeTx with db.encounters. */
-export async function bumpEncountersIn(w: SyncWriter, noteIds: Iterable<Id>, source: EncounterSource, day: string): Promise<EncounterRow[]> {
+export async function bumpEncountersIn(
+  w: SyncWriter,
+  noteIds: Iterable<Id>,
+  source: EncounterSource,
+  day: string,
+): Promise<EncounterRow[]> {
   const ids = [...new Set(noteIds)];
   if (ids.length === 0) return [];
   const existing = (await db.encounters.where('day').equals(day).toArray()).filter(
@@ -52,7 +57,11 @@ export async function getEncounterSummary(noteId: Id): Promise<EncounterSummary>
     const rows = await db.encounters.where('note_id').equals(noteId).toArray();
     const cardIds = (await db.cards.where('note_id').equals(noteId).primaryKeys()) as Id[];
     const answers = cardIds.length
-      ? await db.review_logs.where('card_id').anyOf(cardIds).filter((l) => l.undo_of === null).count()
+      ? await db.review_logs
+          .where('card_id')
+          .anyOf(cardIds)
+          .filter((l) => l.undo_of === null)
+          .count()
       : 0;
     return summarizeEncounters(rows, answers);
   });

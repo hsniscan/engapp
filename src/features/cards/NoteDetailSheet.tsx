@@ -33,6 +33,7 @@ import {
   toast,
 } from '@/ui';
 import { LevelSection } from '@/features/levels/LevelSection';
+import { EncounterLine } from '@/features/reader/EncounterLine';
 import { ExamplesSection } from '@/features/examples/ExamplesPanel';
 import { ImageSection } from '@/features/images/ImageSection';
 import { MnemonicSection } from '@/features/mnemonics';
@@ -343,6 +344,7 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
       />
 
       <LevelSection detail={detail} />
+      <EncounterLine noteId={detail.note.id} />
 
       <section aria-labelledby={`${id}-senses`} className="flex flex-col gap-3">
         <h3 id={`${id}-senses`} className="font-serif text-lg font-semibold text-fg">

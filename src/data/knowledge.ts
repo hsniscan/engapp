@@ -43,13 +43,21 @@ const BAND_TTL_MS = 10 * 60_000;
  */
 async function bandKnown(now: Millis): Promise<Record<CefrLevel, number>> {
   const settings = await getSettings(now);
-  const [answers, known, tests] = await Promise.all([db.review_logs.count(), db.known_terms.count(), db.level_tests.count()]);
+  const [answers, known, tests] = await Promise.all([
+    db.review_logs.count(),
+    db.known_terms.count(),
+    db.level_tests.count(),
+  ]);
   const key = `${settings.level}|${settings.level_updated_at ?? 0}|${answers}|${known}|${tests}`;
-  if (bandCache && bandCache.key === key && now - bandCache.at < BAND_TTL_MS) return bandCache.bands;
+  if (bandCache && bandCache.key === key && now - bandCache.at < BAND_TTL_MS)
+    return bandCache.bands;
   let bands: Record<CefrLevel, number>;
   try {
     const overview = await getLevelOverview(now);
-    bands = Object.fromEntries(LEVELS.map((b) => [b, overview.ratios[b].ratio])) as Record<CefrLevel, number>;
+    bands = Object.fromEntries(LEVELS.map((b) => [b, overview.ratios[b].ratio])) as Record<
+      CefrLevel,
+      number
+    >;
   } catch {
     const prior = priorFor(null, settings.level);
     bands = Object.fromEntries(LEVELS.map((b) => [b, prior[b].ratio])) as Record<CefrLevel, number>;
@@ -76,12 +84,20 @@ export async function loadReaderKnowledge(
   now: Millis = Date.now(),
   loadLevels: () => Promise<LevelData> = () => loadLevelData(),
 ): Promise<ReaderKnowledge> {
-  const [levels, bands, settings] = await Promise.all([levelsOrNull(loadLevels), bandKnown(now), getSettings(now)]);
-  const { notes, cards, known } = await db.transaction('r', [db.notes, db.cards, db.known_terms], async () => ({
-    notes: await db.notes.toArray(),
-    cards: await db.cards.toArray(),
-    known: await db.known_terms.toArray(),
-  }));
+  const [levels, bands, settings] = await Promise.all([
+    levelsOrNull(loadLevels),
+    bandKnown(now),
+    getSettings(now),
+  ]);
+  const { notes, cards, known } = await db.transaction(
+    'r',
+    [db.notes, db.cards, db.known_terms],
+    async () => ({
+      notes: await db.notes.toArray(),
+      cards: await db.cards.toArray(),
+      known: await db.known_terms.toArray(),
+    }),
+  );
   const byNote = wordStagesByNote(notes, cards);
   const stages = new Map<string, WordStage>();
   const noteIds = new Map<string, Id>();
@@ -110,4 +126,22 @@ export async function loadReaderKnowledge(
 export async function loadKnowledge(): Promise<Knowledge> {
   const k = await loadReaderKnowledge();
   return { lemmatize: k.lemmatize, pKnown: k.pKnown };
+}
+
+/**
+ * Changes when what the reader colours by may have changed: a note added, edited or deleted,
+ * an answer, a "Biliyorum" word, the reading offset. Cheap (counts and one index read), so a
+ * screen can watch it with useLiveQuery and reload the knowledge only when it moves.
+ */
+export async function readerKnowledgeSignature(): Promise<string> {
+  return db.transaction('r', [db.notes, db.review_logs, db.known_terms, db.settings], async () => {
+    const [notes, last, answers, known, settings] = await Promise.all([
+      db.notes.count(),
+      db.notes.orderBy('updated_at').last(),
+      db.review_logs.count(),
+      db.known_terms.count(),
+      db.settings.get('settings'),
+    ]);
+    return `${notes}|${last?.updated_at ?? 0}|${answers}|${known}|${settings?.reading_offset ?? 0}`;
+  });
 }

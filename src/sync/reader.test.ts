@@ -41,7 +41,9 @@ async function newDevice(deviceId: string, userId: string | null = USER): Promis
 }
 
 const recognition = async (noteId: string): Promise<Card> =>
-  (await db.cards.where('note_id').equals(noteId).toArray()).find((c) => c.card_type === 'recognition')!;
+  (await db.cards.where('note_id').equals(noteId).toArray()).find(
+    (c) => c.card_type === 'recognition',
+  )!;
 
 const sync = (server: FakeServer, now: number) => runSync(server, { now: () => now });
 
@@ -53,13 +55,22 @@ beforeEach(() => {
 describe('texts', () => {
   it('saveText queues the row; progress, finishing and deleting are synced edits', async () => {
     await newDevice('dev-a');
-    const id = await saveText({ kind: 'paste', title: 'Walk', body: 'I went for a walk. It was nice.' }, T);
-    expect((await db.outbox.toArray()).filter((o) => o.table === 'texts').map((o) => o.row_id)).toEqual([id]);
+    const id = await saveText(
+      { kind: 'paste', title: 'Walk', body: 'I went for a walk. It was nice.' },
+      T,
+    );
+    expect(
+      (await db.outbox.toArray()).filter((o) => o.table === 'texts').map((o) => o.row_id),
+    ).toEqual([id]);
     expect((await getText(id))!.user_id).toBe(USER);
 
     await saveReadingProgress(id, 19, 30_000, T + MIN);
     await saveReadingProgress(id, 19, 0, T + 2 * MIN); // nothing changed: no write
-    expect(await getText(id)).toMatchObject({ progress_offset: 19, read_ms: 30_000, updated_at: T + MIN });
+    expect(await getText(id)).toMatchObject({
+      progress_offset: 19,
+      read_ms: 30_000,
+      updated_at: T + MIN,
+    });
     await saveReadingProgress(id, 9999, 1, T + 3 * MIN);
     expect((await getText(id))!.progress_offset).toBe('I went for a walk. It was nice.'.length);
 
@@ -102,7 +113,10 @@ describe('texts', () => {
     const b = await newDevice('dev-b');
     let id = '';
     await onDevice(a, async () => {
-      id = await saveText({ kind: 'pdf', title: 'Book', body: 'One. Two. Three.', source_url: 'book.pdf' }, T);
+      id = await saveText(
+        { kind: 'pdf', title: 'Book', body: 'One. Two. Three.', source_url: 'book.pdf' },
+        T,
+      );
       await saveReadingProgress(id, 5, 60_000, T + MIN);
       await sync(server, T + 2 * MIN);
       expect(await db.outbox.count()).toBe(0);
@@ -110,7 +124,12 @@ describe('texts', () => {
     expect(server.rowsOf('texts')).toHaveLength(1);
     await onDevice(b, async () => {
       await sync(server, T + 3 * MIN);
-      expect(await getText(id)).toMatchObject({ title: 'Book', progress_offset: 5, read_ms: 60_000, user_id: USER });
+      expect(await getText(id)).toMatchObject({
+        title: 'Book',
+        progress_offset: 5,
+        read_ms: 60_000,
+        user_id: USER,
+      });
     });
   });
 
@@ -132,9 +151,16 @@ describe('texts', () => {
 describe('encounters', () => {
   it('count a reader opening once per note, however often the screen renders', async () => {
     await newDevice('dev-a');
-    const n1 = (await addNoteWithSenses({ term: 'cope', senses: [{ meaning_tr: 'başa çıkmak' }] }, T)).note.id;
-    const n2 = (await addNoteWithSenses({ term: 'thrive', senses: [{ meaning_tr: 'gelişmek' }] }, T)).note.id;
-    const text = await saveText({ kind: 'paste', title: 'A', body: 'I cope and thrive. I cope.' }, T);
+    const n1 = (
+      await addNoteWithSenses({ term: 'cope', senses: [{ meaning_tr: 'başa çıkmak' }] }, T)
+    ).note.id;
+    const n2 = (
+      await addNoteWithSenses({ term: 'thrive', senses: [{ meaning_tr: 'gelişmek' }] }, T)
+    ).note.id;
+    const text = await saveText(
+      { kind: 'paste', title: 'A', body: 'I cope and thrive. I cope.' },
+      T,
+    );
     expect(await recordReaderEncounters(text, 'open-1', [n1, n2, n1], T + MIN)).toBe(2);
     expect(await recordReaderEncounters(text, 'open-1', [n1, n2], T + 2 * MIN)).toBe(0);
     expect(await recordReaderEncounters(text, 'open-2', [n1], T + 3 * MIN)).toBe(1);
@@ -145,9 +171,14 @@ describe('encounters', () => {
 
   it('answering a card counts a review encounter without changing FSRS or the log', async () => {
     await newDevice('dev-a');
-    const note = (await addNoteWithSenses({ term: 'cope', senses: [{ meaning_tr: 'başa çıkmak' }] }, T)).note.id;
+    const note = (
+      await addNoteWithSenses({ term: 'cope', senses: [{ meaning_tr: 'başa çıkmak' }] }, T)
+    ).note.id;
     const card = await recognition(note);
-    const r = await answerCard({ card_id: card.id, rating: Rating.Good, duration_ms: 1000 }, T + MIN);
+    const r = await answerCard(
+      { card_id: card.id, rating: Rating.Good, duration_ms: 1000 },
+      T + MIN,
+    );
     expect(r.card.state).toBe(CardState.Learning);
     const log = (await db.review_logs.toArray())[0]!;
     expect(Object.keys(log).sort()).not.toContain('encounters');
@@ -161,7 +192,8 @@ describe('encounters', () => {
     let note = '';
     let text = '';
     const a2 = await onDevice(a, async () => {
-      note = (await addNoteWithSenses({ term: 'cope', senses: [{ meaning_tr: 'başa çıkmak' }] }, T)).note.id;
+      note = (await addNoteWithSenses({ term: 'cope', senses: [{ meaning_tr: 'başa çıkmak' }] }, T))
+        .note.id;
       text = await saveText({ kind: 'paste', title: 'A', body: 'I cope.' }, T);
       await sync(server, T + MIN);
     });
@@ -181,6 +213,11 @@ describe('encounters', () => {
       await sync(server, T + 21 * MIN);
       expect(await getEncounterSummary(note)).toEqual({ cards: 0, texts: 3, total: 3 });
     });
-    expect(server.rowsOf('encounters').map((r) => r.device_id).sort()).toEqual(['dev-a', 'dev-b']);
+    expect(
+      server
+        .rowsOf('encounters')
+        .map((r) => r.device_id)
+        .sort(),
+    ).toEqual(['dev-a', 'dev-b']);
   });
 });

@@ -1,13 +1,26 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { measureCoverage } from './coverage';
-import { buildKnowledge, frequencyFactor, P_LEARNING, P_NO_DATA, type KnowledgeInput } from './knowledgeModel';
+import {
+  buildKnowledge,
+  frequencyFactor,
+  P_LEARNING,
+  P_NO_DATA,
+  type KnowledgeInput,
+} from './knowledgeModel';
 import { parseClientLevels } from './level';
 import { lemmaCounts, tokenizeReaderText } from './readerTokens';
 import type { WordStage } from './stages';
 import type { CefrLevel } from './types';
 
-const BANDS: Record<CefrLevel, number> = { A1: 0.98, A2: 0.95, B1: 0.85, B2: 0.5, C1: 0.2, C2: 0.05 };
+const BANDS: Record<CefrLevel, number> = {
+  A1: 0.98,
+  A2: 0.95,
+  B1: 0.85,
+  B2: 0.5,
+  C1: 0.2,
+  C2: 0.05,
+};
 
 const small = parseClientLevels(
   [
@@ -125,7 +138,9 @@ describe('pKnown', () => {
     expect(model({ offset: 9 }).pKnown('ubiquitous')).toBeCloseTo(hard);
     expect(model({ offset: Number.NaN }).pKnown('ubiquitous')).toBeCloseTo(0.2);
     // The offset never moves the user's own words or "Biliyorum" words.
-    expect(model({ offset: 0.5, stages: new Map([['cope', 'learned' as const]]) }).pKnown('cope')).toBe(1);
+    expect(
+      model({ offset: 0.5, stages: new Map([['cope', 'learned' as const]]) }).pKnown('cope'),
+    ).toBe(1);
   });
 
   it('every probability is within 0..1', () => {
@@ -145,7 +160,14 @@ describe('pKnown', () => {
 
 describe('on the real level file', () => {
   const real = parseClientLevels(readFileSync('data/levels/client-levels.tsv', 'utf8'));
-  const B1_USER: Record<CefrLevel, number> = { A1: 0.97, A2: 0.92, B1: 0.75, B2: 0.35, C1: 0.12, C2: 0.04 };
+  const B1_USER: Record<CefrLevel, number> = {
+    A1: 0.97,
+    A2: 0.92,
+    B1: 0.75,
+    B2: 0.35,
+    C1: 0.12,
+    C2: 0.04,
+  };
   const k = buildKnowledge({
     stages: new Map(),
     known: new Set(),
@@ -161,7 +183,9 @@ describe('on the real level file', () => {
     'The ubiquitous proliferation of algorithmic curation has engendered an epistemological quandary, ' +
     'wherein the veracity of disseminated information is perpetually contested by heterogeneous constituencies.';
 
-  const rate = (body: string) => measureCoverage(lemmaCounts(tokenizeReaderText(body).tokens, k.lemmatize), k.pKnown).unknownRate;
+  const rate = (body: string) =>
+    measureCoverage(lemmaCounts(tokenizeReaderText(body).tokens, k.lemmatize), k.pKnown)
+      .unknownRate;
 
   it('an A1 story is mostly known, an academic sentence is not', () => {
     expect(rate(easy)).toBeLessThan(0.05);
