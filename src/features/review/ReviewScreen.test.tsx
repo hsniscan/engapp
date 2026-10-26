@@ -95,6 +95,27 @@ describe('review session', () => {
     expect(screen.getByText('Bugün serine eklendi.')).toBeInTheDocument();
   }, 20_000);
 
+  it('counts cards, not answers: a learning step shows as "+1 tekrar" (ADR 0055)', async () => {
+    renderRoute(<ReviewScreen studyMode="word" />, { path: '/study' });
+    await term('bank');
+    expect(screen.getByTestId('study-progress')).toHaveTextContent('0 / 2');
+    await press(' ');
+    await screen.findByText('kıyı');
+    await press('1'); // Again: back in a minute
+    await term('light');
+    await waitFor(() =>
+      expect(screen.getByTestId('study-progress')).toHaveTextContent('1 / 2+1 tekrar'),
+    );
+    await press(' ');
+    await screen.findByText('hafif');
+    await press('4');
+    // The 1-minute step comes back early (learn-ahead), the total stays 2 cards.
+    await term('bank');
+    await waitFor(() =>
+      expect(screen.getByTestId('study-progress')).toHaveTextContent('2 / 2+1 tekrar'),
+    );
+  }, 20_000);
+
   it('shows a calm empty state when nothing is due', async () => {
     await db.cards.toCollection().modify({ suspended: true });
     renderRoute(<ReviewScreen />, { path: '/review' });

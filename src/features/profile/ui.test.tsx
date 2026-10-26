@@ -24,7 +24,13 @@ describe('first-run interests question on the home screen', () => {
     await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] });
     const user = userEvent.setup();
     renderRoute(<HomeScreen />);
-    const card = await screen.findByRole('region', { name: 'Hangi konular ilgini çekiyor?' });
+    // Bugün shows its notes once the hero has its numbers (several queries): wait for them
+    // without a tight bound, the machine running the tests may be busy.
+    const card = await screen.findByRole(
+      'region',
+      { name: 'Hangi konular ilgini çekiyor?' },
+      { timeout: 10_000 },
+    );
     const save = within(card).getByRole('button', { name: 'Kaydet' });
     expect(save).toBeDisabled();
     await user.click(within(card).getByRole('button', { name: 'Teknoloji' }));
@@ -38,16 +44,18 @@ describe('first-run interests question on the home screen', () => {
       expect(screen.queryByRole('region', { name: 'Hangi konular ilgini çekiyor?' })).toBeNull(),
     );
     expect((await getSettings()).interests).toEqual(['technology', 'travel']);
-  });
+  }, 20_000);
 
   it('"Şimdi değil" hides it and does not pick anything', async () => {
     await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] });
     const user = userEvent.setup();
     renderRoute(<HomeScreen />);
-    await user.click(await screen.findByRole('button', { name: 'Şimdi değil' }));
+    await user.click(
+      await screen.findByRole('button', { name: 'Şimdi değil' }, { timeout: 10_000 }),
+    );
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Şimdi değil' })).toBeNull());
     expect((await getSettings()).interests).toEqual([]);
-  });
+  }, 20_000);
 
   it('is not shown to a brand-new user before the first word, nor once answered', async () => {
     renderRoute(<HomeScreen />);

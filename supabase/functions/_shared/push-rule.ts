@@ -276,7 +276,8 @@ export function dueMessage(due: number, secPerCard: number | null): PushMessage 
   return {
     title: 'Engapp',
     body: `Bugün ${due} kart tekrara hazır, yaklaşık ${estimateMinutes(due, secPerCard)} dk.`,
-    url: '/review',
+    // The study picker with every mode (v0.5.1), not only Kelime çalışma.
+    url: '/study',
     tag: 'engapp-due',
   };
 }
@@ -284,7 +285,7 @@ export function dueMessage(due: number, secPerCard: number | null): PushMessage 
 export const TEST_MESSAGE: PushMessage = {
   title: 'Engapp',
   body: 'Bildirimler çalışıyor. Tekrar zamanı gelince sana buradan haber vereceğim.',
-  url: '/review',
+  url: '/study',
   tag: 'engapp-test',
 };
 
