@@ -23,6 +23,7 @@ import { createDeck, deckContext, loadDeckFacts, setNoteTags } from './decks';
 import { getKnownTermKeys } from './knownTerms';
 import { dayConfig, getSettings } from './settings';
 import { bankNoteInput } from './wordBank';
+import { scanWhere } from './scan';
 
 /** The card a word's stage comes from: its recognition card (ogrenme-modeli §2.3). */
 function stageCard(cards: readonly Card[]): Card | undefined {
@@ -56,8 +57,8 @@ const emptyMix = (): WordStageMix => ({ total: 0, learned: 0, studying: 0, fresh
 /** Live notes by normalised term with the stage of their main card; known words. */
 export async function getOwnedIndex(now: Millis = Date.now()): Promise<OwnedIndex> {
   const [notes, cards, known] = await Promise.all([
-    db.notes.filter((n) => n.deleted_at === null).toArray(),
-    db.cards.filter((c) => c.deleted_at === null).toArray(),
+    scanWhere(db.notes, (n) => n.deleted_at === null),
+    scanWhere(db.cards, (c) => c.deleted_at === null),
     getKnownTermKeys(),
   ]);
   const byNote = groupCards(cards);
@@ -103,7 +104,7 @@ export async function getMyDecks(now: Millis = Date.now()): Promise<MyDecksOverv
     loadDeckFacts(now),
     deckContext(now),
     getSettings(now),
-    db.notes.filter((n) => n.deleted_at === null).toArray(),
+    scanWhere(db.notes, (n) => n.deleted_at === null),
   ]);
   const { end } = dayBounds(now, dayConfig(settings));
   const at = new Date(now);

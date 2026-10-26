@@ -26,7 +26,8 @@ export function BackupReminder() {
     const [settings, user, noteCount] = await Promise.all([
       getSettings(),
       db.meta.get('user_id'),
-      db.notes.filter((n) => n.deleted_at === null).count(),
+      // getAll, then filter: a Dexie .filter() walks a cursor, one round trip per row.
+      db.notes.toArray().then((ns) => ns.filter((n) => n.deleted_at === null).length),
     ]);
     return { settings, guest: !user?.value, noteCount, now: Date.now() };
   }, []);

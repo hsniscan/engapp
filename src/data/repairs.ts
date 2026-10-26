@@ -9,6 +9,7 @@ import { editSense, softDeleteSense, type SensePatch } from './actions';
 import { db } from './db';
 import { logsByCard } from './history';
 import { getMeta, setMeta } from './meta';
+import { scanWhere } from './scan';
 
 const LIST_PREFIX_DONE = 'repair_list_prefix_v1';
 
@@ -80,7 +81,7 @@ function addsInformation(a: Sense, b: Sense): boolean {
  */
 export async function repairDuplicateSenses(now: Millis = Date.now()): Promise<number> {
   if (await getMeta<boolean>(DUPLICATE_SENSES_DONE)) return 0;
-  const live = await db.senses.filter((s) => s.deleted_at === null).toArray();
+  const live = await scanWhere(db.senses, (s) => s.deleted_at === null);
   const byNote = new Map<Id, Sense[]>();
   for (const s of live) {
     const list = byNote.get(s.note_id);

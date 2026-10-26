@@ -58,6 +58,7 @@ import { BackBar, StatusPill, type PillTone } from '@/features/decks/parts';
 import { cardStage, STAGE_LABEL_TR, type WordStage } from '@/domain/stages';
 import { TagSheet } from '@/features/decks/TagSheet';
 import { practiceHref } from '@/features/extra/links';
+import { scanWhere } from '@/data/scan';
 
 const PAGE_SIZE = 60;
 
@@ -68,9 +69,9 @@ const PAGE_SIZE = 60;
 function useLibraryRows(): LibraryRow[] | undefined {
   const raw = useLiveQuery(async () => {
     const [notes, senses, cards] = await Promise.all([
-      db.notes.filter((n) => n.deleted_at === null).toArray(),
-      db.senses.filter((s) => s.deleted_at === null).toArray(),
-      db.cards.filter((c) => c.deleted_at === null).toArray(),
+      scanWhere(db.notes, (n) => n.deleted_at === null),
+      scanWhere(db.senses, (s) => s.deleted_at === null),
+      scanWhere(db.cards, (c) => c.deleted_at === null),
     ]);
     const ids = [...new Set(senses.map((s) => s.lexicon_sense_id).filter((x): x is string => !!x))];
     const lex = (await db.lexicon_cache.bulkGet(ids)).filter((r) => !!r);

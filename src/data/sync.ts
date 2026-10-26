@@ -7,6 +7,7 @@ import { db } from './db';
 import { rebuildDailyActivity } from './dailyActivity';
 import { applyRemoteRows, type ApplyRemoteResult, type RemoteBatch } from './maintenance';
 import { getMeta, META, setMeta } from './meta';
+import { scanWhere } from './scan';
 
 /** After this many failed attempts a row is reported as stuck (plan: warn after 10). */
 export const STUCK_ATTEMPTS = 10;
@@ -118,7 +119,7 @@ export async function failOutboxItems(items: OutboxItem[], now: Millis): Promise
 
 /** Distinct rows that failed STUCK_ATTEMPTS times or more ("10 başarısız deneme"). */
 export async function stuckOutboxCount(): Promise<number> {
-  const rows = await db.outbox.filter((r) => r.attempts >= STUCK_ATTEMPTS).toArray();
+  const rows = await scanWhere(db.outbox, (r) => r.attempts >= STUCK_ATTEMPTS);
   return new Set(rows.map((r) => rowKey(r.table, r.row_id))).size;
 }
 

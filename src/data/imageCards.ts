@@ -21,6 +21,7 @@ import type { Card, Id, Millis, NoteTermType, Sense, UserContent } from '../doma
 import { db } from './db';
 import { getSettings, updateSettings } from './settings';
 import { writeTx } from './writer';
+import { scanWhere } from './scan';
 
 /** Tables a plan reads (a transaction that calls planNow must include them). */
 const readTables = () => [db.settings, db.senses, db.notes, db.cards, db.images, db.user_content, db.content_feedback];
@@ -87,7 +88,7 @@ async function planNow(opts: ReconcileOptions): Promise<PlanNow> {
     senses = (await db.senses.bulkGet([...opts.senseIds])).filter((s): s is Sense => !!s);
   } else {
     const withCard = new Set(imageCards.map((c) => c.sense_id).filter((x): x is Id => !!x));
-    senses = await db.senses.filter((s) => !!s.lexicon_sense_id || withCard.has(s.id)).toArray();
+    senses = await scanWhere(db.senses, (s) => !!s.lexicon_sense_id || withCard.has(s.id));
   }
   const noteIds = [...new Set(senses.map((s) => s.note_id))];
   const notes = (await db.notes.bulkGet(noteIds)).filter((n) => !!n && n.deleted_at === null);

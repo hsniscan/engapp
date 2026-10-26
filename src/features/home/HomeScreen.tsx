@@ -88,17 +88,28 @@ function HomeFrame({
 function Dashboard({ core }: { core: HomeCore }) {
   const counts = useStudyModeCounts();
   const activity = useLiveQuery(() => getTodayActivity(), []);
+  // The heavy, secondary reads (whole-history goals, extra-study queues, the weekly report and
+  // the notes below the hero) start once the hero has its numbers: on a large collection they
+  // otherwise share IndexedDB with the hero's queries and delay "Devam et" by seconds
+  // (10,000-card profile, decision 0053). Once true it stays true (live queries keep values).
+  const heroReady = counts !== undefined && activity !== undefined;
   const goals = useLiveQuery(() => getHomeGoals(), []);
-  const goalsView = useLiveQuery(() => getGoalsView(), []);
+  const goalsView = useLiveQuery(() => (heroReady ? getGoalsView() : undefined), [heroReady]);
   const stages = useWordStages();
   const totalWords = useLiveQuery(() => countWords(), []);
-  const moreResult = useLiveQuery(() => getMoreOverview(), []);
+  const moreResult = useLiveQuery(
+    () => (heroReady ? getMoreOverview() : undefined),
+    [heroReady],
+  );
   const more = moreResult?.ok ? moreResult.more : null;
   const moreError = moreResult && !moreResult.ok ? moreResult.error : null;
   useEffect(() => {
     if (moreError) void logError(moreError, 'home.moreStudy');
   }, [moreError]);
-  const report = useLiveQuery(() => getReportShortcut(), []);
+  const report = useLiveQuery(
+    () => (heroReady ? getReportShortcut() : undefined),
+    [heroReady],
+  );
   const shortcuts = moreResult && report !== undefined ? { more, report } : undefined;
   const decks = useHomeDecks();
 
@@ -126,7 +137,7 @@ function Dashboard({ core }: { core: HomeCore }) {
           <StudyTypes counts={counts} answered={activity.answers} finishedHero={wordDone} />
         )}
         {wordDone && more && <MoreStudy more={more} />}
-        <Notes />
+        {heroReady && <Notes />}
       </div>
       <div className="flex flex-col gap-4 lg:gap-5">
         {goals && activity && (

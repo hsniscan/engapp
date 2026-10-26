@@ -60,11 +60,13 @@ async function nextDueFrom(
 
   const tomorrowEnd = dayEndMs(addDays(today.key, 1), cfg);
   const dueTomorrow = soon.filter((c) => c.due < tomorrowEnd).length;
-  const fresh = await db.cards
-    .where('[state+due]')
-    .between([CardState.New, Dexie.minKey], [CardState.New, Dexie.maxKey])
-    .filter(studiable)
-    .count();
+  // getAll, then filter: a Dexie .filter() walks a cursor, one IndexedDB round trip per row.
+  const fresh = (
+    await db.cards
+      .where('[state+due]')
+      .between([CardState.New, Dexie.minKey], [CardState.New, Dexie.maxKey])
+      .toArray()
+  ).filter(studiable).length;
   const count = dueTomorrow + Math.min(fresh, settings.daily_new_limit);
   if (count > 0) return { kind: 'tomorrow', count };
 
