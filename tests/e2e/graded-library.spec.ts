@@ -34,7 +34,7 @@ test('Okuma kitaplığı: catalogue, filters, coverage chip, open and cache', as
   await page.goto('/kitaplik');
   await expect(page.getByRole('heading', { level: 1, name: 'Okuma kitaplığı' })).toBeVisible();
 
-  const list = page.getByRole('list', { name: 'Metinler' });
+  const list = page.getByRole('list', { name: 'Metinler', exact: true });
   await expect(list.getByRole('listitem')).toHaveCount(3);
   // Easiest level first; one chip per text with the understood share and the fit.
   await expect(list.getByRole('listitem').first()).toContainText('The Late Train');
