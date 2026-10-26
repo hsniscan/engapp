@@ -47,6 +47,9 @@ describe('Settings → Bildirim in the Android app', () => {
     renderRoute(<NotifySection />);
     expect(await screen.findByText(/Telefonda hesaplanır/)).toBeInTheDocument();
     expect(screen.queryByText(/Deneme bildirimi/)).toBeNull();
+    // The widgets are explained here (only in the app: the web has none).
+    expect(await screen.findByText('Ana ekran araçları')).toBeInTheDocument();
+    expect(screen.getByText(/uzun bas → Widget'lar/)).toBeInTheDocument();
   });
 
   it('turns on with a notice that browser notifications were removed', async () => {
@@ -82,7 +85,9 @@ describe('Settings → Bildirim in the Android app', () => {
 
   it('offers "Bildirimden cevap ver" once the reminder is on, on by default (ADR 0048)', async () => {
     const user = userEvent.setup();
-    renderRoute(<NativeNotifySection deps={async () => ({ port: port(), cleanWebPush: async () => 0 })} />);
+    renderRoute(
+      <NativeNotifySection deps={async () => ({ port: port(), cleanWebPush: async () => 0 })} />,
+    );
     await screen.findByRole('switch', { name: /Günlük hatırlatma/ });
     expect(screen.queryByRole('switch', { name: /Bildirimden cevap ver/ })).toBeNull();
     await user.click(screen.getByRole('switch', { name: /Günlük hatırlatma/ }));

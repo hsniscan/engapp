@@ -81,6 +81,7 @@ export {
   type ThemeSource,
 } from './themes';
 export {
+  getHardPracticeCount,
   getPracticeCards,
   getPracticeSourceCounts,
   loadPracticeCandidates,
@@ -95,6 +96,7 @@ export {
   markStageRuleNoticeSeen,
   applyRemoteRows,
   exportBackup,
+  recordBackup,
   exportCsv,
   restoreBackup,
   RESTORE_CHUNK,

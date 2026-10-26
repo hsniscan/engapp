@@ -17,6 +17,7 @@ import {
 } from '@/data';
 import type { ReportGroupStat, WeeklyReportSummary } from '@/domain/types';
 import { shownRetention } from '@/domain/weeklyReport';
+import { newLimitAction } from '@/domain/progressView';
 import { practiceHref } from '@/features/extra/links';
 import { formatDayMonth, formatNumber, formatPercent } from '@/features/stats/format';
 import { groupLabel } from '@/features/stats/groupLabel';
@@ -233,10 +234,17 @@ function FocusBlock({ summary: s }: { summary: WeeklyReportSummary }) {
     className: 'h-auto! min-h-11 max-w-full py-2 text-center whitespace-normal!',
   });
   let action: React.ReactNode;
+  const limitAction = focus === 'lower_new_limit' ? newLimitAction(limit, value) : null;
   if (focus === 'lower_new_limit') {
+    // "Sınırı N yap" only when it really lowers the limit (v0.5.1): a limit the user already
+    // lowered further must not be raised back by this button.
     action =
-      limit === value ? (
+      limitAction === null ? null : limitAction === 'done' ? (
         <p className="text-sm text-fg-muted">{t('report.action.lower_new_limitDone', { value })}</p>
+      ) : limitAction === 'already' ? (
+        <p className="text-sm text-fg-muted">
+          {t('report.action.lower_new_limitAlready', { limit })}
+        </p>
       ) : (
         <Button
           disabled={busy}

@@ -20,13 +20,13 @@ test('sign-in succeeds but the sync backend fails → "Misafir olarak devam et" 
   await expect(dialog).toBeVisible();
   await dialog.getByRole('button', { name: 'Misafir olarak devam et' }).click();
   await expect(dialog).toBeHidden();
-  await expect(page.getByRole('link', { name: /Senkron durumu: Misafir modu/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Eşitleme durumu: Misafir modu/ })).toBeVisible();
 
   // Fully usable as a guest, and it stays signed out after a reload.
   await addWord(page, WORDS[0]!);
   await page.reload();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(page.getByRole('link', { name: /Senkron durumu: Misafir modu/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Eşitleme durumu: Misafir modu/ })).toBeVisible();
   await page.goto('/library');
   await expect(page.getByRole('list', { name: 'Notlar' }).getByRole('listitem')).toHaveCount(1);
 });
@@ -52,7 +52,7 @@ test('second-device question can also be left with "Misafir olarak devam et" (no
   await expect(dialog).toBeVisible();
   await dialog.getByRole('button', { name: 'Misafir olarak devam et' }).click();
   await expect(dialog).toBeHidden();
-  await expect(page.getByRole('link', { name: /Senkron durumu: Misafir modu/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Eşitleme durumu: Misafir modu/ })).toBeVisible();
   expect(backend.count('sync_push')).toBe(0);
   await page.goto('/library');
   await expect(

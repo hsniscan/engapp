@@ -5,7 +5,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { getConfusables, listLeechCards } from '@/data';
+import { getConfusables, getHardPracticeCount, listLeechCards } from '@/data';
 import type { ConfusablePair } from '@/domain/confusables';
 import { LEECH_LAPSES } from '@/domain/leech';
 import type { Id } from '@/domain/types';
@@ -21,6 +21,8 @@ const SHOWN = 10;
 export function LeechStatsSection() {
   const { t } = useTranslation();
   const items = useLiveQuery(() => listLeechCards(), []);
+  // No "practise all" link when the practice would have nothing to ask (v0.5.1).
+  const hard = useLiveQuery(() => getHardPracticeCount(Date.now()), []);
   const familyOf = useFamilyOf();
   const pairs = useLiveQuery(
     () => getConfusables({ limit: 5, familyOf }).then((v) => v.pairs),
@@ -65,22 +67,29 @@ export function LeechStatsSection() {
             </li>
           ))}
           {items.length > SHOWN && (
-            <li className="px-2 pt-1 text-sm text-fg-muted">{t('leech.stats.more', { count: items.length - SHOWN })}</li>
+            <li className="px-2 pt-1 text-sm text-fg-muted">
+              {t('leech.stats.more', { count: items.length - SHOWN })}
+            </li>
           )}
         </ul>
       )}
       <div className="flex flex-wrap gap-2">
         {notes.length > 0 && (
-          <Link to={practiceHref({ source: 'list', size: 10, tag: null, notes })} className={buttonClasses({ size: 'md' })}>
+          <Link
+            to={practiceHref({ source: 'list', size: 10, tag: null, notes })}
+            className={buttonClasses({ size: 'md' })}
+          >
             {t('leech.stats.practice')}
           </Link>
         )}
-        <Link
-          to={practiceHref({ source: 'hard', size: 10, tag: null })}
-          className={buttonClasses({ variant: notes.length ? 'ghost' : 'secondary', size: 'md' })}
-        >
-          {t('leech.stats.allHard')}
-        </Link>
+        {!!hard && (
+          <Link
+            to={practiceHref({ source: 'hard', size: 10, tag: null })}
+            className={buttonClasses({ variant: notes.length ? 'ghost' : 'secondary', size: 'md' })}
+          >
+            {t('leech.stats.allHard')}
+          </Link>
+        )}
       </div>
 
       {pairs && pairs.length > 0 && (
@@ -111,7 +120,9 @@ export function ContrastDialog({
       open={pair !== null}
       onOpenChange={onOpenChange}
       title={t('leech.contrast.title')}
-      description={pair ? t('leech.contrast.description', { a: pair.a.term, b: pair.b.term }) : null}
+      description={
+        pair ? t('leech.contrast.description', { a: pair.a.term, b: pair.b.term }) : null
+      }
     >
       {pair && <ContrastEditor pair={pair} onAdded={() => onOpenChange(false)} />}
     </Dialog>

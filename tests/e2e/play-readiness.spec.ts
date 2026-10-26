@@ -102,7 +102,7 @@ test('signed in: Ayarlar → Hesap → "Hesabımı ve verilerimi sil" deletes th
   const calls = await mockDeleteFunction(page);
   await FakeBackend.signIn(context);
   await page.goto('/add');
-  await expect(page.getByRole('status', { name: 'Senkron durumu: Senkronlandı' })).toBeVisible();
+  await expect(page.getByRole('status', { name: 'Eşitleme durumu: Eşitlendi' })).toBeVisible();
   await addWord(page, WORDS[0]!);
   await expect.poll(() => backend.pushedIds('notes').length, { timeout: 15_000 }).toBe(1);
 
@@ -127,7 +127,7 @@ test('signed in: Ayarlar → Hesap → "Hesabımı ve verilerimi sil" deletes th
 
   // Signed out, an empty guest app.
   await page.getByRole('link', { name: 'Uygulamaya dön' }).first().click();
-  await expect(page.getByRole('link', { name: /Senkron durumu: Misafir modu/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Eşitleme durumu: Misafir modu/ })).toBeVisible();
   await page.goto('/library');
   await expect(page.getByRole('list', { name: 'Notlar' })).toHaveCount(0);
 });
@@ -136,7 +136,7 @@ test('signed in: a failed deletion keeps everything and says so', async ({ page,
   await mockDeleteFunction(page, 500);
   await FakeBackend.signIn(context);
   await page.goto('/add');
-  await expect(page.getByRole('status', { name: 'Senkron durumu: Senkronlandı' })).toBeVisible();
+  await expect(page.getByRole('status', { name: 'Eşitleme durumu: Eşitlendi' })).toBeVisible();
   await addWord(page, WORDS[1]!);
   await expect.poll(() => backend.pushedIds('notes').length, { timeout: 15_000 }).toBe(1);
 

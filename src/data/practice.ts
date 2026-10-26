@@ -109,6 +109,11 @@ export interface PracticeSourceCounts {
   interests: number;
 }
 
+/** Cards the "Zorlandıklarım" practice would ask now (İlerleme: no link when there are none). */
+export async function getHardPracticeCount(now: Millis = Date.now()): Promise<number> {
+  return countPracticeSources(await loadPracticeCandidates(now), now).hard;
+}
+
 export async function getPracticeSourceCounts(
   now: Millis = Date.now(),
 ): Promise<PracticeSourceCounts> {

@@ -15,10 +15,12 @@ import {
   type RetentionDimension,
   type RetentionStat,
 } from '@/domain/retention';
+import { shouldNudgeGap } from '@/domain/progressView';
 import { practiceHref } from '@/features/extra/links';
 import { buttonClasses, Select, Skeleton, Surface, Tooltip } from '@/ui';
 import { formatPercent } from './format';
 import { groupLabel } from './groupLabel';
+import { useWordStages } from './useWordStages';
 import { LearnedChart, RetentionBar, RetentionLineChart, SeriesTable } from './ProgressCharts';
 
 export function ProgressPanel() {
@@ -80,6 +82,12 @@ function GapSection({ view }: { view: ProgressView }) {
   const { t } = useTranslation();
   const { gap } = view.report;
   const ids = view.gapNoteIds;
+  // No practice nudge when both directions are (as shown) equal or production is ahead.
+  const nudge = shouldNudgeGap({
+    recognitionRate: gap.gap === null ? null : gap.recognition.rate,
+    productionRate: gap.gap === null ? null : gap.production.rate,
+    noteCount: ids.length,
+  });
   const directions = [
     { key: 'recognition', label: t('progress.gap.recognition'), stat: gap.recognition },
     { key: 'production', label: t('progress.gap.production'), stat: gap.production },
@@ -118,7 +126,11 @@ function GapSection({ view }: { view: ProgressView }) {
             })
           : t('progress.gap.sentenceFew')}
       </p>
-      {ids.length > 0 ? (
+      {!nudge && ids.length > 0 ? (
+        <p className="mt-3 text-sm text-fg-muted" data-testid="gap-equal">
+          {t('progress.gap.equal')}
+        </p>
+      ) : nudge ? (
         <div className="mt-4 flex flex-col items-start gap-3">
           <p className="text-sm text-fg-muted">
             {t('progress.gap.practiceHint')}{' '}
@@ -160,7 +172,12 @@ function PictureSection({ view }: { view: ProgressView }) {
     { key: 'without', label: t('imageCard.progress.without'), stat: p.withoutPicture },
   ] as const;
   return (
-    <Surface as="section" aria-labelledby="picture-recall-title" padding="lg" data-testid="picture-recall">
+    <Surface
+      as="section"
+      aria-labelledby="picture-recall-title"
+      padding="lg"
+      data-testid="picture-recall"
+    >
       <h2 id="picture-recall-title" className="font-serif text-xl font-semibold">
         {t('imageCard.progress.title')}
       </h2>
@@ -309,7 +326,10 @@ function GroupsSection({ view }: { view: ProgressView }) {
 function SeriesSection({ view }: { view: ProgressView }) {
   const { t } = useTranslation();
   const { series } = view.report;
-  const total = series.at(-1)?.learnedTotal ?? 0;
+  // The same "learned now" number as Genel and Profil (word stages), not the cumulative
+  // "ever learned" of the series, so the screens agree (v0.5.1).
+  const stages = useWordStages();
+  const total = stages?.learnedTotal ?? series.at(-1)?.learnedTotal ?? 0;
   return (
     <Surface as="section" aria-labelledby="series-title" padding="lg">
       <h2 id="series-title" className="font-serif text-xl font-semibold">

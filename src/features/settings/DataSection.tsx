@@ -5,8 +5,8 @@ import { verifyBackup, type BackupError, type BackupSummary } from '@/domain/bac
 import { ConfirmDialog } from '@/features/cards/ConfirmDialog';
 import { Link } from 'react-router';
 import { Badge, Button, buttonClasses, Dialog, DialogClose, Icon, toast } from '@/ui';
-import { downloadBackup } from './backupActions';
-import { csvFileName, downloadText, formatBytes, relativeDays } from './download';
+import { downloadBackup, saveFileWithToast } from './backupActions';
+import { csvFileName, formatBytes, relativeDays } from './download';
 import { refreshStorageInfo, requestPersistence, useStorageInfo } from './platform';
 import { SettingsRow, SettingsSection } from './SettingsLayout';
 import { useAppSettings, useUserId } from './useAppSettings';
@@ -47,6 +47,7 @@ export function DataSection() {
     'backup' | 'csv' | 'read' | RestoreMode | 'persist' | 'reset' | null
   >(null);
   const [pending, setPending] = useState<PendingRestore | null>(null);
+  const [backedUp, setBackedUp] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const now = useNow();
 
@@ -56,13 +57,8 @@ export function DataSection() {
 
   const backup = async () => {
     setBusy('backup');
-    const ok = await downloadBackup();
+    await downloadBackup();
     setBusy(null);
-    toast(
-      ok
-        ? { title: t('backup.done'), description: t('backup.doneHint'), tone: 'success' }
-        : { title: t('backup.failed'), tone: 'danger' },
-    );
   };
 
   const csv = async () => {
@@ -76,8 +72,10 @@ export function DataSection() {
         tags: t('csv.tags'),
         created: t('csv.created'),
       });
-      downloadText(csvFileName(), text, 'text/csv;charset=utf-8');
-      toast({ title: t('csv.done'), tone: 'success' });
+      await saveFileWithToast(csvFileName(), text, 'text/csv;charset=utf-8', {
+        done: t('csv.done'),
+        failed: t('csv.failed'),
+      });
     } catch (e) {
       void logError(e, 'csv.export');
       toast({ title: t('csv.failed'), tone: 'danger' });
@@ -103,6 +101,7 @@ export function DataSection() {
         });
         return;
       }
+      setBackedUp(false);
       setPending({
         fileName: file.name,
         json,
@@ -347,6 +346,29 @@ export function DataSection() {
                 reviews: nf.format(pending.summary.reviews),
               })}
             </p>
+            <div className="flex flex-col gap-2 rounded-control border border-border px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-fg-muted">{t('restore.backupFirstHint')}</p>
+              {backedUp ? (
+                <Badge tone="success">{t('restore.backedUp')}</Badge>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  leadingIcon="file"
+                  className="shrink-0 self-start"
+                  loading={busy === 'backup'}
+                  disabled={busy !== null && busy !== 'backup'}
+                  onClick={async () => {
+                    setBusy('backup');
+                    const ok = await downloadBackup();
+                    setBusy(null);
+                    if (ok) setBackedUp(true);
+                  }}
+                >
+                  {t('restore.backupFirst')}
+                </Button>
+              )}
+            </div>
             <dl className="flex flex-col gap-3 text-sm">
               <div className="flex gap-3">
                 <Icon name="check" size={18} className="mt-0.5 shrink-0 text-success-text" />

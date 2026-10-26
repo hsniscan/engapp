@@ -1,5 +1,4 @@
 import { screen, waitFor, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { addNoteWithSenses, db, ensureSettings, markKnown } from '@/data';
 import { setAuthStateForTesting } from '@/features/auth/session';
@@ -19,7 +18,12 @@ describe('profile page', { timeout: 20_000 }, () => {
       status: 'signed_in',
       user: { id: 'u1', email: 'h@example.com', name: 'Hasan', avatarUrl: null },
     });
-    await db.settings.update('settings', { interests: ['travel', 'technology'], level: 'B1' });
+    await db.settings.update('settings', {
+      interests: ['travel', 'technology'],
+      level: 'B1',
+      level_source: 'manual',
+      level_updated_at: Date.UTC(2026, 9, 1),
+    });
     renderRoute(<ProfilePage />, { path: '/profile' });
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Hasan' })).toBeInTheDocument();
@@ -53,20 +57,44 @@ describe('profile page', { timeout: 20_000 }, () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Misafir' })).toBeInTheDocument();
   });
 
-  it('sets goals from the goals card', async () => {
-    const user = userEvent.setup();
+  it('an unmeasured user sees "Henüz ölçülmedi" and a test button, never a default B1', async () => {
     renderRoute(<ProfilePage />, { path: '/profile' });
-    const set = await screen.findByRole('button', { name: 'Hedef koy' });
-    await waitFor(() => expect(set).toBeEnabled(), { timeout: 8000 });
-    await user.click(set);
-    expect(await screen.findByRole('dialog', { name: 'Hedeflerin' })).toBeInTheDocument();
+    const level = await screen.findByTestId('profile-level');
+    expect(level).toHaveTextContent('Henüz ölçülmedi');
+    expect(level).not.toHaveTextContent('B1');
+    expect(screen.getByRole('link', { name: 'Teste başla' })).toHaveAttribute(
+      'href',
+      '/level-test',
+    );
+    expect(screen.getByTestId('profile-vocab')).toHaveTextContent('Henüz tahmin yok');
   });
 
-  it('opens the goals dialog from the home link (?edit=goals)', async () => {
-    renderRoute(<ProfilePage />, { path: '/profile', url: '/profile?edit=goals' });
-    expect(
-      await screen.findByRole('dialog', { name: 'Hedeflerin' }, { timeout: 8000 }),
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText('Günlük hedef (dakika)')).toBeInTheDocument();
+  it('a long-time user without a test sees a floor, not "no estimate"', async () => {
+    // A learned word: its recognition card reached Öğrenildi.
+    const { note } = await addNoteWithSenses({ term: 'tide', senses: [{ meaning_tr: 'gelgit' }] });
+    const rec = (await db.cards.where('note_id').equals(note.id).toArray()).find(
+      (c) => c.card_type === 'recognition',
+    )!;
+    await db.cards.update(rec.id, {
+      state: 2,
+      ramp_step: 3,
+      stability: 30,
+      learned_at: Date.now() - 86_400_000,
+    });
+    await markKnown('give up', 'manual');
+    renderRoute(<ProfilePage />, { path: '/profile' });
+    await waitFor(() => expect(screen.getByTestId('profile-vocab')).toHaveTextContent('en az'), {
+      timeout: 8000,
+    });
+    expect(screen.queryByText('Henüz tahmin yok')).toBeNull();
+  });
+
+  it('stats and goals live on İlerleme: no streak or goals card here, ?edit=goals forwards', async () => {
+    const { router } = renderRoute(<ProfilePage />, {
+      path: '/profile',
+      url: '/profile?edit=goals',
+    });
+    await waitFor(() => expect(router.state.location.pathname).toBe('/progress'));
+    expect(router.state.location.search).toBe('?edit=goals');
   });
 });

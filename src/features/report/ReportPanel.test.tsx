@@ -112,11 +112,24 @@ describe('weekly report tab', () => {
     expect(await screen.findByTestId('report-comment-missing')).toHaveTextContent(
       'Yorum, internete bağlanınca eklenecek.',
     );
-    await userEvent.click(screen.getByRole('button', { name: 'Sınırı 6 yap' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Sınırı 6 yap' }));
     await waitFor(async () => expect((await db.settings.get('settings'))?.daily_new_limit).toBe(6));
     expect(
       await screen.findByText('Günlük yeni kart sınırın artık 6.', { selector: 'p' }),
     ).toBeInTheDocument();
+  });
+
+  it('"Sınırı N yap" never raises a limit the user already lowered', async () => {
+    await db.weekly_reports.put(
+      report('2026-10-12', null, { focus: 'lower_new_limit', focus_value: 6, focus_note_ids: [] }),
+    );
+    await updateSettings({ daily_new_limit: 4 });
+    renderRoute(<ReportPanel onOpen={noop} />);
+    const focus = await screen.findByTestId('report-focus');
+    expect(
+      await within(focus).findByText('Günlük yeni kart sınırın zaten 4; değiştirmen gerekmiyor.'),
+    ).toBeInTheDocument();
+    expect(within(focus).queryByRole('button', { name: /Sınırı/ })).toBeNull();
   });
 
   it('an unknown focus from a newer app reads as "keep going"', async () => {

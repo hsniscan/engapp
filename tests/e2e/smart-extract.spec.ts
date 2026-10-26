@@ -28,7 +28,7 @@ async function shots(page: Page, name: string, at?: Locator) {
 
 async function extract(page: Page, text: string, title: string) {
   await page.goto('/add?tab=paste');
-  await expect(page.getByRole('status', { name: 'Senkron durumu: Senkronlandı' })).toBeVisible();
+  await expect(page.getByRole('status', { name: 'Eşitleme durumu: Eşitlendi' })).toBeVisible();
   await page.getByLabel('İngilizce metin').fill(text);
   await page.getByLabel('Başlık').fill(title);
   await page.getByRole('button', { name: 'Kelimeleri çıkar' }).click();

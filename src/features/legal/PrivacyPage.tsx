@@ -23,7 +23,7 @@ export function PrivacyPage({ lang }: { lang: 'tr' | 'en' }) {
   const t = i18n.getFixedT(lang);
   const doc = DOCS[lang];
   const email = contactEmail();
-  const missing = t('legal.contactMissing');
+  const missing = t('legal.contactFallback');
 
   useEffect(() => {
     const prev = document.title;

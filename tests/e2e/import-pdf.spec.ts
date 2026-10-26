@@ -9,7 +9,7 @@ test.beforeEach(async ({ context, page, backend }) => {
   void backend; // installs the mocked Supabase routes
   await FakeBackend.signIn(context);
   await page.goto('/add?tab=pdf');
-  await expect(page.getByRole('status', { name: 'Senkron durumu: Senkronlandı' })).toBeVisible();
+  await expect(page.getByRole('status', { name: 'Eşitleme durumu: Eşitlendi' })).toBeVisible();
 });
 
 async function pick(page: import('@playwright/test').Page, name: string, buffer: Buffer) {

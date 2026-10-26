@@ -17,7 +17,8 @@ import { IosInstallSteps } from '@/features/settings/IosInstallGuide';
 import { useInstallState } from '@/features/settings/platform';
 import { SettingsRow, SettingsSection } from '@/features/settings/SettingsLayout';
 import { useAppSettings } from '@/features/settings/useAppSettings';
-import { Button, SegmentedControl, Select, Skeleton, Switch, toast } from '@/ui';
+import { Link } from 'react-router';
+import { Button, buttonClasses, SegmentedControl, Select, Skeleton, Switch, toast } from '@/ui';
 import { isNativeApp } from '@/native/platform';
 import { NativeNotifySection } from './NativeNotifySection';
 import {
@@ -139,7 +140,11 @@ function WebNotifySection({ env: envProp }: { env?: PushEnv } = {}) {
     );
   } else if (!userId) {
     body = (
-      <SettingsRow label={t('settings.notify.daily')} description={t('settings.notify.guest')} />
+      <SettingsRow label={t('settings.notify.daily')} description={t('settings.notify.guest')}>
+        <Link to="/auth" className={buttonClasses({ variant: 'secondary', className: 'shrink-0' })}>
+          {t('settings.notify.signIn')}
+        </Link>
+      </SettingsRow>
     );
   } else if (support === 'ios_needs_install') {
     body = (
@@ -177,7 +182,15 @@ function WebNotifySection({ env: envProp }: { env?: PushEnv } = {}) {
             <p className="text-sm text-fg-muted">{t('settings.notify.otherDevice')}</p>
           )}
           {isAndroid(env) && !installed && !env.standalone && (
-            <p className="text-sm text-fg-muted">{t('settings.notify.androidInstall')}</p>
+            <p className="text-sm text-fg-muted">
+              {t('settings.notify.androidInstall')}{' '}
+              <Link
+                to="/settings/hakkinda#uygulama"
+                className="font-medium text-accent-text underline"
+              >
+                {t('settings.notify.androidInstallLink')}
+              </Link>
+            </p>
           )}
         </SettingsRow>
         {on && pref && (

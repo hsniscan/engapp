@@ -18,7 +18,7 @@ export const privacyTr: LegalDocument = {
         {
           ul: [
             'Misafir modunda bütün verilerin yalnızca kendi cihazında durur; bize hiçbir şey gelmez.',
-            'Google ile giriş yaparsan kartların ve çalışma geçmişin, cihazların arasında senkronlanmak için sunucumuzda saklanır.',
+            'Google ile giriş yaparsan kartların ve çalışma geçmişin, cihazların arasında eşitlenmek için sunucumuzda saklanır.',
             "AI özelliklerini kullandığında gönderdiğin metin Google Gemini ile, Gemini'nin kotası dolduğunda Anthropic Claude ile işlenir. Gizli ya da kişisel bilgi içeren metin gönderme.",
             'Reklam yok, verilerini satmıyoruz, seni izleyen bir analiz aracı kullanmıyoruz.',
             'Hesabını ve bütün verilerini istediğin an uygulamadan ya da [hesap silme sayfasından](/hesap-sil) silebilirsin.',
@@ -66,7 +66,7 @@ export const privacyTr: LegalDocument = {
           p: '**Makale ve altyazı içe aktarma.** Bir bağlantıdan makale aldığında yalnızca adres sunucumuza gider; sunucu sayfayı indirip metnini ayıklar, sana gönderir ve ne adresi ne metni saklar (metin yalnızca cihazına kaydedilir, ortak tablolara ya da başka kullanıcılara gitmez); altyazı dosyaları ise yalnızca cihazında okunur.',
         },
         {
-          p: '**Bugünün hikâyesi.** Hikâye istediğinde sunucuya yalnızca o günün 5–8 kelimesi (kartlarındaki sözlük biçimleriyle), seviyen, seçtiğin okuma zorluğu ve en fazla üç ilgi alanın gider; metinlerin, cümlelerin ve anlamların gitmez. Sunucu hikâyeyi Anthropic Claude ile yazdırır, sana gönderir ve saklamaz; yalnızca günde kaç hikâye istediğin sayılır. Hikâye senin metnin olarak cihazına kaydedilir ve yalnızca kendi hesabınla senkronlanır.',
+          p: '**Bugünün hikâyesi.** Hikâye istediğinde sunucuya yalnızca o günün 5–8 kelimesi (kartlarındaki sözlük biçimleriyle), seviyen, seçtiğin okuma zorluğu ve en fazla üç ilgi alanın gider; metinlerin, cümlelerin ve anlamların gitmez. Sunucu hikâyeyi Anthropic Claude ile yazdırır, sana gönderir ve saklamaz; yalnızca günde kaç hikâye istediğin sayılır. Hikâye senin metnin olarak cihazına kaydedilir ve yalnızca kendi hesabınla eşitlenir.',
         },
         {
           p: '**Kullanım sayaçları.** Günlük AI, sesli okuma ve "Görsel üret" hakkını uygulamak için gün başına kaç çağrı yaptığın sayılır.',
@@ -91,7 +91,7 @@ export const privacyTr: LegalDocument = {
       blocks: [
         {
           ul: [
-            'Hesabını açmak, girişini sürdürmek ve verilerini cihazların arasında senkronlamak (KVKK m. 5/2-c: sözleşmenin ifası).',
+            'Hesabını açmak, girişini sürdürmek ve verilerini cihazların arasında eşitlemek (KVKK m. 5/2-c: sözleşmenin ifası).',
             'Senin isteğinle AI özelliklerini çalıştırmak: metinden kart çıkarma, anlam bulma, temalara ayırma, sesli okuma, kelime görseli üretme (KVKK m. 5/2-c).',
             'Hizmeti kötüye kullanıma karşı korumak, örneğin günlük kullanım sınırları (KVKK m. 5/2-f: meşru menfaat).',
             'Açtıysan, günde en fazla bir tekrar hatırlatması göndermek.',
@@ -157,16 +157,16 @@ export const privacyTr: LegalDocument = {
       blocks: [
         {
           ul: [
-            'Uygulamada: **Ayarlar → Hesap → Hesabımı ve verilerimi sil.**',
+            'Uygulamada: **Profil → ⚙ Ayarlar → Hesap ve eşitleme → Hesabımı ve verilerimi sil.**',
             "Web'den: [hesap silme sayfası](/hesap-sil) — Google ile giriş yapıp aynı işlemi yaparsın.",
             'E-postayla: {{email}} adresine yaz; hesabını 30 gün içinde sileriz.',
           ],
         },
         {
-          p: 'Silinenler: kartların ve kelimelerin, çalışma geçmişin ve istatistiklerin, ayarların, raporların, bildirim kayıtların, AI önbelleğin ve sayaçların, görsel sayaçların, görsel isteklerin ve görsel cevapların (yöneticiysen yönetici kaydın ve görsel onay kararların da), ardından hesabının kendisi. Ortak sözlükteki görseller kalır. Silme geri alınamaz; istersen önce **Ayarlar → Veri** bölümünden JSON yedeğini indir.',
+          p: 'Silinenler: kartların ve kelimelerin, çalışma geçmişin ve istatistiklerin, ayarların, raporların, bildirim kayıtların, AI önbelleğin ve sayaçların, görsel sayaçların, görsel isteklerin ve görsel cevapların (yöneticiysen yönetici kaydın ve görsel onay kararların da), ardından hesabının kendisi. Ortak sözlükteki görseller kalır. Silme geri alınamaz; istersen önce **Profil → ⚙ Ayarlar → Yedek ve veri** bölümünden JSON yedeğini indir.',
         },
         {
-          p: 'Misafir modundaki veriler yalnızca cihazındadır: **Ayarlar → Hesap → Bu cihazdaki verileri sil** ile ya da uygulamayı kaldırarak silebilirsin.',
+          p: 'Misafir modundaki veriler yalnızca cihazındadır: **Profil → ⚙ Ayarlar → Hesap ve eşitleme → Bu cihazdaki verileri sil** ile ya da uygulamayı kaldırarak silebilirsin.',
         },
       ],
     },
@@ -191,7 +191,7 @@ export const privacyTr: LegalDocument = {
           p: "Başvurunu {{email}} adresine gönderebilirsin; en geç 30 gün içinde ücretsiz yanıt veririz. Yanıtı yeterli bulmazsan Kişisel Verileri Koruma Kurulu'na şikâyette bulunabilirsin.",
         },
         {
-          p: 'Verilerinin bir kopyasını istediğin an **Ayarlar → Veri → JSON yedeğini indir** ile kendin alabilir, yanlış bir kaydı uygulamada düzeltebilirsin.',
+          p: 'Verilerinin bir kopyasını istediğin an **Profil → ⚙ Ayarlar → Yedek ve veri → Yedek al** ile kendin alabilir, yanlış bir kaydı uygulamada düzeltebilirsin.',
         },
       ],
     },

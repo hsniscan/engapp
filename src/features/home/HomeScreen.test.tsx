@@ -13,6 +13,7 @@ import {
 import { resetDb } from '@/test/db';
 import { renderRoute } from '@/test/ui';
 import { useAddSheetOpen } from '@/features/add/addSheetStore';
+import { finishOnboarding } from '@/features/onboarding/state';
 import { HomeScreen } from './HomeScreen';
 import { STAGE_RULE_NOTE_KEY } from './todayQueries';
 
@@ -27,6 +28,8 @@ function SheetProbe() {
 
 describe('Bugün', () => {
   it('welcomes a brand-new user and opens the Add sheet', async () => {
+    // Past the first-run onboarding (features/onboarding has its own tests).
+    finishOnboarding();
     renderRoute(
       <>
         <HomeScreen />

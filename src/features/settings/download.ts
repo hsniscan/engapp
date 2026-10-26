@@ -1,3 +1,6 @@
+import { isNativeApp } from '@/native/platform';
+import type { NativeSaveResult } from '@/native/files';
+
 /** Save text as a file through a temporary link (works offline, no server round trip). */
 export function downloadText(fileName: string, text: string, mime: string): void {
   const blob = new Blob([text], { type: mime });
@@ -10,6 +13,44 @@ export function downloadText(fileName: string, text: string, mime: string): void
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export type SaveResult =
+  | { ok: true; native: false; location: string }
+  | { ok: true; native: true; how: 'documents' | 'shared'; location: string; uri: string }
+  | { ok: false; cancelled: boolean };
+
+export interface SaveDeps {
+  isNative: () => boolean;
+  saveNative: (fileName: string, text: string, shareTitle: string) => Promise<NativeSaveResult>;
+  download: (fileName: string, text: string, mime: string) => void;
+}
+
+const defaultSaveDeps: SaveDeps = {
+  isNative: isNativeApp,
+  saveNative: async (fileName, text, shareTitle) =>
+    (await import('@/native/files')).saveNativeFile(fileName, text, shareTitle),
+  download: downloadText,
+};
+
+/**
+ * Save a text file where this platform can: a browser download on the web, the phone's
+ * Documents folder (or the share sheet) in the Android app, where `<a download>` does nothing.
+ * Resolves only once the file is really written, so callers can record success afterwards.
+ */
+export async function saveTextFile(
+  fileName: string,
+  text: string,
+  mime: string,
+  shareTitle = fileName,
+  deps: SaveDeps = defaultSaveDeps,
+): Promise<SaveResult> {
+  if (deps.isNative()) {
+    const r = await deps.saveNative(fileName, text, shareTitle);
+    return r.ok ? { ...r, native: true } : r;
+  }
+  deps.download(fileName, text, mime);
+  return { ok: true, native: false, location: fileName };
 }
 
 /** Local calendar date as YYYY-MM-DD, for file names ("engapp-yedek-2026-10-21.json"). */
