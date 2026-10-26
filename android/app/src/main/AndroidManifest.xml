@@ -59,6 +59,42 @@
 
         </activity>
 
+        <!-- Home-screen widgets (Jetpack Glance, docs/decisions/0048). Exported: the launcher
+             sends APPWIDGET_UPDATE. -->
+        <receiver
+            android:name=".widget.DueWidgetReceiver"
+            android:label="@string/widget_due_start"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/engapp_due_widget_info" />
+        </receiver>
+        <receiver
+            android:name=".widget.WordWidgetReceiver"
+            android:label="@string/widget_word_title"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/engapp_word_widget_info" />
+        </receiver>
+
+        <!-- The reminder that asks a card: its alarm and buttons, and re-planning after a
+             reboot or an update. Not exported (the boot broadcasts still arrive). -->
+        <receiver
+            android:name=".answers.CardReminderReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -75,6 +111,9 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Android 13+: asked at run time when the user turns reminders on. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Re-plans the reminder that asks a card after a reboot (also requested by
+         local-notifications for its own reminders). -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Reminders are inexact (a daily nudge, not an alarm clock). Google Play limits exact
          alarms to alarm/calendar apps, so the local-notifications plugin's request is removed. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove" />

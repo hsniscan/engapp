@@ -4,4 +4,19 @@
     <string name="title_activity_main">Engapp</string>
     <string name="package_name">io.github.hsniscan.engapp</string>
     <string name="custom_url_scheme">io.github.hsniscan.engapp</string>
+
+    <!-- Home-screen widgets (docs/decisions/0048). The widget draws while the app is closed,
+         so its few words live here, in Turkish like the app (src/i18n/tr.json has the rest). -->
+    <string name="widget_due_description">Bekleyen tekrar sayısı; dokununca tekrara başlarsın.</string>
+    <string name="widget_word_description">Önce Türkçesi görünür, dokununca İngilizcesi açılır.</string>
+    <string name="widget_due_waiting">tekrar bekliyor</string>
+    <string name="widget_due_none">bugünlük tamam</string>
+    <string name="widget_due_new">%d yeni kelime hazır</string>
+    <string name="widget_due_start">Tekrara başla</string>
+    <string name="widget_open_to_update">güncellemek için aç</string>
+    <string name="widget_word_title">Günün kelimesi</string>
+    <string name="widget_word_tap_reveal">İngilizcesi için dokun</string>
+    <string name="widget_word_tap_open">Kelimeyi açmak için dokun</string>
+    <string name="widget_word_none">Öğrenmekte olduğun bir kelime olunca burada görünür.</string>
+    <string name="widget_word_due">%d tekrar</string>
 </resources>

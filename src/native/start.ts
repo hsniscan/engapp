@@ -63,6 +63,8 @@ export async function startNative(): Promise<void> {
   startBackButton();
   const tasks: [string, () => Promise<unknown>][] = [
     ['native.share', async () => (await import('./share')).startShareTarget()],
+    // Before the reminders: answers given on the notification are applied first (ADR 0048).
+    ['native.widgets', async () => (await import('./widget')).startWidgets()],
     ['native.reminders', async () => (await import('./reminders')).startNativeReminders()],
   ];
   for (const [where, run] of tasks) await run().catch((e: unknown) => void logError(e, where));

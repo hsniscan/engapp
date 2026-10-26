@@ -29,6 +29,7 @@
     "@capacitor/app": "^8.1.2",
     "@capacitor/core": "^8.5.3",
     "@capacitor/local-notifications": "^8.3.1",
+    "@capacitor/preferences": "^8.0.1",
     "@capawesome/capacitor-google-sign-in": "^0.1.4",
     "@fontsource/source-serif-4": "5.3.1",
     "@radix-ui/react-checkbox": "^1.4.1",

@@ -1,6 +1,9 @@
 import groovy.json.JsonSlurper
 
 apply plugin: 'com.android.application'
+// Kotlin + the Compose compiler for the Jetpack Glance widgets (docs/decisions/0048).
+apply plugin: 'org.jetbrains.kotlin.android'
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
 
 // Release versioning and signing (docs/setup-android.md, .github/workflows/android.yml).
 // versionCode: -PversionCode=<n> (CI: the workflow run number, so every build installs over the
@@ -40,12 +43,22 @@ android {
             }
         }
     }
+    buildFeatures {
+        compose = true
+    }
     buildTypes {
         release {
             if (hasReleaseKey) signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+}
+
+kotlin {
+    // Same bytecode level as the Java code (capacitor.build.gradle: Java 21).
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
     }
 }
 
@@ -64,7 +77,14 @@ dependencies {
     // "Fotoğraftan metin" (ADR 0045): ML Kit Text Recognition v2, Latin only, model bundled in
     // the APK (offline; not the Play-services download variant).
     implementation "com.google.mlkit:text-recognition:16.0.1"
+    // Home-screen widgets: Jetpack Glance (Apache-2.0), docs/decisions/0048.
+    implementation "androidx.glance:glance-appwidget:$glanceVersion"
+    // Glance's update calls are suspend functions (Apache-2.0; also a dependency of Glance).
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$kotlinxCoroutinesVersion"
     testImplementation "junit:junit:$junitVersion"
+    // Android's org.json is a stub in local unit tests; this is the reference implementation
+    // (public domain), used by the widget state and answer queue tests only.
+    testImplementation "org.json:json:20250517"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')

@@ -19,6 +19,7 @@ import {
 } from '@/features/notify/nativeReminder';
 import i18n from '@/i18n';
 import { supabase } from '@/lib/supabase';
+import { ReminderAnswers, type CardReminderPayload } from './widget';
 
 const toPermission = (p: string): Permission =>
   p === 'granted' ? 'granted' : p === 'denied' ? 'denied' : 'prompt';
@@ -41,8 +42,38 @@ export const capacitorNotifier: NotifierPort = {
     });
   },
   async schedule(list) {
+    // A reminder that asks a card is planned by the app's own ReminderAnswers plugin: its
+    // buttons ("Cevabı gör", "Bildim", "Bilemedim") work without opening the app, which the
+    // local-notifications plugin cannot do (its buttons always open the app). ADR 0048.
+    const asking = list.filter((n) => n.card);
+    const plain = list.filter((n) => !n.card);
+    if (asking.length)
+      await ReminderAnswers.schedule({
+        notifications: asking.map(
+          (n): CardReminderPayload => ({
+            id: n.id,
+            at: n.at,
+            title: n.title,
+            body: n.body,
+            url: n.url,
+            channelId: REMINDER_CHANNEL,
+            card: {
+              card_id: n.card!.card_id,
+              question: i18n.t('widget.notify.question', { term: n.card!.term }),
+              answer: i18n.t('widget.notify.answer', { term: n.card!.term, meaning: n.card!.meaning }),
+            },
+            labels: {
+              reveal: i18n.t('widget.notify.reveal'),
+              knew: i18n.t('widget.notify.knew'),
+              forgot: i18n.t('widget.notify.forgot'),
+              saved: i18n.t('widget.notify.saved'),
+            },
+          }),
+        ),
+      });
+    if (!plain.length) return;
     await LocalNotifications.schedule({
-      notifications: list.map((n) => ({
+      notifications: plain.map((n) => ({
         id: n.id,
         title: n.title,
         body: n.body,
@@ -58,10 +89,16 @@ export const capacitorNotifier: NotifierPort = {
     });
   },
   async cancel(ids) {
-    await LocalNotifications.cancel({ notifications: ids.map((id) => ({ id })) });
+    await Promise.all([
+      LocalNotifications.cancel({ notifications: ids.map((id) => ({ id })) }),
+      ReminderAnswers.cancel({ ids }),
+    ]);
   },
   async clearShown(ids) {
-    await LocalNotifications.removeDeliveredNotificationsById({ ids });
+    await Promise.all([
+      LocalNotifications.removeDeliveredNotificationsById({ ids }),
+      ReminderAnswers.clearShown({ ids }),
+    ]);
   },
 };
 

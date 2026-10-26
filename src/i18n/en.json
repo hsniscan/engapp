@@ -3263,5 +3263,19 @@
     "linkTitle": "Your selected link",
     "openLink": "Open in Engapp",
     "openFailed": "Could not open it. Try again."
+  },
+  "widget": {
+    "answers": {
+      "toggle": "Answer from the notification",
+      "hint": "The reminder asks one due word: \"Show answer\", then \"I knew it\" or \"I didn't\". Your answer is counted when you open the app."
+    },
+    "notify": {
+      "question": "What does {{term}} mean?",
+      "answer": "{{term}}: {{meaning}}",
+      "reveal": "Show answer",
+      "knew": "I knew it",
+      "forgot": "I didn't",
+      "saved": "Answer saved. It is counted when you open the app."
+    }
   }
 }
