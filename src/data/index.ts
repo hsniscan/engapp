@@ -95,6 +95,7 @@ export {
   markStageRuleNoticeSeen,
   applyRemoteRows,
   exportBackup,
+  recordBackup,
   exportCsv,
   restoreBackup,
   RESTORE_CHUNK,

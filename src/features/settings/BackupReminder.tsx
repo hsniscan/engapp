@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router';
 import { db, getSettings } from '@/data';
-import { Button, Icon, IconButton, toast } from '@/ui';
+import { Button, Icon, IconButton } from '@/ui';
 import { shouldRemindBackup } from './backupReminder';
 import { downloadBackup } from './backupActions';
 import { fileDate, relativeDays } from './download';
@@ -68,13 +68,8 @@ export function BackupReminder() {
             className="self-start sm:self-auto"
             onClick={async () => {
               setBusy(true);
-              const ok = await downloadBackup();
+              await downloadBackup();
               setBusy(false);
-              toast(
-                ok
-                  ? { title: t('backup.done'), tone: 'success' }
-                  : { title: t('backup.failed'), tone: 'danger' },
-              );
             }}
           >
             {t('backup.download')}

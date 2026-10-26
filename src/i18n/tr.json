@@ -1421,6 +1421,10 @@
     "never": "Henüz yedek alınmadı",
     "done": "Yedek indirildi",
     "doneHint": "Dosyayı bulut klasörüne ya da e-postana kaydet.",
+    "savedAt": "Yedek kaydedildi: {{file}}",
+    "savedHint": "Telefonun Dosyalar uygulamasında bulursun. Drive'a ya da e-postana da gönderebilirsin.",
+    "share": "Paylaş",
+    "shareTitle": "Engapp yedeği",
     "failed": "Yedek alınamadı. Tekrar dene.",
     "reminderLabel": "Yedek hatırlatması",
     "reminderTitle": "Son yedek {{when}}.",
@@ -1437,6 +1441,9 @@
     "mergeHint": "Yedekteki kayıtlar eklenir; iki tarafta da olan kayıtta en yeni sürüm kalır. Bu cihazdaki hiçbir şey silinmez.",
     "overwrite": "Üzerine yaz",
     "overwriteHint": "Bu cihazdaki notlar ve kartlar yedekteki hâline döner; yedekte olmayanlar silinir. Tekrar geçmişi her durumda korunur.",
+    "backupFirst": "Önce şimdiki verilerini yedekle",
+    "backupFirstHint": "Bir şey ters giderse bu dosyadan geri dönebilirsin.",
+    "backedUp": "Yedek alındı",
     "done": "Geri yükleme tamamlandı",
     "doneDetail": "{{added}} kayıt eklendi, {{updated}} kayıt güncellendi, {{logs}} tekrar eklendi.",
     "failed": "Geri yükleme yapılamadı. Verilerin değişmedi.",
@@ -1523,7 +1530,9 @@
     "title": "Hata kaydı",
     "count": "Bu cihazda {{count}} kayıt var (en fazla 200).",
     "none": "Kayıtlı hata yok.",
-    "download": "Dosya olarak indir"
+    "download": "Dosya olarak indir",
+    "downloaded": "Hata kaydı indirildi",
+    "downloadFailed": "Hata kaydı kaydedilemedi."
   },
   "pwa": {
     "updateReady": "Yeni sürüm hazır — yenile",

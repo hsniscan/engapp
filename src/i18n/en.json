@@ -1421,6 +1421,10 @@
     "never": "No backup yet",
     "done": "Backup downloaded",
     "doneHint": "Save the file to a cloud folder or your email.",
+    "savedAt": "Backup saved: {{file}}",
+    "savedHint": "Find it in your phone's Files app. You can also send it to Drive or your email.",
+    "share": "Share",
+    "shareTitle": "Engapp backup",
     "failed": "Backup failed. Try again.",
     "reminderLabel": "Backup reminder",
     "reminderTitle": "Last backup {{when}}.",
@@ -1437,6 +1441,9 @@
     "mergeHint": "Records from the backup are added; where both sides have a record, the newest wins. Nothing on this device is deleted.",
     "overwrite": "Overwrite",
     "overwriteHint": "Notes and cards on this device go back to the backup; anything not in it is deleted. Review history is always kept.",
+    "backupFirst": "Back up your current data first",
+    "backupFirstHint": "If something goes wrong, you can go back to this file.",
+    "backedUp": "Backed up",
     "done": "Restore finished",
     "doneDetail": "{{added}} records added, {{updated}} updated, {{logs}} reviews added.",
     "failed": "Restore failed. Your data was not changed.",
@@ -1523,7 +1530,9 @@
     "title": "Error log",
     "count": "{{count}} entries on this device (max 200).",
     "none": "No errors recorded.",
-    "download": "Download as file"
+    "download": "Download as file",
+    "downloaded": "Error log downloaded",
+    "downloadFailed": "Could not save the error log."
   },
   "pwa": {
     "updateReady": "New version ready — reload",
