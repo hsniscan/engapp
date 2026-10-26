@@ -69,7 +69,7 @@ describe('reconcileImageCards', () => {
     expect(await imageCards()).toHaveLength(1);
   });
 
-  it('acceptance 8: opens only when the recognition card reaches Review, then is studied like any card', async () => {
+  it('acceptance 8: opens once the recognition card is Pekişiyor, then is studied like any card', async () => {
     const { rec, production } = await apple();
     await storeImage(img(0));
     await reconcileImageCards({}, T);
@@ -77,25 +77,30 @@ describe('reconcileImageCards', () => {
     let q = await getStudyQueue({}, T);
     expect(q.items.map((i) => i.card_id)).not.toContain(card!.id);
 
-    const ans = await answerCard({ card_id: rec.id, rating: Rating.Easy, duration_ms: 3000 }, T);
-    expect(ans.card.state).toBe(CardState.Review);
+    // Learning model (decision 0041): reaching Review is not enough; the word must be recalled
+    // again on another day (ramp_step 1, Pekişiyor) before its other cards open.
+    const first = await answerCard({ card_id: rec.id, rating: Rating.Easy, duration_ms: 3000 }, T);
+    expect(first.card.state).toBe(CardState.Review);
+    expect(first.unlockedCardIds).not.toContain(card!.id);
+    const ans = await answerCard({ card_id: rec.id, rating: Rating.Good, duration_ms: 3000 }, first.card.due);
     expect(ans.unlockedCardIds).toContain(card!.id);
     expect((await db.cards.get(card!.id))!.unlocked).toBe(true);
+    const next = first.card.due + 86_400_000;
 
     // Tomorrow it is a new card (one card per note a day), counted against the new limit; the
     // production card of the same sense would come first, so it is set aside here.
     await setSuspended({ card_ids: [production!.id] }, true, T);
-    q = await getStudyQueue({}, T + 86_400_000);
+    q = await getStudyQueue({}, next);
     expect(q.items.find((i) => i.card_id === card!.id)?.kind).toBe('new');
-    const view = await getCardView(card!.id, T + 86_400_000);
+    const view = await getCardView(card!.id, next);
     expect(view?.sense?.id).toBe(card!.sense_id);
     expect(view?.image).toMatchObject({ id: id(0), isNew: false });
-    const res = await answerCard({ card_id: card!.id, rating: Rating.Good, duration_ms: 4000 }, T + 86_400_000);
+    const res = await answerCard({ card_id: card!.id, rating: Rating.Good, duration_ms: 4000 }, next);
     expect(res.log.card_id).toBe(card!.id);
     expect(res.card.reps).toBe(1);
 
     // Undo on the recognition card re-locks nothing that was already studied.
-    await undoAnswer(ans.log.id, T + 86_400_000 + 1);
+    await undoAnswer(ans.log.id, next + 1);
     expect((await db.cards.get(card!.id))!.unlocked).toBe(true);
   });
 
@@ -189,12 +194,14 @@ describe('reconcileImageCards', () => {
 describe('picture missing on this device', () => {
   it('the queue leaves out a picture card whose picture is not cached (offline), and takes it back later', async () => {
     const { rec, production } = await apple();
-    await answerCard({ card_id: rec.id, rating: Rating.Easy, duration_ms: 1000 }, T);
+    // Easy, then recalled again when due (Pekişiyor): the picture card opens.
+    const first = await answerCard({ card_id: rec.id, rating: Rating.Easy, duration_ms: 1000 }, T);
+    await answerCard({ card_id: rec.id, rating: Rating.Good, duration_ms: 1000 }, first.card.due);
     await setSuspended({ card_ids: [production!.id] }, true, T);
     await storeImage(img(0));
-    await reconcileImageCards({}, T);
+    await reconcileImageCards({}, first.card.due);
     const [card] = await imageCards();
-    const tomorrow = T + 86_400_000;
+    const tomorrow = first.card.due + 86_400_000;
     expect((await getStudyQueue({}, tomorrow)).items.map((i) => i.card_id)).toContain(card!.id);
 
     await db.images.clear();

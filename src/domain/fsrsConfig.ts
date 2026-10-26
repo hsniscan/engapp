@@ -18,7 +18,7 @@ export const FSRS_CONFIG = {
  * only to answers at or after it, so replaying older logs reproduces their due dates exactly.
  * The ramp counter (ramp_step) is tracked for every log, before and after, so stages are honest.
  */
-export const RAMP_EPOCH = Date.UTC(2026, 9, 28, 0, 0, 0); // 2026-10-28T00:00:00Z
+export const RAMP_EPOCH = Date.UTC(2026, 9, 26, 6, 0, 0); // 2026-10-26T06:00:00Z, the release
 
 /** Cap (days) when a card leaves (re)learning for Review, per rating. Again never graduates. */
 export const GRAD_CAP = { Hard: 1, Good: 1, Easy: 3 } as const;
