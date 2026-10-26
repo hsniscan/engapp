@@ -95,6 +95,8 @@ begin
     values (u, 'https://fcm.googleapis.com/fcm/send/' || u::text, repeat('B', 87), repeat('A', 22));
   insert into public.push_log (user_id, day) values (u, '2026-10-22');
   insert into public.tts_usage (user_id, day) values (u, current_date);
+  insert into public.article_usage (user_id, day) values (u, current_date);
+  insert into public.story_usage (user_id, day) values (u, current_date);
   insert into public.image_usage (user_id, day) values (u, current_date);
   insert into public.image_request_users (sense_id, user_id) select sense_id, u from pic;
   insert into public.image_feedback (image_id, sense_id, user_id, decision)
