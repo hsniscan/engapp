@@ -462,13 +462,13 @@ deploys `fetch-article`. Optional variables (step 4): `ARTICLE_DAILY_LIMIT`,
 - Check after deploy: **Edge Functions → fetch-article → Logs** shows `extracted` lines with
   sizes only, never an address.
 
-## 18. Pronunciation audio on Cloudflare R2 (v0.5)
+## 19. Pronunciation audio on Cloudflare R2 (v0.5)
 
 The audio files (step 15) take about a third of the free 1 GB in Supabase, and the library
 and new words keep adding more. Cloudflare R2 gives 10 GB free and charges nothing for
 downloads, so the files move there (decision 0053). Nothing changes for you in the app, and
 nothing is deleted from Supabase: the app plays from R2 first and uses Supabase whenever R2
-does not answer, so there is always a way back. Until step 18.6 is done, everything stays on
+does not answer, so there is always a way back. Until step 19.7 is done, everything stays on
 Supabase exactly as before.
 
 You only click in two dashboards (Cloudflare and GitHub); the copying is done by a workflow.

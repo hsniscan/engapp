@@ -1,9 +1,9 @@
 # One-time copy of the pronunciation audio from the Supabase `tts` bucket to Cloudflare R2
-# (decision 0053; steps in docs/setup-backend.md, step 18). Run by hand only.
+# (decision 0053; steps in docs/setup-backend.md, step 19). Run by hand only.
 #
 # Safe to run any number of times: it lists both buckets and copies only the files R2 does
 # not have yet (idempotent), so a cancelled or timed-out run is simply run again (resumable).
-# It never deletes anything from Supabase; that is a later, manual step (setup step 18.9).
+# It never deletes anything from Supabase; that is a later, manual step (setup step 19.9).
 #
 #   dry_run (default on): only counts what Supabase has, what R2 has and what is left.
 #   dry_run off:          copies what is left, then checks a sample through the public
@@ -67,7 +67,7 @@ jobs:
         run: |
           missing=0
           for v in R2_ACCOUNT_ID R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET; do
-            if [ -z "${!v}" ]; then echo "::error::Repository secret $v is not set (docs/setup-backend.md, step 18)"; missing=1; fi
+            if [ -z "${!v}" ]; then echo "::error::Repository secret $v is not set (docs/setup-backend.md, step 19)"; missing=1; fi
           done
           exit $missing
 

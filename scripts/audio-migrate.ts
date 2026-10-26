@@ -169,7 +169,7 @@ async function main(): Promise<void> {
   } else if (v.ok < v.checked || v.cors === false) {
     console.log(
       v.cors === false
-        ? `::error::The bucket does not allow the app (${origin}) to read files: add the CORS policy (docs/setup-backend.md, step 18)`
+        ? `::error::The bucket does not allow the app (${origin}) to read files: add the CORS policy (docs/setup-backend.md, step 19)`
         : '::error::Some files are not served by the public address (see the log)',
     );
     process.exitCode = 1;

@@ -143,7 +143,7 @@ Google hesabı** hazır olsun (son bölümde silinecek; kendi hesabını kullanm
 
 ## 14. R2 ses (v0.5, ölçüt 12)
 
-Sesler Cloudflare'e taşındıktan sonra ([setup-backend.md](setup-backend.md), bölüm 18.7) bir kez.
+Sesler Cloudflare'e taşındıktan sonra ([setup-backend.md](setup-backend.md), bölüm 19.7) bir kez.
 
 | ✓ | Ne yap | Ne olmalı | Not |
 |---|---|---|---|
