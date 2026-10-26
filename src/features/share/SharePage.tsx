@@ -1,96 +1,25 @@
 // /share — "Paylaş → Engapp" (v0.4 İP6, docs/decisions/0034-share-target.md). Reached from the
 // Android share sheet (src/native/share.ts) and from the installed PWA's Web Share Target
 // (manifest share_target, GET). Where the text goes is decided by routeShared (route.ts).
-import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, Navigate, useNavigate, useSearchParams } from 'react-router';
-import { createImportJob, getSettings, logError } from '@/data';
-import { chunkText } from '@/domain/chunking';
+import { Link, Navigate, useSearchParams } from 'react-router';
+import { CaptureActions } from '@/features/add/CaptureActions';
+import { SignInNeeded } from '@/features/add/SignInNeeded';
 import { ArticleFetch } from '@/features/article/ArticleFetch';
 import { useAuth } from '@/features/auth/session';
-import { ImportGate } from '@/features/import/ImportGate';
-import { ImportPrivacyNote } from '@/features/import/PrivacyNote';
-import { kickImportQueue } from '@/features/import/queue';
 import { firstWords } from '@/features/import/shared';
-import { Button, EmptyState, Icon, Page, Spinner, Surface, buttonClasses } from '@/ui';
+import { EmptyState, Icon, Page, Spinner, Surface, buttonClasses } from '@/ui';
 import { countWords, MAX_TERM_WORDS, routeShared, shareHref } from './route';
 
 /**
- * One import job per shared text, even when the page renders twice (StrictMode, going back to
- * it): the promise is kept for the session.
+ * A shared passage (v0.5.1, decision 0056): nothing starts on its own. The same two ways as every
+ * capture, reading first: open it in the reader (no account) or pick out its words (signed in).
  */
-const started = new Map<string, Promise<string>>();
-
-function startJob(
-  text: string,
-  title: string,
-  level: Parameters<typeof createImportJob>[0]['level'],
-) {
-  let p = started.get(text);
-  if (!p) {
-    p = createImportJob({ kind: 'text', title, chunks: chunkText(text), level }).then((job) => {
-      kickImportQueue();
-      return job.id;
-    });
-    p.catch(() => started.delete(text));
-    started.set(text, p);
-  }
-  return p;
-}
-
-/** Signed in: starts the extraction at once and opens its preview (acceptance criterion 10). */
-function StartExtraction({ text, title }: { text: string; title: string }) {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  // The user's level (the AI skips words below it); undefined while settings load.
-  const level = useLiveQuery(async () => (await getSettings()).level, []);
-  const [failedAttempt, setFailedAttempt] = useState<number | null>(null);
-  const [attempt, setAttempt] = useState(0);
-  const failed = failedAttempt === attempt;
-
-  useEffect(() => {
-    if (!level) return;
-    let live = true;
-    // startJob de-duplicates, so a second render or a retry never makes two jobs.
-    startJob(text, title, level).then(
-      (id) => {
-        if (live) void navigate(`/import/${id}`, { replace: true });
-      },
-      (e: unknown) => {
-        void logError(e, 'share.startJob');
-        if (live) setFailedAttempt(attempt);
-      },
-    );
-    return () => {
-      live = false;
-    };
-  }, [text, title, level, attempt, navigate]);
-  const run = () => setAttempt((n) => n + 1);
-
-  if (failed)
-    return (
-      <div className="flex flex-col items-start gap-3">
-        <p role="alert" className="text-sm text-danger-text">
-          {t('share.textFailed')}
-        </p>
-        <Button onClick={run} leadingIcon="search">
-          {t('share.textStart')}
-        </Button>
-      </div>
-    );
-  return (
-    <p role="status" className="flex items-center gap-2 text-[0.9375rem] text-fg-muted">
-      <Spinner size={16} /> {t('share.textStarting')}
-    </p>
-  );
-}
-
 function SharedText({ text, title }: { text: string; title: string | null }) {
   const { t } = useTranslation();
   return (
     <Page title={t('share.textTitle')} description={t('share.textLead')}>
-      <ImportPrivacyNote />
       <Surface tone="sunken" padding="sm" className="mb-6 px-4">
         <p
           lang="en"
@@ -100,9 +29,13 @@ function SharedText({ text, title }: { text: string; title: string | null }) {
           {text}
         </p>
       </Surface>
-      <ImportGate>
-        <StartExtraction text={text} title={title || firstWords(text) || t('share.defaultTitle')} />
-      </ImportGate>
+      <CaptureActions
+        input={() => ({
+          kind: 'paste',
+          title: title || firstWords(text) || t('share.defaultTitle'),
+          body: text,
+        })}
+      />
     </Page>
   );
 }
@@ -171,9 +104,11 @@ function SharedLink({ url, title }: { url: string; title: string | null }) {
         </p>
       ) : (
         <div className="flex flex-col gap-5">
-          <p className="text-[0.9375rem] text-fg" data-testid="article-error-message">
-            {t('article.errors.not_signed_in')} {t('article.pasteHint')}
-          </p>
+          <SignInNeeded
+            title={t('article.errors.not_signed_in')}
+            body={t('article.guestBody')}
+            testId="article-signin"
+          />
           <TitleOnly title={title} />
         </div>
       )}

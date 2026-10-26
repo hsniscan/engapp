@@ -10,14 +10,22 @@
 //
 // A request that ends without a story gives its daily count back (story_refund), so a model
 // failure or a used-up budget never costs the user the day's story.
+//
+// v0.5.1 (decision 0056): `source: 'picked'` is "Kelimelerimle metin oluştur": 3–8 words the
+// user picked, a form and a length, its own prompt (picked-v1) and its own daily counter
+// (picked_story_consume / picked_story_refund, PICKED_STORY_DAILY_LIMIT, default 5).
 
 import { AiError } from './ai-provider.ts';
 import { ApiError } from './errors.ts';
 import { cleanExampleText, locateExampleTerm, wordCount } from './examples.ts';
 import { reserveUsd, tokenBound } from './image-models.ts';
 import {
+  DEFAULT_PICKED_DAILY_LIMIT,
   DEFAULT_STORY_DAILY_LIMIT,
   MIN_STORY_USED,
+  PICKED_PROMPT_VERSION,
+  PICKED_WORDS_ACCEPTED,
+  pickedMinUsed,
   STORY_PROMPT_VERSION,
   STORY_QUESTIONS,
   STORY_WORDS_ACCEPTED,
@@ -26,9 +34,12 @@ import {
   type StoryGloss,
   type StoryQuestion,
   type StoryResponse,
+  type StorySource,
 } from './story-contract.ts';
 import {
+  buildPickedUserPrompt,
   buildStoryUserPrompt,
+  PICKED_SYSTEM_PROMPT,
   STORY_RESPONSE_SCHEMA,
   STORY_SYSTEM_PROMPT,
   storyModelGloss,
@@ -62,10 +73,14 @@ export interface StoryUsage {
   limit: number;
 }
 
-/** The daily counter (story_consume / story_refund, migration 20261101000800). */
+/**
+ * The daily counters: the day's story (story_consume / story_refund, migration
+ * 20261101000800) and picked texts (picked_story_*, migration 20261102000300). `source`
+ * absent = 'daily'.
+ */
 export interface StoryStore {
-  consume(userId: string, retry: boolean, limit: number): Promise<StoryUsage>;
-  refund(userId: string, retry: boolean): Promise<void>;
+  consume(userId: string, retry: boolean, limit: number, source?: StorySource): Promise<StoryUsage>;
+  refund(userId: string, retry: boolean, source?: StorySource): Promise<void>;
 }
 
 export interface StoryModelRequest {
@@ -98,6 +113,8 @@ export interface StoryDeps {
   /** The monthly text budget; absent only in tests and local runs. */
   budget?: TextBudget;
   dailyLimit: number;
+  /** Picked texts per day (PICKED_STORY_DAILY_LIMIT); absent = DEFAULT_PICKED_DAILY_LIMIT. */
+  pickedDailyLimit?: number;
   log?: (msg: string, data?: Record<string, unknown>) => void;
 }
 
@@ -158,6 +175,13 @@ function cleanGloss(raw: unknown): StoryGloss | null {
   return { lemma, gloss_tr: tr.toLocaleLowerCase('tr') };
 }
 
+export interface StoryCheck {
+  /** Accepted word count (default: the daily story's). */
+  words?: { min: number; max: number };
+  /** Target words that must occur (default: MIN_STORY_USED, or all when fewer). */
+  minUsed?: number;
+}
+
 /**
  * Checks the model's answer against the request's target words. Returns the clean story, or
  * the first reason it is unusable. Never throws.
@@ -165,7 +189,10 @@ function cleanGloss(raw: unknown): StoryGloss | null {
 export function validateStoryOutput(
   data: unknown,
   targets: readonly string[],
+  check: StoryCheck = {},
 ): StoryContent | StoryDropReason {
+  const accepted = check.words ?? STORY_WORDS_ACCEPTED;
+  const minUsed = check.minUsed ?? Math.min(MIN_STORY_USED, targets.length);
   const p = storyModelOutput.safeParse(data);
   if (!p.success) return 'invalid_shape';
 
@@ -179,10 +206,10 @@ export function validateStoryOutput(
   const clean = paragraphs as string[];
 
   const words = clean.reduce((n, x) => n + wordCount(x), 0);
-  if (words < STORY_WORDS_ACCEPTED.min || words > STORY_WORDS_ACCEPTED.max) return 'length';
+  if (words < accepted.min || words > accepted.max) return 'length';
 
   const used = usedTargets(clean, targets);
-  if (used.length < Math.min(MIN_STORY_USED, targets.length)) return 'targets_missing';
+  if (used.length < minUsed) return 'targets_missing';
 
   const questions = p.data.questions.map(cleanQuestion);
   if (questions.length !== STORY_QUESTIONS || questions.some((q) => q === null))
@@ -217,6 +244,12 @@ export function storyDailyLimit(env: (k: string) => string | undefined): number 
   return Number.isInteger(n) && n > 0 ? n : DEFAULT_STORY_DAILY_LIMIT;
 }
 
+/** "Kelimelerimle metin oluştur" per user and UTC day (PICKED_STORY_DAILY_LIMIT, default 5). */
+export function pickedDailyLimit(env: (k: string) => string | undefined): number {
+  const n = Number(env('PICKED_STORY_DAILY_LIMIT'));
+  return Number.isInteger(n) && n > 0 ? n : DEFAULT_PICKED_DAILY_LIMIT;
+}
+
 export async function runStory(body: unknown, deps: StoryDeps): Promise<StoryResponse> {
   const parsed = storyRequest.safeParse(body);
   if (!parsed.success)
@@ -226,28 +259,42 @@ export async function runStory(body: unknown, deps: StoryDeps): Promise<StoryRes
     );
   const req = parsed.data;
   const retry = req.avoid.length > 0;
+  const picked = req.source === 'picked';
   if (!deps.model) throw new ApiError('internal', 'The story model is not configured');
 
-  const usage = await deps.store.consume(deps.userId, retry, deps.dailyLimit);
+  const limit = picked ? (deps.pickedDailyLimit ?? DEFAULT_PICKED_DAILY_LIMIT) : deps.dailyLimit;
+  const usage = picked
+    ? await deps.store.consume(deps.userId, retry, limit, 'picked')
+    : await deps.store.consume(deps.userId, retry, limit);
   if (!usage.allowed)
     throw new ApiError(
       'daily_limit',
       retry
-        ? 'Today’s story was already regenerated.'
-        : `Today’s story is already made (${usage.used}/${usage.limit}).`,
+        ? picked
+          ? 'This text was already regenerated.'
+          : 'Today’s story was already regenerated.'
+        : picked
+          ? `Today’s texts are used up (${usage.used}/${usage.limit}).`
+          : `Today’s story is already made (${usage.used}/${usage.limit}).`,
     );
 
   let done = false;
   try {
     const model = deps.model();
-    const system = STORY_SYSTEM_PROMPT;
-    const user = buildStoryUserPrompt({
+    const prompt = {
       level: req.level,
       difficulty: req.difficulty,
       interests: req.interests,
       targets: req.target_lemmas,
       avoid: req.avoid,
-    });
+    };
+    const system = picked ? PICKED_SYSTEM_PROMPT : STORY_SYSTEM_PROMPT;
+    const user = picked
+      ? buildPickedUserPrompt({ ...prompt, genre: req.genre, length: req.length })
+      : buildStoryUserPrompt(prompt);
+    const check: StoryCheck = picked
+      ? { words: PICKED_WORDS_ACCEPTED[req.length], minUsed: pickedMinUsed(req.target_lemmas.length) }
+      : {};
     const boundUsd = reserveUsd(model.model, {
       inputTokens: tokenBound(system + user),
       maxTokens: STORY_MAX_OUTPUT_TOKENS + STORY_THINKING_TOKENS,
@@ -279,7 +326,9 @@ export async function runStory(body: unknown, deps: StoryDeps): Promise<StoryRes
         answer = (await call()).value;
       }
       const story =
-        answer.data === undefined ? 'not_json' : validateStoryOutput(answer.data, req.target_lemmas);
+        answer.data === undefined
+          ? 'not_json'
+          : validateStoryOutput(answer.data, req.target_lemmas, check);
       if (typeof story === 'string') {
         last = story;
         deps.log?.('ai-story unusable answer', { model: answer.model, attempt, reason: story });
@@ -291,10 +340,11 @@ export async function runStory(body: unknown, deps: StoryDeps): Promise<StoryRes
         used: story.used_lemmas.length,
         targets: req.target_lemmas.length,
         retry,
+        source: req.source,
       });
       done = true;
       return {
-        prompt_version: STORY_PROMPT_VERSION,
+        prompt_version: picked ? PICKED_PROMPT_VERSION : STORY_PROMPT_VERSION,
         model: answer.model,
         story,
         usage: { used: usage.used, limit: usage.limit },
@@ -306,7 +356,9 @@ export async function runStory(body: unknown, deps: StoryDeps): Promise<StoryRes
     throw e;
   } finally {
     if (!done)
-      await deps.store.refund(deps.userId, retry).catch((e: unknown) =>
+      await (
+        picked ? deps.store.refund(deps.userId, retry, 'picked') : deps.store.refund(deps.userId, retry)
+      ).catch((e: unknown) =>
         deps.log?.('ai-story refund failed', { error: String(e) }),
       );
   }

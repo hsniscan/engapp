@@ -2,9 +2,10 @@
 // article's text, open it in the reader or extract its words. ?url= starts at once.
 import { useId, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSearchParams } from 'react-router';
-import { ImportGate } from '@/features/import/ImportGate';
-import { Button, Page, TextField } from '@/ui';
+import { Link, useSearchParams } from 'react-router';
+import { SignInNeeded } from '@/features/add/SignInNeeded';
+import { useAuth } from '@/features/auth/session';
+import { Button, Page, TextField, buttonClasses } from '@/ui';
 import { ArticleFetch } from './ArticleFetch';
 import { normaliseArticleUrl } from './useArticle';
 
@@ -24,6 +25,24 @@ export function ArticlePage() {
   };
 
   const url = current ? normaliseArticleUrl(current) : null;
+  const auth = useAuth();
+  // Guests: fetching an article goes through the server, so say that before anything else.
+  if (auth.status === 'guest' || auth.status === 'unavailable')
+    return (
+      <Page title={t('article.pageTitle')} description={t('article.pageLead')}>
+        <SignInNeeded
+          title={
+            auth.status === 'guest' ? t('article.errors.not_signed_in') : t('article.unavailable')
+          }
+          body={t('article.guestBody')}
+          testId="article-signin"
+        >
+          <Link to="/add?tab=paste" className={buttonClasses({ variant: 'ghost' })}>
+            {t('article.pasteCta')}
+          </Link>
+        </SignInNeeded>
+      </Page>
+    );
   return (
     <Page title={t('article.pageTitle')} description={t('article.pageLead')}>
       <form id={formId} onSubmit={submit} className="mb-6 flex flex-col gap-3" noValidate>
@@ -52,11 +71,7 @@ export function ArticlePage() {
         </div>
         <p className="text-sm text-fg-muted">{t('article.privacy')}</p>
       </form>
-      {url && (
-        <ImportGate>
-          <ArticleFetch key={url} url={url} />
-        </ImportGate>
-      )}
+      {url && auth.status === 'signed_in' && <ArticleFetch key={url} url={url} />}
     </Page>
   );
 }

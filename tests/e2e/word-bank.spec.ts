@@ -64,9 +64,9 @@ test('Kelime Bankası: guest download, level list, add one, quick-add ten, offli
   const state = { requests: [] as string[], down: false };
   await serveBank(page, state);
 
-  // Reached from the add screen: the old /kelime-bankasi address opens Desteler's bank segment.
-  await page.goto('/add');
-  await page.getByRole('link', { name: "Kelime Bankası'nı aç" }).click();
+  // The old /kelime-bankasi address opens Desteler's bank segment (v0.5.1: the add screen no
+  // longer links it; the bank lives in Desteler / Kelimelerim).
+  await page.goto('/kelime-bankasi');
   await expect(page).toHaveURL(/\/decks\?tab=bank$/);
   await expect(page.getByRole('link', { name: 'Kelime bankası' })).toHaveAttribute(
     'aria-current',

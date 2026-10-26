@@ -31,10 +31,10 @@ test('a guest sharing a link: sign-in message, copy-paste hint and the title-onl
   await expect(page.getByRole('heading', { name: 'Paylaşılan bağlantı' })).toBeVisible();
   await expect(page.getByTestId('shared-title')).toHaveText('Why we all procrastinate so much');
   await expect(page.getByTestId('shared-url')).toHaveText('https://example.com/story?id=1');
-  await expect(page.getByTestId('article-error-message')).toContainText('giriş yapman gerekiyor');
-  await expect(page.getByTestId('article-error-message')).toContainText(
-    'kopyalayıp yapıştırabilirsin',
+  await expect(page.getByTestId('signin-needed-title')).toHaveText(
+    'Makale getirmek için giriş yap',
   );
+  await expect(page.getByTestId('article-signin')).toContainText('kopyalayıp yapıştırırsan');
   await noSideScroll(page);
 
   // The title can still be mined for words (it becomes a shared text).
@@ -125,16 +125,21 @@ test('nothing usable: a calm empty state', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Paylaşılan bir metin yok' })).toBeVisible();
 });
 
-test('a guest sharing a sentence keeps the text and is invited to sign in', async ({ page }) => {
+test('a guest sharing a sentence reads it in the reader; only extraction asks for sign-in', async ({
+  page,
+}) => {
   const text = FAKE_SPECS[0]!.sentence;
   await page.goto(`/share?text=${encodeURIComponent(text)}`);
-  await expect(page.getByRole('heading', { name: 'Metinden kelime çıkar' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Paylaşılan metin' })).toBeVisible();
   await expect(page.getByTestId('shared-text')).toHaveText(text);
-  await expect(page.getByText('AI ile kart çıkarmak için giriş yap')).toBeVisible();
+  await expect(page.getByText(/Kelimeleri çıkarmayı yapay zekâ yapar; bunun için giriş yap/)).toBeVisible();
   await noSideScroll(page);
+  await page.getByTestId('open-in-reader').click();
+  await expect(page).toHaveURL(/\/oku\/[0-9a-f-]+$/);
+  await expect(page.getByTestId('reader-text')).toContainText(text.split(' ').slice(0, 4).join(' '));
 });
 
-test('signed in: a shared sentence lands in the extraction preview within 10 s', async ({
+test('signed in: a shared text waits for a choice, then lands in the extraction preview', async ({
   context,
   page,
   backend,
@@ -142,8 +147,16 @@ test('signed in: a shared sentence lands in the extraction preview within 10 s',
   await FakeBackend.signIn(context);
   const specs = FAKE_SPECS.slice(0, 3);
   const text = specs.map((s) => s.sentence).join(' ');
-  const started = Date.now();
   await page.goto(`/share?text=${encodeURIComponent(text)}`);
+  // v0.5.1: nothing starts by itself; the two choices are shown, reading first.
+  await expect(page.getByTestId('shared-text')).toBeVisible();
+  const choices = page.getByTestId('capture-actions').getByRole('button');
+  await expect(choices).toHaveCount(2);
+  await expect(choices.first()).toContainText('Okuyucuda aç');
+  await expect(choices.nth(1)).toContainText('Bu metindeki kelimeleri çıkar');
+  expect(backend.count('ai-extract')).toBe(0);
+  const started = Date.now();
+  await choices.nth(1).click();
   await expect(page).toHaveURL(/\/import\/[0-9a-f-]+$/, { timeout: 10_000 });
   // The candidates come with the sentence they were found in (the shared text).
   await expect(page.getByTestId('smart-summary')).toBeVisible({ timeout: 10_000 });

@@ -2,11 +2,36 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { db, deleteImportJob, retryImportJob, type ImportJobRecord } from '@/data';
-import type { Source } from '@/domain/types';
+import { getText } from '@/data/texts';
+import { readerPath } from '@/domain/texts';
+import type { Id, Source } from '@/domain/types';
 import { Button, Icon, ProgressBar, Spinner, Surface, buttonClasses, cn } from '@/ui';
 import { importErrorMessage } from './errors';
 import { kickImportQueue } from './queue';
 import { useOnline } from './shared';
+
+/**
+ * "Metni oku" (v0.5.1, decision 0056): the text the words come from, saved before the extraction.
+ * Nothing when the job has no text (older jobs) or the text was deleted.
+ */
+export function ReadTextLink({ textId, className }: { textId?: Id | null; className?: string }) {
+  const { t } = useTranslation();
+  const exists = useLiveQuery(async () => (textId ? !!(await getText(textId)) : false), [textId]);
+  if (!textId || !exists) return null;
+  return (
+    <Link
+      to={readerPath(textId)}
+      className={cn(
+        'inline-flex min-h-11 items-center gap-1.5 self-start text-[0.9375rem] font-medium text-accent-text underline-offset-4 hover:underline',
+        className,
+      )}
+      data-testid="read-text"
+    >
+      <Icon name="file" size={18} />
+      {t('capture.readText')}
+    </Link>
+  );
+}
 
 /** Live progress of one import job: queue state, chunk progress, cache hits, errors, result. */
 export function JobCard({ job, className }: { job: ImportJobRecord; className?: string }) {
@@ -101,6 +126,8 @@ export function JobCard({ job, className }: { job: ImportJobRecord; className?: 
           {t('importer.job.cacheHits', { count: job.chunk_cache_hits })}
         </p>
       )}
+
+      <ReadTextLink textId={job.text_id} />
 
       {ready && (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

@@ -13,41 +13,23 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router';
+import { getAuthState } from '@/features/auth/session';
 import { getSettings, logError } from '@/data';
-import { addQuickCard, previewFromSenses, quickPreview, type QuickAddResult } from '@/data/quick';
-import { saveText } from '@/data/texts';
 import { readerPath } from '@/domain/texts';
-import { startAuth, useAuth } from '@/features/auth/session';
-import { lookupLexicon, type LexiconSuggestion } from '@/features/import/lexicon';
+import { extractCapture, saveCapture } from '@/features/add/capture';
 import { playPronunciation, pronunciationSupported } from '@/features/review/pronunciation';
 import { shareHref } from '@/features/share/route';
 import { historyIndex } from '@/native/backButton';
 import { isNativeApp } from '@/native/platform';
-import { closeQuick, continueInApp } from '@/native/quickHost';
-import { QuickSheet, type LookupState } from './QuickSheet';
-import { addFormPath, lookupForms, quickTitle, routeQuick } from './route';
+import { closeQuick, continueInApp, isQuickHost } from '@/native/quickHost';
+import { QuickSheet } from './QuickSheet';
+import { addFormPath, quickTitle, routeQuick } from './route';
+import { useTermLookup } from './useTermLookup';
 
 /** How long the sheet stays after "Karta ekle" before it closes (the confirmation). */
 export const SAVED_CLOSE_MS = 1200;
 /** Android cold start: how long to wait for the selection before showing the empty state. */
 const WAIT_FOR_SELECTION_MS = 4000;
-
-function useOnlineNow(): boolean {
-  const [online, setOnline] = useState(() =>
-    typeof navigator === 'undefined' ? true : navigator.onLine,
-  );
-  useEffect(() => {
-    const on = () => setOnline(true);
-    const off = () => setOnline(false);
-    window.addEventListener('online', on);
-    window.addEventListener('offline', off);
-    return () => {
-      window.removeEventListener('online', on);
-      window.removeEventListener('offline', off);
-    };
-  }, []);
-  return online;
-}
 
 export function QuickPage() {
   const { t } = useTranslation();
@@ -122,7 +104,7 @@ export function QuickPage() {
         {...common}
         onOpenReader={() =>
           void handOver('reader', async () => {
-            const id = await saveText({
+            const id = await saveCapture({
               kind: 'paste',
               title: quickTitle(route.text),
               body: route.text,
@@ -130,7 +112,21 @@ export function QuickPage() {
             return { path: readerPath(id) };
           })
         }
-        onExtract={() => void handOver('extract', async () => ({ shareText: route.text }))}
+        onExtract={() =>
+          void handOver('extract', async () => {
+            // In the Android sheet, and for guests (who are asked to sign in there), the text
+            // goes to "Paylaş → Engapp", which shows the same two choices. In the browser a
+            // signed-in user's choice is final: the text is saved and its extraction opens.
+            if ((await isQuickHost()) || getAuthState().status !== 'signed_in')
+              return { shareText: route.text };
+            const job = await extractCapture({
+              kind: 'paste',
+              title: quickTitle(route.text),
+              body: route.text,
+            });
+            return { path: `/import/${job}` };
+          })
+        }
       />
     );
   if (route.kind === 'link')
@@ -142,21 +138,6 @@ export function QuickPage() {
       />
     );
   return <QuickSheet route={route} {...common} />;
-}
-
-/** One ai-enrich lookup per term per session (StrictMode runs effects twice). */
-const asking = new Map<string, ReturnType<typeof lookupLexicon>>();
-function askOnce(term: string): ReturnType<typeof lookupLexicon> {
-  let p = asking.get(term);
-  if (!p) {
-    p = lookupLexicon(term, { more: false });
-    // A failed or empty answer may be asked again on a later visit.
-    void p.then((r) => {
-      if (!r.ok || !r.senses.length) asking.delete(term);
-    });
-    asking.set(term, p);
-  }
-  return p;
 }
 
 function TermSheet({
@@ -172,93 +153,8 @@ function TermSheet({
   busy: 'reader' | 'extract' | 'link' | 'write' | null;
   error: string | null;
 }) {
-  const { t } = useTranslation();
-  const auth = useAuth();
-  const online = useOnlineNow();
-  const forms = useMemo(() => lookupForms(term), [term]);
-  const local = useLiveQuery(() => quickPreview(term, forms), [term, forms.join('|')]);
   const voice = useLiveQuery(async () => (await getSettings()).voice, []) ?? 'en-US';
-
-  // ai-enrich, once, only when the device has nothing for the word.
-  const [answer, setAnswer] = useState<{
-    state: LookupState;
-    senses: LexiconSuggestion[] | null;
-  } | null>(null);
-  const aiSenses = answer?.senses ?? null;
-  const missing = local !== undefined && local.origin === 'none';
-  // Outside the shell nothing has started the session yet; only needed when the device has
-  // nothing (an offline word-bank hit never touches the backend).
-  useEffect(() => {
-    if (missing && online) startAuth();
-  }, [missing, online]);
-  const signedIn = auth.status === 'signed_in';
-  const shouldAsk = missing && online && signedIn && answer === null;
-  const lookup: LookupState = !missing
-    ? 'idle'
-    : answer
-      ? answer.state
-      : !online
-        ? 'offline'
-        : signedIn
-          ? 'searching'
-          : auth.status === 'loading'
-            ? 'searching'
-            : auth.status === 'unavailable'
-              ? 'notfound'
-              : 'signin';
-
-  useEffect(() => {
-    if (!shouldAsk) return;
-    let live = true;
-    void askOnce(term).then((res) => {
-      if (!live) return;
-      if (!res.ok)
-        setAnswer({ state: res.error === 'offline' ? 'offline' : 'failed', senses: null });
-      else if (!res.senses.length) setAnswer({ state: 'notfound', senses: null });
-      else setAnswer({ state: 'idle', senses: res.senses });
-    });
-    return () => {
-      live = false;
-    };
-  }, [shouldAsk, term]);
-
-  const preview = useMemo(
-    () => (local && aiSenses ? previewFromSenses(local, aiSenses) : local),
-    [local, aiSenses],
-  );
-
-  // The first meaning is picked by default (the most common one).
-  const [chosen, setChosen] = useState<Set<string> | null>(null);
-  const picked = useMemo(() => {
-    const keys = new Set(preview?.senses.map((s) => s.key) ?? []);
-    if (chosen) return new Set([...chosen].filter((k) => keys.has(k)));
-    const first = preview?.senses[0]?.key;
-    return new Set(first ? [first] : []);
-  }, [chosen, preview]);
-  const toggle = (key: string) =>
-    setChosen(() => {
-      const next = new Set(picked);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState<QuickAddResult | null>(null);
-  const [addError, setAddError] = useState<string | null>(null);
-  const add = async () => {
-    if (!preview || saving) return;
-    setSaving(true);
-    setAddError(null);
-    try {
-      setSaved(await addQuickCard(preview, [...picked]));
-    } catch (e) {
-      void logError(e, 'quick.add');
-      setAddError(t('quick.addFailed'));
-    } finally {
-      setSaving(false);
-    }
-  };
+  const { preview, lookup, picked, toggle, add, saving, saved, addError } = useTermLookup(term);
   useEffect(() => {
     if (!saved) return;
     const id = window.setTimeout(onClose, SAVED_CLOSE_MS);

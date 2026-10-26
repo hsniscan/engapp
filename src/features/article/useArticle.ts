@@ -1,16 +1,10 @@
 // Fetching one article (v0.5 İP2, decision 0044) and what the screens need around it: the
-// state of the request, the Turkish message for a failure, saving into the reader and handing
-// the text to word extraction.
+// state of the request and the Turkish message for a failure. Saving and word extraction are the
+// capture's (features/add/capture.ts).
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AiClientError } from '@/ai/client';
 import { fetchArticle, type ArticleResponse } from '@/ai/article';
-import { createImportJob, getSettings, logError } from '@/data';
-import { saveText } from '@/data/texts';
-import { chunkText } from '@/domain/chunking';
-import type { Id } from '@/domain/types';
-import type { TextKind } from '@/domain/texts';
-import { kickImportQueue } from '@/features/import/queue';
-import { MAX_IMPORT_CHARS } from '@/features/import/shared';
+import { logError } from '@/data';
 
 /** Failure kinds the screens tell apart (each has its own message in `article.errors`). */
 export const ARTICLE_ERRORS = [
@@ -103,42 +97,6 @@ export function useArticleFetch(fetcher: typeof fetchArticle = fetchArticle) {
     [fetcher],
   );
   return { state, run };
-}
-
-/** Saves a text for the reader and returns its id (the screen then opens readerPath(id)). */
-export async function saveForReader(input: {
-  kind: TextKind;
-  title: string;
-  body: string;
-  sourceUrl: string | null;
-}): Promise<Id> {
-  return saveText({
-    kind: input.kind,
-    title: input.title,
-    body: input.body,
-    source_url: input.sourceUrl,
-  });
-}
-
-const extractions = new Map<string, Promise<string>>();
-
-/** Starts the existing word extraction on a text; resolves to the import job id. */
-export function startTextExtraction(text: string, title: string): Promise<string> {
-  const body = text.slice(0, MAX_IMPORT_CHARS);
-  let p = extractions.get(body);
-  if (!p) {
-    p = getSettings()
-      .then((s) =>
-        createImportJob({ kind: 'text', title, chunks: chunkText(body), level: s.level }),
-      )
-      .then((job) => {
-        kickImportQueue();
-        return job.id;
-      });
-    p.catch(() => extractions.delete(body));
-    extractions.set(body, p);
-  }
-  return p;
 }
 
 /** Words with a letter, for the "n kelime" line. */

@@ -45,7 +45,7 @@ export function ReadingTab() {
           <h2 id="my-texts" className="font-serif text-xl font-semibold text-fg">
             {t('reader.list.title')}
           </h2>
-          <Button variant="ghost" size="sm" leadingIcon="plus" onClick={() => openAddSheet()}>
+          <Button variant="ghost" size="sm" leadingIcon="plus" onClick={() => openAddSheet('text')}>
             {t('reader.list.add')}
           </Button>
         </div>

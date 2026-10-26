@@ -388,6 +388,9 @@ export const readerTextSchema: z.ZodType<ReaderText> = z.object({
   story: z
     .object({
       day: dayKey,
+      // v0.5.1 "Kelimelerimle metin oluştur" (decision 0056); absent on daily stories.
+      source: z.enum(['daily', 'picked']).optional().catch(undefined),
+      genre: z.enum(['story', 'dialogue', 'news', 'email']).optional().catch(undefined),
       prompt_version: z.string().max(40),
       targets: z
         .array(

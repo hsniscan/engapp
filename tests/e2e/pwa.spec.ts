@@ -36,7 +36,7 @@ test.describe('PWA', () => {
       ['/library', 'Tüm kelimelerim'],
       ['/decks', 'Kelimelerim'],
       ['/kesfet', 'Keşfet'],
-      ['/add', 'Kart ekle'],
+      ['/add', 'Kelime ekle'],
       ['/progress', 'İlerleme'],
       ['/profile', 'Misafir'],
       ['/settings', 'Ayarlar'],

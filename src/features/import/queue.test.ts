@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AiClientError, type ExtractResponse } from '@/ai/client';
 import {
   createImportJob,
@@ -303,8 +303,9 @@ describe('import queue concurrency (acceptance criterion 5)', () => {
   }
 
   it(`a 51k-character text at 4.5 s per chunk finishes well under 60 s with ${CHUNK_CONCURRENCY} in flight`, async () => {
-    // Real timers, scaled 1:100 (45 ms stands for 4.5 s, 6 ms for the 600 ms gap).
-    const SCALE = 100;
+    // Fake clock (v0.5.1): the old real-time version (scaled 1:100) failed on a busy machine.
+    // Only the timers and the clock are fake; IndexedDB (setImmediate) and crypto stay real.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date', 'performance'] });
     const text = longText();
     const chunks = chunkText(text);
     expect(text.length).toBeGreaterThanOrEqual(51_000);
@@ -315,20 +316,35 @@ describe('import queue concurrency (acceptance criterion 5)', () => {
       extract: async ({ text: t }) => {
         inFlight++;
         maxInFlight = Math.max(maxInFlight, inFlight);
-        await new Promise((r) => setTimeout(r, 4500 / SCALE));
+        await new Promise((r) => setTimeout(r, 4500));
         inFlight--;
         return { ...(fakeExtractResponse(t) as ExtractResponse), chunk_hash: await hashChunk(t) };
       },
       isOnline: () => true,
       isSignedIn: async () => true,
-      sleep: (ms) => new Promise((r) => setTimeout(r, ms / SCALE)),
+      sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
       now: () => Date.now(),
       gapMs: CHUNK_GAP_MS,
     };
-    const job = await createImportJob({ kind: 'pdf', title: '20 sayfa', chunks, level: 'B1' });
-    const t0 = performance.now();
-    expect(await processImportQueue(deps)).toBe('idle');
-    const simulatedMs = (performance.now() - t0) * SCALE;
+    let simulatedMs = 0;
+    let job: Awaited<ReturnType<typeof createImportJob>>;
+    try {
+      job = await createImportJob({ kind: 'pdf', title: '20 sayfa', chunks, level: 'B1' });
+      const t0 = Date.now();
+      let result: string | undefined;
+      const run = processImportQueue(deps).then((r) => (result = r));
+      // Let the real database work settle, then jump to the next timer: only the model's and
+      // the gap's waits cost simulated time, however busy the machine is.
+      for (let i = 0; i < 5000 && result === undefined; i++) {
+        for (let k = 0; k < 200; k++) await new Promise((r) => setImmediate(r));
+        if (result === undefined) await vi.advanceTimersToNextTimerAsync();
+      }
+      await run;
+      expect(result).toBe('idle');
+      simulatedMs = Date.now() - t0;
+    } finally {
+      vi.useRealTimers();
+    }
     const sequentialMs = chunks.length * 4500 + (chunks.length - 1) * CHUNK_GAP_MS;
     expect(maxInFlight).toBe(CHUNK_CONCURRENCY);
     expect(sequentialMs).toBeGreaterThan(45_000); // one by one this was close to the limit

@@ -247,19 +247,51 @@
   },
   "addSheet": {
     "title": "What would you like to add?",
-    "quickLabel": "Quick add · AI finds the meaning and examples",
     "quickPlaceholder": "Type a word…",
-    "quickSubmit": "Add the word",
-    "wordTitle": "Type a word",
-    "wordBody": "Type one word, let AI find its meaning",
-    "textTitle": "Text or PDF",
-    "textBody": "Picks the words that suit your level",
-    "bankTitle": "From the word bank",
-    "bankBody": "Pick from the A1–C2 lists",
-    "decksTitle": "Ready-made decks",
-    "decksBody": "Most common words, level and word-type decks",
-    "ankiTitle": "Move from Anki",
-    "ankiBody": "Choose your .apkg file and bring your decks here"
+    "word": {
+      "title": "Add a word",
+      "label": "Its meaning comes from your cards, the Word Bank or the dictionary; otherwise AI finds it",
+      "submit": "Find the meaning",
+      "manual": "Add by hand",
+      "edit": "Edit by hand",
+      "another": "Add another word",
+      "offline": "This word is not on your phone. Once online I can find its meaning; or add it by hand.",
+      "signIn": "This word is not on your phone. Sign in so AI can find its meaning, or add it by hand.",
+      "notFound": "I couldn't find this word's meaning. You can add it by hand."
+    },
+    "text": {
+      "title": "Add a text",
+      "paste": "Paste",
+      "pdf": "PDF",
+      "link": "Link",
+      "photo": "Photo",
+      "subtitle": "Subtitles",
+      "body": "The text is saved and opens in the reader. You can pick out its new words too."
+    },
+    "compose": {
+      "title": "A text from my words",
+      "cta": "Create a text from my words",
+      "body": "Pick 3–8 of your words; get a story, dialogue, news item or email."
+    },
+    "import": {
+      "title": "Import",
+      "anki": "Anki deck",
+      "ankiBody": "Choose your .apkg file and bring your decks here",
+      "csv": "CSV or word list",
+      "csvBody": "One word and its meaning per line",
+      "backup": "Backup file",
+      "backupBody": "Restore an Engapp backup"
+    }
+  },
+  "capture": {
+    "openReader": "Open in the reader",
+    "openReaderHint": "Tap a word you don't know to see its meaning. No account needed.",
+    "extract": "Pick out the words in this text",
+    "extractHint": "AI suggests new words at your level, with the sentence they appear in. The text is saved too.",
+    "extractSignIn": "Picking out words is done by AI, so sign in for it. Reading needs no account.",
+    "signInCta": "Sign in with Google",
+    "extractUnavailable": "Word extraction is off in this version. The reader always works.",
+    "readText": "Read the text"
   },
   "review": {
     "title": "Review",
@@ -656,7 +688,12 @@
     }
   },
   "add": {
-    "title": "Add a card"
+    "title": "Add a card",
+    "wordTitle": "Add a word",
+    "wordLead": "Type the word; its meaning comes from your cards, the Word Bank or the dictionary. Write your own and add an example if you like.",
+    "textTitle": "Add a text",
+    "textLead": "The text is saved and opens in the reader. You can pick out its new words too.",
+    "otherWays": "Or from somewhere else"
   },
   "import": {
     "title": "Preview"
@@ -1357,11 +1394,6 @@
     "hoursMinutes": "{{h}} h {{m}} min"
   },
   "cards": {
-    "tabs": {
-      "manual": "Manual",
-      "paste": "Paste text",
-      "pdf": "Upload PDF"
-    },
     "termType": {
       "word": "Word",
       "phrase": "Phrase",
@@ -1413,7 +1445,6 @@
       "notFound": "The term was not found in this sentence, so no cloze card will be made. Make sure the sentence contains it."
     },
     "add": {
-      "pageHint": "A new word or phrase, its meaning and, if you like, an example sentence.",
       "manualTitle": "Add a card by hand",
       "term": "English word or phrase",
       "termHint": "Use the dictionary form: “give up”, not “gave up”.",
@@ -1621,8 +1652,6 @@
     }
   },
   "ocr": {
-    "addTitle": "Text from a photo",
-    "addBody": "Snap a book page and get its text",
     "title": "Text from a photo",
     "lead": "Reads the English text in a photo of a book, magazine or sign.",
     "camera": "Take a photo",
@@ -1663,15 +1692,10 @@
     "title": "Shared",
     "emptyTitle": "Nothing was shared",
     "emptyBody": "Select a word or sentence in another app, tap Share and choose Engapp.",
-    "textTitle": "Find words in the text",
-    "textLead": "Looking for words in this text. They appear in the preview with the sentence they came from.",
-    "textStart": "Find words",
-    "textStarting": "Starting…",
-    "textFailed": "Could not start finding words. Try again.",
+    "textTitle": "Shared text",
+    "textLead": "Read it in the reader or pick out its new words. Nothing starts on its own.",
     "defaultTitle": "Shared text",
     "linkTitle": "Shared link",
-    "linkLead": "For now only the page title is used. Importing the full article comes in a later version.",
-    "linkNoTitle": "No title came with this link; the address is shown below. Importing the full article comes in a later version.",
     "linkFromTitle": "Find words in the title",
     "linkTermFromTitle": "Add the title as a card",
     "toHome": "Back to home"
@@ -1805,6 +1829,8 @@
       "label": "English text",
       "placeholder": "Paste an article, email or book chapter…",
       "stats": "{{chars}} characters · {{chunks}} parts",
+      "words_one": "{{count}} word · {{chars}} characters",
+      "words_other": "{{count}} words · {{chars}} characters",
       "statsEmpty": "Paste whole sentences; long texts are split into parts.",
       "titleLabel": "Title",
       "titlePlaceholder": "e.g. The Guardian — climate piece",
@@ -1822,7 +1848,7 @@
       "summary": "{{pages}} pages · {{chars}} characters · {{chunks}} parts",
       "change": "Choose another file",
       "noText": "This PDF has no readable text",
-      "noTextBody": "Scanned (image) PDFs aren't supported yet. If you can copy the text, use the “Paste text” tab.",
+      "noTextBody": "Scanned (image) PDFs are not supported yet. Take a photo of the page, or copy the text and use the “Paste” tab.",
       "notPdf": "This file isn't a PDF.",
       "tooBig": "The file is too large (at most {{mb}} MB).",
       "encrypted": "This PDF is password-protected and couldn't be opened.",
@@ -2606,8 +2632,6 @@
     "title": "Move from Anki",
     "description": "Bring your Anki decks here together with their review history.",
     "entry": {
-      "title": "Using Anki?",
-      "body": "You can move your decks here with their review history.",
       "link": "Upload an Anki file (.apkg)"
     },
     "pick": {
@@ -2958,8 +2982,6 @@
     "retry": "Try again",
     "credit": "Word lists: CEFR-J Wordlist 1.5 (© Tono Laboratory, TUFS) and Octanove Vocabulary Profile C1/C2 (Octanove Labs, CC BY-SA 4.0). Meanings and example sentences were generated once with AI.",
     "creditLink": "Sources",
-    "entryTitle": "Not sure what to add?",
-    "entryBody": "The word bank has thousands of words for your level, with meanings and examples.",
     "entryLink": "Open the word bank"
   },
   "discover": {
@@ -3382,10 +3404,6 @@
     }
   },
   "article": {
-    "sheetTitle": "Article from a link",
-    "sheetBody": "Open a news story or blog post in the reader",
-    "subtitleSheetTitle": "Subtitle file (.srt / .vtt)",
-    "subtitleSheetBody": "Turn series or video subtitles into text",
     "pageTitle": "Article from a link",
     "pageLead": "Paste the address of an article. Ads, menus and comments are dropped; only the text comes through.",
     "urlLabel": "Article address",
@@ -3406,11 +3424,13 @@
     "failTitle": "This page could not be fetched",
     "pasteHint": "You can copy the text from the page and paste it; the reader and word finding work the same way.",
     "pasteCta": "Copy and paste the text",
+    "guestBody": "Articles are fetched through our server, so this needs an account. Copy the page's text and paste it to read it without signing in.",
+    "unavailable": "Fetching articles is off in this version",
     "retry": "Try again",
     "titleOnly": "You can still use the page title:",
     "errors": {
       "offline": "No internet connection. Try again once you are online.",
-      "not_signed_in": "Fetching articles needs a Google sign-in.",
+      "not_signed_in": "Sign in to fetch articles",
       "daily_limit": "You have used today's articles (30 a day). Try again tomorrow.",
       "blocked_url": "This address cannot be opened. Paste the address of a public web page.",
       "robots_disallowed": "This site does not allow apps to fetch its pages.",
@@ -3444,6 +3464,7 @@
     "selected": "You selected: {{selected}}",
     "listen": "Listen: {{term}}",
     "meanings": "Meanings",
+    "mine": "Meaning on your card",
     "pickHint": "Tap the meanings the card should have.",
     "picked": "Selected",
     "owned": {
@@ -3704,6 +3725,100 @@
       "notEnough": "A story needs at least 5 review words today.",
       "generic": "The story could not be written right now. Try again a little later."
     }
+  },
+  "compose": {
+    "title": "Make a text with my words",
+    "lead": "A short text with the words you pick. It opens in the reader with your words marked and 3 questions at the end.",
+    "steps": "Steps",
+    "step1": "Words",
+    "step2": "Options",
+    "step3": "Read",
+    "search": "Search your words",
+    "searchPlaceholder": "Search your words…",
+    "searchResults": "Search results",
+    "noMatch": "None of your words match.",
+    "listDue": "Due for review",
+    "listHard": "Hard for you",
+    "listRecent": "Recently added",
+    "picked": "{{count}}/{{max}} words picked",
+    "pickMore_one": "pick {{count}} more",
+    "pickMore_other": "pick {{count}} more",
+    "pickedList": "Your picked words",
+    "remove": "Remove {{term}}",
+    "next": "Continue",
+    "back": "Back",
+    "genre": "Form",
+    "genres": {
+      "story": "Story",
+      "dialogue": "Dialogue",
+      "news": "News",
+      "email": "Email"
+    },
+    "length": "Length",
+    "lengths": {
+      "short": "Short · ~120 words",
+      "medium": "Medium · ~220 words"
+    },
+    "difficulty": "Difficulty",
+    "topic": "Topic",
+    "topicHint": "The text is set in one of these topics.",
+    "topicNone": "With no topic, an everyday one is chosen.",
+    "noInterests": "You picked no interests, so an everyday topic is chosen.",
+    "setInterests": "Pick your interests",
+    "make": "Create the text",
+    "retry": "Try again",
+    "writing": "Writing your text…",
+    "writingHint": "It takes about 10 seconds and opens in the reader.",
+    "limit_one": "You can create {{count}} text a day · today {{used}}",
+    "limit_other": "You can create {{count}} texts a day · today {{used}}",
+    "signInTitle": "Sign in to create the text",
+    "signInBody": "AI writes the text, so a Google account is needed. Your picked words stay here.",
+    "unavailable": "Creating texts is off in this version.",
+    "fewTitle": "Add a few words first",
+    "fewBody_one": "You need at least {{count}} word on your cards.",
+    "fewBody_other": "You need at least {{count}} words on your cards.",
+    "fewCta": "Add a word",
+    "errors": {
+      "offline": "You're offline. Try again once connected; your pick stays.",
+      "guest": "Sign in with Google for the text.",
+      "used": "Today's {{count}} texts are used up. They renew tomorrow.",
+      "budget": "This month's text budget is used up. It reopens at the start of the month.",
+      "notEnough": "Pick at least 3 words.",
+      "generic": "The text could not be written right now. Try again a bit later."
+    }
+  },
+  "wordList": {
+    "title": "CSV or word list",
+    "lead": "One word and its meaning per line; an example sentence in a third column if you like. The cards are made on this device, no account needed.",
+    "pickFile": "Choose a file (.csv, .txt)",
+    "otherFile": "Choose another file",
+    "pasteLabel": "Or paste the list here",
+    "placeholder": "give up - vazgeçmek\nbank;kıyı;We sat on the bank of the river.",
+    "hint": "Separate with a tab, semicolon, comma or “ - ”.",
+    "preview_one": "{{count}} word found",
+    "preview_other": "{{count}} words found",
+    "more_one": "and {{count}} more word",
+    "more_other": "and {{count}} more words",
+    "skipped_one": "{{count}} line without a word or meaning was skipped.",
+    "skipped_other": "{{count}} lines without a word or meaning were skipped.",
+    "truncated": "The list is long; the first {{max}} lines will be added.",
+    "add_one": "Add {{count}} word",
+    "add_other": "Add {{count}} words",
+    "addEmpty": "Add the words",
+    "adding": "{{done}}/{{total}} words added",
+    "done_one": "{{count}} new word added",
+    "done_other": "{{count}} new words added",
+    "addedSenses_one": "{{count}} new meaning added to words you had.",
+    "addedSenses_other": "{{count}} new meanings added to words you had.",
+    "unchanged_one": "{{count}} word was already on your cards with that meaning.",
+    "unchanged_other": "{{count}} words were already on your cards with that meaning.",
+    "failedRows_one": "{{count}} line could not be added (too long or empty).",
+    "failedRows_other": "{{count}} lines could not be added (too long or empty).",
+    "toWords": "Go to my words",
+    "again": "Add another list",
+    "tooBig": "The file is too large (2 MB at most).",
+    "readFailed": "The file could not be read. Try again.",
+    "failed": "The words could not be added. Try again."
   },
   "smart": {
     "rotation": {

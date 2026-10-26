@@ -17,8 +17,8 @@ test('signed in: sentences are prepared for a new card and controlled on its bac
   await expect(page.getByText('Hesabına bağlandın', { exact: true })).toBeVisible();
   await page.getByLabel('İngilizce metin').fill(SPEC.sentence);
   await page.getByRole('button', { name: 'Kelimeleri çıkar' }).click();
-  await expect(page.getByText('Adaylar hazır')).toBeVisible();
-  await page.getByRole('link', { name: 'Önizlemeyi aç' }).click();
+  // v0.5.1: the extraction opens its preview by itself.
+  await expect(page.getByTestId('smart-summary')).toBeVisible();
   // Smart extraction (İP4) does not pre-select a lone B2 word for a B1 learner: pick it.
   await page.getByRole('checkbox', { name: 'reluctant seç' }).check();
   await page.getByRole('button', { name: '1 kelimeyi ekle' }).click();
