@@ -5,7 +5,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { Page, Route } from '@playwright/test';
+import type { BrowserContext, Page, Route } from '@playwright/test';
 import { SUPABASE_URL } from './backend.ts';
 
 const DIR = join(dirname(fileURLToPath(import.meta.url)), '../../../data/levels');
@@ -122,7 +122,10 @@ export function referenceBankRows(): BankRowSeed[] {
 }
 
 /** Serves public.word_bank like PostgREST (server_seq > after, ascending, limit). */
-export async function serveWordBank(page: Page, rows: readonly BankRowSeed[]): Promise<void> {
+export async function serveWordBank(
+  page: Pick<Page, 'route'> | BrowserContext,
+  rows: readonly BankRowSeed[],
+): Promise<void> {
   await page.route(`${SUPABASE_URL}/rest/v1/word_bank**`, async (route: Route) => {
     const req = route.request();
     if (req.method() === 'OPTIONS') return route.fulfill({ status: 204 });
