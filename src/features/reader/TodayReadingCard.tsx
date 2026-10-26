@@ -4,14 +4,20 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { lastUnfinishedText, logError, readingDifficultyOf } from '@/data';
-import { suggestedGradedTexts, type GradedSummary } from '@/data/library';
+import { openGradedText, suggestedGradedTexts, type GradedSummary } from '@/data/library';
 import { readerPath } from '@/domain/texts';
 import { openAddSheet } from '@/features/add/addSheetStore';
 import { useAppSettings } from '@/features/settings/useAppSettings';
 import { TodayStoryRow } from '@/features/story/TodayStoryRow';
-import { Button } from '@/ui';
+import { Button, toast } from '@/ui';
+
+/**
+ * "Metin ekle" opens the Add sheet on its text group, never the word form (v0.5.1). The `kind`
+ * argument comes with agent C's Add sheet; until that merges the sheet opens at its start.
+ */
+const openTextSheet = openAddSheet as (kind?: 'text') => void;
 
 const SUGGEST_DELAY_MS = 1500;
 
@@ -42,6 +48,8 @@ function useSuggestion(enabled: boolean): GradedSummary | null | undefined {
 
 export function TodayReadingCard() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const [opening, setOpening] = useState(false);
   const last = useLiveQuery(() => lastUnfinishedText(), []);
   const suggestion = useSuggestion(last === null);
   if (last === undefined || (last === null && suggestion === undefined)) return null;
@@ -83,8 +91,26 @@ export function TodayReadingCard() {
     );
   }
   if (suggestion) {
+    // The suggested text itself opens in the reader, not the library list (v0.5.1).
+    const open = async () => {
+      setOpening(true);
+      try {
+        const id = await openGradedText({ id: suggestion.id, title: suggestion.title });
+        await navigate(readerPath(id));
+      } catch (e) {
+        void logError(e, 'reader.today.open');
+        toast({ title: t('reader.today.openFailed'), tone: 'danger' });
+        setOpening(false);
+      }
+    };
     return frame(
-      <Link to="/decks?tab=reading" className="group flex items-center gap-3">
+      <button
+        type="button"
+        disabled={opening}
+        onClick={() => void open()}
+        data-testid="today-reading-suggestion"
+        className="group flex items-center gap-3 text-left disabled:opacity-70"
+      >
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span
             lang="en"
@@ -97,13 +123,13 @@ export function TodayReadingCard() {
           </span>
         </span>
         <span className="text-sm font-medium text-accent-text">{t('reader.today.open')}</span>
-      </Link>,
+      </button>,
     );
   }
   return frame(
     <div className="flex flex-wrap items-center justify-between gap-3">
       <p className="min-w-0 flex-1 text-[0.9375rem] text-fg-muted">{t('reader.today.empty')}</p>
-      <Button variant="secondary" size="sm" onClick={() => openAddSheet()}>
+      <Button variant="secondary" size="sm" onClick={() => openTextSheet('text')}>
         {t('reader.today.paste')}
       </Button>
     </div>,

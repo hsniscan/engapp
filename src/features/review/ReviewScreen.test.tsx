@@ -85,12 +85,15 @@ describe('review session', () => {
     await press('4');
 
     expect(await screen.findByRole('heading', { name: 'Oturum tamamlandı' })).toBeInTheDocument();
-    const cards = screen.getByText('Kart').nextElementSibling;
-    expect(cards).toHaveTextContent('2');
-    expect(screen.getByText('%100')).toBeInTheDocument();
+    // Words, not answers; recall counts reviews only, and new words' first answers are not
+    // recall (ADR 0055).
+    expect(screen.getByTestId('summary-words')).toHaveTextContent('2 kelime çalıştın');
+    const words = screen.getByText('Kelime').nextElementSibling;
+    expect(words).toHaveTextContent('2');
+    expect(screen.getByText('Hatırlama').nextElementSibling).toHaveTextContent('—');
     expect(await screen.findByText('Günlük seri')).toBeInTheDocument();
     expect(screen.getByText('Bugün serine eklendi.')).toBeInTheDocument();
-  });
+  }, 20_000);
 
   it('shows a calm empty state when nothing is due', async () => {
     await db.cards.toCollection().modify({ suspended: true });

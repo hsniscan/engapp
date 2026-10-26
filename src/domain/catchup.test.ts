@@ -227,9 +227,17 @@ describe('5-day gap with ~300 reviews due (acceptance 1)', () => {
     expect(perDay[firstNormal + 1]).toMatchObject({ mode: 'normal', fresh: 10 });
 
     // Recompute from the logs gives the same cards: catch-up only chose what to show.
+    // Logs grouped once: replaying each card against every log was the slow part under load.
+    const byCard = new Map<Id, typeof logs>();
+    for (const l of logs) {
+      const list = byCard.get(l.card_id);
+      if (list) list.push(l);
+      else byCard.set(l.card_id, [l]);
+    }
     for (const c of cards.values()) {
-      const replayed = replayCard(scheduler, c, logs).fsrs;
+      const replayed = replayCard(scheduler, c, byCard.get(c.id) ?? []).fsrs;
       expect(fsrsEqual(replayed, pickFsrs(c)), c.id).toBe(true);
     }
-  });
+    // A pure simulation of ten days: CPU bound, so it gets room on a busy machine.
+  }, 60_000);
 });

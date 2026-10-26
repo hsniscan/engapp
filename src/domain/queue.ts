@@ -40,7 +40,13 @@ export type QueueCard = Pick<
   Partial<Pick<Card, 'scheduled_days'>>;
 
 export const NEW_EVERY_N_REVIEWS = 5;
-export const DEFAULT_LEARN_AHEAD_MS = 20 * 60_000;
+/**
+ * Learn-ahead (ADR 0055): when nothing else is left, a learning card due within this window is
+ * shown early. 2 minutes covers the 1-minute step (Again on a new card) but honours the 6 and
+ * 10 minute steps: those cards wait, and the session ends with "Sıradaki kart 9 dk sonra".
+ * It was 20 minutes, which brought a "10 dk" card back seconds later in a short session.
+ */
+export const DEFAULT_LEARN_AHEAD_MS = 2 * 60_000;
 
 export type QueueMode = 'normal' | 'ahead';
 
@@ -64,7 +70,7 @@ export interface QueueContext {
   session?: { reviews: number; new: number };
   /**
    * When nothing else is left, learning cards due within this window are shown early
-   * instead of making the user wait. Default 20 minutes.
+   * instead of making the user wait. Default DEFAULT_LEARN_AHEAD_MS (2 minutes).
    */
   learnAheadMs?: number;
   /**

@@ -44,7 +44,7 @@ describe('Bugün', () => {
     expect(await getMeta(STAGE_RULE_NOTE_KEY)).toBe(true);
   });
 
-  it('shows the word study, the study types and updates live after answers', async () => {
+  it('shows the whole day with a chip per mode and updates live after answers', async () => {
     await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] });
     await addNoteWithSenses({ term: 'light', senses: [{ meaning_tr: 'hafif' }] });
     renderRoute(<HomeScreen />);
@@ -57,9 +57,11 @@ describe('Bugün', () => {
       'href',
       '/study?mode=word',
     );
-    expect(screen.getByTestId('study-type-word')).toHaveAttribute('href', '/study?mode=word');
-    expect(screen.getByTestId('study-type-word')).toHaveAccessibleName(
-      'Kelime İngilizceden Türkçeye 2 kart',
+    // One chip per mode in the hero: the whole day at a glance (ADR 0055).
+    expect(within(hero).getByTestId('study-type-word')).toHaveAttribute('href', '/study?mode=word');
+    expect(within(hero).getByTestId('study-type-word')).toHaveAccessibleName('Kelime: 2 kart');
+    expect(within(hero).getByTestId('study-type-production')).toHaveAccessibleName(
+      'Üretim: Bugün yok',
     );
     expect(await screen.findByTestId('home-words')).toHaveTextContent('/ 2 kelimenden');
 

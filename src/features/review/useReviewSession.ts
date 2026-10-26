@@ -7,6 +7,7 @@ import {
   ActionError,
   answerCard,
   getCardView,
+  getMixedStudyQueue,
   getStreakSummary,
   getStudyQueue,
   leechAfterAnswer,
@@ -54,6 +55,14 @@ export interface SessionState {
   answered: number;
   /** Cards left, including the one on screen. */
   remaining: number;
+  /**
+   * Progress in cards, not answers (ADR 0055): `cardsTotal` is every card of the session (it
+   * only grows when a card joins later), `cardsDone` the cards answered at least once, and
+   * `repeatsLeft` the answered cards that come back for another learning step.
+   */
+  cardsTotal: number;
+  cardsDone: number;
+  repeatsLeft: number;
   canUndo: boolean;
   /**
    * After an "Again" answer (v0.3 İP6): the leech flag when this answer was the card's 6th
@@ -79,6 +88,22 @@ export function canShow(view: CardView | null | undefined): boolean {
   return view.card.card_type !== 'image' || canShowPicture(view.image);
 }
 
+/**
+ * The session's queue. A normal session without a study mode is "Karışık çalış": the four
+ * modes' own queues together (data getMixedStudyQueue, ADR 0055). 'ahead' stays one queue of
+ * every type.
+ */
+function loadQueue(
+  mode: QueueMode,
+  studyMode: StudyMode | undefined,
+  deckId: Id | undefined,
+  session?: { reviews: number; new: number },
+) {
+  const base = { ...(session ? { session } : {}), ...(deckId ? { deckId } : {}) };
+  if (mode === 'normal' && !studyMode) return getMixedStudyQueue(base);
+  return getStudyQueue({ ...base, mode, ...(studyMode ? { studyMode } : {}) });
+}
+
 /** `studyMode` absent: the mixed queue of every card type ("Karışık çalış", review ahead). */
 export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMode, deckId?: Id) {
   const [state, setState] = useState<SessionState>({
@@ -87,6 +112,9 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
     flipped: false,
     answered: 0,
     remaining: 0,
+    cardsTotal: 0,
+    cardsDone: 0,
+    repeatsLeft: 0,
     canUndo: false,
     notice: null,
   });
@@ -105,10 +133,25 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
   const answers = useRef<SessionAnswer[]>([]);
   const shownAt = useRef(now());
   const alive = useRef(true);
+  /** Every card the session has held (for the fixed progress denominator). */
+  const seen = useRef(new Set<Id>());
 
   const patch = useCallback((p: Partial<SessionState>) => {
     if (!alive.current) return;
-    const next = { ...stateRef.current, ...p };
+    const merged = { ...stateRef.current, ...p };
+    const pending = new Set(upcoming.current.map((i) => i.card_id));
+    if (merged.current) pending.add(merged.current.view.card.id);
+    const answeredIds = new Set(answers.current.map((a) => a.cardId));
+    for (const id of pending) seen.current.add(id);
+    for (const id of answeredIds) seen.current.add(id);
+    let repeatsLeft = 0;
+    for (const id of pending) if (answeredIds.has(id)) repeatsLeft++;
+    const next = {
+      ...merged,
+      cardsTotal: seen.current.size,
+      cardsDone: answeredIds.size,
+      repeatsLeft,
+    };
     stateRef.current = next;
     setState(next);
   }, []);
@@ -168,6 +211,7 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
       const view = cached !== undefined ? cached : await loadView(item.card_id);
       if (!view || !canShow(view)) {
         if (view?.card.card_type === 'image') skipped.current.add(view.card.id);
+        seen.current.delete(item.card_id);
         continue;
       }
       show({ view, kind: item.kind });
@@ -183,12 +227,7 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
   /** Rebuild the queue; applied only if nothing newer happened in the meantime. */
   const rebuild = useCallback(
     async (mySeq: number) => {
-      const q = await getStudyQueue({
-        session: { ...counts.current },
-        mode,
-        ...(studyMode ? { studyMode } : {}),
-        ...(deckId ? { deckId } : {}),
-      });
+      const q = await loadQueue(mode, studyMode, deckId, { ...counts.current });
       carryPostponed(q.postponed);
       if (mySeq !== seq.current || !alive.current) return;
       const currentId = stateRef.current.current?.view.card.id;
@@ -218,18 +257,12 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
     alive.current = true;
     let cancelled = false;
     void (async () => {
-      const [q, streak] = await Promise.all([
-        getStudyQueue({
-          mode,
-          ...(studyMode ? { studyMode } : {}),
-          ...(deckId ? { deckId } : {}),
-        }),
-        getStreakSummary(),
-      ]);
+      const [q, streak] = await Promise.all([loadQueue(mode, studyMode, deckId), getStreakSummary()]);
       carryPostponed(q.postponed);
       if (cancelled) return;
       setStart({ todayActive: streak.todayActive, streak: streak.currentStreak });
       skipped.current.clear();
+      seen.current.clear();
       upcoming.current = q.items.map(({ card_id, note_id, kind }) => ({ card_id, note_id, kind }));
       if (!(await advance()) && !cancelled) finish();
     })();
@@ -376,6 +409,7 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
     await chain.current;
     await setSuspended({ card_ids: [cur.view.card.id] }, true);
     forget(cur.view.card.id);
+    seen.current.delete(cur.view.card.id);
     if (!(await advance())) {
       patch({ phase: 'waiting', current: null });
       await rebuild(mySeq);
@@ -404,6 +438,7 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
     const cur = stateRef.current.current;
     if (!cur) return;
     forget(cur.view.card.id);
+    seen.current.delete(cur.view.card.id);
     const mySeq = ++seq.current;
     if (!(await advance())) {
       patch({ phase: 'waiting', current: null });
@@ -437,6 +472,7 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
         return;
       }
       forget(cardId);
+      seen.current.delete(cardId);
       upcoming.current = upcoming.current.filter((i) => i.card_id !== cardId);
       patch({ remaining: remainingCount(stateRef.current.current) });
     },

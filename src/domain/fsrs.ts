@@ -376,3 +376,23 @@ export function formatNextInterval(ms: number): string {
   if (days < 365 && months < 12) return `${months} ay`;
   return `${trNumber(Math.max(1, Math.round((days / 365) * 2) / 2))} yıl`;
 }
+
+/**
+ * Labels for the four buttons in order (Again … Easy). Rounding can give two different
+ * intervals one label ("2 ay" under Zor and İyi); those neighbours fall back to whole days
+ * ("58 gün", "62 gün") so the buttons never look the same.
+ */
+export function distinctIntervalLabels(intervals: readonly number[]): string[] {
+  const labels = intervals.map(formatNextInterval);
+  for (let i = 1; i < labels.length; i++) {
+    const a = intervals[i - 1]!;
+    const b = intervals[i]!;
+    if (labels[i] !== labels[i - 1] || a === b || a < 2 * DAY) continue;
+    const da = Math.round(a / DAY);
+    const db = Math.round(b / DAY);
+    if (da === db) continue;
+    labels[i - 1] = `${da} gün`;
+    labels[i] = `${db} gün`;
+  }
+  return labels;
+}

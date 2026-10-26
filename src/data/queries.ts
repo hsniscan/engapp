@@ -4,11 +4,12 @@ import { bandFor, type CardSentence, pickRotation, rotationSentences, selectedCo
 import { pickRotating, sentenceKey } from '../domain/textSentences';
 import { previewIntervals, type IntervalPreview } from '../domain/fsrs';
 import { normalizeTerm } from '../domain/normalize';
-import { buildQueue, type QueueCounts, type QueueItem, type QueueMode } from '../domain/queue';
-import { STUDY_MODE_CARD_TYPES, type StudyMode } from '../domain/studyMode';
+import { buildQueue, isStudiable, type QueueCounts, type QueueItem, type QueueMode } from '../domain/queue';
+import { STUDY_MODE_CARD_TYPES, STUDY_MODES, studyModeOf, type StudyMode } from '../domain/studyMode';
+import { shareReviewCap } from '../domain/studyPlan';
 import { type Cloze, firstLetterHint, lastShownSenseId, makeCloze, nextRecognitionSense } from '../domain/recognition';
 import { buildHeatmap, computeStreakSummary, type HeatmapCell, type StreakSummary } from '../domain/streak';
-import { type Card, type Id, type LexiconSense, type Millis, type Note, type RatingValue, type Sense } from '../domain/types';
+import { type Card, CardState, type Id, type LexiconSense, type Millis, type Note, type RatingValue, type Sense } from '../domain/types';
 import { db } from './db';
 import { getDeckNoteIds } from './decks';
 import { getWordStages } from './wordStages';
@@ -118,13 +119,25 @@ export async function getStudyQueue(opts: StudyQueueOptions = {}, now: Millis = 
     // is extra Kelime çalışma.
     const introduced = types ? types.reduce((n, t) => n + facts.introducedByType[t], 0) : facts.newIntroducedToday;
     const extra = !types || opts.studyMode === 'word' ? extraNewToday : 0;
+    // Catch-up is one review budget for the day, shared by the modes in order (ADR 0055):
+    // Kelime first, then Üretim, Boşluk, Dikte. Without it every mode got the whole cap.
+    let reviewCap = load?.plan.reviewCap ?? null;
+    if (reviewCap !== null && opts.studyMode) {
+      const dueReviews: Partial<Record<StudyMode, number>> = {};
+      for (const c of studied) {
+        if (c.state !== CardState.Review || c.due >= facts.bounds.end || noPicture.has(c.id) || !isStudiable(c)) continue;
+        const m = studyModeOf(c.card_type);
+        dueReviews[m] = (dueReviews[m] ?? 0) + 1;
+      }
+      reviewCap = shareReviewCap(reviewCap, dueReviews, opts.studyMode);
+    }
     const q = buildQueue(cards, {
       now,
       dayEnd: facts.bounds.end,
       mode: opts.mode ?? 'normal',
       aheadEnd,
       dailyNewLimit: load ? load.newLimitToday : settings.daily_new_limit,
-      reviewCap: load?.plan.reviewCap ?? null,
+      reviewCap,
       newOrder,
       extraNewToday: extra,
       newIntroducedToday: introduced,
@@ -148,6 +161,50 @@ export async function getStudyQueue(opts: StudyQueueOptions = {}, now: Millis = 
       postponed: q.postponed ?? [],
     };
   });
+}
+
+/**
+ * "Karışık çalış" (ADR 0055): the four study modes' own queues in one session, so the mixed
+ * session holds exactly the cards the modes show (their own new-card limits, the shared
+ * catch-up budget, Dikte when this device can read its sentences). Due learning steps first,
+ * then the modes' cards taken in turn, the later learning steps last.
+ */
+export async function getMixedStudyQueue(
+  opts: Omit<StudyQueueOptions, 'studyMode' | 'mode'> = {},
+  now: Millis = Date.now(),
+): Promise<StudyQueue> {
+  const queues = await Promise.all(STUDY_MODES.map((studyMode) => getStudyQueue({ ...opts, studyMode }, now)));
+  const first = queues[0]!;
+  const dueNow: StudyQueue['items'] = [];
+  const later: StudyQueue['items'] = [];
+  const lanes = queues.map((q) =>
+    q.items.filter((i) => {
+      if (i.kind !== 'learning') return true;
+      (i.card.due <= now ? dueNow : later).push(i);
+      return false;
+    }),
+  );
+  const middle: StudyQueue['items'] = [];
+  for (let k = 0; lanes.some((l) => k < l.length); k++) for (const l of lanes) if (k < l.length) middle.push(l[k]!);
+  dueNow.sort((a, b) => a.card.due - b.card.due);
+  later.sort((a, b) => a.card.due - b.card.due);
+  const items = [...dueNow, ...middle, ...later];
+  const sum = (f: (c: QueueCounts) => number) => queues.reduce((n, q) => n + f(q.counts), 0);
+  const nexts = queues.map((q) => q.nextLearningDue).filter((v): v is Millis => v !== null);
+  return {
+    ...first,
+    items,
+    counts: {
+      learning: sum((c) => c.learning),
+      review: sum((c) => c.review),
+      new: sum((c) => c.new),
+      total: items.length,
+      new_allowed: sum((c) => c.new_allowed),
+    },
+    nextLearningDue: nexts.length ? Math.min(...nexts) : null,
+    newToday: queues.reduce((n, q) => n + q.newToday, 0),
+    postponed: [...new Set(queues.flatMap((q) => q.postponed))],
+  };
 }
 
 export interface CardView {

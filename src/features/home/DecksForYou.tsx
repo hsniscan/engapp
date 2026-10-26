@@ -1,10 +1,13 @@
 // "Senin için desteler" (board Main): ready-made decks that suit the user, scrolled sideways.
-// Phrasal verbs and topic decks have no data yet: they show as "Yakında", without numbers.
+// Decks without data (phrasal verbs, topics) are not shown until they exist (v0.5.1).
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { formatNumber } from '@/features/stats/format';
 import { cn } from '@/ui';
 import { HOME_FREQ_SIZE, type HomeDeck } from './todayQueries';
+
+/** Keşfet filtered to decks (the new tab, agent D; /decks?tab=discover redirects there). */
+export const DISCOVER_DECKS_HREF = '/kesfet?f=desteler';
 
 const cardClass =
   'flex w-50 shrink-0 snap-start flex-col gap-2.5 rounded-[18px] border border-border bg-surface p-4 text-fg';
@@ -17,7 +20,7 @@ export function DecksForYou({ decks }: { decks: HomeDeck[] }) {
         <h2 id="decks-for-you-title" className="font-serif text-[1.1875rem] font-semibold">
           {t('today.decksTitle')}
         </h2>
-        <Link to="/decks?tab=discover" className="text-sm text-accent-text hover:underline">
+        <Link to={DISCOVER_DECKS_HREF} className="text-sm text-accent-text hover:underline">
           {t('today.decksDiscover')}
         </Link>
       </div>
@@ -74,22 +77,6 @@ export function DecksForYou({ decks }: { decks: HomeDeck[] }) {
             </li>
           );
         })}
-        <li className="flex">
-          <div
-            className={cn(cardClass, 'border-dashed bg-transparent')}
-            data-testid="home-deck-soon"
-          >
-            <span className="self-start rounded-md bg-surface-sunken px-2 py-0.5 text-xs font-semibold text-fg-muted">
-              {t('today.deckSoon')}
-            </span>
-            <span className="font-serif text-[1.1875rem] leading-tight font-semibold">
-              {t('today.deckPhrasal')}
-            </span>
-            <span className="mt-auto text-[0.8125rem] text-fg-muted">
-              {t('today.deckSoonBody')}
-            </span>
-          </div>
-        </li>
       </ul>
     </section>
   );

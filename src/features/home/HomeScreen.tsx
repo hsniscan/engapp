@@ -1,6 +1,6 @@
-// Bugün, the home screen of the redesign (boards Main, HomeDone, HomeDark): today's word
-// study on top, the three study types, goals, the words learned under the stricter rule,
-// shortcuts and decks that suit the user. One column on phones, two from 1024 px.
+// Bugün, the home screen of the redesign (boards Main, HomeDone, HomeDark): the whole day's
+// study on top (every mode, ADR 0055), at most one note, goals, the words learned under the
+// stricter rule, shortcuts and decks that suit the user. One column on phones, two from 1024 px.
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,7 +14,7 @@ import { LoadNotes } from '@/features/load/LoadNotes';
 import { InterestsPrompt } from '@/features/profile/InterestsPrompt';
 import { StreakFreezeNote } from '@/features/smart/StreakFreezeNote';
 import { useNow } from '@/features/settings/useNow';
-import { useStudyModeCounts } from '@/features/review/studyModes';
+import { useTodayStudy } from '@/features/review/studyModes';
 import { useWordStages } from '@/features/stats/useWordStages';
 import { Button, cn, Icon, IconButton, Logo, Skeleton, Surface } from '@/ui';
 import { DecksForYou } from './DecksForYou';
@@ -24,7 +24,6 @@ import { HomeIcon } from './homeIcons';
 import { MoreStudy } from './MoreStudy';
 import { getHomeCore, type HomeCore } from './queries';
 import { Shortcuts } from './Shortcuts';
-import { StudyTypes } from './StudyTypes';
 import { TodayHero } from './TodayHero';
 import {
   countWords,
@@ -39,6 +38,7 @@ import {
 } from './todayQueries';
 import { WordsCard } from './WordsCard';
 import { TodayReadingCard } from '@/features/reader/TodayReadingCard';
+import { useBackupReminderShown } from './backupNote';
 
 export function HomeScreen() {
   const core = useLiveQuery(() => getHomeCore(), []);
@@ -88,13 +88,13 @@ function HomeFrame({
 }
 
 function Dashboard({ core }: { core: HomeCore }) {
-  const counts = useStudyModeCounts();
+  const study = useTodayStudy();
   const activity = useLiveQuery(() => getTodayActivity(), []);
   // The heavy, secondary reads (whole-history goals, extra-study queues, the weekly report and
   // the notes below the hero) start once the hero has its numbers: on a large collection they
   // otherwise share IndexedDB with the hero's queries and delay "Devam et" by seconds
   // (10,000-card profile, decision 0053). Once true it stays true (live queries keep values).
-  const heroReady = counts !== undefined && activity !== undefined;
+  const heroReady = study !== undefined && activity !== undefined;
   const goals = useLiveQuery(() => getHomeGoals(), []);
   const goalsView = useLiveQuery(() => (heroReady ? getGoalsView() : undefined), [heroReady]);
   const stages = useWordStages();
@@ -115,8 +115,9 @@ function Dashboard({ core }: { core: HomeCore }) {
   const shortcuts = moreResult && report !== undefined ? { more, report } : undefined;
   const decks = useHomeDecks();
 
-  const ready = counts && activity;
-  const wordDone = counts ? counts.word.due + counts.word.newCount === 0 : false;
+  const ready = study && activity;
+  // "Biraz daha çalış" only once every mode is done for today (not just Kelime).
+  const allDone = study ? study.left === 0 : false;
 
   return (
     <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5">
@@ -124,10 +125,10 @@ function Dashboard({ core }: { core: HomeCore }) {
         {ready ? (
           <TodayHero
             data={{
-              word: counts.word,
+              study,
               activity,
               streak: core.streak,
-              next: wordDone ? core.next : null,
+              next: allDone ? core.next : null,
               now: core.now,
               timezone: core.timezone,
             }}
@@ -135,10 +136,7 @@ function Dashboard({ core }: { core: HomeCore }) {
         ) : (
           <HeroSkeleton />
         )}
-        {ready && (
-          <StudyTypes counts={counts} answered={activity.answers} finishedHero={wordDone} />
-        )}
-        {wordDone && more && <MoreStudy more={more} />}
+        {allDone && more && <MoreStudy more={more} />}
         {heroReady && <TodayReadingCard />}
         {heroReady && <Notes />}
       </div>
@@ -159,7 +157,7 @@ function Dashboard({ core }: { core: HomeCore }) {
             retentionGoal={goals.retentionGoal}
           />
         )}
-        {shortcuts && <Shortcuts data={shortcuts} showHard={!wordDone} />}
+        {shortcuts && <Shortcuts data={shortcuts} showHard={!allDone} />}
         {decks && <DecksForYou decks={decks} />}
       </div>
     </div>
@@ -181,16 +179,26 @@ function useHomeDecks(): HomeDeck[] | undefined {
   return decks;
 }
 
-/** Occasional notes: the stricter "öğrenildi" rule, level changes, load, FSRS, interests. */
+/**
+ * Occasional notes, at most one at a time (v0.5.1): the backup reminder (shown above the page
+ * by RootLayout) wins, then the stricter "öğrenildi" rule, a covered streak day, load
+ * (catch-up, vacation), the FSRS offer, interests, a level change. Every note stays mounted
+ * and decides by itself whether it renders; the container shows only the first one that does,
+ * so the next comes up once it is closed.
+ */
 function Notes() {
+  const backup = useBackupReminderShown();
   return (
-    <div className="flex flex-col gap-4 empty:hidden lg:gap-5">
+    <div
+      className={cn('flex flex-col empty:hidden [&>*+*]:hidden', backup && 'hidden')}
+      data-testid="home-notes"
+    >
       <StageRuleNote />
       <StreakFreezeNote />
-      <LevelChangeLine />
       <LoadNotes />
       <FsrsOptOffer />
       <InterestsPrompt />
+      <LevelChangeLine />
     </div>
   );
 }
