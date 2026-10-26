@@ -64,6 +64,32 @@ export function watchFirstCard(): () => void {
   return () => sub.unsubscribe();
 }
 
+/** A study session (or its picker) is open: heavy maintenance waits, it would stall cards. */
+export function inStudySession(path: string = window.location.pathname): boolean {
+  return /^\/(study|review|practice)(\/|$)/.test(path);
+}
+
+/**
+ * Runs `task` once the first screen has painted and the browser is idle, never during a study
+ * session (v0.5.1, decision 0059: on 10,000 cards the dictation scan right after start-up made
+ * the first session open in 2 s instead of 1).
+ */
+export function whenIdle(task: () => Promise<unknown>, isBusy: () => boolean, delayMs = 4000): void {
+  const idle = (cb: () => void) =>
+    typeof requestIdleCallback === 'function'
+      ? requestIdleCallback(cb, { timeout: 10_000 })
+      : setTimeout(cb, 0);
+  const attempt = () =>
+    idle(() => {
+      if (isBusy()) {
+        setTimeout(attempt, 60_000);
+        return;
+      }
+      void task();
+    });
+  setTimeout(attempt, delayMs);
+}
+
 /** One-off data repairs (src/data/repairs.ts), once the app is idle and not in a review. */
 function scheduleRepairs(isBusy: () => boolean, delayMs = 5000): void {
   const attempt = () => {
@@ -98,11 +124,15 @@ export function bootstrap(): void {
     await backfillLearningModel().catch((e: unknown) => void logError(e, 'bootstrap.learningModel'));
     // v0.5 İP10: a missed day since the last visit is covered by a streak protection.
     void ensureStreakFreezes().catch((e: unknown) => void logError(e, 'bootstrap.streakFreezes'));
+    const inReview = () => inStudySession();
     // Dikte (v0.5 İP9): dictation cards of senses whose shared sentences are already cached.
-    void reconcileDictationCards().catch((e: unknown) => void logError(e, 'bootstrap.dictation'));
+    // It reads every sense: after the first paint, outside a session.
+    whenIdle(
+      () => reconcileDictationCards().catch((e: unknown) => void logError(e, 'bootstrap.dictation')),
+      inReview,
+    );
     watchFirstCard();
     void refreshStorageInfo();
-    const inReview = () => /^\/review(\/|$)/.test(window.location.pathname);
     scheduleStartupIntegrityCheck(inReview);
     scheduleRepairs(inReview);
     scheduleWeeklyLevelUpdate(inReview);

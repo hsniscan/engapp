@@ -37,6 +37,7 @@ import {
   STAGE_RULE_NOTE_KEY,
   stageRuleNoteVisible,
 } from './todayQueries';
+import { useSettled } from './settle';
 import { WordsCard } from './WordsCard';
 import { TodayReadingCard } from '@/features/reader/TodayReadingCard';
 
@@ -100,11 +101,14 @@ function Dashboard({ core }: { core: HomeCore }) {
   // the notes below the hero) start once the hero has its numbers: on a large collection they
   // otherwise share IndexedDB with the hero's queries and delay "Devam et" by seconds
   // (10,000-card profile, decision 0053). Once true it stays true (live queries keep values).
-  const heroReady = study !== undefined && activity !== undefined;
-  const goals = useLiveQuery(() => getHomeGoals(), []);
+  // v0.5.1 (decision 0059): they wait until the hero has painted and the page is idle for a
+  // moment, so a tap on "Çalışmaya başla" right away opens the session without them reading
+  // the whole history in the background (10,000 cards: 2 s → under 1 s).
+  const heroReady = useSettled(study !== undefined && activity !== undefined);
+  const goals = useLiveQuery(() => (heroReady ? getHomeGoals() : undefined), [heroReady]);
   const goalsView = useLiveQuery(() => (heroReady ? getGoalsView() : undefined), [heroReady]);
-  const stages = useWordStages();
-  const totalWords = useLiveQuery(() => countWords(), []);
+  const stages = useWordStages(heroReady);
+  const totalWords = useLiveQuery(() => (heroReady ? countWords() : undefined), [heroReady]);
   const moreResult = useLiveQuery(() => (heroReady ? getMoreOverview() : undefined), [heroReady]);
   const more = moreResult?.ok ? moreResult.more : null;
   const moreError = moreResult && !moreResult.ok ? moreResult.error : null;
@@ -113,7 +117,7 @@ function Dashboard({ core }: { core: HomeCore }) {
   }, [moreError]);
   const report = useLiveQuery(() => (heroReady ? getReportShortcut() : undefined), [heroReady]);
   const shortcuts = moreResult && report !== undefined ? { more, report } : undefined;
-  const decks = useHomeDecks();
+  const decks = useHomeDecks(heroReady);
 
   const ready = study && activity;
   // "Biraz daha çalış" only once every mode is done for today (not just Kelime).
@@ -165,9 +169,10 @@ function Dashboard({ core }: { core: HomeCore }) {
 }
 
 /** Decks for the user, read once per visit (the word bank is large and rarely changes). */
-function useHomeDecks(): HomeDeck[] | undefined {
+function useHomeDecks(enabled: boolean): HomeDeck[] | undefined {
   const [decks, setDecks] = useState<HomeDeck[]>();
   useEffect(() => {
+    if (!enabled) return;
     let live = true;
     getHomeDecks()
       .then((d) => live && setDecks(d))
@@ -175,7 +180,7 @@ function useHomeDecks(): HomeDeck[] | undefined {
     return () => {
       live = false;
     };
-  }, []);
+  }, [enabled]);
   return decks;
 }
 
@@ -266,7 +271,7 @@ function DashboardSkeleton() {
 /** No words yet: three steps, the Add sheet, the level test and decks to start from. */
 function HomeWelcome() {
   const { t } = useTranslation();
-  const decks = useHomeDecks();
+  const decks = useHomeDecks(true);
   // A first-time user learns the counting rule as it is: the "rule changed" note is not for them.
   useEffect(() => {
     void setMeta(STAGE_RULE_NOTE_KEY, true).catch(

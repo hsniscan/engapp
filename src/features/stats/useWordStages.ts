@@ -16,9 +16,10 @@ export interface WordStagesView {
   alreadyKnown: number;
 }
 
-/** Live word-stage counts (ADR 0041); undefined while loading. */
-export function useWordStages(): WordStagesView | undefined {
+/** Live word-stage counts (ADR 0041); undefined while loading (or while `enabled` is false). */
+export function useWordStages(enabled = true): WordStagesView | undefined {
   return useLiveQuery(async () => {
+    if (!enabled) return undefined;
     const c = await getWordStages(Date.now());
     return {
       learning: c.learning,
@@ -30,7 +31,7 @@ export function useWordStages(): WordStagesView | undefined {
       active: c.active,
       alreadyKnown: c.alreadyKnown,
     };
-  }, []);
+  }, [enabled]);
 }
 
 /** Alias kept for callers written against the stub. */
