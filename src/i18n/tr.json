@@ -2385,6 +2385,54 @@
       "goalLevel": "Hedef seviye {{level}}"
     }
   },
+  "onboarding": {
+    "title": "Hoş geldin",
+    "stepOf": "Adım {{n}} / {{total}}",
+    "progressLabel": "Başlangıç adımları",
+    "manual": "Kelimeleri kendim eklemek istiyorum",
+    "welcome": {
+      "title": "Kelimeleri kalıcı öğrenmeye başlayalım",
+      "body": "Engapp sana her gün birkaç kelime sorar ve tam unutmak üzereyken yeniden getirir. Dört kısa adımda hazırız:",
+      "step1": "Seviyeni ölç: yaklaşık 2 dakikalık bir kelime testi (istersen atla).",
+      "step2": "İlgi alanlarını seç: örnek cümleler bu konulardan gelsin.",
+      "step3": "Hazır bir deste seç: “En çok kullanılan 500 kelime” gibi.",
+      "step4": "İlk çalışmanı yap: birkaç dakika, birkaç yeni kelime.",
+      "start": "Başlayalım"
+    },
+    "level": {
+      "title": "Seviyeni ölçelim",
+      "body": "Ekranda bir kelime görürsün, bilip bilmediğini söylersin. Yaklaşık 2 dakika sürer. Sonuca göre sana uygun kelimeler önerilir.",
+      "start": "Teste başla",
+      "skip": "Şimdi değil, atla"
+    },
+    "interests": {
+      "title": "Hangi konular ilgini çekiyor?",
+      "body": "Birkaç konu seç; örnek cümlelerde ve önerilerde önce bunlar gelsin. Sonra Profil'den değiştirebilirsin.",
+      "save_one": "{{count}} konuyla devam et",
+      "save_other": "{{count}} konuyla devam et",
+      "continue": "Devam",
+      "skip": "Konu seçmeden devam et"
+    },
+    "deck": {
+      "title": "Hazır bir desteyle başla",
+      "body": "Bir deste seç; kelimeler kartlarına eklenir ve her gün birkaçı sorulur.",
+      "recommended": "Önerilen",
+      "hint": {
+        "top500_one": "Günlük İngilizcenin büyük kısmı · {{value}} kelime",
+        "top500_other": "Günlük İngilizcenin büyük kısmı · {{value}} kelime",
+        "top100_one": "Hafif bir başlangıç · {{value}} kelime",
+        "top100_other": "Hafif bir başlangıç · {{value}} kelime",
+        "verbs_one": "Seviyene uygun fiiller · {{value}} kelime",
+        "verbs_other": "Seviyene uygun fiiller · {{value}} kelime"
+      },
+      "pace": "Hepsi bir anda gelmez: her gün birkaç yeni kelime sorulur. Bildiğin kelimeler eklenmez.",
+      "start": "Bu desteyle ilk çalışmaya başla",
+      "adding": "Ekleniyor… {{done}} / {{total}}",
+      "loading": "Hazır desteler yükleniyor",
+      "offline": "Hazır desteleri getirmek için internet gerekiyor. Bağlanınca yeniden dene ya da kelimeleri kendin ekle.",
+      "retry": "Yeniden dene"
+    }
+  },
   "decks": {
     "title": "Desteler",
     "description": "Kaydettiğin süzgeçler. Kartlar ekranının üstünde ve pratik turunda seçebilirsin; kelime ekledikçe kendiliğinden güncellenir.",

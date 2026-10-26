@@ -11,6 +11,7 @@ import { useAuth } from '@/features/auth/session';
 import { FsrsOptOffer } from '@/features/fsrs/FsrsOptOffer';
 import { LevelChangeLine, LevelTestOffer } from '@/features/leveltest/LevelHomeNotes';
 import { LoadNotes } from '@/features/load/LoadNotes';
+import { FirstRunGate } from '@/features/onboarding/FirstRunGate';
 import { InterestsPrompt } from '@/features/profile/InterestsPrompt';
 import { StreakFreezeNote } from '@/features/smart/StreakFreezeNote';
 import { useNow } from '@/features/settings/useNow';
@@ -42,7 +43,13 @@ import { TodayReadingCard } from '@/features/reader/TodayReadingCard';
 
 export function HomeScreen() {
   const core = useLiveQuery(() => getHomeCore(), []);
-  if (core && !core.hasCards) return <HomeWelcome />;
+  // A brand-new user gets the guided first run (features/onboarding, v0.5.1).
+  if (core && !core.hasCards)
+    return (
+      <FirstRunGate>
+        <HomeWelcome />
+      </FirstRunGate>
+    );
   return (
     <HomeFrame timezone={core?.timezone}>
       {core ? <Dashboard core={core} /> : <DashboardSkeleton />}
@@ -99,19 +106,13 @@ function Dashboard({ core }: { core: HomeCore }) {
   const goalsView = useLiveQuery(() => (heroReady ? getGoalsView() : undefined), [heroReady]);
   const stages = useWordStages();
   const totalWords = useLiveQuery(() => countWords(), []);
-  const moreResult = useLiveQuery(
-    () => (heroReady ? getMoreOverview() : undefined),
-    [heroReady],
-  );
+  const moreResult = useLiveQuery(() => (heroReady ? getMoreOverview() : undefined), [heroReady]);
   const more = moreResult?.ok ? moreResult.more : null;
   const moreError = moreResult && !moreResult.ok ? moreResult.error : null;
   useEffect(() => {
     if (moreError) void logError(moreError, 'home.moreStudy');
   }, [moreError]);
-  const report = useLiveQuery(
-    () => (heroReady ? getReportShortcut() : undefined),
-    [heroReady],
-  );
+  const report = useLiveQuery(() => (heroReady ? getReportShortcut() : undefined), [heroReady]);
   const shortcuts = moreResult && report !== undefined ? { more, report } : undefined;
   const decks = useHomeDecks();
 

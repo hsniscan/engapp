@@ -2385,6 +2385,54 @@
       "goalLevel": "Target level {{level}}"
     }
   },
+  "onboarding": {
+    "title": "Welcome",
+    "stepOf": "Step {{n}} of {{total}}",
+    "progressLabel": "Getting started",
+    "manual": "I want to add words myself",
+    "welcome": {
+      "title": "Let's start learning words for good",
+      "body": "Engapp asks you a few words every day and brings each back just before you forget it. Four short steps and you're ready:",
+      "step1": "Measure your level: a word test of about 2 minutes (skip it if you like).",
+      "step2": "Pick your interests: example sentences come from these topics.",
+      "step3": "Pick a ready deck, such as “The 500 most used words”.",
+      "step4": "Do your first session: a few minutes, a few new words.",
+      "start": "Let's begin"
+    },
+    "level": {
+      "title": "Let's measure your level",
+      "body": "You see a word and say whether you know it. It takes about 2 minutes. Suggestions then fit your level.",
+      "start": "Start the test",
+      "skip": "Not now, skip"
+    },
+    "interests": {
+      "title": "Which topics interest you?",
+      "body": "Pick a few; example sentences and suggestions come from them first. You can change them in Profil later.",
+      "save_one": "Continue with {{count}} topic",
+      "save_other": "Continue with {{count}} topics",
+      "continue": "Continue",
+      "skip": "Continue without topics"
+    },
+    "deck": {
+      "title": "Start with a ready deck",
+      "body": "Pick a deck; its words are added to your cards and a few come each day.",
+      "recommended": "Recommended",
+      "hint": {
+        "top500_one": "Most of everyday English · {{value}} word",
+        "top500_other": "Most of everyday English · {{value}} words",
+        "top100_one": "A light start · {{value}} word",
+        "top100_other": "A light start · {{value}} words",
+        "verbs_one": "Verbs for your level · {{value}} word",
+        "verbs_other": "Verbs for your level · {{value}} words"
+      },
+      "pace": "They don't all come at once: a few new words each day. Words you know are left out.",
+      "start": "Start my first session with this deck",
+      "adding": "Adding… {{done}} / {{total}}",
+      "loading": "Loading ready decks",
+      "offline": "Ready decks need the internet. Try again once you're online, or add words yourself.",
+      "retry": "Try again"
+    }
+  },
   "decks": {
     "title": "Decks",
     "description": "Your saved filters. Pick them above the Cards list and in practice rounds; they update as you add words.",
