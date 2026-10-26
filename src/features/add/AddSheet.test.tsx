@@ -53,6 +53,8 @@ describe('Add sheet', () => {
       '/decks?tab=discover',
     );
     expect(within(sheet).getByTestId('add-way-anki')).toHaveAttribute('href', '/import/anki');
+    expect(within(sheet).getByTestId('add-way-article')).toHaveAttribute('href', '/makale');
+    expect(within(sheet).getByTestId('add-way-subtitle')).toHaveAttribute('href', '/altyazi');
   });
 
   it('quick add goes to the add form with the word filled in, and closes', async () => {

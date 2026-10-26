@@ -76,6 +76,22 @@ export function AddSheetView({
       testId: 'add-way-text',
     },
     {
+      to: '/makale',
+      icon: 'link',
+      tone: 'accent',
+      title: t('article.sheetTitle'),
+      body: t('article.sheetBody'),
+      testId: 'add-way-article',
+    },
+    {
+      to: '/altyazi',
+      icon: 'captions',
+      tone: 'neutral',
+      title: t('article.subtitleSheetTitle'),
+      body: t('article.subtitleSheetBody'),
+      testId: 'add-way-subtitle',
+    },
+    {
       to: '/decks?tab=bank',
       icon: 'layers',
       tone: 'neutral',

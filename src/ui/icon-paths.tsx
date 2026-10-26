@@ -208,6 +208,19 @@ export const paths = {
       <path d="m4.5 4.5 15 15" />
     </>
   ),
+  // v0.5 İP2: "Bağlantıdan makale" and "Altyazı dosyası" in the Add sheet.
+  link: (
+    <>
+      <path d="M10.5 13.5a3.5 3.5 0 0 0 5 0l3-3a3.54 3.54 0 0 0-5-5l-1 1" />
+      <path d="M13.5 10.5a3.5 3.5 0 0 0-5 0l-3 3a3.54 3.54 0 0 0 5 5l1-1" />
+    </>
+  ),
+  captions: (
+    <>
+      <rect x="3.75" y="5.75" width="16.5" height="12.5" rx="2" />
+      <path d="M7.25 11.5h3.5M12.75 11.5h4M7.25 14.75h6M15.25 14.75h1.5" />
+    </>
+  ),
 } satisfies Record<string, ReactNode>;
 
 export type IconName = keyof typeof paths | 'google';

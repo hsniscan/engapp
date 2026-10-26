@@ -3,7 +3,8 @@
 // Target, which arrive as /share?text=…&title=…&url=….
 //
 //   ≤ 3 words           → card preview for that term (/add?term=…)
-//   a link (+ a title)  → the page title only (full article import comes in v0.5)
+//   a link (+ a title)  → the article through fetch-article (v0.5, decision 0044); the
+//                          title only when that fails
 //   longer text         → word extraction preview, with the text as the source of the sentences
 import { LIMITS } from '@/domain/limits';
 
