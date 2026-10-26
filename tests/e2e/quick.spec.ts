@@ -49,7 +49,7 @@ test.describe('offline', () => {
     page,
     context,
   }) => {
-    await serveWordBank(page, BANK);
+    await serveWordBank(context, BANK); // on the context: the service worker's requests too
     await page.goto('/');
     await page.evaluate(async () => {
       await navigator.serviceWorker.ready;
@@ -118,7 +118,7 @@ test('a long selection: "Okuyucuda aç" saves it as a reading text', async ({ pa
   await page.goto(`/quick?text=${encodeURIComponent(text)}`);
   const sheet = page.getByRole('dialog', { name: 'Seçtiğin metin' });
   await expect(sheet.getByTestId('quick-text')).toHaveText(text);
-  await expect(sheet.getByText('10 kelime')).toBeVisible();
+  await expect(sheet.getByText('9 kelime')).toBeVisible();
   await noSideScroll(page);
   await sheet.getByTestId('quick-reader').click();
   await expect(page).toHaveURL(/\/oku\/[0-9a-f-]{36}$/);

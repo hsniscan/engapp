@@ -17,7 +17,7 @@ import { getSettings, logError } from '@/data';
 import { addQuickCard, previewFromSenses, quickPreview, type QuickAddResult } from '@/data/quick';
 import { saveText } from '@/data/texts';
 import { readerPath } from '@/domain/texts';
-import { useAuth } from '@/features/auth/session';
+import { startAuth, useAuth } from '@/features/auth/session';
 import { lookupLexicon, type LexiconSuggestion } from '@/features/import/lexicon';
 import { playPronunciation, pronunciationSupported } from '@/features/review/pronunciation';
 import { shareHref } from '@/features/share/route';
@@ -186,6 +186,11 @@ function TermSheet({
   } | null>(null);
   const aiSenses = answer?.senses ?? null;
   const missing = local !== undefined && local.origin === 'none';
+  // Outside the shell nothing has started the session yet; only needed when the device has
+  // nothing (an offline word-bank hit never touches the backend).
+  useEffect(() => {
+    if (missing && online) startAuth();
+  }, [missing, online]);
   const signedIn = auth.status === 'signed_in';
   const shouldAsk = missing && online && signedIn && answer === null;
   const lookup: LookupState = !missing
