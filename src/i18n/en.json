@@ -3467,5 +3467,58 @@
       "leftNone": "This month's protections are used. Next month there will be {{perMonth}} again.",
       "rule": "One review a day keeps the streak. A missed day is covered automatically up to {{perMonth}} times a month; vacation days do not count."
     }
+  },
+  "modes": {
+    "typed": {
+      "synonym": "Also right: a word with the same meaning",
+      "synonymNote": "This card's word:",
+      "typeInstead": "Type the answer",
+      "flipInstead": "Answer in my head, without typing",
+      "flipHint": "Say the word in your head, then look at the answer."
+    },
+    "handsFree": {
+      "title": "Hands-free",
+      "short": "Listening review",
+      "intro_one": "{{count}} word is read aloud: the English first, a short pause, then the Turkish and an example sentence. You can listen without looking.",
+      "intro_other": "{{count}} words are read aloud: the English first, a short pause, then the Turkish and an example sentence. You can listen without looking.",
+      "practiceNote": "This is practice: your review schedule does not change.",
+      "start": "Start listening",
+      "pause": "Pause",
+      "resume": "Resume",
+      "next": "Next",
+      "stop": "Finish",
+      "controls": "Listening controls",
+      "playing": "Reading…",
+      "paused": "Paused",
+      "progress": "{{n}} / {{total}} words",
+      "dim": "Black out the screen",
+      "undim": "Tap to come back",
+      "empty": "No words to listen to",
+      "doneTitle": "Round finished",
+      "doneBody_one": "You listened to {{count}} word.",
+      "doneBody_other": "You listened to {{count}} words.",
+      "again": "One more round",
+      "moreTitle": "Study by listening",
+      "moreBody": "While walking or on the road: the words are read aloud, you listen. Your schedule does not change.",
+      "moreDictation": "Dictation: {{count}} cards",
+      "moreDictationNone": "No dictation cards today",
+      "moreStart": "Start a hands-free round"
+    },
+    "dictation": {
+      "name": "Dictation",
+      "dir": "Listen and type",
+      "desc": "You hear the sentence and type the missing word. Recognising a word by ear is a skill of its own.",
+      "note": "Words that are settling open with their spoken example sentences",
+      "cardType": "Dictation",
+      "prompt": "Listen and type the missing word",
+      "empty": "No dictation cards today",
+      "emptyBody": "Words that settle in word study open here with their spoken example sentences.",
+      "start": "Start dictation",
+      "replay": "Play again",
+      "slow": "Play slowly",
+      "typeAnswer": "Type the word you hear",
+      "hidden": "The sentence is hidden: listen first",
+      "showSentence": "Show the sentence"
+    }
   }
 }

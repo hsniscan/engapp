@@ -232,6 +232,7 @@ const promptKey = {
   production: 'review.promptProduction',
   cloze: 'review.promptCloze',
   image: 'review.promptImage',
+  dictation: 'modes.dictation.prompt',
 } as const;
 
 export interface FaceProps {

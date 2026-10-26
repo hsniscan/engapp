@@ -21,15 +21,21 @@ import {
   RatingButton,
   Skeleton,
 } from '@/ui';
+import { HandsFreeScreen } from './HandsFreeScreen';
 import { PracticeSummary } from './PracticeSummary';
 import { usePracticeSession } from './usePracticeSession';
 
 const KEY_SCOPE_IGNORE =
   'input, textarea, select, [contenteditable="true"], [role="dialog"], [role="menu"]';
 
-/** A new round for every navigation (also "Bir tur daha" to the same URL). */
+/**
+ * A new round for every navigation (also "Bir tur daha" to the same URL). `mode=audio` is the
+ * hands-free listening round ("Eller serbest", v0.5 İP9).
+ */
 export function PracticeRoute() {
   const location = useLocation();
+  const [search] = useSearchParams();
+  if (search.get('mode') === 'audio') return <HandsFreeScreen key={location.key} />;
   return <PracticeScreen key={location.key} />;
 }
 

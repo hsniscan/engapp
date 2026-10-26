@@ -7,9 +7,9 @@ import { EngDb, STAGE_RULE_NOTICE_KEY } from './db';
 /** The current schema version; bump with every new Dexie version. */
 const LATEST = 34;
 
-/** A re-pull list after the later upgrades: v29 (reader) adds settings, texts and encounters. */
+/** A re-pull list after the later upgrades: v29 (reader) adds settings, texts and encounters; v33 (dictation) cards; v34 settings. */
 const withLater = (list: readonly string[] | undefined) =>
-  list && [...new Set([...list, 'settings', 'texts', 'encounters'])];
+  list && [...new Set([...list, 'settings', 'texts', 'encounters', 'cards'])];
 
 describe('Dexie schema', () => {
   it('opens with every table and the indexes the queries rely on', async () => {
@@ -695,7 +695,7 @@ describe('Dexie schema', () => {
 
   it('v29 upgrade queues texts saved under v28, drops unsynced encounter rows and re-pulls the reading tables once', async () => {
     for (const [name, cursor, expected] of [
-      ['upgrade-v29-synced', 70, ['settings', 'texts', 'encounters']],
+      ['upgrade-v29-synced', 70, ['settings', 'texts', 'encounters', 'cards']],
       ['upgrade-v29-fresh', 0, undefined],
     ] as const) {
       const old = new Dexie(name);
@@ -729,7 +729,7 @@ describe('Dexie schema', () => {
 
   it('v34 upgrade keeps settings and re-pulls them once for streak_freezes', async () => {
     for (const [name, cursor, expected] of [
-      ['upgrade-v34-synced', 40, ['settings']],
+      ['upgrade-v34-synced', 40, ['cards', 'settings']],
       ['upgrade-v34-fresh', 0, undefined],
     ] as const) {
       // A database as the graded library left it (version 31), with every earlier backfill done.
@@ -747,6 +747,32 @@ describe('Dexie schema', () => {
       expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
       // No streak_freezes key means none; the row is untouched and nothing is queued.
       expect(await d.settings.get('settings')).toEqual({ id: 'settings', theme: 'dark', vacation: null });
+      expect(await d.outbox.count()).toBe(0);
+      d.close();
+      await d.delete();
+    }
+  });
+
+  it('v33 upgrade keeps cards untouched and re-pulls them once for dictation cards', async () => {
+    for (const [name, cursor, expected] of [
+      ['upgrade-v33-synced', 140, ['cards', 'settings']],
+      ['upgrade-v33-fresh', 0, undefined],
+    ] as const) {
+      // A database as the graded-library package left it (version 31), every backfill done.
+      const old = new Dexie(name);
+      old.version(1).stores({ cards: 'id, note_id, sense_id, [state+due], due, card_type, deleted_at', meta: 'key' });
+      old.version(31).stores({ graded_catalog: 'id, level, topic, server_seq', graded_bodies: 'id, fetched_at' });
+      await old.open();
+      const card = makeCard({ id: 'c1', note_id: 'n1', sense_id: 's1', card_type: 'cloze', unlocked: false });
+      await old.table('cards').add(card);
+      await old.table('meta').put({ key: 'sync_cursor', value: cursor });
+      old.close();
+
+      const d = new EngDb(name);
+      await d.open();
+      expect(d.verno).toBe(LATEST);
+      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
+      expect(await d.cards.get('c1')).toEqual(card);
       expect(await d.outbox.count()).toBe(0);
       d.close();
       await d.delete();

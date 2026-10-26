@@ -45,6 +45,11 @@ const CACHE_NAME = 'engapp-tts';
 export interface PlayOptions {
   /** Called once when playback ends, fails, or is replaced by a newer tap. */
   onDone?: () => void;
+  /**
+   * Playback speed, 1 = normal ("Yavaş dinle" in Dikte uses 0.7, v0.5 İP9). Server audio keeps
+   * its pitch; the device voice speaks more slowly.
+   */
+  rate?: number;
 }
 
 export interface AudioCache {
@@ -69,7 +74,7 @@ export interface PronunciationDeps {
   createAudio: () => HTMLAudioElement;
   createObjectURL: (b: Blob) => string;
   revokeObjectURL: (u: string) => void;
-  fallback: (text: string, voice: VoicePref, onDone: () => void) => boolean;
+  fallback: (text: string, voice: VoicePref, onDone: () => void, rate?: number) => boolean;
   setTimeout: (fn: () => void, ms: number) => unknown;
   clearTimeout: (id: unknown) => void;
 }
@@ -170,6 +175,11 @@ export interface Pronouncer {
   prefetch(texts: readonly string[], voice: VoicePref): Promise<number>;
   /** The audio of `text` is in memory: play() starts at once and asks no server. */
   ready(text: string, voice: VoicePref): boolean;
+  /**
+   * Stops whatever is playing or loading (the hands-free round's "Duraklat", v0.5 İP9); its
+   * onDone is not called. The device voice is stopped by the caller.
+   */
+  stop(): void;
   /** For tests: forget the in-memory URLs. */
   reset(): void;
 }
@@ -179,6 +189,7 @@ export function createPronouncer(deps: PronunciationDeps): Pronouncer {
   let el: HTMLAudioElement | null = null;
   let seq = 0;
   let finishCurrent: (() => void) | null = null;
+  let silenced = false;
 
   const remember = (key: string, url: string) => {
     memory.delete(key);
@@ -260,6 +271,19 @@ export function createPronouncer(deps: PronunciationDeps): Pronouncer {
   }
 
   return {
+    stop() {
+      ++seq; // a load still in flight sees a newer id and does nothing
+      el?.pause();
+      const f = finishCurrent;
+      if (!f) return;
+      silenced = true; // clean up (timers, loading state) without telling the caller
+      try {
+        f();
+      } finally {
+        silenced = false;
+      }
+    },
+
     reset() {
       for (const u of memory.values()) deps.revokeObjectURL(u);
       memory.clear();
@@ -311,11 +335,15 @@ export function createPronouncer(deps: PronunciationDeps): Pronouncer {
         if (loadingTimer !== null) deps.clearTimeout(loadingTimer);
         if (loadingOwner === owner) setLoadingOwner(null);
         if (finishCurrent === finish) finishCurrent = null;
-        opts.onDone?.();
+        if (!silenced) opts.onDone?.();
       };
       const fallback = () => {
         if (id !== seq) return finish();
-        if (!deps.fallback(rawText, voice, finish)) finish();
+        const spoke =
+          opts.rate === undefined
+            ? deps.fallback(rawText, voice, finish)
+            : deps.fallback(rawText, voice, finish, opts.rate);
+        if (!spoke) finish();
       };
 
       // Guests (and texts the server would refuse) use the device voice, still inside the tap.
@@ -337,6 +365,11 @@ export function createPronouncer(deps: PronunciationDeps): Pronouncer {
           if (id === seq && !done) fallback();
         };
         audio.src = src;
+        // The element is shared: every play sets its speed (normal unless asked otherwise).
+        const rate = opts.rate ?? 1;
+        audio.defaultPlaybackRate = rate;
+        audio.playbackRate = rate;
+        if ('preservesPitch' in audio) audio.preservesPitch = true;
         audio.play().catch(() => {
           if (id === seq && !done) fallback();
         });
@@ -393,10 +426,13 @@ export function deviceVoice(
   voice: VoicePref,
   onDone: () => void,
   native: boolean = isNativeApp(),
+  rate?: number,
 ): boolean {
-  if (!native) return speakEnglish(text, voice, { onDone });
+  // The device voice's normal speed is 0.92 (useSpeech, native/tts.ts).
+  const speed = rate === undefined ? undefined : 0.92 * rate;
+  if (!native) return speakEnglish(text, voice, speed === undefined ? { onDone } : { onDone, rate: speed });
   void import('@/native/tts')
-    .then((m) => m.speakNative(text, voice))
+    .then((m) => m.speakNative(text, voice, speed))
     .catch(() => {})
     .finally(onDone);
   return true;
@@ -424,7 +460,7 @@ const defaultPronouncer = createPronouncer({
   createObjectURL: (b) => URL.createObjectURL(b),
   revokeObjectURL: (u) => URL.revokeObjectURL(u),
   // Offline without a cached copy (and every failure) goes straight to the device voice.
-  fallback: (text, voice, onDone) => deviceVoice(text, voice, onDone),
+  fallback: (text, voice, onDone, rate) => deviceVoice(text, voice, onDone, isNativeApp(), rate),
   setTimeout: (fn, ms) => window.setTimeout(fn, ms),
   clearTimeout: (id) => window.clearTimeout(id as number),
 });
@@ -482,6 +518,11 @@ export function pronunciationReady(text: string, voice: VoicePref): boolean {
  */
 export function playPronunciation(text: string, voice: VoicePref, opts?: PlayOptions): boolean {
   return defaultPronouncer.play(text, voice, opts);
+}
+
+/** Stops the pronunciation that is playing or loading, without calling its onDone. */
+export function stopPronunciation(): void {
+  defaultPronouncer.stop();
 }
 
 /** True when this browser can play pronunciations at all (audio element or speech engine). */

@@ -110,6 +110,24 @@ describe('playPronunciation', () => {
     expect(deps.fallback).not.toHaveBeenCalled();
   });
 
+  it('plays slowly when asked ("Yavaş dinle"), and at normal speed on the next play', async () => {
+    const { p, audio } = setup();
+    const el = audio as FakeAudio & { playbackRate?: number; preservesPitch?: boolean };
+    el.preservesPitch = false;
+    p.play('She was reluctant to leave.', 'en-US', { rate: 0.7 });
+    await flush();
+    expect(el.playbackRate).toBe(0.7);
+    expect(el.preservesPitch).toBe(true);
+    p.play('She was reluctant to leave.', 'en-US');
+    expect(el.playbackRate).toBe(1);
+  });
+
+  it('passes the slow speed on to the device voice', () => {
+    const { p, deps } = setup({ serverAllowed: () => false });
+    p.play('reluctant', 'en-US', { rate: 0.7 });
+    expect(deps.fallback).toHaveBeenCalledWith('reluctant', 'en-US', expect.any(Function), 0.7);
+  });
+
   it('replays from memory synchronously, without the network', async () => {
     const { p, deps, audio } = setup();
     p.play('word', 'en-US');

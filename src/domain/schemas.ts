@@ -82,7 +82,7 @@ export const cardSchema: z.ZodType<Card> = z.object({
   ...synced,
   note_id: id,
   sense_id: id.nullable(),
-  card_type: z.enum(['recognition', 'production', 'cloze', 'image']),
+  card_type: z.enum(['recognition', 'production', 'cloze', 'image', 'dictation']),
   suspended: z.boolean(),
   unlocked: z.boolean(),
   due: millis,

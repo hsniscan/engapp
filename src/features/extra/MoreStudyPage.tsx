@@ -19,6 +19,7 @@ import {
   Surface,
   toast,
 } from '@/ui';
+import { ListenSection } from '@/features/practice/ListenSection';
 import { extraNewSteps, practiceHref } from './links';
 
 export function MoreStudyPage() {
@@ -50,6 +51,7 @@ export function MoreStudyPage() {
           )}
           <NewCardsSection data={data} />
           <PracticeSection data={data} />
+          <ListenSection data={data} />
           <AheadSection data={data} />
         </div>
       )}
