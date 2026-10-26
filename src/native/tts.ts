@@ -39,6 +39,29 @@ export async function speakNative(text: string, voice: NativeVoice, rate = 0.92)
   }
 }
 
+/**
+ * Speaks Turkish text with the phone's TextToSpeech engine (the hands-free round's meanings,
+ * v0.5 İP9). Resolves when done; false when the phone has no Turkish voice (no help toast:
+ * the meaning is on screen).
+ */
+export async function speakNativeTurkish(text: string): Promise<boolean> {
+  try {
+    await TextToSpeech.speak({ text, lang: 'tr-TR', rate: 0.95, queueStrategy: QueueStrategy.Flush });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Stops the phone's voice (the hands-free round's "Duraklat"). */
+export async function stopNative(): Promise<void> {
+  try {
+    await TextToSpeech.stop();
+  } catch {
+    // nothing was speaking
+  }
+}
+
 /** For tests. */
 export function resetNativeTtsForTesting(): void {
   lastFailureToast = 0;

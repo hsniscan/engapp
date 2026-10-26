@@ -173,6 +173,11 @@ export interface Pronouncer {
    * texts are now ready.
    */
   prefetch(texts: readonly string[], voice: VoicePref): Promise<number>;
+  /**
+   * Stops whatever is playing or loading (the hands-free round's "Duraklat", v0.5 İP9); its
+   * onDone is not called. The device voice is stopped by the caller.
+   */
+  stop(): void;
   /** For tests: forget the in-memory URLs. */
   reset(): void;
 }
@@ -182,6 +187,7 @@ export function createPronouncer(deps: PronunciationDeps): Pronouncer {
   let el: HTMLAudioElement | null = null;
   let seq = 0;
   let finishCurrent: (() => void) | null = null;
+  let silenced = false;
 
   const remember = (key: string, url: string) => {
     memory.delete(key);
@@ -263,6 +269,19 @@ export function createPronouncer(deps: PronunciationDeps): Pronouncer {
   }
 
   return {
+    stop() {
+      ++seq; // a load still in flight sees a newer id and does nothing
+      el?.pause();
+      const f = finishCurrent;
+      if (!f) return;
+      silenced = true; // clean up (timers, loading state) without telling the caller
+      try {
+        f();
+      } finally {
+        silenced = false;
+      }
+    },
+
     reset() {
       for (const u of memory.values()) deps.revokeObjectURL(u);
       memory.clear();
@@ -309,7 +328,7 @@ export function createPronouncer(deps: PronunciationDeps): Pronouncer {
         if (loadingTimer !== null) deps.clearTimeout(loadingTimer);
         if (loadingOwner === owner) setLoadingOwner(null);
         if (finishCurrent === finish) finishCurrent = null;
-        opts.onDone?.();
+        if (!silenced) opts.onDone?.();
       };
       const fallback = () => {
         if (id !== seq) return finish();
@@ -478,6 +497,11 @@ export function prefetchPronunciations(texts: readonly string[], voice: VoicePre
  */
 export function playPronunciation(text: string, voice: VoicePref, opts?: PlayOptions): boolean {
   return defaultPronouncer.play(text, voice, opts);
+}
+
+/** Stops the pronunciation that is playing or loading, without calling its onDone. */
+export function stopPronunciation(): void {
+  defaultPronouncer.stop();
 }
 
 /** True when this browser can play pronunciations at all (audio element or speech engine). */
