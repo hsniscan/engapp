@@ -154,7 +154,8 @@ export async function recomputeAllCards(now: Millis = Date.now()): Promise<numbe
 // ------------------------------------------------------------------ learning model (ADR 0041)
 
 /** Meta key: the one-off replay that fills ramp_step / learned_at has run on this device. */
-export const LEARNING_MODEL_BACKFILL_KEY = 'learning_model_backfill_v1';
+// v2 (ADR 0055): replays again once so an answer on a later calendar day under 12 h counts.
+export const LEARNING_MODEL_BACKFILL_KEY = 'learning_model_backfill_v2';
 
 /**
  * One-off job after the upgrade to the learning model: replay every card from its logs to fill
