@@ -53,6 +53,7 @@ test('progress tab: categories, gap practice and the 12-week series on a phone',
       page.getByRole('button', { name: 'Cevabı göster', disabled: false }),
     ).toBeVisible();
   } else {
-    await expect(gap.getByText(/henüz yok/)).toBeVisible();
+    // The seed is random: no gap list yet, or both directions equally strong (no list needed).
+    await expect(gap.getByText(/henüz yok|aynı oranda hatırlıyorsun/)).toBeVisible();
   }
 });

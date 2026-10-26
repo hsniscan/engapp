@@ -87,6 +87,7 @@ test('reader: closing after a tap keeps the start; a scrolled place is resumed',
   await page.getByTestId('reader-text').getByText('serendipity', { exact: true }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('button', { name: 'Okuyucuyu kapat' }).click();
   await expect(page).not.toHaveURL(/\/oku\//);
   await page.waitForTimeout(300);
@@ -137,6 +138,8 @@ test('reader: own words show their meaning, new ones ask first; the new words at
   await expect(sheet.getByText('park alanı')).toBeVisible();
   await expect(sheet.getByTestId('reader-reveal')).toHaveCount(0);
   await page.keyboard.press('Escape');
+  // The sheet animates out; a tap before it is gone falls on the closing overlay.
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 
   // New: guess first.
   await page.getByTestId('reader-text').getByText('serendipity', { exact: true }).click();
@@ -144,6 +147,8 @@ test('reader: own words show their meaning, new ones ask first; the new words at
   await expect(sheet.getByTestId('reader-reveal')).toBeVisible();
   await expect(sheet.getByText('mutlu tesadüf')).toHaveCount(0);
   await page.keyboard.press('Escape');
+  // The sheet animates out; a tap before it is gone falls on the closing overlay.
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 
   // The end of the text: how many new words, then add several at once.
   const summary = page.getByTestId('reader-summary');
