@@ -439,6 +439,10 @@ verify_jwt = false
 [functions.account-delete]
 verify_jwt = false
 
+# Article import (v0.5 İP2, docs/decisions/0044-article-import.md); checks the JWT itself.
+[functions.fetch-article]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

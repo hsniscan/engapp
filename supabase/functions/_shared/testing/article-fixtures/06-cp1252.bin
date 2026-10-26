@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="windows-1252">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A small café that refuses to grow | Street Stories</title>
+<meta property="og:site_name" content="Street Stories">
+<meta property="og:title" content="A small café that refuses to grow">
+
+<link rel="stylesheet" href="/static/main.css">
+<script>window.dataLayer = window.dataLayer || []; function track(){}</script>
+</head>
+<body>
+<div id="cookie-banner" class="cookie-consent"><p>We use cookies to improve your experience. By continuing you accept our cookie policy.</p><button>Accept all cookies</button></div>
+<header class="site-header"><a class="logo" href="/">Street Stories</a>
+<nav class="main-nav"><ul><li><a href="/world">World</a></li><li><a href="/business">Business</a></li>
+<li><a href="/tech">Technology</a></li><li><a href="/science">Science</a></li><li><a href="/sport">Sport</a></li>
+<li><a href="/opinion">Opinion</a></li><li><a href="/subscribe">Subscribe</a></li></ul></nav></header>
+<div class="ad-slot advertisement" id="ad-top"><span>Advertisement</span><iframe src="about:blank"></iframe></div>
+
+<div class="post"><h1>A small café that refuses to grow</h1><p class="meta">by Ana Lima</p>
+<p>The café on Mill Street has eight tables, one coffee machine and a menu that has not changed since it opened in 1998. Twice a year, someone offers to buy it and turn it into a chain. Twice a year, the owner says no.</p>
+<p>“People come here because it is the same every day,” she told me while she cleaned the counter. “If I open ten more, it will not be this place any more. It will be a brand.”</p>
+<p>Her regular customers agree. A retired teacher has ordered the same tea and the same lemon cake every afternoon for eleven years, and he sits at the same table by the window.</p>
+<p>The café makes enough money to pay its three workers well and to close every August for a long holiday. For the owner, that is success. She does not want more, and she does not see why she should.</p></div>
+
+<aside class="related"><h3>Related stories</h3><ul><li><a href="/a">Ten gadgets you need this winter</a></li><li><a href="/b">Markets close higher on Friday</a></li><li><a href="/c">The best hiking trails near the coast</a></li></ul></aside>
+<footer class="site-footer"><p>© 2026 Street Stories. All rights reserved.</p>
+<ul><li><a href="/privacy">Privacy policy</a></li><li><a href="/terms">Terms of use</a></li><li><a href="/contact">Contact us</a></li></ul></footer>
+<script src="/static/app.js"></script>
+</body>
+</html>

@@ -2,7 +2,7 @@
 // supabase/functions/_shared/push-send.ts and docs/decisions/0024-web-push.md.
 import { parseOrigins } from '../_shared/http.ts';
 import { createPushHandler, vapidFromEnv } from '../_shared/push-send.ts';
-import { log } from '../_shared/setup.ts';
+import { log } from '../_shared/log.ts';
 import {
   createAdminClient,
   createAuthenticator,
