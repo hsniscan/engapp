@@ -106,7 +106,7 @@ export function refreshWidgets(): Promise<void> {
 }
 
 let timer: ReturnType<typeof setTimeout> | null = null;
-function soon(where: string, ms = 2000): void {
+function soon(where: string, ms = 4000): void {
   if (timer) clearTimeout(timer);
   timer = setTimeout(() => {
     timer = null;
@@ -153,7 +153,7 @@ export async function startWidgets(): Promise<void> {
   });
 
   // Every answer (the study screen, a replayed notification answer, an undo) and every change
-  // a sync brings changes the count or the word.
+  // a sync brings changes the count or the word (debounced: one write per burst).
   liveQuery(async () => {
     const [last, cards, settings] = await Promise.all([
       db.review_logs.orderBy('reviewed_at').last(),

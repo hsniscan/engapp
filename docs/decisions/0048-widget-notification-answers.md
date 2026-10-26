@@ -41,7 +41,7 @@ Play release, in-app review and new store screenshots are deferred).
 4. **One reveal state** (`engapp_widget` SharedPreferences, key `revealed` = `"<day>|<note_id>"`):
    a single string, so it resets by itself when the word changes.
 5. **When the state is written** (`src/native/widget.ts`): after every answer, undo or card
-   change (a Dexie liveQuery, debounced 2 s — so after every study session too), after each
+   change (a Dexie liveQuery, debounced 4 s — so after every study session too), after each
    sync run, on app resume, and at the day rollover while the app is open; each write is
    followed by `WidgetBridge.refresh()` (Glance `updateAll`). A notification answer redraws the
    widgets at once, and the widget subtracts queued "Bildim" answers until the app applies them.
