@@ -141,6 +141,19 @@ Google hesabı** hazır olsun (son bölümde silinecek; kendi hesabını kullanm
 | [ ] | Ekranın kenarından geri kaydır (geri hareketi) | Açık pencereyi kapatır, yoksa bir önceki ekrana döner; ana sayfada çıkar | |
 | [ ] | Tablet ya da katlanır telefonda yan çevir | Ekran bozulmadan döner | |
 
+## 14. R2 ses (v0.5, ölçüt 12)
+
+Sesler Cloudflare'e taşındıktan sonra ([setup-backend.md](setup-backend.md), bölüm 19.7) bir kez.
+
+| ✓ | Ne yap | Ne olmalı | Not |
+|---|---|---|---|
+| [ ] | İnternet açıkken, daha önce dinlemediğin bir sözlük kelimesinde hoparlöre dokun | 1 saniye içinde doğal bir sesle okunur (telefonun robot sesi değil) | |
+| [ ] | Ayarlar'da aksanı değiştir (ABD / İngiliz), aynı kelimeyi dinle | İki aksan da okunur ve birbirinden farklıdır | |
+| [ ] | Bir örnek cümlede ve kitaplıktaki bir metnin cümlesinde hoparlöre dokun | Cümle baştan sona okunur, başı kesilmez | |
+| [ ] | Uçak modunu aç, az önce dinlediğin kelimeye dokun | Aynı doğal sesle yine okunur | |
+| [ ] | Uçak modunda hiç dinlemediğin bir kelimeye dokun | Telefonun kendi sesiyle okunur; uygulama takılmaz | |
+| [ ] | Mobil veride (Wi-Fi kapalı) 5 kelime dinle | Hepsi takılmadan okunur | |
+
 ## Genel not
 
 Takıldığın, yavaş gelen ya da garip görünen her şeyi buraya yaz:

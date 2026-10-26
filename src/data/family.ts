@@ -9,6 +9,7 @@ import { addNoteWithSenses, type AddNoteResult } from './actions';
 import { db } from './db';
 import { setContentFeedback } from './examples';
 import { getMeta, setMeta } from './meta';
+import { scanWhere } from './scan';
 
 // ------------------------------------------------------------------ reference file cache
 
@@ -49,7 +50,7 @@ export interface UserWordSets {
 }
 
 export async function getUserWordSets(): Promise<UserWordSets> {
-  const notes = await db.notes.filter((n) => n.deleted_at === null).toArray();
+  const notes = await scanWhere(db.notes, (n) => n.deleted_at === null);
   notes.sort((a, b) => a.created_at - b.created_at);
   return {
     words: notes.filter((n) => n.term_type !== 'affix').map((n) => ({ term: n.term, term_norm: n.term_norm })),

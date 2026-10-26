@@ -5,6 +5,7 @@ import { withTags } from '../domain/tags';
 import type { Id, Millis, Sense, ThemePreview } from '../domain/types';
 import { db } from './db';
 import { writeTx } from './writer';
+import { scanWhere } from './scan';
 
 export const THEME_PREVIEW_ID = 'current';
 
@@ -22,7 +23,7 @@ export interface ThemeSource {
  */
 export async function getThemeSource(opts: { includeTagged?: boolean } = {}): Promise<ThemeSource> {
   return db.transaction('r', [db.notes, db.senses, db.lexicon_cache], async () => {
-    const notes = (await db.notes.filter((n) => n.deleted_at === null).toArray())
+    const notes = (await scanWhere(db.notes, (n) => n.deleted_at === null))
       .filter((n) => opts.includeTagged || n.tags.length === 0)
       .sort((a, b) => b.created_at - a.created_at || (a.id < b.id ? 1 : -1));
     const picked = notes.slice(0, MAX_THEME_RUN_WORDS);

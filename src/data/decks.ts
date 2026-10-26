@@ -38,6 +38,7 @@ import { ActionError } from './errors';
 import { logsByCard } from './history';
 import { levelDataNow } from './levelData';
 import { writeTx } from './writer';
+import { scanWhere } from './scan';
 
 // ------------------------------------------------------------------ evaluation context
 
@@ -53,9 +54,9 @@ export async function deckContext(
   now: Millis,
   levelData: LevelData | null = levelDataNow(),
 ): Promise<DeckContext> {
-  const notes = await db.notes.filter((n) => n.deleted_at === null).toArray();
-  const senses = await db.senses.filter((s) => s.deleted_at === null).toArray();
-  const sources = await db.sources.filter((s) => s.deleted_at === null).toArray();
+  const notes = await scanWhere(db.notes, (n) => n.deleted_at === null);
+  const senses = await scanWhere(db.senses, (s) => s.deleted_at === null);
+  const sources = await scanWhere(db.sources, (s) => s.deleted_at === null);
   const lexIds = [...new Set(senses.map((s) => s.lexicon_sense_id).filter((x): x is Id => !!x))];
   const lexRows = lexIds.length ? await db.lexicon_cache.bulkGet(lexIds) : [];
   const lexicon = new Map(lexRows.filter((r): r is LexiconSense => !!r).map((r) => [r.id, r]));
@@ -97,8 +98,8 @@ export async function loadDeckFacts(now: Millis = Date.now()): Promise<DeckNoteF
   return db.transaction('r', [db.notes, db.cards, db.review_logs, db.practice_logs], async () => {
     const since = now - HARD_WINDOW_MS;
     const [notes, cards, recentLogs, misses] = await Promise.all([
-      db.notes.filter((n) => n.deleted_at === null).toArray(),
-      db.cards.filter((c) => c.deleted_at === null).toArray(),
+      scanWhere(db.notes, (n) => n.deleted_at === null),
+      scanWhere(db.cards, (c) => c.deleted_at === null),
       db.review_logs.where('reviewed_at').aboveOrEqual(since).toArray(),
       db.practice_logs
         .where('practiced_at')
@@ -256,7 +257,7 @@ export async function moveDeck(id: Id, dir: -1 | 1, now: Millis = Date.now()): P
 
 /** Tags of live notes with their note counts, most used first. */
 export async function listTags(): Promise<{ tag: string; count: number }[]> {
-  const notes = await db.notes.filter((n) => n.deleted_at === null).toArray();
+  const notes = await scanWhere(db.notes, (n) => n.deleted_at === null);
   return tagCounts(notes.map((n) => n.tags));
 }
 

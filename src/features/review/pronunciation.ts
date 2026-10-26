@@ -8,9 +8,11 @@
 //
 // Where the audio comes from (docs/decisions/0042-pregenerated-tts.md), first hit wins:
 //   1. memory (object URLs: instant replays) and Cache Storage (offline, after a reload);
-//   2. the pre-generated MP3 in the public `tts` bucket, fetched straight from Storage: the
-//      client computes the object path itself (same key as the server, tts-contract.ts), so
-//      a dictionary word or sentence plays with no edge-function round trip;
+//   2. the pre-generated MP3, fetched straight from the public bucket: the client computes the
+//      object path itself (same key as the server, tts-contract.ts), so a dictionary word or
+//      sentence plays with no edge-function round trip. Cloudflare R2 first when
+//      VITE_AUDIO_BASE_URL is set (decision 0053), then the Supabase `tts` bucket, which is
+//      also used when R2 is unreachable or does not have the file yet;
 //   3. the `tts` edge function, only when that file is not there (a 4xx): private text and
 //      dictionary entries newer than the last pre-generation run;
 //   4. the device voice, on any failure.
@@ -28,8 +30,9 @@ import {
   TTS_CACHE_VERSION,
   ttsKeyMaterial,
   TTS_MAX_CHARS,
+  parseAudioBaseUrl,
+  ttsAudioUrls,
   ttsObjectPath,
-  ttsPublicUrl,
   ttsSha256Hex,
   ttsTextCandidates,
   type TtsResponse,
@@ -63,8 +66,11 @@ export interface PronunciationDeps {
   online: () => boolean;
   request: (text: string, voice: VoicePref) => Promise<TtsResponse>;
   fetchBlob: (url: string) => Promise<Blob>;
-  /** Public URL of an object in the `tts` bucket; null when no backend is configured. */
-  publicUrl: (path: string) => string | null;
+  /**
+   * Public URLs of an object, best first (R2, then the Supabase `tts` bucket; decision 0053).
+   * Empty when neither is configured.
+   */
+  publicUrls: (path: string) => string[];
   /**
    * Fetches a pre-generated file: the audio, or null when it is not there (any 4xx: Storage
    * answers 400 or 404 for a missing object). Throws on network errors.
@@ -201,16 +207,26 @@ export function createPronouncer(deps: PronunciationDeps): Pronouncer {
     }
   };
 
-  /** The pre-generated file of `text` (or of its lower-case headword form), or null. */
+  /**
+   * The pre-generated file of `text` (or of its lower-case headword form), or null. Each
+   * source in order (R2, then Supabase Storage), every candidate within a source; a source
+   * that cannot be reached is skipped for the rest of this lookup.
+   */
   async function fetchPregenerated(text: string, voice: VoicePref): Promise<Blob | null> {
-    for (const t of ttsTextCandidates(text)) {
-      const url = deps.publicUrl(await ttsObjectPath(voice, t));
-      if (!url) return null;
-      try {
-        const blob = await deps.fetchPregenerated(url);
-        if (blob) return blob;
-      } catch {
-        return null; // network trouble: let the edge function (or the device voice) decide
+    const urls: string[][] = [];
+    for (const t of ttsTextCandidates(text))
+      urls.push(deps.publicUrls(await ttsObjectPath(voice, t)));
+    const sources = Math.max(0, ...urls.map((u) => u.length));
+    for (let s = 0; s < sources; s++) {
+      for (const candidate of urls) {
+        const url = candidate[s];
+        if (!url) continue;
+        try {
+          const blob = await deps.fetchPregenerated(url);
+          if (blob) return blob;
+        } catch {
+          break; // unreachable: the next source, then the edge function (or the device voice)
+        }
       }
     }
     return null;
@@ -438,6 +454,9 @@ export function deviceVoice(
   return true;
 }
 
+/** Public base URL of the audio on Cloudflare R2 (build-time, decision 0053), or null. */
+const AUDIO_BASE_URL = parseAudioBaseUrl(import.meta.env.VITE_AUDIO_BASE_URL);
+
 const defaultPronouncer = createPronouncer({
   serverAllowed: () => {
     const s = getAuthState().status;
@@ -450,7 +469,8 @@ const defaultPronouncer = createPronouncer({
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     return r.blob();
   },
-  publicUrl: (path) => (backendConfig ? ttsPublicUrl(backendConfig.url, path) : null),
+  publicUrls: (path) =>
+    ttsAudioUrls(path, { audioBaseUrl: AUDIO_BASE_URL, supabaseUrl: backendConfig?.url ?? null }),
   fetchPregenerated: fetchPregeneratedAudio,
   cache: (() => {
     let c: AudioCache | null | undefined;

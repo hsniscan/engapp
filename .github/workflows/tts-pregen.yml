@@ -17,6 +17,10 @@
 # Repository secrets (the same as the word bank job):
 #   SUPABASE_SERVICE_ROLE_KEY  the project's service_role (or sb_secret_) key, or else
 #   SUPABASE_ACCESS_TOKEN      a token with "API keys: Read" (the key is read and masked).
+# Optional, Cloudflare R2 (decision 0053): with the secrets R2_ACCOUNT_ID, R2_ACCESS_KEY_ID,
+# R2_SECRET_ACCESS_KEY, R2_BUCKET and the variable AUDIO_BASE_URL set, new clips go to R2
+# instead of Supabase Storage (a clip in either bucket counts as made). Without them nothing
+# changes.
 name: Pronunciation audio
 
 on:
@@ -85,6 +89,12 @@ env:
   KOKORO_BASE_URL: https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0
   KOKORO_MODEL_SHA256: 7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5
   KOKORO_VOICES_SHA256: bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d
+  # Cloudflare R2 (decision 0053); empty when the secrets are not set.
+  R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+  R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+  R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+  R2_BUCKET: ${{ secrets.R2_BUCKET }}
+  AUDIO_BASE_URL: ${{ vars.AUDIO_BASE_URL }}
 
 jobs:
   plan:

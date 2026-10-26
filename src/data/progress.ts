@@ -22,6 +22,7 @@ import { db } from './db';
 import { groupLogs } from './history';
 import { levelDataNow } from './levelData';
 import { dayConfig, getSettings } from './settings';
+import { scanWhere } from './scan';
 
 export interface RetentionInput {
   data: RetentionData;
@@ -51,10 +52,10 @@ export async function loadRetentionInput(
       const settings = await getSettings(now);
       const cfg = dayConfig(settings);
       const [cards, notes, senses, sources, logs] = await Promise.all([
-        db.cards.filter((c) => c.deleted_at === null).toArray(),
-        db.notes.filter((n) => n.deleted_at === null).toArray(),
-        db.senses.filter((s) => s.deleted_at === null).toArray(),
-        db.sources.filter((s) => s.deleted_at === null).toArray(),
+        scanWhere(db.cards, (c) => c.deleted_at === null),
+        scanWhere(db.notes, (n) => n.deleted_at === null),
+        scanWhere(db.senses, (s) => s.deleted_at === null),
+        scanWhere(db.sources, (s) => s.deleted_at === null),
         db.review_logs.toArray(),
       ]);
       const lexIds = [

@@ -2,6 +2,7 @@ import { createBrowserRouter, redirect, type RouteObject } from 'react-router';
 import { RootLayout, type RouteHandle } from './RootLayout';
 import { AuthPage } from '@/features/auth/AuthPage';
 import { HomeScreen } from '@/features/home/HomeScreen';
+import { loadLanguage } from '@/i18n';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { RouteErrorPage } from './pages/RouteErrorPage';
 import { LEGACY_PATHS, legacyRedirect } from './redirects';
@@ -260,7 +261,11 @@ routes.unshift(
     path: '/privacy',
     errorElement: <RouteErrorPage />,
     HydrateFallback: () => null,
-    lazy: async () => ({ Component: (await loadLegal()).PrivacyEnRoute }),
+    lazy: async () => {
+      // English strings are not in the start-up bundle (src/i18n/index.ts).
+      const [m] = await Promise.all([loadLegal(), loadLanguage('en')]);
+      return { Component: m.PrivacyEnRoute };
+    },
   },
   {
     path: '/hesap-sil',

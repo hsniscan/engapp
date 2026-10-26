@@ -41,6 +41,7 @@ import { db } from './db';
 import { ActionError } from './errors';
 import { lapsesByNote } from './leech';
 import { writeTx } from './writer';
+import { scanWhere } from './scan';
 
 const meaningOf = (s: Pick<Sense, 'meaning_tr' | 'meaning_tr_override'>) => s.meaning_tr_override?.trim() || s.meaning_tr;
 
@@ -49,8 +50,8 @@ const meaningOf = (s: Pick<Sense, 'meaning_tr' | 'meaning_tr_override'>) => s.me
 /** The user's live notes with their live senses, as the scan sees them. */
 export async function getConfusableTerms(): Promise<ConfusableTerm[]> {
   const [notes, senses] = await Promise.all([
-    db.notes.filter((n) => n.deleted_at === null).toArray(),
-    db.senses.filter((s) => s.deleted_at === null).toArray(),
+    scanWhere(db.notes, (n) => n.deleted_at === null),
+    scanWhere(db.senses, (s) => s.deleted_at === null),
   ]);
   const byNote = new Map<Id, Sense[]>();
   for (const s of senses) {

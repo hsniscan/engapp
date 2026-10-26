@@ -479,6 +479,97 @@ app says the story cannot be written right now). Optional variables (step 4):
 - Check after deploy: **Edge Functions → ai-story → Logs** shows `ai-story model call` lines
   with counts only; `select * from public.text_budget_status();` shows the spending.
 
+## 19. Pronunciation audio on Cloudflare R2 (v0.5)
+
+The audio files (step 15) take about a third of the free 1 GB in Supabase, and the library
+and new words keep adding more. Cloudflare R2 gives 10 GB free and charges nothing for
+downloads, so the files move there (decision 0053). Nothing changes for you in the app, and
+nothing is deleted from Supabase: the app plays from R2 first and uses Supabase whenever R2
+does not answer, so there is always a way back. Until step 19.7 is done, everything stays on
+Supabase exactly as before.
+
+You only click in two dashboards (Cloudflare and GitHub); the copying is done by a workflow.
+
+1. **Create the bucket.** Cloudflare dashboard → **R2 Object Storage**. The first time,
+   Cloudflare asks you to turn R2 on (it may ask for a card; the free plan costs nothing up
+   to 10 GB). Then **Create bucket** → name `engapp-audio` → location **Automatic** →
+   **Create bucket**.
+2. **Make it public.** In the bucket: **Settings → Public access → R2.dev subdomain → Allow**
+   (type `allow` to confirm). Copy the address it shows, which looks like
+   `https://pub-<letters and numbers>.r2.dev`. This is `<AUDIO_URL>` below. (A custom domain
+   from the same page works too; then use that address.)
+3. **Let the app read the files.** Same **Settings** page → **CORS policy → Add CORS policy**,
+   replace the text with the lines below and **Save**. If you use your own app domain, add it
+   to the list the same way.
+
+   ```json
+   [
+     {
+       "AllowedOrigins": [
+         "https://engapp-65y.pages.dev",
+         "https://localhost",
+         "http://localhost:5173"
+       ],
+       "AllowedMethods": ["GET", "HEAD"],
+       "AllowedHeaders": ["*"],
+       "MaxAgeSeconds": 86400
+     }
+   ]
+   ```
+
+4. **Create a key for GitHub.** **R2 Object Storage** main page → **Manage API tokens** (or
+   **API → Manage API tokens**) → **Create API token** (an account token). Permission
+   **Object Read & Write**, **Apply to specific buckets only** → `engapp-audio` → **Create**.
+   Keep the page open: it shows the **Access Key ID** and the **Secret Access Key** only once.
+   The **Account ID** is on the R2 main page (right side) and in the dashboard address.
+5. **Add the GitHub secrets.** GitHub → **Settings → Secrets and variables → Actions →
+   Secrets → New repository secret**, four times:
+
+   | Name                   | Value                 |
+   | ---------------------- | --------------------- |
+   | `R2_ACCOUNT_ID`        | the Account ID        |
+   | `R2_ACCESS_KEY_ID`     | the Access Key ID     |
+   | `R2_SECRET_ACCESS_KEY` | the Secret Access Key |
+   | `R2_BUCKET`            | `engapp-audio`        |
+
+   Nothing changes in the app yet.
+
+6. **Copy the files.** **Actions → Audio copy to R2 → Run workflow**:
+   - first with **dry_run** ticked. It copies nothing; the summary shows how many files
+     Supabase has and how many are left to copy;
+   - then with **dry_run** off and **public_url** set to `<AUDIO_URL>`. It copies the files
+     (about 40,000 small files; usually under an hour) and then checks 20 of them through
+     `<AUDIO_URL>`, as the app would. It is safe to run again at any time: it only copies
+     what is missing, so if it stops or times out, just run it again.
+
+   Done when the summary says **left to copy: 0** and the public check is green. A red
+   "CORS" message means step 3 is missing or has a typo.
+
+7. **Switch the app to R2.** Do these three on the same day, in this order:
+   1. GitHub → **Secrets and variables → Actions → Variables → New repository variable**
+      `AUDIO_BASE_URL` = `<AUDIO_URL>`. From now on the audio jobs write new files to R2.
+   2. **Actions → Supabase → Run workflow**. The `tts` function then finds and stores audio on
+      R2 too.
+   3. Cloudflare → **Workers & Pages → <PAGES_PROJECT> → Settings → Variables and Secrets** →
+      add `VITE_AUDIO_BASE_URL` = `<AUDIO_URL>` for **Production** and **Preview**, then
+      **redeploy** (step 7). The next Android build takes the GitHub variable by itself.
+
+   Then run step 6 once more (dry_run off) to pick up files made in the meantime.
+
+8. **Check.** On the phone, follow "R2 ses" in `docs/real-device-checklist.md`. On the web,
+   in the browser's network tab a speaker tap loads `<AUDIO_URL>/en-US/<…>.mp3`.
+9. **Later, by hand: free the Supabase space.** Wait at least two weeks with R2 in use and no
+   audio complaints, then run step 6 with **dry_run** ticked: it must say **left to copy: 0**.
+   Only then, Supabase dashboard → **Storage → tts** → open `en-US`, select all, **Delete**;
+   the same for `en-GB`. Do not delete the `tts` bucket itself. The app keeps working: it plays
+   from R2, and the `tts` function still makes the rare missing file. No workflow does this
+   step for you, on purpose.
+
+**Going back** (any time before step 9): delete the Cloudflare Pages variable
+`VITE_AUDIO_BASE_URL` and redeploy, and delete the GitHub variable `AUDIO_BASE_URL`. The app
+then uses Supabase only, as before. Files made while R2 was on are made again on Supabase by
+the next audio job run (step 15), which sees them missing there.
+
 ## Manual deploy without GitHub (alternative)
 
 From the repository root, with the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started)

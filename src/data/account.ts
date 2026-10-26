@@ -13,6 +13,7 @@ import { adoptGuestData, applyRemoteRows, type RemoteBatch } from './maintenance
 import { getMeta, META, setMeta } from './meta';
 import { SETTINGS_ID } from './settings';
 import { type MutableRows, type MutableTable, writeTx } from './writer';
+import { scanCount } from './scan';
 
 const MUTABLE: MutableTable[] = [
   'notes',
@@ -249,5 +250,5 @@ export async function copyCardsFromOtherAccount(userId: string, snapshot: Remote
 
 /** Notes flagged possible_duplicate (shown in the library after a merge). */
 export async function countPossibleDuplicates(): Promise<number> {
-  return db.notes.filter((n: Note) => n.possible_duplicate && n.deleted_at === null).count();
+  return scanCount(db.notes, (n: Note) => n.possible_duplicate && n.deleted_at === null);
 }

@@ -17,8 +17,11 @@
  *   node scripts/tts-pregen.ts prune-ondemand [--dry-run]
  *       Deletes the on-demand Gemini WAV files (decision 0028) whose text now has an MP3.
  *
- * Environment: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY. Secrets are read from the environment
- * only and never printed; logs are JSON lines on stdout.
+ * Environment: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY. With R2_ACCOUNT_ID, R2_ACCESS_KEY_ID,
+ * R2_SECRET_ACCESS_KEY, R2_BUCKET and AUDIO_BASE_URL also set (decision 0053) new files go to R2
+ * instead of Supabase Storage; a file in either bucket counts as present, and prune-ondemand
+ * deletes from both. Secrets are read from the environment only and never printed; logs are
+ * JSON lines on stdout.
  */
 import { parseArgs } from 'node:util';
 import { createClient } from '@supabase/supabase-js';
@@ -34,6 +37,9 @@ import {
   runJobs,
   type Log,
 } from './lib/tts-pregen.ts';
+import { R2Client, r2ConfigFromEnv } from '../supabase/functions/_shared/r2.ts';
+import { parseAudioBaseUrl } from '../supabase/functions/_shared/tts-contract.ts';
+import { listR2Audio, MB, unionPaths, uploadAudioToR2 } from './lib/audio-r2.ts';
 import { KokoroWorker } from './lib/tts-kokoro-worker.ts';
 import { SupabasePregenStore } from './lib/tts-pregen-store.ts';
 
@@ -92,26 +98,58 @@ async function main(): Promise<void> {
   const max = int(values.max, 'max', 1, 1_000_000);
   const s = store();
 
-  if (source === 'graded' && job === 'prune-ondemand') throw new Error('prune-ondemand is for the dictionary');
+  if (source === 'graded' && job === 'prune-ondemand')
+    throw new Error('prune-ondemand is for the dictionary');
   const set =
-    source === 'graded' ? gradedTexts(await s.gradedSentences()) : publicTexts(await s.publicRows());
+    source === 'graded'
+      ? gradedTexts(await s.gradedSentences())
+      : publicTexts(await s.publicRows());
   log('tts texts', { source, words: set.words, sentences: set.sentences, skipped: set.skipped });
   const bucket = await s.listBucket(voices);
   log('tts bucket', {
     mp3: bucket.counts.mp3,
-    mp3MB: Math.round(bucket.bytes.mp3 / 1e5) / 10,
+    mp3MB: MB(bucket.bytes.mp3),
     wav: bucket.counts.wav,
-    wavMB: Math.round(bucket.bytes.wav / 1e5) / 10,
+    wavMB: MB(bucket.bytes.wav),
   });
+  // Cloudflare R2 (decision 0053): new files go there; a file in either bucket is present.
+  // The switch is the public AUDIO_BASE_URL: with credentials alone (during the copy, before
+  // the app and the function read R2) new clips still go to Supabase, so nobody misses them.
+  const r2Config = r2ConfigFromEnv((k) => process.env[k]);
+  const r2On = !!r2Config && !!parseAudioBaseUrl(process.env.AUDIO_BASE_URL);
+  if (r2Config && !r2On) log('tts r2 off', { reason: 'AUDIO_BASE_URL is not set' });
+  const r2 = r2On && r2Config ? new R2Client(r2Config) : null;
+  const r2Bucket = r2 ? await listR2Audio(r2, voices) : null;
+  if (r2Bucket) {
+    log('tts r2 bucket', {
+      mp3: r2Bucket.counts.mp3,
+      mp3MB: MB(r2Bucket.bytes.mp3),
+      wav: r2Bucket.counts.wav,
+      wavMB: MB(r2Bucket.bytes.wav),
+    });
+  }
+  log('tts upload target', { target: r2 ? 'r2' : 'supabase' });
+  const present = r2Bucket ? unionPaths(bucket, r2Bucket) : bucket.paths;
 
   if (job === 'prune-ondemand') {
-    const paths = await replacedOnDemandFiles(set.texts, voices, bucket.paths);
+    const paths = await replacedOnDemandFiles(set.texts, voices, present);
     log('tts on-demand files replaced by an MP3', { files: paths.length });
-    if (!values['dry-run'] && paths.length) log('tts removed', { files: await s.remove(paths) });
+    if (!values['dry-run'] && paths.length) {
+      const inSupabase = paths.filter((p) => bucket.paths.has(p));
+      if (inSupabase.length) log('tts removed', { files: await s.remove(inSupabase) });
+      if (r2 && r2Bucket) {
+        let removed = 0;
+        for (const p of paths.filter((x) => r2Bucket.paths.has(x))) {
+          await r2.delete(p);
+          removed++;
+        }
+        log('tts r2 removed', { files: removed });
+      }
+    }
     return;
   }
 
-  const plan = await planJobs(set.texts, bucket.paths, { voices, shard, shards, max });
+  const plan = await planJobs(set.texts, present, { voices, shard, shards, max });
   const est = estimate(plan.jobs);
   log('tts plan', {
     shard,
@@ -125,7 +163,7 @@ async function main(): Promise<void> {
   });
   if (job === 'plan' || values['dry-run'] || plan.jobs.length === 0) return;
 
-  await s.ensureBucket();
+  if (!r2) await s.ensureBucket();
   const worker = await KokoroWorker.start(
     { python: values.python, model: values.model, voices: values.voices, out: values.out },
     log,
@@ -134,7 +172,11 @@ async function main(): Promise<void> {
     const minutes = int(values.minutes, 'minutes', 1, 24 * 60);
     const result = await runJobs(
       plan.jobs,
-      { synth: (j) => worker.synth(j), upload: (p, b) => s.upload(p, b), log },
+      {
+        synth: (j) => worker.synth(j),
+        upload: r2 ? (p, b) => uploadAudioToR2(r2, p, b) : (p, b) => s.upload(p, b),
+        log,
+      },
       { deadline: Date.now() + minutes * 60_000 },
     );
     log('tts run finished', { ...result, MB: Math.round(result.bytes / 1e5) / 10 });

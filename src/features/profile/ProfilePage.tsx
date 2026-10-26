@@ -23,6 +23,7 @@ import { useWordStages } from '@/features/stats/useWordStages';
 import { formatSince } from '@/features/auth/time';
 import { useSyncStatus } from '@/sync/status';
 import { buttonClasses, cn, Icon, Skeleton, Surface } from '@/ui';
+import { scanCount, scanWhere } from '@/data/scan';
 
 const card = 'flex flex-col rounded-card border border-border bg-surface';
 
@@ -349,8 +350,8 @@ function Shortcuts() {
   const { t } = useTranslation();
   const counts = useLiveQuery(async () => {
     const [notes, known] = await Promise.all([
-      db.notes.filter((n) => n.deleted_at === null).count(),
-      db.known_terms.filter((k) => k.deleted_at === null).toArray(),
+      scanCount(db.notes, (n) => n.deleted_at === null),
+      scanWhere(db.known_terms, (k) => k.deleted_at === null),
     ]);
     return { notes, known: new Set(known.map((k) => k.term_norm)).size };
   }, []);

@@ -19,8 +19,9 @@ import type { Card, Id, Millis, Note, Sense } from '../domain/types';
 import { syncFromPrimary } from './actions';
 import { db } from './db';
 import { ActionError } from './errors';
-import { groupLogs } from './history';
+import { logsByCard } from './history';
 import { writeTx } from './writer';
+import { scanWhere } from './scan';
 
 /** Lapses of a card, from its review logs (undo-aware). Safe in live queries. */
 export async function getCardLapses(cardId: Id): Promise<number> {
@@ -87,9 +88,9 @@ export async function listLeechCards(): Promise<LeechListItem[]> {
   return db.transaction('r', [db.cards, db.review_logs, db.notes, db.senses], async () => {
     // Only cards that FSRS already counts six lapses for can be leeches (card.lapses = replay
     // of the logs, invariant 3); their logs decide.
-    const candidates = await db.cards.filter((c) => c.deleted_at === null && !c.suspended && isLeech(c.lapses)).toArray();
+    const candidates = await scanWhere(db.cards, (c) => c.deleted_at === null && !c.suspended && isLeech(c.lapses));
     if (candidates.length === 0) return [];
-    const logs = groupLogs(await db.review_logs.where('card_id').anyOf(candidates.map((c) => c.id)).toArray());
+    const logs = await logsByCard(candidates.map((c) => c.id));
     const entries = listLeeches(candidates, logs);
     const byId = new Map(candidates.map((c) => [c.id, c]));
     const notes = new Map(

@@ -81,6 +81,8 @@ jobs:
         # OAuth client id is public too; it comes from the repository variable.
         env:
           VITE_GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
+          # Optional: pronunciation audio from Cloudflare R2 (decision 0053); empty = Supabase.
+          VITE_AUDIO_BASE_URL: ${{ vars.AUDIO_BASE_URL }}
         run: |
           if [ -z "$VITE_GOOGLE_WEB_CLIENT_ID" ]; then
             echo "::warning::Repository variable GOOGLE_WEB_CLIENT_ID is not set: native Google sign-in will say it is not configured (guest mode works)."

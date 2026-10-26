@@ -43,6 +43,7 @@ import {
   TextField,
   toast,
 } from '@/ui';
+import { scanCount } from '@/data/scan';
 
 export function ThemesPage() {
   const { t } = useTranslation();
@@ -87,7 +88,7 @@ function StartView() {
   const [includeTagged, setIncludeTagged] = useState(false);
   const source = useLiveQuery(() => getThemeSource({ includeTagged }), [includeTagged]);
   const untagged = useLiveQuery(
-    () => db.notes.filter((n) => n.deleted_at === null && n.tags.length === 0).count(),
+    () => scanCount(db.notes, (n) => n.deleted_at === null && n.tags.length === 0),
     [],
   );
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);

@@ -1,8 +1,8 @@
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import '@/i18n';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { loadLanguage } from '@/i18n';
 import { addNoteWithSenses, db } from '@/data';
 import { setAuthStateForTesting } from '@/features/auth/session';
 import { DeleteAccountPage } from '@/features/legal/DeleteAccountPage';
@@ -12,6 +12,9 @@ import { Toaster, TooltipProvider } from '@/ui';
 import { AccountDeleteRow } from './AccountDeleteRow';
 import { DeleteDialog } from './DeleteDialog';
 import type { DeletionDeps } from './deletion';
+
+// English is loaded on demand (the /privacy route does it in the router).
+beforeAll(() => loadLanguage('en'));
 
 function renderAt(element: React.ReactNode, path = '/') {
   const router = createMemoryRouter([{ path: '*', element }], { initialEntries: [path] });

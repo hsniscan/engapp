@@ -24,6 +24,7 @@ import { readCarry } from './smart';
 import { streakFrozenDay } from './streakFreeze';
 import { cachedTextSentences, loadTextSentences, readLastShown, textSentenceTables, writeLastShown } from './textSentences';
 import { dayConfig, getSettings, schedulerFor } from './settings';
+import { scanWhere } from './scan';
 
 export interface StudyQueue {
   items: (QueueItem & { card: Card })[];
@@ -335,7 +336,7 @@ export async function findNoteByTerm(term: string): Promise<{ note: Note; senses
 /** Live notes, newest first; optional case/whitespace-insensitive substring filter on the term. */
 export async function listNotes(query = ''): Promise<Note[]> {
   const q = normalizeTerm(query);
-  const notes = await db.notes.filter((n) => n.deleted_at === null && (!q || n.term_norm.includes(q))).toArray();
+  const notes = await scanWhere(db.notes, (n) => n.deleted_at === null && (!q || n.term_norm.includes(q)));
   return notes.sort((a, b) => b.created_at - a.created_at);
 }
 

@@ -5,13 +5,25 @@ import { effectiveLogs } from '../domain/recompute';
 import { type Card, CardState, type CardType, type Id, type Millis, type ReviewLog } from '../domain/types';
 import { db } from './db';
 
+/** Above this many cards logsByCard reads the whole log table once instead. */
+const LOGS_BY_CARD_SCAN = 3000;
+
 /** All logs (including undo rows) of the given cards, grouped by card id. */
 export async function logsByCard(cardIds: Iterable<Id>): Promise<Map<Id, ReviewLog[]>> {
   const ids = [...new Set(cardIds)];
   const map = new Map<Id, ReviewLog[]>(ids.map((id) => [id, []]));
   if (ids.length === 0) return map;
-  const rows = await db.review_logs.where('card_id').anyOf(ids).toArray();
-  for (const r of rows) map.get(r.card_id)?.push(r);
+  // One getAll per card, not anyOf: Dexie walks anyOf with one cursor that jumps from key to
+  // key, a round trip to IndexedDB per log row, which took seconds for a few hundred cards
+  // with long histories (10,000-card profile, decision 0053). Very large sets read the table.
+  if (ids.length > LOGS_BY_CARD_SCAN) {
+    for (const r of await db.review_logs.toArray()) map.get(r.card_id)?.push(r);
+    return map;
+  }
+  // Dexie.Promise.all, not the native one: hundreds of native awaits in one transaction
+  // outrun Dexie's zone tracking and the transaction commits early (PrematureCommitError).
+  const lists = await Dexie.Promise.all(ids.map((id) => db.review_logs.where('card_id').equals(id).toArray()));
+  ids.forEach((id, i) => map.set(id, lists[i]!));
   return map;
 }
 
