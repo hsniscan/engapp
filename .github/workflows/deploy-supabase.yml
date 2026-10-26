@@ -13,6 +13,9 @@
 #   CLAUDE_IMAGE_MODEL, CLAUDE_CHECK_MODEL, CLAUDE_MONTHLY_CREDIT_USD, IMAGE_DAILY_LIMIT,
 #   APP_ADMIN_USER_ID (the owner's auth user id: may use the picture review screen),
 #   ARTICLE_DAILY_LIMIT, CLAUDE_TEXT_MODEL, AI_CLAUDE_FALLBACK (decision 0044)
+# Audio on Cloudflare R2 (decision 0053), optional: secrets R2_ACCOUNT_ID, R2_ACCESS_KEY_ID,
+#   R2_SECRET_ACCESS_KEY, R2_BUCKET and the variable AUDIO_BASE_URL. Without all five the tts
+#   function keeps using Supabase Storage only.
 # Web Push (VAPID) keys are generated here on the first deploy and kept as Supabase function
 # secrets; nobody has to create them (docs/decisions/0024-web-push.md).
 name: Supabase
@@ -148,6 +151,12 @@ jobs:
           ARTICLE_DAILY_LIMIT: ${{ vars.ARTICLE_DAILY_LIMIT || '30' }}
           CLAUDE_TEXT_MODEL: ${{ vars.CLAUDE_TEXT_MODEL }}
           AI_CLAUDE_FALLBACK: ${{ vars.AI_CLAUDE_FALLBACK || 'on' }}
+          # Audio on Cloudflare R2 (decision 0053); all optional.
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          AUDIO_BASE_URL: ${{ vars.AUDIO_BASE_URL }}
         run: |
           # Written to a temp file (not the command line) so values never show in logs.
           set -euo pipefail
@@ -174,6 +183,9 @@ jobs:
             if [ -n "$CLAUDE_TEXT_MODEL" ]; then echo "CLAUDE_TEXT_MODEL=$CLAUDE_TEXT_MODEL"; fi
             # Only when the secret exists, so a missing key never overwrites a stored one.
             if [ -n "$ANTHROPIC_API_KEY" ]; then echo "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY"; fi
+            for v in R2_ACCOUNT_ID R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET AUDIO_BASE_URL; do
+              if [ -n "${!v}" ]; then echo "$v=${!v}"; fi
+            done
           } > "$f"
           if [ -z "$ANTHROPIC_API_KEY" ]; then
             echo "::notice::ANTHROPIC_API_KEY is not set: ai-image cannot draw pictures (docs/setup-backend.md)."

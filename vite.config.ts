@@ -128,6 +128,10 @@ export default defineConfig({
           /^\/realtime\//,
         ],
         // Supabase (data, auth, edge functions incl. ai-extract / ai-enrich) is never cached.
+        // Pronunciation audio (Supabase `tts` bucket or Cloudflare R2 at VITE_AUDIO_BASE_URL,
+        // decision 0053) is not cached by the service worker either: the R2 host matches no
+        // route, so the browser fetches it directly, and the app keeps its own offline copy
+        // in Cache Storage (`engapp-tts`, src/features/review/pronunciation.ts).
         runtimeCaching: [
           {
             urlPattern: ({ url }) =>

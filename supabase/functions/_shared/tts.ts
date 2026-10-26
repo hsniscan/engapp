@@ -31,10 +31,13 @@ export interface TtsStore {
     userId: string,
     limit: number,
   ): Promise<{ allowed: boolean; used: number; limit: number }>;
-  exists(path: string): Promise<boolean>;
-  /** Stores the audio (type from the extension); false when it could not be stored. */
-  upload(path: string, audio: Uint8Array): Promise<boolean>;
-  publicUrl(path: string): string;
+  /**
+   * Public URL of the stored audio at this object path, or null when it is not stored. With
+   * Cloudflare R2 configured (decision 0053) R2 is asked first, then Supabase Storage.
+   */
+  find(path: string): Promise<string | null>;
+  /** Stores the audio (type from the extension): its public URL, or null when it failed. */
+  save(path: string, audio: Uint8Array): Promise<string | null>;
 }
 
 export interface TtsDeps {
@@ -65,16 +68,17 @@ export async function runTts(body: unknown, deps: TtsDeps): Promise<TtsResponse>
   if (source === 'public') {
     // The pre-generated MP3 (same voice for every word), then an earlier on-demand WAV.
     for (const t of ttsTextCandidates(text)) {
-      const mp3 = await ttsObjectPath(voice, t);
-      if (await deps.store.exists(mp3)) {
+      const url = await deps.store.find(await ttsObjectPath(voice, t));
+      if (url) {
         deps.log?.('tts cache hit', { voice, chars: text.length, kind: 'pregen' });
-        return { url: deps.store.publicUrl(mp3), cached: true };
+        return { url, cached: true };
       }
     }
     path = await ttsOnDemandObjectPath(voice, text);
-    if (await deps.store.exists(path)) {
+    const url = await deps.store.find(path);
+    if (url) {
       deps.log?.('tts cache hit', { voice, chars: text.length, kind: 'ondemand' });
-      return { url: deps.store.publicUrl(path), cached: true };
+      return { url, cached: true };
     }
   }
 
@@ -93,8 +97,7 @@ export async function runTts(body: unknown, deps: TtsDeps): Promise<TtsResponse>
   }
   deps.log?.('tts generated', { voice, source, chars: text.length, bytes: wav.length, model });
 
-  if (path && (await deps.store.upload(path, wav))) {
-    return { url: deps.store.publicUrl(path), cached: false };
-  }
+  const stored = path ? await deps.store.save(path, wav) : null;
+  if (stored) return { url: stored, cached: false };
   return { audio_b64: bytesToBase64(wav), mime: 'audio/wav' };
 }

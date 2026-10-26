@@ -119,12 +119,12 @@ class MemoryTtsStore implements TtsStore {
     this.used.set(userId, used + 1);
     return { allowed: true, used: used + 1, limit };
   }
-  async exists(path: string) {
-    return this.objects.has(path);
+  async find(path: string) {
+    return this.objects.has(path) ? this.publicUrl(path) : null;
   }
-  async upload(path: string, wav: Uint8Array) {
+  async save(path: string, wav: Uint8Array) {
     if (this.uploadOk) this.objects.set(path, wav);
-    return this.uploadOk;
+    return this.uploadOk ? this.publicUrl(path) : null;
   }
   publicUrl(path: string) {
     return `https://x.supabase.co/storage/v1/object/public/tts/${path}`;
