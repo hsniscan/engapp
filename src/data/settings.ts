@@ -102,6 +102,8 @@ export const settingsPatchSchema = z
     reading_difficulty: z.enum(['rahat', 'dengeli', 'zorlayici']),
     reading_offset: z.number().min(-READING_OFFSET_MAX).max(READING_OFFSET_MAX),
     reader_highlight: z.boolean(),
+    // v0.5.1 (decision 0054): "Hep tahmin ettir" in the reader.
+    reader_always_guess: z.boolean(),
     // v0.5 İP10: days a streak protection covered (domain/streakFreeze.ts, decision 0052).
     streak_freezes: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).max(MAX_FREEZE_DAYS).nullable(),
     // v0.3 İP3 load management (domain/capacity.ts, catchup.ts, vacation.ts).

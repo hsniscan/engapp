@@ -422,6 +422,11 @@ export interface Settings extends SyncedRow {
   /** v0.5 İP1: the reader colours words by stage (absent/null = on). */
   reader_highlight?: boolean | null;
   /**
+   * v0.5.1 (decision 0054): "Hep tahmin ettir": a tapped word the user already has a card for
+   * asks for a guess first too. Absent/null = off (its meaning shows at once).
+   */
+  reader_always_guess?: boolean | null;
+  /**
    * v0.5 İP10: days a streak protection covered (YYYY-MM-DD, ascending, at most 48;
    * domain/streakFreeze.ts). Absent/null = none. Never carried to another account.
    */
