@@ -65,6 +65,9 @@ export const privacyEn: LegalDocument = {
           p: '**Article and subtitle import.** When you import an article from a link, only the address goes to our server; the server downloads the page, extracts its text, sends it to you and keeps neither the address nor the text (the text is saved only on your device and never goes to shared tables or other users), while subtitle files are read only on your device.',
         },
         {
+          p: "**Today's story.** When you ask for a story, only that day's 5–8 words (in the dictionary form of your cards), your level, your chosen reading difficulty and at most three of your interests go to our server; none of your texts, sentences or meanings. The server has Anthropic Claude write the story, sends it to you and does not keep it; only how many stories you asked for per day is counted. The story is saved on your device as your own text and syncs only with your own account.",
+        },
+        {
           p: '**Usage counters.** To enforce the daily AI, read-aloud and "Görsel üret" (draw a picture) limits, the number of calls per day is counted.',
         },
         {
@@ -111,7 +114,7 @@ export const privacyEn: LegalDocument = {
             "**Cloudflare** (hosting of the website): processes technical connection data such as your IP address and browser details while serving the app's files.",
             '**Google**: sign-in with Google; your profile photo is loaded from Google\'s servers. **Google ML Kit** (only in the Android app, when you use "Text from a photo"): the usage and performance information described above; no photo and no text. **Google Gemini** (AI): the text chunks you send to create cards, a word you add by hand, your words and their short English definitions for theme grouping, the word or sentence to be read aloud, and only numbers for the weekly report comment.',
             '**Anthropic Claude** (word pictures): only a word from the shared dictionary, its part of speech and Turkish meaning, a short drawing hint, a fixed correction note when a picture is redrawn, and, for the check, the picture Claude drew. Nothing about your account, your cards or your sentences is sent, and neither is who asked for the picture.',
-            "**Anthropic Claude** (AI backup): when Gemini's quota runs out, the same AI requests listed above for Gemini are processed by Claude.",
+            "**Anthropic Claude** (AI backup): when Gemini's quota runs out, the same AI requests listed above for Gemini are processed by Claude. **Anthropic Claude** (Today's story): only the word list, level, difficulty and interests described above.",
             '**Browser push services** (Google, Mozilla, Apple, Microsoft): if you turned on web reminders, the encrypted reminder text (such as "12 reviews are waiting for you today").',
           ],
         },

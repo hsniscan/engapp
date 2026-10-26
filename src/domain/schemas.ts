@@ -379,6 +379,35 @@ export const readerTextSchema: z.ZodType<ReaderText> = z.object({
   read_ms: z.number().int().min(0),
   finished_at: millis.nullable(),
   feedback: z.enum(['hard', 'easy']).nullish().catch(null),
+  // The daily story's extras (İP8, decision 0050); a malformed value only drops them.
+  story: z
+    .object({
+      day: dayKey,
+      prompt_version: z.string().max(40),
+      targets: z
+        .array(
+          z.object({
+            note_id: id,
+            lemma: z.string().max(80),
+            used: z.boolean(),
+            gloss_tr: z.string().max(120).nullable(),
+          }),
+        )
+        .max(12),
+      questions: z
+        .array(
+          z.object({
+            q: z.string().max(400),
+            options: z.array(z.string().max(200)).min(2).max(4),
+            answer: z.number().int().min(0).max(3),
+          }),
+        )
+        .max(5),
+      glossed: z.array(z.object({ lemma: z.string().max(80), gloss_tr: z.string().max(120) })).max(12),
+      unknown_rate: z.number().min(0).max(1),
+    })
+    .nullish()
+    .catch(null),
 });
 
 /** Encounters of one note on one day from one source on one device. */

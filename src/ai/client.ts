@@ -81,7 +81,8 @@ export async function call<T>(
     | 'ai-mnemonic'
     | 'ai-report'
     | 'ai-contrast'
-    | 'fetch-article',
+    | 'fetch-article'
+    | 'ai-story',
   body: unknown,
   parse: (x: unknown) => T,
   deps: AiClientDeps,

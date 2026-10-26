@@ -27,6 +27,7 @@ export async function saveText(input: NewText, now = Date.now()): Promise<Id> {
       read_ms: 0,
       finished_at: null,
       feedback: null,
+      ...(input.story ? { story: input.story } : {}),
     };
     await w.put('texts', row);
     return row.id;

@@ -28,7 +28,9 @@ import {
 } from '@/domain/readerTokens';
 import type { ReaderText, TextFeedback } from '@/domain/texts';
 import type { Id } from '@/domain/types';
+import { storyEncounterNotes } from '@/domain/story';
 import { useAppSettings } from '@/features/settings/useAppSettings';
+import { StoryEnd, StoryGlossary } from '@/features/story/StoryParts';
 import { Button, cn, Dialog, EmptyState, Icon, IconButton, Skeleton, toast } from '@/ui';
 import { MARK_CLASS } from './marks';
 import { ReaderBody, type Selection } from './ReaderBody';
@@ -159,13 +161,18 @@ function Reader({ text }: { text: ReaderText }) {
     if (!view || !k || counted.current) return;
     counted.current = true;
     const ids = [
-      ...new Set(view.metTerms.map((term) => k.noteIdOf(term)).filter((x): x is Id => x !== null)),
+      ...new Set([
+        ...view.metTerms.map((term) => k.noteIdOf(term)).filter((x): x is Id => x !== null),
+        // A daily story counts its target words (İP8) even where a form was not recognised.
+        ...storyEncounterNotes(text.story),
+      ]),
     ];
+    const source = text.kind === 'story' ? 'story' : 'reader';
     if (ids.length)
-      void recordReaderEncounters(text.id, openingKey(location.key), ids).catch(
+      void recordReaderEncounters(text.id, openingKey(location.key), ids, undefined, source).catch(
         (e: unknown) => void logError(e, 'reader.encounters'),
       );
-  }, [view, k, text.id, location.key]);
+  }, [view, k, text.id, text.kind, text.story, location.key]);
 
   // ---- reading time (activity-based, idle gaps capped) and position, saved on leave / hide.
   const acc = useRef(0);
@@ -287,6 +294,18 @@ function Reader({ text }: { text: ReaderText }) {
     };
   }, [selection, k, tokens, view, text.body]);
 
+  // ---- a daily story's target words, drawn in bold (İP8).
+  const targets = useMemo(() => {
+    if (!view || !text.story) return undefined;
+    const lemmas = new Set(text.story.targets.filter((x) => x.used).map((x) => x.lemma));
+    const out = new Set<number>();
+    view.lemmas.forEach((l, i) => {
+      const term = view.noteTerms[i];
+      if (lemmas.has(l) || (term && lemmas.has(term))) out.add(i);
+    });
+    return out;
+  }, [view, text.story]);
+
   const coverage = view ? knownPercent(view.coverage) : null;
   const words = useMemo(() => wordCount(tokens), [tokens]);
   const minutes = Math.round(text.read_ms / 60_000);
@@ -361,6 +380,8 @@ function Reader({ text }: { text: ReaderText }) {
           {resumed && <span>{t('reader.resumed')}</span>}
         </div>
 
+        {text.story && <StoryGlossary story={text.story} />}
+
         {text.body.trim() ? (
           <ReaderBody
             body={text.body}
@@ -370,10 +391,13 @@ function Reader({ text }: { text: ReaderText }) {
             selection={selection}
             speaking={listen.current}
             onWord={onWord}
+            targets={targets}
           />
         ) : (
           <p className="text-fg-muted">{t('reader.emptyBody')}</p>
         )}
+
+        {text.story && <StoryEnd story={text.story} />}
 
         <footer className="mt-12 flex flex-col items-center gap-4 border-t border-border pt-8 text-center">
           {finished ? (

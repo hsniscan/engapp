@@ -5,6 +5,7 @@
 // file, the graded library, the daily story) ends as one `ReaderText` row and opens in the
 // reader at `readerPath(id)`. The reader (İP1) owns the screen, the coverage maths and the
 // encounter counter; the other packages only create texts and navigate.
+import type { StoryInfo } from './story';
 import type { Id, Millis, SyncedRow } from './types';
 
 /** Where a text came from. 'graded' rows point at shared library texts (İP5). */
@@ -46,6 +47,11 @@ export interface ReaderText extends SyncedRow {
    * settings.reading_offset once; changing it moves the offset back. Absent/null = none.
    */
   feedback?: TextFeedback | null;
+  /**
+   * The daily story's extras (İP8, decision 0050): its day, target words, glosses and
+   * questions. Only on 'story' rows; absent/null otherwise.
+   */
+  story?: StoryInfo | null;
 }
 
 /** "Çok zor" / "Çok kolay" on a text. */
@@ -58,6 +64,8 @@ export interface NewText {
   body: string;
   source_url?: string | null;
   graded_id?: string | null;
+  /** 'story' only (İP8). */
+  story?: StoryInfo | null;
 }
 
 /** Where an encounter with a word happened (İP1 counter, İP8 story). */

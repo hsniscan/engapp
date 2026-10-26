@@ -307,6 +307,15 @@ our own block walk: never HTML. The address and the text are not stored or logge
 | `extract_failed`    | 422  | fewer than 60 words of article text                                 |
 | `daily_limit`       | 429  | 30 articles today                                                   |
 
+## ai-story (v0.5, decision 0050)
+
+"Bugünün hikâyesi": `POST /functions/v1/ai-story` `{level, difficulty, interests[], target_lemmas[5–8], avoid[]}`
+(closed) → `{prompt_version, model, story:{title, paragraphs[], used_lemmas[], questions[3], glosses[]}, usage}`.
+One story per user and UTC day plus one regeneration (`story_consume`, `STORY_DAILY_LIMIT`),
+Claude Haiku (`CLAUDE_STORY_MODEL`) under the monthly text budget, nothing stored. Prompt,
+schema and checks: `docs/ai-story.md`. Its own error: `budget_exhausted` (503) when this
+month's `CLAUDE_TEXT_MONTHLY_USD` cannot cover the call.
+
 ## Extract prompt (`extract-v5`)
 
 `extract-v5` (v0.3 İP2, decision 0020) adds two things to the same call (no extra call):

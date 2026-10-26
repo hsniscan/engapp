@@ -12,7 +12,8 @@
 #   GEMINI_MODEL, GEMINI_FALLBACK_MODEL, AI_DAILY_LIMIT, ALLOWED_ORIGINS, VAPID_SUBJECT,
 #   CLAUDE_IMAGE_MODEL, CLAUDE_CHECK_MODEL, CLAUDE_MONTHLY_CREDIT_USD, IMAGE_DAILY_LIMIT,
 #   APP_ADMIN_USER_ID (the owner's auth user id: may use the picture review screen),
-#   ARTICLE_DAILY_LIMIT, CLAUDE_TEXT_MODEL, AI_CLAUDE_FALLBACK (decision 0044)
+#   ARTICLE_DAILY_LIMIT, CLAUDE_TEXT_MODEL, AI_CLAUDE_FALLBACK (decision 0044),
+#   STORY_DAILY_LIMIT, CLAUDE_STORY_MODEL, CLAUDE_TEXT_MONTHLY_USD (decision 0050)
 # Web Push (VAPID) keys are generated here on the first deploy and kept as Supabase function
 # secrets; nobody has to create them (docs/decisions/0024-web-push.md).
 name: Supabase
@@ -57,7 +58,7 @@ jobs:
       - name: Type-check edge functions (Deno)
         working-directory: supabase/functions
         run: |
-          for fn in ai-extract ai-enrich ai-examples ai-themes ai-mnemonic ai-report ai-contrast ai-image push-send tts account-delete fetch-article; do (cd "$fn" && deno check index.ts); done
+          for fn in ai-extract ai-enrich ai-examples ai-themes ai-mnemonic ai-report ai-contrast ai-image push-send tts account-delete fetch-article ai-story; do (cd "$fn" && deno check index.ts); done
       - name: Start local database
         # Only Postgres + Auth are needed for the SQL tests.
         run: supabase start -x studio,imgproxy,vector,logflare,storage-api,realtime,supavisor,mailpit,postgres-meta,edge-runtime,kong,postgrest
@@ -148,6 +149,10 @@ jobs:
           ARTICLE_DAILY_LIMIT: ${{ vars.ARTICLE_DAILY_LIMIT || '30' }}
           CLAUDE_TEXT_MODEL: ${{ vars.CLAUDE_TEXT_MODEL }}
           AI_CLAUDE_FALLBACK: ${{ vars.AI_CLAUDE_FALLBACK || 'on' }}
+          # The daily story (decision 0050); optional. The text budget is shared with graded.yml.
+          STORY_DAILY_LIMIT: ${{ vars.STORY_DAILY_LIMIT || '1' }}
+          CLAUDE_STORY_MODEL: ${{ vars.CLAUDE_STORY_MODEL }}
+          CLAUDE_TEXT_MONTHLY_USD: ${{ vars.CLAUDE_TEXT_MONTHLY_USD || '10' }}
         run: |
           # Written to a temp file (not the command line) so values never show in logs.
           set -euo pipefail
@@ -172,6 +177,9 @@ jobs:
             echo "ARTICLE_DAILY_LIMIT=$ARTICLE_DAILY_LIMIT"
             echo "AI_CLAUDE_FALLBACK=$AI_CLAUDE_FALLBACK"
             if [ -n "$CLAUDE_TEXT_MODEL" ]; then echo "CLAUDE_TEXT_MODEL=$CLAUDE_TEXT_MODEL"; fi
+            echo "STORY_DAILY_LIMIT=$STORY_DAILY_LIMIT"
+            echo "CLAUDE_TEXT_MONTHLY_USD=$CLAUDE_TEXT_MONTHLY_USD"
+            if [ -n "$CLAUDE_STORY_MODEL" ]; then echo "CLAUDE_STORY_MODEL=$CLAUDE_STORY_MODEL"; fi
             # Only when the secret exists, so a missing key never overwrites a stored one.
             if [ -n "$ANTHROPIC_API_KEY" ]; then echo "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY"; fi
           } > "$f"

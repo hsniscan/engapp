@@ -115,6 +115,8 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 | `ARTICLE_DAILY_LIMIT`       | articles a user may import from links per UTC day (step 17) [`30`]                                        |
 | `CLAUDE_TEXT_MODEL`         | model of the text AI fallback when Gemini runs out of quota (step 17) [`claude-haiku-5-5`]                |
 | `AI_CLAUDE_FALLBACK`        | `off`: never use Claude for the text AI tasks (step 17) [`on`]                                            |
+| `STORY_DAILY_LIMIT`         | daily stories per user per UTC day, each may be regenerated once (step 18) [`1`]                          |
+| `CLAUDE_STORY_MODEL`        | model that writes the daily story (step 18) [`CLAUDE_TEXT_MODEL`, else `claude-haiku-5-5`]                |
 
 `ALLOWED_ORIGINS` is the list of web origins allowed to call the AI functions
 (comma-separated, exact, no trailing slash). Preview deploys on other origins cannot
@@ -461,6 +463,21 @@ deploys `fetch-article`. Optional variables (step 4): `ARTICLE_DAILY_LIMIT`,
   `text spend` in the function logs (USD and tokens) until the text budget lands.
 - Check after deploy: **Edge Functions → fetch-article → Logs** shows `extracted` lines with
   sizes only, never an address.
+
+## 18. Bugünün hikâyesi (v0.5)
+
+Nothing new to create: the deploy (step 5) applies `20261101000800_story.sql` and deploys
+`ai-story`. It needs the `ANTHROPIC_API_KEY` secret that pictures already use (without it the
+app says the story cannot be written right now). Optional variables (step 4):
+`STORY_DAILY_LIMIT`, `CLAUDE_STORY_MODEL`, `CLAUDE_TEXT_MONTHLY_USD`.
+
+- One story per user per day costs about 0.001 US$ on Claude Haiku; every call is booked in
+  the same monthly text budget as the reading library. When the month's budget is used up the
+  app shows a calm message and nothing is sent.
+- Only the day's 5–8 words, the level, the reading difficulty and up to three interests are
+  sent; the story is not stored on the server (decision 0050).
+- Check after deploy: **Edge Functions → ai-story → Logs** shows `ai-story model call` lines
+  with counts only; `select * from public.text_budget_status();` shows the spending.
 
 ## Manual deploy without GitHub (alternative)
 

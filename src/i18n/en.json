@@ -3426,5 +3426,32 @@
       "textLabel": "English text",
       "titleLabel": "Title"
     }
+  },
+  "story": {
+    "title": "Today's story",
+    "ready_one": "A short story with {{count}} of your words and 3 questions",
+    "ready_other": "A short story with {{count}} of your words and 3 questions",
+    "make": "Write it",
+    "retry": "Try again",
+    "loading": "Writing your story, this takes a few seconds…",
+    "open": "Read",
+    "again": "Read again",
+    "guest": "A short story with your review words. Sign in to have it written.",
+    "signIn": "Sign in",
+    "glossed": "Look at these words first",
+    "words": "Your words in this story",
+    "questions": {
+      "title": "Did you follow it?",
+      "right": "Correct.",
+      "wrong": "The answer: {{answer}}"
+    },
+    "errors": {
+      "offline": "It will be written once you are online.",
+      "guest": "Sign in with Google for the story.",
+      "used": "Today's story was written on another device. It opens here after syncing; a new one comes tomorrow.",
+      "budget": "This month's stories are used up. They return at the start of next month; your reviews go on as usual.",
+      "notEnough": "A story needs at least 5 review words today.",
+      "generic": "The story could not be written right now. Try again a little later."
+    }
   }
 }

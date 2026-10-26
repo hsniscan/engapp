@@ -10,6 +10,7 @@ import { suggestedGradedTexts, type GradedSummary } from '@/data/library';
 import { readerPath } from '@/domain/texts';
 import { openAddSheet } from '@/features/add/addSheetStore';
 import { useAppSettings } from '@/features/settings/useAppSettings';
+import { TodayStoryRow } from '@/features/story/TodayStoryRow';
 import { Button } from '@/ui';
 
 const SUGGEST_DELAY_MS = 1500;
@@ -58,6 +59,7 @@ export function TodayReadingCard() {
         {t('reader.today.title')}
       </h2>
       {body}
+      <TodayStoryRow hideTextId={last?.id ?? null} />
     </section>
   );
 

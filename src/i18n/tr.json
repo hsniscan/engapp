@@ -3426,5 +3426,32 @@
       "textLabel": "İngilizce metin",
       "titleLabel": "Başlık"
     }
+  },
+  "story": {
+    "title": "Bugünün hikâyesi",
+    "ready_one": "{{count}} kelimenle kısa bir hikâye ve 3 soru",
+    "ready_other": "{{count}} kelimenle kısa bir hikâye ve 3 soru",
+    "make": "Hazırla",
+    "retry": "Tekrar dene",
+    "loading": "Hikâyen yazılıyor, birkaç saniye sürer…",
+    "open": "Oku",
+    "again": "Yeniden oku",
+    "guest": "Tekrar kelimelerinle kısa bir hikâye. Hazırlanması için giriş yap.",
+    "signIn": "Giriş yap",
+    "glossed": "Önce şu kelimelere bir bak",
+    "words": "Hikâyedeki kelimelerin",
+    "questions": {
+      "title": "Anladın mı?",
+      "right": "Doğru.",
+      "wrong": "Doğru cevap: {{answer}}"
+    },
+    "errors": {
+      "offline": "İnternet bağlantısı gelince hazırlanır.",
+      "guest": "Hikâye için Google hesabınla giriş yap.",
+      "used": "Bugünün hikâyesi başka bir cihazda hazırlandı. Eşitlenince burada açılır; yarın yenisi gelir.",
+      "budget": "Bu ayın hikâye hakkı doldu. Ay başında yeniden açılır; tekrarların her zamanki gibi sürer.",
+      "notEnough": "Hikâye için bugün en az 5 tekrar kelimesi gerekir.",
+      "generic": "Hikâye şu an hazırlanamadı. Biraz sonra yeniden dene."
+    }
   }
 }
