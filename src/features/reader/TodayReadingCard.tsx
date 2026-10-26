@@ -1,13 +1,15 @@
 // "Bugünün okuması" on Bugün (v0.5 İP1): a quiet card. Continue the text left unfinished;
-// otherwise the library text that best fits the user's difficulty (İP5); otherwise an
-// invitation to paste a text.
+// otherwise the library text that best fits the user's difficulty (İP5), which opens itself in
+// the reader (v0.5.1); otherwise an invitation to paste a text. The library's data code is
+// loaded on demand (it stays out of the start-up bundle, decision 0053).
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { lastUnfinishedText, logError, readingDifficultyOf } from '@/data';
-import { suggestedGradedTexts, type GradedSummary } from '@/data/library';
+import type { GradedSummary } from '@/data/library';
 import { readerPath } from '@/domain/texts';
+import { gradedReaderPath } from '@/features/library/openReading';
 import { openAddSheet } from '@/features/add/addSheetStore';
 import { useAppSettings } from '@/features/settings/useAppSettings';
 import { TodayStoryRow } from '@/features/story/TodayStoryRow';
@@ -24,7 +26,8 @@ function useSuggestion(enabled: boolean): GradedSummary | null | undefined {
     let live = true;
     // Scoring the library reads every card: wait until Bugün itself has painted.
     const timer = setTimeout(() => {
-      suggestedGradedTexts(difficulty, 1)
+      import('@/data/library')
+        .then((m) => m.suggestedGradedTexts(difficulty, 1))
         .then((list) => live && setState({ key: difficulty, value: list[0] ?? null }))
         .catch((e: unknown) => {
           void logError(e, 'reader.today.suggest');
@@ -84,7 +87,7 @@ export function TodayReadingCard() {
   }
   if (suggestion) {
     return frame(
-      <Link to="/decks?tab=reading" className="group flex items-center gap-3">
+      <Link to={gradedReaderPath(suggestion.id)} className="group flex items-center gap-3">
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span
             lang="en"

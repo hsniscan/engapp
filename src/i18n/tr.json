@@ -3115,7 +3115,7 @@
   "gradedLibrary": {
     "title": "Okuma kitaplığı",
     "description": "Seviyene göre yazılmış kısa metinler. Her cümlenin Türkçesi ve sesi hazır.",
-    "back": "Desteler",
+    "back": "Keşfet",
     "forYou": "Sana uygun",
     "forYouHint": "{{difficulty}} zorlukta, bildiğin kelimelere göre seçildi.",
     "forYouNone": "Şu an seçtiğin zorluğa tam uyan metin yok. Aşağıdaki listeden seçebilirsin.",
@@ -3288,15 +3288,25 @@
     "readMinutes_other": "{{count}} dk okudun",
     "resumed": "Kaldığın yerden",
     "emptyBody": "Bu metnin içeriği henüz bu cihazda yok.",
+    "graded": {
+      "unavailableTitle": "Bu metin henüz bu cihazda değil",
+      "offline": "İnternete bağlanınca bir kez iner; sonra internetsiz de okunur.",
+      "missing": "Bu metin kitaplıktan kaldırılmış olabilir.",
+      "retry": "Tekrar dene"
+    },
     "notFound": {
       "title": "Metin bulunamadı",
       "body": "Silinmiş olabilir ya da başka bir cihazdan henüz gelmemiş olabilir.",
-      "cta": "Metinlerime dön"
+      "cta": "Okumaya dön"
     },
     "listen": {
       "start": "Dinleyerek oku",
       "stop": "Durdur",
       "noVoice": "Bu cihazda sesli okuma kullanılamıyor."
+    },
+    "translation": {
+      "show": "Türkçesini göster",
+      "hide": "Türkçesini gizle"
     },
     "options": {
       "open": "Okuma ayarları",
@@ -3307,12 +3317,33 @@
       "new": "Muhtemelen yeni",
       "learning": "Öğreniyorsun",
       "consolidating": "Pekişiyor",
-      "known": "Biliyorsun ya da öğrendin: işaret yok"
+      "known": "Biliyorsun ya da öğrendin: işaret yok",
+      "title": "Renklerin anlamı",
+      "close": "Renk açıklamasını kapat",
+      "later": "Bunu istediğin zaman ⚙ Okuma ayarlarında da görebilirsin."
     },
     "finished": {
       "cta": "Bitirdim",
       "title": "Bitirdin",
       "again": "Yeniden oku"
+    },
+    "summary": {
+      "line_one": "Bu metinde {{count}} yeni kelime gördün · {{added}} tanesini ekledin",
+      "line_other": "Bu metinde {{count}} yeni kelime gördün · {{added}} tanesini ekledin",
+      "cta": "Bu metindeki yeni kelimeler"
+    },
+    "newWords": {
+      "title": "Bu metindeki yeni kelimeler",
+      "description": "Anlamı bulunanlar işaretli. İstemediklerinin işaretini kaldır, sonra ekle.",
+      "noMeaning": "anlamı bu cihazda yok",
+      "lookUp_one": "{{count}} kelimenin anlamını yapay zekâyla bul",
+      "lookUp_other": "{{count}} kelimenin anlamını yapay zekâyla bul",
+      "someMissing": "Bazı kelimelerin anlamı bulunamadı.",
+      "add_one": "{{count}} kelimeyi ekle",
+      "add_other": "{{count}} kelimeyi ekle",
+      "added_one": "{{count}} kelime kartlarına eklendi",
+      "added_other": "{{count}} kelime kartlarına eklendi",
+      "none": "Bu metindeki yeni kelimelerin hepsi kartlarında."
     },
     "feedback": {
       "question": "Bu metin sana nasıldı?",
@@ -3326,6 +3357,7 @@
       "extendBefore": "← Öncekiyle",
       "extendAfter": "Sonrakiyle →",
       "guessHint": "Önce cümleye bak ve anlamını tahmin et. Tahmin etmeye çalışmak, doğrudan bakmaktan daha iyi akılda kalır.",
+      "showTranslation": "Cümlenin Türkçesini göster",
       "reveal": "Anlamı göster",
       "loading": "Anlam aranıyor…",
       "meanings": "Anlamlar",
@@ -3379,6 +3411,10 @@
       "label": "Kelimeleri renklendir",
       "hint": "Yeni ve öğrendiğin kelimeler hafifçe işaretlenir. Bildiklerin sade kalır."
     },
+    "alwaysGuess": {
+      "label": "Hep tahmin ettir",
+      "hint": "Kartlarında olan kelimelerde de anlam gösterilmeden önce tahmin etmen istenir. Kapalıyken bu kelimelerin anlamı hemen görünür."
+    },
     "settings": {
       "title": "Okuma"
     },
@@ -3397,6 +3433,8 @@
       "empty": "Henüz metin yok. Bir metin yapıştır ya da PDF yükle, \"Okuyucuda aç\" de.",
       "unread": "Okunmadı",
       "progress": "%{{pct}} okundu",
+      "reading": "Okunuyor %{{pct}}",
+      "continue": "Devam et",
       "finished": "Bitti",
       "delete": "\"{{title}}\" metnini sil",
       "confirmTitle": "Metin silinsin mi?",

@@ -7,6 +7,7 @@ import type { Id, Millis } from '../domain/types';
 import { MAX_TEXT_CHARS, type NewText, type ReaderText, type TextFeedback } from '../domain/texts';
 import { db } from './db';
 import { ActionError } from './errors';
+import { getMeta, setMeta } from './meta';
 import { defaultSettings, SETTINGS_ID } from './settings';
 import { writeTx } from './writer';
 
@@ -127,4 +128,16 @@ export async function setTextFeedback(
     if (offset !== current) await w.put('settings', { ...settings, reading_offset: offset });
     return offset;
   });
+}
+
+/** Device flag: the reader's colour legend was shown once (v0.5.1, decision 0054). */
+const LEGEND_SEEN_KEY = 'reader_legend_seen';
+
+/** The colour legend was shown and closed on this device. Safe in useLiveQuery. */
+export async function readerLegendSeen(): Promise<boolean> {
+  return (await getMeta<boolean>(LEGEND_SEEN_KEY)) === true;
+}
+
+export async function markReaderLegendSeen(): Promise<void> {
+  await setMeta(LEGEND_SEEN_KEY, true);
 }

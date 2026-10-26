@@ -131,6 +131,26 @@ export function functionLemmas(entries: readonly WordBankEntry[]): Set<string> {
   return out;
 }
 
+/**
+ * The level of each lemma's earliest reading (any part of speech). A word belongs to a
+ * part-of-speech deck only in the reading the lists teach first (v0.5.1): "go" is an A1 verb,
+ * so its B1 noun reading ("have a go") does not make it a noun; "through" is an A1
+ * preposition, so it is not an adverb. Readings first taught at the same level all count
+ * ("back": noun and adverb, A1).
+ */
+export function firstLevels(entries: readonly WordBankEntry[]): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const e of entries) {
+    const r = levelRank(e.cefr);
+    const cur = out.get(e.lemma_norm);
+    if (cur === undefined || r < cur) out.set(e.lemma_norm, r);
+  }
+  return out;
+}
+
+const isFirstReading = (e: WordBankEntry, first: ReadonlyMap<string, number>) =>
+  levelRank(e.cefr) <= (first.get(e.lemma_norm) ?? Infinity);
+
 function matches(
   spec: SuggestedSpec,
   e: WordBankEntry,
@@ -161,9 +181,16 @@ export function deckWords(
   opts: DeckWordOptions = {},
 ): WordBankEntry[] {
   const fn = spec.kind === 'top' ? functionLemmas(entries) : null;
+  // Part-of-speech decks: each word in the reading taught first (firstLevels).
+  const first = spec.kind === 'pos' || spec.kind === 'levelPos' ? firstLevels(entries) : null;
   const seen = new Set<string>();
   const out: WordBankEntry[] = [];
-  const kept = entries.filter((x) => !AUXILIARY_FORMS.has(x.lemma_norm) && matches(spec, x, opts, fn));
+  const kept = entries.filter(
+    (x) =>
+      !AUXILIARY_FORMS.has(x.lemma_norm) &&
+      matches(spec, x, opts, fn) &&
+      (!first || isFirstReading(x, first)),
+  );
   for (const e of kept.sort(byFrequency)) {
     if (seen.has(e.lemma_norm)) continue;
     seen.add(e.lemma_norm);
@@ -241,7 +268,16 @@ export function posLevelCounts(
     noun: zero(),
     adverb: zero(),
   } satisfies Record<ContentPos, Record<CefrLevel, number>>;
-  for (const e of entries) if (isPos(e.pos)) out[e.pos][e.cefr]++;
+  // Counted like the decks: each word in the reading taught first (firstLevels).
+  const first = firstLevels(entries);
+  const seen = new Set<string>();
+  for (const e of entries) {
+    if (!isPos(e.pos) || AUXILIARY_FORMS.has(e.lemma_norm) || !isFirstReading(e, first)) continue;
+    const key = `${e.pos}|${e.lemma_norm}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out[e.pos][e.cefr]++;
+  }
   return out;
 }
 

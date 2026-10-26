@@ -144,7 +144,39 @@ describe('deckWords', () => {
     });
     const c = posLevelCounts(bank);
     expect(c.verb).toEqual({ A1: 2, A2: 0, B1: 2, B2: 0, C1: 0, C2: 0 });
-    expect(c.noun.A2).toBe(1);
+    // "run" is taught first as a verb (A1): its A2 noun reading is not counted as a noun.
+    expect(c.noun.A2).toBe(0);
+    expect(c.noun.A1).toBe(1);
+  });
+
+  it('a part-of-speech deck takes each word in the reading taught first (v0.5.1)', () => {
+    const lists = [
+      entry('go', 'A1', 6.9, 'verb'),
+      entry('go', 'B1', 6.9, 'noun'),
+      entry('take', 'A1', 6.6, 'verb'),
+      entry('take', 'B1', 6.6, 'noun'),
+      entry('through', 'A1', 6.4, 'preposition'),
+      entry('through', 'B1', 6.4, 'adverb'),
+      entry('back', 'A1', 6.2, 'noun'),
+      entry('back', 'A1', 6.2, 'adverb'),
+      entry('idea', 'B1', 5.6, 'noun'),
+      entry('quickly', 'B1', 5.0, 'adverb'),
+    ];
+    const lemmas = (spec: SuggestedSpec) => deckWords(lists, spec).map((w) => w.lemma);
+    expect(lemmas({ kind: 'levelPos', level: 'B1', pos: 'noun' })).toEqual(['idea']);
+    expect(lemmas({ kind: 'levelPos', level: 'B1', pos: 'adverb' })).toEqual(['quickly']);
+    expect(lemmas({ kind: 'pos', pos: 'noun' })).toEqual(['back', 'idea']);
+    expect(lemmas({ kind: 'pos', pos: 'adverb' })).toEqual(['back', 'quickly']);
+    expect(lemmas({ kind: 'pos', pos: 'verb' })).toEqual(['go', 'take']);
+    // The level decks keep every reading.
+    expect(lemmas({ kind: 'level', level: 'B1' })).toEqual([
+      'go',
+      'take',
+      'through',
+      'idea',
+      'quickly',
+    ]);
+    expect(posLevelCounts(lists).noun).toEqual({ A1: 1, A2: 0, B1: 1, B2: 0, C1: 0, C2: 0 });
   });
 });
 

@@ -65,6 +65,7 @@ export const BACKUP_FORMAT = 'engapp-backup';
 // 11 (v0.5 İP1 reader, decision 0043): texts (reading texts) and encounters (the encounter
 //    counter), and the optional settings reading_difficulty / reading_offset /
 //    reader_highlight. Older files have none (restored as none; overwrite keeps the local ones).
+//    v0.5.1 adds the optional settings.reader_always_guess the same way (absent = off).
 export const BACKUP_SCHEMA_VERSION = 11;
 
 export interface BackupTables {
