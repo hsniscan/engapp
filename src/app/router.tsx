@@ -174,6 +174,26 @@ const children: RouteObject[] = [
 
   // ---- Old addresses (four-tab app): redirect to their new homes.
   ...LEGACY_PATHS.map(legacy),
+  // Old screens whose new home another package builds (redirects.ts LEGACY_PATHS_PENDING).
+  {
+    path: 'kelime-bankasi',
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/wordbank/WordBankPage')).WordBankPage,
+    }),
+  },
+  {
+    path: 'decks/themes',
+    HydrateFallback: () => null,
+    lazy: async () => ({ Component: (await import('@/features/decks/ThemesPage')).ThemesPage }),
+  },
+  {
+    path: 'settings/profile',
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/profile/ProfilePage')).ProfilePage,
+    }),
+  },
 ];
 
 children.push({ path: '*', element: <NotFoundPage /> });

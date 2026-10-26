@@ -33,19 +33,23 @@ test.describe('PWA', () => {
 
     await context.setOffline(true);
     for (const [path, heading] of [
-      ['/', 'Bugün'],
+      ['/progress', 'İstatistik'],
       ['/library', 'Kartlar'],
       ['/add', 'Kart ekle'],
       ['/stats', 'İstatistik'],
       ['/settings', 'Ayarlar'],
       ['/more', 'Biraz daha çalış'],
+      ['/study', 'Biraz daha çalış'],
     ] as const) {
       await page.goto(path);
       await expect(
         page.getByRole('heading', { name: heading, level: 1, exact: true }),
       ).toBeVisible();
     }
+    await page.goto('/');
+    await expect(page.getByTestId('today-hero')).toBeVisible();
     await page.goto('/review');
+    await expect(page).toHaveURL(/\/study\?mode=word$/);
     await expect(page.getByRole('button', { name: 'Cevabı göster' })).toBeEnabled();
     // Extra study works in airplane mode too: answer the card, then practice it.
     await page.locator('body').press('Space');
@@ -61,11 +65,11 @@ test('a screen whose code cannot be downloaded shows a friendly error inside the
   page,
 }) => {
   await page.goto('/');
-  await page.route(/\/assets\/LibraryPage-.*\.js$/, (r) => r.abort('internetdisconnected'));
-  await page.getByRole('link', { name: 'Kartlar' }).first().click();
+  await page.route(/\/assets\/DecksPage-.*\.js$/, (r) => r.abort('internetdisconnected'));
+  await page.getByRole('link', { name: 'Desteler' }).first().click();
   await expect(page.getByRole('heading', { name: 'Bu ekran yüklenemedi', level: 2 })).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Ana gezinme' }).first()).toBeVisible();
-  await page.unroute(/\/assets\/LibraryPage-.*\.js$/);
+  await page.unroute(/\/assets\/DecksPage-.*\.js$/);
   await page.getByRole('button', { name: 'Sayfayı yenile' }).click();
-  await expect(page.getByRole('heading', { name: 'Kartlar', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Desteler', level: 1 })).toBeVisible();
 });

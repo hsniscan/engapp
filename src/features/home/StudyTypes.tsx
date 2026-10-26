@@ -50,18 +50,6 @@ export function StudyTypes({
               <Link
                 to={`/study?mode=${mode}`}
                 data-testid={`study-type-${mode}`}
-                aria-label={
-                  finished
-                    ? t(studied ? 'today.typeDoneLabel' : 'today.typeNoneLabel', {
-                        mode: t(`today.mode.${mode}`),
-                      })
-                    : t('today.typeLabel', {
-                        mode: t(`today.mode.${mode}`),
-                        hint: t(`today.modeHintLong.${mode}`),
-                        count: n,
-                        unit,
-                      })
-                }
                 className="flex min-h-37 flex-1 flex-col gap-2 rounded-[18px] border border-border bg-surface px-3 pt-3.5 pb-3 text-fg transition-colors duration-(--duration-micro) hover:border-border-strong"
               >
                 <span
@@ -80,9 +68,13 @@ export function StudyTypes({
                 <span className="flex flex-col gap-px">
                   <span className="text-[0.9375rem] leading-tight font-semibold">
                     {t(`today.mode.${mode}`)}
+                  </span>{' '}
+                  {/* "EN → TR" reads badly aloud: screen readers get the words instead. */}
+                  <span aria-hidden="true" className="text-xs text-fg-muted">
+                    {t(`today.modeHint.${mode}`)}
                   </span>
-                  <span className="text-xs text-fg-muted">{t(`today.modeHint.${mode}`)}</span>
-                </span>
+                  <span className="sr-only">{t(`today.modeHintLong.${mode}`)}</span>
+                </span>{' '}
                 {finished ? (
                   <span
                     className={cn(
@@ -96,7 +88,7 @@ export function StudyTypes({
                   <span className="mt-auto flex items-baseline gap-1">
                     <span className="tabular font-serif text-2xl leading-none font-semibold">
                       {n}
-                    </span>
+                    </span>{' '}
                     <span className="text-[0.8125rem] text-fg-muted">{unit}</span>
                   </span>
                 )}

@@ -73,7 +73,7 @@ for (const size of SIZES) {
     const seeded = await restore(page, size);
 
     await page.goto('/');
-    await expect(page.getByRole('link', { name: 'Tekrara başla' })).toBeVisible();
+    await expect(page.getByTestId('start-study')).toBeVisible();
     await page.waitForTimeout(500);
     const warm = (await timeFirstCard(page, 'click')).ms;
 

@@ -50,12 +50,13 @@ export function legacyRedirect(pathname: string, search = ''): string | null {
   }
 }
 
-/** The old paths, for the router (each gets a redirecting route). */
-export const LEGACY_PATHS = [
-  'review',
-  'more',
-  'kelime-bankasi',
-  'decks/themes',
-  'stats',
-  'settings/profile',
-] as const;
+/** The old paths the router redirects now (each gets a redirecting route). */
+export const LEGACY_PATHS = ['review', 'more', 'stats'] as const;
+
+/**
+ * Old paths whose new home is built by another redesign package: until it lands they keep
+ * serving their old screen (src/app/router.tsx), so nothing breaks in between. At integration
+ * move each into LEGACY_PATHS and delete its old route:
+ *   kelime-bankasi, decks/themes → Desteler tabs; settings/profile → the Profil settings page.
+ */
+export const LEGACY_PATHS_PENDING = ['kelime-bankasi', 'decks/themes', 'settings/profile'] as const;

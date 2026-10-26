@@ -160,23 +160,39 @@ export async function stageRuleNoteVisible(): Promise<boolean> {
 // ------------------------------------------------------------------ shortcuts
 
 export interface Shortcuts {
-  more: MoreStudyOverview;
+  /** null when the overview could not be read (the home screen then leaves its parts out). */
+  more: MoreStudyOverview | null;
   /** The latest weekly report, until it is opened or closed. */
   report: { week: DayKey; activeDays: number; newCards: number } | null;
 }
 
-export async function getShortcuts(now: Millis = Date.now()): Promise<Shortcuts> {
-  const [more, notice] = await Promise.all([getMoreStudyOverview(now), getReportNotice(now)]);
-  if (!notice) return { more, report: null };
+/** The extra-study overview, or the error that kept it from being read. */
+export type MoreOverviewResult =
+  { ok: true; more: MoreStudyOverview } | { ok: false; error: unknown };
+
+/**
+ * getMoreStudyOverview for the home screen, in its own live query: it builds several queues
+ * (and the practice counts) and can fail where today's word queue does not (seen offline with
+ * picture cards: a PrematureCommitError). The home screen must never fall over because of it.
+ */
+export async function getMoreOverview(now: Millis = Date.now()): Promise<MoreOverviewResult> {
+  try {
+    return { ok: true, more: await getMoreStudyOverview(now) };
+  } catch (error) {
+    return { ok: false, error };
+  }
+}
+
+/** The latest weekly report for the "Kısa yollar" row, until it is opened. */
+export async function getReportShortcut(now: Millis = Date.now()): Promise<Shortcuts['report']> {
+  const notice = await getReportNotice(now);
+  if (!notice) return null;
   const final = await db.weekly_reports.where('week').equals(notice.week).first();
   const summary = final?.summary ?? (await db.report_drafts.get(notice.week))?.report.summary;
   return {
-    more,
-    report: {
-      week: notice.week,
-      activeDays: summary?.active_days ?? 0,
-      newCards: summary?.new_cards ?? 0,
-    },
+    week: notice.week,
+    activeDays: summary?.active_days ?? 0,
+    newCards: summary?.new_cards ?? 0,
   };
 }
 

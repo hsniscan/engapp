@@ -22,7 +22,8 @@ test('backup → restore into an empty browser: notes, cards, review history and
     await page.locator('body').press(ratings[i % ratings.length]!);
   }
   await page.goto('/');
-  const homeBefore = await page.getByRole('region', { name: 'Günlük seri' }).textContent();
+  await expect(page.getByTestId('today-streak')).toBeVisible();
+  const homeBefore = await page.getByTestId('today-streak').textContent();
   const before = await dumpTables(page, TABLES);
   expect(before.review_logs!.length).toBeGreaterThan(WORDS.length);
 
@@ -66,6 +67,6 @@ test('backup → restore into an empty browser: notes, cards, review history and
   const after = await dumpTables(fresh, TABLES);
   for (const t of TABLES) expect(after[t], t).toEqual(before[t]);
   await fresh.goto('/');
-  await expect(fresh.getByRole('region', { name: 'Günlük seri' })).toHaveText(homeBefore!);
+  await expect(fresh.getByTestId('today-streak')).toHaveText(homeBefore!);
   await ctx.close();
 });

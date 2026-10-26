@@ -9,13 +9,13 @@ test('progress tab: categories, gap practice and the 12-week series on a phone',
   page,
 }) => {
   await page.setViewportSize({ width: 360, height: 780 });
-  await page.goto('/stats');
+  await page.goto('/progress');
   await page.getByRole('tab', { name: 'Gelişim' }).click();
-  await expect(page).toHaveURL(/\/stats\?tab=gelisim$/);
+  await expect(page).toHaveURL(/\/progress\?tab=gelisim$/);
   await expect(page.getByText(/Henüz sayılacak tekrar yok/)).toBeVisible();
 
   await restoreSeed(page, 1000);
-  await page.goto('/stats?tab=gelisim');
+  await page.goto('/progress?tab=gelisim');
   const groups = page.getByRole('region', { name: 'Kategorilere göre tutma oranı' });
   await expect(groups).toBeVisible();
   await expect(groups.getByText(/Tutma oranı, son 90 gün:/)).toContainText('%');

@@ -51,9 +51,14 @@ function WeekDots({ week, tone }: { week: WeekDot[]; tone: 'hero' | 'surface' })
 
 function StreakLine({ streak, done }: { streak: StreakSummary; done: boolean }) {
   const { t } = useTranslation();
-  if (streak.currentStreak === 0) return <span className="text-sm">{t('today.streakStart')}</span>;
+  if (streak.currentStreak === 0)
+    return (
+      <span data-testid="today-streak" className="text-sm">
+        {t('today.streakStart')}
+      </span>
+    );
   return (
-    <span className="text-sm">
+    <span data-testid="today-streak" className="text-sm">
       <strong className="font-semibold">
         {t('today.streakDays', { count: streak.currentStreak })}
       </strong>{' '}
@@ -111,7 +116,7 @@ function PendingHero({ data }: { data: HeroData }) {
           <h2 id="today-hero-title" className="font-serif text-2xl leading-tight font-normal">
             {t('today.cardsLeft', { count: remaining })}
           </h2>
-          <span className="text-sm text-hero-muted">
+          <span data-testid="today-split" className="text-sm text-hero-muted">
             {t('today.split', { due: word.due, fresh: word.newCount })}
             {word.estMinutes > 0 && ` · ${t('today.aboutMinutes', { count: word.estMinutes })}`}
           </span>
@@ -119,6 +124,7 @@ function PendingHero({ data }: { data: HeroData }) {
       </div>
       <Link
         to={WORD_STUDY_HREF}
+        data-testid="start-study"
         className="flex h-13 items-center justify-center gap-2 rounded-[14px] bg-hero-action text-[1.0625rem] font-semibold text-hero-action-fg transition-opacity duration-(--duration-micro) hover:opacity-92 focus-visible:outline-hero-action"
       >
         {done > 0 ? t('today.continue') : t('today.start')}

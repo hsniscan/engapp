@@ -127,7 +127,8 @@ test.describe('picture recall card', () => {
     await expect.poll(() => pictureCards(page), { timeout: 30_000 }).toBe(1);
 
     await page.goto('/');
-    await page.getByRole('link', { name: 'Tekrara başla' }).click();
+    // The picture card is a production-type card: it waits under "Çalışma türleri", not in word study.
+    await page.getByTestId('study-type-production').click();
     await expect(page.getByText('Görseldeki kelimeyi bul')).toBeVisible();
     const front = page.getByRole('img', { name: ALT.apple });
     await expect(front).toHaveAttribute('src', /^data:image\/svg\+xml,/);

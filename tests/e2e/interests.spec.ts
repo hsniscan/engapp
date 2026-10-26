@@ -47,14 +47,14 @@ test('interests: pick on the home screen, see why in the profile, turn a topic o
   await page.goto('/');
   const prompt = page.getByRole('region', { name: PROMPT });
   await expect(prompt).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Tekrara başla' })).toBeVisible(); // nothing blocked
+  await expect(page.getByTestId('start-study')).toBeVisible(); // nothing blocked
   await prompt.getByRole('button', { name: 'Teknoloji' }).click();
   await prompt.getByRole('button', { name: 'Seyahat' }).click();
   await prompt.getByRole('button', { name: '2 konuyu kaydet' }).click();
   await expect(page.getByText('İlgi alanların kaydedildi', { exact: true })).toBeVisible();
   await expect(prompt).toBeHidden();
   await page.reload();
-  await expect(page.getByRole('link', { name: 'Tekrara başla' })).toBeVisible();
+  await expect(page.getByTestId('start-study')).toBeVisible();
   await expect(page.getByRole('region', { name: PROMPT })).toBeHidden();
   await expect
     .poll(() => backend.rows.get('settings:settings')?.row.interests, { timeout: 15_000 })
@@ -90,7 +90,7 @@ test('interests: pick on the home screen, see why in the profile, turn a topic o
   await FakeBackend.signIn(other);
   const page2 = await other.newPage();
   await page2.goto('/');
-  await expect(page2.getByRole('link', { name: 'Tekrara başla' })).toBeVisible({ timeout: 20_000 });
+  await expect(page2.getByTestId('start-study')).toBeVisible({ timeout: 20_000 });
   await page2.goto('/settings/profile');
   await expect(
     page2
@@ -98,7 +98,7 @@ test('interests: pick on the home screen, see why in the profile, turn a topic o
       .getByRole('button', { name: 'Teknoloji' }),
   ).toHaveAttribute('aria-pressed', 'true');
   await page2.goto('/');
-  await expect(page2.getByRole('link', { name: 'Tekrara başla' })).toBeVisible();
+  await expect(page2.getByTestId('start-study')).toBeVisible();
   await expect(page2.getByRole('region', { name: PROMPT })).toBeHidden();
   await other.close();
 });
@@ -112,7 +112,7 @@ test('interests: "Şimdi değil" answers the question for good (guest)', async (
     .click();
   await expect(page.getByRole('region', { name: PROMPT })).toBeHidden();
   await page.reload();
-  await expect(page.getByRole('link', { name: 'Tekrara başla' })).toBeVisible();
+  await expect(page.getByTestId('start-study')).toBeVisible();
   await expect(page.getByRole('region', { name: PROMPT })).toBeHidden();
   await page.goto('/settings');
   await expect(

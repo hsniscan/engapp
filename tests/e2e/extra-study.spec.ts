@@ -30,22 +30,23 @@ test('done for today → "Biraz daha çalış": +5 new cards, then a practice ro
 
   // Today's session: exactly the 2 new cards (Easy graduates them).
   await page.goto('/');
-  await page.getByRole('link', { name: 'Tekrara başla' }).click();
+  await page.getByTestId('start-study').click();
   expect(await reviewAll(page, '4')).toBe(2);
   await page.getByRole('link', { name: 'Biraz daha çalış' }).click();
-  await expect(page).toHaveURL(/\/more$/);
+  await expect(page).toHaveURL(/\/study$/);
   await expect(page.getByRole('heading', { name: 'Biraz daha çalış', level: 1 })).toBeVisible();
   const newCards = page.getByRole('region', { name: 'Yeni kartlar' });
   await expect(newCards.getByText('Bekleyen yeni kart: 6')).toBeVisible();
 
   // +5: exactly five more cards today, then done again.
   await newCards.getByRole('button', { name: '+5 yeni kart' }).click();
-  await expect(page).toHaveURL(/\/review$/);
+  await expect(page).toHaveURL(/\/study\?mode=word$/);
   expect(await reviewAll(page, '4')).toBe(5);
 
   await page.goto('/');
-  await expect(page.getByText('Bugünlük bitti')).toBeVisible();
-  await page.getByRole('link', { name: 'Biraz daha çalış' }).click();
+  await expect(page.getByTestId('today-hero-done')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Biraz daha çalış' })).toBeVisible();
+  await page.goto('/more'); // the old address still leads to the extra-study page
   await expect(newCards.getByText('Bekleyen yeni kart: 1')).toBeVisible();
   await expect(newCards.getByText('Bugün 5 ek kart açtın.')).toBeVisible();
 

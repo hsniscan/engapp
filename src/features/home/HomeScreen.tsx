@@ -29,7 +29,8 @@ import {
   countWords,
   getHomeDecks,
   getHomeGoals,
-  getShortcuts,
+  getMoreOverview,
+  getReportShortcut,
   getTodayActivity,
   type HomeDeck,
   STAGE_RULE_NOTE_KEY,
@@ -91,7 +92,14 @@ function Dashboard({ core }: { core: HomeCore }) {
   const goalsView = useLiveQuery(() => getGoalsView(), []);
   const stages = useWordStages();
   const totalWords = useLiveQuery(() => countWords(), []);
-  const shortcuts = useLiveQuery(() => getShortcuts(), []);
+  const moreResult = useLiveQuery(() => getMoreOverview(), []);
+  const more = moreResult?.ok ? moreResult.more : null;
+  const moreError = moreResult && !moreResult.ok ? moreResult.error : null;
+  useEffect(() => {
+    if (moreError) void logError(moreError, 'home.moreStudy');
+  }, [moreError]);
+  const report = useLiveQuery(() => getReportShortcut(), []);
+  const shortcuts = moreResult && report !== undefined ? { more, report } : undefined;
   const decks = useHomeDecks();
 
   const ready = counts && activity;
@@ -117,7 +125,7 @@ function Dashboard({ core }: { core: HomeCore }) {
         {ready && (
           <StudyTypes counts={counts} answered={activity.answers} finishedHero={wordDone} />
         )}
-        {wordDone && shortcuts && <MoreStudy more={shortcuts.more} />}
+        {wordDone && more && <MoreStudy more={more} />}
         <Notes />
       </div>
       <div className="flex flex-col gap-4 lg:gap-5">

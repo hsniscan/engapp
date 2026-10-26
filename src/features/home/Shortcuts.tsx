@@ -50,7 +50,7 @@ function Row({
 
 export function Shortcuts({ data, showHard }: { data: ShortcutsData; showHard: boolean }) {
   const { t } = useTranslation();
-  const hard = showHard ? data.more.practice.hard : 0;
+  const hard = showHard ? (data.more?.practice.hard ?? 0) : 0;
   const report = data.report;
   if (hard === 0 && !report) return null;
   return (

@@ -49,9 +49,9 @@ export function WordsCard({
         <Link
           to="/progress"
           className="-my-3 flex min-h-11 items-center text-sm text-accent-text hover:underline"
-          aria-label={t('today.wordsMoreLabel')}
         >
           {t('today.details')}
+          <span className="sr-only">: {t('today.wordsTitle')}</span>
         </Link>
       </div>
       <div className="flex flex-col gap-0.5">
