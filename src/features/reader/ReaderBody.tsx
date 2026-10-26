@@ -23,9 +23,20 @@ interface Props {
   /** The sentence being read aloud. */
   speaking: number | null;
   onWord: (token: number) => void;
+  /** Tokens of a story's target words (İP8): drawn in bold, always focusable. */
+  targets?: ReadonlySet<number>;
 }
 
-export function ReaderBody({ body, text, view, highlight, selection, speaking, onWord }: Props) {
+export function ReaderBody({
+  body,
+  text,
+  view,
+  highlight,
+  selection,
+  speaking,
+  onWord,
+  targets,
+}: Props) {
   const pick = (e: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>) => {
     const el = (e.target as HTMLElement).closest<HTMLElement>('[data-t]');
     if (!el) return;
@@ -51,6 +62,7 @@ export function ReaderBody({ body, text, view, highlight, selection, speaking, o
           paragraph={p}
           view={view}
           highlight={highlight}
+          targets={targets}
           selection={selection && inParagraph(text, p, selection.first) ? selection : null}
           speaking={
             speaking !== null && speaking >= p.firstSentence && speaking < p.endSentence
@@ -77,6 +89,7 @@ interface ParagraphProps {
   highlight: boolean;
   selection: Selection | null;
   speaking: number | null;
+  targets?: ReadonlySet<number>;
 }
 
 const Paragraph = memo(function Paragraph({
@@ -88,6 +101,7 @@ const Paragraph = memo(function Paragraph({
   highlight,
   selection,
   speaking,
+  targets,
 }: ParagraphProps) {
   const parts: React.ReactNode[] = [];
   for (let s = paragraph.firstSentence; s < paragraph.endSentence; s++) {
@@ -99,15 +113,18 @@ const Paragraph = memo(function Paragraph({
       if (tok.start > at) words.push(body.slice(at, tok.start));
       const mark = highlight && view ? view.marks[i]! : 'plain';
       const selected = selection !== null && i >= selection.first && i < selection.end;
+      const target = targets?.has(i) === true;
       words.push(
         <span
           key={i}
           data-t={i}
           data-mark={mark === 'plain' ? undefined : mark}
-          tabIndex={mark === 'plain' ? undefined : 0}
+          data-target={target || undefined}
+          tabIndex={mark === 'plain' && !target ? undefined : 0}
           className={cn(
             'cursor-pointer rounded-[3px] transition-colors duration-(--duration-micro) hover:bg-hover',
             MARK_CLASS[mark],
+            target && 'font-semibold',
             selected && 'bg-accent-soft text-fg no-underline ring-1 ring-accent/40',
           )}
         >

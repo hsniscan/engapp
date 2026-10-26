@@ -10,6 +10,7 @@ import { suggestedGradedTexts, type GradedSummary } from '@/data/library';
 import { readerPath } from '@/domain/texts';
 import { openAddSheet } from '@/features/add/addSheetStore';
 import { useAppSettings } from '@/features/settings/useAppSettings';
+import { TodayStoryRow } from '@/features/story/TodayStoryRow';
 import { Button } from '@/ui';
 
 function useSuggestion(enabled: boolean): GradedSummary | null | undefined {
@@ -52,6 +53,7 @@ export function TodayReadingCard() {
         {t('reader.today.title')}
       </h2>
       {body}
+      <TodayStoryRow hideTextId={last?.id ?? null} />
     </section>
   );
 
