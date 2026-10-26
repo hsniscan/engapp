@@ -107,6 +107,11 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 | `CLAUDE_WORDBANK_MODEL`     | model of the word bank job (step 14) [`CLAUDE_CHECK_MODEL`]                                               |
 | `WORD_BANK_NIGHTLY`         | `true`: the word bank job also runs every night (step 14) [off]                                           |
 | `TTS_PREGEN_WEEKLY`         | `true`: the pronunciation audio job also runs every Sunday for new words (step 15) [off]                  |
+| `GRADED_BULK`               | `true`: the reading library job writes new texts every night (step 16) [off]                              |
+| `CLAUDE_TEXT_MONTHLY_USD`   | monthly cap in USD for Claude text features: library texts, stories (step 16) [`10`]                      |
+| `CLAUDE_GRADED_MODEL`       | model that writes library texts [`claude-sonnet-5-5`]                                                     |
+| `GRADED_PER_CELL`           | library texts per level and core topic [`9`]                                                              |
+| `GRADED_EXTENDED_PER_CELL`  | library texts per level and extended topic [`0`]                                                          |
 
 `ALLOWED_ORIGINS` is the list of web origins allowed to call the AI functions
 (comma-separated, exact, no trailing slash). Preview deploys on other origins cannot
@@ -400,6 +405,42 @@ bucket take MP3 files itself) and the service-role key exactly like the word ban
 Check: `plan_only` again shows `missing: 0`. In the app, a speaker tap on a dictionary word
 plays without the spinner; in the browser's network tab the request goes to
 `/storage/v1/object/public/tts/<accent>/<hash>.mp3`, not to `/functions/v1/tts`.
+
+## 16. Okuma kitaplığı (v0.5)
+
+Short texts for each level, A2 to C1, with a Turkish translation and audio for every
+sentence (decision 0047). Claude writes and checks them in nightly batches. Until there are
+texts, the library page says new texts are being prepared; nothing else changes.
+
+Needs: the `ANTHROPIC_API_KEY` secret (step 12) and the service-role key, exactly as for
+pictures.
+
+1. **Deploy** (step 5), so that the migrations `20261101000500_text_budget.sql` and
+   `20261101000510_graded_texts.sql` are in place.
+2. **Cap.** This is optional. Text features (library texts, and stories later) share their own
+   monthly cap, separate from pictures. The default is 10 USD. To change it, set the
+   repository variable `CLAUDE_TEXT_MONTHLY_USD`. A call that would pass the cap is not sent.
+3. **Plan.** Go to **Actions → Graded library → Run workflow**, job `plan`. It sends nothing.
+   The log lists the missing texts per level and topic (360 for the first plan) and the
+   worst-case cost.
+4. **Turn it on (from 1 November).** Set the repository variable **`GRADED_BULK`** to `true`.
+   The workflow then runs every night at 02:15 UTC. It does these steps in order:
+   - collects last night's batch;
+   - checks coverage and quality, then stores the approved texts;
+   - sends the next batch inside the cap;
+   - makes the sentence audio;
+   - prints a report.
+
+   Set `GRADED_BULK` to `false` to pause. Other jobs by hand: `submit` (needs `GRADED_BULK`
+   or **dry_run**), `collect`, `audio`, `report`.
+
+5. Optional: `GRADED_PER_CELL` (texts per level and core topic, default 9),
+   `GRADED_EXTENDED_PER_CELL` (default 0; e.g. `3` adds the extended topics such as food, film
+   and law), `CLAUDE_GRADED_MODEL`, `CLAUDE_CHECK_MODEL`.
+
+Check: in **SQL Editor**, `select * from public.text_budget_status();` shows this month's cap
+and spending. `select status, count(*) from public.graded_texts group by 1;` grows after each
+night. In the app, **/kitaplik** lists the approved texts.
 
 ## Manual deploy without GitHub (alternative)
 

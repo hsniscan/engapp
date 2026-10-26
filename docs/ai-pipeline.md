@@ -1301,3 +1301,51 @@ Meanings you do not list are kept unchanged. Most words need no change. Answer w
   }
 }
 ```
+
+## Graded library (`graded-v1`, `gradedcheck-v1`)
+
+Short English texts for each level, A2 to C1, each with a Turkish translation and an en-US clip
+per sentence (decision 0047). The nightly job `.github/workflows/graded.yml` drives
+`scripts/graded-batch.ts`. Its jobs:
+
+- `plan`: print the missing slots and the worst-case cost.
+- `collect`: fetch finished batches, then gate, check and store.
+- `submit`: send new batches. It runs only when `GRADED_BULK=true`.
+- `audio`: run the Kokoro pre-generation with `--source graded`.
+- `report`: print the counts.
+
+Both models are run through Message Batches (half price). Model ids come from the environment:
+
+| Step    | Prompt           | Model (env)                                 | Output                                                                 |
+| ------- | ---------------- | ------------------------------------------- | ---------------------------------------------------------------------- |
+| Writer  | `graded-v1`      | `CLAUDE_GRADED_MODEL` [`claude-sonnet-5-5`] | `{title, sentences:[{en, tr, new_paragraph}], target_lemmas, glosses}` |
+| Checker | `gradedcheck-v1` | `CLAUDE_CHECK_MODEL` [`claude-haiku-5-5`]   | scores for naturalness, level fit, translation, safety, facts, copying |
+
+- **Plan** (`scripts/lib/graded-plan.ts`). A slot is `LEVEL|topic|n`, and each slot has its own
+  angle and genre. Topics are the ten core ones (business English, technology, daily life,
+  travel, science, health, sports, culture, history, news) plus nine extended ones that map to
+  the profile interests. All are timeless: no real news, no real people. The first plan has
+  9 texts per level and core topic, 360 in all (`GRADED_PER_CELL`,
+  `GRADED_EXTENDED_PER_CELL`). Failed slots are planned again, up to twice the target.
+- **Writer.** The prompt (`scripts/lib/graded-prompt.ts`) asks for an original text of 150–250
+  (A2), 220–350 (B1), 320–480 (B2) or 420–600 (C1) words, written mostly in words at or below
+  the level, with natural Turkish for every sentence. The input is the plan item only. No user
+  data is ever sent (a snapshot test pins the payload).
+- **Coverage gate** (`_shared/graded-coverage.ts`, client-levels word lists):
+  - at least 95 % of tokens at or below the level;
+  - at most 3 % at level+1;
+  - no word above level+2 unless it is glossed.
+
+  Proper nouns and function words are not counted. A failure is rewritten once, with the
+  offending words as an avoid list. A second failure is `rejected`.
+
+- **Checker.** It approves a text only when it is natural (4 or more out of 5), fits the level,
+  has a correct translation, is safe, has no false facts and is not copied. Otherwise the text
+  is `rejected`, with the reasons in `checks`.
+- **Budget.** Before a batch is sent, its worst-case cost is reserved on the monthly text
+  budget (`CLAUDE_TEXT_MONTHLY_USD`, default 10 USD; `_shared/text-budget.ts`). The batch is
+  halved until it fits. On collect, the hold is settled with the real `usage`.
+- **Audio.** Each sentence's `audio_key` is `ttsObjectPath('en-US', en)`, so the existing `tts`
+  bucket and Kokoro job serve it (decision 0042).
+- **Tests** use recorded fixtures only (`scripts/lib/fixtures/graded/`). No test or script
+  calls a live model.
