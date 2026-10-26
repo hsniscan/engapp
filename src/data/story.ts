@@ -9,6 +9,7 @@ import { dayEndMs, dayKeyOf } from '../domain/day';
 import type { Knowledge } from '../domain/knowledgeModel';
 import { tokenizeReaderText } from '../domain/readerTokens';
 import {
+  isPickedStory,
   MIN_STORY_TARGETS,
   selectStoryTargets,
   storyAvoidList,
@@ -18,7 +19,7 @@ import {
   storyLimit,
   type StoryCandidate,
 } from '../domain/story';
-import type { ReaderText, ReadingDifficulty } from '../domain/texts';
+import type { CoverageResult, ReaderText, ReadingDifficulty } from '../domain/texts';
 import type { CefrLevel, Id, Millis } from '../domain/types';
 import { db } from './db';
 import { loadKnowledge } from './knowledge';
@@ -43,7 +44,7 @@ export async function todayStory(now: Millis = Date.now()): Promise<ReaderText |
   const rows = await db.texts.where('kind').equals('story').toArray();
   return (
     rows
-      .filter((r) => r.deleted_at === null && r.story?.day === day)
+      .filter((r) => r.deleted_at === null && r.story?.day === day && !isPickedStory(r.story))
       .sort((a, b) => a.created_at - b.created_at)[0] ?? null
   );
 }
@@ -98,26 +99,23 @@ export function createTodayStory(deps: CreateStoryDeps = {}): Promise<Id> {
   return inflight;
 }
 
-async function makeStory(deps: CreateStoryDeps): Promise<Id> {
-  const now = deps.now ?? Date.now();
-  const existing = await todayStory(now);
-  if (existing) return existing.id;
-  const input = await storyInputs(now);
-  if (input.targets.length < MIN_STORY_TARGETS) throw new StoryUnavailable();
+/**
+ * One ai-story request measured against what the user knows; over the user's difficulty, asked
+ * once more with an avoid list and the easier of the two kept. Shared by the day's story and
+ * "Kelimelerimle metin oluştur" (data/pickedStory.ts).
+ */
+export async function writeMeasuredStory(
+  req: StoryRequest,
+  difficulty: ReadingDifficulty,
+  deps: CreateStoryDeps,
+): Promise<{ res: StoryResponse; coverage: CoverageResult; overLimit: boolean }> {
   const ask = deps.fetchStory ?? ((r: StoryRequest) => fetchStory(r));
-  const req: StoryRequest = {
-    level: input.level,
-    difficulty: input.difficulty,
-    interests: input.interests as StoryRequest['interests'],
-    target_lemmas: input.targets.map((t) => t.lemma),
-  };
-
   let res = await ask(req);
   const k = await (deps.loadKnowledge ?? loadKnowledge)();
   const measure = (r: StoryResponse) =>
     storyCoverage(tokenizeReaderText(storyBody(r.story)), k, r.story.used_lemmas);
   let coverage = measure(res);
-  const limit = storyLimit(input.difficulty);
+  const limit = storyLimit(difficulty);
   if (coverage.unknownRate > limit) {
     const avoid = storyAvoidList(coverage);
     if (avoid.length > 0) {
@@ -134,6 +132,22 @@ async function makeStory(deps: CreateStoryDeps): Promise<Id> {
       }
     }
   }
+  return { res, coverage, overLimit: coverage.unknownRate > limit };
+}
+
+async function makeStory(deps: CreateStoryDeps): Promise<Id> {
+  const now = deps.now ?? Date.now();
+  const existing = await todayStory(now);
+  if (existing) return existing.id;
+  const input = await storyInputs(now);
+  if (input.targets.length < MIN_STORY_TARGETS) throw new StoryUnavailable();
+  const req: StoryRequest = {
+    level: input.level,
+    difficulty: input.difficulty,
+    interests: input.interests as StoryRequest['interests'],
+    target_lemmas: input.targets.map((t) => t.lemma),
+  };
+  const { res, coverage, overLimit } = await writeMeasuredStory(req, input.difficulty, deps);
 
   // Another device may have made today's story meanwhile (pulled during the call).
   const raced = await todayStory(now);
@@ -144,7 +158,7 @@ async function makeStory(deps: CreateStoryDeps): Promise<Id> {
     input.day,
     res.prompt_version,
     coverage,
-    coverage.unknownRate > limit,
+    overLimit,
   );
   return saveText(
     { kind: 'story', title: res.story.title, body: storyBody(res.story), story: info },

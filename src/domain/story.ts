@@ -146,6 +146,13 @@ export interface StoryQuestionInfo {
 export interface StoryInfo {
   /** The study day the story belongs to (YYYY-MM-DD, domain/day.ts). */
   day: string;
+  /**
+   * v0.5.1 (decision 0056): 'picked' = "Kelimelerimle metin oluştur", the user's own words;
+   * absent or 'daily' = the day's story. Only a daily story is "Bugünün hikâyesi".
+   */
+  source?: 'daily' | 'picked';
+  /** Picked texts: the form asked for (hikâye, diyalog, haber, e-posta). */
+  genre?: 'story' | 'dialogue' | 'news' | 'email';
   prompt_version: string;
   targets: StoryTarget[];
   questions: StoryQuestionInfo[];
@@ -196,6 +203,14 @@ export function storyInfo(
     glossed,
     unknown_rate: Math.round(coverage.unknownRate * 10_000) / 10_000,
   };
+}
+
+/**
+ * A picked text ("Kelimelerimle metin oluştur"), not the day's story. The prompt version is
+ * checked too: an older app that drops `source` when it saves the row keeps the version.
+ */
+export function isPickedStory(info: StoryInfo | null | undefined): boolean {
+  return !!info && (info.source === 'picked' || info.prompt_version.startsWith('picked-'));
 }
 
 /** Note ids the opening of a story counts as encounters: its used target words. */

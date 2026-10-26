@@ -14,7 +14,13 @@ import {
   SupabaseAiStore,
 } from './supabase-store.ts';
 import { SupabaseTextBudgetStore, textMonthlyCapUsd, type TextBudget } from './text-budget.ts';
-import { runStory, storyDailyLimit, type StoryModel, type StoryStore } from './story.ts';
+import {
+  pickedDailyLimit,
+  runStory,
+  storyDailyLimit,
+  type StoryModel,
+  type StoryStore,
+} from './story.ts';
 import { storyModelFromEnv } from './story-claude.ts';
 import { SupabaseStoryStore } from './story-store.ts';
 
@@ -95,6 +101,7 @@ export function createStoryFunction(
   const logger = log('ai-story');
   const model = overrides.model !== undefined ? overrides.model : storyModelFromEnv(env, logger);
   const limit = storyDailyLimit(env);
+  const picked = pickedDailyLimit(env);
   return createHandler({
     cors: { allowedOrigins: parseOrigins(env('ALLOWED_ORIGINS')) },
     authenticate,
@@ -106,6 +113,7 @@ export function createStoryFunction(
         model,
         ...(budget ? { budget } : {}),
         dailyLimit: limit,
+        pickedDailyLimit: picked,
         log: logger,
       }),
   });
