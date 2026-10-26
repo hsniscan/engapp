@@ -3,7 +3,7 @@
 import { useTranslation } from 'react-i18next';
 import { type CardView, getChoiceCandidates, logError } from '@/data';
 import type { ChoiceCandidate } from '@/domain/clozeChoices';
-import { formatNextInterval, type IntervalPreview } from '@/domain/fsrs';
+import { distinctIntervalLabels, type IntervalPreview } from '@/domain/fsrs';
 import { findSpan, isValidSpan } from '@/domain/recognition';
 import {
   cardStage,
@@ -14,7 +14,7 @@ import {
   type WordStage,
 } from '@/domain/stages';
 import { studyModeOf } from '@/domain/studyMode';
-import { type Card, type Id, Rating as R, type RatingValue, type Sense } from '@/domain/types';
+import { type Card, CardState, type Id, Rating as R, type RatingValue, type Sense } from '@/domain/types';
 import type { Rating } from '@/ui';
 import { productionAnswerMode } from './answerMode';
 import { modeText } from './modeText';
@@ -42,8 +42,10 @@ export function ratingLines(
 ): { interval: string; change: string | null } {
   const p = view.previews[rating];
   const after = stageAfterOf(p);
+  const order = [R.Again, R.Hard, R.Good, R.Easy] as const;
+  const labels = distinctIntervalLabels(order.map((r) => view.previews[r].interval_ms));
   return {
-    interval: formatNextInterval(p.interval_ms),
+    interval: labels[order.indexOf(rating as (typeof order)[number])] ?? '',
     change: after ? stageChangeLabel(cardStage(view.card), after) : null,
   };
 }
@@ -98,6 +100,33 @@ export function learnedInSession(answers: readonly SessionAnswer[]): number {
       reached.add(a.view.note.id);
   }
   return reached.size;
+}
+
+/** Words of the session, words that reached Pekişiyor or higher, and recall on reviews. */
+export function sessionFacts(answers: readonly SessionAnswer[]): {
+  words: number;
+  consolidated: number;
+  reviews: number;
+  recalled: number;
+} {
+  const words = new Set<Id>();
+  const up = new Set<Id>();
+  const rank = { new: 0, learning: 1, consolidating: 2, learned: 3, mastered: 4 } as const;
+  let reviews = 0;
+  let recalled = 0;
+  for (const a of answers) {
+    words.add(a.view.note.id);
+    const before = cardStage(a.view.card);
+    const after = stageAfterOf(a.view.previews[a.rating]);
+    if (after && rank[before] < rank.consolidating && rank[after] >= rank.consolidating)
+      up.add(a.view.note.id);
+    // Recall counts answers on cards that were in review; learning steps of new words do not.
+    if (a.view.card.state === CardState.Review) {
+      reviews++;
+      if (a.rating !== R.Again) recalled++;
+    }
+  }
+  return { words: words.size, consolidated: up.size, reviews, recalled };
 }
 
 // ------------------------------------------------------------------ cloze choices

@@ -43,6 +43,9 @@ function useSuggestion(enabled: boolean): GradedSummary | null | undefined {
   return state && state.key === difficulty ? state.value : undefined;
 }
 
+/** The "Metin ekle" button opens the Add sheet on its text section (v0.5.1). */
+const openTextSheet = openAddSheet as (kind?: 'text') => void;
+
 export function TodayReadingCard() {
   const { t } = useTranslation();
   const last = useLiveQuery(() => lastUnfinishedText(), []);
@@ -87,7 +90,11 @@ export function TodayReadingCard() {
   }
   if (suggestion) {
     return frame(
-      <Link to={gradedReaderPath(suggestion.id)} className="group flex items-center gap-3">
+      <Link
+        to={gradedReaderPath(suggestion.id)}
+        data-testid="today-reading-suggestion"
+        className="group flex items-center gap-3"
+      >
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span
             lang="en"
@@ -106,7 +113,7 @@ export function TodayReadingCard() {
   return frame(
     <div className="flex flex-wrap items-center justify-between gap-3">
       <p className="min-w-0 flex-1 text-[0.9375rem] text-fg-muted">{t('reader.today.empty')}</p>
-      <Button variant="secondary" size="sm" onClick={() => openAddSheet()}>
+      <Button variant="secondary" size="sm" onClick={() => openTextSheet('text')}>
         {t('reader.today.paste')}
       </Button>
     </div>,

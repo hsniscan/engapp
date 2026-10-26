@@ -172,8 +172,10 @@ export function dayConfig(s: Pick<Settings, 'timezone' | 'day_start_hour'>): Day
 let cached: { key: string; scheduler: Scheduler } | null = null;
 
 /** Scheduler for these settings (memoized); falls back to defaults on invalid stored values. */
-export function schedulerFor(s: Pick<Settings, 'request_retention' | 'fsrs_params'>): Scheduler {
-  const key = `${s.request_retention}|${s.fsrs_params?.join(',') ?? ''}`;
+export function schedulerFor(
+  s: Pick<Settings, 'request_retention' | 'fsrs_params'> & Partial<Pick<Settings, 'timezone' | 'day_start_hour'>>,
+): Scheduler {
+  const key = `${s.request_retention}|${s.fsrs_params?.join(',') ?? ''}|${s.timezone ?? ''}|${s.day_start_hour ?? ''}`;
   if (cached?.key === key) return cached.scheduler;
   let scheduler: Scheduler;
   try {
@@ -182,6 +184,8 @@ export function schedulerFor(s: Pick<Settings, 'request_retention' | 'fsrs_param
     scheduler = createScheduler({
       request_retention: DEFAULT_SETTINGS.request_retention,
       fsrs_params: null,
+      ...(s.timezone !== undefined ? { timezone: s.timezone } : {}),
+      ...(s.day_start_hour !== undefined ? { day_start_hour: s.day_start_hour } : {}),
     });
   }
   cached = { key, scheduler };

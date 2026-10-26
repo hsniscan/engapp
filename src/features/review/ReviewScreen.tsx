@@ -4,10 +4,11 @@
 // Keyboard on desktop: Space shows the answer, 1–4 answer, Z undoes.
 import { useLiveQuery } from 'dexie-react-hooks';
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useSearchParams } from 'react-router';
 import { db, getSettings } from '@/data';
-import { STUDY_MODES, type StudyMode } from '@/domain/studyMode';
+import { STUDY_MODE_CARD_TYPES, type StudyMode } from '@/domain/studyMode';
 import type { Id, RatingValue } from '@/domain/types';
 import { getNextDue, cfgOf } from '@/features/home/queries';
 import { nextDueText } from '@/features/home/nextDueText';
@@ -34,7 +35,7 @@ import { EditSheet } from './EditSheet';
 import { type KindProps, RecognitionStudy } from './kinds';
 import { ProductionStudy } from './ProductionStudy';
 import { SessionSummary } from './SessionSummary';
-import { type StudyModeCount, useStudyModeCounts } from './studyModes';
+import { modeLeft, useTodayStudy } from './studyModes';
 import { StudyFrame } from './StudyFrame';
 import { useReviewSession } from './useReviewSession';
 import { prefetchPronunciations } from './pronunciation';
@@ -263,14 +264,15 @@ export function ReviewScreen({ studyMode, ahead = false, deckId }: ReviewScreenP
           canUndo={state.canUndo}
           onUndo={() => void doUndo()}
           learnedToday={learnedInSession(answers)}
-          continueWith={studyMode && !ahead ? <OtherModes current={studyMode} /> : null}
+          {...(studyMode && !ahead ? { studyMode } : {})}
         />
         {leechSheet}
       </>
     );
   }
 
-  const total = state.answered + state.remaining;
+  // A fixed number of cards; the learning steps still to come show apart ("+2 tekrar").
+  const total = Math.max(state.cardsTotal, state.cardsDone);
   const speak = {
     available: speech.available,
     onSpeak: () => current && speech.speak(current.view.note.term),
@@ -280,7 +282,7 @@ export function ReviewScreen({ studyMode, ahead = false, deckId }: ReviewScreenP
   const top = (
     <div className="safe-top flex flex-col gap-1 pt-2 pb-2">
       <h1 className="sr-only">
-        {studyMode ? modeText(t, studyMode, 'name') : t('review.title')}
+        {studyMode ? modeText(t, studyMode, 'name') : sessionTitle(t, ahead)}
       </h1>
       {ahead && (
         <div className="flex">
@@ -297,13 +299,26 @@ export function ReviewScreen({ studyMode, ahead = false, deckId }: ReviewScreenP
       <div className="flex items-center gap-2">
         <StudyClose />
         <ProgressBar
-          value={state.answered}
+          value={state.cardsDone}
           max={Math.max(1, total)}
           label={t('a11y.progress')}
-          valueText={t('review.progress', { done: state.answered, total })}
+          valueText={
+            state.repeatsLeft > 0
+              ? `${t('review.progress', { done: state.cardsDone, total })}, ${t('review.repeatsLeft', { count: state.repeatsLeft })}`
+              : t('review.progress', { done: state.cardsDone, total })
+          }
         />
-        <span aria-hidden="true" className="tabular shrink-0 pl-1 text-sm text-fg-muted">
-          {state.answered} / {total}
+        <span
+          aria-hidden="true"
+          className="tabular shrink-0 pl-1 text-sm text-fg-muted"
+          data-testid="study-progress"
+        >
+          {state.cardsDone} / {total}
+          {state.repeatsLeft > 0 && (
+            <span className="ml-1.5 text-xs text-fg-subtle">
+              {t('review.repeatsLeft', { count: state.repeatsLeft })}
+            </span>
+          )}
         </span>
         <div className="-mr-2 flex shrink-0 items-center">
           {state.canUndo && (
@@ -404,6 +419,11 @@ export function ReviewScreen({ studyMode, ahead = false, deckId }: ReviewScreenP
   );
 }
 
+/** The screen-reader title of a session without a study mode (never "Tekrar", the button). */
+function sessionTitle(t: TFunction, ahead: boolean): string {
+  return ahead ? t('review.aheadBadge') : t('study.mode.mixed.name');
+}
+
 function CardPlaceholder() {
   return (
     <div
@@ -449,7 +469,7 @@ function StudySkeleton() {
   const { t } = useTranslation();
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col px-4 pt-3 sm:px-6 sm:pt-5">
-      <h1 className="sr-only">{t('review.title')}</h1>
+      <h1 className="sr-only">{t('study.title')}</h1>
       <p className="sr-only" role="status">
         {t('common.loading')}
       </p>
@@ -464,10 +484,11 @@ function StudySkeleton() {
 /** Links to the other study modes that still have cards today. */
 export function OtherModes({ current }: { current?: StudyMode }) {
   const { t } = useTranslation();
-  const counts = useStudyModeCounts();
-  if (!counts) return null;
-  const left = (c: StudyModeCount) => c.due + c.newCount;
-  const others = STUDY_MODES.filter((m) => m !== current && left(counts[m]) > 0);
+  const study = useTodayStudy();
+  if (!study) return null;
+  const { counts } = study;
+  const left = modeLeft;
+  const others = study.waiting.filter((m) => m !== current);
   if (!others.length) return null;
   return (
     <div className="flex flex-col gap-2 rounded-[18px] border border-border bg-surface p-4 text-left">
@@ -503,12 +524,13 @@ function StudyEmpty({
   const { t } = useTranslation();
   const info = useLiveQuery(async () => {
     const [next, settings, anyNote] = await Promise.all([
-      getNextDue(),
+      // A mode's empty screen counts that mode's cards only ("Yarın 3 kart" in Dikte).
+      getNextDue(Date.now(), studyMode && !ahead ? STUDY_MODE_CARD_TYPES[studyMode] : undefined),
       getSettings(),
       db.notes.filter((n) => n.deleted_at === null).first(),
     ]);
     return { next, tz: cfgOf(settings).timezone, hasCards: !!anyNote, now: Date.now() };
-  }, []);
+  }, [studyMode, ahead]);
   if (!info) return <StudySkeleton />;
   const title = !info.hasCards
     ? t('review.noCardsTitle')
@@ -527,7 +549,7 @@ function StudyEmpty({
   return (
     <div className="mx-auto w-full max-w-xl px-4 pt-10 sm:px-6 md:pt-16">
       <h1 className="sr-only">
-        {studyMode ? modeText(t, studyMode, 'name') : t('review.title')}
+        {studyMode ? modeText(t, studyMode, 'name') : sessionTitle(t, ahead)}
       </h1>
       <EmptyState
         icon={info.hasCards ? 'check' : 'cards'}

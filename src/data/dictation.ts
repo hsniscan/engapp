@@ -249,3 +249,16 @@ export async function hiddenDictationCards(): Promise<Set<Id>> {
   withoutSentenceMemo = { key, ids };
   return ids;
 }
+
+/**
+ * Dikte can give cards on this device: at least one live, unlocked dictation card has a sentence
+ * to read here. False for a guest offline with no cached sentences (the mode is then hidden).
+ */
+export async function dictationAvailable(): Promise<boolean> {
+  const cards = (await db.cards.where('card_type').equals('dictation').toArray()).filter(
+    (c) => c.deleted_at === null && !c.suspended && c.unlocked,
+  );
+  if (cards.length === 0) return false;
+  const hidden = await hiddenDictationCards();
+  return cards.some((c) => !hidden.has(c.id));
+}

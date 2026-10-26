@@ -14,6 +14,7 @@ import type { CardStateValue, FsrsFields, Id, Millis, RatingValue, Settings } fr
 import { CardState, Rating } from './types';
 import { FSRS_CONFIG, GRAD_CAP, PROVEN, RAMP_CAPS, RAMP_EPOCH, RAMP_FUZZ_MIN_DAYS, RAMP_LEN } from './fsrsConfig';
 import { cardStage, isLearnedStage, type WordStage } from './stages';
+import { type DayConfig, dayKeyOf } from './day';
 
 export { FSRS_CONFIG };
 
@@ -35,6 +36,11 @@ export interface Scheduler {
   readonly engine: FSRS;
   /** Interval fuzz (FSRS's own and the ramp's downward fuzz). Off only in tests and tools. */
   readonly fuzz: boolean;
+  /**
+   * The user's calendar day (time zone, day start hour). With it, an answer on a later local
+   * day counts for the ramp even under 12 h (ADR 0055); without it, only the hour rule applies.
+   */
+  readonly day?: DayConfig;
 }
 
 export interface SchedulerOptions {
@@ -57,7 +63,8 @@ function seedStrategy(this: AbstractScheduler): string {
 
 /** Validate settings and build a scheduler. Throws a ZodError on invalid values. */
 export function createScheduler(
-  settings: Pick<Settings, 'request_retention' | 'fsrs_params'>,
+  settings: Pick<Settings, 'request_retention' | 'fsrs_params'> &
+    Partial<Pick<Settings, 'timezone' | 'day_start_hour'>>,
   options: SchedulerOptions = {},
 ): Scheduler {
   const fuzz = options.fuzz ?? FSRS_CONFIG.enable_fuzz;
@@ -75,7 +82,11 @@ export function createScheduler(
     ...(parsed.fsrs_params ? { w: parsed.fsrs_params } : {}),
   });
   const engine = createFsrs(params).useStrategy(StrategyMode.SEED, seedStrategy);
-  return { settings: parsed, engine, fuzz };
+  const day =
+    typeof settings.timezone === 'string' && typeof settings.day_start_hour === 'number'
+      ? { timezone: settings.timezone, day_start_hour: settings.day_start_hour }
+      : undefined;
+  return { settings: parsed, engine, fuzz, ...(day ? { day } : {}) };
 }
 
 /** FSRS fields of a card that was never reviewed. */
@@ -224,7 +235,9 @@ export function rampCap(before: CardStateValue, rating: RatingValue, rampStep: n
 /**
  * Ramp counter after an answer. Learning steps never move it; Again resets it (to 1 when the
  * word had been learned, ramp ≥ 3); an early review (under 12 h, or under half the planned
- * interval) does not count; otherwise +1, and at least the level the gap itself proves.
+ * interval) does not count, unless it is on a later calendar day and not before the card's due
+ * day (`laterDay`, ADR 0055: learnt at 22:00, recalled next morning at 09:00 counts); otherwise
+ * +1, and at least the level the gap itself proves.
  */
 export function nextRampStep(
   before: CardStateValue,
@@ -232,10 +245,11 @@ export function nextRampStep(
   rampStep: number,
   gapDays: number,
   scheduledDays: number,
+  laterDay = false,
 ): number {
   if (before !== CardState.Review) return rampStep;
   if (rating === Rating.Again) return rampStep >= 3 ? 1 : 0;
-  if (gapDays < 0.5 || gapDays < scheduledDays / 2) return rampStep;
+  if (!laterDay && (gapDays < 0.5 || gapDays < scheduledDays / 2)) return rampStep;
   return Math.max(rampStep + 1, provenLevel(gapDays));
 }
 
@@ -267,10 +281,32 @@ export function applyRating(
       fsrs.due = at + days * DAY;
     }
   }
-  const ramp_step = nextRampStep(before, rating, rampStep, gapDays, card.scheduled_days);
+  const ramp_step = nextRampStep(
+    before,
+    rating,
+    rampStep,
+    gapDays,
+    card.scheduled_days,
+    isLaterDueDay(scheduler.day, card, at),
+  );
   const next: FsrsFields = { ...fsrs, ramp_step, learned_at: card.learned_at ?? null };
   if (next.learned_at === null && isLearnedStage(cardStage(next))) next.learned_at = at;
   return next;
+}
+
+/**
+ * The answer falls on a later local day than the previous one, and not before the card's due
+ * day: a real "another day" recall, however few hours passed. Reviewing tomorrow's cards today
+ * ("Yarının kartlarını şimdi") is before the due day and stays an early review.
+ */
+export function isLaterDueDay(
+  day: DayConfig | undefined,
+  card: Pick<FsrsFields, 'last_review' | 'due'>,
+  at: Millis,
+): boolean {
+  if (!day || card.last_review === null) return false;
+  const today = dayKeyOf(at, day);
+  return today > dayKeyOf(card.last_review, day) && today >= dayKeyOf(card.due, day);
 }
 
 export interface IntervalPreview {
@@ -339,4 +375,24 @@ export function formatNextInterval(ms: number): string {
   const months = Math.round(days / 30);
   if (days < 365 && months < 12) return `${months} ay`;
   return `${trNumber(Math.max(1, Math.round((days / 365) * 2) / 2))} yıl`;
+}
+
+/**
+ * Labels for the four buttons in order (Again … Easy). Rounding can give two different
+ * intervals one label ("2 ay" under Zor and İyi); those neighbours fall back to whole days
+ * ("58 gün", "62 gün") so the buttons never look the same.
+ */
+export function distinctIntervalLabels(intervals: readonly number[]): string[] {
+  const labels = intervals.map(formatNextInterval);
+  for (let i = 1; i < labels.length; i++) {
+    const a = intervals[i - 1]!;
+    const b = intervals[i]!;
+    if (labels[i] !== labels[i - 1] || a === b || a < 2 * DAY) continue;
+    const da = Math.round(a / DAY);
+    const db = Math.round(b / DAY);
+    if (da === db) continue;
+    labels[i - 1] = `${da} gün`;
+    labels[i] = `${db} gün`;
+  }
+  return labels;
 }

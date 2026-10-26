@@ -61,7 +61,7 @@ describe('nextReminder (examples, Istanbul = UTC+3)', () => {
     expect(r?.day).toBe('2026-10-20');
     expect(r?.due).toBe(2);
     expect(r?.message.body).toBe('Bugün 2 kart tekrara hazır, yaklaşık 1 dk.');
-    expect(r?.message.url).toBe('/review');
+    expect(r?.message.url).toBe('/study');
   });
 
   it('moves to tomorrow once the user studied today', () => {

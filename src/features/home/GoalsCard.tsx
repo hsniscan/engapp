@@ -1,16 +1,55 @@
 // "Hedeflerin" (board Main): minutes today and this week, new words this month, and the level
-// path towards the target level. Goals are set on Profil ("Düzenle").
+// path towards the target level. Goals are set on Profil ("Düzenle"). With no goal set, one
+// line "Günlük hedef koy" with three presets instead of three empty rings (v0.5.1).
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import type { GoalsView } from '@/data';
+import { type GoalsView, logError, updateGoals } from '@/data';
 import { CEFR_ORDER } from '@/domain/deckFilter';
 import type { GoalKey } from '@/domain/goals';
-import { cn } from '@/ui';
+import { cn, toast } from '@/ui';
 import { HomeIcon } from './homeIcons';
 import { Ring } from './Ring';
 import { levelPath, type HomeGoals } from './todayQueries';
 
 export const GOALS_EDIT_HREF = '/profile?edit=goals';
+
+/** Daily minutes offered in one tap when no goal is set. */
+const DAY_GOAL_PRESETS = [10, 15, 20] as const;
+
+function SetDayGoal() {
+  const { t } = useTranslation();
+  const [busy, setBusy] = useState<number | null>(null);
+  const set = async (minutes: number) => {
+    setBusy(minutes);
+    try {
+      await updateGoals({ day_minutes: minutes });
+    } catch (e) {
+      void logError(e, 'home.dayGoal');
+      toast({ title: t('today.goalSetFailed'), tone: 'danger' });
+    } finally {
+      setBusy(null);
+    }
+  };
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2" data-testid="goal-presets">
+      <span className="text-[0.9375rem]">{t('today.goalSetDay')}</span>
+      <div className="flex gap-1.5" role="group" aria-label={t('today.goalSetDay')}>
+        {DAY_GOAL_PRESETS.map((n) => (
+          <button
+            key={n}
+            type="button"
+            disabled={busy !== null}
+            onClick={() => void set(n)}
+            className="inline-flex h-11 min-w-14 items-center justify-center rounded-xl border border-border bg-surface px-2.5 text-sm font-semibold text-accent-text transition-colors duration-(--duration-micro) hover:bg-hover disabled:opacity-60"
+          >
+            {t('today.goalPreset', { count: n })}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function GoalRing({
   value,
@@ -71,6 +110,7 @@ export function GoalsCard({
   const path = levelPath(goals.level, goals.target);
   const reached = CEFR_ORDER.indexOf(goals.level);
   const targetIndex = CEFR_ORDER.indexOf(goals.target);
+  const noGoals = goals.dayTarget === null && !week?.target && !month?.target;
 
   return (
     <section
@@ -90,6 +130,9 @@ export function GoalsCard({
           {t('today.edit')}
         </Link>
       </div>
+      {noGoals ? (
+        <SetDayGoal />
+      ) : (
       <div className="grid grid-cols-3 gap-2">
         <GoalRing
           value={todayMinutes}
@@ -113,6 +156,7 @@ export function GoalsCard({
           testId="goal-month"
         />
       </div>
+      )}
       <div className="flex flex-col gap-2 border-t border-surface-sunken pt-3">
         <div className="flex items-center justify-between gap-2">
           <span className="rounded-full bg-accent-soft px-2.5 py-1 text-[0.8125rem] font-semibold text-accent-text">

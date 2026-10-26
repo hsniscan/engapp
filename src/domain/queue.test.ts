@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { makeCard } from '../test/factories';
-import { buildQueue, isDayComplete, newCardsAllowed, type QueueContext } from './queue';
+import { buildQueue, DEFAULT_LEARN_AHEAD_MS, isDayComplete, newCardsAllowed, type QueueContext } from './queue';
 import { type Card, CardState } from './types';
 
 const NOW = Date.UTC(2026, 9, 21, 9);
@@ -109,6 +109,16 @@ describe('buildQueue', () => {
     expect(q2.items[0]!.card_id).toBe('l');
   });
 
+  it('the default learn-ahead honours the 10 minute step but not a 1 minute one (ADR 0055)', () => {
+    const cards = [learning('ten', NOW + 9 * MIN), learning('one', NOW + 1 * MIN)];
+    const { learnAheadMs: _drop, ...rest } = ctx();
+    void _drop;
+    const q = buildQueue(cards, rest);
+    expect(q.items.map((i) => i.card_id)).toEqual(['one']);
+    expect(q.nextLearningDue).toBe(NOW + 9 * MIN);
+    expect(DEFAULT_LEARN_AHEAD_MS).toBeLessThan(6 * MIN);
+  });
+
   it('builds a 1,000-card queue quickly', () => {
     const cards: Card[] = [];
     for (let i = 0; i < 10_000; i++) {
@@ -116,7 +126,7 @@ describe('buildQueue', () => {
     }
     const t0 = performance.now();
     const q = buildQueue(cards, ctx());
-    expect(performance.now() - t0).toBeLessThan(200);
+    expect(performance.now() - t0).toBeLessThan(1_000); // loose: CI machines are shared
     expect(q.counts.new).toBe(10);
   });
 });

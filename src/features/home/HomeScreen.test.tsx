@@ -47,7 +47,7 @@ describe('Bugün', () => {
     expect(await getMeta(STAGE_RULE_NOTE_KEY)).toBe(true);
   });
 
-  it('shows the word study, the study types and updates live after answers', async () => {
+  it('shows the whole day with a chip per mode and updates live after answers', async () => {
     await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] });
     await addNoteWithSenses({ term: 'light', senses: [{ meaning_tr: 'hafif' }] });
     renderRoute(<HomeScreen />);
@@ -60,9 +60,11 @@ describe('Bugün', () => {
       'href',
       '/study?mode=word',
     );
-    expect(screen.getByTestId('study-type-word')).toHaveAttribute('href', '/study?mode=word');
-    expect(screen.getByTestId('study-type-word')).toHaveAccessibleName(
-      'Kelime İngilizceden Türkçeye 2 kart',
+    // One chip per mode in the hero: the whole day at a glance (ADR 0055).
+    expect(within(hero).getByTestId('study-type-word')).toHaveAttribute('href', '/study?mode=word');
+    expect(within(hero).getByTestId('study-type-word')).toHaveAccessibleName(/^Kelime\s*2 kart$/);
+    expect(within(hero).getByTestId('study-type-production')).toHaveAccessibleName(
+      /^Üretim\s*Bugün yok$/,
     );
     expect(await screen.findByTestId('home-words')).toHaveTextContent('/ 2 kelimenden');
 
@@ -75,6 +77,41 @@ describe('Bugün', () => {
     expect(within(done).getByRole('status')).toHaveTextContent(/Sıradaki tekrar|Yarın/);
     expect(screen.queryByRole('link', { name: /Devam et|Başla/ })).toBeNull();
     expect(await db.daily_activity.count()).toBe(1);
+  });
+
+  it('is not done while another mode still has cards: the button goes to it (ADR 0055)', async () => {
+    await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] });
+    // Kelime has nothing today; Üretim has one card open.
+    await db.cards.where('card_type').equals('recognition').modify({ suspended: true });
+    await db.cards.where('card_type').equals('production').modify({ unlocked: true });
+    renderRoute(<HomeScreen />);
+    const hero = await screen.findByTestId('today-hero');
+    expect(screen.queryByTestId('today-hero-done')).toBeNull();
+    expect(within(hero).getByRole('heading', { name: '1 kart kaldı' })).toBeInTheDocument();
+    expect(within(hero).getByTestId('start-study')).toHaveTextContent('Üretime geç (1)');
+    expect(within(hero).getByTestId('start-study')).toHaveAttribute('href', '/study?mode=production');
+    expect(screen.queryByTestId('more-study')).toBeNull();
+  });
+
+  it('offers daily-goal presets instead of empty rings when no goal is set', async () => {
+    await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] });
+    renderRoute(<HomeScreen />);
+    const goals = await screen.findByTestId('home-goals');
+    expect(within(goals).queryByTestId('goal-day')).toBeNull();
+    fireEvent.click(within(goals).getByRole('button', { name: '15 dk' }));
+    expect(await within(goals).findByTestId('goal-day')).toHaveTextContent('0/15 dk');
+  });
+
+  it('opens the streak sheet from the streak line', async () => {
+    await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] });
+    renderRoute(<HomeScreen />);
+    fireEvent.click(await screen.findByTestId('today-streak'));
+    const sheet = await screen.findByTestId('streak-sheet');
+    expect(sheet).toHaveTextContent('en az bir kart');
+    expect(await within(sheet).findByTestId('streak-protection')).toHaveTextContent(
+      'Bu ay 2 / 2 koruma kaldı.',
+    );
+    expect(sheet).toHaveTextContent('seriye sayılmaz');
   });
 
   it('shows goals with their targets and the level path', async () => {

@@ -20,3 +20,10 @@ export function emptyTitle(t: TFunction, mode: StudyMode): string {
 export function startLabel(t: TFunction, mode: StudyMode | 'mixed'): string {
   return mode === 'dictation' ? t('modes.dictation.start') : t(`study.start.${mode}`);
 }
+
+/** "Kelime çalışma, Üretim ve Boşluk doldurma tek oturumda karışık gelir." */
+export function mixedHint(t: TFunction, modes: readonly StudyMode[]): string {
+  const names = modes.map((m) => modeText(t, m, 'name'));
+  const list = new Intl.ListFormat(t('study.listLocale'), { type: 'conjunction' }).format(names);
+  return t('study.mixedHintList', { modes: list });
+}

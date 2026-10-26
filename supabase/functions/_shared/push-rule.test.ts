@@ -96,7 +96,7 @@ describe('send decision (acceptance criterion 7)', () => {
       message: {
         title: 'Engapp',
         body: 'Bugün 23 kart tekrara hazır, yaklaşık 6 dk.',
-        url: '/review',
+        url: '/study',
         tag: 'engapp-due',
       },
     });

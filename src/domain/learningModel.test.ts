@@ -226,6 +226,41 @@ describe('the ramp', () => {
     expect(nextRampStep(CardState.Relearning, G, 1, 0.01, 0)).toBe(1);
   });
 
+  it('an answer on a later calendar day counts even under 12 h (ADR 0055)', () => {
+    // Istanbul (UTC+3), day starts at 04:00. Good 22:00, Good 22:11, next day Good 09:11.
+    const day = createScheduler(
+      { request_retention: 0.9, fsrs_params: null, timezone: 'Europe/Istanbul', day_start_hour: 4 },
+      { fuzz: false },
+    );
+    const at22 = Date.UTC(2027, 0, 5, 19, 0); // 22:00 local
+    let f: FsrsFields = emptyFsrs(at22);
+    f = applyRating(day, { id: 'c', ...f }, G, at22);
+    f = applyRating(day, { id: 'c', ...f }, G, at22 + 11 * MIN);
+    expect(f.state).toBe(CardState.Review);
+    expect(f.ramp_step).toBe(0);
+    const morning = at22 + 11 * MIN + 11 * 60 * MIN; // 09:11 local next day
+    const next = applyRating(day, { id: 'c', ...f }, G, morning);
+    expect(next.ramp_step).toBe(1);
+    expect(cardStage(next)).toBe('consolidating');
+    // Without a calendar (old hour rule) the same answer would not count.
+    expect(applyRating(exact, { id: 'c', ...f }, G, morning).ramp_step).toBe(0);
+    // 03:30 the next night is still the same day (day starts at 04:00): no count.
+    const night = at22 + 5.5 * 60 * MIN; // 03:30 local
+    const g1 = applyRating(day, { id: 'c', ...f }, G, at22 + 11 * MIN);
+    expect(applyRating(day, { id: 'c', ...g1 }, G, night).ramp_step).toBe(0);
+  });
+
+  it('a later day before the due day ("Yarının kartlarını şimdi") stays early', () => {
+    const day = createScheduler(
+      { request_retention: 0.9, fsrs_params: null, timezone: 'UTC', day_start_hour: 4 },
+      { fuzz: false },
+    );
+    const { card, at } = run([G, G, G], day); // ramp 1, due 3 days after the last review
+    // One day after the last review, two days before due: still early.
+    expect(applyRating(day, { id: 'card-1', ...card }, G, at - 2 * DAY).ramp_step).toBe(1);
+    expect(nextRampStep(CardState.Review, G, 1, 0.4, 1, true)).toBe(2);
+  });
+
   it('an early review ("Yarının kartlarını şimdi tekrar et") does not count', () => {
     // Under 12 hours.
     expect(nextRampStep(CardState.Review, G, 1, 0.4, 0)).toBe(1);

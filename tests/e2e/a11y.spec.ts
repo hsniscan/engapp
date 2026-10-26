@@ -161,7 +161,7 @@ for (const width of [360, 1280]) {
       ).toBeVisible();
       await check(page, 'more', tag);
       await page.getByRole('button', { name: 'Pratiğe başla' }).click();
-      await expect(page.getByText('Pratik · takvimin değişmez')).toBeVisible();
+      await expect(page.getByText('Pratik · takvim ve seri değişmez')).toBeVisible();
       await check(page, 'practice-front', tag);
       await page.locator('body').press('Space');
       await expect(page.getByRole('group', { name: 'Bildin mi?' })).toBeVisible();

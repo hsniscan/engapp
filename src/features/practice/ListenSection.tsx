@@ -1,19 +1,20 @@
 // "Dinleyerek çalış" on /study/more (v0.5 İP9, ADR 0051): today's Dikte cards and the
-// hands-free round ("Eller serbest"), which never changes the schedule.
+// hands-free round ("Eller serbest"), which never changes the schedule. The Dikte link shows
+// only when it has cards today (v0.5.1: no "Dikte'de bugün kart yok" line here).
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import type { MoreStudyOverview } from '@/data';
 import { HANDS_FREE_SIZES, handsFreeHref } from '@/domain/handsFree';
 import type { PracticeSource } from '@/domain/practice';
-import { useStudyModeCounts } from '@/features/review/studyModes';
+import { modeLeft, useTodayStudy } from '@/features/review/studyModes';
 import { buttonClasses, Icon, SegmentedControl, Surface } from '@/ui';
 
 export function ListenSection({ data }: { data: MoreStudyOverview }) {
   const { t } = useTranslation();
-  const counts = useStudyModeCounts();
+  const today = useTodayStudy();
   const [size, setSize] = useState<number>(HANDS_FREE_SIZES[0]);
-  const dictation = counts ? counts.dictation.due + counts.dictation.newCount : 0;
+  const dictation = today?.dictation ? modeLeft(today.counts.dictation) : 0;
   // The words heard: the hard ones first, else the recent ones.
   const source: PracticeSource | null =
     data.practice.hard > 0 ? 'hard' : data.practice.recent > 0 ? 'recent' : null;
@@ -24,7 +25,7 @@ export function ListenSection({ data }: { data: MoreStudyOverview }) {
       </h2>
       <p className="mt-1 text-[0.9375rem] text-fg-muted">{t('modes.handsFree.moreBody')}</p>
       <div className="mt-5 flex flex-col gap-4">
-        {dictation > 0 ? (
+        {dictation > 0 && (
           <Link
             to="/study?mode=dictation"
             data-testid="more-dictation"
@@ -33,8 +34,6 @@ export function ListenSection({ data }: { data: MoreStudyOverview }) {
             {t('modes.handsFree.moreDictation', { count: dictation })}
             <Icon name="chevron-right" size={18} />
           </Link>
-        ) : (
-          <p className="text-[0.9375rem] text-fg">{t('modes.handsFree.moreDictationNone')}</p>
         )}
         {source ? (
           <>
