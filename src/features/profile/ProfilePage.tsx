@@ -4,7 +4,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { db, getGoalsView, getStreakSummary } from '@/data';
 import type { GoalProgress } from '@/domain/goals';
 import { Avatar } from '@/features/auth/Avatar';
@@ -189,7 +189,17 @@ function MiniStat({ label, value }: { label: string; value: string }) {
 function GoalsCard() {
   const { t } = useTranslation();
   const view = useLiveQuery(() => getGoalsView(Date.now()), []);
-  const [open, setOpen] = useState(false);
+  // The home's "Hedeflerin · Düzenle" lands here with ?edit=goals: the dialog opens at once.
+  const [params, setParams] = useSearchParams();
+  const [open, setOpen] = useState(() => params.get('edit') === 'goals');
+  const close = () => {
+    setOpen(false);
+    if (params.has('edit')) {
+      const next = new URLSearchParams(params);
+      next.delete('edit');
+      setParams(next, { replace: true });
+    }
+  };
   const has = !!view && view.progress.length > 0;
   return (
     <section
@@ -220,7 +230,7 @@ function GoalsCard() {
       ) : (
         <p className="text-[0.9375rem] text-fg-muted">{t('profile.home.goalsNone')}</p>
       )}
-      {open && view ? <GoalsDialog view={view} onClose={() => setOpen(false)} /> : null}
+      {open && view ? <GoalsDialog view={view} onClose={close} /> : null}
     </section>
   );
 }

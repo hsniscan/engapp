@@ -2630,7 +2630,12 @@
     "rangeStep": "Enter a multiple of {{step}} from {{min}} to {{max}}.",
     "saved": "Your goals are saved.",
     "cleared": "Your goals are removed.",
-    "clearAll": "Remove goals"
+    "clearAll": "Remove goals",
+    "day_minutes": "Daily goal (minutes)",
+    "dayMinutesHint": "The ring on the Today screen fills towards this goal.",
+    "target_level": "Target level",
+    "targetLevelHint": "Your level now is {{level}}. Without a choice, the next level is the target.",
+    "targetLevelAuto": "The next level"
   },
   "imageCard": {
     "pos": "Part of speech: {{pos}}",

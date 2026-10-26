@@ -2630,7 +2630,12 @@
     "rangeStep": "{{min}} ile {{max}} arasında, {{step}} ve katları olan bir sayı yaz.",
     "saved": "Hedeflerin kaydedildi.",
     "cleared": "Hedeflerin kaldırıldı.",
-    "clearAll": "Hedefleri kaldır"
+    "clearAll": "Hedefleri kaldır",
+    "day_minutes": "Günlük hedef (dakika)",
+    "dayMinutesHint": "Bugün ekranındaki halka bu hedefe göre dolar.",
+    "target_level": "Hedef seviye",
+    "targetLevelHint": "Şu anki seviyen {{level}}. Seçmezsen bir sonraki seviye hedeflenir.",
+    "targetLevelAuto": "Bir sonraki seviye"
   },
   "imageCard": {
     "pos": "Sözcük türü: {{pos}}",

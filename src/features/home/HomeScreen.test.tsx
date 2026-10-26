@@ -87,7 +87,7 @@ describe('Bugün', () => {
     ).toBeInTheDocument();
     expect(within(goals).getByRole('link', { name: 'Hedefleri düzenle' })).toHaveAttribute(
       'href',
-      '/profile',
+      '/profile?edit=goals',
     );
   });
 

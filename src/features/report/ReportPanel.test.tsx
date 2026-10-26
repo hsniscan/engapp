@@ -166,4 +166,67 @@ describe('goals', () => {
       screen.getByRole('img', { name: 'Bu hafta çalışma süresi: 0 / 90 dk' }),
     ).toBeInTheDocument();
   });
+
+  it('keep the home goals, set the daily minutes and the target level, and clear all', async () => {
+    const user = userEvent.setup();
+    await updateSettings({
+      timezone: 'Europe/Istanbul',
+      level: 'B1',
+      goals: { week_active_days: 5, day_minutes: 20, target_level: 'C1' },
+    });
+    renderRoute(<GoalsSection />);
+    await user.click(await screen.findByRole('button', { name: 'Hedefleri değiştir' }));
+    let dialog = await screen.findByRole('dialog');
+    const day = within(dialog).getByLabelText('Günlük hedef (dakika)');
+    expect(day).toHaveValue('20');
+    const level = within(dialog).getByRole('combobox', { name: 'Hedef seviye' });
+    expect(level).toHaveTextContent('C1');
+
+    // Saving the report goals alone keeps the home goals.
+    await user.type(within(dialog).getByLabelText('Haftada çalışma süresi (dakika)'), '90');
+    await user.click(within(dialog).getByRole('button', { name: 'Kaydet' }));
+    await waitFor(async () =>
+      expect((await db.settings.get('settings'))?.goals).toEqual({
+        week_active_days: 5,
+        week_minutes: 90,
+        day_minutes: 20,
+        target_level: 'C1',
+      }),
+    );
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(
+      await screen.findByRole('img', { name: 'Bu hafta çalışma süresi: 0 / 90 dk' }),
+    ).toBeInTheDocument();
+
+    // Daily minutes follow the same validation; the levels offered are those above B1.
+    await user.click(screen.getByRole('button', { name: 'Hedefleri değiştir' }));
+    dialog = await screen.findByRole('dialog');
+    const day2 = within(dialog).getByLabelText('Günlük hedef (dakika)');
+    await user.clear(day2);
+    await user.type(day2, '7');
+    await user.click(within(dialog).getByRole('button', { name: 'Kaydet' }));
+    expect(await within(dialog).findByText(/5 ile 240 arasında, 5 ve katları/)).toBeInTheDocument();
+    await user.clear(day2);
+    await user.type(day2, '30');
+    await user.click(within(dialog).getByRole('combobox', { name: 'Hedef seviye' }));
+    const options = (await screen.findAllByRole('option')).map((o) => o.textContent);
+    expect(options).toEqual(['Bir sonraki seviye', 'B2 · İyi orta', 'C1 · İleri', 'C2 · Ustalık']);
+    await user.click(screen.getByRole('option', { name: 'C2 · Ustalık' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Kaydet' }));
+    await waitFor(async () =>
+      expect((await db.settings.get('settings'))?.goals).toEqual({
+        week_active_days: 5,
+        week_minutes: 90,
+        day_minutes: 30,
+        target_level: 'C2',
+      }),
+    );
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    // "Hedefleri kaldır" clears every goal, the home ones too.
+    await user.click(screen.getByRole('button', { name: 'Hedefleri değiştir' }));
+    dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Hedefleri kaldır' }));
+    await waitFor(async () => expect((await db.settings.get('settings'))?.goals).toBeNull());
+  });
 });

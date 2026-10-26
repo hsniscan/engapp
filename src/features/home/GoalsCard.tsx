@@ -10,7 +10,7 @@ import { HomeIcon } from './homeIcons';
 import { Ring } from './Ring';
 import { levelPath, type HomeGoals } from './todayQueries';
 
-export const GOALS_EDIT_HREF = '/profile';
+export const GOALS_EDIT_HREF = '/profile?edit=goals';
 
 function GoalRing({
   value,

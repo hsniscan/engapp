@@ -25,6 +25,7 @@ import {
   reportWeekFor,
 } from '../domain/weeklyReport';
 import type {
+  CefrLevel,
   Millis,
   ReportDraft,
   Settings,
@@ -257,6 +258,8 @@ export interface GoalsView {
   /** Progress this week (days, minutes) and this month (new words), goals that are set. */
   progress: GoalProgress[];
   suggestions: Record<GoalKey, GoalSuggestion>;
+  /** The user's current level (the dialog offers target levels above it). */
+  level: CefrLevel;
 }
 
 /** Facts of the SUGGESTION_WEEKS complete weeks before the current one, oldest first. */
@@ -295,6 +298,7 @@ export async function getGoalsView(now: Millis = Date.now()): Promise<GoalsView>
       monthLearned: countLearned(learned, `${today.slice(0, 7)}-01`, today),
     }),
     suggestions: suggestGoals(pastWeekFacts(activity, learned, today)),
+    level: settings.level,
   };
 }
 
