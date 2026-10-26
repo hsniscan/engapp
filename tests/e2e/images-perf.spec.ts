@@ -99,7 +99,7 @@ test('1,000 cards with pictures: session opens < 1 s, card switch < 100 ms', asy
   const pictures = await addPictures(page);
 
   await page.goto('/');
-  await expect(page.getByRole('link', { name: 'Tekrara başla' })).toBeVisible();
+  await expect(page.getByTestId('start-study')).toBeVisible();
   await page.waitForTimeout(500);
   const warm = (await timeFirstCard(page, 'click')).ms;
 

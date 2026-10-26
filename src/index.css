@@ -69,6 +69,15 @@
   --color-heat-active: var(--heat-active);
   --color-heat-completed: var(--heat-completed);
   --color-scrim: var(--scrim);
+  --color-hero-ring: var(--hero-ring);
+  --color-hero-muted: var(--hero-muted);
+  --color-hero-action: var(--hero-action);
+  --color-hero-action-fg: var(--hero-action-fg);
+  --color-streak-flame: var(--streak-flame);
+  --color-stage-learning: var(--stage-learning);
+  --color-stage-consolidating: var(--stage-consolidating);
+  --color-stage-learned: var(--stage-learned);
+  --color-stage-mastered: var(--stage-mastered);
   /* Interaction overlays: ink at low alpha, so they read on any surface in both themes */
   --color-hover: color-mix(in oklab, var(--fg) 6%, transparent);
   --color-selected: color-mix(in oklab, var(--fg) 9%, transparent);

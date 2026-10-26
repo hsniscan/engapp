@@ -20,7 +20,7 @@ test('phone: bulk tag two words, make a deck of them, filter Cards and practise 
   for (const w of OFFICE) await addWord(page, w);
   // Study everything once so the words can be practised.
   await page.goto('/');
-  await page.getByRole('link', { name: 'Tekrara başla' }).click();
+  await page.getByTestId('start-study').click();
   expect(await reviewAll(page, '4')).toBe(4);
 
   // Bulk tag: select two notes, "Etiket", create "iş", apply.

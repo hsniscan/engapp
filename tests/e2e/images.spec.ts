@@ -75,7 +75,7 @@ test.describe('picture on the card', () => {
     await context.setOffline(true);
     await page.goto('/');
     await expect(page.getByRole('status', { name: /Senkron durumu: Çevrimdışı/ })).toBeVisible();
-    await page.getByRole('link', { name: 'Tekrara başla' }).click();
+    await page.getByTestId('start-study').click();
 
     const seen = new Map<string, boolean>();
     const summary = page.getByRole('heading', { name: 'Oturum tamamlandı' });

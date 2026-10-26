@@ -26,11 +26,22 @@ async function restoreFile(page: Page, file: unknown) {
   });
 }
 
-function todayCount(page: Page, label: 'Vadesi gelen' | 'Yeni') {
-  return page
-    .getByRole('region', { name: 'Bugünün tekrarı' })
-    .locator('dt', { hasText: label })
-    .locator('xpath=following-sibling::dd');
+/** The hero's word-study split, "N tekrar · M yeni · yaklaşık K dk", as numbers. */
+async function todaySplit(page: Page): Promise<{ due: number; fresh: number }> {
+  const split = page.getByTestId('today-split');
+  await expect(split).toBeVisible();
+  const m = /(\d+) tekrar · (\d+) yeni/.exec((await split.textContent()) ?? '');
+  return { due: Number(m?.[1]), fresh: Number(m?.[2]) };
+}
+
+/** Cards waiting today summed over the "Çalışma türleri" tiles (a finished tile counts 0). */
+async function studyTypesTotal(page: Page): Promise<number> {
+  let total = 0;
+  for (const mode of ['word', 'production', 'cloze']) {
+    const text = (await page.getByTestId(`study-type-${mode}`).textContent()) ?? '';
+    total += Number(/(\d+)\s*(kart|cümle)/.exec(text)?.[1] ?? 0);
+  }
+  return total;
 }
 
 test('5-day break: catch-up caps today at the daily capacity and pauses new cards', async ({
@@ -56,14 +67,14 @@ test('5-day break: catch-up caps today at the daily capacity and pauses new card
   const backlog = Number(/Biriken (\d+) tekrarı/.exec(body)?.[1]);
   expect(cap).toBeGreaterThan(0);
   expect(backlog).toBeGreaterThan(cap);
-  await expect(todayCount(page, 'Yeni')).toHaveText('0');
-  const due = Number(await todayCount(page, 'Vadesi gelen').textContent());
+  const { due, fresh } = await todaySplit(page);
+  expect(fresh).toBe(0);
   expect(due).toBeLessThanOrEqual(cap + 5); // + learning steps, never capped
   expect(due).toBeGreaterThan(0);
 
   // Building and opening the capped queue writes nothing; each answer writes one review log.
   const before = await dumpTables(page, ['cards', 'review_logs']);
-  await page.getByRole('link', { name: 'Tekrara başla' }).click();
+  await page.getByTestId('start-study').click();
   await expect(page.getByRole('button', { name: 'Cevabı göster', disabled: false })).toBeVisible();
   expect(await dumpTables(page, ['cards', 'review_logs'])).toEqual(before);
   for (let i = 0; i < 3; i++) {
@@ -110,29 +121,29 @@ test('vacation: no new cards, streak frozen, new cards ramp back 0 → ½ → fu
   await expect(page.getByText('Tatil kaydedildi', { exact: true })).toBeVisible();
   await expect(page.getByTestId('vacation-current')).toContainText('3 Kasım');
 
-  const streak = () => page.getByRole('region', { name: 'Günlük seri' }).locator('.text-6xl');
+  const streak = () => page.getByTestId('today-streak');
 
   // On vacation: no new cards, the streak is kept.
   await page.clock.setSystemTime(at('2026-11-04'));
   await page.goto('/');
   await expect(page.getByTestId('load-vacation')).toContainText('Tatildesin');
-  await expect(page.getByText('Bugünlük bitti')).toBeVisible();
-  await expect(streak()).toHaveText('1');
+  await expect(page.getByTestId('today-hero-done')).toBeVisible();
+  await expect(streak()).toContainText('1 günlük seri');
 
   // First day back: still no new cards, streak still 1. The first word ("Kolay" on day 1) is
   // due: a new word's Easy goes at most 3 days out (learning model, decision 0041).
   await page.clock.setSystemTime(at('2026-11-06'));
   await page.goto('/');
   await expect(page.getByTestId('load-ramp')).toContainText('Tekrar hoş geldin');
-  await expect(todayCount(page, 'Yeni')).toHaveText('0');
-  await expect(todayCount(page, 'Vadesi gelen')).toHaveText('1');
-  await expect(streak()).toHaveText('1');
+  await expect(page.getByTestId('today-hero-done')).toBeVisible();
+  await expect(streak()).toContainText('1 günlük seri');
 
   // Second day back: half the limit (5 of 10).
   await page.clock.setSystemTime(at('2026-11-07'));
   await page.goto('/');
   await expect(page.getByTestId('load-ramp')).toContainText('bugün 5 yeni kart');
-  await expect(todayCount(page, 'Yeni')).toHaveText('5');
+  // Five new cards across the study types (one is the first word's production card).
+  await expect.poll(() => studyTypesTotal(page)).toBe(5);
 
   // Then the full limit: the six waiting words. The first word's recognition card (due since
   // the 5th) is a review today; its production card stays locked until the word is recalled
@@ -143,9 +154,10 @@ test('vacation: no new cards, streak frozen, new cards ramp back 0 → ½ → fu
   const first = (notes as Note[]).find((n) => n.term === VOCAB[0]!.term)!;
   const recognition = (cards as Card[]).find((c) => c.note_id === first.id && c.card_type === 'recognition')!;
   const recognitionDueToday = recognition.due < at('2026-11-09').getTime();
-  expect(recognitionDueToday).toBe(true);
-  await expect(todayCount(page, 'Yeni')).toHaveText('6');
-  await expect(todayCount(page, 'Vadesi gelen')).toHaveText('1');
+  // The hero counts word study (recognition cards); the production card is a separate type.
+  await expect
+    .poll(() => todaySplit(page))
+    .toEqual({ due: recognitionDueToday ? 1 : 0, fresh: 6 });
   await expect(page.getByTestId('load-ramp')).toHaveCount(0);
 });
 

@@ -31,6 +31,7 @@ export {
   REPORT_MAX_ATTEMPTS,
   reportSeenKey,
   setGoals,
+  updateGoals,
   type EnsureReportOutcome,
   type GoalsView,
   type ReportListItem,

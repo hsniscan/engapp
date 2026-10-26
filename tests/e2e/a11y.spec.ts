@@ -42,7 +42,7 @@ for (const width of [360, 1280]) {
       await restoreSeed(page, 150);
 
       await page.goto('/');
-      await expect(page.getByRole('link', { name: 'Tekrara başla' })).toBeVisible();
+      await expect(page.getByTestId('start-study')).toBeVisible();
       await check(page, 'home', tag);
 
       await page.goto('/review');

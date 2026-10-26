@@ -4,7 +4,7 @@ export * from './tokens';
 export * from './theme';
 
 export { AppShell, type AppShellProps } from './AppShell';
-export { navItems, type NavItem } from './nav';
+export { isNavActive, navItems, type NavItem, type NavLinkItem } from './nav';
 export { Badge, type BadgeProps, type BadgeTone } from './Badge';
 export { Button, type ButtonProps } from './Button';
 export { buttonClasses, type ButtonSize, type ButtonVariant } from './button-styles';

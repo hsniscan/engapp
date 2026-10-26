@@ -1,42 +1,44 @@
-import { createBrowserRouter, Navigate, redirect, type RouteObject } from 'react-router';
+import { createBrowserRouter, redirect, type RouteObject } from 'react-router';
 import { RootLayout, type RouteHandle } from './RootLayout';
 import { AuthPage } from '@/features/auth/AuthPage';
 import { HomeScreen } from '@/features/home/HomeScreen';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { RouteErrorPage } from './pages/RouteErrorPage';
+import { LEGACY_PATHS, legacyRedirect } from './redirects';
 
-/** The review session is the most used screen: its chunk is fetched while the browser is idle. */
-const loadReview = () => import('@/features/review/StudyRoute');
+/** The study session is the most used screen: its chunk is fetched while the browser is idle. */
+const loadStudy = () => import('@/features/review/StudyRoute');
 if (typeof window !== 'undefined') {
   const idle = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 1500));
-  idle(() => void loadReview().catch(() => {}));
+  idle(() => void loadStudy().catch(() => {}));
 }
 
+/** A route that only sends an old address to its new home (src/app/redirects.ts). */
+const legacy = (path: (typeof LEGACY_PATHS)[number]): RouteObject => ({
+  path,
+  loader: ({ request }) => {
+    const url = new URL(request.url);
+    return redirect(legacyRedirect(url.pathname, url.search) ?? '/');
+  },
+});
+
 /*
- * Placeholder pages live in src/app/pages. Feature agents replace each `element` with the
- * real screen from src/features/<feature>.
+ * Information architecture of the redesign (five places): Bugün `/` · Desteler `/decks` ·
+ * (+) the Add sheet (a modal, not a route) · İlerleme `/progress` · Profil `/profile`.
+ * Feature screens are lazy chunks; the names below are the agreed exports of each feature.
  */
 const children: RouteObject[] = [
   { index: true, element: <HomeScreen /> },
+
+  // ---- Study: /study?mode=word|production|cloze runs a session; /study alone is the picker.
   {
-    path: 'review',
-    handle: { immersive: true } satisfies RouteHandle,
-    HydrateFallback: () => null,
-    lazy: async () => ({ Component: (await loadReview()).ReviewRoute }),
-  },
-  {
-    // Redesign: /study?mode=word|production|cloze|mixed, no mode = the StudyModes picker.
     path: 'study',
-    handle: { immersive: true } satisfies RouteHandle,
+    handle: {
+      immersive: (search) => search.has('mode'),
+      exitTo: '/',
+    } satisfies RouteHandle,
     HydrateFallback: () => null,
-    lazy: async () => ({ Component: (await loadReview()).StudyRoute }),
-  },
-  {
-    path: 'more',
-    HydrateFallback: () => null,
-    lazy: async () => ({
-      Component: (await import('@/features/extra/MoreStudyPage')).MoreStudyPage,
-    }),
+    lazy: async () => ({ Component: (await loadStudy()).StudyRoute }),
   },
   {
     path: 'practice',
@@ -46,6 +48,41 @@ const children: RouteObject[] = [
       Component: (await import('@/features/practice/PracticeScreen')).PracticeRoute,
     }),
   },
+
+  // ---- Desteler: ?tab=mine|discover|bank; a deck; a suggested deck; all my words.
+  {
+    path: 'decks',
+    HydrateFallback: () => null,
+    lazy: async () => ({ Component: (await import('@/features/decks/DecksPage')).DecksPage }),
+  },
+  {
+    // AI theme grouping of the user's words (Destelerim → "AI ile temalara ayır").
+    path: 'decks/themes',
+    HydrateFallback: () => null,
+    lazy: async () => ({ Component: (await import('@/features/decks/ThemesPage')).ThemesPage }),
+  },
+  {
+    path: 'decks/suggested/:key',
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/decks/SuggestedDeckPage')).SuggestedDeckPage,
+    }),
+  },
+  {
+    path: 'decks/:id',
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/decks/DeckDetailPage')).DeckDetailPage,
+    }),
+  },
+  {
+    // "Tüm kelimelerim" (reached from Desteler and Profil).
+    path: 'library',
+    HydrateFallback: () => null,
+    lazy: async () => ({ Component: (await import('@/features/cards/LibraryPage')).LibraryPage }),
+  },
+
+  // ---- Adding: the sheet leads into these flows.
   {
     path: 'add',
     HydrateFallback: () => null,
@@ -65,42 +102,8 @@ const children: RouteObject[] = [
       Component: (await import('@/features/import/ImportPreviewPage')).ImportPreviewPage,
     }),
   },
-  // Kelime Bankası (decision 0038) is the third segment of Desteler now.
-  { path: 'kelime-bankasi', element: <Navigate to="/decks?tab=bank" replace /> },
-  {
-    path: 'library',
-    HydrateFallback: () => null,
-    lazy: async () => ({ Component: (await import('@/features/cards/LibraryPage')).LibraryPage }),
-  },
-  {
-    path: 'decks',
-    HydrateFallback: () => null,
-    lazy: async () => ({ Component: (await import('@/features/decks/DecksPage')).DecksPage }),
-  },
-  {
-    path: 'decks/suggested/:key',
-    HydrateFallback: () => null,
-    lazy: async () => ({
-      Component: (await import('@/features/decks/SuggestedDeckPage')).SuggestedDeckPage,
-    }),
-  },
-  {
-    path: 'decks/:id',
-    HydrateFallback: () => null,
-    lazy: async () => ({
-      Component: (await import('@/features/decks/DeckDetailPage')).DeckDetailPage,
-    }),
-  },
-  {
-    path: 'decks/themes',
-    HydrateFallback: () => null,
-    lazy: async () => ({ Component: (await import('@/features/decks/ThemesPage')).ThemesPage }),
-  },
-  {
-    // Old "İstatistik" address: the tabs (?tab=gelisim|rapor) carry over.
-    path: 'stats',
-    loader: ({ request }) => redirect(`/progress${new URL(request.url).search}`),
-  },
+
+  // ---- İlerleme
   {
     path: 'progress',
     HydrateFallback: () => null,
@@ -108,6 +111,8 @@ const children: RouteObject[] = [
       Component: (await import('@/features/stats/ProgressPage')).ProgressPage,
     }),
   },
+
+  // ---- Profil and its settings (gear on Profil → /settings, sub-pages /settings/:section).
   {
     path: 'profile',
     HydrateFallback: () => null,
@@ -120,22 +125,6 @@ const children: RouteObject[] = [
     HydrateFallback: () => null,
     lazy: async () => ({
       Component: (await import('@/features/settings/SettingsIndexPage')).SettingsIndexPage,
-    }),
-  },
-  {
-    // One settings sub-page; old slugs (/settings/profile) are redirected by the page itself.
-    path: 'settings/:section',
-    HydrateFallback: () => null,
-    lazy: async () => ({
-      Component: (await import('@/features/settings/SettingsSectionPage')).SettingsSectionPage,
-    }),
-  },
-  {
-    path: 'level-test',
-    handle: { immersive: true } satisfies RouteHandle,
-    HydrateFallback: () => null,
-    lazy: async () => ({
-      Component: (await import('@/features/leveltest/LevelTestScreen')).LevelTestRoute,
     }),
   },
   {
@@ -153,8 +142,23 @@ const children: RouteObject[] = [
     }),
   },
   {
+    path: 'settings/:section',
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/settings/SettingsSectionPage')).SettingsSectionPage,
+    }),
+  },
+  {
+    path: 'level-test',
+    handle: { immersive: true } satisfies RouteHandle,
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/leveltest/LevelTestScreen')).LevelTestRoute,
+    }),
+  },
+  {
     path: 'admin/images',
-    // Entered from Ayarlar → Gelişmiş (/settings/gelismis): the top bar's ✕ goes back there (the page has no
+    // Entered from Ayarlar → Gelişmiş: the top bar's ✕ goes back there (the page has no
     // back arrow of its own, like every other immersive screen).
     handle: {
       immersive: true,
@@ -173,6 +177,9 @@ const children: RouteObject[] = [
     HydrateFallback: () => null,
     lazy: async () => ({ Component: (await import('@/features/share/SharePage')).SharePage }),
   },
+
+  // ---- Old addresses (four-tab app): redirect to their new homes.
+  ...LEGACY_PATHS.map(legacy),
 ];
 
 children.push({ path: '*', element: <NotFoundPage /> });

@@ -11,11 +11,11 @@ test('daily new-card limit in Ayarlar changes the "Yeni" count on the home scree
 }) => {
   for (const w of MORE) await addWord(page, w);
   await page.goto('/');
-  const today = page.getByRole('region', { name: 'Bugünün tekrarı' });
-  const newCount = today
-    .locator('dt', { hasText: /^Yeni$/ })
-    .locator('xpath=following-sibling::dd');
-  const initial = Number(await newCount.textContent());
+  // "N tekrar · M yeni · yaklaşık K dk" in the hero.
+  const newCount = page.getByTestId('today-hero').getByText(/ tekrar · \d+ yeni/);
+  const newOf = async () => Number(/· (\d+) yeni/.exec((await newCount.textContent()) ?? '')![1]);
+  await expect(newCount).toBeVisible();
+  const initial = await newOf();
   expect(initial).toBeGreaterThan(2);
 
   await page.goto('/settings/calisma');
@@ -27,8 +27,8 @@ test('daily new-card limit in Ayarlar changes the "Yeni" count on the home scree
   await expect(page.getByText('2 kart', { exact: true })).toBeVisible();
   await page.waitForTimeout(600); // the slider saves 400 ms after the last change
 
-  await page.getByRole('link', { name: 'Ana', exact: true }).first().click();
-  await expect(newCount).toHaveText('2');
+  await page.getByRole('link', { name: 'Bugün', exact: true }).first().click();
+  await expect(newCount).toContainText('· 2 yeni');
 
   // 0 = no new cards today.
   await page.goto('/settings/calisma');
@@ -37,7 +37,7 @@ test('daily new-card limit in Ayarlar changes the "Yeni" count on the home scree
   await expect(page.getByText('Yeni kart yok', { exact: true })).toBeVisible();
   await page.waitForTimeout(600);
   await page.goto('/');
-  await expect(page.getByText('Bugünlük bitti')).toBeVisible();
+  await expect(page.getByTestId('today-hero-done')).toContainText('Bugün tekrar yok');
 });
 
 test('theme switch persists across a reload (stored before first paint, no flash)', async ({

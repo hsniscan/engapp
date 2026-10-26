@@ -95,7 +95,7 @@ test('guest, offline: the offered level test sets the level, the counter and the
     expect(['A1', 'A2', 'B1', 'B2']).toContain(k.cefr_at_mark);
   }
 
-  // Home: the offer is gone; with a card the counter shows "C1'e ~… kelime kaldı".
+  // Home: the offer is gone.
   await page.getByRole('link', { name: 'Ana sayfaya dön' }).click();
   await expect(page.getByRole('heading', { name: 'Hoş geldin', level: 1 })).toBeVisible();
   await expect(page.getByTestId('level-offer')).toHaveCount(0);
@@ -103,13 +103,13 @@ test('guest, offline: the offered level test sets the level, the counter and the
   await context.setOffline(false);
   await addWord(page, { term: 'cope', meaning: 'başa çıkmak' });
   await page.goto('/');
-  const tile = page.getByTestId('vocab-tile');
-  await expect(tile).toBeVisible();
-  await expect(tile.getByTestId('vocab-next')).toHaveText(/^C1'e ~[\d.]+ kelime kaldı$/);
-  await tile.getByRole('button', { name: 'Nasıl hesaplanıyor?' }).click();
-  const dialog = page.getByRole('dialog', { name: 'Kelime sayacı nasıl hesaplanıyor?' });
-  await expect(dialog.getByRole('table')).toContainText('Toplam');
-  await dialog.getByRole('button', { name: 'Tamam' }).click();
+  // The Bugün goals card shows the measured level, the next one as the target, and no longer
+  // offers to measure it. (The vocabulary counter, VocabTile, left the home screen in the
+  // redesign; it keeps its unit tests until İlerleme hosts it.)
+  const goals = page.getByTestId('home-goals');
+  await expect(goals).toContainText('Seviye tahmini: B2');
+  await expect(goals).toContainText('Hedef C1');
+  await expect(goals.getByRole('link', { name: /Seviyeni ölç/ })).toHaveCount(0);
 
   // Settings → Seviye: where the level came from, and the known words (remove one).
   await page.goto('/settings/seviye');

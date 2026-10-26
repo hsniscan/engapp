@@ -35,3 +35,4 @@ export function useWordStages(): WordStagesView | undefined {
 
 /** Alias kept for callers written against the stub. */
 export type WordStageCounts = WordStagesView;
+export type WordStages = WordStagesView;

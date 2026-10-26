@@ -5,6 +5,8 @@ import {
   REPORT_GOAL_KEYS,
   type ReportGoalKey,
 } from '../../supabase/functions/_shared/report-contracts';
+import { CEFR_ORDER } from './deckFilter';
+import type { CefrLevel } from './types';
 
 export const GOAL_KEYS = REPORT_GOAL_KEYS;
 export type GoalKey = ReportGoalKey;
@@ -14,6 +16,34 @@ export interface Goals {
   week_active_days?: number | null;
   month_new_terms?: number | null;
   week_minutes?: number | null;
+  /**
+   * Home-screen goals of the redesign, outside the weekly report (GOAL_KEYS): minutes a day
+   * and the level the user aims for. Same JSON column, no schema change.
+   */
+  day_minutes?: number | null;
+  target_level?: CefrLevel | null;
+}
+
+/** settings.goals.day_minutes: what the user can set. */
+export const DAY_MINUTES_LIMITS = { min: 5, max: 240, step: 5 } as const;
+
+/** The level aimed for: the stored goal, else the next level after `level` (C2 stays C2). */
+export function targetLevel(goals: Goals | null | undefined, level: CefrLevel): CefrLevel {
+  const set = goals?.target_level;
+  if (set && (CEFR_ORDER as readonly string[]).includes(set)) return set;
+  const i = CEFR_ORDER.indexOf(level);
+  return CEFR_ORDER[Math.min(CEFR_ORDER.length - 1, i + 1)]!;
+}
+
+/** The daily minutes goal when it is set and valid, else null. */
+export function dayMinutesGoal(goals: Goals | null | undefined): number | null {
+  const v = goals?.day_minutes;
+  return typeof v === 'number' &&
+    Number.isInteger(v) &&
+    v >= DAY_MINUTES_LIMITS.min &&
+    v <= DAY_MINUTES_LIMITS.max
+    ? v
+    : null;
 }
 
 /** Values the user can set. */
