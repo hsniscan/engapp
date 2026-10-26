@@ -6,6 +6,7 @@
 //
 // loadKnowledge() is the contract the graded library (İP5) and the daily story (İP8) use;
 // loadReaderKnowledge() adds what the reader needs to colour a text and count encounters.
+import type { LevelData } from '../domain/level';
 import { buildKnowledge, type Knowledge, type KnowledgeModel } from '../domain/knowledgeModel';
 import { LEVELS } from '../domain/levelTest';
 import { priorFor } from '../domain/levelUpdate';
@@ -62,17 +63,20 @@ export function resetKnowledgeCache(): void {
   bandCache = null;
 }
 
-async function levelsOrNull() {
+async function levelsOrNull(load: () => Promise<LevelData>) {
   try {
-    const data = levelDataNow() ?? (await loadLevelData());
+    const data = levelDataNow() ?? (await load());
     return { lookup: data.lookup, minZipf: data.minZipf };
   } catch {
     return null; // offline before the level file was ever fetched
   }
 }
 
-export async function loadReaderKnowledge(now: Millis = Date.now()): Promise<ReaderKnowledge> {
-  const [levels, bands, settings] = await Promise.all([levelsOrNull(), bandKnown(now), getSettings(now)]);
+export async function loadReaderKnowledge(
+  now: Millis = Date.now(),
+  loadLevels: () => Promise<LevelData> = () => loadLevelData(),
+): Promise<ReaderKnowledge> {
+  const [levels, bands, settings] = await Promise.all([levelsOrNull(loadLevels), bandKnown(now), getSettings(now)]);
   const { notes, cards, known } = await db.transaction('r', [db.notes, db.cards, db.known_terms], async () => ({
     notes: await db.notes.toArray(),
     cards: await db.cards.toArray(),

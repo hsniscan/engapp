@@ -64,7 +64,7 @@ export function nudgeOffset(current: number, prev: TextFeedback | null, next: Te
   const base = Number.isFinite(current) ? current : 0;
   const v = base - step(prev) + step(next);
   const bounded = Math.min(READING_OFFSET_MAX, Math.max(-READING_OFFSET_MAX, v));
-  return Math.round(bounded * 100) / 100;
+  return Math.round(bounded * 100) / 100 || 0; // never -0
 }
 
 /** Reading time added by one foreground stretch; long idle gaps count as at most `cap`. */
