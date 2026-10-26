@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { buildKnowledge } from './knowledgeModel';
 import { parseClientLevels } from './level';
@@ -107,5 +108,38 @@ describe('knownPercent', () => {
     expect(knownPercent({ tokens: 100, unknownRate: 0.041, unknownLemmas: [] })).toBe(95);
     expect(knownPercent({ tokens: 100, unknownRate: 0.04, unknownLemmas: [] })).toBe(96);
     expect(knownPercent({ tokens: 0, unknownRate: 0, unknownLemmas: [] })).toBe(100);
+  });
+});
+
+describe('speed (acceptance criterion 1)', () => {
+  it('a 1 000-word text with 300 of the user’s words and phrases is drawn in well under a second', () => {
+    const file = readFileSync('data/levels/client-levels.tsv', 'utf8');
+    const real = parseClientLevels(file);
+    const words = file
+      .split('\n')
+      .filter((l) => l && !l.startsWith('#'))
+      .map((l) => l.split('\t')[0]!)
+      .filter((w) => /^[a-z]+$/.test(w));
+    const stages: [string, WordStage][] = words
+      .slice(0, 300)
+      .map((w, i) => [i % 10 === 0 ? `${w} up` : w, i % 2 ? 'learning' : 'consolidating']);
+    const body = Array.from({ length: 1000 }, (_, i) => words[(i * 7919) % words.length]!)
+      .map((w, i) => (i % 15 === 14 ? `${w}.` : w))
+      .join(' ');
+    const start = performance.now();
+    const k = buildKnowledge({
+      stages: new Map(stages),
+      known: new Set(),
+      bandKnown: { A1: 0.97, A2: 0.92, B1: 0.75, B2: 0.35, C1: 0.12, C2: 0.04 },
+      levels: { lookup: real.lookup, minZipf: real.minZipf },
+      offset: 0,
+    });
+    const v = buildReaderView(
+      tokenizeReaderText(body),
+      k,
+      stages.map(([t]) => t),
+    );
+    expect(performance.now() - start).toBeLessThan(1000);
+    expect(v.marks).toHaveLength(1000);
   });
 });
