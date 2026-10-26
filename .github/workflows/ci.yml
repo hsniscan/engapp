@@ -19,6 +19,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Every npm package's licence against the allowlist (decision 0053).
+      - run: node scripts/check-licenses.ts
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm test
