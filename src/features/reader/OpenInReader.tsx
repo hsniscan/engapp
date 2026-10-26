@@ -1,7 +1,7 @@
 // "Okuyucuda aç" in the paste and PDF flows (v0.5 İP1): the text is stored on this device
 // (and in the user's own sync) and opens in the reader. No AI and no account needed, so it
 // works offline and for guests too.
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { logError, saveText } from '@/data';
@@ -22,6 +22,10 @@ function useOpenInReader() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
+  // The reader's code is fetched while the user pastes, so it opens at once (and offline).
+  useEffect(() => {
+    void import('./ReaderPage').catch(() => {});
+  }, []);
   const open = async (input: NewText) => {
     setBusy(true);
     try {

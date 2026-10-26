@@ -68,11 +68,10 @@ beforeEach(async () => {
 });
 afterEach(() => setLevelDataForTests(null));
 
-const openReader = (id: string) => renderRoute(<ReaderPage />, { path: '/oku/:textId', url: `/oku/${id}` });
+const openReader = (id: string) =>
+  renderRoute(<ReaderPage />, { path: '/oku/:textId', url: `/oku/${id}` });
 const word = (text: string) =>
-  within(screen.getByTestId('reader-text'))
-    .getAllByText(text, { selector: '[data-t]' })
-    .at(0)!;
+  within(screen.getByTestId('reader-text')).getAllByText(text, { selector: '[data-t]' }).at(0)!;
 
 describe('ReaderPage', () => {
   it('colours the text, shows the coverage and counts the encounters once per opening', async () => {
@@ -80,11 +79,17 @@ describe('ReaderPage', () => {
     const id = await saveText({ kind: 'paste', title: 'A walk', body: BODY });
     const first = openReader(id);
     expect(await screen.findByRole('heading', { name: 'A walk' })).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByTestId('reader-coverage')).toHaveTextContent(/Bu metnin %\d+'sını biliyorsun/));
+    await waitFor(() =>
+      expect(screen.getByTestId('reader-coverage')).toHaveTextContent(
+        /Bu metnin %\d+'sını biliyorsun/,
+      ),
+    );
     await waitFor(() => expect(word('serendipity')).toHaveAttribute('data-mark', 'new'));
     expect(word('cope')).toHaveAttribute('data-mark', 'learning');
     expect(word('walk')).not.toHaveAttribute('data-mark');
-    await waitFor(async () => expect(await db.encounters.where('note_id').equals(cope.note.id).count()).toBe(1));
+    await waitFor(async () =>
+      expect(await db.encounters.where('note_id').equals(cope.note.id).count()).toBe(1),
+    );
     first.unmount();
     // Same opening rendered again: nothing more is counted.
     openReader(id);
@@ -130,7 +135,9 @@ describe('ReaderPage', () => {
     await user.click(word('walk'));
     const sheet = await screen.findByRole('dialog');
     await user.click(within(sheet).getByRole('button', { name: 'Sonrakiyle →' }));
-    await waitFor(() => expect(screen.getByRole('dialog', { name: 'walk my' })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('dialog', { name: 'walk my' })).toBeInTheDocument(),
+    );
   });
 
   it('finishing, "çok zor" and reading again', async () => {
@@ -162,7 +169,9 @@ describe('useListenAlong', () => {
       prefetch: vi.fn(),
       cancel: vi.fn(),
     };
-    const { result } = renderHook(() => useListenAlong(['A one.', '—', 'B two.', 'C three.'], 'en-US', true, deps));
+    const { result } = renderHook(() =>
+      useListenAlong(['A one.', '—', 'B two.', 'C three.'], 'en-US', true, deps),
+    );
     act(() => void result.current.start(0));
     expect(result.current.current).toBe(0);
     act(() => done.shift()!());
@@ -181,11 +190,17 @@ describe('Okuma tab and Bugünün okuması', () => {
   it('lists my texts with their progress and deletes one', async () => {
     const user = userEvent.setup();
     const a = await saveText({ kind: 'paste', title: 'First text', body: BODY }, 1000);
-    const b = await saveText({ kind: 'pdf', title: 'Book', body: BODY, source_url: 'book.pdf' }, 2000);
+    const b = await saveText(
+      { kind: 'pdf', title: 'Book', body: BODY, source_url: 'book.pdf' },
+      2000,
+    );
     await setTextFinished(b, true, 3000);
     renderRoute(<ReadingTab />);
     const list = await screen.findByTestId('my-texts');
-    expect(within(list).getByRole('link', { name: /First text/ })).toHaveAttribute('href', `/oku/${a}`);
+    expect(within(list).getByRole('link', { name: /First text/ })).toHaveAttribute(
+      'href',
+      `/oku/${a}`,
+    );
     expect(within(list).getByText('Bitti')).toBeInTheDocument();
     await user.click(within(list).getByRole('button', { name: '"First text" metnini sil' }));
     await user.click(await screen.findByRole('button', { name: 'Sil' }));
@@ -196,7 +211,10 @@ describe('Okuma tab and Bugünün okuması', () => {
   it('Desteler has the Okuma segment', async () => {
     renderRoute(<DecksPage />, { path: '/decks', url: '/decks?tab=reading' });
     const nav = screen.getByRole('navigation', { name: 'Deste görünümü' });
-    expect(within(nav).getByRole('link', { name: 'Okuma' })).toHaveAttribute('aria-current', 'page');
+    expect(within(nav).getByRole('link', { name: 'Okuma' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
     expect(await screen.findByRole('heading', { name: 'Metinlerim' })).toBeInTheDocument();
   });
 
@@ -206,13 +224,15 @@ describe('Okuma tab and Bugünün okuması', () => {
     unmount();
     const id = await saveText({ kind: 'paste', title: 'A walk', body: BODY });
     renderRoute(<TodayReadingCard />);
-    expect(await screen.findByRole('link', { name: /A walk/ })).toHaveAttribute('href', `/oku/${id}`);
+    expect(await screen.findByRole('link', { name: /A walk/ })).toHaveAttribute(
+      'href',
+      `/oku/${id}`,
+    );
   });
 });
 
 describe('Okuyucuda aç', () => {
-  const panel = () =>
-    renderRoute(<TextImportPanel />, { path: '*', url: '/add?tab=paste' });
+  const panel = () => renderRoute(<TextImportPanel />, { path: '*', url: '/add?tab=paste' });
 
   it('a guest pastes a text and it opens in the reader (no account, no AI)', async () => {
     const user = userEvent.setup();
@@ -225,7 +245,11 @@ describe('Okuyucuda aç', () => {
     await user.click(screen.getByRole('button', { name: 'Okuyucuda aç' }));
     await waitFor(() => expect(router.state.location.pathname).toMatch(/^\/oku\//));
     const id = router.state.location.pathname.split('/')[2]!;
-    expect(await getText(id)).toMatchObject({ kind: 'paste', title: 'The cat sat on the mat.', body: 'The cat sat on the mat.' });
+    expect(await getText(id)).toMatchObject({
+      kind: 'paste',
+      title: 'The cat sat on the mat.',
+      body: 'The cat sat on the mat.',
+    });
   });
 
   it('signed in: next to "Kelimeleri çıkar" in the paste form', async () => {

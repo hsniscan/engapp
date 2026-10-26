@@ -266,14 +266,14 @@ function SheetBody({
           {lookup.info.ipa && (
             <p className="text-sm text-fg-muted">/{lookup.info.ipa.replace(/^\/|\/$/g, '')}/</p>
           )}
+          <h3 id={listId} className="sr-only">
+            {t('reader.word.meanings')}
+          </h3>
           <ul
             aria-labelledby={listId}
-            className="flex flex-col gap-1.5"
+            className="-mt-4 flex flex-col gap-1.5"
             data-testid="reader-meanings"
           >
-            <span id={listId} className="sr-only">
-              {t('reader.word.meanings')}
-            </span>
             {lookup.info.meanings.slice(0, 4).map((m, i) => {
               const selectable = !noteId && lookup.info.meanings.length > 1;
               return (
