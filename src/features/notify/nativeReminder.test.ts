@@ -74,7 +74,7 @@ describe('native reminder', () => {
     expect(port.scheduled[0]).toMatchObject({
       id: REMINDER_ID,
       at: Date.UTC(2026, 9, 20, 16),
-      body: 'Bugün 2 tekrar seni bekliyor (~1 dk)',
+      body: 'Bugün 2 kart tekrara hazır, yaklaşık 1 dk.',
       url: '/review',
     });
     expect(clean).toHaveBeenCalledWith('u1');

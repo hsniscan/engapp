@@ -11,7 +11,7 @@ import { getReminderFacts, type ReminderFacts } from '@/data/reminder';
 import { getReminderCards } from '@/data/widget';
 import { dayKeyOf } from '@/domain/day';
 import { parseNotify } from '@/domain/notify';
-import { planReminders, REMINDER_CHAIN, type PlannedReminder } from '@/domain/reminderSchedule';
+import { onePerDay, planReminders, REMINDER_CHAIN, type PlannedReminder } from '@/domain/reminderSchedule';
 import type { Millis } from '@/domain/types';
 import { dayConfig } from '@/data/settings';
 
@@ -149,19 +149,22 @@ export function planFromFacts(
 ): PlannedReminder[] {
   if (!state.enabled) return [];
   const pref = parseNotify(facts.settings.notify);
-  return planReminders({
+  const shown = shownDay(state, now);
+  // One a day, the card question included (v0.5 İP10): the rule already plans so; the budget
+  // check keeps it so whatever the plan.
+  return onePerDay(planReminders({
     candidate: {
       timezone: facts.settings.timezone,
       day_start_hour: facts.settings.day_start_hour,
       notify: { enabled: true, mode: pref?.mode ?? 'auto', hour: pref?.hour ?? null },
       vacation: facts.settings.vacation ?? null,
       last_review_at: facts.lastReviewAt,
-      last_push_day: shownDay(state, now),
+      last_push_day: shown,
     },
     dueTimes: facts.dueTimes,
     secPerCard: facts.secPerCard,
     now,
-  });
+  }), shown);
 }
 
 export interface RescheduleDeps {
