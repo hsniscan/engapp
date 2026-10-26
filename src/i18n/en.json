@@ -2239,13 +2239,13 @@
     "rule": "Each topic you pick gets 3 points. Each text you import adds 1 point to its topic; a liked example sentence adds 0.5 and a skipped one takes away 0.25. Text and sentence points halve every 60 days, so the profile follows what interests you now. A turned-off topic is 0.",
     "ruleUse": "The profile is calculated from data already on your device and in your account; it is not sent anywhere else.",
     "promptTitle": "Which topics interest you?",
-    "promptBody": "Pick a few topics and example sentences will start with them. You can change them later in Settings → Profile.",
+    "promptBody": "Pick a few topics and example sentences will start with them. You can change them later in Profile → Your interests.",
     "promptSave": "Save",
     "promptSaveCount_one": "Save {{count}} topic",
     "promptSaveCount_other": "Save {{count}} topics",
     "promptLater": "Not now",
     "saved": "Interests saved",
-    "savedHint": "Change them any time in Settings → Profile.",
+    "savedHint": "Change them any time in Profile → Your interests.",
     "settingsLabel": "Interests",
     "settingsNone": "No topics yet.",
     "settingsMore_one": "{{list}} and {{count}} more topic",
@@ -2278,7 +2278,7 @@
       "goalsTitle": "Your goals",
       "goalsEdit": "Edit",
       "goalsSet": "Set a goal",
-      "goalsNone": "Choose how many days or minutes a week to study, or how many new words a month to learn.",
+      "goalsNone": "Choose how many minutes a day and days a week to study, how many new words a month to learn and the level you aim for.",
       "interestsTitle": "Your interests",
       "interestsEdit": "Edit",
       "interestsChosen": "Chosen interests",
@@ -2299,7 +2299,10 @@
         "week_minutes_other": "{{count}} min a week",
         "month_new_terms_one": "{{count}} new word a month",
         "month_new_terms_other": "{{count}} new words a month"
-      }
+      },
+      "goalDay_one": "{{count}} min a day",
+      "goalDay_other": "{{count}} min a day",
+      "goalLevel": "Target level {{level}}"
     }
   },
   "decks": {

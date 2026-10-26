@@ -19,10 +19,12 @@ import {
   buttonClasses,
   DropdownMenu,
   EmptyState,
+  Icon,
   IconButton,
   ProgressBar,
   Skeleton,
   toast,
+  Tooltip,
 } from '@/ui';
 import { ClozeStudy } from './ClozeStudy';
 import { flipsWithSpace, learnedInSession, resetChoiceCandidates } from './study';
@@ -223,22 +225,32 @@ export function ReviewScreen({ studyMode, ahead = false, deckId }: ReviewScreenP
     />
   );
 
-  if (state.phase === 'loading') return <StudySkeleton />;
+  if (state.phase === 'loading')
+    return (
+      <>
+        <CloseRow />
+        <StudySkeleton />
+      </>
+    );
 
   if (state.phase === 'done') {
     const answers = session.getAnswers();
     if (answers.length === 0)
       return (
-        <StudyEmpty
-          studyMode={studyMode}
-          ahead={ahead}
-          deckName={deckName ?? null}
-          canUndo={state.canUndo}
-          onUndo={doUndo}
-        />
+        <>
+          <CloseRow />
+          <StudyEmpty
+            studyMode={studyMode}
+            ahead={ahead}
+            deckName={deckName ?? null}
+            canUndo={state.canUndo}
+            onUndo={doUndo}
+          />
+        </>
       );
     return (
       <>
+        <CloseRow />
         {afterAgain && (
           <div className="mx-auto w-full max-w-xl px-4 pt-3 sm:px-6">{afterAgain}</div>
         )}
@@ -264,7 +276,7 @@ export function ReviewScreen({ studyMode, ahead = false, deckId }: ReviewScreenP
   };
 
   const top = (
-    <div className="flex flex-col gap-1 pt-2 pb-2">
+    <div className="safe-top flex flex-col gap-1 pt-2 pb-2">
       <h1 className="sr-only">
         {studyMode ? t(`study.mode.${studyMode}.name`) : t('review.title')}
       </h1>
@@ -281,6 +293,7 @@ export function ReviewScreen({ studyMode, ahead = false, deckId }: ReviewScreenP
         </div>
       )}
       <div className="flex items-center gap-2">
+        <StudyClose />
         <ProgressBar
           value={state.answered}
           max={Math.max(1, total)}
@@ -395,6 +408,35 @@ function CardPlaceholder() {
     >
       <Skeleton className="h-9 w-40" />
       <Skeleton className="w-56" />
+    </div>
+  );
+}
+
+/**
+ * "Oturumu bitir" (×): the study screen draws its own top row (route handle ownTopBar), so the
+ * close button sits beside the progress as on the boards, with no second bar above it.
+ */
+function StudyClose() {
+  const { t } = useTranslation();
+  return (
+    <Tooltip content={t('review.endSession')}>
+      <Link
+        to="/"
+        aria-label={t('review.endSession')}
+        data-testid="study-close"
+        className="-ml-2 inline-flex size-11 shrink-0 items-center justify-center rounded-control text-fg-muted hover:bg-hover hover:text-fg"
+      >
+        <Icon name="x" size={22} />
+      </Link>
+    </Tooltip>
+  );
+}
+
+/** The top row outside a running session (loading, nothing to study, the summary). */
+function CloseRow() {
+  return (
+    <div className="safe-top mx-auto flex h-14 w-full max-w-xl items-center px-4 sm:px-6">
+      <StudyClose />
     </div>
   );
 }

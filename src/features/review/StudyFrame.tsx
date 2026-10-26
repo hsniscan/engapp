@@ -59,7 +59,7 @@ export function StudyFrame({ top, children, footer, scrollLabel }: StudyFramePro
       <div
         ref={ref}
         data-testid="study-frame"
-        className="flex h-[calc(100dvh-3.5rem-env(safe-area-inset-top))] flex-col overflow-hidden bg-canvas"
+        className="flex h-dvh flex-col overflow-hidden bg-canvas"
         style={height === null ? undefined : { height }}
       >
         <div className="mx-auto w-full max-w-xl shrink-0 px-4 sm:px-6">{top}</div>

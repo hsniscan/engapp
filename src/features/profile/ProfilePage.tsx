@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router';
 import { db, getGoalsView, getStreakSummary } from '@/data';
-import type { GoalProgress } from '@/domain/goals';
+import { dayMinutesGoal, type GoalProgress } from '@/domain/goals';
 import { Avatar } from '@/features/auth/Avatar';
 import { useAuth } from '@/features/auth/session';
 import { formatDate, useLevelOverview } from '@/features/leveltest/levelText';
@@ -200,7 +200,9 @@ function GoalsCard() {
       setParams(next, { replace: true });
     }
   };
-  const has = !!view && view.progress.length > 0;
+  const day = view ? dayMinutesGoal(view.goals) : null;
+  const level = view?.goals.target_level ?? null;
+  const has = !!view && (view.progress.length > 0 || day !== null || level !== null);
   return (
     <section
       aria-labelledby="profile-goals"
@@ -222,11 +224,25 @@ function GoalsCard() {
       {!view ? (
         <Skeleton className="h-20 w-full" />
       ) : has ? (
-        <ul className="grid grid-cols-3 gap-2">
-          {view.progress.map((p) => (
-            <GoalRing key={p.key} progress={p} />
-          ))}
-        </ul>
+        <>
+          {view.progress.length > 0 && (
+            <ul className="grid grid-cols-3 gap-2">
+              {view.progress.map((p) => (
+                <GoalRing key={p.key} progress={p} />
+              ))}
+            </ul>
+          )}
+          {(day !== null || level !== null) && (
+            <p className="text-sm text-fg-muted" data-testid="profile-home-goals">
+              {[
+                day !== null ? t('profile.home.goalDay', { count: day }) : null,
+                level !== null ? t('profile.home.goalLevel', { level }) : null,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
+          )}
+        </>
       ) : (
         <p className="text-[0.9375rem] text-fg-muted">{t('profile.home.goalsNone')}</p>
       )}

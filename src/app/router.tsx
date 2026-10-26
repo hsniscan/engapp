@@ -35,6 +35,8 @@ const children: RouteObject[] = [
     path: 'study',
     handle: {
       immersive: (search) => search.has('mode'),
+      // The session draws its own top row (× beside the progress, as on the boards).
+      ownTopBar: true,
       exitTo: '/',
     } satisfies RouteHandle,
     HydrateFallback: () => null,

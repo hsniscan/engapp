@@ -22,7 +22,9 @@ test('offline: review, add a card and open stats; back online the outbox is push
   for (const w of WORDS.slice(0, 2)) await addWord(page, w);
   await expect.poll(() => backend.pushedIds('notes').length, { timeout: 15_000 }).toBe(2);
   await page.goto('/');
-  await expect(page.getByTestId('start-study')).toBeVisible();
+  // The home screen builds several study queues at once; on a loaded CI machine that has taken
+  // longer than the default 10 s (seen once in a full parallel run).
+  await expect(page.getByTestId('start-study')).toBeVisible({ timeout: 30_000 });
 
   // Airplane mode.
   backend.offline = true;

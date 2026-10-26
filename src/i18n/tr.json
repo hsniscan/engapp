@@ -2239,13 +2239,13 @@
     "rule": "Seçtiğin her konu 3 puan alır. Yüklediğin her metin kendi konusuna 1 puan ekler; beğendiğin örnek cümle 0,5 ekler, atladığın 0,25 düşürür. Metin ve cümle puanları 60 günde yarıya iner, böylece profil bugünkü ilgini yansıtır. Kapattığın konu 0 olur.",
     "ruleUse": "Profil, cihazında ve hesabında zaten olan verilerden hesaplanır; ayrıca bir yere gönderilmez.",
     "promptTitle": "Hangi konular ilgini çekiyor?",
-    "promptBody": "Birkaç konu seç; örnek cümlelerde önce bunlar gelsin. Sonra Ayarlar → Profil'den değiştirebilirsin.",
+    "promptBody": "Birkaç konu seç; örnek cümlelerde önce bunlar gelsin. Sonra Profil → İlgi alanların'dan değiştirebilirsin.",
     "promptSave": "Kaydet",
     "promptSaveCount_one": "{{count}} konuyu kaydet",
     "promptSaveCount_other": "{{count}} konuyu kaydet",
     "promptLater": "Şimdi değil",
     "saved": "İlgi alanların kaydedildi",
-    "savedHint": "Ayarlar → Profil'den istediğin zaman değiştirebilirsin.",
+    "savedHint": "Profil → İlgi alanların'dan istediğin zaman değiştirebilirsin.",
     "settingsLabel": "İlgi alanları",
     "settingsNone": "Henüz bir konu yok.",
     "settingsMore_one": "{{list}} ve {{count}} konu daha",
@@ -2278,7 +2278,7 @@
       "goalsTitle": "Hedeflerin",
       "goalsEdit": "Düzenle",
       "goalsSet": "Hedef koy",
-      "goalsNone": "Haftada kaç gün, kaç dakika çalışmak ya da ayda kaç yeni kelime öğrenmek istediğini seç.",
+      "goalsNone": "Günde kaç dakika, haftada kaç gün çalışmak, ayda kaç yeni kelime öğrenmek ve hangi seviyeye ulaşmak istediğini seç.",
       "interestsTitle": "İlgi alanların",
       "interestsEdit": "Düzenle",
       "interestsChosen": "Seçili ilgi alanları",
@@ -2299,7 +2299,10 @@
         "week_minutes_other": "Haftada {{count}} dk",
         "month_new_terms_one": "Ayda {{count}} yeni kelime",
         "month_new_terms_other": "Ayda {{count}} yeni kelime"
-      }
+      },
+      "goalDay_one": "Günde {{count}} dk",
+      "goalDay_other": "Günde {{count}} dk",
+      "goalLevel": "Hedef seviye {{level}}"
     }
   },
   "decks": {
