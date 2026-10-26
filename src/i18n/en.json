@@ -3277,5 +3277,14 @@
       "forgot": "I didn't",
       "saved": "Answer saved. It is counted when you open the app."
     }
+  },
+  "modes": {
+    "typed": {
+      "synonym": "Also right: a word with the same meaning",
+      "synonymNote": "This card's word:",
+      "typeInstead": "Type the answer",
+      "flipInstead": "Answer in my head, without typing",
+      "flipHint": "Say the word in your head, then look at the answer."
+    }
   }
 }

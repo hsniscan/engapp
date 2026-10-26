@@ -3277,5 +3277,14 @@
       "forgot": "Bilemedim",
       "saved": "Cevabın kaydedildi. Uygulamayı açınca işlenir."
     }
+  },
+  "modes": {
+    "typed": {
+      "synonym": "Bu da doğru: aynı anlamda bir kelime",
+      "synonymNote": "Bu kartın kelimesi:",
+      "typeInstead": "Yazarak cevapla",
+      "flipInstead": "Yazmadan, aklımdan cevapla",
+      "flipHint": "Kelimeyi aklından söyle, sonra cevaba bak."
+    }
   }
 }

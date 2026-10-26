@@ -2,7 +2,7 @@
 // choices from the user's own words, or a typed answer. Hints: the first letter and the
 // sentence's Turkish. The result marks the right choice and the user's pick, shows the word
 // with its meaning and pronunciation, and suggests a button.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type AnswerCheck, checkAnswer, suggestRating } from '@/domain/answerCheck';
 import { type ClozeChoice, pickClozeChoices } from '@/domain/clozeChoices';
@@ -11,6 +11,7 @@ import { posLabel } from '@/features/cards/labels';
 import { LeechHint } from '@/features/leech';
 import { cn, Icon } from '@/ui';
 import { Ipa, SpeakButton } from './CardFaces';
+import { useClozeAnswerMode } from './answerMode';
 import type { KindProps } from './kinds';
 import { AnswerInput, LetterDiff, VerdictLine } from './ProductionStudy';
 import { RatingBar } from './RatingBar';
@@ -23,6 +24,7 @@ import {
   PrimarySpeak,
 } from './StudyCards';
 import { loadChoiceCandidates, meaningOf, useModeLabel } from './study';
+import { checkTypedAnswer } from './typedCheck';
 
 /** undefined while loading; null when the collection is too small for choices. */
 function useChoices(kp: KindProps): ClozeChoice[] | null | undefined {
@@ -59,7 +61,11 @@ export function ClozeStudy(kp: KindProps) {
   const label = useModeLabel(view, false);
   const choices = useChoices(kp);
   const [picked, setPicked] = useState<number | null>(null);
-  const [typing, setTyping] = useState(false);
+  // "Yazarak cevapla" is remembered on this device (v0.5 İP9); choices are the default.
+  const [answerMode, setAnswerMode] = useClozeAnswerMode();
+  const typing = answerMode === 'type';
+  const setTyping = (f: (v: boolean) => boolean) => setAnswerMode(f(typing) ? 'type' : 'choose');
+  const checking = useRef(false);
   const [typed, setTyped] = useState('');
   const [hintShown, setHintShown] = useState(false);
   const [trShown, setTrShown] = useState(false);
@@ -68,17 +74,24 @@ export function ClozeStudy(kp: KindProps) {
   const sentence = view.sentence;
   const typingMode = typing || choices === null;
 
-  const checkTyped = (answer: string): AnswerCheck => {
-    const a = checkAnswer(answer, cloze.answer);
+  const checkTyped = async (answer: string): Promise<AnswerCheck> => {
+    const a = await checkTypedAnswer(answer, view, cloze.answer);
     const b = checkAnswer(answer, view.note.term);
     // The base form ("reopen" where the sentence has "reopened") is almost right.
-    return a.verdict !== 'correct' && b.verdict === 'correct' ? { ...a, verdict: 'close' } : a;
+    return a.verdict !== 'correct' && a.verdict !== 'synonym' && b.verdict === 'correct'
+      ? { ...a, verdict: 'close' }
+      : a;
   };
 
   const submit = () => {
     if (typingMode) {
-      if (!typed.trim()) return;
-      setResult({ check: checkTyped(typed), picked: null });
+      if (!typed.trim() || checking.current) return;
+      checking.current = true;
+      void checkTyped(typed).then((check) => {
+        setResult({ check, picked: null });
+        onReveal(false);
+      });
+      return;
     } else {
       if (picked === null || !choices) return;
       const right = choices[picked]!.correct;
@@ -233,7 +246,7 @@ export function ClozeStudy(kp: KindProps) {
             <mark
               className={cn(
                 'rounded-[4px] px-1 font-semibold not-italic',
-                r.check.verdict === 'correct'
+                r.check.verdict === 'correct' || r.check.verdict === 'synonym'
                   ? 'bg-success-soft text-success-text'
                   : 'bg-accent-soft text-fg',
               )}
