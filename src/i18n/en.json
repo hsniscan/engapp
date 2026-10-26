@@ -3115,7 +3115,7 @@
   "gradedLibrary": {
     "title": "Reading library",
     "description": "Short texts written for your level. Every sentence has its Turkish translation and audio.",
-    "back": "Decks",
+    "back": "Discover",
     "forYou": "For you",
     "forYouHint": "Picked for the {{difficulty}} difficulty from the words you know.",
     "forYouNone": "No text fits your chosen difficulty right now. Pick one from the list below.",
@@ -3288,15 +3288,25 @@
     "readMinutes_other": "{{count}} min read",
     "resumed": "Where you left off",
     "emptyBody": "This text is not on this device yet.",
+    "graded": {
+      "unavailableTitle": "This text is not on this device yet",
+      "offline": "It downloads once when you are online; after that it reads offline.",
+      "missing": "This text may have been removed from the library.",
+      "retry": "Try again"
+    },
     "notFound": {
       "title": "Text not found",
       "body": "It may have been deleted, or it has not arrived from another device yet.",
-      "cta": "Back to my texts"
+      "cta": "Back to reading"
     },
     "listen": {
       "start": "Read along",
       "stop": "Stop",
       "noVoice": "Reading aloud is not available on this device."
+    },
+    "translation": {
+      "show": "Show Turkish",
+      "hide": "Hide Turkish"
     },
     "options": {
       "open": "Reading settings",
@@ -3307,12 +3317,33 @@
       "new": "Probably new",
       "learning": "Learning",
       "consolidating": "Consolidating",
-      "known": "Known or learned: no mark"
+      "known": "Known or learned: no mark",
+      "title": "What the colours mean",
+      "close": "Close the colour key",
+      "later": "You can find this in ⚙ Reading settings at any time."
     },
     "finished": {
       "cta": "I finished",
       "title": "Finished",
       "again": "Read again"
+    },
+    "summary": {
+      "line_one": "You met {{count}} new word in this text · added {{added}}",
+      "line_other": "You met {{count}} new words in this text · added {{added}}",
+      "cta": "New words in this text"
+    },
+    "newWords": {
+      "title": "New words in this text",
+      "description": "Words with a meaning are ticked. Untick the ones you don't want, then add.",
+      "noMeaning": "no meaning on this device",
+      "lookUp_one": "Find the meaning of {{count}} word with AI",
+      "lookUp_other": "Find the meanings of {{count}} words with AI",
+      "someMissing": "Some meanings could not be found.",
+      "add_one": "Add {{count}} word",
+      "add_other": "Add {{count}} words",
+      "added_one": "{{count}} word added to your cards",
+      "added_other": "{{count}} words added to your cards",
+      "none": "All new words in this text are already in your cards."
     },
     "feedback": {
       "question": "How was this text for you?",
@@ -3326,6 +3357,7 @@
       "extendBefore": "← With previous",
       "extendAfter": "With next →",
       "guessHint": "Look at the sentence and guess the meaning first. Trying to guess sticks better than looking it up.",
+      "showTranslation": "Show the sentence in Turkish",
       "reveal": "Show the meaning",
       "loading": "Looking up the meaning…",
       "meanings": "Meanings",
@@ -3379,6 +3411,10 @@
       "label": "Colour words",
       "hint": "New words and words you are learning get a light mark. Words you know stay plain."
     },
+    "alwaysGuess": {
+      "label": "Always guess first",
+      "hint": "Words already in your cards ask for a guess too before their meaning shows. When off, their meaning shows at once."
+    },
     "settings": {
       "title": "Reading"
     },
@@ -3397,6 +3433,8 @@
       "empty": "No texts yet. Paste a text or upload a PDF and choose \"Open in reader\".",
       "unread": "Not read",
       "progress": "{{pct}}% read",
+      "reading": "Reading {{pct}}%",
+      "continue": "Continue",
       "finished": "Finished",
       "delete": "Delete \"{{title}}\"",
       "confirmTitle": "Delete this text?",

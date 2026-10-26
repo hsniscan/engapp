@@ -25,6 +25,8 @@ interface Props {
   onWord: (token: number) => void;
   /** Tokens of a story's target words (İP8): drawn in bold, always focusable. */
   targets?: ReadonlySet<number>;
+  /** A library text's Turkish, one per paragraph, shown under it (null = none). */
+  translations?: readonly (string | null)[] | null;
 }
 
 export function ReaderBody({
@@ -36,6 +38,7 @@ export function ReaderBody({
   speaking,
   onWord,
   targets,
+  translations,
 }: Props) {
   const pick = (e: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>) => {
     const el = (e.target as HTMLElement).closest<HTMLElement>('[data-t]');
@@ -53,24 +56,40 @@ export function ReaderBody({
         if (e.key === 'Enter' || e.key === ' ') pick(e);
       }}
     >
-      {text.paragraphs.map((p, i) => (
-        <Paragraph
-          key={i}
-          index={i}
-          body={body}
-          text={text}
-          paragraph={p}
-          view={view}
-          highlight={highlight}
-          targets={targets}
-          selection={selection && inParagraph(text, p, selection.first) ? selection : null}
-          speaking={
-            speaking !== null && speaking >= p.firstSentence && speaking < p.endSentence
-              ? speaking
-              : null
-          }
-        />
-      ))}
+      {text.paragraphs.map((p, i) => {
+        const tr = translations?.[i];
+        const para = (
+          <Paragraph
+            key={i}
+            index={i}
+            body={body}
+            text={text}
+            paragraph={p}
+            view={view}
+            highlight={highlight}
+            targets={targets}
+            selection={selection && inParagraph(text, p, selection.first) ? selection : null}
+            speaking={
+              speaking !== null && speaking >= p.firstSentence && speaking < p.endSentence
+                ? speaking
+                : null
+            }
+          />
+        );
+        if (!tr) return para;
+        return (
+          <div key={i} className="flex flex-col gap-1.5">
+            {para}
+            <p
+              lang="tr"
+              className="border-l-2 border-border pl-3 font-sans text-[0.9375rem] leading-relaxed text-fg-muted"
+              data-testid="reader-translation"
+            >
+              {tr}
+            </p>
+          </div>
+        );
+      })}
     </div>
   );
 }

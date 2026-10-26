@@ -1,5 +1,6 @@
 // Reading settings (v0.5 İP1): the difficulty of recommended and generated texts (Rahat /
-// Dengeli / Zorlayıcı, Hasan's bands) and whether the reader colours words. Shown in Ayarlar →
+// Dengeli / Zorlayıcı, Hasan's bands), whether the reader colours words and whether every
+// tapped word asks for a guess first ("Hep tahmin ettir", v0.5.1). Shown in Ayarlar →
 // Çalışma and in the reader's "Aa" sheet; both write the same settings row.
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -53,6 +54,24 @@ export function HighlightSwitch() {
   );
 }
 
+/**
+ * "Hep tahmin ettir" (v0.5.1, decision 0054): off by default, so a word the user has a card for
+ * shows its meaning at once; on, every tapped word asks for a guess first.
+ */
+export function AlwaysGuessSwitch() {
+  const { t } = useTranslation();
+  const { settings, update } = useAppSettings();
+  return (
+    <Switch
+      label={t('reader.alwaysGuess.label')}
+      description={t('reader.alwaysGuess.hint')}
+      checked={settings?.reader_always_guess === true}
+      disabled={!settings}
+      onCheckedChange={(on) => void update({ reader_always_guess: on })}
+    />
+  );
+}
+
 /** Ayarlar → Çalışma → Okuma. */
 export function ReadingSettingsSection() {
   const { t } = useTranslation();
@@ -63,6 +82,9 @@ export function ReadingSettingsSection() {
       </SettingsRow>
       <SettingsRow>
         <HighlightSwitch />
+      </SettingsRow>
+      <SettingsRow>
+        <AlwaysGuessSwitch />
       </SettingsRow>
     </SettingsSection>
   );

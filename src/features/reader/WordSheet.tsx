@@ -1,5 +1,6 @@
 // The sheet a tapped word opens (v0.5 İP1, plan "dokununca önce tahmin et"): first the
-// sentence and "Tahmin et", then the meaning, the picture (when one is cached), the sound and
+// sentence and "Tahmin et", then the meaning. A word the user already has a card for shows its
+// meaning at once unless "Hep tahmin ettir" is on (v0.5.1, decision 0054). Then the picture (when one is cached), the sound and
 // "Karta ekle" with the sentence as the card's source sentence. Meanings come from this
 // device first (the user's card, Kelime Bankası, the cached shared lexicon: offline and
 // instant); only when none of these has the word and the device is online is ai-enrich asked,
@@ -40,11 +41,15 @@ export interface WordPick {
   canExtend: { before: boolean; after: boolean };
   /** It is more than one word. */
   phrase: boolean;
+  /** The sentence's Turkish (library texts), shown on request. */
+  translation?: string | null;
 }
 
 interface Props {
   pick: WordPick | null;
   voice: VoicePref;
+  /** "Hep tahmin ettir": ask for a guess even for the user's own words. */
+  alwaysGuess?: boolean;
   onClose: () => void;
   onExtend: (side: 'before' | 'after') => void;
 }
@@ -115,7 +120,7 @@ function useWordLookup(pick: WordPick | null): Lookup {
   return state.key === key ? state.lookup : { status: 'loading' };
 }
 
-export function WordSheet({ pick, voice, onClose, onExtend }: Props) {
+export function WordSheet({ pick, voice, alwaysGuess = false, onClose, onExtend }: Props) {
   const { t } = useTranslation();
   return (
     <Dialog
@@ -136,6 +141,7 @@ export function WordSheet({ pick, voice, onClose, onExtend }: Props) {
           key={`${pick.lemma}|${pick.written}|${pick.sentence}`}
           pick={pick}
           voice={voice}
+          guessFirst={alwaysGuess || pick.noteId === null}
           onExtend={onExtend}
         />
       )}
@@ -146,15 +152,18 @@ export function WordSheet({ pick, voice, onClose, onExtend }: Props) {
 function SheetBody({
   pick,
   voice,
+  guessFirst,
   onExtend,
 }: {
   pick: WordPick;
   voice: VoicePref;
+  guessFirst: boolean;
   onExtend: Props['onExtend'];
 }) {
   const { t } = useTranslation();
   const lookup = useWordLookup(pick);
-  const [revealed, setRevealed] = useState(false);
+  const [revealed, setRevealed] = useState(!guessFirst);
+  const [showTr, setShowTr] = useState(false);
   const [chosen, setChosen] = useState(0);
   const [adding, setAdding] = useState(false);
   const [addedId, setAddedId] = useState<Id | null>(null);
@@ -231,6 +240,24 @@ function SheetBody({
       >
         <Highlighted sentence={pick.sentence} written={pick.written} />
       </blockquote>
+      {pick.translation &&
+        (showTr ? (
+          <p
+            lang="tr"
+            className="-mt-2 px-1 text-[0.9375rem] text-fg-muted"
+            data-testid="reader-sentence-tr"
+          >
+            {pick.translation}
+          </p>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowTr(true)}
+            className="-mt-2 min-h-11 self-start px-1 text-[0.9375rem] font-medium text-accent-text underline underline-offset-4"
+          >
+            {t('reader.word.showTranslation')}
+          </button>
+        ))}
 
       {!revealed ? (
         <div className="flex flex-col gap-3">
