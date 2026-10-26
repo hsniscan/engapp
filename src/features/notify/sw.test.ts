@@ -43,18 +43,18 @@ describe('push service worker', () => {
       'push',
       pushEvent({
         title: 'Engapp',
-        body: 'Bugün 23 kart tekrara hazır, yaklaşık 6 dk.',
-        url: '/review',
+        body: 'Bugün 23 kart çalışmaya hazır, yaklaşık 6 dk.',
+        url: '/study',
         tag: 'engapp-due',
       }),
     );
     expect(sw.registration.showNotification).toHaveBeenCalledWith('Engapp', {
-      body: 'Bugün 23 kart tekrara hazır, yaklaşık 6 dk.',
+      body: 'Bugün 23 kart çalışmaya hazır, yaklaşık 6 dk.',
       tag: 'engapp-due',
       lang: 'tr',
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
-      data: { url: '/review' },
+      data: { url: '/study' },
     });
   });
 
@@ -68,19 +68,19 @@ describe('push service worker', () => {
       { body: string; data: { url: string } },
     ][];
     expect(calls.map((c) => [c[0], c[1].data.url])).toEqual([
-      ['Engapp', '/review'],
-      ['Engapp', '/review'],
-      ['Engapp', '/review'],
+      ['Engapp', '/study'],
+      ['Engapp', '/study'],
+      ['Engapp', '/study'],
     ]);
     expect(calls[0]![1].body).toBe('not json');
   });
 
-  it('a tap opens /review in a new window when the app is closed', async () => {
+  it('a tap opens /study in a new window when the app is closed', async () => {
     const { sw, fire } = worker();
     const close = vi.fn();
-    await fire('notificationclick', { notification: { close, data: { url: '/review' } } });
+    await fire('notificationclick', { notification: { close, data: { url: '/study' } } });
     expect(close).toHaveBeenCalled();
-    expect(sw.clients.openWindow).toHaveBeenCalledWith('/review');
+    expect(sw.clients.openWindow).toHaveBeenCalledWith('/study');
   });
 
   it('a tap focuses the open app and routes it in place', async () => {
@@ -91,9 +91,9 @@ describe('push service worker', () => {
       { url: 'https://engapp.example/library', focus, postMessage },
     ]);
     await fire('notificationclick', {
-      notification: { close: () => {}, data: { url: '/review' } },
+      notification: { close: () => {}, data: { url: '/study' } },
     });
-    expect(postMessage).toHaveBeenCalledWith({ type: 'engapp:navigate', url: '/review' });
+    expect(postMessage).toHaveBeenCalledWith({ type: 'engapp:navigate', url: '/study' });
     expect(focus).toHaveBeenCalled();
     expect(sw.clients.openWindow).not.toHaveBeenCalled();
   });

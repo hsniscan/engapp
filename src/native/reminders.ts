@@ -1,7 +1,7 @@
 // The Android app's reminder on @capacitor/local-notifications (docs/decisions/0033-android-capacitor.md).
 // Implements NotifierPort for src/features/notify/nativeReminder.ts and keeps the plan current:
 // after every answer (a new review row), when settings change, when the app comes back to the
-// foreground and when the signed-in account changes. A tap on the reminder opens /review.
+// foreground and when the signed-in account changes. A tap on the reminder opens /study.
 import { liveQuery } from 'dexie';
 import { App } from '@capacitor/app';
 import { LocalNotifications } from '@capacitor/local-notifications';
@@ -140,7 +140,7 @@ export async function startNativeReminders(): Promise<void> {
 
   await LocalNotifications.addListener('localNotificationActionPerformed', (a) => {
     const url = (a.notification.extra as { url?: unknown } | undefined)?.url;
-    void router.navigate(typeof url === 'string' && url.startsWith('/') ? url : '/review');
+    void router.navigate(typeof url === 'string' && url.startsWith('/') ? url : '/study');
   });
 
   // A new answer or a settings change (hour, mode, time zone, vacation) changes the plan.
