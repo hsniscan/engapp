@@ -30,6 +30,8 @@
     "scripts/system-jobs.ts",
     "scripts/word-bank.ts",
     "scripts/graded-batch.ts",
-    "scripts/tts-pregen.ts"
+    "scripts/tts-pregen.ts",
+    "scripts/audio-migrate.ts",
+    "scripts/check-*.ts"
   ]
 }
