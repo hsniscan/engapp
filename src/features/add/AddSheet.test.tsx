@@ -47,6 +47,7 @@ describe('Add sheet', () => {
     const sheet = screen.getByRole('dialog', { name: 'Ne eklemek istersin?' });
     expect(within(sheet).getByTestId('add-way-word')).toHaveAttribute('href', '/add');
     expect(within(sheet).getByTestId('add-way-text')).toHaveAttribute('href', '/add?tab=paste');
+    expect(within(sheet).getByTestId('add-way-photo')).toHaveAttribute('href', '/fotograf');
     expect(within(sheet).getByTestId('add-way-bank')).toHaveAttribute('href', '/decks?tab=bank');
     expect(within(sheet).getByTestId('add-way-decks')).toHaveAttribute(
       'href',

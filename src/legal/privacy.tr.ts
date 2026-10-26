@@ -75,7 +75,10 @@ export const privacyTr: LegalDocument = {
           p: '**Bildirimler.** Hatırlatma bildirimlerini açarsan: tarayıcının bildirim servisi adresi ve şifreleme anahtarları, cihaz ya da tarayıcı adı ve hangi gün hatırlatma gönderildiği.',
         },
         {
-          p: '**İşlemediklerimiz.** Konumun, rehberin, fotoğrafların, mikrofonun ya da kameran kullanılmaz. Reklam kimliği, analiz ya da izleme aracı yoktur. Uygulamanın hata kaydı yalnızca cihazında tutulur, bize gönderilmez.',
+          p: '**Fotoğraftan metin.** "Fotoğraftan metin" ile çektiğin ya da galeriden seçtiğin fotoğraf yalnızca cihazında okunur: Android uygulamasında Google ML Kit, web sürümünde tarayıcının içinde çalışan Tesseract ile. Fotoğraf hiçbir sunucuya gönderilmez ve saklanmaz. Okunan metni kaydedersen yalnızca metin, kendi metinlerinin arasında cihazında tutulur. Android uygulamasında Google ML Kit, kendi işleyişini ölçmek için Google\'a kullanım ve performans bilgisi gönderir (cihaz modeli, Android ve uygulama sürümü, kuruluma özel bir kimlik, ne kadar sürdüğü, hata kodları); bu bilgide fotoğraf ya da okunan metin yoktur.',
+        },
+        {
+          p: '**İşlemediklerimiz.** Konumun, rehberin, mikrofonun ve fotoğraf arşivin kullanılmaz. Kamerayı yalnızca "Fotoğraftan metin" ile sen açarsın; uygulamanın kamera izni yoktur, fotoğrafı telefonun kendi kamera uygulaması çeker. Reklam kimliği, analiz ya da izleme aracı yoktur. Uygulamanın hata kaydı yalnızca cihazında tutulur, bize gönderilmez.',
         },
       ],
     },
@@ -107,7 +110,7 @@ export const privacyTr: LegalDocument = {
           ul: [
             "**Supabase** (veritabanı, giriş, sunucu fonksiyonları): hesabın ve öğrenme verilerin. Sunucular Avrupa Birliği'nde, İrlanda bölgesindedir.",
             '**Cloudflare** (web sitesinin barındırılması): uygulama dosyalarını sunarken IP adresin ve tarayıcı bilgin gibi teknik bağlantı verilerini işler.',
-            "**Google**: Google ile giriş; profil fotoğrafın Google'ın sunucusundan yüklenir. **Google Gemini** (AI): kart çıkarmak için gönderdiğin metin parçaları, elle eklediğin kelime, temalara ayırma için kelimelerin ve kısa İngilizce tanımları, sesli okunacak kelime ya da cümle, haftalık rapor yorumu için yalnızca sayılar.",
+            '**Google**: Google ile giriş; profil fotoğrafın Google\'ın sunucusundan yüklenir. **Google ML Kit** (yalnızca Android uygulamasında "Fotoğraftan metin" kullanınca): yukarıda anlatılan kullanım ve performans bilgisi; fotoğraf ve metin gönderilmez. **Google Gemini** (AI): kart çıkarmak için gönderdiğin metin parçaları, elle eklediğin kelime, temalara ayırma için kelimelerin ve kısa İngilizce tanımları, sesli okunacak kelime ya da cümle, haftalık rapor yorumu için yalnızca sayılar.',
             "**Anthropic Claude** (kelime görselleri): yalnızca ortak sözlükteki kelime, sözcük türü ve Türkçe anlamı, kısa bir çizim ipucu, yeniden çizimde hazır bir düzeltme notu ve kontrol için Claude'un çizdiği resmin kendisi. Hesabına, kartlarına ya da cümlelerine ait hiçbir bilgi gönderilmez; görseli kimin istediği de gönderilmez.",
             "**Anthropic Claude** (AI yedeği): Gemini'nin kotası dolduğunda, yukarıda Gemini için sayılan aynı AI istekleri Claude ile işlenir.",
             '**Tarayıcıların bildirim servisleri** (Google, Mozilla, Apple, Microsoft): web bildirimlerini açtıysan, şifreli hatırlatma metni ("Bugün 12 tekrar seni bekliyor" gibi).',

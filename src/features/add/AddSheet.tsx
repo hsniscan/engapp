@@ -92,6 +92,14 @@ export function AddSheetView({
       testId: 'add-way-subtitle',
     },
     {
+      to: '/fotograf',
+      icon: 'camera',
+      tone: 'accent',
+      title: t('ocr.addTitle'),
+      body: t('ocr.addBody'),
+      testId: 'add-way-photo',
+    },
+    {
       to: '/decks?tab=bank',
       icon: 'layers',
       tone: 'neutral',

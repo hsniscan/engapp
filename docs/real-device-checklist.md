@@ -98,6 +98,15 @@ Google hesabı** hazır olsun (son bölümde silinecek; kendi hesabını kullanm
 | [ ] | Deneme hesabıyla tekrar gir | Boş başlar: eski kelimeler yok | |
 | [ ] | Kendi hesabınla tekrar gir | Kendi kartların yerinde | |
 
+## 10. Fotoğraftan metin (v0.5, ölçüt 4)
+
+| ✓ | Ne yap | Ne olmalı | Not |
+|---|---|---|---|
+| [ ] | Uçak modunu aç. (+) → Fotoğraftan metin → Fotoğraf çek → bir kitap sayfası çek | Kamera izni sorulmaz; metin 3 saniye içinde gelir | |
+| [ ] | 10 farklı kitap sayfasıyla dene, yanlış okunan kelimeleri say | Kelimelerin en az %95'i doğru | |
+| [ ] | Bir satıra dokun, kalemle bir kelimeyi düzelt → Okuyucuda aç | Çıkardığın satır yok, düzeltme var; satır sonunda bölünmüş kelime birleşik | |
+| [ ] | Galeriden seç → loş ışıkta çekilmiş bir fotoğraf | "Bazı yerler net okunamadı" uyarısı, emin olunmayan satırlar işaretli | |
+
 ## Genel not
 
 Takıldığın, yavaş gelen ya da garip görünen her şeyi buraya yaz:

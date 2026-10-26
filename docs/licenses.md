@@ -87,3 +87,14 @@ model and the training recipe of the FSRS reference optimizer; defaults and para
 come from **ts-fsrs** (MIT, already a dependency). Evaluated and not used: **fsrs-browser**
 6.6.0 (WASM build of fsrs-rs, BSD-3-Clause, commercial use allowed): its build needs shared
 WebAssembly memory and threads, i.e. a cross-origin-isolated site (decision 0022).
+
+## Text recognition models (v0.5 İP3)
+
+"Fotoğraftan metin" (decision 0045) ships two recognition models; both allow commercial use.
+
+| Model | Where | Licence |
+| --- | --- | --- |
+| Google ML Kit Text Recognition v2, Latin (`com.google.mlkit:text-recognition` 16.0.1, model bundled in the APK) | Android app | ML Kit Terms of Service (free, commercial use allowed); its usage metrics are disclosed in `/gizlilik` and `docs/play-store/data-safety.md` |
+| Tesseract English LSTM model `eng.traineddata` (tessdata_best, integerised; via `@tesseract.js-data/eng` 1.0.0, `4.0.0_best_int`) | web build, `/ocr/<version>/` | Apache-2.0 (tesseract-ocr/tessdata_best); npm packaging MIT |
+
+Code: `tesseract.js` 7.0.0 and `tesseract.js-core` 7.0.0, Apache-2.0.

@@ -36,7 +36,7 @@ Only the types marked collected are ticked in the form; everything else is **not
 | Financial info | all | No | | | | |
 | Health and fitness | all | No | | | | |
 | Messages | Emails, SMS or MMS, Other in-app messages | No | | | | |
-| Photos and videos | Photos, Videos | No | | | | |
+| Photos and videos | Photos, Videos | No | | | | "Fotoğraftan metin" reads the photo on the device only (ML Kit, ADR 0045); it is never sent or stored. Play does not count on-device processing as collection. |
 | Audio files | Voice or sound recordings, Music files, Other audio files | No | | | | |
 | Files and docs | **Files and docs** (text of an imported PDF, its file name and page count) | Yes | **Yes** | No | Optional | App functionality |
 | Calendar | Calendar events | No | | | | |
@@ -47,8 +47,9 @@ Only the types marked collected are ticked in the form; everything else is **not
 | App activity | **Other user-generated content** (words, meanings, own example sentences, notes, decks, tags, pasted text) | Yes | **Yes** | No | Optional | App functionality |
 | App activity | Other actions | No | | | | |
 | Web browsing | Web browsing history | No | | | | |
-| App info and performance | Crash logs, Diagnostics, Other app performance data | No | | | | The error log stays on the device (`src/data/errorLog.ts`), never sent. |
-| Device or other IDs | **Device or other IDs** (random per-install id in review logs; push endpoint and browser name if reminders are on) | Yes | No | No | Optional | App functionality |
+| App info and performance | Crash logs | No | | | | The error log stays on the device (`src/data/errorLog.ts`), never sent. |
+| App info and performance | **Diagnostics**, **Other app performance data** (ML Kit usage metrics: latency, error codes, API configuration such as image size) | Yes | No | No | Optional | Analytics (Google measures and maintains the ML Kit API) |
+| Device or other IDs | **Device or other IDs** (random per-install id in review logs; push endpoint and browser name if reminders are on; ML Kit's per-installation id) | Yes | No | No | Optional | App functionality, Analytics (ML Kit only) |
 
 ### Where each "collected" comes from
 
@@ -68,6 +69,16 @@ Only the types marked collected are ticked in the form; everything else is **not
 - **Device or other IDs:** `device_id` in the review logs (a random id made at install,
   `src/data/meta.ts`), not the advertising ID or any hardware id; `push_subscriptions`
   (endpoint, keys, `user_agent`) when web reminders are on.
+
+- **ML Kit (Android app, "Fotoğraftan metin", ADR 0045):** the bundled text recognition model
+  runs on the phone; the photo and the recognised text never leave it. Google's ML Kit SDK
+  itself sends usage and performance metrics to Google (device model and OS version, app
+  package and version, a per-installation identifier, latency, error codes, API settings).
+  That is what the Diagnostics / Other performance data rows and the ML Kit part of Device
+  or other IDs declare, purpose Analytics, collected only when the feature is used.
+  Before submitting, compare with Google's own list at
+  https://developers.google.com/ml-kit/android-data-disclosure (it may change with SDK
+  versions). The web version (tesseract.js) sends nothing anywhere.
 
 ### Why "Shared: Yes" for three types
 

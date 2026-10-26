@@ -74,7 +74,10 @@ export const privacyEn: LegalDocument = {
           p: "**Notifications.** If you turn on reminders: your browser's push service address and encryption keys, the device or browser name, and the days a reminder was sent.",
         },
         {
-          p: "**What we do not process.** Your location, contacts, photos, microphone and camera are not used. There is no advertising ID and no analytics or tracking tool. The app's error log stays on your device and is never sent to us.",
+          p: '**Text from a photo.** A photo you take or pick for "Text from a photo" is read on your device only: by Google ML Kit in the Android app, by Tesseract running inside your browser on the web. The photo is never sent to a server and is not kept. If you save the recognised text, only the text is stored, on your device, among your own texts. In the Android app, Google ML Kit sends usage and performance information to Google to measure how it works (device model, Android and app version, a per-installation identifier, how long it took, error codes); it contains no photo and no recognised text.',
+        },
+        {
+          p: '**What we do not process.** Your location, contacts, microphone and photo library are not used. The camera opens only when you start "Text from a photo"; the app has no camera permission, the phone\'s own camera app takes the picture. There is no advertising ID and no analytics or tracking tool. The app\'s error log stays on your device and is never sent to us.',
         },
       ],
     },
@@ -106,7 +109,7 @@ export const privacyEn: LegalDocument = {
           ul: [
             '**Supabase** (database, sign-in, server functions): your account and study data. The servers are in the European Union, in the Ireland region.',
             "**Cloudflare** (hosting of the website): processes technical connection data such as your IP address and browser details while serving the app's files.",
-            "**Google**: sign-in with Google; your profile photo is loaded from Google's servers. **Google Gemini** (AI): the text chunks you send to create cards, a word you add by hand, your words and their short English definitions for theme grouping, the word or sentence to be read aloud, and only numbers for the weekly report comment.",
+            '**Google**: sign-in with Google; your profile photo is loaded from Google\'s servers. **Google ML Kit** (only in the Android app, when you use "Text from a photo"): the usage and performance information described above; no photo and no text. **Google Gemini** (AI): the text chunks you send to create cards, a word you add by hand, your words and their short English definitions for theme grouping, the word or sentence to be read aloud, and only numbers for the weekly report comment.',
             '**Anthropic Claude** (word pictures): only a word from the shared dictionary, its part of speech and Turkish meaning, a short drawing hint, a fixed correction note when a picture is redrawn, and, for the check, the picture Claude drew. Nothing about your account, your cards or your sentences is sent, and neither is who asked for the picture.',
             "**Anthropic Claude** (AI backup): when Gemini's quota runs out, the same AI requests listed above for Gemini are processed by Claude.",
             '**Browser push services** (Google, Mozilla, Apple, Microsoft): if you turned on web reminders, the encrypted reminder text (such as "12 reviews are waiting for you today").',
