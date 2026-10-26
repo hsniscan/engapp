@@ -349,6 +349,9 @@ const SYNC_TABLES = [
   'level_tests',
   'known_terms',
   'weekly_reports',
+  // v0.5 İP1 (the app's texts / encounters, renamed at the wire: src/sync/api.ts).
+  'user_texts',
+  'user_encounters',
 ];
 
 /**

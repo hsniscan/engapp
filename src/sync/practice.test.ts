@@ -123,7 +123,8 @@ describe('practice_logs sync', () => {
       await sync(server, T + 5 * MIN);
       await sync(server, T + 10 * MIN);
       const waiting = await db.outbox.toArray();
-      expect(waiting.map((o) => o.table)).toEqual(['practice_logs', 'practice_logs']);
+      // The review encounter (decision 0043) waits for the registry the same way.
+      expect(waiting.map((o) => o.table).sort()).toEqual(['encounters', 'practice_logs', 'practice_logs']);
       expect(waiting.every((o) => o.attempts === 0)).toBe(true);
       expect(await stuckOutboxCount()).toBe(0);
       expect(await getMeta(META.serverPractice)).toBeFalsy();

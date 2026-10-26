@@ -118,8 +118,12 @@ describe('answerCard and undo', () => {
     expect(r.log).toMatchObject({ card_id: rec.id, rating: 3, duration_ms: 60_000, undo_of: null, reviewed_at: T + MIN });
     expect(r.card.state).toBe(CardState.Learning);
     expect(r.day).toMatchObject({ date: '2026-10-21', reviews: 1, new_cards: 1, time_ms: 60_000, completed: false });
-    expect(await db.outbox.count()).toBe(before + 2);
+    // The log, the card and the review encounter (decision 0043); daily_activity is local.
+    expect(await db.outbox.count()).toBe(before + 3);
     expect(await db.daily_activity.get('2026-10-21')).toEqual(r.day);
+    expect(await db.encounters.where('note_id').equals(a.note.id).toArray()).toMatchObject([
+      { source: 'review', n: 1, day: '2026-10-21' },
+    ]);
   });
 
   it('unlocks production/cloze when recognition reaches Review; undo locks them again', async () => {

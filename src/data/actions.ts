@@ -35,6 +35,7 @@ import { db } from './db';
 import { isTodayComplete, refreshDay } from './dailyActivity';
 import { ActionError } from './errors';
 import { loadTodayFacts, logsByCard } from './history';
+import { bumpEncountersIn } from './encounters';
 import { dayConfig, getSettings, schedulerFor } from './settings';
 import { type SyncWriter, writeTx } from './writer';
 
@@ -504,12 +505,13 @@ export interface AnswerResult {
 
 /**
  * Answer a card: writes the review log, updates the card's FSRS state, unlocks the note's
- * production/cloze cards when the recognition card reaches Review, and updates today's
- * daily_activity row — all in one transaction.
+ * production/cloze cards when the recognition card reaches Review, updates today's
+ * daily_activity row and counts one review encounter of the note (v0.5 İP1; the counter
+ * never feeds FSRS) — all in one transaction.
  */
 export async function answerCard(input: AnswerInput, now: Millis = Date.now()): Promise<AnswerResult> {
   if (!isRating(input.rating)) throw new ActionError('invalid_input', 'Invalid rating');
-  return writeTx([db.cards, db.review_logs, db.daily_activity, db.settings], now, async (w) => {
+  return writeTx([db.cards, db.review_logs, db.daily_activity, db.settings, db.encounters], now, async (w) => {
     const settings = await getSettings(now);
     const cfg = dayConfig(settings);
     const card = await db.cards.get(input.card_id);
@@ -541,6 +543,7 @@ export async function answerCard(input: AnswerInput, now: Millis = Date.now()): 
     addAnswerToDay(day, { before_state: before, rating: input.rating, duration_ms: duration });
     day.completed = await isTodayComplete(cfg, now);
     await db.daily_activity.put(day);
+    await bumpEncountersIn(w, [card.note_id], 'review', key);
     return { log, card: saved, unlockedCardIds, day };
   });
 }

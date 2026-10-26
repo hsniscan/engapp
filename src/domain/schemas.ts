@@ -17,6 +17,7 @@ import type {
   UserContent,
   WeeklyReport,
 } from './types';
+import { MAX_TEXT_CHARS, READING_OFFSET_MAX, TEXT_KINDS, type EncounterRow, type ReaderText } from './texts';
 
 const millis = z.number().int();
 const id = z.string().min(1);
@@ -185,6 +186,11 @@ export const settingsSchema: z.ZodType<Settings> = z.object({
   image_cards: z.boolean().nullish().catch(null),
   // v0.4 new-card order (absent = smart). A value a newer client adds must not reject the row.
   new_card_order: z.enum(['smart', 'added']).nullish().catch(null),
+  // v0.5 İP1 reading (decision 0043); absent = dengeli, no correction, colours on. A value a
+  // newer client adds must not reject the row.
+  reading_difficulty: z.enum(['rahat', 'dengeli', 'zorlayici']).nullish().catch(null),
+  reading_offset: z.number().min(-READING_OFFSET_MAX).max(READING_OFFSET_MAX).nullish().catch(null),
+  reader_highlight: z.boolean().nullish().catch(null),
   // v0.3 İP3 load management; absent in older rows and backups (= the defaults). Malformed
   // values (a newer client, a hand-edited backup) fall back to "unset" instead of rejecting
   // the whole settings row.
@@ -357,4 +363,30 @@ export const weeklyReportSchema: z.ZodType<WeeklyReport> = z.object({
   device_id: z.string(),
   created_at: millis,
   hlc: z.string().min(1),
+});
+
+// ------------------------------------------------------------------ v0.5 reading (decision 0043)
+
+/** A reading text (Dexie texts ⇄ server user_texts). Loose on what an older client lacks. */
+export const readerTextSchema: z.ZodType<ReaderText> = z.object({
+  ...synced,
+  kind: z.enum(TEXT_KINDS as [ReaderText['kind'], ...ReaderText['kind'][]]),
+  title: z.string().max(300),
+  body: z.string().max(MAX_TEXT_CHARS),
+  source_url: z.string().max(2000).nullable(),
+  graded_id: z.string().max(200).nullable(),
+  progress_offset: z.number().int().min(0),
+  read_ms: z.number().int().min(0),
+  finished_at: millis.nullable(),
+  feedback: z.enum(['hard', 'easy']).nullish().catch(null),
+});
+
+/** Encounters of one note on one day from one source on one device. */
+export const encounterRowSchema: z.ZodType<EncounterRow> = z.object({
+  ...synced,
+  note_id: id,
+  day: dayKey,
+  source: z.enum(['review', 'reader', 'story']),
+  n: z.number().int().min(0),
+  device_id: z.string().min(1).max(100),
 });

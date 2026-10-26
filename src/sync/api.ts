@@ -20,7 +20,10 @@ import {
   sourceSchema,
   userContentSchema,
   weeklyReportSchema,
+  readerTextSchema,
+  encounterRowSchema,
 } from '@/domain/schemas';
+import type { EncounterRow, ReaderText } from '@/domain/texts';
 import type {
   Card,
   ContentFeedback,
@@ -80,6 +83,8 @@ export interface RowByTable {
   level_tests: LevelTest;
   known_terms: KnownTerm;
   weekly_reports: WeeklyReport;
+  texts: ReaderText;
+  encounters: EncounterRow;
 }
 export type PulledRow = {
   [T in OutboxTable]: { table: T; seq: number; row: RowByTable[T] };
@@ -99,7 +104,26 @@ const ROW_SCHEMAS: { [T in OutboxTable]: z.ZodType<RowByTable[T]> } = {
   level_tests: levelTestSchema,
   known_terms: knownTermSchema,
   weekly_reports: weeklyReportSchema,
+  texts: readerTextSchema,
+  encounters: encounterRowSchema,
 };
+
+/**
+ * Local tables whose server table has another name (v0.5 İP1, decision 0043): "texts" and
+ * "encounters" are generic words, so the server says whose they are. The names are mapped
+ * here, at the wire, and nowhere else: the outbox, Dexie and the engine use the local name.
+ */
+const SERVER_NAME: Partial<Record<OutboxTable, string>> = {
+  texts: 'user_texts',
+  encounters: 'user_encounters',
+};
+const LOCAL_NAME: Record<string, OutboxTable> = Object.fromEntries(
+  Object.entries(SERVER_NAME).map(([local, server]) => [server, local as OutboxTable]),
+);
+/** The server's name of a local synced table. */
+export const serverTableName = (t: OutboxTable): string => SERVER_NAME[t] ?? t;
+/** The local name of a server table (unknown names pass through unchanged). */
+export const localTableName = (t: string): string => LOCAL_NAME[t] ?? t;
 
 const pullEnvelope = z.object({
   rows: z.array(
@@ -189,7 +213,12 @@ export async function pushBatch(items: PushItem[], c?: SupabaseClient | null): P
   if (items.length > MAX_PUSH_BATCH)
     throw new RangeError(`at most ${MAX_PUSH_BATCH} rows per push`);
   if (items.length === 0) return { acked: [], stale: [], rejected: [] };
-  return rpc(client(c), 'sync_push', { p_batch: items }, pushResult);
+  const wire = items.map((i) => ({ ...i, table: serverTableName(i.table) }));
+  const res = await rpc(client(c), 'sync_push', { p_batch: wire }, pushResult);
+  return {
+    ...res,
+    rejected: res.rejected.map((r) => ({ ...r, table: r.table === null ? null : localTableName(r.table) })),
+  };
 }
 
 /** sync_pull_v2 is not deployed yet (older backend): PostgREST / Postgres "no such function". */
@@ -231,14 +260,15 @@ export async function pullChanges(
   const rows: PulledRow[] = [];
   const invalid: PullResult['invalid'] = [];
   for (const r of env.rows) {
-    const schema = ROW_SCHEMAS[r.table as OutboxTable];
+    const table = localTableName(r.table);
+    const schema = ROW_SCHEMAS[table as OutboxTable];
     if (!schema) {
-      invalid.push({ table: r.table, seq: r.seq, id: r.row.id, error: 'unknown table' });
+      invalid.push({ table, seq: r.seq, id: r.row.id, error: 'unknown table' });
       continue;
     }
     const p = schema.safeParse(r.row);
-    if (p.success) rows.push({ table: r.table, seq: r.seq, row: p.data } as PulledRow);
-    else invalid.push({ table: r.table, seq: r.seq, id: r.row.id, error: p.error.message });
+    if (p.success) rows.push({ table, seq: r.seq, row: p.data } as PulledRow);
+    else invalid.push({ table, seq: r.seq, id: r.row.id, error: p.error.message });
   }
   return {
     rows,
@@ -272,7 +302,7 @@ export async function listSyncTables(c?: SupabaseClient | null): Promise<string[
   }
   const parsed = z.array(z.object({ name: z.string() })).safeParse(res.data);
   if (!parsed.success) throw new SyncApiError('invalid_response', parsed.error.message);
-  return parsed.data.map((r) => r.name);
+  return parsed.data.map((r) => localTableName(r.name));
 }
 
 /** Lexicon senses referenced by the user's senses, changed after `sinceSeq` (lexicon_cursor). */

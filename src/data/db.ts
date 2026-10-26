@@ -346,6 +346,34 @@ export class EngDb extends Dexie {
       texts: 'id, kind, updated_at, deleted_at, graded_id',
       encounters: 'id, note_id, day',
     });
+    // v29 (v0.5 İP1 reader, decision 0043; 30–32 belong to the other v0.5 packages): texts
+    // and encounters become synced tables (server user_texts / user_encounters) and the
+    // settings row gains reading_difficulty, reading_offset and reader_highlight (optional,
+    // absent = Dengeli, 0, on). An older app version dropped pulled rows of these: re-pull
+    // them once (equal HLC → the server's set values, domain/syncMerge.ts). Texts saved
+    // under v28 were never queued: they are queued here, as the sync writer would have.
+    // Encounter rows of v28 had no sync columns (nothing wrote them yet): any such row goes.
+    this.version(29)
+      .stores({})
+      .upgrade(async (tx) => {
+        await addPullBackfill(tx.table('meta'), ['settings', 'texts', 'encounters']);
+        const texts = (await tx.table('texts').toArray()) as ReaderText[];
+        for (const row of texts) {
+          if (typeof row.hlc !== 'string') continue;
+          await tx.table('outbox').add({
+            table: 'texts',
+            row_id: row.id,
+            op: row.deleted_at !== null ? 'delete' : 'upsert',
+            payload: row,
+            attempts: 0,
+            next_attempt_at: 0,
+          });
+        }
+        await tx
+          .table('encounters')
+          .filter((r: Partial<EncounterRow>) => typeof r.hlc !== 'string')
+          .delete();
+      });
   }
 }
 

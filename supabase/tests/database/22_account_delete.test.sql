@@ -83,6 +83,10 @@ begin
     values (gen_random_uuid(), u, 'mnemonic', 'My own mnemonic', 1, 1, h);
   insert into public.weekly_reports (id, user_id, week, summary, device_id, created_at, hlc)
     values (gen_random_uuid(), u, '2026-10-19', '{}', 'dev1', 1, h);
+  insert into public.user_texts (id, user_id, kind, title, body, created_at, updated_at, hlc)
+    values (gen_random_uuid(), u, 'paste', 'My text', 'A private text I read.', 1, 1, h);
+  insert into public.user_encounters (id, user_id, note_id, day, source, n, device_id, created_at, updated_at, hlc)
+    values (note::text || '|2026-11-01|reader|dev1', u, note, '2026-11-01', 'reader', 1, 'dev1', 1, 1, h);
   insert into public.ai_usage (user_id, day) values (u, current_date);
   insert into public.ai_chunk_cache (user_id, chunk_hash, prompt_version, level, result)
     values (u, repeat('a', 64), 'extract-v5', 'B1', '{"candidates": []}');

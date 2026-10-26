@@ -48,6 +48,11 @@ const LATE_COLUMNS: Readonly<Record<string, Readonly<Record<string, unknown>>>> 
     image_cards: undefined,
     // v0.4 new-card order (decision 0039)
     new_card_order: null,
+    // v0.5 İP1 reading (decision 0043). reader_highlight defaults to on: only missing or null
+    // is unset.
+    reading_difficulty: null,
+    reading_offset: null,
+    reader_highlight: undefined,
   },
 };
 

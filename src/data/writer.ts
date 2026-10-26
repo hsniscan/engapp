@@ -23,6 +23,7 @@ import type {
   UserContent,
   WeeklyReport,
 } from '../domain/types';
+import type { EncounterRow, ReaderText } from '../domain/texts';
 import { db } from './db';
 import { getDeviceId, getMeta, META, setMeta } from './meta';
 
@@ -36,6 +37,10 @@ export interface MutableRows {
   user_content: UserContent;
   decks: Deck;
   known_terms: KnownTerm;
+  /** v0.5 İP1 (decision 0043); server table user_texts. */
+  texts: ReaderText;
+  /** v0.5 İP1; server table user_encounters. */
+  encounters: EncounterRow;
 }
 export type MutableTable = keyof MutableRows;
 

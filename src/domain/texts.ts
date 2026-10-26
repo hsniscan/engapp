@@ -41,7 +41,15 @@ export interface ReaderText extends SyncedRow {
   /** Total foreground reading time in ms. */
   read_ms: number;
   finished_at: Millis | null;
+  /**
+   * The user's "çok zor / çok kolay" on this text (İP1, decision 0043): it nudged
+   * settings.reading_offset once; changing it moves the offset back. Absent/null = none.
+   */
+  feedback?: TextFeedback | null;
 }
+
+/** "Çok zor" / "Çok kolay" on a text. */
+export type TextFeedback = 'hard' | 'easy';
 
 /** What a capture package hands over; saveText (data/texts.ts) fills the rest. */
 export interface NewText {
@@ -55,19 +63,28 @@ export interface NewText {
 /** Where an encounter with a word happened (İP1 counter, İP8 story). */
 export type EncounterSource = 'review' | 'reader' | 'story';
 
-/** Times the user met a note on one day from one source. Never touches FSRS or review_logs. */
-export interface EncounterRow {
-  /** `${note_id}|${day}|${source}` */
+/**
+ * Times the user met a note on one day from one source, counted on one device. Never touches
+ * FSRS or review_logs. Synced (user_encounters) and, like review history, never copied to
+ * another account. One row per device: two devices counting the same note on the same day
+ * each own their row, so last-writer-wins never loses a count; readers add the rows up
+ * (decision 0043). Write through data/encounters.ts, never by hand.
+ */
+export interface EncounterRow extends SyncedRow {
+  /** encounterId(note_id, day, source, device_id) */
   id: string;
   note_id: Id;
   /** Study day, YYYY-MM-DD (domain/day.ts). */
   day: string;
   source: EncounterSource;
   n: number;
+  /** The device that counted them (meta device id). */
+  device_id: string;
 }
 
-export const encounterId = (noteId: Id, day: string, source: EncounterSource): string =>
-  `${noteId}|${day}|${source}`;
+/** `${note_id}|${day}|${source}`, plus `|${device_id}` for a stored row. */
+export const encounterId = (noteId: Id, day: string, source: EncounterSource, deviceId?: string): string =>
+  deviceId ? `${noteId}|${day}|${source}|${deviceId}` : `${noteId}|${day}|${source}`;
 
 /**
  * Reading difficulty (Hasan's choice, 2026-10-25): the share of unknown running words a
@@ -83,6 +100,17 @@ export const DIFFICULTY_BANDS: Record<ReadingDifficulty, { min: number; max: num
 
 export const DEFAULT_DIFFICULTY: ReadingDifficulty = 'dengeli';
 export const UNKNOWN_RATE_CAP = 0.1;
+
+export const READING_DIFFICULTIES: readonly ReadingDifficulty[] = ['rahat', 'dengeli', 'zorlayici'];
+
+/**
+ * settings.reading_offset (decision 0043): how much the "çok zor / çok kolay" answers scale
+ * the estimated unknown share of words the user has no record of. +0.1 per "çok zor",
+ * −0.1 per "çok kolay", kept within ±0.5 (so one answer moves a 4 % text by about 0.3 points
+ * and the model can never be pushed far from the level data).
+ */
+export const READING_OFFSET_STEP = 0.1;
+export const READING_OFFSET_MAX = 0.5;
 
 /** Result of measuring a text against what the user knows (domain/coverage.ts, İP1). */
 export interface CoverageResult {

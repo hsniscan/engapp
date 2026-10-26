@@ -166,6 +166,8 @@ const RESYNC_TABLES = [
   'user_content',
   'decks',
   'known_terms',
+  'texts',
+  'encounters',
 ] as const;
 export type ResyncTable = (typeof RESYNC_TABLES)[number];
 
