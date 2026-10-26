@@ -134,7 +134,7 @@ describe('home offer', { timeout: 30_000 }, () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ayarla' })).toHaveAttribute(
       'href',
-      '/settings#calisma',
+      '/settings/calisma',
     );
     await user.click(screen.getByRole('button', { name: 'Sonra' }));
     await waitFor(() => expect(screen.queryByTestId('fsrs-offer')).not.toBeInTheDocument());

@@ -65,7 +65,7 @@ export async function timeFirstCard(
       return !!b && !b.disabled && !!document.querySelector('[data-card-type]');
     };
     const t0 = performance.now();
-    if (how === 'click') (document.querySelector('a[href="/review"]') as HTMLAnchorElement).click();
+    if (how === 'click') (document.querySelector('a[data-testid="start-study"]') as HTMLAnchorElement).click();
     await new Promise<void>((resolve) => {
       if (ready()) return resolve();
       const mo = new MutationObserver(() => {

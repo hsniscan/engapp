@@ -93,6 +93,11 @@ export const cardSchema: z.ZodType<Card> = z.object({
   lapses: z.number().int().min(0),
   state: cardState,
   last_review: millis.nullable(),
+  // Learning model (ADR 0041). Absent in backups and server rows from before the columns
+  // existed, and dropped by older app versions: derived from the logs, so the next recompute
+  // (data/maintenance.ts) fills them in.
+  ramp_step: z.number().int().min(0).default(0),
+  learned_at: millis.nullable().default(null),
 });
 
 export const reviewLogSchema: z.ZodType<ReviewLog> = z.object({
@@ -213,6 +218,9 @@ export const settingsSchema: z.ZodType<Settings> = z.object({
       week_active_days: z.number().int().min(1).max(7).nullish().catch(null),
       month_new_terms: z.number().int().min(1).max(100_000).nullish().catch(null),
       week_minutes: z.number().int().min(1).max(100_000).nullish().catch(null),
+      // Redesign home goals (no schema change: the same JSON column).
+      day_minutes: z.number().int().min(1).max(1440).nullish().catch(null),
+      target_level: cefr.nullish().catch(null),
     })
     .nullish()
     .catch(null),
@@ -274,7 +282,14 @@ export const levelTestSchema: z.ZodType<LevelTest> = z.object({
   vocab_estimate: z.number().int().min(0),
   reliable: z.boolean(),
   false_alarm_rate: z.number().min(0).max(1),
-  ratios: z.object({ A1: z.number(), A2: z.number(), B1: z.number(), B2: z.number(), C1: z.number(), C2: z.number() }),
+  ratios: z.object({
+    A1: z.number(),
+    A2: z.number(),
+    B1: z.number(),
+    B2: z.number(),
+    C1: z.number(),
+    C2: z.number(),
+  }),
   items: z.array(levelTestItemSchema).max(200),
   bank_version: z.string().min(1).max(64),
   applied: z.boolean(),

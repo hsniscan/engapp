@@ -180,7 +180,10 @@ describe('reset', () => {
     expect(copy.state).toBe(0);
     // The production card has no history of its own: locked again until the copy is learned.
     expect((await db.cards.get(production.id))!.unlocked).toBe(false);
-    await answerCard({ card_id: copy.id, rating: Rating.Easy, duration_ms: 1000 }, T0 + 100 * DAY + 1000);
+    // Graduating is not enough any more (ADR 0041): the copy must be recalled on another day.
+    const easy = await answerCard({ card_id: copy.id, rating: Rating.Easy, duration_ms: 1000 }, T0 + 100 * DAY + 1000);
+    expect((await db.cards.get(production.id))!.unlocked).toBe(false);
+    await answerCard({ card_id: copy.id, rating: Rating.Good, duration_ms: 1000 }, easy.card.due);
     expect((await db.cards.get(production.id))!.unlocked).toBe(true);
   });
 });

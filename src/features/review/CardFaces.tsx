@@ -110,24 +110,28 @@ export function SpeakButton({
  * aloud, and its Turkish translation under it, when there is one. An example sentence's
  * translation waits for a tap unless the user turned that off.
  */
-function BackSentence({
+export function BackSentence({
   sentence,
   term,
   speech,
   className,
+  align = 'center',
 }: {
   sentence: CardSentence;
   term: string;
   speech: SpeakProps;
   className?: string;
+  /** 'start': left-aligned, full width (the study session's sentence panel). */
+  align?: 'center' | 'start';
 }) {
   const { t } = useTranslation();
   const [trShown, setTrShown] = useState(false);
   const { speakText } = speech;
   const text = sentence.text;
+  const start = align === 'start';
   return (
-    <div className="flex w-full max-w-md flex-col items-center gap-1.5">
-      <div className="flex items-start justify-center gap-1">
+    <div className={cn('flex w-full flex-col gap-1.5', start ? 'items-start text-left' : 'max-w-md items-center')}>
+      <div className={cn('flex items-start gap-1', start ? 'w-full justify-between' : 'justify-center')}>
         <Sentence sentence={text} span={sentence.span} term={term} className={cn('min-w-0', className)} />
         {speakText && (
           <SpeakButton
@@ -209,7 +213,7 @@ function Term({ term, size = 'lg' }: { term: string; size?: 'lg' | 'md' }) {
   );
 }
 
-function Ipa({ ipa }: { ipa: string | null }) {
+export function Ipa({ ipa }: { ipa: string | null }) {
   if (!ipa) return null;
   return (
     <p lang="en" className="font-serif text-lg text-fg-muted">
@@ -337,7 +341,7 @@ export const CardFront = memo(function CardFront({ view, isNew, speech }: FacePr
   );
 });
 
-function SenseList({ view, align = 'center' }: { view: CardView; align?: 'center' | 'start' }) {
+export function SenseList({ view, align = 'center' }: { view: CardView; align?: 'center' | 'start' }) {
   const { t } = useTranslation();
   const { sense } = view;
   // A per-sense recognition card (split leech) covers only its own sense.

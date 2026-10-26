@@ -32,7 +32,6 @@ import {
 } from '../domain/schemas';
 import {
   type Card,
-  type CardStateValue,
   type Id,
   type LevelTest,
   type Millis,
@@ -43,13 +42,13 @@ import {
   type WeeklyReport,
 } from '../domain/types';
 import { emptyFsrs } from '../domain/fsrs';
-import { db } from './db';
+import { db, STAGE_RULE_NOTICE_KEY } from './db';
 import { compactGuestOutbox, compactOutbox } from './outbox';
 import { whileRestoring } from './restoreState';
 import { rebuildDailyActivity } from './dailyActivity';
 import { ActionError } from './errors';
 import { groupLogs } from './history';
-import { getDeviceId, META, setMeta } from './meta';
+import { getDeviceId, getMeta, META, setMeta } from './meta';
 import { dayConfig, getSettings, schedulerFor, updateSettings } from './settings';
 import { type MutableRows, type MutableTable, type SyncWriter, writeTx } from './writer';
 
@@ -125,15 +124,15 @@ export async function recomputeCardsIn(w: SyncWriter, cardIds: Iterable<Id> | 'a
     if (list) list.push(c);
     else recognitionByNote.set(c.note_id, [c]);
   }
-  const recognitionState = new Map<Id, CardStateValue>();
+  const recognitionOfNote = new Map<Id, Card>();
   for (const [noteId, list] of recognitionByNote) {
     const primary = primaryRecognition(list);
-    if (primary) recognitionState.set(noteId, primary.state);
+    if (primary) recognitionOfNote.set(noteId, primary);
   }
   const changed: Card[] = [];
   for (const original of cards) {
     let c = updated.get(original.id)!;
-    const unlocked = deriveUnlocked(c, recognitionState.get(c.note_id) ?? null);
+    const unlocked = deriveUnlocked(c, recognitionOfNote.get(c.note_id) ?? null);
     if (unlocked !== c.unlocked) c = { ...c, unlocked };
     if (c !== original) changed.push(c);
   }
@@ -144,6 +143,35 @@ export async function recomputeCardsIn(w: SyncWriter, cardIds: Iterable<Id> | 'a
 /** Rebuild every card's FSRS state and unlock flag from the review logs. */
 export async function recomputeAllCards(now: Millis = Date.now()): Promise<number> {
   return writeTx([db.cards, db.review_logs, db.settings], now, (w) => recomputeCardsIn(w, 'all'));
+}
+
+// ------------------------------------------------------------------ learning model (ADR 0041)
+
+/** Meta key: the one-off replay that fills ramp_step / learned_at has run on this device. */
+export const LEARNING_MODEL_BACKFILL_KEY = 'learning_model_backfill_v1';
+
+/**
+ * One-off job after the upgrade to the learning model: replay every card from its logs to fill
+ * ramp_step and learned_at (the v26 Dexie upgrade only set them to 0 / null). Due dates do not
+ * change, because every log written before the release is before RAMP_EPOCH and is replayed
+ * without caps. Changed cards are queued, so the server gets the derived values too. Runs once
+ * per device; returns the number of cards written (0 when it already ran).
+ */
+export async function backfillLearningModel(now: Millis = Date.now()): Promise<number> {
+  if ((await getMeta<boolean>(LEARNING_MODEL_BACKFILL_KEY)) === true) return 0;
+  const changed = await recomputeAllCards(now);
+  await setMeta(LEARNING_MODEL_BACKFILL_KEY, true);
+  return changed;
+}
+
+/** The one-time Bugün note about the new counting rule is still to be shown. */
+export async function stageRuleNoticePending(): Promise<boolean> {
+  return (await getMeta<boolean>(STAGE_RULE_NOTICE_KEY)) === false;
+}
+
+/** The user saw (or closed) the note about the new counting rule. */
+export async function markStageRuleNoticeSeen(): Promise<void> {
+  await setMeta(STAGE_RULE_NOTICE_KEY, true);
 }
 
 // ------------------------------------------------------------------ reset study history

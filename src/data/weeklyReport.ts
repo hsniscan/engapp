@@ -25,6 +25,7 @@ import {
   reportWeekFor,
 } from '../domain/weeklyReport';
 import type {
+  CefrLevel,
   Millis,
   ReportDraft,
   Settings,
@@ -257,6 +258,8 @@ export interface GoalsView {
   /** Progress this week (days, minutes) and this month (new words), goals that are set. */
   progress: GoalProgress[];
   suggestions: Record<GoalKey, GoalSuggestion>;
+  /** The user's current level (the dialog offers target levels above it). */
+  level: CefrLevel;
 }
 
 /** Facts of the SUGGESTION_WEEKS complete weeks before the current one, oldest first. */
@@ -295,13 +298,25 @@ export async function getGoalsView(now: Millis = Date.now()): Promise<GoalsView>
       monthLearned: countLearned(learned, `${today.slice(0, 7)}-01`, today),
     }),
     suggestions: suggestGoals(pastWeekFacts(activity, learned, today)),
+    level: settings.level,
   };
 }
 
 /** Set the goals (null or empty = none). */
 export async function setGoals(goals: Goals | null, now: Millis = Date.now()): Promise<Settings> {
   const clean = goals
-    ? Object.fromEntries(Object.entries(goals).filter(([, v]) => typeof v === 'number'))
+    ? Object.fromEntries(
+        Object.entries(goals).filter(([, v]) => typeof v === 'number' || typeof v === 'string'),
+      )
     : {};
   return updateSettings({ goals: Object.keys(clean).length ? clean : null }, now);
+}
+
+/**
+ * Change some goals and keep the others (null clears one). For editors that show only part
+ * of the goals, e.g. the redesign's daily minutes and target level.
+ */
+export async function updateGoals(patch: Goals, now: Millis = Date.now()): Promise<Settings> {
+  const current = (await getSettings(now)).goals ?? {};
+  return setGoals({ ...current, ...patch }, now);
 }

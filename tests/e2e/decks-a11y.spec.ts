@@ -1,7 +1,7 @@
 /**
- * Accessibility (axe, WCAG 2.2 AA) of the İP8 screens with realistic data: Cards with deck
- * chips and the bulk bar, the tag sheet, the Decks page, the deck editor and the theme
- * preview, at phone and desktop width, light and dark. With SHOTS_DIR=<dir> it also writes
+ * Accessibility (axe, WCAG 2.2 AA) of the İP8 screens with realistic data: Desteler
+ * (Destelerim, Keşfet), a deck's own page, the rules editor, Tüm kelimelerim with the bulk bar,
+ * the tag sheet and the theme preview, at phone and desktop width, light and dark. With SHOTS_DIR=<dir> it also writes
  * screenshots there (kept out of docs/screenshots on purpose).
  */
 import AxeBuilder from '@axe-core/playwright';
@@ -76,9 +76,9 @@ for (const width of [360, 1280]) {
       await page.emulateMedia({ colorScheme: scheme, reducedMotion: 'reduce' });
       await restoreSeed(page, 150);
 
-      // Decks page, empty, then the editor.
+      // Desteler, no decks yet, then the rules editor ("Yeni deste · Kurallarla").
       await page.goto('/decks');
-      await page.getByRole('button', { name: 'İlk desteni oluştur' }).click();
+      await page.getByRole('button', { name: /Kurallarla/ }).click();
       const editor = page.getByRole('dialog', { name: 'Yeni deste' });
       await editor.getByRole('textbox', { name: 'Adı' }).fill('İş · zorlandıklarım');
       await editor.getByRole('button', { name: /#iş/ }).click();
@@ -87,27 +87,37 @@ for (const width of [360, 1280]) {
       await expect(editor.getByText(/Şu an \d+ kelime bu desteye giriyor\./)).toBeVisible();
       await check(page, 'editor', tag);
       await editor.getByRole('button', { name: 'Oluştur' }).click();
-      await page.getByRole('button', { name: 'Yeni deste' }).first().click();
+      // Saving opens the deck's own page.
+      await expect(page).toHaveURL(/\/decks\/[^/?]+$/);
+      const deckId = new URL(page.url()).pathname.split('/').pop()!;
+      await expect(
+        page.getByRole('heading', { level: 1, name: 'İş · zorlandıklarım' }),
+      ).toBeVisible();
+      await check(page, 'deck-detail', tag);
+      await page.goto('/decks');
+      await page.getByRole('button', { name: /Kurallarla/ }).click();
       await editor.getByRole('textbox', { name: 'Adı' }).fill('Bu hafta eklediklerim');
       await editor.getByText('Son 7 gün', { exact: true }).click();
       await editor.getByRole('button', { name: 'Oluştur' }).click();
-      await expect(page.getByRole('list', { name: 'Desteler' }).getByRole('listitem')).toHaveCount(
-        2,
-      );
+      await expect(page).toHaveURL(/\/decks\/[^/?]+$/);
+      await page.goto('/decks');
+      await expect(
+        page.getByRole('list', { name: 'Destelerim' }).getByRole('listitem'),
+      ).toHaveCount(2);
       await check(page, 'decks', tag);
+      // Keşfet before the word bank is downloaded.
+      await page.goto('/decks?tab=discover');
+      await expect(page.getByRole('link', { name: 'Keşfet', exact: true })).toHaveAttribute(
+        'aria-current',
+        'page',
+      );
+      await check(page, 'decks-discover', tag);
 
-      // Cards: deck chips, an active deck, then a selection with the bulk bar and the tag sheet.
-      await page.goto('/library');
-      await page
-        .getByRole('group', { name: 'Desteler' })
-        .getByRole('button', { name: /İş · zorlandıklarım/ })
-        .click();
-      await expect(page).toHaveURL(/deck=/);
+      // Tüm kelimelerim: one deck's words, then a selection with the bulk bar and the tag sheet.
+      await page.goto(`/library?deck=${deckId}`);
+      await expect(page.getByRole('link', { name: 'Desteyi aç' })).toBeVisible();
       await check(page, 'library-deck', tag);
-      await page
-        .getByRole('group', { name: 'Desteler' })
-        .getByRole('button', { name: 'Tüm kelimeler' })
-        .click();
+      await page.goto('/library');
       const boxes = page.getByRole('list', { name: 'Notlar' }).getByRole('checkbox');
       for (let i = 0; i < 3; i++) await boxes.nth(i).click();
       await expect(page.getByRole('region', { name: 'Seçili notlar için işlemler' })).toBeVisible();

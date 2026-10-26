@@ -9,6 +9,7 @@ import {
   type BandEstimate,
   type EvidenceKnownTerm,
   type EvidenceNote,
+  learnedEvidence,
   type LevelTestRecord,
   type ModelInput,
   ratiosAt,
@@ -17,8 +18,9 @@ import {
   weekStartMs,
 } from '../domain/levelUpdate';
 import { type VocabSize, vocabSize } from '../domain/vocabSize';
+import { replayCard } from '../domain/recompute';
+import { cardStage, isLearnedStage } from '../domain/stages';
 import {
-  CardState,
   type CefrLevel,
   type Id,
   type LevelTest,
@@ -32,7 +34,7 @@ import { db } from './db';
 import { markKnownIn } from './knownTerms';
 import { levelDataNow, loadLevelData } from './levelData';
 import { getCurrentUserId, getMeta, setMeta } from './meta';
-import { dayConfig, defaultSettings, getSettings, SETTINGS_ID } from './settings';
+import { dayConfig, defaultSettings, getSettings, schedulerFor, SETTINGS_ID } from './settings';
 import { writeTx } from './writer';
 
 /** Lemmas per level in the word list (data/level-test/band-sizes.json, built with the bank). */
@@ -62,7 +64,7 @@ export const testRecord = (t: LevelTest): LevelTestRecord => ({
 interface LoadedModel {
   settings: Settings;
   input: ModelInput;
-  /** Words outside the word list that the user learned (card in Review) or marked known. */
+  /** Words outside the word list that the user learned (Öğrenildi or Kalıcı) or marked known. */
   outside: number;
   tests: LevelTest[];
 }
@@ -125,6 +127,7 @@ async function loadModel(now: Millis): Promise<LoadedModel> {
       }
 
       const inList = (term: string) => !!data?.lookup(term)?.refs.length;
+      const scheduler = schedulerFor(settings);
       let outside = 0;
       const noteTerms = new Set<string>();
       const evidenceNotes: EvidenceNote[] = notes.map((n) => {
@@ -132,19 +135,16 @@ async function loadModel(now: Millis): Promise<LoadedModel> {
         const rec = recognition.get(n.id);
         const own = (sensesByNote.get(n.id) ?? []).sort((a, b) => a.sense_no - b.sense_no);
         const level = noteLevel(n, own, (id) => lex.get(id), data);
-        if (
-          data &&
-          !inList(n.term_norm) &&
-          rec &&
-          (rec.state === CardState.Review || rec.state === CardState.Relearning)
-        )
-          outside++;
+        if (data && !inList(n.term_norm) && rec && isLearnedStage(cardStage(rec))) outside++;
+        const recLogs = rec ? (logsByCard.get(rec.id) ?? []) : [];
         return {
           id: n.id,
           term_norm: n.term_norm,
           band: level?.cefr ?? null,
-          logs: rec ? (logsByCard.get(rec.id) ?? []) : [],
+          logs: recLogs,
           practice: practiceByNote.get(n.id) ?? [],
+          // learned_at with "no lapse before it" needs the card's history: replay it.
+          learned: rec && rec.learned_at !== null ? learnedEvidence(replayCard(scheduler, rec, recLogs).steps) : null,
         };
       });
       const knownTerms: EvidenceKnownTerm[] = [];

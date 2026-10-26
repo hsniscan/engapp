@@ -260,6 +260,27 @@ export interface RetentionCardFacts {
   pos: readonly string[];
   /** The card's own sense (production, cloze, picture cards); absent or null for recognition. */
   sense_id?: Id | null;
+  /**
+   * Local day of the card's learned_at (first time at Öğrenildi, ADR 0041); absent or null when
+   * it never got there. Only recognition cards' days make a note learned.
+   */
+  learned_day?: DayKey | null;
+}
+
+/**
+ * The local day each word was learned: its recognition card's learned_at (ADR 0041). Affix
+ * roots and contrast notes are not words and never count; production, cloze and picture cards
+ * never make a word learned.
+ */
+export function noteLearnedDaysOf(facts: ReadonlyMap<Id, RetentionCardFacts>): Map<Id, DayKey> {
+  const out = new Map<Id, DayKey>();
+  for (const f of facts.values()) {
+    if (f.card_type !== 'recognition' || !f.learned_day) continue;
+    if (f.term_type === 'affix' || f.term_type === 'contrast') continue;
+    const prev = out.get(f.note_id);
+    if (prev === undefined || f.learned_day < prev) out.set(f.note_id, f.learned_day);
+  }
+  return out;
 }
 
 export interface GroupRetention extends RetentionStat {
@@ -596,8 +617,9 @@ export function weekOf(day: DayKey): DayKey {
 }
 
 /**
- * The last `weeks` weeks ending with the current one (oldest first): notes learned per week
- * (a note is learned when its first live card first reached Review) and weekly retention.
+ * The last `weeks` weeks ending with the current one (oldest first): words learned per week
+ * (a word is learned on the day its recognition card first reached Öğrenildi, ADR 0041) and
+ * weekly retention.
  */
 export function weeklySeries(
   data: RetentionData,
@@ -610,13 +632,7 @@ export function weeklySeries(
   const index = new Map(keys.map((k, i) => [k, i]));
   const first = keys[0]!;
 
-  const noteLearned = new Map<Id, DayKey>();
-  for (const [cardId, r] of data.reachedReview) {
-    const f = facts.get(cardId);
-    if (!f) continue;
-    const prev = noteLearned.get(f.note_id);
-    if (prev === undefined || r.day < prev) noteLearned.set(f.note_id, r.day);
-  }
+  const noteLearned = noteLearnedDaysOf(facts);
   const learned = new Array<number>(weeks).fill(0);
   let before = 0;
   for (const day of noteLearned.values()) {

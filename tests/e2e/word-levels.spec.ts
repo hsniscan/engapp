@@ -114,9 +114,9 @@ test('card back: the level badge explains itself and links to Kaynaklar; Setting
   await expect(sources.getByRole('heading', { name: 'wordfreq 3.1.1' })).toBeVisible();
   await expect(sources.getByText('CC BY-SA 4.0', { exact: true })).toBeVisible();
 
-  // The settings page reaches it through "Hakkında".
-  await page.locator('a[href="/settings#hakkinda"]').click();
-  await expect(page).toHaveURL(/\/settings#hakkinda$/);
+  // The settings page reaches it through "Hakkında ve yardım".
+  await page.locator('a[href="/settings/hakkinda"]').click();
+  await expect(page).toHaveURL(/\/settings\/hakkinda$/);
   await page
     .getByRole('link', { name: /Kaynaklar/ })
     .first()
@@ -147,7 +147,7 @@ test('signed in: levels stored with the lexicon by ai-extract; an AI guess has a
   await FakeBackend.signIn(context);
   const specs = FAKE_SPECS.filter((s) => ['reluctant', 'backfire', 'cut corners'].includes(s.term));
   // A B2 learner: the two B2 words are pre-selected, the C1 idiom (one above) is picked by hand.
-  await page.goto('/settings');
+  await page.goto('/settings/seviye');
   await page.getByRole('combobox', { name: 'Seviyen' }).click();
   await page.getByRole('option', { name: /^B2/ }).click();
   await expect(page.getByRole('combobox', { name: 'Seviyen' })).toContainText('B2');

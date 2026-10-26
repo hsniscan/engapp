@@ -23,6 +23,7 @@ import { isLeech } from './leech';
 import {
   type GroupRetention,
   MIN_ANSWERS,
+  noteLearnedDaysOf,
   overallRetention,
   RETENTION_DIMENSIONS,
   type RetentionCardFacts,
@@ -72,19 +73,15 @@ export function reportWeekFor(today: DayKey): DayKey {
   return addDays(mondayOf(today), -7);
 }
 
-/** The local day each note first reached Review (its earliest card). */
+/**
+ * The local day each word was learned: its recognition card first reached Öğrenildi (ADR 0041,
+ * retention.ts noteLearnedDaysOf). `data` is kept for the call sites; the days come from facts.
+ */
 export function noteLearnedDays(
-  data: Pick<RetentionData, 'reachedReview'>,
+  _data: Pick<RetentionData, 'reachedReview'>,
   facts: ReadonlyMap<Id, RetentionCardFacts>,
 ): Map<Id, DayKey> {
-  const out = new Map<Id, DayKey>();
-  for (const [cardId, r] of data.reachedReview) {
-    const f = facts.get(cardId);
-    if (!f) continue;
-    const prev = out.get(f.note_id);
-    if (prev === undefined || r.day < prev) out.set(f.note_id, r.day);
-  }
-  return out;
+  return noteLearnedDaysOf(facts);
 }
 
 /** Notes learned between two days (both included). */

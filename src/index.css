@@ -69,6 +69,15 @@
   --color-heat-active: var(--heat-active);
   --color-heat-completed: var(--heat-completed);
   --color-scrim: var(--scrim);
+  --color-hero-ring: var(--hero-ring);
+  --color-hero-muted: var(--hero-muted);
+  --color-hero-action: var(--hero-action);
+  --color-hero-action-fg: var(--hero-action-fg);
+  --color-streak-flame: var(--streak-flame);
+  --color-stage-learning: var(--stage-learning);
+  --color-stage-consolidating: var(--stage-consolidating);
+  --color-stage-learned: var(--stage-learned);
+  --color-stage-mastered: var(--stage-mastered);
   /* Interaction overlays: ink at low alpha, so they read on any surface in both themes */
   --color-hover: color-mix(in oklab, var(--fg) 6%, transparent);
   --color-selected: color-mix(in oklab, var(--fg) 9%, transparent);
@@ -164,6 +173,8 @@
   --duration-medium: 280ms;
   --duration-large: 520ms;
   --nav-height: 64px;
+  /* The (+) button in the tab bar rises this far above it; floating bars clear it. */
+  --nav-fab-rise: 1.25rem;
 }
 
 @layer base {
@@ -178,7 +189,8 @@
        floating action bar (--floating-bar, set while one is shown; WCAG 2.4.11). */
     scroll-padding-top: calc(3.5rem + env(safe-area-inset-top) + 0.5rem);
     scroll-padding-bottom: calc(
-      var(--nav-height) + env(safe-area-inset-bottom) + 0.5rem + var(--floating-bar, 0px)
+      var(--nav-height) + var(--nav-fab-rise) + env(safe-area-inset-bottom) + 0.5rem +
+        var(--floating-bar, 0px)
     );
     @media (width >= 48rem) {
       scroll-padding-bottom: calc(0.5rem + var(--floating-bar, 0px));

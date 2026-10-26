@@ -95,7 +95,7 @@ test('signed in: sentences are prepared for a new card and controlled on its bac
   await expect.poll(() => backend.pushedIds('content_feedback').length, { timeout: 20_000 }).toBe(2);
 
   if (SHOTS) {
-    await page.goto('/settings#ornekler');
+    await page.goto('/settings/kartlar#ornekler');
     const section = page.locator('#ornekler');
     await expect(section.getByRole('group', { name: 'Hazırlanacak bağlamlar' })).toBeVisible();
     await section.screenshot({ path: `${SHOTS}/settings-light.png` });

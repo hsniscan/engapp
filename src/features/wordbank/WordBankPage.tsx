@@ -1,118 +1,106 @@
-// Kelime Bankası (decision 0038): every leveled list word with its Turkish meanings and an
-// example, by level. "Ekle" adds a word through the normal add path; several can be picked at
-// once, and "Bu seviyeden 10 kelime ekle" follows the level mix (domain/wordBank.ts).
-import { useLiveQuery } from 'dexie-react-hooks';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+// Kelime Bankası (decision 0038), now the third segment of Desteler (board DecksBank): every
+// leveled list word with its Turkish meanings and an example. Filters (level, part of speech,
+// order, hide what I know), select several and "Ekle" them to Tüm kelimelerim, or open a word
+// to pick its meanings and add just that one. "Deste yap" opens the matching suggested deck.
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
-import {
-  addFromWordBank,
-  getOwnedTerms,
-  getSettings,
-  listWordBank,
-  logError,
-  type BankAddResult,
-} from '@/data';
-import type { WordLevel } from '@/domain/level';
+import { Link, Navigate } from 'react-router';
+import { addFromWordBank, logError, type BankAddResult } from '@/data';
+import { CEFR } from '@/domain/level';
+import { CONTENT_POS, type ContentPos, type SuggestedSpec } from '@/domain/suggestedDecks';
 import type { CefrLevel } from '@/domain/types';
 import {
-  countByLevel,
   filterBank,
+  ownedStatus,
   pickLevelMix,
   QUICK_ADD_COUNT,
   type BankItem,
   type OwnedTerms,
   type WordBankEntry,
 } from '@/domain/wordBank';
-import { WORDBANK_POS } from '../../../supabase/functions/_shared/wordbank-contract';
-import {
-  Badge,
-  Button,
-  Checkbox,
-  EmptyState,
-  Icon,
-  IconButton,
-  Page,
-  SegmentedControl,
-  Select,
-  Skeleton,
-  Spinner,
-  Surface,
-  Switch,
-  TextField,
-  cn,
-  toast,
-} from '@/ui';
+import { Button, Checkbox, cn, Icon, Skeleton, Switch, TextField, toast } from '@/ui';
 import { posLabel } from '@/features/cards/labels';
-import { LevelBadge } from '@/features/levels/LevelBadge';
-import { fetchWordBank, type WordBankFetchOutcome } from './fetcher';
+import { BankMissing } from '@/features/decks/DiscoverTab';
+import { nf } from '@/features/decks/deckUi';
+import { FilterChip, FreqDots } from '@/features/decks/parts';
+import { specHref, useBankData, useWordBankDownload } from '@/features/decks/suggested';
 
-const LEVELS: CefrLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 const PAGE = 50;
-const ALL_POS = '__all';
-const NO_OWNED: OwnedTerms = { known: new Set(), carded: new Set() };
+const OTHER = '__other';
+type PosFilter = ContentPos | typeof OTHER | null;
+type Sort = 'freq' | 'az';
 
-const badgeLevel = (e: WordBankEntry): WordLevel => ({
-  cefr: e.cefr,
-  source: e.list_source,
-  list_cefr: null,
-  reason_tr: null,
-  auto: null,
-});
-
-type Download = 'running' | WordBankFetchOutcome['status'];
-
+/** The old /kelime-bankasi route: the bank lives in Desteler now. */
 export function WordBankPage() {
-  const { t } = useTranslation();
-  const entries = useLiveQuery(() => listWordBank(), []);
-  // The list waits for owned words and the level, so nothing known flashes or gets added.
-  const ownedLoaded = useLiveQuery(() => getOwnedTerms(), []);
-  const owned = ownedLoaded ?? NO_OWNED;
-  const userLevel = useLiveQuery(async () => (await getSettings()).level, []);
+  return <Navigate to="/decks?tab=bank" replace />;
+}
 
-  const [level, setLevel] = useState<CefrLevel | null>(null);
+const isContent = (pos: string): pos is ContentPos => (CONTENT_POS as readonly string[]).includes(pos);
+
+export function WordBankPanel() {
+  const { t } = useTranslation();
+  const { download, retry } = useWordBankDownload();
+  const data = useBankData();
+
+  const [level, setLevel] = useState<CefrLevel | null | undefined>(undefined);
+  const [pos, setPos] = useState<PosFilter>(null);
+  const [sort, setSort] = useState<Sort>('freq');
   const [query, setQuery] = useState('');
-  const [pos, setPos] = useState(ALL_POS);
-  const [showOwned, setShowOwned] = useState(false);
+  const [hideOwned, setHideOwned] = useState(true);
   const [paging, setPaging] = useState({ key: '', shown: PAGE });
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [busy, setBusy] = useState(false);
-  const [download, setDownload] = useState<Download>('running');
 
-  const activeLevel: CefrLevel = level ?? userLevel ?? 'B1';
-  // A new level, filter or search starts the list from its first page again.
-  const filterKey = `${activeLevel}|${pos}|${query}|${showOwned}`;
-  const shown = paging.key === filterKey ? paging.shown : PAGE;
-  const showMore = () => setPaging({ key: filterKey, shown: shown + PAGE });
-
-  const download$ = useCallback(
-    (force: boolean) => fetchWordBank(undefined, { force }).then((r) => setDownload(r.status)),
-    [],
-  );
-  useEffect(() => {
-    void download$(false);
-  }, [download$]);
-  const retryDownload = () => {
-    setDownload('running');
-    void download$(true);
-  };
-
-  const items: BankItem[] = useMemo(
+  const owned: OwnedTerms = useMemo(
     () =>
-      filterBank(
-        entries ?? [],
-        {
-          level: query.trim() ? null : activeLevel,
-          pos: pos === ALL_POS ? null : pos,
-          query,
-          showOwned,
-        },
-        owned,
-      ),
-    [entries, activeLevel, pos, query, showOwned, owned],
+      data
+        ? {
+            known: data.idx.known,
+            carded: new Set(data.idx.stage.keys()),
+          }
+        : { known: new Set(), carded: new Set() },
+    [data],
   );
-  const perLevel = useMemo(() => countByLevel(entries ?? [], owned), [entries, owned]);
-  const byId = useMemo(() => new Map((entries ?? []).map((e) => [e.id, e])), [entries]);
+  // The learner's level until they pick another (null = every level).
+  const activeLevel = level === undefined ? (data?.level ?? 'B1') : level;
+  const searching = query.trim() !== '';
+
+  const base = useMemo(
+    () =>
+      data
+        ? filterBank(
+            data.entries,
+            { level: searching ? null : activeLevel, pos: null, query, showOwned: !hideOwned },
+            owned,
+          )
+        : [],
+    [data, activeLevel, searching, query, hideOwned, owned],
+  );
+  const posCounts = useMemo(() => {
+    const c: Record<string, number> = { all: base.length, [OTHER]: 0 };
+    for (const p of CONTENT_POS) c[p] = 0;
+    for (const i of base) c[isContent(i.entry.pos) ? i.entry.pos : OTHER]!++;
+    return c;
+  }, [base]);
+  const items: BankItem[] = useMemo(() => {
+    const list = base.filter(
+      (i) => pos === null || (pos === OTHER ? !isContent(i.entry.pos) : i.entry.pos === pos),
+    );
+    return sort === 'az' && !searching
+      ? [...list].sort((a, b) => a.entry.lemma.localeCompare(b.entry.lemma, 'en'))
+      : list;
+  }, [base, pos, sort, searching]);
+
+  const filterKey = `${activeLevel}|${pos}|${query}|${hideOwned}|${sort}`;
+  const shown = paging.key === filterKey ? paging.shown : PAGE;
+  const byId = useMemo(() => new Map((data?.entries ?? []).map((e) => [e.id, e])), [data]);
+  const quickPick = useMemo(
+    () => (data ? pickLevelMix(data.entries, owned, activeLevel ?? data.level, QUICK_ADD_COUNT) : []),
+    [data, owned, activeLevel],
+  );
+
+  if (!data) return <Skeleton lines={6} />;
+  if (data.entries.length === 0) return <BankMissing download={download} onRetry={retry} />;
 
   const report = (res: BankAddResult) => {
     if (res.added.length === 0) {
@@ -147,11 +135,6 @@ export function WordBankPage() {
     }
   };
 
-  const quickPick = useMemo(
-    () => pickLevelMix(entries ?? [], owned, activeLevel, QUICK_ADD_COUNT),
-    [entries, owned, activeLevel],
-  );
-
   const toggle = (id: string, on: boolean) =>
     setSelected((sel) => {
       const next = new Set(sel);
@@ -160,168 +143,202 @@ export function WordBankPage() {
       return next;
     });
 
-  const empty = entries !== undefined && entries.length === 0;
+  const deckSpec: SuggestedSpec | null =
+    !searching && activeLevel && pos && pos !== OTHER
+      ? { kind: 'levelPos', level: activeLevel, pos }
+      : !searching && activeLevel && pos === null
+        ? { kind: 'level', level: activeLevel }
+        : !searching && !activeLevel && pos && pos !== OTHER
+          ? { kind: 'pos', pos }
+          : null;
+  const headingParts = [
+    searching ? null : (activeLevel ?? t('deckHub.bank.allLevels')),
+    pos === null ? null : pos === OTHER ? t('deckHub.bank.posOther') : posLabel(t, pos),
+  ].filter(Boolean);
 
   return (
-    <Page title={t('wordBank.title')} description={t('wordBank.description')}>
-      <div className="flex flex-col gap-5 pb-24">
-        {entries === undefined || ownedLoaded === undefined || userLevel === undefined ? (
-          <Surface>
-            <Skeleton lines={4} />
-          </Surface>
-        ) : empty ? (
-          download === 'running' ? (
-            <Surface className="flex items-center gap-3" role="status">
-              <Spinner />
-              <span className="text-[0.9375rem] text-fg-muted">{t('wordBank.loading')}</span>
-            </Surface>
-          ) : (
-            <EmptyState
-              icon="layers"
-              title={t('wordBank.emptyTitle')}
-              description={
-                download === 'no_backend'
-                  ? t('wordBank.emptyNoBackend')
-                  : download === 'offline'
-                    ? t('wordBank.emptyOffline')
-                    : t('wordBank.emptyFailed')
-              }
-              action={
-                download === 'no_backend' ? undefined : (
-                  <Button variant="secondary" onClick={retryDownload}>
-                    {t('wordBank.retry')}
-                  </Button>
-                )
-              }
-            />
-          )
-        ) : (
-          <>
-            <SegmentedControl
-              legend={t('wordBank.level')}
-              options={LEVELS.map((l) => ({ value: l, label: l }))}
-              value={activeLevel}
-              onValueChange={(v) => setLevel(v)}
-            />
+    <div className="flex flex-col gap-3.5 pb-24">
+      <TextField
+        label={t('deckHub.bank.search', { count: nf.format(data.entries.length) })}
+        hideLabel
+        placeholder={t('deckHub.bank.search', { count: nf.format(data.entries.length) })}
+        leadingIcon="search"
+        type="search"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+      />
 
-            <Surface className="flex flex-col gap-2" data-testid="word-bank-quick">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-fg">
-                    {t('wordBank.quickTitle', { count: QUICK_ADD_COUNT })}
-                  </p>
-                  <p className="text-sm text-fg-muted">
-                    {t('wordBank.quickHint', { level: activeLevel })}
-                  </p>
-                </div>
-                <Button
-                  onClick={() => void add(quickPick.map((entry) => ({ entry })))}
-                  disabled={busy || quickPick.length === 0}
-                >
-                  <Icon name="plus" size={18} />
-                  {t('wordBank.quickAction', { count: quickPick.length })}
-                </Button>
-              </div>
-              {quickPick.length === 0 && (
-                <p className="text-sm text-fg-muted">{t('wordBank.quickNone')}</p>
-              )}
-            </Surface>
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-              <TextField
-                label={t('wordBank.search')}
-                hideLabel
-                placeholder={t('wordBank.search')}
-                leadingIcon="search"
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                fieldClassName="flex-1"
-              />
-              <Select
-                label={t('wordBank.pos')}
-                hideLabel
-                value={pos}
-                onValueChange={setPos}
-                options={[
-                  { value: ALL_POS, label: t('wordBank.posAll') },
-                  ...WORDBANK_POS.map((p) => ({ value: p, label: posLabel(t, p) })),
-                ]}
-                className="sm:w-48"
-              />
-            </div>
-            <Switch
-              label={t('wordBank.showOwned')}
-              checked={showOwned}
-              onCheckedChange={setShowOwned}
-            />
-
-            <p className="tabular text-sm text-fg-muted" aria-live="polite">
-              {query.trim()
-                ? t('wordBank.countSearch', { count: items.length })
-                : t('wordBank.countLevel', {
-                    count: items.length,
-                    level: activeLevel,
-                    left: perLevel[activeLevel],
-                  })}
-            </p>
-
-            {items.length === 0 ? (
-              <p className="text-[0.9375rem] text-fg-muted">{t('wordBank.noMatch')}</p>
-            ) : (
-              <ul
-                aria-label={t('wordBank.listLabel')}
-                className="divide-y divide-border rounded-card border border-border bg-surface"
+      <section
+        aria-label={t('deckHub.bank.filters')}
+        className="flex flex-col gap-3.5 rounded-[20px] border border-border bg-surface p-3.5"
+      >
+        <div className={cn('flex flex-col gap-2', searching && 'opacity-60')}>
+          <span id="wb-level" className="text-[13px] text-fg-muted">
+            {t('deckHub.bank.level')}
+          </span>
+          <div role="group" aria-labelledby="wb-level" className="grid grid-cols-6 gap-1.5">
+            {CEFR.map((l) => (
+              <FilterChip
+                key={l}
+                pressed={!searching && activeLevel === l}
+                onClick={() => setLevel(activeLevel === l ? null : l)}
+                className="px-0 font-semibold"
               >
-                {items.slice(0, shown).map((item) => (
-                  <BankRow
-                    key={item.entry.id}
-                    item={item}
-                    selected={selected.has(item.entry.id)}
-                    onSelect={(on) => toggle(item.entry.id, on)}
-                    onAdd={(senses) => void add([{ entry: item.entry, senses }])}
-                    busy={busy}
-                  />
-                ))}
-              </ul>
-            )}
-            {items.length > shown && (
-              <Button variant="secondary" onClick={showMore} className="self-center">
-                {t('wordBank.more', { count: items.length - shown })}
-              </Button>
-            )}
-          </>
-        )}
+                {l}
+              </FilterChip>
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-col gap-2">
+          <span id="wb-pos" className="text-[13px] text-fg-muted">
+            {t('deckHub.bank.pos')}
+          </span>
+          <div role="group" aria-labelledby="wb-pos" className="flex flex-wrap gap-1.5">
+            {(
+              [
+                [null, t('deckHub.bank.posAll'), posCounts.all],
+                ...CONTENT_POS.map((p) => [p, posLabel(t, p), posCounts[p]] as const),
+                ...(posCounts[OTHER] ? ([[OTHER, t('deckHub.bank.posOther'), posCounts[OTHER]]] as const) : []),
+              ] as [PosFilter, string, number][]
+            ).map(([p, label, n]) => (
+              <FilterChip key={p ?? 'all'} tone="accent" pressed={pos === p} onClick={() => setPos(p)}>
+                <span>{label.charAt(0).toLocaleUpperCase('tr') + label.slice(1)}</span>{' '}
+                <span className={cn('tabular', pos === p ? '' : 'text-fg-muted')}>{nf.format(n)}</span>
+              </FilterChip>
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-2.5 border-t border-surface-sunken pt-3">
+          <div role="group" aria-label={t('deckHub.bank.sort')} className="flex gap-0.5 rounded-[11px] bg-surface-sunken p-[3px]">
+            {(['freq', 'az'] as const).map((s) => (
+              <button
+                key={s}
+                type="button"
+                aria-pressed={sort === s}
+                onClick={() => setSort(s)}
+                className={cn(
+                  'h-10 rounded-[9px] px-3 text-sm',
+                  sort === s
+                    ? 'bg-surface-raised font-semibold text-fg shadow-[0_1px_2px_rgb(31_29_26/0.12)]'
+                    : 'text-fg-muted hover:text-fg',
+                )}
+              >
+                {s === 'freq' ? t('deckHub.bank.sortFreq') : t('deckHub.bank.sortAz')}
+              </button>
+            ))}
+          </div>
+          <Switch label={t('deckHub.bank.hideOwned')} checked={hideOwned} onCheckedChange={setHideOwned} />
+        </div>
+      </section>
 
-        <p className="text-xs text-fg-subtle">
-          {t('wordBank.credit')}{' '}
+      <div className="flex items-center justify-between gap-3 px-1 pt-1">
+        <h2 className="font-serif text-[19px] font-semibold text-fg" aria-live="polite">
+          {headingParts.length
+            ? t('deckHub.bank.heading', { parts: headingParts.join(' · '), count: nf.format(items.length) })
+            : t('wordBank.countSearch', { count: items.length })}
+        </h2>
+        {deckSpec && (
           <Link
-            to="/settings/kaynaklar"
-            className="font-medium text-accent-text underline-offset-4 hover:underline"
+            to={specHref(deckSpec)}
+            className="flex min-h-11 shrink-0 items-center text-sm font-semibold text-accent-text hover:underline"
           >
-            {t('wordBank.creditLink')}
+            {t('deckHub.bank.makeDeck')}
           </Link>
-        </p>
+        )}
       </div>
+
+      {!searching && (
+        <div
+          data-testid="word-bank-quick"
+          className="flex items-center justify-between gap-3 rounded-[18px] border border-border bg-surface py-2 pr-2 pl-4"
+        >
+          <span className="min-w-0 text-sm text-fg-muted">
+            {quickPick.length
+              ? t('deckHub.bank.quick', { count: QUICK_ADD_COUNT })
+              : t('wordBank.quickNone')}
+          </span>
+          <Button
+            size="sm"
+            variant="secondary"
+            leadingIcon="plus"
+            onClick={() => void add(quickPick.map((entry) => ({ entry })))}
+            disabled={busy || quickPick.length === 0}
+          >
+            {t('wordBank.quickAction', { count: quickPick.length })}
+          </Button>
+        </div>
+      )}
+
+      {items.length === 0 ? (
+        <p className="rounded-[20px] border border-border bg-surface p-4 text-[15px] text-fg-muted">
+          {t('wordBank.noMatch')}
+        </p>
+      ) : (
+        <ul
+          aria-label={t('wordBank.listLabel')}
+          className="flex flex-col overflow-hidden rounded-[20px] border border-border bg-surface"
+        >
+          {items.slice(0, shown).map((item) => (
+            <BankRow
+              key={item.entry.id}
+              item={item}
+              owned={ownedStatus(item.entry, owned)}
+              selected={selected.has(item.entry.id)}
+              onSelect={(on) => toggle(item.entry.id, on)}
+              onAdd={(senses) => void add([{ entry: item.entry, senses }])}
+              busy={busy}
+            />
+          ))}
+        </ul>
+      )}
+      {items.length > 0 && (
+        <div className="flex flex-col items-center gap-1">
+          <span className="tabular text-[13px] text-fg-muted">
+            {t('deckHub.bank.showing', {
+              shown: nf.format(Math.min(shown, items.length)),
+              total: nf.format(items.length),
+            })}
+          </span>
+          {items.length > shown && (
+            <Button variant="ghost" onClick={() => setPaging({ key: filterKey, shown: shown + PAGE })}>
+              {t('wordBank.more', { count: items.length - shown })}
+            </Button>
+          )}
+        </div>
+      )}
+
+      <p className="text-xs text-fg-subtle">
+        {t('wordBank.credit')}{' '}
+        <Link to="/settings/kaynaklar" className="font-medium text-accent-text underline-offset-4 hover:underline">
+          {t('wordBank.creditLink')}
+        </Link>
+      </p>
 
       {selected.size > 0 && (
         <div
           role="region"
           aria-label={t('wordBank.selectionBar')}
-          className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] z-20 px-4 md:bottom-6"
+          className="fixed inset-x-3 bottom-[calc(var(--nav-height)+var(--nav-fab-rise)+env(safe-area-inset-bottom)+0.5rem)] z-20 md:bottom-6"
         >
-          <Surface className="mx-auto flex max-w-xl items-center gap-3 shadow-lg">
-            <span className="tabular min-w-0 flex-1 text-[0.9375rem] font-medium text-fg">
-              {t('wordBank.selected', { count: selected.size })}
+          <div className="mx-auto flex max-w-xl items-center gap-2.5 rounded-[18px] bg-fg py-2 pr-2 pl-4 text-fg-inverse shadow-overlay">
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="tabular text-[15px] font-semibold">
+                {t('wordBank.selected', { count: selected.size })}
+              </span>
+              <span className="text-xs opacity-80">{t('deckHub.bank.selectedBody')}</span>
             </span>
-            <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
+            <button
+              type="button"
+              onClick={() => setSelected(new Set())}
+              className="h-11 rounded-xl px-3 text-sm hover:bg-white/10"
+            >
               {t('wordBank.clearSelection')}
-            </Button>
-            <Button
-              size="sm"
+            </button>
+            <button
+              type="button"
               disabled={busy}
               onClick={() =>
                 void add(
@@ -331,87 +348,95 @@ export function WordBankPage() {
                   }),
                 )
               }
+              className="h-11 rounded-xl bg-canvas px-[18px] text-[15px] font-semibold text-accent-text disabled:opacity-50"
             >
               {t('wordBank.addSelected')}
-            </Button>
-          </Surface>
+            </button>
+          </div>
         </div>
       )}
-    </Page>
+    </div>
   );
 }
 
 function BankRow({
   item,
+  owned,
   selected,
   onSelect,
   onAdd,
   busy,
 }: {
   item: BankItem;
+  owned: 'known' | 'carded' | null;
   selected: boolean;
   onSelect: (on: boolean) => void;
   onAdd: (senses: number[]) => void;
   busy: boolean;
 }) {
   const { t } = useTranslation();
-  const { entry, owned } = item;
+  const { entry } = item;
   const [open, setOpen] = useState(false);
   const [picked, setPicked] = useState<number[]>([0]);
   const detailsId = `wb-${entry.id.replace(/[^a-z0-9]/gi, '-')}`;
   return (
-    <li className="flex flex-col gap-2 py-2 pr-2 pl-3" data-testid="word-bank-row">
-      <div className="flex items-start gap-2">
-        <Checkbox
-          label={t('wordBank.select', { term: entry.lemma })}
-          hideLabel
-          checked={selected}
-          onCheckedChange={(v) => onSelect(v === true)}
-          className="mt-2.5"
-        />
-        <div className="min-w-0 flex-1 py-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span lang="en" className="font-serif text-lg font-semibold text-fg">
-              {entry.lemma}
-            </span>
-            <span className="text-sm text-fg-muted">{posLabel(t, entry.pos)}</span>
-            <LevelBadge level={badgeLevel(entry)} />
-            {owned && (
-              <Badge tone={owned === 'carded' ? 'accent' : 'success'}>
-                {t(owned === 'carded' ? 'wordBank.carded' : 'wordBank.known')}
-              </Badge>
-            )}
-          </div>
-          <p className="text-[0.9375rem] text-fg-muted">
-            {entry.senses.map((s) => s.meaning_tr).join(' · ')}
-          </p>
-        </div>
-        <IconButton
-          icon={open ? 'chevron-up' : 'chevron-down'}
-          label={t('wordBank.details', { term: entry.lemma })}
+    <li
+      data-testid="word-bank-row"
+      className={cn('border-b border-surface-sunken last:border-b-0', selected && 'bg-accent-soft/50')}
+    >
+      <div className="flex min-h-16 items-center gap-3 py-2 pr-2.5 pl-4">
+        <button
+          type="button"
           aria-expanded={open}
           aria-controls={detailsId}
           onClick={() => setOpen((o) => !o)}
-          variant="ghost"
-        />
-        <Button
-          size="sm"
-          variant={owned ? 'ghost' : 'secondary'}
-          aria-label={t('wordBank.addLabel', { term: entry.lemma })}
-          disabled={busy}
-          onClick={() => onAdd(open && picked.length > 0 ? picked : [0])}
-          className="mt-1"
+          className="flex min-w-0 flex-1 flex-col gap-0.5 rounded-control text-left"
         >
-          {t('wordBank.add')}
-        </Button>
+          <span className="flex items-baseline gap-2">
+            <span lang="en" className="truncate font-serif text-lg font-semibold text-fg">
+              {entry.lemma}
+            </span>
+            <span className="text-xs text-fg-muted">{posLabel(t, entry.pos)}</span>
+            <span className="text-xs font-semibold text-fg-muted">{entry.cefr}</span>
+          </span>
+          <span className="truncate text-sm text-fg-muted">
+            {entry.senses.map((s) => s.meaning_tr).join(', ')}
+          </span>
+        </button>
+        <FreqDots zipf={entry.zipf} />
+        <span className="flex w-[84px] shrink-0 justify-center">
+          {owned === 'known' ? (
+            <span className="text-[13px] text-fg-muted">{t('deckHub.bank.known')}</span>
+          ) : owned === 'carded' ? (
+            <span className="flex items-center gap-1 text-[13px] font-semibold text-success-text">
+              <Icon name="check" size={14} />
+              {t('deckHub.bank.carded')}
+            </span>
+          ) : (
+            <button
+              type="button"
+              aria-pressed={selected}
+              aria-label={t('wordBank.select', { term: entry.lemma })}
+              onClick={() => onSelect(!selected)}
+              className={cn(
+                'flex size-11 items-center justify-center rounded-full',
+                selected
+                  ? 'bg-accent text-accent-fg'
+                  : 'border border-border bg-surface-raised text-accent-text hover:border-border-strong',
+              )}
+            >
+              <Icon name={selected ? 'check' : 'plus'} size={20} />
+            </button>
+          )}
+        </span>
       </div>
       {open && (
-        <div id={detailsId} className="flex flex-col gap-3 pb-2 pl-11">
+        <div id={detailsId} className="flex flex-col gap-3 px-4 pb-4">
           {entry.senses.length > 1 && (
             <p className="text-sm font-medium text-fg-muted">{t('wordBank.meaningsPick')}</p>
           )}
           {entry.senses.map((s, i) => (
-            <div key={i} className={cn('flex flex-col gap-1', entry.senses.length > 1 && 'pl-0')}>
+            <div key={i} className="flex flex-col gap-1">
               {entry.senses.length > 1 ? (
                 <Checkbox
                   label={s.meaning_tr}
@@ -429,6 +454,19 @@ function BankRow({
               <p className="text-sm text-fg-muted">{s.example_tr}</p>
             </div>
           ))}
+          {!owned || owned === 'carded' ? (
+            <Button
+              size="sm"
+              variant="secondary"
+              leadingIcon="plus"
+              aria-label={t('wordBank.addLabel', { term: entry.lemma })}
+              disabled={busy || picked.length === 0}
+              onClick={() => onAdd(picked)}
+              className="self-start"
+            >
+              {t('wordBank.add')}
+            </Button>
+          ) : null}
         </div>
       )}
     </li>

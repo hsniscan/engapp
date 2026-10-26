@@ -326,6 +326,8 @@ describe('study queue from the database', () => {
         lapses: 0,
         state: i % 4 === 0 ? CardState.New : CardState.Review,
         last_review: i % 4 === 0 ? null : T - 2e8,
+        ramp_step: 0,
+        learned_at: null,
       });
     }
     await db.cards.bulkAdd(cards);

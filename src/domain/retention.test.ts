@@ -233,21 +233,26 @@ describe('recognition vs production', () => {
 });
 
 describe('weekly series', () => {
-  it('counts notes by the week their first card reached Review', () => {
+  it('counts words by the week their recognition card first reached Öğrenildi (ADR 0041)', () => {
     const today = '2026-10-21'; // Wednesday
     const w = weekOf(today);
     expect(w).toBe('2026-10-19');
     const logs = [
-      history('a', [true, false], Date.UTC(2026, 9, 12, 9)), // n1 learned week of 12 Oct
-      history('b', [true], Date.UTC(2026, 9, 20, 9)), // n1 again: earlier card wins
-      history('c', [true], Date.UTC(2026, 9, 20, 9)), // n2 learned week of 19 Oct
-      history('d', [], Date.UTC(2026, 5, 1, 9)), // n3 learned before the series
+      history('a', [true, false], Date.UTC(2026, 9, 12, 9)),
+      history('b', [true], Date.UTC(2026, 9, 20, 9)),
+      history('c', [true], Date.UTC(2026, 9, 20, 9)),
+      history('d', [], Date.UTC(2026, 5, 1, 9)),
     ];
     const f = new Map([
-      ['a', facts({ note_id: 'n1' })],
-      ['b', facts({ note_id: 'n1', card_type: 'production' })],
-      ['c', facts({ note_id: 'n2' })],
-      ['d', facts({ note_id: 'n3' })],
+      ['a', facts({ note_id: 'n1', learned_day: '2026-10-14' })], // n1 learned week of 12 Oct
+      ['e', facts({ note_id: 'n1', learned_day: '2026-10-20' })], // n1 again: earlier day wins
+      // A production card never makes a word learned, however early.
+      ['b', facts({ note_id: 'n1', card_type: 'production', learned_day: '2026-08-01' })],
+      ['p', facts({ note_id: 'n6', card_type: 'production', learned_day: '2026-10-20' })],
+      ['c', facts({ note_id: 'n2', learned_day: '2026-10-20' })], // n2 learned week of 19 Oct
+      ['d', facts({ note_id: 'n3', learned_day: '2026-06-01' })], // n3 learned before the series
+      ['x', facts({ note_id: 'n4', term_type: 'affix', learned_day: '2026-10-20' })], // not a word
+      ['y', facts({ note_id: 'n5', learned_day: null })], // in review, not learned yet
     ]);
     const s = weeklySeries(collectRetention(logs, dayOf), f, today);
     expect(s).toHaveLength(12);

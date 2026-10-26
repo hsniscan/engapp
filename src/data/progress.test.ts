@@ -78,7 +78,9 @@ describe('progress data', () => {
     expect(view.report.overall).toMatchObject({ n: 2, passed: 1, enough: false });
     expect(view.report.groups.source.map((x) => x.key)).toEqual([src.id]);
     expect(view.sourceTitles).toEqual({ [src.id]: 'Mutfak yazısı' });
-    expect(view.report.series.at(-1)!.learnedTotal).toBe(1);
+    // apple was recalled on two days only: Pekişiyor, not learned yet (ADR 0041).
+    expect(view.report.series.at(-1)!.learnedTotal).toBe(0);
+    expect(input.facts.get(a.rec.id)?.learned_day).toBeNull();
     expect(view.gapNoteIds).toEqual([]);
   });
 });

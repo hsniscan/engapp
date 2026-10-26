@@ -98,7 +98,7 @@ export async function pictureBackup(names: readonly SampleName[] = SAMPLE_NAMES,
 /** Restore a backup file through Ayarlar → Veri → Geri yükle. */
 export async function restoreFile(page: Page, file: unknown, name = 'pictures.json') {
   const buffer = Buffer.from(JSON.stringify(file));
-  await page.goto('/settings#veri');
+  await page.goto('/settings/veri');
   await expect(page.getByRole('button', { name: 'Geri yükle' })).toBeVisible();
   const chooser = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: 'Geri yükle' }).click();

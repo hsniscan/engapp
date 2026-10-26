@@ -38,6 +38,12 @@ async function seed(now: number) {
     await answer(prod.id, ok ? Rating.Good : Rating.Again, now - d * DAY);
     if (!ok) await answer(prod.id, Rating.Good, now - d * DAY + 10 * MIN);
   }
+  // pear reaches Öğrenildi (ADR 0041): recalled 15 days after its first day proves ramp 3.
+  const p = await addNoteWithSenses({ term: 'pear', senses: [{ meaning_tr: 'armut', pos: 'noun' }] }, now - 41 * DAY);
+  const pear = (await db.cards.where('note_id').equals(p.note.id).toArray()).find((c) => c.card_type === 'recognition')!;
+  await answer(pear.id, Rating.Good, now - 40 * DAY);
+  await answer(pear.id, Rating.Good, now - 40 * DAY + 12 * MIN);
+  await answer(pear.id, Rating.Good, now - 25 * DAY);
 }
 
 describe('progress panel', () => {
@@ -60,7 +66,7 @@ describe('progress panel', () => {
 
     const groups = screen.getByRole('region', { name: 'Kategorilere göre tutma oranı' });
     expect(
-      within(groups).getByRole('listitem', { name: 'Kelime: veri az, 6 cevap.' }),
+      within(groups).getByRole('listitem', { name: 'Kelime: veri az, 7 cevap.' }),
     ).toBeInTheDocument();
     expect(within(groups).getByText(/En zayıf noktanı göstermek için/)).toBeInTheDocument();
 

@@ -177,7 +177,7 @@ export async function resetCard(cardId: Id, now: Millis = Date.now()): Promise<C
     await w.put('cards', { ...card, suspended: true });
     const noteCards = await db.cards.where('note_id').equals(card.note_id).toArray();
     const fresh = emptyFsrs(now);
-    const recState = primaryRecognition(noteCards)?.state ?? null;
+    const recState = primaryRecognition(noteCards) ?? null;
     const copy = await w.put('cards', {
       ...w.base(),
       note_id: card.note_id,

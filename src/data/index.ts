@@ -4,6 +4,7 @@ export { wipeLocalDatabase } from './wipe';
 export { loadLevelData, levelDataNow } from './levelData';
 export * from './actions';
 export * from './queries';
+export * from './wordStages';
 export * from './examples';
 export * from './mnemonics';
 export * from './images';
@@ -30,6 +31,7 @@ export {
   REPORT_MAX_ATTEMPTS,
   reportSeenKey,
   setGoals,
+  updateGoals,
   type EnsureReportOutcome,
   type GoalsView,
   type ReportListItem,
@@ -88,6 +90,9 @@ export {
 } from './practice';
 export {
   recomputeAllCards,
+  backfillLearningModel,
+  stageRuleNoticePending,
+  markStageRuleNoticeSeen,
   applyRemoteRows,
   exportBackup,
   exportCsv,
@@ -191,3 +196,4 @@ export {
   type LevelOverview,
   type SaveLevelTestInput,
 } from './levelModel';
+export { getChoiceCandidates } from './clozeChoices';

@@ -76,6 +76,19 @@
   --heat-active: light-dark(#9fcfb9, #2f6150);
   --heat-completed: light-dark(#1f7556, #63c49f);
 
+  /* Today hero (home): the one filled card. Text on it is accent-fg / hero-muted. */
+  --hero-ring: light-dark(#9dbde3, #e6edf5);
+  --hero-muted: light-dark(#e6edf5, #e6edf5);
+  --hero-action: light-dark(#fdfcf9, #ece6dc);
+  --hero-action-fg: light-dark(#1f3f63, #1a2a3c);
+  --streak-flame: light-dark(#f3c77a, #f3c77a);
+
+  /* Word stages (Öğreniyor · Pekişiyor · Öğrenildi · Kalıcı): bars, legends, rings */
+  --stage-learning: light-dark(#d7d1c6, #4a4640);
+  --stage-consolidating: light-dark(#9dbde3, #34506e);
+  --stage-learned: light-dark(#2a5a8c, #4274a6);
+  --stage-mastered: light-dark(#1f3f63, #9dbde3);
+
   /* Brand: the stress tick on the logo tile (inverse of accent-text) */
   --logo-tick: light-dark(#9dbde3, #2a5a8c);
 

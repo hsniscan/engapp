@@ -9,8 +9,8 @@
 //     the sense is in the shared lexicon, and it has a picture the card may show: the user's
 //     chosen picture, else the first approved one the user did not reject. A picture still in
 //     review never makes a card by itself; a hidden picture never does.
-//   - The card is created locked and unlocks like the production card: when the note's
-//     recognition card first reaches Review (domain/recompute.ts deriveUnlocked).
+//   - The card is created locked and unlocks like the production card: when the word
+//     reaches Pekişiyor (ADR 0041; domain/recompute.ts deriveUnlocked).
 //   - Hiding the picture, rejecting every picture of the sense, the server dropping its pictures
 //     or turning the setting off removes the card (a tombstone; its answers stay in review_logs
 //     and come back with the card if the picture does).

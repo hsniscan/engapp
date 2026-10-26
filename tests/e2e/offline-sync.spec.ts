@@ -22,26 +22,29 @@ test('offline: review, add a card and open stats; back online the outbox is push
   for (const w of WORDS.slice(0, 2)) await addWord(page, w);
   await expect.poll(() => backend.pushedIds('notes').length, { timeout: 15_000 }).toBe(2);
   await page.goto('/');
-  await expect(page.getByRole('link', { name: 'Tekrara başla' })).toBeVisible();
+  // The home screen builds several study queues at once; on a loaded CI machine that has taken
+  // longer than the default 10 s (seen once in a full parallel run).
+  await expect(page.getByTestId('start-study')).toBeVisible({ timeout: 30_000 });
 
   // Airplane mode.
   backend.offline = true;
   await context.setOffline(true);
   await expect(page.getByRole('status', { name: /Senkron durumu: Çevrimdışı/ })).toBeVisible();
 
-  await page.getByRole('link', { name: 'Tekrara başla' }).click();
+  await page.getByTestId('start-study').click();
   const reviewed = await reviewAll(page, '3');
   expect(reviewed).toBeGreaterThan(0);
   await expect(page.getByRole('heading', { name: 'Oturum tamamlandı' })).toBeVisible();
 
   await page.getByRole('link', { name: 'Ana ekrana dön' }).click();
-  await page.getByRole('link', { name: 'Ekle', exact: true }).first().click();
+  await page.getByRole('button', { name: 'Ekle', exact: true }).first().click();
+  await page.getByRole('dialog', { name: 'Ne eklemek istersin?' }).getByTestId('add-way-word').click();
   await expect(page).toHaveURL(/\/add$/);
   await addWord(page, WORDS[2]!);
 
-  await page.getByRole('link', { name: 'İstatistik' }).first().click();
-  await expect(page.getByRole('heading', { name: 'İstatistik', level: 1 })).toBeVisible();
-  await expect(page.getByText('Güncel seri')).toBeVisible();
+  await page.getByRole('link', { name: 'İlerleme' }).first().click();
+  await expect(page.getByRole('heading', { name: 'İlerleme', level: 1 })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Devamlılık' })).toBeVisible();
   await expect(page.getByRole('grid', { name: /Günlük tekrar takvimi/ })).toBeVisible();
 
   const localLogs: string[] = await page.evaluate(async () => {

@@ -1,7 +1,8 @@
 // Rebuild FSRS state from the immutable review log. Used after undo, after sync pulls
 // new logs, after a backup restore and by the integrity repair.
 import { applyRating, emptyFsrs, type Scheduler } from './fsrs';
-import { type Card, type CardStateValue, CardState, type FsrsFields, type Id, type Millis, type ReviewLog } from './types';
+import { RAMP_EPOCH } from './fsrsConfig';
+import { type Card, CardState, type FsrsFields, type Id, type Millis, type ReviewLog } from './types';
 
 export function compareLogs(a: ReviewLog, b: ReviewLog): number {
   if (a.reviewed_at !== b.reviewed_at) return a.reviewed_at - b.reviewed_at;
@@ -56,21 +57,33 @@ export function replayCard(
   return { fsrs, steps };
 }
 
-/** Recognition has reached Review at least once (Relearning only follows Review). */
-export function recognitionUnlocks(state: CardStateValue): boolean {
-  return state === CardState.Review || state === CardState.Relearning;
+/** The recognition card fields the unlock rule reads. */
+export type RecognitionUnlockInput = Pick<FsrsFields, 'state' | 'ramp_step' | 'last_review'>;
+
+/**
+ * Production, cloze and picture cards open when the word reaches Pekişiyor: its recognition
+ * card was recalled on another day (ramp_step ≥ 1, ADR 0041). A short relearning step after a
+ * lapse at Öğrenildi (ramp_step back to 1) keeps them open. Cards the old rule opened (the
+ * recognition card reached Review before RAMP_EPOCH and was not answered since) stay open, so
+ * the upgrade never closes a card.
+ */
+export function recognitionUnlocks(rec: RecognitionUnlockInput | null): boolean {
+  if (rec === null) return false;
+  if (rec.state !== CardState.Review && rec.state !== CardState.Relearning) return false;
+  if ((rec.ramp_step ?? 0) >= 1) return true;
+  return rec.last_review !== null && rec.last_review < RAMP_EPOCH;
 }
 
 /**
- * Whether a card may be shown. Recognition cards always; production/cloze cards once the
- * note's recognition card has reached Review, or once they have history of their own
- * (so an undo on the recognition card never hides a card that was already studied).
+ * Whether a card may be shown. Recognition cards always; production/cloze/picture cards once
+ * the note's recognition card unlocks them (recognitionUnlocks), or once they have history of
+ * their own (so an undo on the recognition card never hides a card that was already studied).
  */
 export function deriveUnlocked(
   card: Pick<Card, 'card_type'> & Pick<FsrsFields, 'state' | 'reps'>,
-  recognitionState: CardStateValue | null,
+  recognition: RecognitionUnlockInput | null,
 ): boolean {
   if (card.card_type === 'recognition') return true;
   if (card.reps > 0 || card.state !== CardState.New) return true;
-  return recognitionState !== null && recognitionUnlocks(recognitionState);
+  return recognitionUnlocks(recognition);
 }

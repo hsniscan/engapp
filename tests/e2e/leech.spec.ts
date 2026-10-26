@@ -111,7 +111,7 @@ async function leechBackup(now: number) {
 
 async function restoreFile(page: Page, file: unknown) {
   const buffer = Buffer.from(JSON.stringify(file));
-  await page.goto('/settings#veri');
+  await page.goto('/settings/veri');
   await expect(page.getByText('Henüz yedek alınmadı')).toBeVisible();
   const chooser = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: 'Geri yükle' }).click();
@@ -186,7 +186,7 @@ test('the 6th lapse is flagged in the session with at least 3 paths; only the us
   expect((await dumpTables(page, ['review_logs'])).review_logs).toEqual(before.review_logs);
 
   // Stats, "Zorlandıklarım".
-  await page.goto('/stats');
+  await page.goto('/progress?tab=gelisim');
   const stats = page.getByTestId('leech-stats');
   await expect(stats.getByRole('heading', { name: 'Zorlandıklarım' })).toBeVisible();
   await expect(stats.getByRole('button', { name: /bank/ })).toContainText('6 kez unuttun');

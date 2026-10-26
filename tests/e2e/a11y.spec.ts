@@ -42,7 +42,7 @@ for (const width of [360, 1280]) {
       await restoreSeed(page, 150);
 
       await page.goto('/');
-      await expect(page.getByRole('link', { name: 'Tekrara başla' })).toBeVisible();
+      await expect(page.getByTestId('start-study')).toBeVisible();
       await check(page, 'home', tag);
 
       await page.goto('/review');
@@ -61,6 +61,29 @@ for (const width of [360, 1280]) {
         await check(page, 'level-dialog', tag);
         await page.keyboard.press('Escape');
         await expect(page.getByTestId('level-explanation')).toBeHidden();
+      }
+
+      // Redesign: the study-type picker, and an Üretim and a Boşluk doldurma card (front and
+      // result) when the seed has one due.
+      await page.goto('/study');
+      await expect(page.getByTestId('study-start')).toBeVisible();
+      await check(page, 'study-modes', tag);
+      for (const mode of ['production', 'cloze'] as const) {
+        await page.goto(`/study?mode=${mode}`);
+        const front = page.getByTestId('study-front');
+        const empty = page.getByRole('heading', { level: 2 });
+        await expect(front.or(empty).first()).toBeVisible();
+        if (!(await front.isVisible())) continue;
+        await check(page, `study-${mode}`, tag);
+        if (mode === 'production') await page.getByRole('button', { name: 'Bilmiyorum, göster' }).click();
+        else {
+          const choices = page.getByRole('group', { name: 'Seçenekler' }).getByRole('button');
+          if (await choices.count()) await choices.first().click();
+          else await page.getByTestId('answer-input').fill('x');
+          await page.getByRole('button', { name: 'Kontrol et' }).click();
+        }
+        await expect(page.getByRole('group', { name: /Ne kadar iyi hatırladın\?/ })).toBeVisible();
+        await check(page, `study-${mode}-result`, tag);
       }
 
       for (const [tab, label] of [
@@ -120,12 +143,13 @@ for (const width of [360, 1280]) {
         .nth(1)
         .uncheck();
 
-      await page.goto('/stats');
+      await page.goto('/progress');
       await expect(
-        page.getByRole('heading', { name: 'İstatistik', level: 1, exact: true }),
+        page.getByRole('heading', { name: 'İlerleme', level: 1, exact: true }),
       ).toBeVisible();
-      await check(page, 'stats', tag);
-      await page.goto('/stats?tab=gelisim');
+      await expect(page.getByRole('region', { name: 'Öğrendiğin kelimeler' })).toBeVisible();
+      await check(page, 'progress', tag);
+      await page.goto('/progress?tab=gelisim');
       await expect(
         page.getByRole('region', { name: 'Kategorilere göre tutma oranı' }),
       ).toBeVisible();
@@ -148,13 +172,21 @@ for (const width of [360, 1280]) {
         page.getByRole('heading', { name: 'Ayarlar', level: 1, exact: true }),
       ).toBeVisible();
       await check(page, 'settings', tag);
+      await page.goto('/settings/calisma');
+      await expect(
+        page.getByRole('heading', { name: 'Çalışma', level: 1, exact: true }),
+      ).toBeVisible();
+      await check(page, 'settings-study', tag);
+      await page.goto('/profile');
+      await expect(page.getByRole('navigation', { name: 'Kısayollar' })).toBeVisible();
+      await check(page, 'profile', tag);
 
       await page.goto('/settings/kaynaklar');
       await expect(
         page.getByRole('heading', { name: 'Kaynaklar', level: 1, exact: true }),
       ).toBeVisible();
       await check(page, 'sources', tag);
-      await page.goto('/settings/profile');
+      await page.goto('/settings/ilgi-alanlari');
       const pick = page.getByRole('region', { name: 'İlgi alanların' });
       await pick.getByRole('button', { name: 'Teknoloji' }).click();
       await pick.getByRole('button', { name: 'Bilim' }).click();

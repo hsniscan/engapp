@@ -11,14 +11,14 @@ test('daily new-card limit in Ayarlar changes the "Yeni" count on the home scree
 }) => {
   for (const w of MORE) await addWord(page, w);
   await page.goto('/');
-  const today = page.getByRole('region', { name: 'Bugünün tekrarı' });
-  const newCount = today
-    .locator('dt', { hasText: /^Yeni$/ })
-    .locator('xpath=following-sibling::dd');
-  const initial = Number(await newCount.textContent());
+  // "N tekrar · M yeni · yaklaşık K dk" in the hero.
+  const newCount = page.getByTestId('today-hero').getByText(/ tekrar · \d+ yeni/);
+  const newOf = async () => Number(/· (\d+) yeni/.exec((await newCount.textContent()) ?? '')![1]);
+  await expect(newCount).toBeVisible();
+  const initial = await newOf();
   expect(initial).toBeGreaterThan(2);
 
-  await page.goto('/settings#calisma');
+  await page.goto('/settings/calisma');
   const slider = page.getByRole('slider', { name: 'Günlük yeni kart' });
   await expect(slider).toHaveAttribute('aria-valuenow', '10');
   await slider.focus();
@@ -27,24 +27,24 @@ test('daily new-card limit in Ayarlar changes the "Yeni" count on the home scree
   await expect(page.getByText('2 kart', { exact: true })).toBeVisible();
   await page.waitForTimeout(600); // the slider saves 400 ms after the last change
 
-  await page.getByRole('link', { name: 'Ana', exact: true }).first().click();
-  await expect(newCount).toHaveText('2');
+  await page.getByRole('link', { name: 'Bugün', exact: true }).first().click();
+  await expect(newCount).toContainText('· 2 yeni');
 
   // 0 = no new cards today.
-  await page.goto('/settings#calisma');
+  await page.goto('/settings/calisma');
   await page.getByRole('slider', { name: 'Günlük yeni kart' }).focus();
   await page.keyboard.press('Home');
   await expect(page.getByText('Yeni kart yok', { exact: true })).toBeVisible();
   await page.waitForTimeout(600);
   await page.goto('/');
-  await expect(page.getByText('Bugünlük bitti')).toBeVisible();
+  await expect(page.getByTestId('today-hero-done')).toContainText('Bugün tekrar yok');
 });
 
 test('theme switch persists across a reload (stored before first paint, no flash)', async ({
   page,
 }) => {
   await page.emulateMedia({ colorScheme: 'light' });
-  await page.goto('/settings#gorunum');
+  await page.goto('/settings/gorunum');
   await page.locator('label', { hasText: 'Koyu' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
@@ -58,4 +58,23 @@ test('theme switch persists across a reload (stored before first paint, no flash
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'system');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'system');
+});
+
+test('Profil → ⚙ → Ayarlar → a sub-page, and old #anchors land on their new page', async ({
+  page,
+}) => {
+  await page.goto('/profile');
+  await page.locator('main a[href="/settings"][aria-label="Ayarlar"]').click();
+  await expect(page).toHaveURL(/\/settings$/);
+  await page.getByRole('link', { name: /Hatırlatmalar/ }).click();
+  await expect(page).toHaveURL(/\/settings\/bildirim$/);
+  await expect(page.getByRole('heading', { name: 'Hatırlatmalar', level: 1 })).toBeVisible();
+  await page.locator('main').getByRole('link', { name: 'Ayarlar', exact: true }).click();
+  await expect(page).toHaveURL(/\/settings$/);
+
+  await page.goto('/settings#ornekler');
+  await expect(page).toHaveURL(/\/settings\/kartlar#ornekler$/);
+  await expect(page.getByRole('region', { name: 'Örnek cümleler' })).toBeVisible();
+  await page.goto('/settings/profile');
+  await expect(page).toHaveURL(/\/settings\/ilgi-alanlari$/);
 });

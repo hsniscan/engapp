@@ -1,13 +1,17 @@
+// The study session (redesign, boards ReviewFront … ClozeResult): one study mode at a time
+// ("Kelime çalışma", "Üretim", "Boşluk doldurma"), or all of them mixed. The card content
+// scrolls on its own; the answer bar stays fixed at the bottom (above the keyboard on a phone).
+// Keyboard on desktop: Space shows the answer, 1–4 answer, Z undoes.
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useSearchParams } from 'react-router';
 import { db, getSettings } from '@/data';
-import { Rating as R, type RatingValue } from '@/domain/types';
+import { STUDY_MODES, type StudyMode } from '@/domain/studyMode';
+import type { Id, RatingValue } from '@/domain/types';
 import { getNextDue, cfgOf } from '@/features/home/queries';
 import { nextDueText } from '@/features/home/nextDueText';
 import { AfterAgainBar, LeechSheet } from '@/features/leech';
-import type { Id } from '@/domain/types';
 import { requestSync } from '@/sync';
 import {
   Badge,
@@ -15,44 +19,57 @@ import {
   buttonClasses,
   DropdownMenu,
   EmptyState,
-  FlipCard,
+  Icon,
   IconButton,
   ProgressBar,
-  RatingButton,
-  ratings,
   Skeleton,
   toast,
-  type Rating,
+  Tooltip,
 } from '@/ui';
-import { CardBack, CardFront } from './CardFaces';
+import { ClozeStudy } from './ClozeStudy';
+import { flipsWithSpace, learnedInSession, resetChoiceCandidates } from './study';
 import { EditSheet } from './EditSheet';
+import { type KindProps, RecognitionStudy } from './kinds';
+import { ProductionStudy } from './ProductionStudy';
 import { SessionSummary } from './SessionSummary';
+import { type StudyModeCount, useStudyModeCounts } from './studyModes';
+import { StudyFrame } from './StudyFrame';
 import { useReviewSession } from './useReviewSession';
 import { prefetchPronunciations } from './pronunciation';
 import { useSpeech } from './useSpeech';
 
-const ratingValue: Record<Rating, RatingValue> = {
-  again: R.Again,
-  hard: R.Hard,
-  good: R.Good,
-  easy: R.Easy,
-};
-
-/** Elements whose own keyboard handling wins over the review shortcuts. */
+/** Elements whose own keyboard handling wins over the session shortcuts. */
 const KEY_SCOPE_IGNORE =
   'input, textarea, select, [contenteditable="true"], [role="dialog"], [role="menu"]';
 
-/** A fresh session for every navigation, so /review -> /review?mode=ahead starts over. */
+/** "/review" stays as "Kelime çalışma"; "/review?mode=ahead" is tomorrow's cards, every type. */
 export function ReviewRoute() {
   const location = useLocation();
-  return <ReviewScreen key={location.key} />;
-}
-
-export function ReviewScreen() {
-  const { t } = useTranslation();
   const [search] = useSearchParams();
   const ahead = search.get('mode') === 'ahead';
-  const { state, start, actions: session } = useReviewSession(ahead ? 'ahead' : 'normal');
+  return <ReviewScreen key={location.key} studyMode={ahead ? undefined : 'word'} ahead={ahead} />;
+}
+
+export interface ReviewScreenProps {
+  /** Absent: the mixed queue of every card type ("Karışık çalış", tomorrow's cards). */
+  studyMode?: StudyMode;
+  /** "Yarının kartlarını şimdi tekrar et". */
+  ahead?: boolean;
+  /** Only this deck's words (Desteler → "Çalış", `&deck=<id>`). */
+  deckId?: Id;
+}
+
+export function ReviewScreen({ studyMode, ahead = false, deckId }: ReviewScreenProps) {
+  const { t } = useTranslation();
+  const {
+    state,
+    start,
+    actions: session,
+  } = useReviewSession(ahead ? 'ahead' : 'normal', studyMode, deckId);
+  const deckName = useLiveQuery(
+    async () => (deckId ? ((await db.decks.get(deckId))?.name ?? null) : null),
+    [deckId],
+  );
   const settings = useLiveQuery(() => getSettings(), []);
   const speech = useSpeech(settings?.voice ?? 'en-US');
   const [editOpen, setEditOpen] = useState(false);
@@ -65,6 +82,8 @@ export function ReviewScreen() {
   const showAnswerRef = useRef<HTMLButtonElement>(null);
   const ratingGroupRef = useRef<HTMLDivElement>(null);
   const focusAfter = useRef<'ratings' | 'show' | null>(null);
+
+  useEffect(() => resetChoiceCandidates(), []);
 
   const current = state.current;
   const currentId = current?.view.card.id ?? null;
@@ -92,7 +111,7 @@ export function ReviewScreen() {
     }
   }, [watched, currentId, session, t]);
 
-  // Move focus sensibly for keyboard users after flipping and answering via buttons.
+  // Move focus sensibly for keyboard users after showing the answer and answering.
   useEffect(() => {
     const target = focusAfter.current;
     focusAfter.current = null;
@@ -157,8 +176,10 @@ export function ReviewScreen() {
       if (e.key === ' ' || e.code === 'Space') {
         // A focused button or link keeps its native Space activation.
         if (target?.closest('button, a')) return;
-        e.preventDefault();
-        if (s.phase === 'card' && !s.flipped) session.flip();
+        if (s.phase === 'card' && !s.flipped && s.current && flipsWithSpace(s.current.view)) {
+          e.preventDefault();
+          session.flip();
+        }
       } else if (e.key >= '1' && e.key <= '4') {
         if (s.phase === 'card' && s.flipped) {
           e.preventDefault();
@@ -204,21 +225,43 @@ export function ReviewScreen() {
     />
   );
 
-  if (state.phase === 'loading') return <ReviewSkeleton />;
+  if (state.phase === 'loading')
+    return (
+      <>
+        <CloseRow />
+        <StudySkeleton />
+      </>
+    );
 
   if (state.phase === 'done') {
     const answers = session.getAnswers();
     if (answers.length === 0)
-      return <ReviewEmpty ahead={ahead} canUndo={state.canUndo} onUndo={doUndo} />;
+      return (
+        <>
+          <CloseRow />
+          <StudyEmpty
+            studyMode={studyMode}
+            ahead={ahead}
+            deckName={deckName ?? null}
+            canUndo={state.canUndo}
+            onUndo={doUndo}
+          />
+        </>
+      );
     return (
       <>
-        {afterAgain && <div className="mx-auto w-full max-w-xl px-4 pt-3 sm:px-6">{afterAgain}</div>}
+        <CloseRow />
+        {afterAgain && (
+          <div className="mx-auto w-full max-w-xl px-4 pt-3 sm:px-6">{afterAgain}</div>
+        )}
         <SessionSummary
           answers={answers}
           start={start}
           settled={session.settled}
           canUndo={state.canUndo}
           onUndo={() => void doUndo()}
+          learnedToday={learnedInSession(answers)}
+          continueWith={studyMode && !ahead ? <OtherModes current={studyMode} /> : null}
         />
         {leechSheet}
       </>
@@ -231,17 +274,26 @@ export function ReviewScreen() {
     onSpeak: () => current && speech.speak(current.view.note.term),
     speakText: speech.speak,
   };
-  const isNew = current?.kind === 'new';
 
-  return (
-    <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] w-full max-w-xl flex-col px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:pt-5">
-      <h1 className="sr-only">{t('review.title')}</h1>
+  const top = (
+    <div className="safe-top flex flex-col gap-1 pt-2 pb-2">
+      <h1 className="sr-only">
+        {studyMode ? t(`study.mode.${studyMode}.name`) : t('review.title')}
+      </h1>
       {ahead && (
-        <div className="mb-1 flex">
+        <div className="flex">
           <Badge tone="accent">{t('review.aheadBadge')}</Badge>
         </div>
       )}
-      <div className="mb-4 flex items-center gap-2">
+      {deckName && (
+        <div className="flex min-w-0">
+          <Badge tone="accent" className="max-w-full truncate" data-testid="study-deck">
+            {t('review.deckBadge', { name: deckName })}
+          </Badge>
+        </div>
+      )}
+      <div className="flex items-center gap-2">
+        <StudyClose />
         <ProgressBar
           value={state.answered}
           max={Math.max(1, total)}
@@ -270,78 +322,73 @@ export function ReviewScreen() {
               {
                 label: t('leech.menu'),
                 icon: 'layers',
-                onSelect: () => current && setLeech({ cardId: current.view.card.id, startWith: 'paths' }),
+                onSelect: () =>
+                  current && setLeech({ cardId: current.view.card.id, startWith: 'paths' }),
               },
               { label: t('review.suspend'), icon: 'pause', onSelect: () => void doSuspend() },
             ]}
           />
         </div>
       </div>
-
       {afterAgain}
+    </div>
+  );
 
-      {current ? (
-        <div
-          key={current.view.card.id + ':' + state.answered}
-          data-card-type={current.view.card.card_type}
-          data-flipped={state.flipped}
-          className="contents"
-        >
-          <FlipCard
-            flipped={state.flipped}
-            onFlip={state.flipped ? undefined : session.flip}
-            front={<CardFront view={current.view} isNew={isNew} speech={speak} />}
-            back={<CardBack view={current.view} isNew={isNew} speech={speak} />}
-          />
-        </div>
-      ) : (
-        <CardPlaceholder />
-      )}
+  const frame = (body: ReactNode, footer: ReactNode, scrollLabel?: string) => (
+    <StudyFrame top={top} footer={footer} scrollLabel={scrollLabel}>
+      {body}
+    </StudyFrame>
+  );
 
-      <div className="mt-auto pt-6 md:mt-0 md:pt-8">
-        {state.flipped && current ? (
-          <div
-            ref={ratingGroupRef}
-            tabIndex={-1}
-            role="group"
-            aria-label={t('rating.group')}
-            className="grid grid-cols-4 gap-2 outline-none"
-          >
-            {ratings.map((r, i) => (
-              <RatingButton
-                key={r}
-                rating={r}
-                interval={current.view.previews[ratingValue[r]].label}
-                shortcut={String(i + 1)}
-                onClick={(e) => {
-                  if (e.detail === 0) focusAfter.current = 'show';
-                  session.answer(ratingValue[r]);
-                }}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-3">
-            <Button
-              ref={showAnswerRef}
-              size="lg"
-              fullWidth
-              disabled={!current}
-              onClick={(e) => {
-                if (e.detail === 0) focusAfter.current = 'ratings';
-                session.flip();
-              }}
-            >
-              {t('review.showAnswer')}
-            </Button>
-            <p className="text-sm text-fg-muted">
-              <span className="pointer-fine:hidden">{t('review.tapToFlip')}</span>
-              <span className="hidden pointer-fine:inline">{t('review.spaceToFlip')}</span>
-            </p>
-          </div>
-        )}
+  let content: ReactNode;
+  if (!current) {
+    content = frame(
+      <CardPlaceholder />,
+      <Button size="lg" fullWidth disabled>
+        {t('review.showAnswer')}
+      </Button>,
+    );
+  } else {
+    const kp: KindProps = {
+      view: current.view,
+      speech: speak,
+      revealed: state.flipped,
+      onReveal: (viaKeyboard) => {
+        if (viaKeyboard) focusAfter.current = 'ratings';
+        session.flip();
+      },
+      onAnswer: (rating, viaKeyboard) => {
+        if (viaKeyboard) focusAfter.current = 'show';
+        session.answer(rating);
+      },
+      ratingRef: ratingGroupRef,
+      showRef: showAnswerRef,
+      frame,
+    };
+    const { card, note } = current.view;
+    const Kind =
+      note.term_type === 'contrast'
+        ? RecognitionStudy
+        : card.card_type === 'production' || card.card_type === 'image'
+          ? ProductionStudy
+          : card.card_type === 'cloze' && current.view.cloze
+            ? ClozeStudy
+            : RecognitionStudy;
+    content = (
+      <div
+        key={card.id + ':' + state.answered}
+        data-card-type={card.card_type}
+        data-flipped={state.flipped}
+        className="contents"
+      >
+        <Kind {...kp} />
       </div>
+    );
+  }
 
+  return (
+    <>
+      {content}
       <EditSheet
         view={current?.view ?? null}
         open={editOpen}
@@ -349,7 +396,7 @@ export function ReviewScreen() {
         onSaved={() => void session.refreshCurrent()}
       />
       {leechSheet}
-    </div>
+    </>
   );
 }
 
@@ -357,7 +404,7 @@ function CardPlaceholder() {
   return (
     <div
       aria-busy="true"
-      className="flex min-h-[min(52dvh,26rem)] flex-col items-center justify-center gap-4 rounded-card border border-border bg-surface-raised shadow-raised"
+      className="flex min-h-[min(52dvh,26rem)] flex-1 flex-col items-center justify-center gap-4 rounded-[20px] border border-border bg-surface"
     >
       <Skeleton className="h-9 w-40" />
       <Skeleton className="w-56" />
@@ -365,7 +412,36 @@ function CardPlaceholder() {
   );
 }
 
-function ReviewSkeleton() {
+/**
+ * "Oturumu bitir" (×): the study screen draws its own top row (route handle ownTopBar), so the
+ * close button sits beside the progress as on the boards, with no second bar above it.
+ */
+function StudyClose() {
+  const { t } = useTranslation();
+  return (
+    <Tooltip content={t('review.endSession')}>
+      <Link
+        to="/"
+        aria-label={t('review.endSession')}
+        data-testid="study-close"
+        className="-ml-2 inline-flex size-11 shrink-0 items-center justify-center rounded-control text-fg-muted hover:bg-hover hover:text-fg"
+      >
+        <Icon name="x" size={22} />
+      </Link>
+    </Tooltip>
+  );
+}
+
+/** The top row outside a running session (loading, nothing to study, the summary). */
+function CloseRow() {
+  return (
+    <div className="safe-top mx-auto flex h-14 w-full max-w-xl items-center px-4 sm:px-6">
+      <StudyClose />
+    </div>
+  );
+}
+
+function StudySkeleton() {
   const { t } = useTranslation();
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col px-4 pt-3 sm:px-6 sm:pt-5">
@@ -381,12 +457,42 @@ function ReviewSkeleton() {
   );
 }
 
-function ReviewEmpty({
+/** Links to the other study modes that still have cards today. */
+export function OtherModes({ current }: { current?: StudyMode }) {
+  const { t } = useTranslation();
+  const counts = useStudyModeCounts();
+  if (!counts) return null;
+  const left = (c: StudyModeCount) => c.due + c.newCount;
+  const others = STUDY_MODES.filter((m) => m !== current && left(counts[m]) > 0);
+  if (!others.length) return null;
+  return (
+    <div className="flex flex-col gap-2 rounded-[18px] border border-border bg-surface p-4 text-left">
+      <h2 className="text-sm text-fg-muted">{t('study.empty.others')}</h2>
+      {others.map((m) => (
+        <Link
+          key={m}
+          to={`/study?mode=${m}`}
+          className={buttonClasses({ variant: 'secondary', fullWidth: true })}
+          data-testid={`study-other-${m}`}
+        >
+          {t('study.empty.otherCount', { mode: t(`study.mode.${m}.name`), count: left(counts[m]) })}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function StudyEmpty({
+  studyMode,
   ahead,
+  deckName,
   canUndo,
   onUndo,
 }: {
+  studyMode?: StudyMode;
   ahead: boolean;
+  /** A deck-scoped session (Desteler → "Çalış"). */
+  deckName: string | null;
   canUndo: boolean;
   onUndo: () => void;
 }) {
@@ -399,27 +505,39 @@ function ReviewEmpty({
     ]);
     return { next, tz: cfgOf(settings).timezone, hasCards: !!anyNote, now: Date.now() };
   }, []);
-  if (!info) return <ReviewSkeleton />;
+  if (!info) return <StudySkeleton />;
+  const title = !info.hasCards
+    ? t('review.noCardsTitle')
+    : ahead
+      ? t('review.aheadEmptyTitle')
+      : deckName
+        ? t('study.empty.deck', { name: deckName })
+        : studyMode
+          ? t(`study.empty.${studyMode}`)
+          : t('review.emptyTitle');
+  const description = !info.hasCards
+    ? t('review.noCardsBody')
+    : studyMode === 'production'
+      ? t('study.empty.productionBody')
+      : nextDueText(t, info.next, info.now, info.tz);
   return (
     <div className="mx-auto w-full max-w-xl px-4 pt-10 sm:px-6 md:pt-16">
-      <h1 className="sr-only">{t('review.title')}</h1>
+      <h1 className="sr-only">
+        {studyMode ? t(`study.mode.${studyMode}.name`) : t('review.title')}
+      </h1>
       <EmptyState
         icon={info.hasCards ? 'check' : 'cards'}
-        title={
-          !info.hasCards
-            ? t('review.noCardsTitle')
-            : ahead
-              ? t('review.aheadEmptyTitle')
-              : t('review.emptyTitle')
-        }
-        description={
-          info.hasCards ? nextDueText(t, info.next, info.now, info.tz) : t('review.noCardsBody')
-        }
+        title={title}
+        description={description}
         action={
           <>
             {info.hasCards ? (
               <>
-                <Link to="/more" className={buttonClasses({ size: 'lg', className: 'min-w-60' })}>
+                {studyMode && !ahead && <OtherModes current={studyMode} />}
+                <Link
+                  to="/study/more"
+                  className={buttonClasses({ size: 'lg', className: 'min-w-60' })}
+                >
                   {t('review.moreStudy')}
                 </Link>
                 <Link to="/" className={buttonClasses({ variant: 'ghost', className: 'min-w-60' })}>

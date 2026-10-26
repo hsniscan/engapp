@@ -22,11 +22,12 @@ test('backup → restore into an empty browser: notes, cards, review history and
     await page.locator('body').press(ratings[i % ratings.length]!);
   }
   await page.goto('/');
-  const homeBefore = await page.getByRole('region', { name: 'Günlük seri' }).textContent();
+  await expect(page.getByTestId('today-streak')).toBeVisible();
+  const homeBefore = await page.getByTestId('today-streak').textContent();
   const before = await dumpTables(page, TABLES);
   expect(before.review_logs!.length).toBeGreaterThan(WORDS.length);
 
-  await page.goto('/settings#veri');
+  await page.goto('/settings/veri');
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Yedek al' }).click();
   const file = await download;
@@ -45,7 +46,7 @@ test('backup → restore into an empty browser: notes, cards, review history and
   const fresh = await ctx.newPage();
   await fresh.goto('/');
   await expect(fresh.getByRole('heading', { name: 'Hoş geldin' })).toBeVisible();
-  await fresh.goto('/settings#veri');
+  await fresh.goto('/settings/veri');
   await expect(fresh.getByText('Henüz yedek alınmadı')).toBeVisible();
   const chooser = fresh.waitForEvent('filechooser');
   await fresh.getByRole('button', { name: 'Geri yükle' }).click();
@@ -66,6 +67,6 @@ test('backup → restore into an empty browser: notes, cards, review history and
   const after = await dumpTables(fresh, TABLES);
   for (const t of TABLES) expect(after[t], t).toEqual(before[t]);
   await fresh.goto('/');
-  await expect(fresh.getByRole('region', { name: 'Günlük seri' })).toHaveText(homeBefore!);
+  await expect(fresh.getByTestId('today-streak')).toHaveText(homeBefore!);
   await ctx.close();
 });

@@ -59,7 +59,7 @@ export function KnownWordsPage() {
     <Page title={t('knownWords.title')} description={t('knownWords.description')}>
       <div className="flex flex-col gap-5">
         <Link
-          to="/settings#seviye"
+          to="/settings/seviye"
           className="-mt-2 inline-flex min-h-11 items-center gap-1 self-start text-sm font-medium text-accent-text underline-offset-4 hover:underline"
         >
           <Icon name="chevron-left" size={16} />

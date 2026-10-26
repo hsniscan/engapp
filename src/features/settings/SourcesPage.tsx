@@ -19,7 +19,7 @@ export function SourcesPage() {
     <Page title={t('sources.title')} description={t('sources.intro')}>
       <div className="flex flex-col gap-4">
         <Link
-          to="/settings#hakkinda"
+          to="/settings/hakkinda"
           className="-mt-2 inline-flex min-h-11 items-center gap-1 self-start text-sm font-medium text-accent-text underline-offset-4 hover:underline"
         >
           <Icon name="chevron-left" size={16} />
