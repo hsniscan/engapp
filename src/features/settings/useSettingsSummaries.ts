@@ -37,9 +37,13 @@ export function useSettingsSummaries(): Partial<Record<SettingsPageId, string>> 
     : n.mode === 'fixed' && n.hour !== null
       ? t('settings.summary.notifyFixed', { time: `${pad(n.hour)}:00` })
       : t('settings.summary.notifyAuto');
-  out.seviye = t(s.level_locked ? 'settings.summary.levelLocked' : 'settings.summary.level', {
-    level: s.level,
-  });
+  // Never the default B1 as if it were measured (v0.5.1, as on Profil).
+  out.seviye =
+    s.level_source === 'default' && !s.level_locked
+      ? t('settings.summary.levelUnmeasured')
+      : t(s.level_locked ? 'settings.summary.levelLocked' : 'settings.summary.level', {
+          level: s.level,
+        });
   out.kartlar = t('settings.summary.cards', {
     voice: s.voice === 'en-GB' ? t('settings.voice.gb') : t('settings.voice.us'),
     count: selectedContexts(s).length,

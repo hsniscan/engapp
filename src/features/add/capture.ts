@@ -21,7 +21,11 @@ export interface CaptureInput {
   pageCount?: number | null;
 }
 
-/** First words of a text as its title ("The morning was quiet and…"). */
+/**
+ * A pasted text's title: its first sentence when that is short ("Every morning I walk my
+ * dog"), else its first words ("The morning was quiet and…"). It is the reader's heading, so
+ * it stays within a line or two on a phone.
+ */
 export function captureTitle(body: string, max = 60): string {
   const line =
     body
@@ -30,6 +34,8 @@ export function captureTitle(body: string, max = 60): string {
       ?.replace(/\s+/g, ' ')
       .trim() ?? '';
   if (line.length <= max) return line;
+  const sentence = /^(.{12,}?)[.!?](\s|$)/.exec(line)?.[1];
+  if (sentence && sentence.length <= max) return sentence;
   const cut = line.slice(0, max);
   return `${cut.slice(0, Math.max(cut.lastIndexOf(' '), Math.floor(max / 3))).trimEnd()}…`;
 }

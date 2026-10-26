@@ -108,6 +108,8 @@ export function GoalsCard({
   const month = progress('month_new_terms');
   const dayDone = goals.dayTarget !== null && todayMinutes >= goals.dayTarget;
   const path = levelPath(goals.level, goals.target);
+  // Never the default B1 as if it were measured (v0.5.1, as on Profil and in Ayarlar).
+  const measured = goals.levelSource !== 'default';
   const reached = CEFR_ORDER.indexOf(goals.level);
   const targetIndex = CEFR_ORDER.indexOf(goals.target);
   const noGoals = goals.dayTarget === null && !week?.target && !month?.target;
@@ -133,83 +135,87 @@ export function GoalsCard({
       {noGoals ? (
         <SetDayGoal />
       ) : (
-      <div className="grid grid-cols-3 gap-2">
-        <GoalRing
-          value={todayMinutes}
-          target={goals.dayTarget}
-          unit={t('today.minUnit')}
-          label={dayDone ? t('today.goalTodayDone') : t('today.goalToday')}
-          testId="goal-day"
-        />
-        <GoalRing
-          value={week?.value ?? weekMinutes}
-          target={week?.target ?? null}
-          unit={t('today.minUnit')}
-          label={t('today.goalWeek')}
-          testId="goal-week"
-        />
-        <GoalRing
-          value={month?.value ?? null}
-          target={month?.target ?? null}
-          label={t('today.goalMonth')}
-          soft
-          testId="goal-month"
-        />
-      </div>
+        <div className="grid grid-cols-3 gap-2">
+          <GoalRing
+            value={todayMinutes}
+            target={goals.dayTarget}
+            unit={t('today.minUnit')}
+            label={dayDone ? t('today.goalTodayDone') : t('today.goalToday')}
+            testId="goal-day"
+          />
+          <GoalRing
+            value={week?.value ?? weekMinutes}
+            target={week?.target ?? null}
+            unit={t('today.minUnit')}
+            label={t('today.goalWeek')}
+            testId="goal-week"
+          />
+          <GoalRing
+            value={month?.value ?? null}
+            target={month?.target ?? null}
+            label={t('today.goalMonth')}
+            soft
+            testId="goal-month"
+          />
+        </div>
       )}
       <div className="flex flex-col gap-2 border-t border-surface-sunken pt-3">
         <div className="flex items-center justify-between gap-2">
           <span className="rounded-full bg-accent-soft px-2.5 py-1 text-[0.8125rem] font-semibold text-accent-text">
-            {t('today.levelEstimate', { level: goals.level })}
+            {measured
+              ? t('today.levelEstimate', { level: goals.level })
+              : t('today.levelUnmeasured')}
           </span>
-          {targetIndex > reached && (
+          {measured && targetIndex > reached && (
             <span className="text-sm">
               {t('today.levelTarget')} <strong className="font-semibold">{goals.target}</strong>
             </span>
           )}
         </div>
-        <ol
-          aria-label={
-            targetIndex > reached
-              ? t('today.levelPathLabel', { level: goals.level, target: goals.target })
-              : t('today.levelPathReached', { level: goals.level })
-          }
-          className="grid gap-1"
-          style={{ gridTemplateColumns: `repeat(${path.length}, minmax(0, 1fr))` }}
-        >
-          {path.map((l, i) => {
-            const isNow = i === reached;
-            const isTarget = i === targetIndex && targetIndex > reached;
-            return (
-              <li key={l} aria-hidden="true" className="flex min-w-0 flex-col gap-1">
-                <span
-                  className={cn(
-                    'h-1.5 rounded-[3px]',
-                    i <= reached
-                      ? 'bg-accent'
-                      : 'border border-dashed border-accent bg-surface-sunken',
-                  )}
-                />
-                <span
-                  className={cn(
-                    'truncate text-xs',
-                    isNow
-                      ? 'font-semibold text-fg'
+        {measured && (
+          <ol
+            aria-label={
+              targetIndex > reached
+                ? t('today.levelPathLabel', { level: goals.level, target: goals.target })
+                : t('today.levelPathReached', { level: goals.level })
+            }
+            className="grid gap-1"
+            style={{ gridTemplateColumns: `repeat(${path.length}, minmax(0, 1fr))` }}
+          >
+            {path.map((l, i) => {
+              const isNow = i === reached;
+              const isTarget = i === targetIndex && targetIndex > reached;
+              return (
+                <li key={l} aria-hidden="true" className="flex min-w-0 flex-col gap-1">
+                  <span
+                    className={cn(
+                      'h-1.5 rounded-[3px]',
+                      i <= reached
+                        ? 'bg-accent'
+                        : 'border border-dashed border-accent bg-surface-sunken',
+                    )}
+                  />
+                  <span
+                    className={cn(
+                      'truncate text-xs',
+                      isNow
+                        ? 'font-semibold text-fg'
+                        : isTarget
+                          ? 'font-semibold text-accent-text'
+                          : 'text-fg-muted',
+                    )}
+                  >
+                    {isNow
+                      ? t('today.levelNow', { level: l })
                       : isTarget
-                        ? 'font-semibold text-accent-text'
-                        : 'text-fg-muted',
-                  )}
-                >
-                  {isNow
-                    ? t('today.levelNow', { level: l })
-                    : isTarget
-                      ? t('today.levelGoal', { level: l })
-                      : l}
-                </span>
-              </li>
-            );
-          })}
-        </ol>
+                        ? t('today.levelGoal', { level: l })
+                        : l}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+        )}
         {goals.levelSource !== 'test' ? (
           <Link
             to="/level-test"

@@ -74,7 +74,7 @@ describe('Bugün', () => {
     const done = await screen.findByTestId('today-hero-done');
     expect(within(done).getByRole('heading', { name: 'Bugünlük tamam' })).toBeInTheDocument();
     expect(within(done).getByText('0 tekrar · 2 yeni kelime')).toBeInTheDocument();
-    expect(within(done).getByRole('status')).toHaveTextContent(/Sıradaki tekrar|Yarın/);
+    expect(within(done).getByRole('status')).toHaveTextContent(/Sıradaki çalışma|Yarın/);
     expect(screen.queryByRole('link', { name: /Devam et|Başla/ })).toBeNull();
     expect(await db.daily_activity.count()).toBe(1);
   });
@@ -102,6 +102,15 @@ describe('Bugün', () => {
     expect(await within(goals).findByTestId('goal-day')).toHaveTextContent('0/15 dk');
   });
 
+  it('an unmeasured level is not shown as B1', async () => {
+    await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] });
+    renderRoute(<HomeScreen />);
+    const goals = await screen.findByTestId('home-goals');
+    expect(within(goals).getByText('Seviye henüz ölçülmedi')).toBeInTheDocument();
+    expect(within(goals).queryByText(/B1/)).toBeNull();
+    expect(within(goals).getByRole('link', { name: /Seviyeni ölç/ })).toHaveAttribute('href', '/level-test');
+  });
+
   it('opens the streak sheet from the streak line', async () => {
     await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] });
     renderRoute(<HomeScreen />);
@@ -117,6 +126,7 @@ describe('Bugün', () => {
   it('shows goals with their targets and the level path', async () => {
     await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] });
     await updateGoals({ day_minutes: 15, week_minutes: 60, target_level: 'C1' });
+    await db.settings.update('settings', { level_source: 'manual' });
     renderRoute(<HomeScreen />);
     const goals = await screen.findByTestId('home-goals');
     expect(within(goals).getByTestId('goal-day')).toHaveTextContent('0/15 dk');

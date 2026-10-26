@@ -85,8 +85,8 @@ export function ProgressGlance() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex min-w-0 flex-col gap-0.5">
-      <dt className="truncate text-[0.8125rem] text-fg-muted">{label}</dt>
+    <div className="flex min-w-0 flex-col justify-end gap-0.5">
+      <dt className="text-[0.8125rem] leading-snug text-fg-muted">{label}</dt>
       <dd className="tabular truncate font-serif text-[1.375rem] leading-tight font-semibold text-fg">{value}</dd>
     </div>
   );

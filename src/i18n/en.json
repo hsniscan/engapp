@@ -157,6 +157,7 @@
     "goalPreset_other": "{{count}} min",
     "goalSetFailed": "The goal was not saved; try again.",
     "levelEstimate": "Level estimate: {{level}}",
+    "levelUnmeasured": "Level not measured yet",
     "levelTarget": "Goal",
     "levelPathLabel": "Level path: now {{level}}, next goal {{target}}",
     "levelPathReached": "Level path: now {{level}}",
@@ -1170,6 +1171,7 @@
       "notifyFixed": "Every day at {{time}}",
       "level": "{{level}} · updates by itself",
       "levelLocked": "{{level}} · fixed",
+      "levelUnmeasured": "Not measured yet",
       "cards_one": "{{voice}} · {{count}} context",
       "cards_other": "{{voice}} · {{count}} contexts",
       "theme": {
