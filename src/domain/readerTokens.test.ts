@@ -141,3 +141,21 @@ describe('lemmaCounts and sentenceAt', () => {
     expect(sentenceAt(tokenizeReaderText(''), 10)).toBe(0);
   });
 });
+
+describe('given sentence ranges (library texts, decision 0054)', () => {
+  it('keeps the given sentences even where the splitter would cut', () => {
+    const body = 'Mr. Lee saw Dr. Who. It was fine.\n\nThen e.g. Bob left.';
+    const ranges: [number, number][] = [
+      [0, 20],
+      [21, 33],
+      [35, body.length],
+    ];
+    const t = tokenizeReaderText(body, { sentences: ranges });
+    expect(t.sentences.map((s) => [s.start, s.end])).toEqual(ranges);
+    expect(t.paragraphs.map((p) => [p.firstSentence, p.endSentence])).toEqual([
+      [0, 2],
+      [2, 3],
+    ]);
+    expect(t.tokens.find((x) => x.text === 'Bob')!.sentence).toBe(2);
+  });
+});

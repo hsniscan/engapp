@@ -120,6 +120,8 @@ export {
   getText,
   lastUnfinishedText,
   listTexts,
+  markReaderLegendSeen,
+  readerLegendSeen,
   saveReadingProgress,
   saveText,
   setTextFeedback,

@@ -163,8 +163,30 @@ function sentenceRanges(body: string, start: number, end: number): [number, numb
   return out.filter(([a, b]) => body.slice(a, b).trim().length > 0);
 }
 
+export interface TokenizeOptions {
+  /**
+   * Sentence ranges [start, end) to use instead of finding them (a library text keeps its own
+   * sentences: one translation and one recording each). Ranges are taken in order; each
+   * belongs to the paragraph it starts in.
+   */
+  sentences?: readonly (readonly [number, number])[];
+}
+
 /** Tokenise a reader text. Linear in the length of the body. */
-export function tokenizeReaderText(body: string): TokenizedText {
+export function tokenizeReaderText(body: string, opts: TokenizeOptions = {}): TokenizedText {
+  const given = opts.sentences;
+  let nextGiven = 0;
+  const rangesIn = (ps: number, pe: number): [number, number][] => {
+    if (!given) return sentenceRanges(body, ps, pe);
+    const out: [number, number][] = [];
+    while (nextGiven < given.length && given[nextGiven]![0] < pe) {
+      const [a, b] = given[nextGiven++]!;
+      const s = Math.max(a, ps);
+      const e = Math.min(b, pe);
+      if (e > s && body.slice(s, e).trim()) out.push([s, e]);
+    }
+    return out;
+  };
   const tokens: ReaderToken[] = [];
   const sentences: ReaderSentence[] = [];
   const paragraphs: ReaderParagraph[] = [];
@@ -179,7 +201,7 @@ export function tokenizeReaderText(body: string): TokenizedText {
 
   for (const [ps, pe] of paragraphRanges(body)) {
     const firstSentence = sentences.length;
-    for (const [ss, se] of sentenceRanges(body, ps, pe)) {
+    for (const [ss, se] of rangesIn(ps, pe)) {
       const sentenceIndex = sentences.length;
       const firstToken = tokens.length;
       const slice = body.slice(ss, se);

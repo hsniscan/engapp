@@ -2,7 +2,14 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { buildKnowledge } from './knowledgeModel';
 import { parseClientLevels } from './level';
-import { buildReaderView, findPhrases, knownPercent, markOf, phraseIndex } from './readerView';
+import {
+  buildReaderView,
+  findPhrases,
+  knownPercent,
+  markOf,
+  newWordsIn,
+  phraseIndex,
+} from './readerView';
 import { tokenizeReaderText } from './readerTokens';
 import type { WordStage } from './stages';
 
@@ -141,5 +148,21 @@ describe('speed (acceptance criterion 1)', () => {
     );
     expect(performance.now() - start).toBeLessThan(1000);
     expect(v.marks).toHaveLength(1000);
+  });
+});
+
+describe('newWordsIn (end-of-text summary)', () => {
+  it('lists each new word once, in reading order, at its first sentence', () => {
+    const { text, v } = view('A quandary. Quandaries everywhere. I walk my dog.', [
+      ['cope', 'learning'],
+    ]);
+    const words = newWordsIn(text, v);
+    expect(words.map((w) => w.lemma)).toEqual(['quandary', 'everywhere']);
+    expect(words[0]).toMatchObject({ written: 'quandary', sentence: 0 });
+  });
+
+  it('no new words: an empty list', () => {
+    const { text, v } = view('I walk my dog.');
+    expect(newWordsIn(text, v)).toEqual([]);
   });
 });

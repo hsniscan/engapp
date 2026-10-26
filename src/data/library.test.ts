@@ -13,13 +13,16 @@ import {
   GRADED_META,
   GradedUnavailableError,
   listGradedCatalog,
+  openGradedById,
   openGradedText,
   pullGradedCatalog,
+  setGradedTextBody,
   setGradedRemoteForTests,
   suggestedGradedTexts,
 } from './library';
 import { getMeta } from './meta';
 import { ensureSettings, SETTINGS_ID } from './settings';
+import { saveReadingProgress, saveText } from './texts';
 
 // The reader package replaces the knowledge stub; here the user knows the lemmas listed in
 // KNOWN and nothing else.
@@ -159,7 +162,13 @@ describe('opening a library text', () => {
     remote.bodies.set(ID(1), body(1));
     const id = await openGradedText({ id: ID(1), title: 'Text 1' }, T);
     const text = await db.texts.get(id);
-    expect(text).toMatchObject({ kind: 'graded', graded_id: ID(1), title: 'Text 1', body: '' });
+    // The row carries the text's plain body (decision 0054): progress works like any text's.
+    expect(text).toMatchObject({
+      kind: 'graded',
+      graded_id: ID(1),
+      title: 'Text 1',
+      body: 'The train was late.\n\nWe waited.',
+    });
     expect(await db.graded_bodies.get(ID(1))).toBeDefined();
     expect(await openGradedText({ id: ID(1), title: 'Text 1' }, T + 1)).toBe(id);
     expect(await db.texts.count()).toBe(1);
@@ -168,7 +177,32 @@ describe('opening a library text', () => {
   it('opens offline too (the reader fetches the body later)', async () => {
     vi.stubGlobal('navigator', { onLine: false });
     const id = await openGradedText({ id: ID(2), title: 'Text 2' }, T);
-    expect(await db.texts.get(id)).toMatchObject({ graded_id: ID(2) });
+    expect(await db.texts.get(id)).toMatchObject({ graded_id: ID(2), body: '' });
+  });
+
+  it('keeps a resume point and fills the body of a row made before v0.5.1', async () => {
+    remote.bodies.set(ID(1), body(1));
+    const id = await saveText({ kind: 'graded', graded_id: ID(1), title: 'Text 1', body: '' }, T);
+    await db.texts.update(id, { progress_offset: 0 });
+    expect(await openGradedText({ id: ID(1), title: 'Text 1' }, T + 1)).toBe(id);
+    expect((await db.texts.get(id))!.body).toBe('The train was late.\n\nWe waited.');
+    await saveReadingProgress(id, 21, 0, T + 2);
+    await setGradedTextBody(id, 'The train was late.\n\nWe waited.', T + 3);
+    expect((await db.texts.get(id))!.progress_offset).toBe(21);
+    // A shorter rebuilt text: a resume point past its end starts over.
+    await setGradedTextBody(id, 'Short.', T + 4);
+    expect(await db.texts.get(id)).toMatchObject({ body: 'Short.', progress_offset: 0 });
+  });
+
+  it('opens by library id (a suggestion link), from the catalogue or the user’s row', async () => {
+    await applyGradedCatalogPage([row(3)]);
+    remote.bodies.set(ID(3), { ...body(3), id: ID(3), title: 'Text 3' });
+    const id = await openGradedById(ID(3), T);
+    expect(id).not.toBeNull();
+    expect(await db.texts.get(id!)).toMatchObject({ graded_id: ID(3), title: 'Text 3' });
+    expect(await openGradedById(ID(3), T + 1)).toBe(id);
+    expect(await openGradedById(ID(9), T)).toBeNull();
+    expect(await openGradedById('', T)).toBeNull();
   });
 });
 
