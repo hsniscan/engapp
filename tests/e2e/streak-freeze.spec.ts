@@ -53,7 +53,7 @@ test('a missed day is covered: the streak goes on and Bugün shows a calm note o
   const note = page.getByTestId('streak-freeze-note');
   await expect(note).toBeVisible({ timeout: 20_000 });
   await expect(note.getByRole('heading')).toHaveText('Serin korundu');
-  await expect(note).toContainText('Dün tekrar yapılmadı.');
+  await expect(note).toContainText('Dün çalışılmadı.');
   await expect(note).toContainText('Bu ay 1 koruma daha var.');
   // The streak goes on: at least the eight days before the missed one.
   const streak = Number(/(\d+) günlük seri/.exec((await page.getByTestId('today-streak').textContent()) ?? '')?.[1]);
