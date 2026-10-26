@@ -2,7 +2,7 @@
 // permission prompt, PushManager subscribe/unsubscribe, registering the subscription with the
 // server (push_subscribe / push_unsubscribe: the owner is always the signed-in user) and the
 // test notification. Everything browser-specific comes through PushEnv so tests can mock it.
-import { backendConfig, getAccessToken, supabase } from '@/lib/supabase';
+import { backendConfig, getAccessToken, loadSupabase } from '@/lib/supabase';
 import { flags, isIos, isStandalone } from '@/features/settings/platform';
 
 /** localStorage key: the user id this browser's subscription was registered for. */
@@ -39,6 +39,7 @@ export function browserPushEnv(): PushEnv {
     config: backendConfig,
     getAccessToken,
     rpc: async (fn, args) => {
+      const supabase = await loadSupabase();
       if (!supabase) return { error: { message: 'not configured' } };
       const { error } = await supabase.rpc(fn, args);
       return { error };

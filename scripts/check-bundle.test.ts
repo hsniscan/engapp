@@ -35,6 +35,13 @@ describe('check-bundle', () => {
     ]);
   });
 
+  it('fails when supabase-js is in the start-up bundle', () => {
+    const r = checkStartup([{ path: 'assets/index-AAAAAAAA.js', content: 'class GoTrueClient {}' }]);
+    expect(r.problems).toEqual([
+      'index-AAAAAAAA.js contains the Supabase client (must load on first use)',
+    ]);
+  });
+
   it('fails over the budget', () => {
     const noise = randomBytes(30_000).toString('base64'); // does not compress
     const r = checkStartup([{ path: 'assets/index-AAAAAAAA.js', content: noise }], 10);

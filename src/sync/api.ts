@@ -42,7 +42,7 @@ import type {
   Source,
   UserContent,
 } from '@/domain/types';
-import { supabase } from '@/lib/supabase';
+import { loadSupabase } from '@/lib/supabase';
 
 export const MAX_PUSH_BATCH = 100;
 export const MAX_PULL_PAGE = 500;
@@ -171,8 +171,8 @@ export class SyncApiError extends Error {
   }
 }
 
-function client(c?: SupabaseClient | null): SupabaseClient {
-  const s = c === undefined ? supabase : c;
+async function client(c?: SupabaseClient | null): Promise<SupabaseClient> {
+  const s = c === undefined ? await loadSupabase() : c;
   if (!s) throw new SyncApiError('not_configured', 'Supabase is not configured (guest mode)');
   return s;
 }
@@ -214,7 +214,7 @@ export async function pushBatch(items: PushItem[], c?: SupabaseClient | null): P
     throw new RangeError(`at most ${MAX_PUSH_BATCH} rows per push`);
   if (items.length === 0) return { acked: [], stale: [], rejected: [] };
   const wire = items.map((i) => ({ ...i, table: serverTableName(i.table) }));
-  const res = await rpc(client(c), 'sync_push', { p_batch: wire }, pushResult);
+  const res = await rpc(await client(c), 'sync_push', { p_batch: wire }, pushResult);
   return {
     ...res,
     rejected: res.rejected.map((r) => ({ ...r, table: r.table === null ? null : localTableName(r.table) })),
@@ -241,7 +241,7 @@ export async function pullChanges(
   c?: SupabaseClient | null,
   fromSeq?: number,
 ): Promise<PullResult> {
-  const cl = client(c);
+  const cl = await client(c);
   const p_limit = Math.min(limit, MAX_PULL_PAGE);
   let env: z.infer<typeof pullEnvelope> | null = null;
   let version: PullResult['version'] = 1;
@@ -287,7 +287,7 @@ export async function pullChanges(
  * never burns their push attempts.
  */
 export async function listSyncTables(c?: SupabaseClient | null): Promise<string[] | null> {
-  const cl = client(c);
+  const cl = await client(c);
   let res: { data: unknown; error: { code?: string; message: string } | null };
   try {
     res = await cl.from('sync_tables').select('name');
@@ -312,7 +312,7 @@ export async function pullLexicon(
   c?: SupabaseClient | null,
 ): Promise<LexiconPullResult> {
   return rpc(
-    client(c),
+    await client(c),
     'lexicon_pull',
     { p_since: sinceSeq, p_limit: Math.min(limit, MAX_PULL_PAGE) },
     lexiconPullEnvelope,
@@ -326,7 +326,7 @@ export async function getLexiconSenses(
 ): Promise<LexiconSense[]> {
   if (ids.length === 0) return [];
   if (ids.length > 500) throw new RangeError('at most 500 ids');
-  return rpc(client(c), 'lexicon_get', { p_ids: ids }, z.array(lexiconEntry));
+  return rpc(await client(c), 'lexicon_get', { p_ids: ids }, z.array(lexiconEntry));
 }
 
 const examplesPullEnvelope = z.object({
@@ -356,7 +356,7 @@ export async function pullLexiconExamples(
   let env: z.infer<typeof examplesPullEnvelope>;
   try {
     env = await rpc(
-      client(c),
+      await client(c),
       'lexicon_examples_pull',
       { p_since: sinceSeq, p_limit: Math.min(limit, MAX_PULL_PAGE) },
       examplesPullEnvelope,

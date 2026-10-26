@@ -18,7 +18,7 @@ import {
   type WebPushCleaner,
 } from '@/features/notify/nativeReminder';
 import i18n from '@/i18n';
-import { supabase } from '@/lib/supabase';
+import { getSession, loadSupabase } from '@/lib/supabase';
 import { ReminderAnswers, type CardReminderPayload } from './widget';
 
 const toPermission = (p: string): Permission =>
@@ -104,6 +104,9 @@ export const capacitorNotifier: NotifierPort = {
 
 /** Removes every Web Push subscription of the signed-in account (own rows, RLS). */
 export const removeAccountWebPush: WebPushCleaner = async () => {
+  // Only a signed-in device has web push rows of its own to drop.
+  if (!(await getSession())) return 0;
+  const supabase = await loadSupabase();
   if (!supabase) return 0;
   const { data, error } = await supabase.from('push_subscriptions').select('endpoint');
   if (error) return null;
