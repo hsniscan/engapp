@@ -48,7 +48,7 @@ test('progress tab: categories, gap practice and the 12-week series on a phone',
   if (await start.isVisible()) {
     await start.click();
     await expect(page).toHaveURL(/\/practice\?source=list&size=(10|20)&notes=/);
-    await expect(page.getByText('Pratik · takvimin değişmez')).toBeVisible();
+    await expect(page.getByText('Pratik · takvim ve seri değişmez')).toBeVisible();
     await expect(
       page.getByRole('button', { name: 'Cevabı göster', disabled: false }),
     ).toBeVisible();

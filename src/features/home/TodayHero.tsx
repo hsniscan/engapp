@@ -176,23 +176,27 @@ function ModeChips({ data, tone }: { data: HeroData; tone: 'hero' | 'surface' })
               to={studyHref(m)}
               data-testid={`study-type-${m}`}
               data-done={done || undefined}
-              aria-label={
-                done
-                  ? `${t(`today.mode.${m}`)}: ${studied ? t('today.typeDone') : t('today.typeNone')}`
-                  : `${t(`today.mode.${m}`)}: ${t('today.chipCount', { count: n })}`
-              }
               className={cn(
                 'inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-sm font-medium transition-colors duration-(--duration-micro)',
                 tone === 'hero'
                   ? done
-                    ? 'bg-accent-fg/12 text-hero-muted hover:bg-accent-fg/18'
-                    : 'bg-accent-fg/18 text-accent-fg hover:bg-accent-fg/26'
+                    ? 'bg-[rgb(0_0_0/0.1)] text-hero-muted hover:bg-[rgb(0_0_0/0.16)]'
+                    : 'bg-[rgb(0_0_0/0.2)] text-accent-fg hover:bg-[rgb(0_0_0/0.28)]'
                   : done
                     ? 'bg-surface-sunken text-fg-muted hover:bg-hover'
                     : 'bg-accent-soft text-accent-text hover:bg-hover',
               )}
             >
-              <span aria-hidden="true">{t(`today.mode.${m}`)}</span>
+              {/* The name is "Kelime 2 kart" / "Üretim Bugün yok"; the eye sees "Kelime 2". */}
+              <span>{t(`today.mode.${m}`)}</span>
+              <span className="sr-only">
+                {' '}
+                {done
+                  ? studied
+                    ? t('today.typeDone')
+                    : t('today.typeNone')
+                  : t('today.chipCount', { count: n })}
+              </span>
               {done ? (
                 studied ? (
                   <HomeIcon name="check" size={15} strokeWidth={2.2} />

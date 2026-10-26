@@ -37,7 +37,7 @@ test('daily new-card limit in Ayarlar changes the "Yeni" count on the home scree
   await expect(page.getByText('Yeni kart yok', { exact: true })).toBeVisible();
   await page.waitForTimeout(600);
   await page.goto('/');
-  await expect(page.getByTestId('today-hero-done')).toContainText('Bugün tekrar yok');
+  await expect(page.getByTestId('today-hero-done')).toContainText('Bugün kart yok');
 });
 
 test('theme switch persists across a reload (stored before first paint, no flash)', async ({

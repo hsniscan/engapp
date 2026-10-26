@@ -49,9 +49,11 @@ learning step (0/15 → 15/30), an evening learner lost a ramp step to the 12-ho
     answers on cards that were in review only (a new word's first answers are not recall); the
     main button goes to the next mode with cards, else home; the "Yarın N kart seni bekliyor"
     phrasing is gone ("Yarın N kart planlı").
-11. **One note at a time on Bugün**, in priority order: backup reminder (above the page),
-    the stricter-rule note, a covered streak day, load notes, the FSRS offer, interests, a
-    level change. No goals: one line "Günlük hedef koy" with 10 / 15 / 20 dk.
+11. **One note at a time on Bugün**, in priority order: the stricter-rule note, a covered
+    streak day, load notes, the FSRS offer, interests, a level change. The guest backup
+    reminder stays a banner of its own above the page and does not hold these back (a guest
+    sees it every day until a backup, so it would hide catch-up and a covered streak day).
+    No goals: one line "Günlük hedef koy" with 10 / 15 / 20 dk.
 12. **Reminder** (`20261102000200_push_capped.sql`): reviews above the capacity are capped as
     catch-up caps them (learning steps added, new cards not counted); a tap opens `/study`.
 

@@ -114,7 +114,6 @@ export const RatingBar = forwardRef<HTMLDivElement, RatingBarProps>(function Rat
           const value = ratingValue[r];
           const { interval, change } = ratingLines(view, value);
           const isSuggested = value === suggested;
-          const held = guarded && value !== R.Again;
           const isArmed = armed === value;
           return (
             <button
@@ -129,7 +128,6 @@ export const RatingBar = forwardRef<HTMLDivElement, RatingBarProps>(function Rat
                 'transition-[background-color,transform] duration-(--duration-micro) ease-standard motion-safe:active:scale-[0.97]',
                 look[r].button,
                 isSuggested && cn('ring-2 ring-offset-2 ring-offset-canvas', look[r].ring),
-                held && !isArmed && 'opacity-60',
                 isArmed && cn('ring-2 ring-offset-2 ring-offset-canvas', look[r].ring),
               )}
             >

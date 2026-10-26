@@ -245,30 +245,30 @@ function StudyWelcome() {
         {t('study.pickerTitle')}
       </h1>
       <div data-testid="study-welcome">
-      <EmptyState
-        icon="cards"
-        title={t('study.welcomeTitle')}
-        description={t('study.welcomeBody')}
-        action={
-          <>
-            <button
-              type="button"
-              onClick={() => openAddSheet()}
-              aria-haspopup="dialog"
-              className={buttonClasses({ size: 'lg', className: 'min-w-60' })}
-            >
-              <Icon name="plus" size={20} />
-              {t('home.emptyAction')}
-            </button>
-            <Link
-              to={DISCOVER_DECKS_HREF}
-              className={buttonClasses({ variant: 'secondary', className: 'min-w-60' })}
-            >
-              {t('study.welcomeDecks')}
-            </Link>
-          </>
-        }
-      />
+        <EmptyState
+          icon="cards"
+          title={t('study.welcomeTitle')}
+          description={t('study.welcomeBody')}
+          action={
+            <>
+              <button
+                type="button"
+                onClick={() => openAddSheet()}
+                aria-haspopup="dialog"
+                className={buttonClasses({ size: 'lg', className: 'min-w-60' })}
+              >
+                <Icon name="plus" size={20} />
+                {t('home.emptyAction')}
+              </button>
+              <Link
+                to={DISCOVER_DECKS_HREF}
+                className={buttonClasses({ variant: 'secondary', className: 'min-w-60' })}
+              >
+                {t('study.welcomeDecks')}
+              </Link>
+            </>
+          }
+        />
       </div>
     </div>
   );

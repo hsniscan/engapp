@@ -38,7 +38,6 @@ import {
 } from './todayQueries';
 import { WordsCard } from './WordsCard';
 import { TodayReadingCard } from '@/features/reader/TodayReadingCard';
-import { useBackupReminderShown } from './backupNote';
 
 export function HomeScreen() {
   const core = useLiveQuery(() => getHomeCore(), []);
@@ -180,17 +179,16 @@ function useHomeDecks(): HomeDeck[] | undefined {
 }
 
 /**
- * Occasional notes, at most one at a time (v0.5.1): the backup reminder (shown above the page
- * by RootLayout) wins, then the stricter "öğrenildi" rule, a covered streak day, load
- * (catch-up, vacation), the FSRS offer, interests, a level change. Every note stays mounted
- * and decides by itself whether it renders; the container shows only the first one that does,
- * so the next comes up once it is closed.
+ * Occasional notes, at most one at a time (v0.5.1): the stricter "öğrenildi" rule, a covered
+ * streak day, load (catch-up, vacation), the FSRS offer, interests, a level change. Every note
+ * stays mounted and decides by itself whether it renders; the container shows only the first
+ * one that does, so the next comes up once it is closed. The guest backup reminder is a banner
+ * of its own above the page (RootLayout) and does not hold these back.
  */
 function Notes() {
-  const backup = useBackupReminderShown();
   return (
     <div
-      className={cn('flex flex-col empty:hidden [&>*+*]:hidden', backup && 'hidden')}
+      className="flex flex-col empty:hidden [&>:empty]:hidden [&>:not(:empty)~*]:hidden"
       data-testid="home-notes"
     >
       <StageRuleNote />

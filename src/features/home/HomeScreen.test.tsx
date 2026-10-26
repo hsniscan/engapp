@@ -59,9 +59,9 @@ describe('Bugün', () => {
     );
     // One chip per mode in the hero: the whole day at a glance (ADR 0055).
     expect(within(hero).getByTestId('study-type-word')).toHaveAttribute('href', '/study?mode=word');
-    expect(within(hero).getByTestId('study-type-word')).toHaveAccessibleName('Kelime: 2 kart');
+    expect(within(hero).getByTestId('study-type-word')).toHaveAccessibleName(/^Kelime\s*2 kart$/);
     expect(within(hero).getByTestId('study-type-production')).toHaveAccessibleName(
-      'Üretim: Bugün yok',
+      /^Üretim\s*Bugün yok$/,
     );
     expect(await screen.findByTestId('home-words')).toHaveTextContent('/ 2 kelimenden');
 

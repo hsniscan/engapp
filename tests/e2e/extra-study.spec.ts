@@ -61,7 +61,7 @@ test('done for today → "Biraz daha çalış": +5 new cards, then a practice ro
 
   await practice.getByRole('button', { name: 'Pratiğe başla' }).click();
   await expect(page).toHaveURL(/\/practice\?source=recent&size=10$/);
-  await expect(page.getByText('Pratik · takvimin değişmez')).toBeVisible();
+  await expect(page.getByText('Pratik · takvim ve seri değişmez')).toBeVisible();
 
   // Keyboard only: Space flips, 1 = Bilemedim (asked again at the end), 2 = Bildim.
   const done = page.getByRole('heading', { name: 'Pratik bitti' });
@@ -75,7 +75,7 @@ test('done for today → "Biraz daha çalış": +5 new cards, then a practice ro
     await page.locator('body').press(answers === 0 ? '1' : '2');
   }
   expect(answers).toBe(8); // 7 cards + the missed one once more
-  await expect(page.getByText('Kartlarının takvimi değişmedi.')).toBeVisible();
+  await expect(page.getByText('Kartlarının takvimi değişmedi; pratik seriye sayılmaz.')).toBeVisible();
   await expect(page.getByText('6/7')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'En çok zorlandıkların' })).toBeVisible();
 

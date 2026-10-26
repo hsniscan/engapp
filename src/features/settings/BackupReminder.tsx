@@ -88,8 +88,6 @@ export function BackupReminder() {
           onClick={() => {
             flags.set(DISMISS_KEY, today);
             setDismissed(today);
-            // Bugün shows its next note once this one is closed (features/home/backupNote.ts).
-            window.dispatchEvent(new Event('engapp:backup-reminder'));
           }}
         />
       </div>
