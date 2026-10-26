@@ -21,8 +21,8 @@ import {
 import type { WordBankEntry } from '@/domain/wordBank';
 import { Button, cn, EmptyState, Icon, Skeleton, Surface, toast } from '@/ui';
 import { posLabel } from '@/features/cards/labels';
-import { BankMissing } from './DiscoverTab';
-import { LEVEL_MARK, MARK, nf } from './deckUi';
+import { BankMissing } from './DeckCatalog';
+import { DISCOVER_DECKS_HREF, LEVEL_MARK, MARK, nf } from './deckUi';
 import {
   BackBar,
   FilterChip,
@@ -60,7 +60,7 @@ export function SuggestedDeckPage() {
   const spec = parseSuggestedKey(key);
   return (
     <div className="pb-10">
-      <BackBar to="/decks?tab=discover" parent={t('deckHub.suggested.parent')} />
+      <BackBar to={DISCOVER_DECKS_HREF} parent={t('deckHub.suggested.parent')} />
       {spec ? (
         <SuggestedBody key={key} spec={spec} />
       ) : (
@@ -71,7 +71,7 @@ export function SuggestedDeckPage() {
               title={t('deckHub.suggested.notFound')}
               description={t('deckHub.suggested.notFoundBody')}
               action={
-                <Link to="/decks?tab=discover" className="font-medium text-accent-text hover:underline">
+                <Link to={DISCOVER_DECKS_HREF} className="font-medium text-accent-text hover:underline">
                   {t('deckHub.suggested.toDiscover')}
                 </Link>
               }

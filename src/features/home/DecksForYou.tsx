@@ -17,7 +17,7 @@ export function DecksForYou({ decks }: { decks: HomeDeck[] }) {
         <h2 id="decks-for-you-title" className="font-serif text-[1.1875rem] font-semibold">
           {t('today.decksTitle')}
         </h2>
-        <Link to="/decks?tab=discover" className="text-sm text-accent-text hover:underline">
+        <Link to="/kesfet?f=desteler" className="text-sm text-accent-text hover:underline">
           {t('today.decksDiscover')}
         </Link>
       </div>

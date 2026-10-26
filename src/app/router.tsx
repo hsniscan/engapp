@@ -24,8 +24,9 @@ const legacy = (path: (typeof LEGACY_PATHS)[number]): RouteObject => ({
 });
 
 /*
- * Information architecture of the redesign (five places): Bugün `/` · Desteler `/decks` ·
- * (+) the Add sheet (a modal, not a route) · İlerleme `/progress` · Profil `/profile`.
+ * Information architecture (v0.5.1, ADR 0057; five places): Bugün `/` · Kelimelerim `/decks` ·
+ * (+) the Add sheet (a modal, not a route) · Keşfet `/kesfet` · Profil `/profile` (İlerleme
+ * `/progress` is reached from the top of Profil and from Bugün's numbers).
  * Feature screens are lazy chunks; the names below are the agreed exports of each feature.
  */
 const children: RouteObject[] = [
@@ -60,9 +61,15 @@ const children: RouteObject[] = [
     }),
   },
 
-  // ---- Desteler: ?tab=mine|discover|bank; a deck; a suggested deck; all my words.
+  // ---- Kelimelerim: ?tab=mine|bank; a deck; a suggested deck; all my words. The old
+  // ?tab=discover|reading segments live in Keşfet now (redirect).
   {
     path: 'decks',
+    loader: ({ request }) => {
+      const url = new URL(request.url);
+      const to = legacyRedirect(url.pathname, url.search);
+      return to ? redirect(to) : null;
+    },
     HydrateFallback: () => null,
     lazy: async () => ({ Component: (await import('@/features/decks/DecksPage')).DecksPage }),
   },
@@ -87,15 +94,16 @@ const children: RouteObject[] = [
     }),
   },
   {
-    // The graded reading library (v0.5 İP5); also shown in Desteler → Okuma.
-    path: 'kitaplik',
+    // Keşfet (v0.5.1): a feed of texts, suggested decks and words, with ?f=okuma|desteler|
+    // kelimeler filters. The graded library (old /kitaplik) is its "Okuma" filter.
+    path: 'kesfet',
     HydrateFallback: () => null,
     lazy: async () => ({
-      Component: (await import('@/features/library/GradedLibraryPage')).GradedLibraryPage,
+      Component: (await import('@/features/discover/DiscoverPage')).DiscoverPage,
     }),
   },
   {
-    // "Tüm kelimelerim" (reached from Desteler and Profil).
+    // "Tüm kelimelerim" (reached from Kelimelerim and Profil).
     path: 'library',
     HydrateFallback: () => null,
     lazy: async () => ({ Component: (await import('@/features/cards/LibraryPage')).LibraryPage }),
@@ -107,7 +115,7 @@ const children: RouteObject[] = [
     handle: {
       immersive: true,
       ownTopBar: true,
-      exitTo: '/decks?tab=reading',
+      exitTo: '/kesfet?f=okuma',
     } satisfies RouteHandle,
     HydrateFallback: () => null,
     lazy: async () => ({ Component: (await import('@/features/reader/ReaderPage')).ReaderPage }),
@@ -155,7 +163,7 @@ const children: RouteObject[] = [
     }),
   },
 
-  // ---- İlerleme
+  // ---- İlerleme (under Profil since v0.5.1)
   {
     path: 'progress',
     HydrateFallback: () => null,

@@ -310,3 +310,18 @@ export function forYouSpecs(
   }
   return out.sort((a, b) => Number(a.upLevel) - Number(b.upLevel));
 }
+
+/**
+ * Lemmas listed under more than one part of speech ("go" is a verb and, in the lists, also a
+ * noun). Not good as an example of a part of speech: "İsimler: go, take" reads as a mistake.
+ */
+export function multiPosLemmas(entries: readonly Pick<WordBankEntry, 'lemma_norm' | 'pos'>[]): Set<string> {
+  const first = new Map<string, string>();
+  const out = new Set<string>();
+  for (const e of entries) {
+    const seen = first.get(e.lemma_norm);
+    if (seen === undefined) first.set(e.lemma_norm, e.pos);
+    else if (seen !== e.pos) out.add(e.lemma_norm);
+  }
+  return out;
+}
