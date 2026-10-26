@@ -18,6 +18,7 @@ import { SegmentedControl, Select, Skeleton, Switch, toast } from '@/ui';
 import {
   disableReminder,
   enableReminder,
+  setAnswerCards,
   upcoming,
   useReminderState,
   type NotifierPort,
@@ -95,6 +96,18 @@ export function NativeNotifySection({
     }
   };
 
+  const toggleAnswers = async (next: boolean) => {
+    setBusy(true);
+    try {
+      await setAnswerCards(next, { port: (await deps()).port });
+    } catch (e) {
+      void logError(e, 'nativeNotify.answers');
+      toast({ title: t('settings.saveFailed'), tone: 'danger' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const hourLabel = (h: number) => t('settings.notify.hourLabel', { hour: pad(h) });
   const hours = [];
   for (let h = FIRST_NOTIFY_HOUR; h <= LAST_NOTIFY_HOUR; h++)
@@ -162,6 +175,18 @@ export function NativeNotifySection({
               <p className="text-sm text-fg-muted" aria-live="polite">
                 {when ? t('native.reminders.next', { when }) : t('native.reminders.nextNone')}
               </p>
+            </SettingsRow>
+          )}
+          {state.enabled && (
+            <SettingsRow stack>
+              <Switch
+                className="w-full"
+                label={t('widget.answers.toggle')}
+                description={t('widget.answers.hint')}
+                checked={state.answerCards}
+                disabled={busy}
+                onCheckedChange={(v) => void toggleAnswers(v)}
+              />
             </SettingsRow>
           )}
         </>

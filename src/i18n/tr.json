@@ -1557,6 +1557,20 @@
       "channelDescription": "Tekrar zamanı gelince günde en fazla bir kez."
     }
   },
+  "widget": {
+    "answers": {
+      "toggle": "Bildirimden cevap ver",
+      "hint": "Hatırlatma bekleyen bir kelimeyi sorar: \"Cevabı gör\", sonra \"Bildim\" ya da \"Bilemedim\". Cevabın uygulamayı açınca işlenir."
+    },
+    "notify": {
+      "question": "{{term}} ne demek?",
+      "answer": "{{term}}: {{meaning}}",
+      "reveal": "Cevabı gör",
+      "knew": "Bildim",
+      "forgot": "Bilemedim",
+      "saved": "Cevabın kaydedildi. Uygulamayı açınca işlenir."
+    }
+  },
   "share": {
     "title": "Paylaşılan",
     "emptyTitle": "Paylaşılan bir metin yok",
