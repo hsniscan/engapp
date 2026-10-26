@@ -18,7 +18,7 @@
  *       Deletes the on-demand Gemini WAV files (decision 0028) whose text now has an MP3.
  *
  * Environment: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY. With R2_ACCOUNT_ID, R2_ACCESS_KEY_ID,
- * R2_SECRET_ACCESS_KEY and R2_BUCKET also set (decision 0053) new files go to Cloudflare R2
+ * R2_SECRET_ACCESS_KEY, R2_BUCKET and AUDIO_BASE_URL also set (decision 0053) new files go to R2
  * instead of Supabase Storage; a file in either bucket counts as present, and prune-ondemand
  * deletes from both. Secrets are read from the environment only and never printed; logs are
  * JSON lines on stdout.
@@ -38,6 +38,7 @@ import {
   type Log,
 } from './lib/tts-pregen.ts';
 import { R2Client, r2ConfigFromEnv } from '../supabase/functions/_shared/r2.ts';
+import { parseAudioBaseUrl } from '../supabase/functions/_shared/tts-contract.ts';
 import { listR2Audio, MB, unionPaths, uploadAudioToR2 } from './lib/audio-r2.ts';
 import { KokoroWorker } from './lib/tts-kokoro-worker.ts';
 import { SupabasePregenStore } from './lib/tts-pregen-store.ts';
@@ -112,8 +113,12 @@ async function main(): Promise<void> {
     wavMB: MB(bucket.bytes.wav),
   });
   // Cloudflare R2 (decision 0053): new files go there; a file in either bucket is present.
+  // The switch is the public AUDIO_BASE_URL: with credentials alone (during the copy, before
+  // the app and the function read R2) new clips still go to Supabase, so nobody misses them.
   const r2Config = r2ConfigFromEnv((k) => process.env[k]);
-  const r2 = r2Config ? new R2Client(r2Config) : null;
+  const r2On = !!r2Config && !!parseAudioBaseUrl(process.env.AUDIO_BASE_URL);
+  if (r2Config && !r2On) log('tts r2 off', { reason: 'AUDIO_BASE_URL is not set' });
+  const r2 = r2On && r2Config ? new R2Client(r2Config) : null;
   const r2Bucket = r2 ? await listR2Audio(r2, voices) : null;
   if (r2Bucket) {
     log('tts r2 bucket', {

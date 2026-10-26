@@ -3,7 +3,7 @@
 #
 # Safe to run any number of times: it lists both buckets and copies only the files R2 does
 # not have yet (idempotent), so a cancelled or timed-out run is simply run again (resumable).
-# It never deletes anything from Supabase; that is a later, manual step (setup step 18.7).
+# It never deletes anything from Supabase; that is a later, manual step (setup step 18.9).
 #
 #   dry_run (default on): only counts what Supabase has, what R2 has and what is left.
 #   dry_run off:          copies what is left, then checks a sample through the public
@@ -11,7 +11,8 @@
 #
 # Repository secrets: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET, and the
 # service-role key as for the pronunciation audio job (SUPABASE_SERVICE_ROLE_KEY, or else
-# SUPABASE_ACCESS_TOKEN). Repository variable: AUDIO_BASE_URL (for the check).
+# SUPABASE_ACCESS_TOKEN). For the check: the repository variable AUDIO_BASE_URL or, before it
+# is set (the app and the jobs switch to R2 when it is), the public_url input.
 name: Audio copy to R2
 
 on:
@@ -23,6 +24,10 @@ on:
         default: true
       max:
         description: 'At most this many files in this run (empty: all)'
+        type: string
+        default: ''
+      public_url:
+        description: 'Public address of the bucket (https://pub-….r2.dev), when the AUDIO_BASE_URL variable is not set yet'
         type: string
         default: ''
 
@@ -47,7 +52,7 @@ jobs:
       R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
       R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
       R2_BUCKET: ${{ secrets.R2_BUCKET }}
-      AUDIO_BASE_URL: ${{ vars.AUDIO_BASE_URL }}
+      AUDIO_BASE_URL: ${{ vars.AUDIO_BASE_URL || inputs.public_url }}
       APP_ORIGIN: https://engapp-65y.pages.dev
     steps:
       - uses: actions/checkout@v4
