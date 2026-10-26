@@ -98,6 +98,40 @@ Google hesabı** hazır olsun (son bölümde silinecek; kendi hesabını kullanm
 | [ ] | Deneme hesabıyla tekrar gir | Boş başlar: eski kelimeler yok | |
 | [ ] | Kendi hesabınla tekrar gir | Kendi kartların yerinde | |
 
+## 10. Ana ekran widget'ı (v0.5)
+
+| ✓ | Ne yap | Ne olmalı | Not |
+|---|---|---|---|
+| [ ] | Ana ekranda boş yere uzun bas → Widget'lar → Engapp → "Tekrara başla" (2×1) ve "Günün kelimesi" (4×2) ekle | İkisi de eklenir; sayı ve kelime birkaç saniyede gelir | |
+| [ ] | 2×1 widget'a dokun | Engapp kelime çalışmasıyla açılır | |
+| [ ] | 2–3 kart çalış, ana ekrana dön | Bekleyen sayı hemen azalır | |
+| [ ] | "Günün kelimesi"ne bak, sonra dokun | Önce Türkçesi görünür; dokununca İngilizcesi açılır | |
+| [ ] | Bir kez daha dokun | Engapp o kelimenin ayrıntısıyla açılır | |
+| [ ] | Uçak modunda widget'a bak ve dokun | Kelime yine çevrilir; internet gerekmez | |
+| [ ] | Telefonu koyu moda al | Widget'lar koyu olur; yazılar okunur | |
+| [ ] | Uygulamayı açmadan gece yarısını (gün başlangıç saatini) geçir, sabah bak | Yeni günün sayısı ve kelimesi görünür (en fazla 30 dakika gecikmeyle) | |
+
+## 11. Bildirimden cevap (v0.5)
+
+| ✓ | Ne yap | Ne olmalı | Not |
+|---|---|---|---|
+| [ ] | Ayarlar → Bildirim → "Bildirimden cevap ver" | Açık gelir (varsayılan) | |
+| [ ] | 5. bölümdeki gibi sabit saatli bir hatırlatma kur, uygulamayı kapat | Bildirim "… ne demek?" diye bir kelime sorar, altında "Cevabı gör" | |
+| [ ] | "Cevabı gör" | Uygulama açılmadan aynı bildirimde anlam görünür; "Bildim" ve "Bilemedim" çıkar | |
+| [ ] | "Bildim" | "Cevabın kaydedildi" yazar ve kısa sürede kaybolur; widget'taki sayı bir azalır | |
+| [ ] | Engapp'i aç → İlerleme ya da kelimenin ayrıntısı | Cevap bir tekrar olarak sayılmış (bir kez, iki kez değil) | |
+| [ ] | Uçak modunda bildirimden cevap ver, sonra uygulamayı aç | Cevap yine işlenir | |
+| [ ] | Telefonu yeniden başlat (hatırlatma saati gelmeden) | Hatırlatma yine zamanında gelir | |
+| [ ] | "Bildirimden cevap ver"i kapat, yeni bir hatırlatma bekle | Düz hatırlatma gelir, kelime sorulmaz | |
+
+## 12. Android 16
+
+| ✓ | Ne yap | Ne olmalı | Not |
+|---|---|---|---|
+| [ ] | Android 16 bir telefonda (ya da emülatörde) uygulamayı aç | Üst ve alt çubuk uygulamanın zeminiyle bütün; yazı çubukların altında kalmaz | |
+| [ ] | Ekranın kenarından geri kaydır (geri hareketi) | Açık pencereyi kapatır, yoksa bir önceki ekrana döner; ana sayfada çıkar | |
+| [ ] | Tablet ya da katlanır telefonda yan çevir | Ekran bozulmadan döner | |
+
 ## Genel not
 
 Takıldığın, yavaş gelen ya da garip görünen her şeyi buraya yaz:
