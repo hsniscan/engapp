@@ -42,7 +42,9 @@ test('offline: review, add a card and open stats; back online the outbox is push
   await expect(page).toHaveURL(/\/add$/);
   await addWord(page, WORDS[2]!);
 
-  await page.getByRole('link', { name: 'İlerleme' }).first().click();
+  // İlerleme is reached from the top of Profil (v0.5.1).
+  await page.getByRole('link', { name: 'Profil', exact: true }).first().click();
+  await page.getByRole('link', { name: 'İlerleme: tümünü gör' }).click();
   await expect(page.getByRole('heading', { name: 'İlerleme', level: 1 })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Devamlılık' })).toBeVisible();
   await expect(page.getByRole('grid', { name: /Günlük tekrar takvimi/ })).toBeVisible();

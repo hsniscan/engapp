@@ -276,7 +276,7 @@ function FocusBlock({ summary: s }: { summary: WeeklyReportSummary }) {
         ? `/library?note=${encodeURIComponent(ids[0]!)}`
         : focus === 'add_words'
           ? '/add'
-          : '/review';
+          : '/study?mode=word';
     action = (
       <Link to={to} className={actionClass}>
         {t(`report.action.${focus as 'come_back'}`)}

@@ -12,7 +12,8 @@
     "primary": "Main navigation",
     "skipToContent": "Skip to content",
     "backHome": "Back to home",
-    "decks": "Decks",
+    "decks": "My words",
+    "discover": "Discover",
     "progress": "Progress",
     "profile": "Profile",
     "addLong": "Add"
@@ -2841,7 +2842,7 @@
     "emptyTitle": "The word bank is not downloaded yet",
     "emptyOffline": "The first time needs the internet. Once downloaded it works offline.",
     "emptyFailed": "The download did not work just now. Try again in a moment.",
-    "emptyNoBackend": "This installation has no word bank.",
+    "emptyNoBackend": "The word bank cannot load right now. It will load when you are online.",
     "retry": "Try again",
     "credit": "Word lists: CEFR-J Wordlist 1.5 (© Tono Laboratory, TUFS) and Octanove Vocabulary Profile C1/C2 (Octanove Labs, CC BY-SA 4.0). Meanings and example sentences were generated once with AI.",
     "creditLink": "Sources",
@@ -2849,13 +2850,107 @@
     "entryBody": "The word bank has thousands of words for your level, with meanings and examples.",
     "entryLink": "Open the word bank"
   },
+  "discover": {
+    "title": "Discover",
+    "lead": "Texts to read, ready-made decks, new words. A little different every day.",
+    "filters": "Discover filter",
+    "filter": {
+      "hepsi": "All",
+      "okuma": "Reading",
+      "desteler": "Decks",
+      "kelimeler": "Words"
+    },
+    "seeAll": "See all",
+    "loading": "Preparing Discover",
+    "continue": {
+      "eyebrow": "Continue",
+      "pct": "{{pct}}% read",
+      "start": "Opened, not started yet",
+      "action": "Continue reading"
+    },
+    "story": {
+      "eyebrow": "Today's story"
+    },
+    "suggestions": {
+      "eyebrow": "Texts for you",
+      "body": "{{difficulty}} difficulty, chosen by the words you know",
+      "label": "Texts for you"
+    },
+    "createText": {
+      "eyebrow": "A text of your own",
+      "title": "Write a text with my words",
+      "body": "Pick a few of your words; a short text is written with them and opens in the reader.",
+      "action": "Pick words"
+    },
+    "newTexts": {
+      "eyebrow": "New in the library",
+      "label": "New texts"
+    },
+    "myTexts": {
+      "eyebrow": "My texts",
+      "count_one": "{{count}} text",
+      "count_other": "{{count}} texts",
+      "label": "Your recent texts"
+    },
+    "forYou": {
+      "eyebrow": "Decks for you",
+      "body": "By your level {{level}} and your interests"
+    },
+    "shelf": {
+      "eyebrow": "Ready-made decks",
+      "levels": "By level",
+      "pos": "At your level, by part of speech"
+    },
+    "word": {
+      "eyebrow": "Word of the day",
+      "add": "Add to my cards",
+      "added": "Added to your cards",
+      "addedToast": "“{{word}}” added to your cards",
+      "failed": "Could not add. Try again.",
+      "example": "Example"
+    },
+    "falseFriend": {
+      "eyebrow": "False friend of the day",
+      "deck": "All false friends · {{count}} pairs"
+    },
+    "wordsAtLevel": {
+      "eyebrow": "New words",
+      "body": "{{level}} words not in your cards yet",
+      "label": "New words",
+      "add": "Add “{{word}}”",
+      "added": "“{{word}}” added",
+      "bank": "Open the word bank"
+    },
+    "missing": {
+      "title": "Some suggestions will load when you are online",
+      "body": "Once downloaded, texts and decks show offline too.",
+      "retry": "Try again"
+    },
+    "empty": "Nothing to show yet. Add a word or a text and this page starts to fill."
+  },
+  "progressGlance": {
+    "title": "Progress",
+    "seeAll": "See all",
+    "seeAllLabel": "Progress: see all",
+    "streak": "Streak",
+    "streakValue_one": "{{count}} day",
+    "streakValue_other": "{{count}} days",
+    "learned": "Learned",
+    "learnedValue_one": "{{formatted}} word",
+    "learnedValue_other": "{{formatted}} words",
+    "retention": "Recall",
+    "week": "Last 7 days",
+    "weekLabel_one": "You studied on {{count}} day in the last 7",
+    "weekLabel_other": "You studied on {{count}} days in the last 7",
+    "none": "No study yet. It shows here after your first session."
+  },
   "deckHub": {
-    "title": "Decks",
+    "title": "My words",
     "segments": "Deck view",
     "tabMine": "My decks",
     "tabDiscover": "Discover",
     "tabBank": "Word bank",
-    "import": "Import: Anki, text or PDF",
+    "import": "Import: Anki, CSV or a backup",
     "back": "Back",
     "study": "Study",
     "studyAnyway": "Study anyway",
@@ -2897,7 +2992,7 @@
       "tagsBody_other": "{{count}} tags · rename, delete",
       "tagsNone": "No tags yet",
       "importTitle": "Import",
-      "importBody": "Anki deck, text or PDF"
+      "importBody": "Anki deck, CSV or a backup file"
     },
     "manual": {
       "title": "Hand-picked deck",
@@ -3148,7 +3243,7 @@
     "loading": "Downloading the library…",
     "emptyTitle": "The library is empty for now",
     "emptyOffline": "Connect to the internet once to download the library. After that it reads offline.",
-    "emptyNoBackend": "The library is not available in this setup.",
+    "emptyNoBackend": "The library cannot load right now. It will load when you are online.",
     "emptySoon": "New texts are being prepared; they will be here soon.",
     "emptyFailed": "The library could not be downloaded.",
     "retry": "Try again",

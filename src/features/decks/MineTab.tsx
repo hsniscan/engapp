@@ -13,7 +13,8 @@ import { cleanTag } from '@/domain/tags';
 import { Button, cn, Dialog, DialogClose, Icon, Skeleton, TextField, toast } from '@/ui';
 import { useLevelData } from '@/features/levels/useLevelData';
 import { DeckEditorDialog } from './DeckEditorDialog';
-import { deckStudyHref, MARK, nf } from './deckUi';
+import { MIN_THEME_WORDS } from '@/domain/themes';
+import { deckStudyHref, DISCOVER_DECKS_HREF, MARK, nf, openImportSheet } from './deckUi';
 import { Glyph, ProgressBar2 } from './parts';
 import { titleIndex } from './suggested';
 import { TagsDialog } from './TagsDialog';
@@ -118,7 +119,7 @@ export function MineTab() {
         ) : decks.length === 0 ? (
           <p className="rounded-[18px] border border-border bg-surface p-4 text-[0.9375rem] text-fg-muted">
             {t('deckHub.mine.empty')}{' '}
-            <Link to="/decks?tab=discover" className="font-medium text-accent-text underline-offset-4 hover:underline">
+            <Link to={DISCOVER_DECKS_HREF} className="font-medium text-accent-text underline-offset-4 hover:underline">
               {t('deckHub.tabDiscover')}
             </Link>
           </p>
@@ -174,17 +175,20 @@ export function MineTab() {
         aria-label={t('deckHub.mine.tools')}
         className="flex flex-col overflow-hidden rounded-[20px] border border-border bg-surface"
       >
-        <ToolRow
-          to="/decks/themes"
-          icon={<Glyph name="themes" />}
-          accent
-          title={t('deckHub.mine.themes')}
-          body={
-            pending
-              ? t('deckHub.mine.themesPending')
-              : t('deckHub.mine.themesBody', { count: data?.all.total ?? 0 })
-          }
-        />
+        {/* Grouping needs a few words to group: hidden for a new user (unless a preview waits). */}
+        {(pending || (data?.all.total ?? 0) >= MIN_THEME_WORDS) && (
+          <ToolRow
+            to="/decks/themes"
+            icon={<Glyph name="themes" />}
+            accent
+            title={t('deckHub.mine.themes')}
+            body={
+              pending
+                ? t('deckHub.mine.themesPending')
+                : t('deckHub.mine.themesBody', { count: data?.all.total ?? 0 })
+            }
+          />
+        )}
         <ToolRow
           onClick={() => setTagsOpen(true)}
           icon={<Glyph name="tag" />}
@@ -196,7 +200,7 @@ export function MineTab() {
           }
         />
         <ToolRow
-          to="/add"
+          onClick={openImportSheet}
           icon={<Glyph name="download" />}
           title={t('deckHub.mine.importTitle')}
           body={t('deckHub.mine.importBody')}

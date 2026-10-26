@@ -105,9 +105,9 @@ for (const width of [360, 1280]) {
         page.getByRole('list', { name: 'Destelerim' }).getByRole('listitem'),
       ).toHaveCount(2);
       await check(page, 'decks', tag);
-      // Keşfet before the word bank is downloaded.
-      await page.goto('/decks?tab=discover');
-      await expect(page.getByRole('link', { name: 'Keşfet', exact: true })).toHaveAttribute(
+      // Keşfet › Desteler before the word bank is downloaded.
+      await page.goto('/kesfet?f=desteler');
+      await expect(page.getByRole('link', { name: 'Desteler', exact: true })).toHaveAttribute(
         'aria-current',
         'page',
       );

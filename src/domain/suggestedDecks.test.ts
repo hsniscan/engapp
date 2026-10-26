@@ -10,6 +10,7 @@ import {
   forYouSpecs,
   knownShare,
   levelSpread,
+  multiPosLemmas,
   type OwnedIndex,
   parseSuggestedKey,
   posLevelCounts,
@@ -255,5 +256,13 @@ describe('suggestions', () => {
       ['b1-adjective', false],
       ['b2-verb', true],
     ]);
+  });
+});
+
+describe('multiPosLemmas', () => {
+  it('finds words listed under two parts of speech', () => {
+    const rows = [entry('go', 'A1', 6, 'verb'), entry('go', 'A2', 6, 'noun'), entry('table', 'A1', 5, 'noun'), entry('table', 'B1', 4, 'noun')];
+    expect([...multiPosLemmas(rows)]).toEqual(['go']);
+    expect(multiPosLemmas([])).toEqual(new Set());
   });
 });

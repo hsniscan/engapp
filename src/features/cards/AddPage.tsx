@@ -29,7 +29,7 @@ function WordBankEntry() {
       <p className="font-medium text-fg">{t('wordBank.entryTitle')}</p>
       <p className="text-sm text-fg-muted">{t('wordBank.entryBody')}</p>
       <Link
-        to="/kelime-bankasi"
+        to="/decks?tab=bank"
         className="inline-flex min-h-11 items-center gap-1.5 self-start text-[0.9375rem] font-medium text-accent-text underline-offset-4 hover:underline"
       >
         <Icon name="layers" size={18} />

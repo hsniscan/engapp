@@ -19,6 +19,7 @@ import {
 } from '@/features/settings/SettingsGlyph';
 import { useAppSettings } from '@/features/settings/useAppSettings';
 import { formatNumber } from '@/features/stats/format';
+import { ProgressGlance } from '@/features/stats/ProgressGlance';
 import { useWordStages } from '@/features/stats/useWordStages';
 import { formatSince } from '@/features/auth/time';
 import { useSyncStatus } from '@/sync/status';
@@ -32,6 +33,8 @@ export function ProfilePage() {
     <div className="mx-auto w-full max-w-2xl px-4 pt-5 pb-10 sm:px-6 md:pt-10">
       <ProfileHeader />
       <div className="mt-3 flex flex-col gap-4">
+        {/* İlerleme moved here from the tab bar (v0.5.1, ADR 0057). */}
+        <ProgressGlance />
         <LevelCard />
         <GoalsCard />
         <InterestsCard />

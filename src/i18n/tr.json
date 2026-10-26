@@ -12,7 +12,8 @@
     "primary": "Ana gezinme",
     "skipToContent": "İçeriğe geç",
     "backHome": "Ana ekrana dön",
-    "decks": "Desteler",
+    "decks": "Kelimelerim",
+    "discover": "Keşfet",
     "progress": "İlerleme",
     "profile": "Profil",
     "addLong": "Ekle"
@@ -2839,9 +2840,9 @@
     "noMatch": "Bu seçimle kelime yok.",
     "loading": "Kelime bankası indiriliyor…",
     "emptyTitle": "Kelime bankası henüz indirilmedi",
-    "emptyOffline": "İlk açılışta internet gerekir. Bir kez indikten sonra internetsiz de çalışır.",
+    "emptyOffline": "İnternet gelince yüklenecek. Bir kez indikten sonra internetsiz de çalışır.",
     "emptyFailed": "İndirme şu an olmadı. Biraz sonra tekrar dene.",
-    "emptyNoBackend": "Bu kurulumda kelime bankası yok.",
+    "emptyNoBackend": "Kelime bankası şu an yüklenemiyor. İnternet gelince yüklenecek.",
     "retry": "Tekrar dene",
     "credit": "Kelime listeleri: CEFR-J Wordlist 1.5 (© Tono Laboratuvarı, TUFS) ve Octanove Vocabulary Profile C1/C2 (Octanove Labs, CC BY-SA 4.0). Anlamlar ve örnek cümleler yapay zekâyla bir kez üretildi.",
     "creditLink": "Kaynaklar",
@@ -2849,13 +2850,107 @@
     "entryBody": "Kelime Bankası'nda seviyene göre binlerce kelime anlamı ve örneğiyle hazır.",
     "entryLink": "Kelime Bankası'nı aç"
   },
+  "discover": {
+    "title": "Keşfet",
+    "lead": "Okuyacak metinler, hazır desteler, yeni kelimeler. Her gün biraz değişir.",
+    "filters": "Keşfet süzgeci",
+    "filter": {
+      "hepsi": "Hepsi",
+      "okuma": "Okuma",
+      "desteler": "Desteler",
+      "kelimeler": "Kelimeler"
+    },
+    "seeAll": "Tümünü gör",
+    "loading": "Keşfet hazırlanıyor",
+    "continue": {
+      "eyebrow": "Devam et",
+      "pct": "%{{pct}} okudun",
+      "start": "Açtın, henüz okumaya başlamadın",
+      "action": "Kaldığın yerden oku"
+    },
+    "story": {
+      "eyebrow": "Bugünün hikâyesi"
+    },
+    "suggestions": {
+      "eyebrow": "Sana uygun metinler",
+      "body": "{{difficulty}} zorlukta, bildiğin kelimelere göre seçildi",
+      "label": "Sana uygun metinler"
+    },
+    "createText": {
+      "eyebrow": "Sana özel metin",
+      "title": "Kelimelerimle metin oluştur",
+      "body": "Kendi kelimelerinden birkaçını seç; onlarla kısa bir metin yazılsın, okuyucuda açılsın.",
+      "action": "Kelimeleri seç"
+    },
+    "newTexts": {
+      "eyebrow": "Kitaplığa yeni eklenenler",
+      "label": "Yeni metinler"
+    },
+    "myTexts": {
+      "eyebrow": "Metinlerim",
+      "count_one": "{{count}} metin",
+      "count_other": "{{count}} metin",
+      "label": "Son metinlerin"
+    },
+    "forYou": {
+      "eyebrow": "Senin için desteler",
+      "body": "{{level}} seviyene ve ilgi alanlarına göre"
+    },
+    "shelf": {
+      "eyebrow": "Hazır desteler",
+      "levels": "Seviyeye göre",
+      "pos": "Seviyende, kelime türüne göre"
+    },
+    "word": {
+      "eyebrow": "Günün kelimesi",
+      "add": "Kartlarıma ekle",
+      "added": "Kartlarına eklendi",
+      "addedToast": "“{{word}}” kartlarına eklendi",
+      "failed": "Eklenemedi. Tekrar dene.",
+      "example": "Örnek cümle"
+    },
+    "falseFriend": {
+      "eyebrow": "Günün yanıltıcı benzeri",
+      "deck": "Tüm yanıltıcı benzerler · {{count}} çift"
+    },
+    "wordsAtLevel": {
+      "eyebrow": "Yeni kelimeler",
+      "body": "{{level}} kelimeleri, henüz kartlarında olmayanlar",
+      "label": "Yeni kelimeler",
+      "add": "“{{word}}” kelimesini ekle",
+      "added": "“{{word}}” eklendi",
+      "bank": "Kelime bankasını aç"
+    },
+    "missing": {
+      "title": "Bazı öneriler internet gelince yüklenecek",
+      "body": "Metinler ve desteler bir kez indikten sonra internetsiz de görünür.",
+      "retry": "Tekrar dene"
+    },
+    "empty": "Şimdilik gösterecek bir şey yok. Bir kelime ya da metin ekleyince burası dolmaya başlar."
+  },
+  "progressGlance": {
+    "title": "İlerleme",
+    "seeAll": "Tümünü gör",
+    "seeAllLabel": "İlerleme: tümünü gör",
+    "streak": "Seri",
+    "streakValue_one": "{{count}} gün",
+    "streakValue_other": "{{count}} gün",
+    "learned": "Öğrendiğin",
+    "learnedValue_one": "{{formatted}} kelime",
+    "learnedValue_other": "{{formatted}} kelime",
+    "retention": "Hatırlama",
+    "week": "Son 7 gün",
+    "weekLabel_one": "Son 7 günde {{count}} gün çalıştın",
+    "weekLabel_other": "Son 7 günde {{count}} gün çalıştın",
+    "none": "Henüz çalışma yok. İlk çalışmandan sonra burada görünür."
+  },
   "deckHub": {
-    "title": "Desteler",
+    "title": "Kelimelerim",
     "segments": "Deste görünümü",
     "tabMine": "Destelerim",
     "tabDiscover": "Keşfet",
     "tabBank": "Kelime bankası",
-    "import": "İçe aktar: Anki, metin veya PDF",
+    "import": "İçe aktar: Anki, CSV ya da yedek",
     "back": "Geri",
     "study": "Çalış",
     "studyAnyway": "Yine de çalış",
@@ -2888,7 +2983,7 @@
       "byHand": "Elle seç",
       "byHandBody": "Kelimelerinden tek tek işaretle.",
       "tools": "Düzenleme araçları",
-      "themes": "AI ile temalara ayır",
+      "themes": "Yapay zekâ ile temalara ayır",
       "themesBody_one": "{{count}} kelimeni anlam gruplarına böler",
       "themesBody_other": "{{count}} kelimeni anlam gruplarına böler",
       "themesPending": "Bekleyen bir önerin var: kaldığın yerden devam et",
@@ -2897,7 +2992,7 @@
       "tagsBody_other": "{{count}} etiket · yeniden adlandır, sil",
       "tagsNone": "Henüz etiket yok",
       "importTitle": "İçe aktar",
-      "importBody": "Anki destesi, metin ya da PDF"
+      "importBody": "Anki destesi, CSV ya da yedek dosyası"
     },
     "manual": {
       "title": "Elle seçilen deste",
@@ -3148,7 +3243,7 @@
     "loading": "Kitaplık indiriliyor…",
     "emptyTitle": "Kitaplık henüz boş",
     "emptyOffline": "Kitaplığı indirmek için bir kez internete bağlan. Sonra internetsiz de okursun.",
-    "emptyNoBackend": "Kitaplık bu kurulumda kullanılamıyor.",
+    "emptyNoBackend": "Kitaplık şu an yüklenemiyor. İnternet gelince yüklenecek.",
     "emptySoon": "Yeni metinler hazırlanıyor; kısa süre sonra burada olacak.",
     "emptyFailed": "Kitaplık indirilemedi.",
     "retry": "Yeniden dene",

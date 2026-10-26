@@ -96,8 +96,8 @@ test('nav: every place, the (+) Add sheet and the old addresses', async ({ page 
   await page.goto('/');
   const nav = page.getByRole('navigation', { name: 'Ana gezinme' }).first();
   for (const [name, url, heading] of [
-    ['Desteler', /\/decks$/, 'Desteler'],
-    ['İlerleme', /\/progress$/, 'İlerleme'],
+    ['Kelimelerim', /\/decks$/, 'Kelimelerim'],
+    ['Keşfet', /\/kesfet$/, 'Keşfet'],
     ['Profil', /\/profile$/, 'Misafir'],
     ['Bugün', /\/$/, null],
   ] as const) {
@@ -135,6 +135,9 @@ test('nav: every place, the (+) Add sheet and the old addresses', async ({ page 
     ['/stats', /\/progress$/],
     ['/stats?tab=rapor', /\/progress\?tab=rapor$/],
     ['/kelime-bankasi', /\/decks\?tab=bank$/],
+    ['/kitaplik', /\/kesfet\?f=okuma$/],
+    ['/decks?tab=discover', /\/kesfet\?f=desteler$/],
+    ['/decks?tab=reading', /\/kesfet\?f=okuma$/],
     ['/settings/profile', /\/settings\/ilgi-alanlari$/],
     ['/settings#veri', /\/settings\/veri(#veri)?$/],
   ] as const) {

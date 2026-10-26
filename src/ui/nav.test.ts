@@ -11,7 +11,7 @@ describe('bottom navigation', () => {
       '/',
       '/decks',
       '+',
-      '/progress',
+      '/kesfet',
       '/profile',
     ]);
   });
@@ -21,17 +21,27 @@ describe('bottom navigation', () => {
     expect(activeTabs('/decks')).toEqual(['/decks']);
     expect(activeTabs('/decks/abc')).toEqual(['/decks']);
     expect(activeTabs('/decks/suggested/freq-500')).toEqual(['/decks']);
+    expect(activeTabs('/decks/themes')).toEqual(['/decks']);
     expect(activeTabs('/library')).toEqual(['/decks']);
-    expect(activeTabs('/add')).toEqual(['/decks']);
-    expect(activeTabs('/progress')).toEqual(['/progress']);
+    expect(activeTabs('/kesfet')).toEqual(['/kesfet']);
+    expect(activeTabs('/kitaplik')).toEqual(['/kesfet']);
+    expect(activeTabs('/oku/abc')).toEqual(['/kesfet']);
+    // İlerleme lives at the top of Profil (v0.5.1).
+    expect(activeTabs('/progress')).toEqual(['/profile']);
     expect(activeTabs('/profile')).toEqual(['/profile']);
     expect(activeTabs('/settings')).toEqual(['/profile']);
     expect(activeTabs('/settings/calisma')).toEqual(['/profile']);
+  });
+
+  it('marks no tab on the (+) sheet\'s own flows', () => {
+    expect(activeTabs('/add')).toEqual([]);
+    expect(activeTabs('/import/anki')).toEqual([]);
   });
 
   it('does not match a path that only shares a prefix', () => {
     expect(isNavActive(tab('/decks'), '/decksx')).toBe(false);
     expect(navAlsoActive(tab('/profile'), '/settingsx')).toBe(false);
     expect(isNavActive(tab('/'), '/decks')).toBe(false);
+    expect(isNavActive(tab('/kesfet'), '/okuma')).toBe(false);
   });
 });

@@ -104,7 +104,7 @@ function VacationSoon({ status }: { status: LoadStatus }) {
       title={t('load.vacationSoon', { date: formatDayLong(status.vacation!.start) })}
       actions={
         status.aheadCount > 0 && (
-          <Link to="/review?mode=ahead" className={buttonClasses({ variant: 'secondary' })}>
+          <Link to="/study?mode=ahead" className={buttonClasses({ variant: 'secondary' })}>
             {t('load.vacationAheadAction')}
             <Icon name="chevron-right" size={18} />
           </Link>
