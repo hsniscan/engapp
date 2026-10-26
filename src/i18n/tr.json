@@ -2914,7 +2914,7 @@
       "deck": "Tüm yanıltıcı benzerler · {{count}} çift"
     },
     "wordsAtLevel": {
-      "eyebrow": "Seviyene uygun yeni kelimeler",
+      "eyebrow": "Yeni kelimeler",
       "body": "{{level}} kelimeleri, henüz kartlarında olmayanlar",
       "label": "Yeni kelimeler",
       "add": "“{{word}}” kelimesini ekle",

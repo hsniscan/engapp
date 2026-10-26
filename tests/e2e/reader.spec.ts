@@ -127,7 +127,7 @@ for (const scheme of ['light', 'dark'] as const) {
     await expect(page.getByRole('dialog', { name: 'Okuma ayarları' })).toBeVisible();
     await axe(page, `reader options ${scheme}`);
     await page.keyboard.press('Escape');
-    await page.goto('/decks?tab=reading');
+    await page.goto('/kesfet?f=okuma');
     await expect(page.getByTestId('my-texts')).toBeVisible();
     await axe(page, `okuma tab ${scheme}`);
   });

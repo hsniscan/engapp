@@ -35,7 +35,7 @@ export function DiscoverPage() {
       </header>
 
       <nav aria-label={t('discover.filters')} className="-mx-4 mb-5">
-        <ul className="flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+        <ul className="flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
           {FEED_FILTERS.map((f) => (
             <li key={f}>
               <FilterLink filter={f} current={filter === f} />
@@ -87,7 +87,7 @@ function FilterLink({ filter, current }: { filter: FeedFilter; current: boolean 
       replace
       aria-current={current ? 'page' : undefined}
       className={cn(
-        'inline-flex h-11 shrink-0 items-center rounded-full border px-4 text-[0.9375rem] whitespace-nowrap transition-colors',
+        'inline-flex h-11 shrink-0 items-center rounded-full border px-3.5 text-sm whitespace-nowrap transition-colors',
         current
           ? 'border-fg bg-fg font-semibold text-fg-inverse'
           : 'border-border bg-surface text-fg hover:border-border-strong',

@@ -49,7 +49,7 @@ function Eyebrow({
       {more && (
         <Link
           to={filterHref(more)}
-          className="-my-2.5 -mr-2 inline-flex min-h-11 items-center gap-0.5 rounded-control px-2 text-sm font-medium text-accent-text hover:bg-hover"
+          className="-my-2.5 -mr-2 inline-flex min-h-11 shrink-0 items-center gap-0.5 rounded-control px-2 text-sm font-medium whitespace-nowrap text-accent-text hover:bg-hover"
         >
           {t('discover.seeAll')}
           <Icon name="chevron-right" size={16} />
@@ -270,7 +270,7 @@ function ForYouCard({ item, level }: { item: Extract<FeedItem, { kind: 'forYouDe
 function ShelfCard({ item, level }: { item: Extract<FeedItem, { kind: 'deckShelf' }>; level: CefrLevel }) {
   const { t } = useTranslation();
   const chip =
-    'flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 text-sm text-fg hover:border-border-strong';
+    'flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 text-sm whitespace-nowrap text-fg hover:border-border-strong';
   return (
     <section aria-labelledby="kf-shelf" className={shell}>
       <Eyebrow id="kf-shelf" icon="cards" more="desteler">
@@ -279,17 +279,18 @@ function ShelfCard({ item, level }: { item: Extract<FeedItem, { kind: 'deckShelf
       <div className="flex flex-col gap-2">
         <h3 className="text-sm font-semibold text-fg">{t('discover.shelf.levels')}</h3>
         <ul className="-mr-[18px] flex gap-2 overflow-x-auto pr-[18px] pb-1 [scrollbar-width:none]">
-          {item.levels.map((d) => {
+          {item.levels.filter((d) => d.progress.total > 0).map((d) => {
             const lv = (d.spec as { level: CefrLevel }).level;
             return (
               <li key={lv}>
                 <Link
                   to={specHref(d.spec)}
-                  aria-label={`${specTitle(t, d.spec)}, ${t('deckHub.words', { count: d.progress.total, formatted: nf.format(d.progress.total) })}`}
                   className={cn(chip, lv === level && 'border-accent bg-accent-soft font-semibold text-accent-text')}
                 >
                   <span className="font-serif text-base font-semibold">{lv}</span>
-                  <span className="tabular text-fg-muted">{nf.format(d.progress.total)}</span>
+                  <span className="tabular text-fg-muted">
+                    {t('deckHub.words', { count: d.progress.total, formatted: nf.format(d.progress.total) })}
+                  </span>
                 </Link>
               </li>
             );
@@ -299,7 +300,7 @@ function ShelfCard({ item, level }: { item: Extract<FeedItem, { kind: 'deckShelf
       <div className="flex flex-col gap-2">
         <h3 className="text-sm font-semibold text-fg">{t('discover.shelf.pos')}</h3>
         <ul className="-mr-[18px] flex gap-2 overflow-x-auto pr-[18px] pb-1 [scrollbar-width:none]">
-          {item.levelPos.map((d) => (
+          {item.levelPos.filter((d) => d.progress.total > 0).map((d) => (
             <li key={specHref(d.spec)}>
               <Link to={specHref(d.spec)} className={chip}>
                 <span className="font-semibold">{specTitle(t, d.spec)}</span>

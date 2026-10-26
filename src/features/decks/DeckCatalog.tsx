@@ -96,7 +96,6 @@ export function DeckCatalog({
               <li key={lv}>
                 <Link
                   to={specHref(d.spec)}
-                  aria-label={`${specTitle(t, d.spec)}, ${t('deckHub.words', { count: d.progress.total, formatted: nf.format(d.progress.total) })}, %${Math.round(share * 100)}`}
                   className={cn(
                     'flex flex-col gap-1.5 rounded-2xl p-3 text-fg',
                     mine
@@ -105,13 +104,15 @@ export function DeckCatalog({
                   )}
                 >
                   <span className="flex items-center justify-between">
-                    <span className="font-serif text-2xl leading-none font-semibold">{lv}</span>
+                    <span aria-hidden="true" className="font-serif text-2xl leading-none font-semibold">{lv}</span>
+                    <span className="sr-only">{specTitle(t, d.spec)}</span>
                     {mine && (
                       <span className="text-[11px] font-semibold text-accent-text">{t('deckHub.discover.yourLevel')}</span>
                     )}
                   </span>
                   <span className="text-[13px] text-fg-muted">
                     {t('deckHub.words', { count: d.progress.total, formatted: nf.format(d.progress.total) })}
+                    <span className="sr-only">, %{Math.round(share * 100)}</span>
                   </span>
                   <span aria-hidden="true" className="h-1 overflow-hidden rounded-full" style={{ background: mine ? MARK.trackOnSoft : MARK.track }}>
                     <span

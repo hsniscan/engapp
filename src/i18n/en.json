@@ -2914,7 +2914,7 @@
       "deck": "All false friends · {{count}} pairs"
     },
     "wordsAtLevel": {
-      "eyebrow": "New words at your level",
+      "eyebrow": "New words",
       "body": "{{level}} words not in your cards yet",
       "label": "New words",
       "add": "Add “{{word}}”",

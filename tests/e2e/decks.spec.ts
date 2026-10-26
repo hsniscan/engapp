@@ -139,7 +139,7 @@ test('themes: preview, rename, remove a word, reject a group → tags, with only
   for (const w of THEME_WORDS) await addWord(page, w);
 
   await page.goto('/decks');
-  await page.getByRole('link', { name: /AI ile temalara ayır/ }).click();
+  await page.getByRole('link', { name: /temalara ayır/ }).click();
   await expect(page).toHaveURL(/\/decks\/themes$/);
   await expect(page.getByText('Etiketi olmayan 9 kelimen var.')).toBeVisible();
   await expect(page.getByText('Günlük AI hakkından 1 çağrı kullanır.')).toBeVisible();

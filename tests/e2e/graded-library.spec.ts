@@ -31,8 +31,10 @@ test('Okuma kitaplığı: catalogue, filters, coverage chip, open and cache', as
     text(2, 'B1', 'science', 'Why the Sky Is Blue'),
     text(3, 'B2', 'business', 'A Meeting That Went Well'),
   );
+  // The library is Keşfet's "Okuma" filter (v0.5.1); the old /kitaplik redirects there.
   await page.goto('/kitaplik');
-  await expect(page.getByRole('heading', { level: 1, name: 'Okuma kitaplığı' })).toBeVisible();
+  await expect(page).toHaveURL(/\/kesfet\?f=okuma$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Keşfet' })).toBeVisible();
 
   const list = page.getByRole('list', { name: 'Metinler', exact: true });
   await expect(list.getByRole('listitem')).toHaveCount(3);
@@ -62,7 +64,10 @@ test('Okuma kitaplığı: catalogue, filters, coverage chip, open and cache', as
   expect(axe.violations).toEqual([]);
 
   // Only the public catalogue was asked for; nothing about the guest went out.
-  expect([...new Set(backend.calls.map((c) => c.name))]).toEqual(['/rest/v1/graded_texts']);
+  // (Keşfet, where /kitaplik leads since v0.5.1, also pulls the public word bank.)
+  expect([...new Set(backend.calls.map((c) => c.name))].filter((n) => n !== '/rest/v1/word_bank')).toEqual([
+    '/rest/v1/graded_texts',
+  ]);
 
   // Open: one reading row for the library text, the reader's address, the body on the device.
   await list.getByRole('button', { name: /^The Late Train/ }).click();
