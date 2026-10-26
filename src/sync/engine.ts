@@ -234,7 +234,12 @@ async function tablesServerLacks(t: SyncTransport, now: Millis): Promise<OutboxT
   }
   if (pending.length === 0) return pending;
   const checkedAt = (await getMeta<number>(META.serverTablesCheckedAt)) ?? 0;
-  if (now - checkedAt >= 0 && now - checkedAt < REGISTRY_RECHECK_MS) return pending;
+  // The throttle covers only tables the last check asked about: a table whose rows began to
+  // wait after it is asked about now (v0.5.1: a saved text confirmed 'texts' first, and the
+  // known words then waited ten minutes).
+  const asked = (await getMeta<string[]>(META.serverTablesAsked)) ?? pending;
+  const recent = now - checkedAt >= 0 && now - checkedAt < REGISTRY_RECHECK_MS;
+  if (recent && pending.every((x) => asked.includes(x))) return pending;
   let registry: string[] | null;
   try {
     registry = await t.listSyncTables();
@@ -248,6 +253,7 @@ async function tablesServerLacks(t: SyncTransport, now: Millis): Promise<OutboxT
   const confirmed = pending.filter((x) => listed.includes(x));
   await db.transaction('rw', db.meta, async () => {
     await setMeta(META.serverTablesCheckedAt, now);
+    await setMeta(META.serverTablesAsked, pending);
     if (confirmed.length) await setMeta(META.serverTables, [...known, ...confirmed]);
   });
   return pending.filter((x) => !listed.includes(x));

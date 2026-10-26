@@ -18,6 +18,7 @@ import {
   updateSettings,
 } from '@/data';
 import { copyCardsFromOtherAccount, discardLocalData } from '@/data/account';
+import { saveText } from '@/data/texts';
 import { LEVELS } from '@/domain/levelTest';
 import type { CefrLevel } from '@/domain/types';
 import { resetDb } from '@/test/db';
@@ -130,6 +131,25 @@ describe('level tables sync', () => {
       expect(await getMeta<string[]>(META.serverTables)).toContain('level_tests');
     });
     expect(server.rowsOf('level_tests')).toHaveLength(1);
+    expect(server.rowsOf('known_terms')).toHaveLength(1);
+  });
+
+  it('a table that starts waiting after a registry check is asked about at once (v0.5.1)', async () => {
+    server.registry.delete('known_terms');
+    const a = await newDevice('dev-a');
+    await onDevice(a, async () => {
+      // A saved text waits for the registry and is confirmed on the first check …
+      await saveText({ kind: 'paste', title: 'A text', body: 'The cat sat on the mat.' }, T);
+      await sync(server, T + MIN);
+      expect(server.calls.registry).toBe(1);
+      // … then a known word waits: its table was not part of that check, so it is asked now,
+      // not ten minutes later.
+      server.registry.add('known_terms');
+      await markKnown('give up', 'manual', T + 2 * MIN);
+      await sync(server, T + 3 * MIN);
+      expect(server.calls.registry).toBe(2);
+      expect(await db.outbox.count()).toBe(0);
+    });
     expect(server.rowsOf('known_terms')).toHaveLength(1);
   });
 

@@ -18,6 +18,8 @@ export const META = {
   serverTables: 'server_tables',
   /** When this device last asked the registry while rows of an unconfirmed table waited. */
   serverTablesCheckedAt: 'server_tables_checked_at',
+  /** The tables that last registry check asked about (a table waiting since asks again). */
+  serverTablesAsked: 'server_tables_asked',
 } as const;
 
 /** Meta key of a day's extra new-card allowance ("+5 yeni kart"). Device-local, never synced. */
