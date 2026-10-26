@@ -64,7 +64,9 @@ describe('profile page', { timeout: 20_000 }, () => {
 
   it('opens the goals dialog from the home link (?edit=goals)', async () => {
     renderRoute(<ProfilePage />, { path: '/profile', url: '/profile?edit=goals' });
-    expect(await screen.findByRole('dialog', { name: 'Hedeflerin' }, { timeout: 8000 })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('dialog', { name: 'Hedeflerin' }, { timeout: 8000 }),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText('Günlük hedef (dakika)')).toBeInTheDocument();
   });
 });
