@@ -1,0 +1,26 @@
+{
+  "title": "The Late Train",
+  "sentences": [
+    { "en": "Maria wanted to visit her sister in the north.", "tr": "Maria kuzeydeki kız kardeşini ziyaret etmek istiyordu.", "new_paragraph": true },
+    { "en": "She bought a ticket for the morning train.", "tr": "Sabah treni için bir bilet aldı.", "new_paragraph": false },
+    { "en": "On Saturday she got up early and walked to the station.", "tr": "Cumartesi günü erken kalktı ve istasyona yürüdü.", "new_paragraph": false },
+    { "en": "The weather was cold, but the sky was blue.", "tr": "Hava soğuktu ama gökyüzü maviydi.", "new_paragraph": false },
+    { "en": "At the station, there was a big sign.", "tr": "İstasyonda büyük bir tabela vardı.", "new_paragraph": true },
+    { "en": "It said that her train was two hours late.", "tr": "Treninin iki saat geç kalacağını söylüyordu.", "new_paragraph": false },
+    { "en": "Maria was not happy.", "tr": "Maria mutlu değildi.", "new_paragraph": false },
+    { "en": "She did not want to wait for so long.", "tr": "Bu kadar uzun beklemek istemiyordu.", "new_paragraph": false },
+    { "en": "Then she saw a small café next to the station.", "tr": "Sonra istasyonun yanında küçük bir kafe gördü.", "new_paragraph": false },
+    { "en": "She went inside and ordered a cup of tea and some bread with cheese.", "tr": "İçeri girdi ve bir fincan çay ile biraz peynirli ekmek sipariş etti.", "new_paragraph": false },
+    { "en": "An old man sat at the next table.", "tr": "Yan masada yaşlı bir adam oturuyordu.", "new_paragraph": true },
+    { "en": "He was also waiting for the train.", "tr": "O da treni bekliyordu.", "new_paragraph": false },
+    { "en": "They started to talk about their families, their jobs and their favourite places.", "tr": "Aileleri, işleri ve en sevdikleri yerler hakkında konuşmaya başladılar.", "new_paragraph": false },
+    { "en": "The man told her funny stories about his life as a bus driver.", "tr": "Adam ona otobüs şoförü olarak geçen hayatıyla ilgili komik hikâyeler anlattı.", "new_paragraph": false },
+    { "en": "Maria laughed a lot.", "tr": "Maria çok güldü.", "new_paragraph": false },
+    { "en": "The two hours went very quickly.", "tr": "İki saat çok çabuk geçti.", "new_paragraph": false },
+    { "en": "When the train came, they sat together.", "tr": "Tren gelince birlikte oturdular.", "new_paragraph": true },
+    { "en": "At the end of the day, Maria said to her sister, \"My train was late, but I made a new friend.\"", "tr": "Günün sonunda Maria kız kardeşine, \"Trenim geç kaldı ama yeni bir arkadaş edindim,\" dedi.", "new_paragraph": false },
+    { "en": "Her sister smiled and said, \"Sometimes a bad start makes a good day.\"", "tr": "Kız kardeşi gülümsedi ve \"Bazen kötü bir başlangıç güzel bir gün yaratır,\" dedi.", "new_paragraph": false }
+  ],
+  "target_lemmas": ["ticket", "station", "late", "wait", "order", "together"],
+  "glosses": []
+}
