@@ -5,7 +5,7 @@ import { PULL_BACKFILL_KEY } from './backfill';
 import { EngDb, STAGE_RULE_NOTICE_KEY } from './db';
 
 /** The current schema version; bump with every new Dexie version. */
-const LATEST = 31;
+const LATEST = 34;
 
 describe('Dexie schema', () => {
   it('opens with every table and the indexes the queries rely on', async () => {
@@ -649,7 +649,8 @@ describe('Dexie schema', () => {
     expect(d.verno).toBe(LATEST);
     expect(await d.cards.get('c1')).toEqual({ ...oldCard, ramp_step: 0, learned_at: null });
     expect((await d.meta.get(STAGE_RULE_NOTICE_KEY))?.value).toBe(false);
-    expect(await d.meta.get(PULL_BACKFILL_KEY)).toBeUndefined();
+    // v26 itself re-pulls nothing (the later v34 step re-pulls settings only).
+    expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(['settings']);
     expect(await d.outbox.count()).toBe(0);
     d.close();
     await d.delete();
@@ -687,5 +688,31 @@ describe('Dexie schema', () => {
     expect(await d.outbox.count()).toBe(0);
     d.close();
     await d.delete();
+  });
+
+  it('v34 upgrade keeps settings and re-pulls them once for streak_freezes', async () => {
+    for (const [name, cursor, expected] of [
+      ['upgrade-v34-synced', 40, ['settings']],
+      ['upgrade-v34-fresh', 0, undefined],
+    ] as const) {
+      // A database as the graded library left it (version 31), with every earlier backfill done.
+      const old = new Dexie(name);
+      old.version(1).stores({ settings: 'id', meta: 'key' });
+      old.version(31).stores({ graded_catalog: 'id, level, topic, server_seq', graded_bodies: 'id, fetched_at' });
+      await old.open();
+      await old.table('settings').add({ id: 'settings', theme: 'dark', vacation: null });
+      await old.table('meta').put({ key: 'sync_cursor', value: cursor });
+      old.close();
+
+      const d = new EngDb(name);
+      await d.open();
+      expect(d.verno).toBe(LATEST);
+      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
+      // No streak_freezes key means none; the row is untouched and nothing is queued.
+      expect(await d.settings.get('settings')).toEqual({ id: 'settings', theme: 'dark', vacation: null });
+      expect(await d.outbox.count()).toBe(0);
+      d.close();
+      await d.delete();
+    }
   });
 });

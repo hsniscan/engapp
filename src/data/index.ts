@@ -198,3 +198,4 @@ export {
 } from './levelModel';
 export { getChoiceCandidates } from './clozeChoices';
 export * from './smart';
+export * from './streakFreeze';

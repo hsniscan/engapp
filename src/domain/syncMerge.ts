@@ -48,6 +48,8 @@ const LATE_COLUMNS: Readonly<Record<string, Readonly<Record<string, unknown>>>> 
     image_cards: undefined,
     // v0.4 new-card order (decision 0039)
     new_card_order: null,
+    // v0.5 İP10 streak protections (decision 0052)
+    streak_freezes: null,
   },
 };
 

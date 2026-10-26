@@ -8,7 +8,6 @@ import { buildQueue, type QueueCounts, type QueueItem, type QueueMode } from '..
 import { STUDY_MODE_CARD_TYPES, type StudyMode } from '../domain/studyMode';
 import { type Cloze, firstLetterHint, lastShownSenseId, makeCloze, nextRecognitionSense } from '../domain/recognition';
 import { buildHeatmap, computeStreakSummary, type HeatmapCell, type StreakSummary } from '../domain/streak';
-import { isVacationDay } from '../domain/vacation';
 import { type Card, type Id, type LexiconSense, type Millis, type Note, type RatingValue, type Sense } from '../domain/types';
 import { db } from './db';
 import { getDeckNoteIds } from './decks';
@@ -21,6 +20,7 @@ import { aheadDaysFor, getLoadToday, type LoadToday } from './load';
 import { extraNewKey, getMeta } from './meta';
 import { newOrderInput, newOrderTables } from './newOrder';
 import { readCarry } from './smart';
+import { streakFrozenDay } from './streakFreeze';
 import { cachedTextSentences, loadTextSentences, readLastShown, textSentenceTables, writeLastShown } from './textSentences';
 import { dayConfig, getSettings, schedulerFor } from './settings';
 
@@ -273,8 +273,9 @@ export async function getStreakSummary(now: Millis = Date.now()): Promise<Streak
   ]);
   return computeStreakSummary(activity, {
     today: dayKeyOf(now, cfg),
-    // Vacation days without reviews neither break nor extend the streak (v0.3 İP3).
-    isFrozenDay: (day) => isVacationDay(settings, day),
+    // Vacation days (v0.3 İP3) and days a streak protection covered (v0.5 İP10) neither break
+    // nor extend the streak.
+    isFrozenDay: streakFrozenDay(settings),
     accountStartDay: dayKeyOf(settings.created_at, cfg),
     learnedCards: learned,
   });

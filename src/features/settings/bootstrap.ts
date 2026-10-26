@@ -2,6 +2,7 @@
 import { liveQuery } from 'dexie';
 import {
   backfillLearningModel,
+  ensureStreakFreezes,
   db,
   ensureSettings,
   getCurrentUserId,
@@ -94,6 +95,8 @@ export function bootstrap(): void {
     // Learning model (ADR 0041): fill ramp_step / learned_at from the logs once, before the
     // first answer, so the ramp and the stages start from the real history.
     await backfillLearningModel().catch((e: unknown) => void logError(e, 'bootstrap.learningModel'));
+    // v0.5 İP10: a missed day since the last visit is covered by a streak protection.
+    void ensureStreakFreezes().catch((e: unknown) => void logError(e, 'bootstrap.streakFreezes'));
     watchFirstCard();
     void refreshStorageInfo();
     const inReview = () => /^\/review(\/|$)/.test(window.location.pathname);

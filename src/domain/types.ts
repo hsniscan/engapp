@@ -412,6 +412,11 @@ export interface Settings extends SyncedRow {
   image_cards?: boolean | null;
   /** v0.4: order of new cards (docs/decisions/0039); absent/null = 'smart'. */
   new_card_order?: NewCardOrder | null;
+  /**
+   * v0.5 İP10: days a streak protection covered (YYYY-MM-DD, ascending, at most 48;
+   * domain/streakFreeze.ts). Absent/null = none. Never carried to another account.
+   */
+  streak_freezes?: string[] | null;
 }
 
 /** "Yeni kelime sırası": smart (level, frequency, own signals, interference) or as added. */

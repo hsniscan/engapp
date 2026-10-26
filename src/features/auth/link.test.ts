@@ -98,7 +98,8 @@ async function guestDevice() {
 async function otherAccountDevice() {
   await resetDb();
   await db.transaction('rw', db.meta, () => setMeta(META.userId, OTHER));
-  await updateSettings({ daily_new_limit: 3, level: 'C1' }, T);
+  // v0.5 İP10: its streak protections are its own.
+  await updateSettings({ daily_new_limit: 3, level: 'C1', streak_freezes: ['2026-10-20'] }, T);
   const src = await createSource({ kind: 'text', title: 'Article' }, T);
   const cope = await addNoteWithSenses(
     {
@@ -299,6 +300,8 @@ describe('account linking', () => {
     const settings = (await db.settings.get('settings'))!;
     expect(settings.daily_new_limit).toBe(25);
     expect(settings.level).not.toBe('C1');
+    expect(settings.streak_freezes ?? null).toBeNull();
+    expect(JSON.stringify(server.rowsOf('settings'))).not.toContain('2026-10-20');
 
     // All rows belong to this account and none reuses an id of the other account.
     const notes = (await db.notes.toArray()).filter((n) => n.deleted_at === null);
@@ -482,7 +485,7 @@ describe('account linking', () => {
     await resetDb();
     await db.transaction('rw', db.meta, () => setMeta(META.userId, OTHER));
     // v0.3 İP8: the other account's reminder setting stays behind as well.
-    await updateSettings({ daily_new_limit: 3, notify: { enabled: true, mode: 'fixed', hour: 9 } }, T);
+    await updateSettings({ daily_new_limit: 3, notify: { enabled: true, mode: 'fixed', hour: 9 }, streak_freezes: ['2026-10-21'] }, T);
     // v0.3 İP7: and so do its goals.
     await setGoals({ week_active_days: 6 }, T);
     configureLink({ transport: server, engine: engine() });
@@ -494,6 +497,9 @@ describe('account linking', () => {
     expect(JSON.stringify(server.rowsOf('settings'))).not.toContain('"notify":{"enabled":true');
     expect((await db.settings.get('settings'))!.goals ?? null).toBeNull();
     expect(JSON.stringify(server.rowsOf('settings'))).not.toContain('week_active_days');
+    // v0.5 İP10: nor its streak protections.
+    expect((await db.settings.get('settings'))!.streak_freezes ?? null).toBeNull();
+    expect(JSON.stringify(server.rowsOf('settings'))).not.toContain('2026-10-21');
   });
 
   it('a guest’s weekly reports and goals go with the guest data to the account', async () => {

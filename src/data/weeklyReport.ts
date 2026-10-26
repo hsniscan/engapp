@@ -14,7 +14,7 @@ import {
   SUGGESTION_WEEKS,
   type WeekFacts,
 } from '../domain/goals';
-import { isVacationDay } from '../domain/vacation';
+import { streakFrozenDay } from './streakFreeze';
 import {
   activityTotals,
   buildWeeklySummary,
@@ -76,7 +76,7 @@ export async function computeWeeklySummary(
     activity,
     data: retention.data,
     facts: retention.facts,
-    isFrozenDay: (day) => isVacationDay(settings, day),
+    isFrozenDay: streakFrozenDay(settings),
     goals: settings.goals ?? null,
     load: {
       overDay: advice.overDay,

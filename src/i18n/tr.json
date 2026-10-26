@@ -3281,6 +3281,15 @@
   "smart": {
     "rotation": {
       "fromText": "Senin metninden"
+    },
+    "freeze": {
+      "title": "Serin korundu",
+      "body_one": "Dün tekrar yapılmadı. Ayın seri korumalarından biri bu günü kendiliğinden karşıladı.",
+      "body_other": "Son {{count}} gün tekrar yapılmadı. Ayın seri korumaları bu günleri kendiliğinden karşıladı.",
+      "left_one": "Bu ay {{count}} koruma daha var.",
+      "left_other": "Bu ay {{count}} koruma daha var.",
+      "leftNone": "Bu ayın korumaları kullanıldı. Gelecek ay yine {{perMonth}} tane olacak.",
+      "rule": "Seri için günde 1 tekrar yeter. Kaçan bir günü ayda {{perMonth}} kez kendiliğinden koruruz; tatil günleri bundan sayılmaz."
     }
   }
 }
