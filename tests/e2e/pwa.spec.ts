@@ -35,7 +35,7 @@ test.describe('PWA', () => {
     for (const [path, heading] of [
       ['/library', 'Tüm kelimelerim'],
       ['/decks', 'Desteler'],
-      ['/add', 'Kart ekle'],
+      ['/add', 'Kelime ekle'],
       ['/progress', 'İlerleme'],
       ['/profile', 'Misafir'],
       ['/settings', 'Ayarlar'],

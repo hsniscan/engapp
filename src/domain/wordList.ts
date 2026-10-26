@@ -62,6 +62,15 @@ export function detectSeparator(lines: readonly string[]): string | null {
   return best?.sep ?? null;
 }
 
+/** A line's cells: the list's separator, else the first one that splits this line (mixed lists). */
+function cellsOf(line: string, sep: string | null): string[] {
+  for (const s of sep ? [sep, ...SEPARATORS] : []) {
+    const cells = splitCsvLine(line, s).map(clean);
+    if (cells.filter(Boolean).length >= 2) return cells;
+  }
+  return [clean(line)];
+}
+
 const HEADER = /^(term|word|english|ingilizce|kelime|front|question|en)$/i;
 
 const clean = (s: string) => s.replace(/\s+/g, ' ').trim();
@@ -77,7 +86,7 @@ export function parseWordList(text: string): WordListParse {
   let skipped = 0;
   let truncated = false;
   lines.forEach((line, i) => {
-    const cells = sep ? splitCsvLine(line, sep).map(clean) : [clean(line)];
+    const cells = cellsOf(line, sep);
     const [term = '', ...rest] = cells.filter((c, j) => j === 0 || c !== '');
     // The last cell is an example sentence only when it reads like one (three words or more);
     // otherwise it is more of the meaning ("bank, kıyı, sahil").

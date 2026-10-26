@@ -10,7 +10,7 @@ test.beforeEach(async ({ context }) => {
 });
 
 // Plan, "Uçtan uca": paste → job → preview → confirm → library → review; acceptance criterion 8.
-test('signed in: paste text → preview (edit, deselect) → cards → review; the same text again makes no AI call', async ({
+test('signed in: paste text → saved text + preview (edit, deselect) → cards → review; the same text again makes no AI call', async ({
   page,
   backend,
 }) => {
@@ -19,13 +19,15 @@ test('signed in: paste text → preview (edit, deselect) → cards → review; t
 
   await page.getByLabel('İngilizce metin').fill(TEXT);
   await page.getByLabel('Başlık').fill('Şehirler ve iklim');
-  await page.getByRole('button', { name: 'Kelimeleri çıkar' }).click();
-  await expect(page.getByText('Adaylar hazır')).toBeVisible();
+  // v0.5.1: one result for every text; extraction saves the text first and opens the job.
+  await expect(page.getByTestId('open-in-reader')).toBeVisible();
+  await page.getByRole('button', { name: /Bu metindeki kelimeleri çıkar/ }).click();
+  await expect(page).toHaveURL(/\/import\//);
+  await expect(page.getByTestId('smart-summary')).toBeVisible();
   expect(backend.count('ai-extract')).toBe(1);
   expect(backend.model.calls).toBe(1);
-
-  await page.getByRole('link', { name: 'Önizlemeyi aç' }).click();
-  await expect(page).toHaveURL(/\/import\//);
+  // The text the words came from is one tap away.
+  await expect(page.getByTestId('read-text')).toHaveText(/Metni oku/);
   // Smart extraction (B1): the four B1 phrases and the two lower words are pre-selected; the
   // B2 words wait unselected in "Senin için"; the three C1/C2 items are only counted.
   await expect(page.getByTestId('smart-summary')).toHaveText(
@@ -65,11 +67,11 @@ test('signed in: paste text → preview (edit, deselect) → cards → review; t
   // Same text again: answered from this device's chunk cache, zero ai-extract requests.
   await page.goto('/add?tab=paste');
   await page.getByLabel('İngilizce metin').fill(TEXT);
-  await page.getByRole('button', { name: 'Kelimeleri çıkar' }).click();
-  await expect(page.getByText('1 parça önbellekten geldi, AI çağrılmadı.')).toBeVisible();
+  await page.getByRole('button', { name: /Bu metindeki kelimeleri çıkar/ }).click();
+  await expect(page).toHaveURL(/\/import\//);
+  await expect(page.getByTestId('smart-summary')).toBeVisible();
   expect(backend.count('ai-extract')).toBe(1);
   expect(backend.model.calls).toBe(1);
-  await page.getByRole('link', { name: 'Önizlemeyi aç' }).first().click();
   // Everything already added is in "Biliyorsun", unselected; only "put off" (B1) is new and
   // pre-selected; the B2 words stay unselected.
   await expect(page.getByText('1/9 seçili').first()).toBeVisible();
@@ -83,8 +85,8 @@ test('another device (fresh browser): the same text is answered by the server ca
 }) => {
   await page.goto('/add?tab=paste');
   await page.getByLabel('İngilizce metin').fill(TEXT);
-  await page.getByRole('button', { name: 'Kelimeleri çıkar' }).click();
-  await expect(page.getByText('Adaylar hazır')).toBeVisible();
+  await page.getByRole('button', { name: /Bu metindeki kelimeleri çıkar/ }).click();
+  await expect(page.getByTestId('smart-summary')).toBeVisible();
   expect(backend.model.calls).toBe(1);
 
   // Second device of the same user: empty IndexedDB, same backend.
@@ -94,10 +96,23 @@ test('another device (fresh browser): the same text is answered by the server ca
   const page2 = await ctx2.newPage();
   await page2.goto('/add?tab=paste');
   await page2.getByLabel('İngilizce metin').fill(TEXT);
-  await page2.getByRole('button', { name: 'Kelimeleri çıkar' }).click();
-  await expect(page2.getByText('Adaylar hazır')).toBeVisible();
+  await page2.getByRole('button', { name: /Bu metindeki kelimeleri çıkar/ }).click();
+  await expect(page2.getByTestId('smart-summary')).toBeVisible();
   expect(backend.count('ai-extract')).toBe(2); // the request is made ...
   expect(backend.model.calls).toBe(1); // ... but the model is not called again
   expect(backend.store.senses.size).toBe(SPECS.length); // one lexicon row per sense, no duplicates
   await ctx2.close();
+});
+
+test('"Metni oku": the text behind an extraction opens in the reader (v0.5.1)', async ({ page, backend }) => {
+  await page.goto('/add?tab=paste');
+  await page.getByLabel('İngilizce metin').fill(TEXT);
+  await page.getByLabel('Başlık').fill('Şehirler ve iklim');
+  await page.getByRole('button', { name: /Bu metindeki kelimeleri çıkar/ }).click();
+  await expect(page.getByTestId('smart-summary')).toBeVisible();
+  expect(backend.count('ai-extract')).toBe(1);
+  await page.getByTestId('read-text').click();
+  await expect(page).toHaveURL(/\/oku\//);
+  await expect(page.getByRole('heading', { name: 'Şehirler ve iklim' })).toBeVisible();
+  await expect(page.getByText(SPECS[0]!.sentence.split(' ').slice(0, 4).join(' '))).toBeVisible();
 });

@@ -47,6 +47,16 @@ describe('parseWordList', () => {
     expect(r.skipped).toBe(2);
   });
 
+  it('a typed list may mix separators line by line', () => {
+    expect(
+      parseWordList('give up - vazgeçmek\nbank;kıyı;We sat on the bank.\nrecipe, tarif').rows,
+    ).toEqual([
+      { term: 'give up', meaning: 'vazgeçmek', sentence: null },
+      { term: 'bank', meaning: 'kıyı', sentence: 'We sat on the bank.' },
+      { term: 'recipe', meaning: 'tarif', sentence: null },
+    ]);
+  });
+
   it('cuts at MAX_LIST_ROWS and says so', () => {
     const text = Array.from({ length: MAX_LIST_ROWS + 3 }, (_, i) => `w${i}x;anlam`).join('\n');
     const r = parseWordList(text);

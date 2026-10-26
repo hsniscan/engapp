@@ -3476,7 +3476,7 @@
     }
   },
   "compose": {
-    "title": "Kelimelerimle metin",
+    "title": "Kelimelerimle metin oluştur",
     "lead": "Seçtiğin kelimelerle kısa bir metin. Okuyucuda kelimelerin vurgulu açılır, sonunda 3 soru var.",
     "steps": "Adımlar",
     "step1": "Kelimeler",

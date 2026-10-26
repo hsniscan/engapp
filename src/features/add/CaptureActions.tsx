@@ -1,7 +1,7 @@
 // The one result of every capture (v0.5.1, decision 0056): "Okuyucuda aç" first (no account,
 // works offline), then "Bu metindeki kelimeleri çıkar" (yapay zekâ: signed in only). Both save
 // the text first, so the words never lose the text they came from.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { logError } from '@/data';
@@ -33,6 +33,11 @@ export function CaptureActions({
   const auth = useAuth();
   const [busy, setBusy] = useState<'reader' | 'extract' | null>(null);
   const [failed, setFailed] = useState<'reader' | 'extract' | null>(null);
+  // The reader's code is fetched while the user looks at the choices, so it opens at once
+  // (and offline).
+  useEffect(() => {
+    void import('@/features/reader/ReaderPage').catch(() => {});
+  }, []);
 
   const run = async (which: 'reader' | 'extract') => {
     const v = input();

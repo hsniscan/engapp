@@ -214,7 +214,7 @@ function Group({
       data-testid={id}
       className="flex scroll-mt-4 flex-col gap-2.5"
     >
-      <h3 id={id} className="pl-1 text-xs font-semibold tracking-[0.08em] text-fg-subtle uppercase">
+      <h3 id={id} className="pl-1 text-xs font-semibold tracking-[0.08em] text-fg-muted uppercase">
         {title}
       </h3>
       {children}

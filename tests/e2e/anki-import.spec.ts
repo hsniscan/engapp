@@ -27,8 +27,10 @@ async function axe(page: Page, label: string) {
 }
 
 test('guest imports an Anki deck with its history; a second import adds nothing', async ({ page }) => {
-  await page.goto('/add');
-  await page.getByRole('link', { name: 'Anki dosyası (.apkg) yükle' }).click();
+  // v0.5.1: reached from the Add sheet's "İçe aktar" group.
+  await page.goto('/');
+  await page.getByRole('navigation', { name: 'Ana gezinme' }).getByRole('button', { name: 'Ekle' }).first().click();
+  await page.getByTestId('add-way-anki').click();
   await expect(page).toHaveURL(/\/import\/anki$/);
   await expect(page.getByRole('heading', { name: "Anki'den taşı", level: 1 })).toBeVisible();
 

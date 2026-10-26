@@ -155,7 +155,7 @@ test('signed in: levels stored with the lexicon by ai-extract; an AI guess has a
   await expect(page.getByRole('status', { name: 'Senkron durumu: Senkronlandı' })).toBeVisible();
   await page.getByLabel('İngilizce metin').fill(specs.map((s) => s.sentence).join(' '));
   await page.getByRole('button', { name: 'Kelimeleri çıkar' }).click();
-  await page.getByRole('link', { name: 'Önizlemeyi aç' }).click();
+  await expect(page.getByTestId('smart-summary')).toBeVisible();
   expect(backend.model.calls).toBe(1);
   await page.getByRole('checkbox', { name: 'cut corners seç' }).click();
   await page.getByRole('button', { name: '3 kelimeyi ekle' }).click();

@@ -66,7 +66,9 @@ test('a guest on /makale is invited to sign in, nothing is fetched', async ({ pa
     return route.abort();
   });
   await page.goto('/makale?url=https%3A%2F%2Fnews.example%2Fa');
-  await expect(page.getByText('AI ile kart çıkarmak için giriş yap')).toBeVisible();
+  await expect(page.getByTestId('signin-needed-title')).toHaveText(
+    'Makale getirmek için giriş yap',
+  );
   expect(called).toBe(false);
 });
 
