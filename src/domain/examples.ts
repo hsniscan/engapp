@@ -191,18 +191,22 @@ export interface CardSentence {
   context: string | null;
   /** Show the translation only on tap (example sentences, unless settings say otherwise). */
   trOnTap?: boolean;
+  /** v0.5 İP10: 'text' = a sentence from one of the user's own reading texts (device only). */
+  origin?: 'text';
 }
 
 /**
- * The sentences a card rotates through: the source sentence first, then the example
- * sentences of the selected contexts taken in turn (one per context, then the next one…),
- * without skipped ones. `needSpan` (cloze) keeps only sentences where the term is located.
+ * The sentences a card rotates through: the source sentence first, then sentences from the
+ * user's own texts (v0.5 İP10, `own`), then the example sentences of the selected contexts
+ * taken in turn (one per context, then the next one…), without skipped ones. `needSpan`
+ * (cloze) keeps only sentences where the term is located.
  */
 export function rotationSentences(
   sense: Pick<Sense, 'source_sentence' | 'source_sentence_tr' | 'span'>,
   examples: SenseExamples | null,
   selected: readonly string[],
   needSpan: boolean,
+  own: readonly { text: string; span: Span; tr: string | null }[] = [],
 ): CardSentence[] {
   const out: CardSentence[] = [];
   if (sense.source_sentence && (!needSpan || isValidSpan(sense.source_sentence, sense.span))) {
@@ -213,6 +217,11 @@ export function rotationSentences(
       exampleId: null,
       context: null,
     });
+  }
+  const sourceText = sense.source_sentence?.trim().toLowerCase() ?? null;
+  for (const t of own) {
+    if (t.text.trim().toLowerCase() === sourceText) continue;
+    out.push({ text: t.text, span: t.span, tr: t.tr, exampleId: null, context: null, origin: 'text' });
   }
   if (!examples) return out;
   const lists = selected.map((c) =>

@@ -14,7 +14,7 @@ import {
   SUGGESTION_WEEKS,
   type WeekFacts,
 } from '../domain/goals';
-import { isVacationDay } from '../domain/vacation';
+import { streakFrozenDay } from './streakFreeze';
 import {
   activityTotals,
   buildWeeklySummary,
@@ -39,6 +39,7 @@ import { getCurrentUserId, getMeta, setMeta } from './meta';
 import { loadRetentionInput } from './progress';
 import { dayConfig, getSettings, updateSettings } from './settings';
 import { writeTx } from './writer';
+import { scanWhere } from './scan';
 
 /** A draft waits at most this long for its comment; then the report is kept without one. */
 export const REPORT_COMMENT_WAIT_MS = 7 * 24 * 60 * 60_000;
@@ -64,7 +65,7 @@ export async function computeWeeklySummary(
     listDailyActivity(),
     loadRetentionInput(now),
     getWorkloadInput(now),
-    db.cards.filter((c) => c.deleted_at === null && !c.suspended).toArray(),
+    scanWhere(db.cards, (c) => c.deleted_at === null && !c.suspended),
   ]);
   const advice = computeWorkload(workloadInput).advice;
   const live = new Set(retention.facts.keys());
@@ -76,7 +77,7 @@ export async function computeWeeklySummary(
     activity,
     data: retention.data,
     facts: retention.facts,
-    isFrozenDay: (day) => isVacationDay(settings, day),
+    isFrozenDay: streakFrozenDay(settings),
     goals: settings.goals ?? null,
     load: {
       overDay: advice.overDay,

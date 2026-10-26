@@ -23,9 +23,9 @@ function reportFailure(now = Date.now()) {
 }
 
 /** Speaks `text` in the accent; resolves when done or failed (failure shows the help toast). */
-export async function speakNative(text: string, voice: NativeVoice): Promise<void> {
+export async function speakNative(text: string, voice: NativeVoice, rate = 0.92): Promise<void> {
   const say = (lang: string) =>
-    TextToSpeech.speak({ text, lang, rate: 0.92, queueStrategy: QueueStrategy.Flush });
+    TextToSpeech.speak({ text, lang, rate, queueStrategy: QueueStrategy.Flush });
   try {
     await say(voice);
   } catch {
@@ -36,6 +36,29 @@ export async function speakNative(text: string, voice: NativeVoice): Promise<voi
     } catch {
       reportFailure();
     }
+  }
+}
+
+/**
+ * Speaks Turkish text with the phone's TextToSpeech engine (the hands-free round's meanings,
+ * v0.5 İP9). Resolves when done; false when the phone has no Turkish voice (no help toast:
+ * the meaning is on screen).
+ */
+export async function speakNativeTurkish(text: string): Promise<boolean> {
+  try {
+    await TextToSpeech.speak({ text, lang: 'tr-TR', rate: 0.95, queueStrategy: QueueStrategy.Flush });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Stops the phone's voice (the hands-free round's "Duraklat"). */
+export async function stopNative(): Promise<void> {
+  try {
+    await TextToSpeech.stop();
+  } catch {
+    // nothing was speaking
   }
 }
 

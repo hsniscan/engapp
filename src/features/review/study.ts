@@ -16,6 +16,8 @@ import {
 import { studyModeOf } from '@/domain/studyMode';
 import { type Card, type Id, Rating as R, type RatingValue, type Sense } from '@/domain/types';
 import type { Rating } from '@/ui';
+import { productionAnswerMode } from './answerMode';
+import { modeText } from './modeText';
 import type { SessionAnswer } from './useReviewSession';
 
 export const meaningOf = (s: Pick<Sense, 'meaning_tr' | 'meaning_tr_override'>) =>
@@ -66,8 +68,8 @@ export function useModeLabel(view: CardView, withDirection: boolean): string {
   const { t } = useTranslation();
   const mode = studyModeOf(view.card.card_type);
   if (view.note.term_type === 'contrast') return t('leech.contrast.prompt');
-  const name = t(`study.mode.${mode}.name`);
-  return withDirection && mode !== 'cloze' ? `${name} · ${t(`study.mode.${mode}.dir`)}` : name;
+  const name = modeText(t, mode, 'name');
+  return withDirection && mode !== 'cloze' ? `${name} · ${modeText(t, mode, 'dir')}` : name;
 }
 
 /** Where the term sits in the card's sentence (stored span, else a text search). */
@@ -81,7 +83,10 @@ export function blankSpan(view: CardView): [number, number] | null {
 export const flipsWithSpace = (view: CardView) =>
   view.card.card_type === 'recognition' ||
   view.note.term_type === 'contrast' ||
-  (view.card.card_type === 'cloze' && !view.cloze);
+  (view.card.card_type === 'cloze' && !view.cloze) ||
+  // Üretim "aklımdan" (v0.5 İP9): no typing, the answer is shown.
+  ((view.card.card_type === 'production' || view.card.card_type === 'image') &&
+    productionAnswerMode() === 'flip');
 
 /** Recognition answers of this session that moved a word to Öğrenildi or Kalıcı. */
 export function learnedInSession(answers: readonly SessionAnswer[]): number {

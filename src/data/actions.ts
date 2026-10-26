@@ -26,15 +26,18 @@ import {
   type RatingValue,
   type ReviewLog,
   type Sense,
+  type Settings,
   type NoteTermType,
   recognitionOnly,
   type Source,
 } from '../domain/types';
 import { isRating } from '../domain/fsrs';
+import { replayTime } from '../domain/notificationAnswer';
 import { db } from './db';
 import { isTodayComplete, refreshDay } from './dailyActivity';
 import { ActionError } from './errors';
 import { loadTodayFacts, logsByCard } from './history';
+import { bumpEncountersIn } from './encounters';
 import { dayConfig, getSettings, schedulerFor } from './settings';
 import { type SyncWriter, writeTx } from './writer';
 
@@ -42,7 +45,13 @@ export const MAX_DURATION_MS = 60_000;
 
 // ------------------------------------------------------------------ helpers
 
-function newCard(w: SyncWriter, noteId: Id, senseId: Id | null, type: CardType, unlocked: boolean): Card {
+function newCard(
+  w: SyncWriter,
+  noteId: Id,
+  senseId: Id | null,
+  type: CardType,
+  unlocked: boolean,
+): Card {
   return {
     ...w.base(),
     note_id: noteId,
@@ -58,7 +67,10 @@ function uniqueTags(tags: Iterable<string>): string[] {
   return [...new Set([...tags].map((t) => t.trim()).filter(Boolean))];
 }
 
-function cleanSpan(sentence: string | null, span: [number, number] | null | undefined): [number, number] | null {
+function cleanSpan(
+  sentence: string | null,
+  span: [number, number] | null | undefined,
+): [number, number] | null {
   return sentence && isValidSpan(sentence, span) ? [span[0], span[1]] : null;
 }
 
@@ -73,7 +85,15 @@ function assertNoteFits(n: Pick<Note, 'term' | 'term_norm' | 'ipa' | 'tags'>): v
 }
 
 function assertSenseFits(
-  s: Pick<Sense, 'pos' | 'gloss_en' | 'meaning_tr' | 'meaning_tr_override' | 'source_sentence' | 'source_sentence_tr'>,
+  s: Pick<
+    Sense,
+    | 'pos'
+    | 'gloss_en'
+    | 'meaning_tr'
+    | 'meaning_tr_override'
+    | 'source_sentence'
+    | 'source_sentence_tr'
+  >,
 ): void {
   const bad = overLimit({
     pos: { value: s.pos, max: LIMITS.pos },
@@ -109,7 +129,11 @@ export async function syncFromPrimary(w: SyncWriter, noteId: Id): Promise<Id[]> 
 }
 
 /** Bring every production/cloze card of a note in line with the recognition state. */
-async function syncUnlocked(w: SyncWriter, noteId: Id, recognition: RecognitionUnlockInput | null): Promise<Id[]> {
+async function syncUnlocked(
+  w: SyncWriter,
+  noteId: Id,
+  recognition: RecognitionUnlockInput | null,
+): Promise<Id[]> {
   const changed: Id[] = [];
   const cards = await db.cards.where('note_id').equals(noteId).toArray();
   for (const c of cards) {
@@ -135,17 +159,32 @@ async function ensureSenseCards(
 ): Promise<Card[]> {
   const existing = await db.cards.where('sense_id').equals(sense.id).toArray();
   const out: Card[] = [];
-  const wanted: CardType[] = recognitionOnly(termType) ? [] : canHaveCloze(sense) ? ['production', 'cloze'] : ['production'];
+  const wanted: CardType[] = recognitionOnly(termType)
+    ? []
+    : canHaveCloze(sense)
+      ? ['production', 'cloze']
+      : ['production'];
   for (const type of ['production', 'cloze'] as const) {
     // A reset (v0.3 İP6) leaves the old card suspended next to a fresh copy: all copies count.
     const ofType = existing.filter((c) => c.card_type === type);
     const live = ofType.filter((c) => c.deleted_at === null);
     const want = wanted.includes(type);
     if (want && ofType.length === 0) {
-      out.push(await w.put('cards', newCard(w, sense.note_id, sense.id, type, recognitionUnlocks(recognition))));
+      out.push(
+        await w.put(
+          'cards',
+          newCard(w, sense.note_id, sense.id, type, recognitionUnlocks(recognition)),
+        ),
+      );
     } else if (want && live.length === 0) {
       const card = ofType[0]!;
-      out.push(await w.put('cards', { ...card, deleted_at: null, unlocked: deriveUnlocked(card, recognition) }));
+      out.push(
+        await w.put('cards', {
+          ...card,
+          deleted_at: null,
+          unlocked: deriveUnlocked(card, recognition),
+        }),
+      );
     } else if (!want) {
       for (const card of live) await w.put('cards', { ...card, deleted_at: w.now });
     }
@@ -205,12 +244,21 @@ export interface AddNoteResult {
  * the recognition card has already reached Review.
  * @throws ActionError('invalid_input') for an empty term or meaning.
  */
-export async function addNoteWithSenses(input: AddNoteInput, now: Millis = Date.now()): Promise<AddNoteResult> {
+export async function addNoteWithSenses(
+  input: AddNoteInput,
+  now: Millis = Date.now(),
+): Promise<AddNoteResult> {
   const term = input.term.normalize('NFC').replace(/\s+/g, ' ').trim();
   const termNorm = normalizeTerm(term);
   if (!termNorm) throw new ActionError('invalid_input', 'Empty term');
-  for (const s of input.senses) if (!s.meaning_tr.trim()) throw new ActionError('invalid_input', 'Empty meaning');
-  assertNoteFits({ term, term_norm: termNorm, ipa: input.ipa ?? null, tags: uniqueTags(input.tags ?? []) });
+  for (const s of input.senses)
+    if (!s.meaning_tr.trim()) throw new ActionError('invalid_input', 'Empty meaning');
+  assertNoteFits({
+    term,
+    term_norm: termNorm,
+    ipa: input.ipa ?? null,
+    tags: uniqueTags(input.tags ?? []),
+  });
   for (const s of input.senses) {
     assertSenseFits({
       pos: s.pos ?? null,
@@ -224,8 +272,12 @@ export async function addNoteWithSenses(input: AddNoteInput, now: Millis = Date.
 
   return writeTx([db.notes, db.senses, db.cards], now, async (w) => {
     const sameTerm = await db.notes.where('term_norm').equals(termNorm).toArray();
-    const live = sameTerm.filter((n) => n.deleted_at === null).sort((a, b) => a.created_at - b.created_at)[0];
-    const deleted = sameTerm.filter((n) => n.deleted_at !== null).sort((a, b) => b.deleted_at! - a.deleted_at!)[0];
+    const live = sameTerm
+      .filter((n) => n.deleted_at === null)
+      .sort((a, b) => a.created_at - b.created_at)[0];
+    const deleted = sameTerm
+      .filter((n) => n.deleted_at !== null)
+      .sort((a, b) => b.deleted_at! - a.deleted_at!)[0];
     const createdCards: Card[] = [];
     let status: AddNoteResult['status'];
     let note: Note;
@@ -274,7 +326,8 @@ export async function addNoteWithSenses(input: AddNoteInput, now: Millis = Date.
     const recState: RecognitionUnlockInput = recognition;
 
     const senses = await db.senses.where('note_id').equals(note.id).toArray();
-    let nextNo = Math.max(0, ...senses.filter((s) => s.deleted_at === null).map((s) => s.sense_no)) + 1;
+    let nextNo =
+      Math.max(0, ...senses.filter((s) => s.deleted_at === null).map((s) => s.sense_no)) + 1;
     const addedSenses: Sense[] = [];
     const skippedSenses: SenseInput[] = [];
 
@@ -284,14 +337,20 @@ export async function addNoteWithSenses(input: AddNoteInput, now: Millis = Date.
       const sentence = inp.source_sentence?.trim() ? inp.source_sentence : null;
       const sentenceKey = input.one_sense_per_sentence && sentence ? normalizeTerm(sentence) : null;
       const matches = (s: Sense): boolean =>
-        (!!inp.lexicon_sense_id && s.lexicon_sense_id === inp.lexicon_sense_id) || meaningKey(s) === key;
+        (!!inp.lexicon_sense_id && s.lexicon_sense_id === inp.lexicon_sense_id) ||
+        meaningKey(s) === key;
       // A live sense that is the same meaning in other words ("davet" next to "davetiye,
       // davet", same part of speech), or, for an import, the sense of the same sentence:
       // reuse it instead of adding a second one.
       const duplicates = (s: Sense): boolean =>
         matches(s) ||
-        isDuplicateSense({ pos: s.pos, meaning_tr: s.meaning_tr_override?.trim() || s.meaning_tr }, { pos: inp.pos, meaning_tr: meaning }) ||
-        (sentenceKey !== null && !!s.source_sentence && normalizeTerm(s.source_sentence) === sentenceKey);
+        isDuplicateSense(
+          { pos: s.pos, meaning_tr: s.meaning_tr_override?.trim() || s.meaning_tr },
+          { pos: inp.pos, meaning_tr: meaning },
+        ) ||
+        (sentenceKey !== null &&
+          !!s.source_sentence &&
+          normalizeTerm(s.source_sentence) === sentenceKey);
       if (senses.some((s) => s.deleted_at === null && duplicates(s))) {
         skippedSenses.push(inp);
         continue;
@@ -315,7 +374,11 @@ export async function addNoteWithSenses(input: AddNoteInput, now: Millis = Date.
             deleted_at: null,
             sense_no: nextNo++,
             ...(fields.source_sentence
-              ? { source_sentence: fields.source_sentence, source_sentence_tr: fields.source_sentence_tr, span: fields.span }
+              ? {
+                  source_sentence: fields.source_sentence,
+                  source_sentence_tr: fields.source_sentence_tr,
+                  span: fields.span,
+                }
               : {}),
           })
         : await w.put('senses', { ...w.base(), note_id: note.id, sense_no: nextNo++, ...fields });
@@ -341,7 +404,11 @@ export interface NotePatch {
  * Edit a note. Changing the term re-derives term_norm.
  * @throws ActionError('duplicate_term') if another live note already has the new term.
  */
-export async function editNote(noteId: Id, patch: NotePatch, now: Millis = Date.now()): Promise<Note> {
+export async function editNote(
+  noteId: Id,
+  patch: NotePatch,
+  now: Millis = Date.now(),
+): Promise<Note> {
   return writeTx([db.notes, db.senses, db.cards], now, async (w) => {
     const note = await db.notes.get(noteId);
     if (!note) throw new ActionError('not_found');
@@ -351,7 +418,11 @@ export async function editNote(noteId: Id, patch: NotePatch, now: Millis = Date.
       next.term = patch.term.normalize('NFC').replace(/\s+/g, ' ').trim();
       next.term_norm = normalizeTerm(next.term);
       if (!next.term_norm) throw new ActionError('invalid_input', 'Empty term');
-      const clash = await db.notes.where('term_norm').equals(next.term_norm).filter((n) => n.id !== noteId && n.deleted_at === null).count();
+      const clash = await db.notes
+        .where('term_norm')
+        .equals(next.term_norm)
+        .filter((n) => n.id !== noteId && n.deleted_at === null)
+        .count();
       if (clash) throw new ActionError('duplicate_term');
     }
     assertNoteFits(next);
@@ -372,8 +443,13 @@ const LEVELS: readonly CefrLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
  * Set (or with null, clear) the user's own level of a note. Synced; only this user sees it.
  * @throws ActionError('invalid_input') for anything but A1–C2 or null.
  */
-export async function setLevelOverride(noteId: Id, level: CefrLevel | null, now: Millis = Date.now()): Promise<Note> {
-  if (level !== null && !LEVELS.includes(level)) throw new ActionError('invalid_input', 'Unknown level');
+export async function setLevelOverride(
+  noteId: Id,
+  level: CefrLevel | null,
+  now: Millis = Date.now(),
+): Promise<Note> {
+  if (level !== null && !LEVELS.includes(level))
+    throw new ActionError('invalid_input', 'Unknown level');
   const note = await db.notes.get(noteId);
   if (!note) throw new ActionError('not_found');
   if ((note.level_override ?? null) === level) return note;
@@ -383,7 +459,15 @@ export async function setLevelOverride(noteId: Id, level: CefrLevel | null, now:
 export type SensePatch = Partial<
   Pick<
     Sense,
-    'meaning_tr' | 'meaning_tr_override' | 'gloss_en' | 'pos' | 'source_sentence' | 'source_sentence_tr' | 'span' | 'lexicon_sense_id' | 'sense_no'
+    | 'meaning_tr'
+    | 'meaning_tr_override'
+    | 'gloss_en'
+    | 'pos'
+    | 'source_sentence'
+    | 'source_sentence_tr'
+    | 'span'
+    | 'lexicon_sense_id'
+    | 'sense_no'
   >
 >;
 
@@ -392,7 +476,11 @@ export type SensePatch = Partial<
  * them soft-deletes it. A new sentence without a new translation drops the old one.
  * @throws ActionError('invalid_input') for an empty meaning or a span outside the sentence.
  */
-export async function editSense(senseId: Id, patch: SensePatch, now: Millis = Date.now()): Promise<Sense> {
+export async function editSense(
+  senseId: Id,
+  patch: SensePatch,
+  now: Millis = Date.now(),
+): Promise<Sense> {
   return writeTx([db.notes, db.senses, db.cards], now, async (w) => {
     const sense = await db.senses.get(senseId);
     if (!sense) throw new ActionError('not_found');
@@ -404,7 +492,8 @@ export async function editSense(senseId: Id, patch: SensePatch, now: Millis = Da
       next.span = null; // sentence changed under an old span
     }
     if (!next.source_sentence) next.span = null;
-    if (patch.source_sentence_tr === undefined && next.source_sentence !== sense.source_sentence) next.source_sentence_tr = null;
+    if (patch.source_sentence_tr === undefined && next.source_sentence !== sense.source_sentence)
+      next.source_sentence_tr = null;
     next.source_sentence_tr = (next.source_sentence && next.source_sentence_tr?.trim()) || null;
     assertSenseFits(next);
     const saved = await w.put('senses', next);
@@ -477,7 +566,8 @@ export async function createSource(
       ...w.base(),
       kind: input.kind,
       title: truncateCodePoints(input.title, LIMITS.source_title),
-      file_name: input.file_name == null ? null : truncateCodePoints(input.file_name, LIMITS.file_name),
+      file_name:
+        input.file_name == null ? null : truncateCodePoints(input.file_name, LIMITS.file_name),
       page_count: input.page_count ?? null,
     }),
   );
@@ -504,45 +594,122 @@ export interface AnswerResult {
 
 /**
  * Answer a card: writes the review log, updates the card's FSRS state, unlocks the note's
- * production/cloze cards when the recognition card reaches Review, and updates today's
- * daily_activity row — all in one transaction.
+ * production/cloze cards when the recognition card reaches Review, updates today's
+ * daily_activity row and counts one review encounter of the note (v0.5 İP1; the counter
+ * never feeds FSRS) — all in one transaction.
  */
-export async function answerCard(input: AnswerInput, now: Millis = Date.now()): Promise<AnswerResult> {
+export async function answerCard(
+  input: AnswerInput,
+  now: Millis = Date.now(),
+): Promise<AnswerResult> {
   if (!isRating(input.rating)) throw new ActionError('invalid_input', 'Invalid rating');
-  return writeTx([db.cards, db.review_logs, db.daily_activity, db.settings], now, async (w) => {
-    const settings = await getSettings(now);
-    const cfg = dayConfig(settings);
-    const card = await db.cards.get(input.card_id);
-    if (!card) throw new ActionError('not_found');
-    if (card.deleted_at !== null) throw new ActionError('deleted');
+  return writeTx(
+    [db.cards, db.review_logs, db.daily_activity, db.settings, db.encounters],
+    now,
+    async (w) => {
+      const settings = await getSettings(now);
+      const card = await db.cards.get(input.card_id);
+      if (!card) throw new ActionError('not_found');
+      if (card.deleted_at !== null) throw new ActionError('deleted');
+      return writeAnswer(w, settings, card, input, now, w.newId());
+    },
+  );
+}
 
-    const before = card.state;
-    const fsrs = applyRating(schedulerFor(settings), card, input.rating, now);
-    const duration = Math.min(MAX_DURATION_MS, Math.max(0, Math.round(input.duration_ms || 0)));
-    const log: ReviewLog = {
-      id: w.newId(),
-      user_id: w.userId,
-      card_id: card.id,
-      rating: input.rating,
-      reviewed_at: now,
-      duration_ms: duration,
-      device_id: w.deviceId,
-      undo_of: null,
-      shown_sense_id: input.shown_sense_id ?? null,
-      created_at: now,
-      hlc: w.nextHlc(),
-    };
-    await w.insertLog(log);
-    const saved = await w.put('cards', { ...card, ...fsrs, unlocked: true });
-    const unlockedCardIds = card.card_type === 'recognition' ? await syncFromPrimary(w, card.note_id) : [];
+/**
+ * The one answer path: log, FSRS state, unlocks and the day's counts. `at` is when the answer
+ * was given: now on the study screen, the button press for an answer from the notification.
+ * An answer older than the card's last review (given offline before an answer that arrived
+ * first) is put in its place in the history: the card is replayed from its logs and that day
+ * recounted, exactly as after a sync that brings an older log.
+ */
+async function writeAnswer(
+  w: SyncWriter,
+  settings: Settings,
+  card: Card,
+  input: AnswerInput,
+  at: Millis,
+  logId: Id,
+): Promise<AnswerResult> {
+  const cfg = dayConfig(settings);
+  const scheduler = schedulerFor(settings);
+  const before = card.state;
+  const inOrder = card.last_review === null || at >= card.last_review;
+  const duration = Math.min(MAX_DURATION_MS, Math.max(0, Math.round(input.duration_ms || 0)));
+  const log: ReviewLog = {
+    id: logId,
+    user_id: w.userId,
+    card_id: card.id,
+    rating: input.rating,
+    reviewed_at: at,
+    duration_ms: duration,
+    device_id: w.deviceId,
+    undo_of: null,
+    shown_sense_id: input.shown_sense_id ?? null,
+    created_at: w.now,
+    hlc: w.nextHlc(),
+  };
+  await w.insertLog(log);
+  const fsrs = inOrder
+    ? applyRating(scheduler, card, input.rating, at)
+    : replayCard(scheduler, card, [...((await logsByCard([card.id])).get(card.id) ?? [])]).fsrs;
+  const saved = await w.put('cards', { ...card, ...fsrs, unlocked: true });
+  const unlockedCardIds =
+    card.card_type === 'recognition' ? await syncFromPrimary(w, card.note_id) : [];
 
-    const key = dayKeyOf(now, cfg);
+  const key = dayKeyOf(at, cfg);
+  const today = dayKeyOf(w.now, cfg) === key;
+  if (inOrder && today) {
     const day = (await db.daily_activity.get(key)) ?? emptyDay(key);
     addAnswerToDay(day, { before_state: before, rating: input.rating, duration_ms: duration });
-    day.completed = await isTodayComplete(cfg, now);
+    day.completed = await isTodayComplete(cfg, w.now);
     await db.daily_activity.put(day);
+    await bumpEncountersIn(w, [card.note_id], 'review', key);
     return { log, card: saved, unlockedCardIds, day };
-  });
+  }
+  const day = (await refreshDay(key, cfg, scheduler, w.now)) ?? emptyDay(key);
+  return { log, card: saved, unlockedCardIds, day };
+}
+
+export type ReplayOutcome =
+  | { status: 'applied'; result: AnswerResult }
+  /** This answer is already in the history (replayed before, or synced from elsewhere). */
+  | { status: 'duplicate' }
+  /** The card is gone, deleted or suspended: nothing to answer. */
+  | { status: 'skipped' };
+
+/**
+ * An answer given on the reminder notification (docs/decisions/0048), replayed once through the
+ * same path as the study screen with the time of the button press. The queued item's id becomes
+ * the log's id, so a second replay (app killed before the queue was cleared) finds it and
+ * changes nothing.
+ */
+export async function replayQueuedAnswer(
+  item: { id: Id; card_id: Id; rating: RatingValue; at: Millis; duration_ms?: number },
+  now: Millis = Date.now(),
+): Promise<ReplayOutcome> {
+  if (!isRating(item.rating)) throw new ActionError('invalid_input', 'Invalid rating');
+  return writeTx(
+    [db.cards, db.review_logs, db.daily_activity, db.settings, db.encounters],
+    now,
+    async (w) => {
+      if (await db.review_logs.get(item.id)) return { status: 'duplicate' } as const;
+      const card = await db.cards.get(item.card_id);
+      if (!card || card.deleted_at !== null || card.suspended)
+        return { status: 'skipped' } as const;
+      const settings = await getSettings(now);
+      const at = replayTime(item.at, now);
+      const result = await writeAnswer(
+        w,
+        settings,
+        card,
+        { card_id: card.id, rating: item.rating, duration_ms: item.duration_ms ?? 0 },
+        at,
+        item.id,
+      );
+      return { status: 'applied', result } as const;
+    },
+  );
 }
 
 /** The latest answer of the current day that can still be undone, if any (never one imported from Anki). */
@@ -558,7 +725,10 @@ export async function getLastUndoableAnswer(now: Millis = Date.now()): Promise<R
  * recounts that day's daily_activity. The original log is never changed.
  * @throws ActionError('already_undone' | 'not_undoable' | 'not_found')
  */
-export async function undoAnswer(logId: Id, now: Millis = Date.now()): Promise<{ card: Card; undone: ReviewLog }> {
+export async function undoAnswer(
+  logId: Id,
+  now: Millis = Date.now(),
+): Promise<{ card: Card; undone: ReviewLog }> {
   return writeTx([db.cards, db.review_logs, db.daily_activity, db.settings], now, async (w) => {
     const settings = await getSettings(now);
     const cfg = dayConfig(settings);
@@ -567,7 +737,8 @@ export async function undoAnswer(logId: Id, now: Millis = Date.now()): Promise<{
     if (!log) throw new ActionError('not_found');
     if (log.undo_of !== null) throw new ActionError('not_undoable');
     const allLogs = (await logsByCard([log.card_id])).get(log.card_id) ?? [];
-    if (!effectiveLogs(allLogs).some((l) => l.id === logId)) throw new ActionError('already_undone');
+    if (!effectiveLogs(allLogs).some((l) => l.id === logId))
+      throw new ActionError('already_undone');
 
     const undo: ReviewLog = {
       id: w.newId(),

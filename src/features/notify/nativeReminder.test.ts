@@ -9,6 +9,7 @@ import {
   REMINDER_ID,
   rescheduleReminder,
   resetReminderStateForTesting,
+  setAnswerCards,
   syncWebPushCleanup,
   type NotifierPort,
   type Permission,
@@ -73,7 +74,7 @@ describe('native reminder', () => {
     expect(port.scheduled[0]).toMatchObject({
       id: REMINDER_ID,
       at: Date.UTC(2026, 9, 20, 16),
-      body: 'Bugün 2 tekrar seni bekliyor (~1 dk)',
+      body: 'Bugün 2 kart tekrara hazır, yaklaşık 1 dk.',
       url: '/review',
     });
     expect(clean).toHaveBeenCalledWith('u1');
@@ -172,5 +173,44 @@ describe('native reminder', () => {
     expect(clean).toHaveBeenCalledTimes(1);
     await syncWebPushCleanup('u2', clean); // another account signed in on this phone
     expect(clean).toHaveBeenCalledTimes(2);
+  });
+
+  describe('answering from the notification (ADR 0048)', () => {
+    const card = { card_id: 'c1', term: 'resilient', meaning: 'dayanıklı' };
+    const enable = (port: ReturnType<typeof fakePort>, cards: (ats: number[]) => Promise<(typeof card | null)[]>) =>
+      enableReminder({
+        port,
+        userId: null,
+        cleanWebPush: async () => 0,
+        facts: async () => facts(),
+        cards,
+        now: () => NOW,
+      });
+
+    it('asks a due card on the first reminder by default', async () => {
+      const port = fakePort();
+      const cards = vi.fn(async (ats: number[]) => ats.map((_, i) => (i === 0 ? card : null)));
+      await enable(port, cards);
+      expect(readReminderState().answerCards).toBe(true);
+      expect(cards).toHaveBeenCalledWith(port.scheduled.map((n) => n.at));
+      expect(port.scheduled[0]?.card).toEqual(card);
+      expect(port.scheduled[1]?.card).toBeUndefined();
+    });
+
+    it('turned off, or when the lookup fails, the reminder stays plain', async () => {
+      const port = fakePort();
+      await enable(port, async () => {
+        throw new Error('db closed');
+      });
+      expect(port.scheduled.length).toBeGreaterThan(0);
+      expect(port.scheduled.every((n) => n.card === undefined)).toBe(true);
+
+      const again = fakePort();
+      const cards = vi.fn(async () => [card]);
+      await setAnswerCards(false, { port: again, facts: async () => facts(), cards, now: () => NOW });
+      expect(readReminderState().answerCards).toBe(false);
+      expect(cards).not.toHaveBeenCalled();
+      expect(again.scheduled.every((n) => n.card === undefined)).toBe(true);
+    });
   });
 });

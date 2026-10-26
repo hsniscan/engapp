@@ -95,7 +95,7 @@ describe('send decision (acceptance criterion 7)', () => {
       day,
       message: {
         title: 'Engapp',
-        body: 'Bugün 23 tekrar seni bekliyor (~6 dk)',
+        body: 'Bugün 23 kart tekrara hazır, yaklaşık 6 dk.',
         url: '/review',
         tag: 'engapp-due',
       },
@@ -201,8 +201,8 @@ describe('send decision (acceptance criterion 7)', () => {
 
 describe('message', () => {
   it('is built from counts only', () => {
-    expect(dueMessage(1, null).body).toBe('Bugün 1 tekrar seni bekliyor (~1 dk)');
-    expect(dueMessage(120, 10).body).toBe('Bugün 120 tekrar seni bekliyor (~20 dk)');
+    expect(dueMessage(1, null).body).toBe('Bugün 1 kart tekrara hazır, yaklaşık 1 dk.');
+    expect(dueMessage(120, 10).body).toBe('Bugün 120 kart tekrara hazır, yaklaşık 20 dk.');
     expect(estimateMinutes(23, 15)).toBe(6);
     expect(estimateMinutes(10, 1000)).toBe(10); // a pace above 60 s per card is capped
     expect(estimateMinutes(2, null)).toBe(1);

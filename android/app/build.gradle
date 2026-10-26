@@ -1,6 +1,9 @@
 import groovy.json.JsonSlurper
 
 apply plugin: 'com.android.application'
+// Kotlin + the Compose compiler for the Jetpack Glance widgets (docs/decisions/0048).
+apply plugin: 'org.jetbrains.kotlin.android'
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
 
 // Release versioning and signing (docs/setup-android.md, .github/workflows/android.yml).
 // versionCode: -PversionCode=<n> (CI: the workflow run number, so every build installs over the
@@ -25,7 +28,9 @@ android {
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
-            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+            // `!<dir>ocr`: the web build's tesseract.js files (dist/ocr, ~11 MB, web only: the app
+            // uses ML Kit, ADR 0045) stay out of the APK.
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~:!<dir>ocr'
         }
     }
     signingConfigs {
@@ -38,12 +43,22 @@ android {
             }
         }
     }
+    buildFeatures {
+        compose = true
+    }
     buildTypes {
         release {
             if (hasReleaseKey) signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+}
+
+kotlin {
+    // Same bytecode level as the Java code (capacitor.build.gradle: Java 21).
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
     }
 }
 
@@ -59,7 +74,17 @@ dependencies {
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
+    // "Fotoğraftan metin" (ADR 0045): ML Kit Text Recognition v2, Latin only, model bundled in
+    // the APK (offline; not the Play-services download variant).
+    implementation "com.google.mlkit:text-recognition:16.0.1"
+    // Home-screen widgets: Jetpack Glance (Apache-2.0), docs/decisions/0048.
+    implementation "androidx.glance:glance-appwidget:$glanceVersion"
+    // Glance's update calls are suspend functions (Apache-2.0; also a dependency of Glance).
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$kotlinxCoroutinesVersion"
     testImplementation "junit:junit:$junitVersion"
+    // Android's org.json is a stub in local unit tests; this is the reference implementation
+    // (public domain), used by the widget state and answer queue tests only.
+    testImplementation "org.json:json:20250517"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')

@@ -79,4 +79,17 @@ describe('Settings → Bildirim in the Android app', () => {
     expect(await screen.findAllByText(/Bildirim izni kapalı/)).not.toHaveLength(0);
     expect(readReminderState().enabled).toBe(false);
   });
+
+  it('offers "Bildirimden cevap ver" once the reminder is on, on by default (ADR 0048)', async () => {
+    const user = userEvent.setup();
+    renderRoute(<NativeNotifySection deps={async () => ({ port: port(), cleanWebPush: async () => 0 })} />);
+    await screen.findByRole('switch', { name: /Günlük hatırlatma/ });
+    expect(screen.queryByRole('switch', { name: /Bildirimden cevap ver/ })).toBeNull();
+    await user.click(screen.getByRole('switch', { name: /Günlük hatırlatma/ }));
+    const answers = await screen.findByRole('switch', { name: /Bildirimden cevap ver/ });
+    expect(answers).toBeChecked();
+    await user.click(answers);
+    await waitFor(() => expect(readReminderState().answerCards).toBe(false));
+    expect(answers).not.toBeChecked();
+  });
 });

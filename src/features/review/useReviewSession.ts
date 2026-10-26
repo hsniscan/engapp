@@ -11,6 +11,7 @@ import {
   getStudyQueue,
   leechAfterAnswer,
   logError,
+  rememberPostponed,
   setSuspended,
   undoAnswer,
   type CardView,
@@ -22,6 +23,11 @@ import type { LeechNotice } from '@/features/leech';
 import { canShowPicture, preloadPicture } from '@/features/images/picture';
 
 export const MAX_ANSWER_MS = 60_000;
+
+/** v0.5 İP10: keep the new cards the interference guard held back for a later day. */
+function carryPostponed(postponed: readonly Id[]): void {
+  if (postponed.length) void rememberPostponed(postponed).catch((e: unknown) => void logError(e, 'review:carry'));
+}
 
 export interface CurrentCard {
   view: CardView;
@@ -183,6 +189,7 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
         ...(studyMode ? { studyMode } : {}),
         ...(deckId ? { deckId } : {}),
       });
+      carryPostponed(q.postponed);
       if (mySeq !== seq.current || !alive.current) return;
       const currentId = stateRef.current.current?.view.card.id;
       upcoming.current = q.items
@@ -219,6 +226,7 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
         }),
         getStreakSummary(),
       ]);
+      carryPostponed(q.postponed);
       if (cancelled) return;
       setStart({ todayActive: streak.todayActive, streak: streak.currentStreak });
       skipped.current.clear();

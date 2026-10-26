@@ -12,6 +12,8 @@ export const DEFAULT_CHECK_MODEL = 'claude-haiku-5-5';
  * model than the one that wrote them, still about $1-2 for the whole bank at batch price.
  */
 export const DEFAULT_WORDBANK_REVIEW_MODEL = 'claude-sonnet-5-5';
+/** Writes the graded library's texts (graded-v1, decision 0047, CLAUDE_GRADED_MODEL). */
+export const DEFAULT_GRADED_MODEL = 'claude-sonnet-5-5';
 
 export interface ImageModels {
   /** Draws the pictures (image-v1). */

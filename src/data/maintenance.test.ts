@@ -278,7 +278,9 @@ describe('chunked restore (decision 0025)', () => {
   it('a guest restore queues one entry per row and no logs; a linked device queues the logs', async () => {
     const t = await study(['bank', 'shore'], T);
     const backup = await exportBackup(t + MIN);
-    const rows = backup.tables.notes.length + backup.tables.senses.length + backup.tables.cards.length + backup.tables.settings.length;
+    const rows = backup.tables.notes.length + backup.tables.senses.length + backup.tables.cards.length + backup.tables.settings.length +
+      (backup.tables.encounters?.length ?? 0);
+    expect(backup.tables.encounters?.length).toBe(2); // one review encounter per studied word
 
     await resetDb();
     await restoreBackup(backup, 'merge', t + 2 * MIN);
@@ -319,7 +321,8 @@ describe('adoptGuestData', () => {
     await answerCard({ card_id: (await recognition(a.note.id)).id, rating: Rating.Good, duration_ms: 1 }, T);
     await db.outbox.clear();
     const n = await adoptGuestData('user-1', T + 1);
-    expect(n).toBe(1 + 1 + 2 + 1 + 1); // note, sense, 2 cards, settings, 1 log
+    expect(n).toBe(1 + 1 + 2 + 1 + 1 + 1); // note, sense, 2 cards, settings, 1 log, 1 encounter
+    expect((await db.encounters.toArray())[0]!.user_id).toBe('user-1');
     expect((await db.notes.get(a.note.id))!.user_id).toBe('user-1');
     expect(await db.outbox.count()).toBe(n);
     const b = await addNoteWithSenses({ term: 'shore', senses: [{ meaning_tr: 'kıyı' }] }, T + 2);

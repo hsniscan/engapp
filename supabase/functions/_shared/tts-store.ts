@@ -35,6 +35,14 @@ export class SupabaseTtsStore implements TtsStore {
     return r.data as { allowed: boolean; used: number; limit: number };
   }
 
+  async find(path: string): Promise<string | null> {
+    return (await this.exists(path)) ? this.publicUrl(path) : null;
+  }
+
+  async save(path: string, audio: Uint8Array): Promise<string | null> {
+    return (await this.upload(path, audio)) ? this.publicUrl(path) : null;
+  }
+
   async exists(path: string): Promise<boolean> {
     // HEAD on the object through the service role (not the public CDN URL, which may cache a 404).
     const { data, error } = await this.db.storage.from(TTS_BUCKET).exists(path);

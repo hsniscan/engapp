@@ -1,0 +1,31 @@
+1
+00:00:01,000 --> 00:00:03,200
+Have you ever wondered
+why the sky is blue?
+
+2
+00:00:03,300 --> 00:00:05,900
+<i>Most people never ask.</i>
+
+3
+00:00:06,000 --> 00:00:08,400
+- Sunlight looks white,
+- but it is a mix of colours.
+
+4
+00:00:08,500 --> 00:00:11,000
+Blue light is scattered
+more than red light...
+
+5
+00:00:11,100 --> 00:00:13,000
+...by the tiny molecules in the air.
+
+6
+00:00:17,500 --> 00:00:20,000
+That is why, at sunset,
+the sky turns <b>orange</b> and red.
+
+7
+00:00:20,100 --> 00:00:22,000
+The light travels through more air.

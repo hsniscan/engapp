@@ -98,6 +98,62 @@ Google hesabı** hazır olsun (son bölümde silinecek; kendi hesabını kullanm
 | [ ] | Deneme hesabıyla tekrar gir | Boş başlar: eski kelimeler yok | |
 | [ ] | Kendi hesabınla tekrar gir | Kendi kartların yerinde | |
 
+## 10. Fotoğraftan metin (v0.5, ölçüt 4)
+
+| ✓ | Ne yap | Ne olmalı | Not |
+|---|---|---|---|
+| [ ] | Uçak modunu aç. (+) → Fotoğraftan metin → Fotoğraf çek → bir kitap sayfası çek | Kamera izni sorulmaz; metin 3 saniye içinde gelir | |
+| [ ] | 10 farklı kitap sayfasıyla dene, yanlış okunan kelimeleri say | Kelimelerin en az %95'i doğru | |
+| [ ] | Bir satıra dokun, kalemle bir kelimeyi düzelt → Okuyucuda aç | Çıkardığın satır yok, düzeltme var; satır sonunda bölünmüş kelime birleşik | |
+| [ ] | Galeriden seç → loş ışıkta çekilmiş bir fotoğraf | "Bazı yerler net okunamadı" uyarısı, emin olunmayan satırlar işaretli | |
+
+## 11. Ana ekran widget'ı (v0.5)
+
+| ✓ | Ne yap | Ne olmalı | Not |
+|---|---|---|---|
+| [ ] | Ana ekranda boş yere uzun bas → Widget'lar → Engapp → "Tekrara başla" (2×1) ve "Günün kelimesi" (4×2) ekle | İkisi de eklenir; sayı ve kelime birkaç saniyede gelir | |
+| [ ] | 2×1 widget'a dokun | Engapp kelime çalışmasıyla açılır | |
+| [ ] | 2–3 kart çalış, ana ekrana dön | Bekleyen sayı hemen azalır | |
+| [ ] | "Günün kelimesi"ne bak, sonra dokun | Önce Türkçesi görünür; dokununca İngilizcesi açılır | |
+| [ ] | Bir kez daha dokun | Engapp o kelimenin ayrıntısıyla açılır | |
+| [ ] | Uçak modunda widget'a bak ve dokun | Kelime yine çevrilir; internet gerekmez | |
+| [ ] | Telefonu koyu moda al | Widget'lar koyu olur; yazılar okunur | |
+| [ ] | Uygulamayı açmadan gece yarısını (gün başlangıç saatini) geçir, sabah bak | Yeni günün sayısı ve kelimesi görünür (en fazla 30 dakika gecikmeyle) | |
+
+## 12. Bildirimden cevap (v0.5)
+
+| ✓ | Ne yap | Ne olmalı | Not |
+|---|---|---|---|
+| [ ] | Ayarlar → Bildirim → "Bildirimden cevap ver" | Açık gelir (varsayılan) | |
+| [ ] | 5. bölümdeki gibi sabit saatli bir hatırlatma kur, uygulamayı kapat | Bildirim "… ne demek?" diye bir kelime sorar, altında "Cevabı gör" | |
+| [ ] | "Cevabı gör" | Uygulama açılmadan aynı bildirimde anlam görünür; "Bildim" ve "Bilemedim" çıkar | |
+| [ ] | "Bildim" | "Cevabın kaydedildi" yazar ve kısa sürede kaybolur; widget'taki sayı bir azalır | |
+| [ ] | Engapp'i aç → İlerleme ya da kelimenin ayrıntısı | Cevap bir tekrar olarak sayılmış (bir kez, iki kez değil) | |
+| [ ] | Uçak modunda bildirimden cevap ver, sonra uygulamayı aç | Cevap yine işlenir | |
+| [ ] | Telefonu yeniden başlat (hatırlatma saati gelmeden) | Hatırlatma yine zamanında gelir | |
+| [ ] | "Bildirimden cevap ver"i kapat, yeni bir hatırlatma bekle | Düz hatırlatma gelir, kelime sorulmaz | |
+
+## 13. Android 16
+
+| ✓ | Ne yap | Ne olmalı | Not |
+|---|---|---|---|
+| [ ] | Android 16 bir telefonda (ya da emülatörde) uygulamayı aç | Üst ve alt çubuk uygulamanın zeminiyle bütün; yazı çubukların altında kalmaz | |
+| [ ] | Ekranın kenarından geri kaydır (geri hareketi) | Açık pencereyi kapatır, yoksa bir önceki ekrana döner; ana sayfada çıkar | |
+| [ ] | Tablet ya da katlanır telefonda yan çevir | Ekran bozulmadan döner | |
+
+## 14. R2 ses (v0.5, ölçüt 12)
+
+Sesler Cloudflare'e taşındıktan sonra ([setup-backend.md](setup-backend.md), bölüm 19.7) bir kez.
+
+| ✓ | Ne yap | Ne olmalı | Not |
+|---|---|---|---|
+| [ ] | İnternet açıkken, daha önce dinlemediğin bir sözlük kelimesinde hoparlöre dokun | 1 saniye içinde doğal bir sesle okunur (telefonun robot sesi değil) | |
+| [ ] | Ayarlar'da aksanı değiştir (ABD / İngiliz), aynı kelimeyi dinle | İki aksan da okunur ve birbirinden farklıdır | |
+| [ ] | Bir örnek cümlede ve kitaplıktaki bir metnin cümlesinde hoparlöre dokun | Cümle baştan sona okunur, başı kesilmez | |
+| [ ] | Uçak modunu aç, az önce dinlediğin kelimeye dokun | Aynı doğal sesle yine okunur | |
+| [ ] | Uçak modunda hiç dinlemediğin bir kelimeye dokun | Telefonun kendi sesiyle okunur; uygulama takılmaz | |
+| [ ] | Mobil veride (Wi-Fi kapalı) 5 kelime dinle | Hepsi takılmadan okunur | |
+
 ## Genel not
 
 Takıldığın, yavaş gelen ya da garip görünen her şeyi buraya yaz:

@@ -22,12 +22,13 @@ select is_empty(
   'anon has no table privileges in public'
 );
 
--- The only thing a guest reads: some columns of the word bank (system content, decision 0038).
+-- The only things a guest reads: some columns of the word bank (decision 0038) and of the
+-- approved graded library texts (decision 0047). Both are system content, never user data.
 select is_empty(
   $$ select table_name, column_name, privilege_type from information_schema.column_privileges
       where table_schema = 'public' and grantee = 'anon'
-        and not (table_name = 'word_bank' and privilege_type = 'SELECT') $$,
-  'anon column privileges: SELECT on word_bank only'
+        and not (table_name in ('word_bank', 'graded_texts') and privilege_type = 'SELECT') $$,
+  'anon column privileges: SELECT on word_bank and graded_texts only'
 );
 
 select * from finish();

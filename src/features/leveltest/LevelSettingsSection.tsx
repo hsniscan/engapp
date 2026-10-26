@@ -10,6 +10,7 @@ import { SettingsRow, SettingsSection } from '@/features/settings/SettingsLayout
 import { useAppSettings } from '@/features/settings/useAppSettings';
 import { buttonClasses, Select, Skeleton, Switch } from '@/ui';
 import { formatDate } from './levelText';
+import { scanWhere } from '@/data/scan';
 
 export function LevelSettingsSection() {
   const { t } = useTranslation();
@@ -17,7 +18,7 @@ export function LevelSettingsSection() {
   const extra = useLiveQuery(async () => {
     const [tests, known] = await Promise.all([
       listLevelTests(),
-      db.known_terms.filter((k) => k.deleted_at === null).toArray(),
+      scanWhere(db.known_terms, (k) => k.deleted_at === null),
     ]);
     return { last: tests[0] ?? null, known: new Set(known.map((k) => k.term_norm)).size };
   }, []);

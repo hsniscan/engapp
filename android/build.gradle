@@ -1,7 +1,9 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-    
+    // Kotlin for the app's widgets (Jetpack Glance, docs/decisions/0048). Plugins that use
+    // Kotlin (local-notifications) read this version too, so the whole build has one.
+    ext.kotlin_version = '2.2.21'
     repositories {
         google()
         mavenCentral()
@@ -9,6 +11,8 @@ buildscript {
     dependencies {
         classpath 'com.android.tools.build:gradle:8.13.0'
         classpath 'com.google.gms:google-services:4.4.4'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "org.jetbrains.kotlin:compose-compiler-gradle-plugin:$kotlin_version"
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files

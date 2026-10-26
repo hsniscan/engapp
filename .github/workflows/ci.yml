@@ -19,10 +19,14 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Every npm package's licence against the allowlist (decision 0053).
+      - run: node scripts/check-licenses.ts
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm test
       - run: pnpm build
+      # Start-up bundle: size budget, OCR and reader stay lazy (decision 0053).
+      - run: node scripts/check-bundle.ts
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 20

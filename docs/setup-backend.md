@@ -88,7 +88,7 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 | `SUPABASE_DB_PASSWORD`      | the database password from step 3.6                                                                                                                                                                                                 |
 | `GEMINI_API_KEY`            | the key from step 1                                                                                                                                                                                                                 |
 | `SUPABASE_SERVICE_ROLE_KEY` | optional, for the level job (step 9): **Project Settings → API Keys** → the `service_role` key or a secret key (`sb_secret_…`). Without it the job reads the key with `SUPABASE_ACCESS_TOKEN`, which then needs API key read access |
-| `ANTHROPIC_API_KEY`         | optional, for pictures (step 12): `https://console.anthropic.com/settings/keys` → **Create Key** → copy (starts with `sk-ant-`)                                                                                                     |
+| `ANTHROPIC_API_KEY`         | optional, for pictures (step 12) and the text AI fallback (step 16): `https://console.anthropic.com/settings/keys` → **Create Key** → copy (starts with `sk-ant-`)                                                                  |
 
 **Variables** tab → **New repository variable** (all optional; defaults in brackets):
 
@@ -102,11 +102,21 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 | `CLAUDE_MONTHLY_CREDIT_USD` | the monthly Claude credit in USD; pictures may use 80 % of it [`100`]                                     |
 | `APP_ADMIN_USER_ID`         | your Supabase user id (step 12): who may open the picture review screen [none]                            |
 | `IMAGE_DAILY_LIMIT`         | pictures a user may ask for per UTC day [`10`]                                                            |
-| `CLAUDE_IMAGE_MODEL`        | model that draws pictures [`claude-sonnet-5-5`]                                                             |
+| `CLAUDE_IMAGE_MODEL`        | model that draws pictures [`claude-sonnet-5-5`]                                                           |
 | `CLAUDE_CHECK_MODEL`        | model that scores and checks pictures [`claude-haiku-5-5`]                                                |
 | `CLAUDE_WORDBANK_MODEL`     | model of the word bank job (step 14) [`CLAUDE_CHECK_MODEL`]                                               |
 | `WORD_BANK_NIGHTLY`         | `true`: the word bank job also runs every night (step 14) [off]                                           |
 | `TTS_PREGEN_WEEKLY`         | `true`: the pronunciation audio job also runs every Sunday for new words (step 15) [off]                  |
+| `GRADED_BULK`               | `true`: the reading library job writes new texts every night (step 16) [off]                              |
+| `CLAUDE_TEXT_MONTHLY_USD`   | monthly cap in USD for Claude text features: library texts, stories (step 16) [`10`]                      |
+| `CLAUDE_GRADED_MODEL`       | model that writes library texts [`claude-sonnet-5-5`]                                                     |
+| `GRADED_PER_CELL`           | library texts per level and core topic [`9`]                                                              |
+| `GRADED_EXTENDED_PER_CELL`  | library texts per level and extended topic [`0`]                                                          |
+| `ARTICLE_DAILY_LIMIT`       | articles a user may import from links per UTC day (step 17) [`30`]                                        |
+| `CLAUDE_TEXT_MODEL`         | model of the text AI fallback when Gemini runs out of quota (step 17) [`claude-haiku-5-5`]                |
+| `AI_CLAUDE_FALLBACK`        | `off`: never use Claude for the text AI tasks (step 17) [`on`]                                            |
+| `STORY_DAILY_LIMIT`         | daily stories per user per UTC day, each may be regenerated once (step 18) [`1`]                          |
+| `CLAUDE_STORY_MODEL`        | model that writes the daily story (step 18) [`CLAUDE_TEXT_MODEL`, else `claude-haiku-5-5`]                |
 
 `ALLOWED_ORIGINS` is the list of web origins allowed to call the AI functions
 (comma-separated, exact, no trailing slash). Preview deploys on other origins cannot
@@ -126,7 +136,7 @@ call AI unless added here. The deploy workflow always appends the production Pag
      `GEMINI_FALLBACK_MODEL`, `AI_PROVIDER=gemini`, `AI_DAILY_LIMIT`, `ALLOWED_ORIGINS`
    - on the first run only: a Web Push (VAPID) key pair, stored as the function secrets
      `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` (see step 10; nothing to do)
-   - `supabase functions deploy` (`ai-extract`, `ai-enrich`, `ai-examples`, `ai-themes`, `ai-mnemonic`, `ai-report`, `ai-contrast`, `push-send`, `tts`, `account-delete`; JWT is verified inside the
+   - `supabase functions deploy` (`ai-extract`, `ai-enrich`, `ai-examples`, `ai-themes`, `ai-mnemonic`, `ai-report`, `ai-contrast`, `push-send`, `tts`, `account-delete`, `fetch-article`; JWT is verified inside the
      functions, so `verify_jwt = false` from `supabase/config.toml` is expected)
    - `select public.push_configure(<push-send URL>)`, which turns on the 15-minute reminder job
 3. Both jobs must end green. If "Check secrets" fails, a secret from step 4 is missing.
@@ -152,10 +162,10 @@ dashboard auth settings from step 3 with the local-development `config.toml`).
 Cloudflare dashboard → **Workers & Pages → <PAGES_PROJECT> → Settings → Variables and
 Secrets**, for **Production** and **Preview**, then redeploy:
 
-| Name                            | Value                                      |
-| ------------------------------- | ------------------------------------------ |
-| `VITE_SUPABASE_URL`             | `https://bikcjlomrjaxymifxogi.supabase.co` |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | the publishable key from step 3.5          |
+| Name                            | Value                                                                      |
+| ------------------------------- | -------------------------------------------------------------------------- |
+| `VITE_SUPABASE_URL`             | `https://bikcjlomrjaxymifxogi.supabase.co`                                 |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | the publishable key from step 3.5                                          |
 | `VITE_CONTACT_EMAIL`            | the contact address shown in the privacy policy and on `/hesap-sil` (v0.4) |
 
 Locally: create `.env.local` in the repository root with the same two lines
@@ -313,6 +323,7 @@ Also nightly, by pg_cron: `engapp-purge-usage` (03:27 UTC) deletes read-aloud an
 usage counters older than 90 days, as the privacy policy says. **Integrations → Cron** lists
 it next to `engapp-purge-tombstones`; without pg_cron run
 `select public.purge_usage_counters(90);` now and then.
+
 ## 14. Kelime Bankası (v0.4)
 
 The word bank (decision 0038) is filled once by a job: Turkish meanings and an example sentence
@@ -400,6 +411,164 @@ bucket take MP3 files itself) and the service-role key exactly like the word ban
 Check: `plan_only` again shows `missing: 0`. In the app, a speaker tap on a dictionary word
 plays without the spinner; in the browser's network tab the request goes to
 `/storage/v1/object/public/tts/<accent>/<hash>.mp3`, not to `/functions/v1/tts`.
+
+## 16. Okuma kitaplığı (v0.5)
+
+Short texts for each level, A2 to C1, with a Turkish translation and audio for every
+sentence (decision 0047). Claude writes and checks them in nightly batches. Until there are
+texts, the library page says new texts are being prepared; nothing else changes.
+
+Needs: the `ANTHROPIC_API_KEY` secret (step 12) and the service-role key, exactly as for
+pictures.
+
+1. **Deploy** (step 5), so that the migrations `20261101000500_text_budget.sql` and
+   `20261101000510_graded_texts.sql` are in place.
+2. **Cap.** This is optional. Text features (library texts, and stories later) share their own
+   monthly cap, separate from pictures. The default is 10 USD. To change it, set the
+   repository variable `CLAUDE_TEXT_MONTHLY_USD`. A call that would pass the cap is not sent.
+3. **Plan.** Go to **Actions → Graded library → Run workflow**, job `plan`. It sends nothing.
+   The log lists the missing texts per level and topic (360 for the first plan) and the
+   worst-case cost.
+4. **Turn it on (from 1 November).** Set the repository variable **`GRADED_BULK`** to `true`.
+   The workflow then runs every night at 02:15 UTC. It does these steps in order:
+   - collects last night's batch;
+   - checks coverage and quality, then stores the approved texts;
+   - sends the next batch inside the cap;
+   - makes the sentence audio;
+   - prints a report.
+
+   Set `GRADED_BULK` to `false` to pause. Other jobs by hand: `submit` (needs `GRADED_BULK`
+   or **dry_run**), `collect`, `audio`, `report`.
+
+5. Optional: `GRADED_PER_CELL` (texts per level and core topic, default 9),
+   `GRADED_EXTENDED_PER_CELL` (default 0; e.g. `3` adds the extended topics such as food, film
+   and law), `CLAUDE_GRADED_MODEL`, `CLAUDE_CHECK_MODEL`.
+
+Check: in **SQL Editor**, `select * from public.text_budget_status();` shows this month's cap
+and spending. `select status, count(*) from public.graded_texts group by 1;` grows after each
+night. In the app, **/kitaplik** lists the approved texts.
+
+## 17. Article import and the Claude fallback (v0.5)
+
+Nothing new to create: the deploy (step 5) applies `20261101000200_article_usage.sql` and
+deploys `fetch-article`. Optional variables (step 4): `ARTICLE_DAILY_LIMIT`,
+`CLAUDE_TEXT_MODEL`, `AI_CLAUDE_FALLBACK`.
+
+- **Article import** needs no key: the server downloads the page itself (user agent
+  `EngappReader/1.0`), returns plain text and stores nothing (decision 0044).
+- **Claude fallback**: when Gemini answers "quota exhausted" on both models, ai-extract,
+  ai-enrich, ai-examples, ai-themes, ai-mnemonic, ai-report and ai-contrast retry the same
+  request on Claude Haiku. It uses the `ANTHROPIC_API_KEY` secret that pictures already use;
+  without it the old `quota_exceeded` error remains. Each Claude call is logged as
+  `text spend` in the function logs (USD and tokens) until the text budget lands.
+- Check after deploy: **Edge Functions → fetch-article → Logs** shows `extracted` lines with
+  sizes only, never an address.
+
+## 18. Bugünün hikâyesi (v0.5)
+
+Nothing new to create: the deploy (step 5) applies `20261101000800_story.sql` and deploys
+`ai-story`. It needs the `ANTHROPIC_API_KEY` secret that pictures already use (without it the
+app says the story cannot be written right now). Optional variables (step 4):
+`STORY_DAILY_LIMIT`, `CLAUDE_STORY_MODEL`, `CLAUDE_TEXT_MONTHLY_USD`.
+
+- One story per user per day costs about 0.001 US$ on Claude Haiku; every call is booked in
+  the same monthly text budget as the reading library. When the month's budget is used up the
+  app shows a calm message and nothing is sent.
+- Only the day's 5–8 words, the level, the reading difficulty and up to three interests are
+  sent; the story is not stored on the server (decision 0050).
+- Check after deploy: **Edge Functions → ai-story → Logs** shows `ai-story model call` lines
+  with counts only; `select * from public.text_budget_status();` shows the spending.
+
+## 19. Pronunciation audio on Cloudflare R2 (v0.5)
+
+The audio files (step 15) take about a third of the free 1 GB in Supabase, and the library
+and new words keep adding more. Cloudflare R2 gives 10 GB free and charges nothing for
+downloads, so the files move there (decision 0053). Nothing changes for you in the app, and
+nothing is deleted from Supabase: the app plays from R2 first and uses Supabase whenever R2
+does not answer, so there is always a way back. Until step 19.7 is done, everything stays on
+Supabase exactly as before.
+
+You only click in two dashboards (Cloudflare and GitHub); the copying is done by a workflow.
+
+1. **Create the bucket.** Cloudflare dashboard → **R2 Object Storage**. The first time,
+   Cloudflare asks you to turn R2 on (it may ask for a card; the free plan costs nothing up
+   to 10 GB). Then **Create bucket** → name `engapp-audio` → location **Automatic** →
+   **Create bucket**.
+2. **Make it public.** In the bucket: **Settings → Public access → R2.dev subdomain → Allow**
+   (type `allow` to confirm). Copy the address it shows, which looks like
+   `https://pub-<letters and numbers>.r2.dev`. This is `<AUDIO_URL>` below. (A custom domain
+   from the same page works too; then use that address.)
+3. **Let the app read the files.** Same **Settings** page → **CORS policy → Add CORS policy**,
+   replace the text with the lines below and **Save**. If you use your own app domain, add it
+   to the list the same way.
+
+   ```json
+   [
+     {
+       "AllowedOrigins": [
+         "https://engapp-65y.pages.dev",
+         "https://localhost",
+         "http://localhost:5173"
+       ],
+       "AllowedMethods": ["GET", "HEAD"],
+       "AllowedHeaders": ["*"],
+       "MaxAgeSeconds": 86400
+     }
+   ]
+   ```
+
+4. **Create a key for GitHub.** **R2 Object Storage** main page → **Manage API tokens** (or
+   **API → Manage API tokens**) → **Create API token** (an account token). Permission
+   **Object Read & Write**, **Apply to specific buckets only** → `engapp-audio` → **Create**.
+   Keep the page open: it shows the **Access Key ID** and the **Secret Access Key** only once.
+   The **Account ID** is on the R2 main page (right side) and in the dashboard address.
+5. **Add the GitHub secrets.** GitHub → **Settings → Secrets and variables → Actions →
+   Secrets → New repository secret**, four times:
+
+   | Name                   | Value                 |
+   | ---------------------- | --------------------- |
+   | `R2_ACCOUNT_ID`        | the Account ID        |
+   | `R2_ACCESS_KEY_ID`     | the Access Key ID     |
+   | `R2_SECRET_ACCESS_KEY` | the Secret Access Key |
+   | `R2_BUCKET`            | `engapp-audio`        |
+
+   Nothing changes in the app yet.
+
+6. **Copy the files.** **Actions → Audio copy to R2 → Run workflow**:
+   - first with **dry_run** ticked. It copies nothing; the summary shows how many files
+     Supabase has and how many are left to copy;
+   - then with **dry_run** off and **public_url** set to `<AUDIO_URL>`. It copies the files
+     (about 40,000 small files; usually under an hour) and then checks 20 of them through
+     `<AUDIO_URL>`, as the app would. It is safe to run again at any time: it only copies
+     what is missing, so if it stops or times out, just run it again.
+
+   Done when the summary says **left to copy: 0** and the public check is green. A red
+   "CORS" message means step 3 is missing or has a typo.
+
+7. **Switch the app to R2.** Do these three on the same day, in this order:
+   1. GitHub → **Secrets and variables → Actions → Variables → New repository variable**
+      `AUDIO_BASE_URL` = `<AUDIO_URL>`. From now on the audio jobs write new files to R2.
+   2. **Actions → Supabase → Run workflow**. The `tts` function then finds and stores audio on
+      R2 too.
+   3. Cloudflare → **Workers & Pages → <PAGES_PROJECT> → Settings → Variables and Secrets** →
+      add `VITE_AUDIO_BASE_URL` = `<AUDIO_URL>` for **Production** and **Preview**, then
+      **redeploy** (step 7). The next Android build takes the GitHub variable by itself.
+
+   Then run step 6 once more (dry_run off) to pick up files made in the meantime.
+
+8. **Check.** On the phone, follow "R2 ses" in `docs/real-device-checklist.md`. On the web,
+   in the browser's network tab a speaker tap loads `<AUDIO_URL>/en-US/<…>.mp3`.
+9. **Later, by hand: free the Supabase space.** Wait at least two weeks with R2 in use and no
+   audio complaints, then run step 6 with **dry_run** ticked: it must say **left to copy: 0**.
+   Only then, Supabase dashboard → **Storage → tts** → open `en-US`, select all, **Delete**;
+   the same for `en-GB`. Do not delete the `tts` bucket itself. The app keeps working: it plays
+   from R2, and the `tts` function still makes the rare missing file. No workflow does this
+   step for you, on purpose.
+
+**Going back** (any time before step 9): delete the Cloudflare Pages variable
+`VITE_AUDIO_BASE_URL` and redeploy, and delete the GitHub variable `AUDIO_BASE_URL`. The app
+then uses Supabase only, as before. Files made while R2 was on are made again on Supabase by
+the next audio job run (step 15), which sees them missing there.
 
 ## Manual deploy without GitHub (alternative)
 

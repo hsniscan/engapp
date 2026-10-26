@@ -89,6 +89,42 @@ export function ttsPublicUrl(supabaseUrl: string, path: string): string {
   return `${supabaseUrl.replace(/\/$/, '')}/storage/v1/object/public/${TTS_BUCKET}/${path}`;
 }
 
+/**
+ * Public base URL of the audio bucket (an r2.dev address or a custom domain), or null when it
+ * is not set or not an https URL. Trailing slashes are dropped.
+ */
+export function parseAudioBaseUrl(v: string | undefined | null): string | null {
+  const s = v?.trim();
+  if (!s) return null;
+  try {
+    const u = new URL(s);
+    if (u.protocol !== 'https:' || u.search || u.hash || u.username || u.password) return null;
+    return s.replace(/\/+$/, '');
+  } catch {
+    return null;
+  }
+}
+
+/** Public URL of an object under the audio base URL (Cloudflare R2, decision 0053). */
+export function audioObjectUrl(baseUrl: string, path: string): string {
+  return `${baseUrl.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
+}
+
+/**
+ * Where an audio object may be fetched, best first (decision 0053): Cloudflare R2 under the
+ * audio base URL when one is configured, then the Supabase `tts` bucket, which stays the
+ * fallback until the copy is verified. Empty when neither is configured.
+ */
+export function ttsAudioUrls(
+  path: string,
+  from: { audioBaseUrl: string | null; supabaseUrl: string | null },
+): string[] {
+  const out: string[] = [];
+  if (from.audioBaseUrl) out.push(audioObjectUrl(from.audioBaseUrl, path));
+  if (from.supabaseUrl) out.push(ttsPublicUrl(from.supabaseUrl, path));
+  return out;
+}
+
 function hasControlChars(s: string): boolean {
   for (let i = 0; i < s.length; i++) {
     const c = s.charCodeAt(i);

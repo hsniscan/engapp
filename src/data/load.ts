@@ -39,12 +39,14 @@ const WARNING_SNOOZE_DAYS = 7;
 const studiable = (c: Card): boolean => c.deleted_at === null && !c.suspended && c.unlocked;
 
 /** Studiable Review-state cards due before `until`. */
-async function reviewCardsDueBefore(until: Millis): Promise<Card[]> {
+function reviewCardsDueBefore(until: Millis): Promise<Card[]> {
+  // getAll, then filter: a Dexie .filter() walks a cursor, one IndexedDB round trip per row.
+  // Chained on Dexie's promise (not async/await) so the caller's transaction zone is kept.
   return db.cards
     .where('[state+due]')
     .between([CardState.Review, Dexie.minKey], [CardState.Review, until], true, false)
-    .filter(studiable)
-    .toArray();
+    .toArray()
+    .then((cs) => cs.filter(studiable));
 }
 
 interface DayFacts {
@@ -185,11 +187,12 @@ export async function getLoadStatus(now: Millis = Date.now()): Promise<LoadStatu
     let catchupDays: number | null = null;
     if (today.plan.mode === 'catchup') {
       const ends = Array.from({ length: FORECAST_DAYS }, (_, i) => dayEndMs(addDays(today.day, i + 1), cfg));
-      const upcoming = await db.cards
-        .where('[state+due]')
-        .between([CardState.Review, dayEndMs(today.day, cfg)], [CardState.Review, ends.at(-1)!], true, false)
-        .filter(studiable)
-        .toArray();
+      const upcoming = (
+        await db.cards
+          .where('[state+due]')
+          .between([CardState.Review, dayEndMs(today.day, cfg)], [CardState.Review, ends.at(-1)!], true, false)
+          .toArray()
+      ).filter(studiable);
       const arrivals = new Array<number>(FORECAST_DAYS).fill(0);
       for (const c of upcoming) {
         const i = ends.findIndex((e) => c.due < e);
@@ -208,9 +211,8 @@ export async function getLoadStatus(now: Millis = Date.now()): Promise<LoadStatu
               true,
               false,
             )
-            .filter(studiable)
             .toArray()
-        ).length
+        ).filter(studiable).length
       : 0;
     return {
       ...today,
@@ -249,14 +251,19 @@ export async function getWorkloadInput(now: Millis = Date.now()): Promise<Worklo
     const bounds = [...days.map((d) => dayStartMs(d, cfg)), dayEndMs(days.at(-1)!, cfg)];
     const studied = await Promise.all(
       [CardState.Learning, CardState.Review, CardState.Relearning].map((s) =>
-        db.cards.where('[state+due]').between([s, Dexie.minKey], [s, Dexie.maxKey]).filter(studiable).toArray(),
+        db.cards
+          .where('[state+due]')
+          .between([s, Dexie.minKey], [s, Dexie.maxKey])
+          .toArray()
+          .then((cs) => cs.filter(studiable)),
       ),
     );
-    const newAvailable = await db.cards
-      .where('[state+due]')
-      .between([CardState.New, Dexie.minKey], [CardState.New, Dexie.maxKey])
-      .filter(studiable)
-      .count();
+    const newAvailable = (
+      await db.cards
+        .where('[state+due]')
+        .between([CardState.New, Dexie.minKey], [CardState.New, Dexie.maxKey])
+        .toArray()
+    ).filter(studiable).length;
     const introducedToday = await countIntroducedToday(bounds[0]!, bounds[1]!);
     const skipDays = days.map((d, i) => i > 0 && isOnVacation(settings, d));
     const newFactor = days.map((d, i) => {
@@ -294,8 +301,8 @@ async function countIntroducedToday(start: Millis, end: Millis): Promise<number>
   const todays = await db.review_logs.where('reviewed_at').between(start, end, true, false).toArray();
   const ids = new Set(todays.filter((l) => l.undo_of === null).map((l) => l.card_id));
   if (!ids.size) return 0;
-  const earlier = await db.review_logs.where('card_id').anyOf([...ids]).filter((l) => l.reviewed_at < start).toArray();
-  for (const l of earlier) ids.delete(l.card_id);
+  for (const logs of (await logsByCard(ids)).values())
+    for (const l of logs) if (l.reviewed_at < start) ids.delete(l.card_id);
   return ids.size;
 }
 

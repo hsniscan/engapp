@@ -7,6 +7,7 @@ import { App } from '@/app/App';
 import { bootstrap } from '@/features/settings/bootstrap';
 import { registerServiceWorker } from '@/app/pwa';
 import { isNativeApp } from '@/native/platform';
+import { bootedAsQuickHost } from '@/native/quickHost';
 
 // Pre-paint cache first (localStorage), then the settings table takes over (bootstrap).
 initTheme();
@@ -14,6 +15,8 @@ bootstrap();
 // The Android app (Capacitor) ships its files inside the APK: no service worker, no Web Push.
 // Its native wiring (back button, system bars, share, reminders) loads only there.
 if (isNativeApp()) {
+  // Text-selection sheet (decision 0046); index.html usually marked it before the first paint.
+  if (bootedAsQuickHost()) document.documentElement.dataset.quickHost = 'true';
   void import('@/native/start')
     .then((m) => m.startNative())
     .catch((e: unknown) => console.warn('native start failed', e));

@@ -32,6 +32,16 @@ export const ERROR_CODES = [
   'ai_failed', // the provider failed or kept returning unusable output
   'method_not_allowed',
   'internal',
+  // fetch-article (v0.5 İP2, decision 0044)
+  'blocked_url', // not http(s) on a default port, or the host is not a public address (SSRF)
+  'robots_disallowed', // the site's robots.txt does not allow EngappReader
+  'not_html', // the address is not a web page (PDF, image, JSON, ...)
+  'too_large', // the page is over 2 MB
+  'fetch_failed', // the site did not answer in time, refused, or redirected too often
+  'paywalled', // the page says it is for subscribers only; no attempt is made to get around it
+  'extract_failed', // no readable article text on the page
+  // ai-story (v0.5 İP8, decision 0050)
+  'budget_exhausted', // this month's text-AI budget (CLAUDE_TEXT_MONTHLY_USD) is used up
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 

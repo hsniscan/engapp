@@ -56,7 +56,7 @@ export function soleTag(f: DeckFilter | null): string | null {
   return f.tags[0]!;
 }
 
-export const DECK_TABS = ['mine', 'discover', 'bank'] as const;
+export const DECK_TABS = ['mine', 'discover', 'bank', 'reading'] as const;
 export type DeckTab = (typeof DECK_TABS)[number];
 
 export function parseDeckTab(raw: string | null): DeckTab {

@@ -349,6 +349,9 @@ const SYNC_TABLES = [
   'level_tests',
   'known_terms',
   'weekly_reports',
+  // v0.5 İP1 (the app's texts / encounters, renamed at the wire: src/sync/api.ts).
+  'user_texts',
+  'user_encounters',
 ];
 
 /**
@@ -412,6 +415,11 @@ export class FakeBackend {
   readonly reviewQueue: ImageReviewQueueRow[] = [];
   readonly reviewDecisions: { id: string; decision: string; reason: string | null }[] = [];
   readonly imageAnswers: AiImageResponse[] = [];
+  /**
+   * v0.5 graded library: public.graded_texts rows (catalogue columns plus sentences), read
+   * through PostgREST with `server_seq=gt.N` (catalogue pages) or `id=eq.X` (one body).
+   */
+  readonly graded: Record<string, unknown>[] = [];
   private readonly opts: BackendOptions;
   constructor(opts: BackendOptions = {}) {
     this.opts = opts;
@@ -485,6 +493,7 @@ export class FakeBackend {
       return this.json(route, 404, { msg: 'not found' });
     }
     if (path === '/rest/v1/lexicon_images') return this.lexiconImages(route, new URL(req.url()));
+    if (path === '/rest/v1/graded_texts') return this.gradedTexts(route, new URL(req.url()));
     if (path === '/functions/v1/ai-image') {
       const answer = this.imageAnswers.length > 1 ? this.imageAnswers.shift()! : this.imageAnswers[0];
       if (!answer) return this.json(route, 200, { ok: false, reason: 'failed' });
@@ -593,6 +602,24 @@ export class FakeBackend {
       }
     }
     return this.json(route, 404, { message: `unmocked ${path}` });
+  }
+
+  /** public.graded_texts like PostgREST: a catalogue page after a cursor, or one row by id. */
+  private gradedTexts(route: Route, url: URL) {
+    const id = url.searchParams.get('id')?.replace(/^eq\./, '');
+    if (id) {
+      const row = this.graded.find((r) => r.id === id);
+      // maybeSingle() asks for an array and takes its only row (none → null).
+      return this.json(route, 200, row ? [row] : []);
+    }
+    const after = Number((url.searchParams.get('server_seq') ?? 'gt.0').replace('gt.', ''));
+    const limit = Number(url.searchParams.get('limit') ?? 1000);
+    const rows = this.graded
+      .filter((r) => Number(r.server_seq) > after)
+      .sort((a, b) => Number(a.server_seq) - Number(b.server_seq))
+      .slice(0, limit)
+      .map(({ sentences: _s, glosses: _g, ...meta }) => meta);
+    return this.json(route, 200, rows);
   }
 
   /** ai-themes through the REAL runThemes, with a scripted model that groups by keyword. */

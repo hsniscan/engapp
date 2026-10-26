@@ -26,8 +26,11 @@ export const recognitionOnly = (t: NoteTermType): boolean => t === 'affix' || t 
 /**
  * 'image' (v0.4 İP8, decision 0036): the sense's picture on the front, the English word to
  * recall. One per sense with an approved (or chosen) picture; locked like production.
+ * 'dictation' (v0.5 İP9, decision 0051): an example sentence is read aloud with the term left
+ * out, the user types it. One per sense with a shared example sentence (pre-generated audio);
+ * opens at Pekişiyor like production and never changes the word's stage.
  */
-export type CardType = 'recognition' | 'production' | 'cloze' | 'image';
+export type CardType = 'recognition' | 'production' | 'cloze' | 'image' | 'dictation';
 
 /** FSRS card states (numeric values match ts-fsrs State enum). */
 export const CardState = { New: 0, Learning: 1, Review: 2, Relearning: 3 } as const;
@@ -412,6 +415,17 @@ export interface Settings extends SyncedRow {
   image_cards?: boolean | null;
   /** v0.4: order of new cards (docs/decisions/0039); absent/null = 'smart'. */
   new_card_order?: NewCardOrder | null;
+  /** v0.5 İP1 reading difficulty (domain/texts.ts, decision 0043); absent/null = 'dengeli'. */
+  reading_difficulty?: 'rahat' | 'dengeli' | 'zorlayici' | null;
+  /** v0.5 İP1: the "çok zor / çok kolay" correction (−0.5..0.5); absent/null = 0. */
+  reading_offset?: number | null;
+  /** v0.5 İP1: the reader colours words by stage (absent/null = on). */
+  reader_highlight?: boolean | null;
+  /**
+   * v0.5 İP10: days a streak protection covered (YYYY-MM-DD, ascending, at most 48;
+   * domain/streakFreeze.ts). Absent/null = none. Never carried to another account.
+   */
+  streak_freezes?: string[] | null;
 }
 
 /** "Yeni kelime sırası": smart (level, frequency, own signals, interference) or as added. */
@@ -610,7 +624,10 @@ export type OutboxTable =
   | 'decks'
   | 'level_tests'
   | 'known_terms'
-  | 'weekly_reports';
+  | 'weekly_reports'
+  // v0.5 İP1 (decision 0043): the server tables are user_texts / user_encounters (sync/api.ts).
+  | 'texts'
+  | 'encounters';
 /** Synced tables whose rows are never changed or deleted. */
 export const INSERT_ONLY_TABLES = [
   'review_logs',

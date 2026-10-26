@@ -2,6 +2,7 @@ import { createBrowserRouter, redirect, type RouteObject } from 'react-router';
 import { RootLayout, type RouteHandle } from './RootLayout';
 import { AuthPage } from '@/features/auth/AuthPage';
 import { HomeScreen } from '@/features/home/HomeScreen';
+import { loadLanguage } from '@/i18n';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { RouteErrorPage } from './pages/RouteErrorPage';
 import { LEGACY_PATHS, legacyRedirect } from './redirects';
@@ -86,10 +87,30 @@ const children: RouteObject[] = [
     }),
   },
   {
+    // The graded reading library (v0.5 İP5); also shown in Desteler → Okuma.
+    path: 'kitaplik',
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/library/GradedLibraryPage')).GradedLibraryPage,
+    }),
+  },
+  {
     // "Tüm kelimelerim" (reached from Desteler and Profil).
     path: 'library',
     HydrateFallback: () => null,
     lazy: async () => ({ Component: (await import('@/features/cards/LibraryPage')).LibraryPage }),
+  },
+
+  // ---- Reading (v0.5 İP1): every text opens here; the screen draws its own top bar.
+  {
+    path: 'oku/:textId',
+    handle: {
+      immersive: true,
+      ownTopBar: true,
+      exitTo: '/decks?tab=reading',
+    } satisfies RouteHandle,
+    HydrateFallback: () => null,
+    lazy: async () => ({ Component: (await import('@/features/reader/ReaderPage')).ReaderPage }),
   },
 
   // ---- Adding: the sheet leads into these flows.
@@ -97,6 +118,27 @@ const children: RouteObject[] = [
     path: 'add',
     HydrateFallback: () => null,
     lazy: async () => ({ Component: (await import('@/features/cards/AddPage')).AddPage }),
+  },
+  {
+    // v0.5 İP2 (decision 0044): an article from a link, a subtitle file.
+    path: 'makale',
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/article/ArticlePage')).ArticlePage,
+    }),
+  },
+  {
+    path: 'altyazi',
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/article/SubtitlePage')).SubtitlePage,
+    }),
+  },
+  {
+    // "Fotoğraftan metin" (v0.5 İP3, decision 0045).
+    path: 'fotograf',
+    HydrateFallback: () => null,
+    lazy: async () => ({ Component: (await import('@/features/ocr/OcrPage')).OcrPage }),
   },
   {
     path: 'import/anki',
@@ -219,13 +261,24 @@ routes.unshift(
     path: '/privacy',
     errorElement: <RouteErrorPage />,
     HydrateFallback: () => null,
-    lazy: async () => ({ Component: (await loadLegal()).PrivacyEnRoute }),
+    lazy: async () => {
+      // English strings are not in the start-up bundle (src/i18n/index.ts).
+      const [m] = await Promise.all([loadLegal(), loadLanguage('en')]);
+      return { Component: m.PrivacyEnRoute };
+    },
   },
   {
     path: '/hesap-sil',
     errorElement: <RouteErrorPage />,
     HydrateFallback: () => null,
     lazy: async () => ({ Component: (await loadLegal()).DeleteAccountPage }),
+  },
+  {
+    // "Engapp" in the text-selection menu: only the quick sheet, no shell (decision 0046).
+    path: '/quick',
+    errorElement: <RouteErrorPage />,
+    HydrateFallback: () => null,
+    lazy: async () => ({ Component: (await import('@/features/quick/QuickPage')).QuickPage }),
   },
 );
 

@@ -104,6 +104,8 @@ export const LATE_SYNC_TABLES: readonly OutboxTable[] = [
   'level_tests',
   'known_terms',
   'weekly_reports',
+  'texts',
+  'encounters',
 ];
 /** While rows of an unconfirmed table wait, the registry is asked at most this often. */
 export const REGISTRY_RECHECK_MS = 10 * 60_000;
@@ -321,6 +323,8 @@ async function fullResync(t: SyncTransport, report: SyncReport, now: () => Milli
     user_content: new Set(),
     decks: new Set(),
     known_terms: new Set(),
+    texts: new Set(),
+    encounters: new Set(),
   });
   let seen = emptySeen();
   let cursor = 0;

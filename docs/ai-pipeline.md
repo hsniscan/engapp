@@ -238,7 +238,8 @@ All errors: `{ "error": { "code": "...", "message": "...", "retry_after_s"?: n }
 
 ## Model calls
 
-`AiProvider` (`_shared/ai-provider.ts`); `AI_PROVIDER=gemini` is the only implementation.
+`AiProvider` (`_shared/ai-provider.ts`); `AI_PROVIDER=gemini` is the only primary
+implementation; Claude is the quota fallback (below).
 
 - `POST https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent`,
   header `x-goog-api-key`, body
@@ -259,6 +260,62 @@ responseMimeType:"application/json", responseJsonSchema, maxOutputTokens}}`
   INVALID_ARGUMENT for `maxItems: 30` on this schema (observed Oct 2026); the limits are
   in the prompts and enforced by the server.
 
+### Claude fallback (v0.5, decision 0044)
+
+`createAiFunction` builds the provider with `createTextAiProvider(env)` (`_shared/ai.ts`):
+
+1. Gemini as above (primary model, then `GEMINI_FALLBACK_MODEL`).
+2. Only if that ends in `quota_exceeded` (429 / `RESOURCE_EXHAUSTED`, or 503 `UNAVAILABLE`
+   on both models): the same request on Claude, `CLAUDE_TEXT_MODEL` [`claude-haiku-5-5`],
+   key `ANTHROPIC_API_KEY` (`_shared/ai-claude-text.ts`, official SDK, 60 s timeout, 1 SDK
+   retry). Any other Gemini failure is returned as before.
+
+- Request: `system` = the task's system prompt, one user message = the task's user text,
+  `output_config: {effort: "low", format: {type: "json_schema", schema}}` where `schema` is the
+  task's own response schema through `toClaudeSchema` (every object
+  `additionalProperties: false`; `minimum`/`maximum`/`minLength`/`maxLength`/`maxItems`/
+  `pattern` dropped; `type: [X, "null"]` → `anyOf`). `max_tokens` = the task's
+  `maxOutputTokens` + 2048 (adaptive thinking). No temperature.
+- Answer: text blocks joined and parsed; the task's `validate` runs (one more attempt on a
+  mismatch); `stop_reason: "max_tokens"` keeps the complete list items (`truncated`);
+  `refusal` → `ai_failed`; Claude 429 / 529 → `quota_exceeded`.
+- `result.model` is the Claude model id, so caches and the lexicon record who wrote a row.
+- Cost: every answered call goes to `recordTextSpend({model, usd, input_tokens,
+output_tokens})`; **for now it only logs** (`text spend`). TODO at the v0.5 merge: the text
+  budget of İP5 (`CLAUDE_TEXT_MONTHLY_USD`).
+- Off: `AI_CLAUDE_FALLBACK=off`, or no `ANTHROPIC_API_KEY`. With no Gemini key but a Claude
+  key, Claude alone.
+
+## fetch-article (v0.5, decision 0044)
+
+Not an AI call: one web page as plain text for the reader. `POST /functions/v1/fetch-article`
+`{url}` → `{url, title, byline, site, lang, paragraphs[], truncated, usage:{used, limit}}`.
+Signed-in users only, `ARTICLE_DAILY_LIMIT` [30] per UTC day (`article_consume`). Every hop:
+http(s) on a default port, no credentials, all DNS answers public (no private, loopback,
+link-local, CGNAT, multicast, ULA, IPv4-mapped …), robots.txt for `EngappReader`; ≤ 3
+redirects, 10 s for everything, 2 MB, `text/html` only. linkedom + Mozilla Readability, then
+our own block walk: never HTML. The address and the text are not stored or logged.
+
+| code                | HTTP | meaning                                                             |
+| ------------------- | ---- | ------------------------------------------------------------------- |
+| `blocked_url`       | 400  | not http(s) on a default port, credentials, or a non-public address |
+| `robots_disallowed` | 422  | robots.txt disallows the page for EngappReader (or is unreachable)  |
+| `not_html`          | 422  | the final response is not `text/html`                               |
+| `too_large`         | 422  | over 2 MB                                                           |
+| `fetch_failed`      | 502  | timeout, network error, non-2xx (except 401/402), > 3 redirects     |
+| `paywalled`         | 422  | HTTP 401/402, or paywall markup with only a teaser (< 250 words)    |
+| `extract_failed`    | 422  | fewer than 60 words of article text                                 |
+| `daily_limit`       | 429  | 30 articles today                                                   |
+
+## ai-story (v0.5, decision 0050)
+
+"Bugünün hikâyesi": `POST /functions/v1/ai-story` `{level, difficulty, interests[], target_lemmas[5–8], avoid[]}`
+(closed) → `{prompt_version, model, story:{title, paragraphs[], used_lemmas[], questions[3], glosses[]}, usage}`.
+One story per user and UTC day plus one regeneration (`story_consume`, `STORY_DAILY_LIMIT`),
+Claude Haiku (`CLAUDE_STORY_MODEL`) under the monthly text budget, nothing stored. Prompt,
+schema and checks: `docs/ai-story.md`. Its own error: `budget_exhausted` (503) when this
+month's `CLAUDE_TEXT_MONTHLY_USD` cannot cover the call.
+
 ## Extract prompt (`extract-v5`)
 
 `extract-v5` (v0.3 İP2, decision 0020) adds two things to the same call (no extra call):
@@ -270,7 +327,7 @@ responseMimeType:"application/json", responseJsonSchema, maxOutputTokens}}`
   chunks' topics on the import job and, when the last chunk is in, stores
   `aggregateTopics(...)` in `sources.topics` (v0.2 İP7's field, decision 0015).
 - **`false_friend_tr`** on every new sense: `null`, or `{tr_word, tr_meaning_tr, strength,
-  note_tr}` for a Turkish look-alike with another meaning ("actually" ~ "aktüel"). The server
+note_tr}` for a Turkish look-alike with another meaning ("actually" ~ "aktüel"). The server
   keeps it only when the Turkish word sounds like the term (`looksBorrowed`, the level job's
   sound check), its meaning is not the sense's Turkish meaning (a borrowed word is not a
   trap) and the text is clean Turkish (`cleanFalseFriend`); otherwise it is dropped without
@@ -428,11 +485,7 @@ Response schema (`responseJsonSchema`):
           },
           "term_type": {
             "type": "string",
-            "enum": [
-              "word",
-              "phrase",
-              "pattern"
-            ]
+            "enum": ["word", "phrase", "pattern"]
           },
           "source_sentence": {
             "type": "string",
@@ -448,52 +501,31 @@ Response schema (`responseJsonSchema`):
             "maximum": 1
           },
           "known_sense": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "ref from KNOWN_SENSES or null"
           },
           "pos": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "null when known_sense is set"
           },
           "gloss_en": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "null when known_sense is set"
           },
           "meaning_tr": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "null when known_sense is set"
           },
           "ipa": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "null when known_sense is set or unsure"
           },
           "cefr_guess": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "A1, A2, B1, B2, C1 or C2; null when known_sense is set"
           },
           "false_friend_tr": {
-            "type": [
-              "object",
-              "null"
-            ],
+            "type": ["object", "null"],
             "description": "a Turkish look-alike with another meaning; usually null",
             "properties": {
               "tr_word": {
@@ -504,24 +536,13 @@ Response schema (`responseJsonSchema`):
               },
               "strength": {
                 "type": "string",
-                "enum": [
-                  "full",
-                  "partial"
-                ]
+                "enum": ["full", "partial"]
               },
               "note_tr": {
-                "type": [
-                  "string",
-                  "null"
-                ]
+                "type": ["string", "null"]
               }
             },
-            "required": [
-              "tr_word",
-              "tr_meaning_tr",
-              "strength",
-              "note_tr"
-            ]
+            "required": ["tr_word", "tr_meaning_tr", "strength", "note_tr"]
           }
         },
         "required": [
@@ -542,10 +563,7 @@ Response schema (`responseJsonSchema`):
       }
     }
   },
-  "required": [
-    "topics",
-    "candidates"
-  ]
+  "required": ["topics", "candidates"]
 }
 ```
 
@@ -885,16 +903,23 @@ check cannot catch every bad reason). `try-guess` rated "bank" (river) B1 vs "ba
 `POST /functions/v1/ai-themes`
 
 ```json
-{ "words": [ { "ref": "w1", "lemma": "bank", "gloss_en": "the land beside a river" },
-             { "ref": "w2", "lemma": "cope with", "gloss_en": null } ] }
+{
+  "words": [
+    { "ref": "w1", "lemma": "bank", "gloss_en": "the land beside a river" },
+    { "ref": "w2", "lemma": "cope with", "gloss_en": null }
+  ]
+}
 ```
 
 Response:
 
 ```json
-{ "prompt_version": "themes-v1", "model": "…",
-  "groups": [ { "name_tr": "Doğa", "refs": ["w1", "w7"] } ],
-  "usage": { "used": 3, "limit": 50 } }
+{
+  "prompt_version": "themes-v1",
+  "model": "…",
+  "groups": [{ "name_tr": "Doğa", "refs": ["w1", "w7"] }],
+  "usage": { "used": 3, "limit": 50 }
+}
 ```
 
 - **What is sent:** 2–200 words per call, each only a short ref (`w1`…`w200`, unique), the
@@ -950,7 +975,11 @@ Response schema:
         "type": "object",
         "properties": {
           "name_tr": { "type": "string", "description": "Turkish theme name, 1-3 words" },
-          "refs": { "type": "array", "items": { "type": "string" }, "description": "refs from WORDS" }
+          "refs": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "refs from WORDS"
+          }
         },
         "required": ["name_tr", "refs"]
       }
@@ -1028,6 +1057,7 @@ A one-off system job (İP6, ADR 0014), not an edge function. It runs with
   - every id must be answered exactly once.
 
   Rejected items keep the hand-written meaning from `inventory.ts` and are retried on the next run.
+
 - **Output.** `data/reference/morpheme-meanings.tr.json`. Each item records its model and the
   prompt version, and the owner can set `"reviewed": true` on an item. `load-sql.ts` writes it to
   `ref_morphemes.meanings.tr` with `source: "ai"`.
@@ -1071,17 +1101,11 @@ Rules:
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "meaning_tr",
-          "note_tr"
-        ]
+        "required": ["id", "meaning_tr", "note_tr"]
       }
     }
   },
-  "required": [
-    "items"
-  ]
+  "required": ["items"]
 }
 ```
 
@@ -1140,10 +1164,7 @@ Answer with JSON only: {"lemma": string, "senses": [{"given": number, "meaning_t
 {
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "lemma",
-    "senses"
-  ],
+  "required": ["lemma", "senses"],
   "properties": {
     "lemma": {
       "type": "string"
@@ -1153,13 +1174,7 @@ Answer with JSON only: {"lemma": string, "senses": [{"given": number, "meaning_t
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "given",
-          "meaning_tr",
-          "gloss_en",
-          "example_en",
-          "example_tr"
-        ],
+        "required": ["given", "meaning_tr", "gloss_en", "example_en", "example_tr"],
         "properties": {
           "given": {
             "type": "integer"
@@ -1247,9 +1262,7 @@ Meanings you do not list are kept unchanged. Most words need no change. Answer w
 {
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "changes"
-  ],
+  "required": ["changes"],
   "properties": {
     "changes": {
       "type": "array",
@@ -1275,10 +1288,7 @@ Meanings you do not list are kept unchanged. Most words need no change. Answer w
           },
           "action": {
             "type": "string",
-            "enum": [
-              "fix",
-              "drop"
-            ]
+            "enum": ["fix", "drop"]
           },
           "meaning_tr": {
             "type": "string"
@@ -1301,3 +1311,51 @@ Meanings you do not list are kept unchanged. Most words need no change. Answer w
   }
 }
 ```
+
+## Graded library (`graded-v1`, `gradedcheck-v1`)
+
+Short English texts for each level, A2 to C1, each with a Turkish translation and an en-US clip
+per sentence (decision 0047). The nightly job `.github/workflows/graded.yml` drives
+`scripts/graded-batch.ts`. Its jobs:
+
+- `plan`: print the missing slots and the worst-case cost.
+- `collect`: fetch finished batches, then gate, check and store.
+- `submit`: send new batches. It runs only when `GRADED_BULK=true`.
+- `audio`: run the Kokoro pre-generation with `--source graded`.
+- `report`: print the counts.
+
+Both models are run through Message Batches (half price). Model ids come from the environment:
+
+| Step    | Prompt           | Model (env)                                 | Output                                                                 |
+| ------- | ---------------- | ------------------------------------------- | ---------------------------------------------------------------------- |
+| Writer  | `graded-v1`      | `CLAUDE_GRADED_MODEL` [`claude-sonnet-5-5`] | `{title, sentences:[{en, tr, new_paragraph}], target_lemmas, glosses}` |
+| Checker | `gradedcheck-v1` | `CLAUDE_CHECK_MODEL` [`claude-haiku-5-5`]   | scores for naturalness, level fit, translation, safety, facts, copying |
+
+- **Plan** (`scripts/lib/graded-plan.ts`). A slot is `LEVEL|topic|n`, and each slot has its own
+  angle and genre. Topics are the ten core ones (business English, technology, daily life,
+  travel, science, health, sports, culture, history, news) plus nine extended ones that map to
+  the profile interests. All are timeless: no real news, no real people. The first plan has
+  9 texts per level and core topic, 360 in all (`GRADED_PER_CELL`,
+  `GRADED_EXTENDED_PER_CELL`). Failed slots are planned again, up to twice the target.
+- **Writer.** The prompt (`scripts/lib/graded-prompt.ts`) asks for an original text of 150–250
+  (A2), 220–350 (B1), 320–480 (B2) or 420–600 (C1) words, written mostly in words at or below
+  the level, with natural Turkish for every sentence. The input is the plan item only. No user
+  data is ever sent (a snapshot test pins the payload).
+- **Coverage gate** (`_shared/graded-coverage.ts`, client-levels word lists):
+  - at least 95 % of tokens at or below the level;
+  - at most 3 % at level+1;
+  - no word above level+2 unless it is glossed.
+
+  Proper nouns and function words are not counted. A failure is rewritten once, with the
+  offending words as an avoid list. A second failure is `rejected`.
+
+- **Checker.** It approves a text only when it is natural (4 or more out of 5), fits the level,
+  has a correct translation, is safe, has no false facts and is not copied. Otherwise the text
+  is `rejected`, with the reasons in `checks`.
+- **Budget.** Before a batch is sent, its worst-case cost is reserved on the monthly text
+  budget (`CLAUDE_TEXT_MONTHLY_USD`, default 10 USD; `_shared/text-budget.ts`). The batch is
+  halved until it fits. On collect, the hold is settled with the real `usage`.
+- **Audio.** Each sentence's `audio_key` is `ttsObjectPath('en-US', en)`, so the existing `tts`
+  bucket and Kokoro job serve it (decision 0042).
+- **Tests** use recorded fixtures only (`scripts/lib/fixtures/graded/`). No test or script
+  calls a live model.

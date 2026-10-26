@@ -9,7 +9,8 @@ import { type AnswerCheck, checkAnswer, diffLetters, suggestRating } from '@/dom
 import { posLabel } from '@/features/cards/labels';
 import { CardPicture } from '@/features/images';
 import { LeechHint } from '@/features/leech';
-import { cn, Icon } from '@/ui';
+import { Button, cn, Icon } from '@/ui';
+import { useProductionAnswerMode } from './answerMode';
 import { Ipa } from './CardFaces';
 import type { KindProps } from './kinds';
 import { RatingBar } from './RatingBar';
@@ -24,6 +25,7 @@ import {
   SentencePanel,
 } from './StudyCards';
 import { blankSpan, useModeLabel } from './study';
+import { checkTypedAnswer } from './typedCheck';
 
 /** The typed-answer row pinned above the keyboard: field and "Kontrol et". */
 export function AnswerInput({
@@ -130,8 +132,10 @@ export function BlankedSentence({
 export function LetterDiff({ check }: { check: AnswerCheck }) {
   const { t } = useTranslation();
   const ops = diffLetters(check.typed, check.expected);
-  // Letters are marked only when the answer was close; a wrong word is shown whole.
+  // Letters are marked only when the answer was close; a wrong word is shown whole and struck
+  // through, a synonym (or a right answer) whole and plain.
   const marked = check.verdict === 'close';
+  const struck = check.verdict === 'wrong';
   return (
     <div className="grid grid-cols-[auto_1fr] items-baseline gap-x-4 gap-y-2">
       {check.typed && (
@@ -144,7 +148,9 @@ export function LetterDiff({ check }: { check: AnswerCheck }) {
             <span className="sr-only">{check.typed}</span>
             <span aria-hidden="true">
               {!marked ? (
-                <span className="text-danger-text line-through decoration-2">{check.typed}</span>
+                <span className={struck ? 'text-danger-text line-through decoration-2' : undefined}>
+                  {check.typed}
+                </span>
               ) : (
                 ops.map((o, i) =>
                   o.kind === 'same' ? (
@@ -164,7 +170,9 @@ export function LetterDiff({ check }: { check: AnswerCheck }) {
           </span>
         </>
       )}
-      <span className="text-[0.8125rem] text-fg-muted">{t('study.result.right')}</span>
+      <span className="text-[0.8125rem] text-fg-muted">
+        {check.verdict === 'synonym' ? t('modes.typed.synonymNote') : t('study.result.right')}
+      </span>
       <span
         lang="en"
         data-testid="right-answer"
@@ -200,6 +208,11 @@ const verdictLook = {
     text: 'text-success-text',
     icon: 'check',
   },
+  synonym: {
+    box: 'border-[color-mix(in_oklab,var(--success-text)_30%,transparent)] bg-success-soft',
+    text: 'text-success-text',
+    icon: 'check',
+  },
   close: {
     box: 'border-[color-mix(in_oklab,var(--warn-text)_30%,transparent)] bg-warn-soft',
     text: 'text-warn-text',
@@ -219,7 +232,9 @@ export function VerdictLine({ check }: { check: Pick<AnswerCheck, 'verdict' | 'd
   const text =
     check.verdict === 'close'
       ? t('study.result.close', { count: check.distance })
-      : t(`study.result.${check.verdict}`);
+      : check.verdict === 'synonym'
+        ? t('modes.typed.synonym')
+        : t(`study.result.${check.verdict}`);
   return (
     <span
       role="status"
@@ -259,19 +274,28 @@ export function ProductionStudy({
   onReveal,
   onAnswer,
   ratingRef,
+  showRef,
   frame,
 }: KindProps) {
   const { t } = useTranslation();
   const [typed, setTyped] = useState('');
   const [hintShown, setHintShown] = useState(false);
   const [check, setCheck] = useState<AnswerCheck | null>(null);
+  const [mode, setMode] = useProductionAnswerMode();
+  const checking = useRef(false);
   const label = useModeLabel(view, true);
   const { card, note, sense } = view;
   const picture = card.card_type === 'image' && view.image ? view.image : null;
+  // "Aklımdan" (no typing): the answer is shown and rated without a check.
+  const flip = mode === 'flip';
 
   const submit = (answer: string) => {
-    setCheck(checkAnswer(answer, note.term));
-    onReveal(false);
+    if (checking.current) return;
+    checking.current = true;
+    void checkTypedAnswer(answer, view).then((c) => {
+      setCheck(c);
+      onReveal(false);
+    });
   };
 
   if (!revealed) {
@@ -319,28 +343,50 @@ export function ProductionStudy({
             <BulbIcon />
             {t('study.firstLetter')}
           </button>
-          <button
-            type="button"
-            onClick={() => submit('')}
-            className="flex min-h-11 items-center rounded-control px-2 text-sm text-fg-muted hover:text-fg"
-          >
-            {t('study.dontKnow')}
-          </button>
+          {!flip && (
+            <button
+              type="button"
+              onClick={() => submit('')}
+              className="flex min-h-11 items-center rounded-control px-2 text-sm text-fg-muted hover:text-fg"
+            >
+              {t('study.dontKnow')}
+            </button>
+          )}
         </div>
+        <button
+          type="button"
+          data-testid="answer-mode-toggle"
+          onClick={() => setMode(flip ? 'type' : 'flip')}
+          className="flex min-h-11 items-center gap-1.5 self-center rounded-control px-2 text-sm text-fg-muted hover:text-fg"
+        >
+          <Icon name={flip ? 'pencil' : 'cards'} size={18} />
+          {flip ? t('modes.typed.typeInstead') : t('modes.typed.flipInstead')}
+        </button>
       </CardSurface>,
-      <AnswerInput
-        value={typed}
-        onChange={setTyped}
-        onSubmit={() => submit(typed)}
-        placeholder={t('study.typeAnswer')}
-        autoFocus
-      />,
+      flip ? (
+        <div className="flex flex-col items-center gap-2">
+          <Button ref={showRef} size="lg" fullWidth onClick={(e) => onReveal(e.detail === 0)}>
+            {t('review.showAnswer')}
+          </Button>
+          <p className="text-[0.8125rem] text-fg-muted">{t('modes.typed.flipHint')}</p>
+        </div>
+      ) : (
+        <AnswerInput
+          value={typed}
+          onChange={setTyped}
+          onSubmit={() => submit(typed)}
+          placeholder={t('study.typeAnswer')}
+          autoFocus
+        />
+      ),
     );
   }
 
-  // Shown without a check (Space on a keyboard, undo): treat as "Bilmiyorum".
+  // Shown without a check ("aklımdan", Space on a keyboard, undo): no verdict and no
+  // suggestion in "aklımdan"; otherwise treated as "Bilmiyorum".
   const result = check ?? checkAnswer('', note.term);
-  const suggested = suggestRating(result.verdict, hintShown);
+  const unchecked = flip && !check;
+  const suggested = unchecked ? null : suggestRating(result.verdict, hintShown);
   return frame(
     <BackRegion>
       <CardSurface className="gap-4" testId="study-back">
@@ -362,11 +408,24 @@ export function ProductionStudy({
         <div
           className={cn(
             'flex flex-col gap-3 rounded-[16px] border px-4 py-3.5',
-            verdictBox(result.verdict),
+            unchecked ? 'border-border bg-canvas' : verdictBox(result.verdict),
           )}
         >
-          <VerdictLine check={result} />
-          <LetterDiff check={result} />
+          {unchecked ? (
+            <p
+              lang="en"
+              data-testid="right-answer"
+              data-answer={result.expected}
+              className="font-serif text-[1.875rem] leading-tight font-semibold tracking-[0.02em] break-words text-fg"
+            >
+              {result.expected}
+            </p>
+          ) : (
+            <>
+              <VerdictLine check={result} />
+              <LetterDiff check={result} />
+            </>
+          )}
           <div className="flex items-center gap-2">
             <Ipa ipa={note.ipa} />
             {note.term_type !== 'affix' && <PrimarySpeak speech={speech} />}

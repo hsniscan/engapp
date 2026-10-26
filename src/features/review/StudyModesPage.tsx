@@ -1,11 +1,14 @@
-// "Çalış" (redesign board StudyModes): the three study types with what each has left today, a
-// "Karışık çalış" switch, and a button that starts the main one.
-import { useState } from 'react';
+// "Çalış" (redesign board StudyModes): the study types with what each has left today, a
+// "Karışık çalış" switch, and a button that starts the main one. "Dikte" (v0.5 İP9) is the
+// fourth type; its cards open with the word's spoken example sentences.
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { STUDY_MODES, type StudyMode } from '@/domain/studyMode';
 import { flags } from '@/features/settings/platform';
 import { cn, Icon, Skeleton, Switch } from '@/ui';
+import { reconcileDictationCards } from '@/data/dictation';
+import { modeText, startLabel } from './modeText';
 import { type StudyModeCount, useStudyModeCounts } from './studyModes';
 
 const MIXED_FLAG = 'study.mixed';
@@ -29,6 +32,14 @@ function ModeIcon({ mode }: { mode: StudyMode }) {
       <svg {...common}>
         <rect x="3" y="5" width="18" height="14" rx="2.5" />
         <path d="M7 10h6M7 14h10" />
+      </svg>
+    );
+  if (mode === 'dictation')
+    return (
+      <svg {...common}>
+        <path d="M4 14v-2a8 8 0 0 1 16 0v2" />
+        <rect x="3" y="14" width="4" height="6" rx="1.5" />
+        <rect x="17" y="14" width="4" height="6" rx="1.5" />
       </svg>
     );
   if (mode === 'production')
@@ -78,11 +89,11 @@ function ModeCard({
   const note =
     mode === 'word'
       ? t('study.split', { due: count.due, new: count.newCount })
-      : mode === 'production'
+      : mode === 'production' || mode === 'dictation'
         ? n > 0
           ? t('study.split', { due: count.due, new: count.newCount })
-          : t('study.mode.production.note')
-        : t('study.mode.cloze.note');
+          : modeText(t, mode, 'note')
+        : modeText(t, mode, 'note');
   return (
     <Link
       to={`/study?mode=${mode}`}
@@ -103,21 +114,21 @@ function ModeCard({
         </span>
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="flex items-center gap-2">
-            <span className="font-serif text-xl font-semibold">{t(`study.mode.${mode}.name`)}</span>
+            <span className="font-serif text-xl font-semibold">{modeText(t, mode, 'name')}</span>
             {mode === 'word' && (
               <span className="rounded-[6px] bg-accent-soft px-1.5 py-0.5 text-xs font-semibold text-accent-text">
                 {t('study.mainBadge')}
               </span>
             )}
           </span>
-          <span className="text-[0.8125rem] text-fg-muted">{t(`study.mode.${mode}.dir`)}</span>
+          <span className="text-[0.8125rem] text-fg-muted">{modeText(t, mode, 'dir')}</span>
         </span>
         <span className="flex flex-col items-end">
           <span className="tabular font-serif text-[1.625rem] leading-none font-semibold">{n}</span>
           <span className="text-xs text-fg-muted">{t('study.cardsUnit')}</span>
         </span>
       </span>
-      <span className="text-[0.9375rem] leading-snug">{t(`study.mode.${mode}.desc`)}</span>
+      <span className="text-[0.9375rem] leading-snug">{modeText(t, mode, 'desc')}</span>
       <span className="flex items-center justify-between gap-2.5 text-[0.8125rem] text-fg-muted">
         <span>{note}</span>
         {count.estMinutes > 0 && (
@@ -135,6 +146,11 @@ export function StudyModesPage() {
   const { t } = useTranslation();
   const counts = useStudyModeCounts();
   const [mixed, setMixed] = useState(() => flags.get(MIXED_FLAG) === '1');
+  // Dictation cards of words whose example sentences arrived since the last visit (cheap
+  // when nothing changed; the counts follow through the live query).
+  useEffect(() => {
+    void reconcileDictationCards().catch(() => {});
+  }, []);
 
   const total = counts ? STUDY_MODES.reduce((n, m) => n + left(counts[m]), 0) : 0;
   const minutes = counts ? STUDY_MODES.reduce((n, m) => n + counts[m].estMinutes, 0) : 0;
@@ -167,6 +183,7 @@ export function StudyModesPage() {
           <Skeleton className="h-36 w-full rounded-[20px]" />
           <Skeleton className="h-36 w-full rounded-[20px]" />
           <Skeleton className="h-36 w-full rounded-[20px]" />
+          <Skeleton className="h-36 w-full rounded-[20px]" />
         </>
       )}
 
@@ -186,7 +203,7 @@ export function StudyModesPage() {
         data-testid="study-start"
         className="mt-auto flex h-14 items-center justify-center gap-2 rounded-[14px] bg-accent text-[1.0625rem] font-semibold text-accent-fg no-underline transition-colors hover:bg-accent-hover"
       >
-        {t(`study.start.${mixed ? 'mixed' : main}`)}
+        {startLabel(t, mixed ? 'mixed' : main)}
         <Icon name="arrow-right" size={20} />
       </Link>
     </div>

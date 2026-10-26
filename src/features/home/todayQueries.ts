@@ -9,6 +9,7 @@ import {
   type MoreStudyOverview,
 } from '@/data';
 import { STAGE_RULE_NOTICE_KEY } from '@/data/db';
+import { logsByCard } from '@/data/history';
 import { addDays, dayBounds, type DayKey } from '@/domain/day';
 import { CEFR_ORDER } from '@/domain/deckFilter';
 import { dayMinutesGoal, targetLevel } from '@/domain/goals';
@@ -16,6 +17,7 @@ import type { CardType, CefrLevel, LevelSourceKind, Millis } from '@/domain/type
 import { mondayOf } from '@/domain/weeklyReport';
 import type { StudyMode } from '@/features/review/studyModes';
 import { cfgOf } from './queries';
+import { scanCount, scanWhere } from '@/data/scan';
 
 // ------------------------------------------------------------------ the week and today
 
@@ -46,6 +48,7 @@ const MODE_OF: Record<CardType, StudyMode> = {
   production: 'production',
   image: 'production',
   cloze: 'cloze',
+  dictation: 'dictation',
 };
 
 /** Monday-to-Sunday dots of the week `today` falls in. */
@@ -77,7 +80,7 @@ export async function getTodayActivity(now: Millis = Date.now()): Promise<TodayA
   const cards = cardIds.length ? await db.cards.bulkGet(cardIds) : [];
   const typeOf = new Map(cards.flatMap((c) => (c ? [[c.id, c.card_type] as const] : [])));
 
-  const answers: Record<StudyMode, number> = { word: 0, production: 0, cloze: 0 };
+  const answers: Record<StudyMode, number> = { word: 0, production: 0, cloze: 0, dictation: 0 };
   const wordCards = new Set<string>();
   for (const l of kept) {
     const type = typeOf.get(l.card_id);
@@ -88,13 +91,10 @@ export async function getTodayActivity(now: Millis = Date.now()): Promise<TodayA
   // A word card met before today is a review; one without earlier answers is a new word.
   const seenBefore = wordCards.size
     ? new Set(
-        (
-          await db.review_logs
-            .where('card_id')
-            .anyOf([...wordCards])
-            .filter((l) => l.reviewed_at < bounds.start && !l.undo_of)
-            .toArray()
-        ).map((l) => l.card_id),
+        [...(await logsByCard(wordCards)).values()]
+          .flat()
+          .filter((l) => l.reviewed_at < bounds.start && !l.undo_of)
+          .map((l) => l.card_id),
       )
     : new Set<string>();
   const reviewed = [...wordCards].filter((id) => seenBefore.has(id)).length;
@@ -141,10 +141,8 @@ export async function getHomeGoals(now: Millis = Date.now()): Promise<HomeGoals>
 // ------------------------------------------------------------------ words
 
 /** Live words that count for "Öğrendiğin kelime" (affixes and contrast pairs left out). */
-export async function countWords(): Promise<number> {
-  return db.notes
-    .filter((n) => n.deleted_at === null && n.term_type !== 'affix' && n.term_type !== 'contrast')
-    .count();
+export function countWords(): Promise<number> {
+  return scanCount(db.notes, (n) => n.deleted_at === null && n.term_type !== 'affix' && n.term_type !== 'contrast');
 }
 
 /**
@@ -229,8 +227,8 @@ export async function getHomeDecks(now: Millis = Date.now()): Promise<HomeDeck[]
     ];
 
   const [notes, known] = await Promise.all([
-    db.notes.filter((n) => n.deleted_at === null).toArray(),
-    db.known_terms.filter((k) => k.deleted_at === null).toArray(),
+    scanWhere(db.notes, (n) => n.deleted_at === null),
+    scanWhere(db.known_terms, (k) => k.deleted_at === null),
   ]);
   const mine = new Set([...notes.map((n) => n.term_norm), ...known.map((k) => k.term_norm)]);
 

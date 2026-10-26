@@ -29,6 +29,8 @@ import {
   sourceSchema,
   userContentSchema,
   weeklyReportSchema,
+  readerTextSchema,
+  encounterRowSchema,
 } from '../domain/schemas';
 import {
   type Card,
@@ -62,6 +64,8 @@ const MUTABLE: MutableTable[] = [
   'user_content',
   'decks',
   'known_terms',
+  'texts',
+  'encounters',
 ];
 const allSyncedTables = () => [
   db.content_feedback,
@@ -77,6 +81,8 @@ const allSyncedTables = () => [
   db.practice_logs,
   db.decks,
   db.weekly_reports,
+  db.texts,
+  db.encounters,
 ];
 
 // ------------------------------------------------------------------ recompute
@@ -272,6 +278,8 @@ const rowSchemas = {
   known_terms: knownTermSchema,
   level_tests: levelTestSchema,
   weekly_reports: weeklyReportSchema,
+  texts: readerTextSchema,
+  encounters: encounterRowSchema,
 } satisfies Record<MutableTable | InsertOnlyRemote, z.ZodType>;
 
 /**
@@ -441,6 +449,8 @@ async function readTables(): Promise<BackupTables> {
     level_tests: await db.level_tests.toArray(),
     known_terms: await db.known_terms.toArray(),
     weekly_reports: await db.weekly_reports.toArray(),
+    texts: await db.texts.toArray(),
+    encounters: await db.encounters.toArray(),
   }));
 }
 
@@ -540,9 +550,9 @@ async function restoreBackupNow(
 
   const terms = new Set<string>();
   for (const table of MUTABLE) {
-    // content_feedback / user_content (before schema_version 5), decks (before 7) and
-    // known_terms (before 8) are absent in older files: such a file says nothing about
-    // them, so overwrite leaves the local rows alone.
+    // content_feedback / user_content (before schema_version 5), decks (before 7),
+    // known_terms (before 8) and texts / encounters (before 11) are absent in older files:
+    // such a file says nothing about them, so overwrite leaves the local rows alone.
     const fromFile = tables[table] as MutableRows[MutableTable][] | undefined;
     const incoming = fromFile ?? [];
     for (const chunk of chunks(incoming, chunkSize)) {

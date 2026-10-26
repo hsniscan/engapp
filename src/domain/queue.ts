@@ -18,6 +18,11 @@
 // one day, a per-user daily jitter); without it, by insertion order ("Eklenme sırası"). The
 // limit, the 1-per-note rule and the 5:1 rhythm are the same either way.
 //
+// Interference guard (v0.5 İP10, docs/decisions/0052): with `newOrder` set, both orders (its
+// `order` field) introduce at most one card a day from one confusable pair, one Turkish
+// meaning or one synonym set; the cards held back come back as `postponed`, which the data
+// layer carries to the front of a later day.
+//
 // Study modes (redesign, plan/ogrenme-modeli.md §4): with `cardTypes` set, the queue holds only
 // those card types ("Kelime çalışma" = recognition, "Üretim" = production + image, "Boşluk
 // doldurma" = cloze). `newIntroducedToday` is then that mode's own first-time counter, and
@@ -99,6 +104,8 @@ export interface QueueResult {
   nextLearningDue: Millis | null;
   /** Smart order only: why each new card in the queue came today. */
   newReasons?: Map<Id, NewReason>;
+  /** With `newOrder`: new cards the interference guard held back today (to carry). */
+  postponed?: Id[];
 }
 
 /** Card can be studied at all (ignores due date and burying). */
@@ -185,11 +192,13 @@ export function buildQueue(cards: Iterable<QueueCard>, ctx: QueueContext): Queue
   const rev = take(reviews, capped ? Math.max(0, ctx.reviewCap!) : Infinity);
   let nw: QueueCard[];
   let newReasons: Map<Id, NewReason> | undefined;
+  let postponed: Id[] | undefined;
   if (ctx.newOrder && !ahead) {
     const blocked = (c: QueueCard) => notesInQueue.has(c.note_id) && !ctx.reviewedTodayCardIds.has(c.id);
     const sel = selectNewCards(fresh, newAllowed, blocked, ctx.newOrder);
     nw = sel.cards;
-    newReasons = sel.reasons;
+    if (ctx.newOrder.order !== 'added') newReasons = sel.reasons;
+    postponed = sel.postponed;
     for (const c of nw) notesInQueue.add(c.note_id);
   } else nw = take(fresh, newAllowed);
   const soon = take(learningSoon);
@@ -221,6 +230,7 @@ export function buildQueue(cards: Iterable<QueueCard>, ctx: QueueContext): Queue
     },
     nextLearningDue,
     ...(newReasons ? { newReasons } : {}),
+    ...(postponed ? { postponed } : {}),
   };
 }
 

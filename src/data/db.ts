@@ -31,6 +31,8 @@ import type {
 } from '../domain/types';
 import type { CachedImage } from '../domain/images';
 import type { WordBankEntry } from '../domain/wordBank';
+import type { EncounterRow, ReaderText } from '../domain/texts';
+import type { GradedBody, GradedCatalogEntry } from '../domain/library';
 import { addPullBackfill } from './backfill';
 
 /**
@@ -76,6 +78,10 @@ export class EngDb extends Dexie {
   report_drafts!: EntityTable<ReportDraft, 'week'>;
   images!: EntityTable<CachedImage, 'id'>;
   word_bank!: EntityTable<WordBankEntry, 'id'>;
+  texts!: EntityTable<ReaderText, 'id'>;
+  encounters!: EntityTable<EncounterRow, 'id'>;
+  graded_catalog!: EntityTable<GradedCatalogEntry, 'id'>;
+  graded_bodies!: EntityTable<GradedBody, 'id'>;
 
   constructor(name = 'engapp') {
     super(name);
@@ -335,6 +341,67 @@ export class EngDb extends Dexie {
           });
         if (cards > 0) await tx.table('meta').put({ key: STAGE_RULE_NOTICE_KEY, value: false });
       });
+    // v28 (v0.5 reading texts, decision 0043; 26–27 belong to the UI redesign, 29–36 to the
+    // other v0.5 packages): `texts`, the user's reading texts (domain/texts.ts), and
+    // `encounters`, how often the user met each note per day and source. Both are new tables,
+    // so no row is rewritten.
+    this.version(28).stores({
+      texts: 'id, kind, updated_at, deleted_at, graded_id',
+      encounters: 'id, note_id, day',
+    });
+    // v29 (v0.5 İP1 reader, decision 0043; 30–32 belong to the other v0.5 packages): texts
+    // and encounters become synced tables (server user_texts / user_encounters) and the
+    // settings row gains reading_difficulty, reading_offset and reader_highlight (optional,
+    // absent = Dengeli, 0, on). An older app version dropped pulled rows of these: re-pull
+    // them once (equal HLC → the server's set values, domain/syncMerge.ts). Texts saved
+    // under v28 were never queued: they are queued here, as the sync writer would have.
+    // Encounter rows of v28 had no sync columns (nothing wrote them yet): any such row goes.
+    this.version(29)
+      .stores({})
+      .upgrade(async (tx) => {
+        await addPullBackfill(tx.table('meta'), ['settings', 'texts', 'encounters']);
+        const texts = (await tx.table('texts').toArray()) as ReaderText[];
+        for (const row of texts) {
+          if (typeof row.hlc !== 'string') continue;
+          await tx.table('outbox').add({
+            table: 'texts',
+            row_id: row.id,
+            op: row.deleted_at !== null ? 'delete' : 'upsert',
+            payload: row,
+            attempts: 0,
+            next_attempt_at: 0,
+          });
+        }
+        await tx
+          .table('encounters')
+          .filter((r: Partial<EncounterRow>) => typeof r.hlc !== 'string')
+          .delete();
+      });
+    // v31 (v0.5 graded library, decision 0047; 29, 30 and 32 belong to the other v0.5
+    // packages): `graded_catalog`, the device's copy of the approved texts' metadata (shared
+    // system content, read-only like word_bank; pulled by server_seq into
+    // meta.graded_cursor), and `graded_bodies`, the sentences of each text the user opened
+    // (kept for offline reading). Both are new tables, so no row is rewritten.
+    this.version(31).stores({
+      graded_catalog: 'id, level, topic, server_seq',
+      graded_bodies: 'id, fetched_at',
+    });
+    // v33 (v0.5 study modes, decision 0051; 32 and 34–36 belong to the other v0.5 packages):
+    // cards may now have card_type 'dictation' ("Dikte"). No new table or index. An older app
+    // version dropped a pulled dictation card as invalid: re-pull cards once (equal HLC → the
+    // server's row, domain/syncMerge.ts), so a device never makes a fresh copy of a dictation
+    // card another device already studied. The cards themselves are made after start-up
+    // (data/dictation.ts reconcileDictationCards needs the sync writer).
+    this.version(33)
+      .stores({})
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['cards']));
+    // v34 (v0.5 İP10 smart review, decision 0052; 32, 33 and 35 belong to the other v0.5
+    // packages): the settings row gains streak_freezes (optional, absent = none). A device that
+    // pulled settings while it ran an older version dropped it: re-pull settings once (equal
+    // HLC → the server's set value, domain/syncMerge.ts). No new table or index.
+    this.version(34)
+      .stores({})
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
   }
 }
 

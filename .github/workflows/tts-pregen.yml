@@ -11,10 +11,16 @@
 # then a full run (default 8 shards: about 1.5 hours for ~40 000 clips), then optionally
 # prune_ondemand to delete the older Gemini WAV files that the MP3s replace.
 # With the repository variable TTS_PREGEN_WEEKLY=true a weekly run picks up new words.
+# source=graded reads the graded library's approved sentences instead (en-US only, decision
+# 0047); the graded library workflow (graded.yml) calls this workflow that way every night.
 #
 # Repository secrets (the same as the word bank job):
 #   SUPABASE_SERVICE_ROLE_KEY  the project's service_role (or sb_secret_) key, or else
 #   SUPABASE_ACCESS_TOKEN      a token with "API keys: Read" (the key is read and masked).
+# Optional, Cloudflare R2 (decision 0053): with the secrets R2_ACCOUNT_ID, R2_ACCESS_KEY_ID,
+# R2_SECRET_ACCESS_KEY, R2_BUCKET and the variable AUDIO_BASE_URL set, new clips go to R2
+# instead of Supabase Storage (a clip in either bucket counts as made). Without them nothing
+# changes.
 name: Pronunciation audio
 
 on:
@@ -43,6 +49,32 @@ on:
         description: 'Afterwards delete the on-demand Gemini WAVs that an MP3 now replaces'
         type: boolean
         default: false
+      source:
+        description: 'What to read aloud: the dictionary, or the graded library (en-US only)'
+        type: choice
+        options: [dictionary, graded]
+        default: dictionary
+  # The graded library workflow (graded.yml) calls this with source=graded.
+  workflow_call:
+    inputs:
+      voice:
+        type: string
+        default: en-US
+      shards:
+        type: string
+        default: '1'
+      max:
+        type: string
+        default: ''
+      plan_only:
+        type: boolean
+        default: false
+      prune_ondemand:
+        type: boolean
+        default: false
+      source:
+        type: string
+        default: graded
 
 concurrency:
   group: tts-pregen
@@ -57,10 +89,16 @@ env:
   KOKORO_BASE_URL: https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0
   KOKORO_MODEL_SHA256: 7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5
   KOKORO_VOICES_SHA256: bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d
+  # Cloudflare R2 (decision 0053); empty when the secrets are not set.
+  R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+  R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+  R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+  R2_BUCKET: ${{ secrets.R2_BUCKET }}
+  AUDIO_BASE_URL: ${{ vars.AUDIO_BASE_URL }}
 
 jobs:
   plan:
-    if: github.event_name == 'workflow_dispatch' || vars.TTS_PREGEN_WEEKLY == 'true'
+    if: github.event_name == 'workflow_dispatch' || vars.TTS_PREGEN_WEEKLY == 'true' || inputs.source == 'graded'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
@@ -92,10 +130,11 @@ jobs:
           SERVICE_KEY_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           VOICE: ${{ inputs.voice || 'both' }}
+          SOURCE: ${{ inputs.source || 'dictionary' }}
         run: |
           set -euo pipefail
           source scripts/supabase-service-env.sh
-          node scripts/tts-pregen.ts plan --voice "$VOICE"
+          node scripts/tts-pregen.ts plan --voice "$VOICE" --source "$SOURCE"
 
   generate:
     needs: plan
@@ -145,6 +184,7 @@ jobs:
           SERVICE_KEY_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           VOICE: ${{ inputs.voice || 'both' }}
+          SOURCE: ${{ inputs.source || 'dictionary' }}
           SHARD: ${{ matrix.shard }}
           SHARDS: ${{ needs.plan.outputs.count }}
           # Weekly: new dictionary entries only, so a small cap is plenty.
@@ -154,7 +194,7 @@ jobs:
           if [ -n "$MAX" ] && ! [[ "$MAX" =~ ^[0-9]{1,6}$ ]]; then echo "::error::max must be a whole number"; exit 1; fi
           source scripts/supabase-service-env.sh
           mkdir -p "$RUNNER_TEMP/tts-out"
-          args=(run --voice "$VOICE" --shard "$SHARD" --shards "$SHARDS" --minutes 330
+          args=(run --voice "$VOICE" --source "$SOURCE" --shard "$SHARD" --shards "$SHARDS" --minutes 330
             --model "$RUNNER_TEMP/kokoro/kokoro-v1.0.onnx" --voices "$RUNNER_TEMP/kokoro/voices-v1.0.bin"
             --python "$(command -v python)" --out "$RUNNER_TEMP/tts-out")
           if [ -n "$MAX" ]; then args+=(--max "$MAX"); fi

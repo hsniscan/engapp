@@ -2,4 +2,5 @@
 <resources>
     <!-- The app canvas in the dark theme (src/ui/tokens: themeColor.dark). -->
     <color name="engapp_canvas">#1A1917</color>
+    <color name="engapp_accent">#9DBDE3</color>
 </resources>

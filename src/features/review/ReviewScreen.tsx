@@ -27,6 +27,8 @@ import {
   Tooltip,
 } from '@/ui';
 import { ClozeStudy } from './ClozeStudy';
+import { DictationStudy } from './DictationStudy';
+import { emptyTitle, modeText } from './modeText';
 import { flipsWithSpace, learnedInSession, resetChoiceCandidates } from './study';
 import { EditSheet } from './EditSheet';
 import { type KindProps, RecognitionStudy } from './kinds';
@@ -278,7 +280,7 @@ export function ReviewScreen({ studyMode, ahead = false, deckId }: ReviewScreenP
   const top = (
     <div className="safe-top flex flex-col gap-1 pt-2 pb-2">
       <h1 className="sr-only">
-        {studyMode ? t(`study.mode.${studyMode}.name`) : t('review.title')}
+        {studyMode ? modeText(t, studyMode, 'name') : t('review.title')}
       </h1>
       {ahead && (
         <div className="flex">
@@ -373,7 +375,9 @@ export function ReviewScreen({ studyMode, ahead = false, deckId }: ReviewScreenP
           ? ProductionStudy
           : card.card_type === 'cloze' && current.view.cloze
             ? ClozeStudy
-            : RecognitionStudy;
+            : card.card_type === 'dictation' && current.view.cloze
+              ? DictationStudy
+              : RecognitionStudy;
     content = (
       <div
         key={card.id + ':' + state.answered}
@@ -475,7 +479,7 @@ export function OtherModes({ current }: { current?: StudyMode }) {
           className={buttonClasses({ variant: 'secondary', fullWidth: true })}
           data-testid={`study-other-${m}`}
         >
-          {t('study.empty.otherCount', { mode: t(`study.mode.${m}.name`), count: left(counts[m]) })}
+          {t('study.empty.otherCount', { mode: modeText(t, m, 'name'), count: left(counts[m]) })}
         </Link>
       ))}
     </div>
@@ -513,7 +517,7 @@ function StudyEmpty({
       : deckName
         ? t('study.empty.deck', { name: deckName })
         : studyMode
-          ? t(`study.empty.${studyMode}`)
+          ? emptyTitle(t, studyMode)
           : t('review.emptyTitle');
   const description = !info.hasCards
     ? t('review.noCardsBody')
@@ -523,7 +527,7 @@ function StudyEmpty({
   return (
     <div className="mx-auto w-full max-w-xl px-4 pt-10 sm:px-6 md:pt-16">
       <h1 className="sr-only">
-        {studyMode ? t(`study.mode.${studyMode}.name`) : t('review.title')}
+        {studyMode ? modeText(t, studyMode, 'name') : t('review.title')}
       </h1>
       <EmptyState
         icon={info.hasCards ? 'check' : 'cards'}

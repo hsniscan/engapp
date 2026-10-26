@@ -47,12 +47,15 @@ describe('Add sheet', () => {
     const sheet = screen.getByRole('dialog', { name: 'Ne eklemek istersin?' });
     expect(within(sheet).getByTestId('add-way-word')).toHaveAttribute('href', '/add');
     expect(within(sheet).getByTestId('add-way-text')).toHaveAttribute('href', '/add?tab=paste');
+    expect(within(sheet).getByTestId('add-way-photo')).toHaveAttribute('href', '/fotograf');
     expect(within(sheet).getByTestId('add-way-bank')).toHaveAttribute('href', '/decks?tab=bank');
     expect(within(sheet).getByTestId('add-way-decks')).toHaveAttribute(
       'href',
       '/decks?tab=discover',
     );
     expect(within(sheet).getByTestId('add-way-anki')).toHaveAttribute('href', '/import/anki');
+    expect(within(sheet).getByTestId('add-way-article')).toHaveAttribute('href', '/makale');
+    expect(within(sheet).getByTestId('add-way-subtitle')).toHaveAttribute('href', '/altyazi');
   });
 
   it('quick add goes to the add form with the word filled in, and closes', async () => {

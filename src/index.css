@@ -204,6 +204,11 @@
     font-size: 1rem;
     line-height: 1.5;
   }
+  /* The Android text-selection sheet (decision 0046): the calling app shows through. */
+  html[data-quick-host],
+  html[data-quick-host] body {
+    background-color: transparent;
+  }
   ::selection {
     background-color: var(--accent-soft);
     color: var(--fg);

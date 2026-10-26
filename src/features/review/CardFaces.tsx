@@ -142,6 +142,11 @@ export function BackSentence({
           />
         )}
       </div>
+      {sentence.origin === 'text' && (
+        <p data-testid="sentence-from-text" className="text-xs text-fg-subtle">
+          {t('smart.rotation.fromText')}
+        </p>
+      )}
       {sentence.tr &&
         (sentence.trOnTap && !trShown ? (
           <button
@@ -227,6 +232,7 @@ const promptKey = {
   production: 'review.promptProduction',
   cloze: 'review.promptCloze',
   image: 'review.promptImage',
+  dictation: 'modes.dictation.prompt',
 } as const;
 
 export interface FaceProps {

@@ -70,7 +70,7 @@ function setup(over: Partial<PronunciationDeps> = {}) {
       cached: true,
     })),
     fetchBlob: vi.fn(async () => new Blob(['RIFF'], { type: 'audio/wav' })),
-    publicUrl: (path) => ttsPublicUrl(BASE, path),
+    publicUrls: (path) => [ttsPublicUrl(BASE, path)],
     // Default: nothing pre-generated (Storage answers 4xx), so the edge function is asked.
     fetchPregenerated: vi.fn(async (): Promise<Blob | null> => null),
     cache: () => cache,
@@ -108,6 +108,24 @@ describe('playPronunciation', () => {
     expect(deps.fetchBlob).toHaveBeenCalledWith('https://s.example/tts/a.wav');
     expect(audio.played.at(-1)).toBe('blob:1');
     expect(deps.fallback).not.toHaveBeenCalled();
+  });
+
+  it('plays slowly when asked ("Yavaş dinle"), and at normal speed on the next play', async () => {
+    const { p, audio } = setup();
+    const el = audio as FakeAudio & { playbackRate?: number; preservesPitch?: boolean };
+    el.preservesPitch = false;
+    p.play('She was reluctant to leave.', 'en-US', { rate: 0.7 });
+    await flush();
+    expect(el.playbackRate).toBe(0.7);
+    expect(el.preservesPitch).toBe(true);
+    p.play('She was reluctant to leave.', 'en-US');
+    expect(el.playbackRate).toBe(1);
+  });
+
+  it('passes the slow speed on to the device voice', () => {
+    const { p, deps } = setup({ serverAllowed: () => false });
+    p.play('reluctant', 'en-US', { rate: 0.7 });
+    expect(deps.fallback).toHaveBeenCalledWith('reluctant', 'en-US', expect.any(Function), 0.7);
   });
 
   it('replays from memory synchronously, without the network', async () => {
@@ -283,11 +301,80 @@ describe('pre-generated audio (fast path)', () => {
   });
 
   it('asks the edge function directly when no backend URL is known', async () => {
-    const { p, deps } = setup({ publicUrl: () => null });
+    const { p, deps } = setup({ publicUrls: () => [] });
     p.play('word', 'en-US');
     await flush();
     expect(deps.fetchPregenerated).not.toHaveBeenCalled();
     expect(deps.request).toHaveBeenCalledTimes(1);
+  });
+
+  describe('on Cloudflare R2 (decision 0053)', () => {
+    const R2 = 'https://pub-test.r2.dev';
+    const both = (path: string) => [`${R2}/${path}`, ttsPublicUrl(BASE, path)];
+
+    it('plays from R2 first and never asks Supabase when R2 has the file', async () => {
+      const path = await ttsObjectPath('en-US', 'reluctant');
+      const fetchPregenerated = vi.fn(async (u: string) => (u.startsWith(R2) ? mp3() : null));
+      const { p, deps, audio } = setup({ publicUrls: both, fetchPregenerated });
+      p.play('reluctant', 'en-US');
+      await flush();
+      expect(fetchPregenerated.mock.calls.map((c) => c[0])).toEqual([`${R2}/${path}`]);
+      expect(deps.request).not.toHaveBeenCalled();
+      expect(audio.played.at(-1)).toBe('blob:1');
+    });
+
+    it('falls back to Supabase Storage on an R2 404', async () => {
+      const path = await ttsObjectPath('en-US', 'reluctant');
+      const fetchPregenerated = vi.fn(async (u: string) => (u.startsWith(BASE) ? mp3() : null));
+      const { p, deps } = setup({ publicUrls: both, fetchPregenerated });
+      p.play('reluctant', 'en-US');
+      await flush();
+      expect(fetchPregenerated.mock.calls.map((c) => c[0])).toEqual(both(path));
+      expect(deps.request).not.toHaveBeenCalled();
+    });
+
+    it('falls back to Supabase Storage when R2 fails (network, CORS)', async () => {
+      const fetchPregenerated = vi.fn(async (u: string) => {
+        if (u.startsWith(R2)) throw new TypeError('Failed to fetch');
+        return mp3();
+      });
+      const { p, deps, audio } = setup({ publicUrls: both, fetchPregenerated });
+      p.play('MONDAY', 'en-US');
+      await flush();
+      // R2 is skipped after its first failure (not tried again for "monday").
+      expect(fetchPregenerated.mock.calls.map((c) => c[0])).toEqual([
+        `${R2}/${await ttsObjectPath('en-US', 'MONDAY')}`,
+        ttsPublicUrl(BASE, await ttsObjectPath('en-US', 'MONDAY')),
+      ]);
+      expect(deps.request).not.toHaveBeenCalled();
+      expect(audio.played.at(-1)).toBe('blob:1');
+    });
+
+    it('looks in R2 for both spellings before Supabase', async () => {
+      const upper = await ttsObjectPath('en-US', 'MONDAY');
+      const lower = await ttsObjectPath('en-US', 'monday');
+      const fetchPregenerated = vi.fn(async (u: string) =>
+        u === ttsPublicUrl(BASE, lower) ? mp3() : null,
+      );
+      const { p, deps } = setup({ publicUrls: both, fetchPregenerated });
+      p.play('MONDAY', 'en-US');
+      await flush();
+      expect(fetchPregenerated.mock.calls.map((c) => c[0])).toEqual([
+        `${R2}/${upper}`,
+        `${R2}/${lower}`,
+        ttsPublicUrl(BASE, upper),
+        ttsPublicUrl(BASE, lower),
+      ]);
+      expect(deps.request).not.toHaveBeenCalled();
+    });
+
+    it('asks the edge function only after both sources miss', async () => {
+      const { p, deps } = setup({ publicUrls: both });
+      p.play('brand-new word', 'en-US');
+      await flush();
+      expect(deps.fetchPregenerated).toHaveBeenCalledTimes(2);
+      expect(deps.request).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('prefetches into memory, so the tap plays synchronously', async () => {

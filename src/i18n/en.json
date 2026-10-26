@@ -1557,6 +1557,45 @@
       "channelDescription": "At most once a day, when reviews are due."
     }
   },
+  "ocr": {
+    "addTitle": "Text from a photo",
+    "addBody": "Snap a book page and get its text",
+    "title": "Text from a photo",
+    "lead": "Reads the English text in a photo of a book, magazine or sign.",
+    "camera": "Take a photo",
+    "gallery": "Choose from gallery",
+    "privacy": "The photo never leaves your device: the text is read on your phone, offline.",
+    "privacyWeb": "The photo never leaves your device: the text is read inside your browser.",
+    "webSlow": "Reading is slower on the web. The first time, about 7 MB is downloaded; after that it also works offline. The Android app does the same in a few seconds.",
+    "tips": "Hold the page flat, in good light and close up.",
+    "working": "Reading the text…",
+    "workingWeb": "Reading the text. On the web this can take up to half a minute.",
+    "progress": "Reading progress",
+    "notImage": "This file could not be opened as a photo. Choose another photo.",
+    "failed": "The text could not be read. Try again or choose another photo.",
+    "emptyTitle": "No text found in the photo",
+    "emptyBody": "Take the page closer, flat and in good light, and try again.",
+    "retake": "Another photo",
+    "reviewTitle": "Check the text",
+    "reviewLead": "Tap a line you don't want to take it out. Fix a misread spot with the pencil.",
+    "lowWarning": "Some parts were not clear. Compare the marked lines with the photo and fix them.",
+    "lowLine": "Not sure",
+    "selected": "{{count}} / {{total}} lines selected",
+    "words_one": "{{count}} word",
+    "words_other": "{{count}} words",
+    "selectAll": "Select all",
+    "selectNone": "Select none",
+    "lines": "Recognised lines",
+    "editLine": "Fix the line",
+    "editLabel": "Text of the line",
+    "doneEdit": "Done",
+    "showPhoto": "Show the photo",
+    "photoAlt": "The photo you chose",
+    "openReader": "Open in reader",
+    "extract": "Find the words",
+    "nothingSelected": "Select at least one line.",
+    "saveFailed": "The text could not be saved. Try again."
+  },
   "share": {
     "title": "Shared",
     "emptyTitle": "Nothing was shared",
@@ -3071,6 +3110,415 @@
       "selectedBody": "Will be added to All my words",
       "showing": "Showing {{shown}} / {{total}}",
       "quick": "A mix of {{count}} words from your level"
+    }
+  },
+  "gradedLibrary": {
+    "title": "Reading library",
+    "description": "Short texts written for your level. Every sentence has its Turkish translation and audio.",
+    "back": "Decks",
+    "forYou": "For you",
+    "forYouHint": "Picked for the {{difficulty}} difficulty from the words you know.",
+    "forYouNone": "No text fits your chosen difficulty right now. Pick one from the list below.",
+    "difficulty": {
+      "rahat": "Comfortable",
+      "dengeli": "Balanced",
+      "zorlayici": "Stretch"
+    },
+    "filters": "Filters",
+    "level": "Level",
+    "topic": "Topic",
+    "all": "All",
+    "listLabel": "Texts",
+    "suggestionsLabel": "Texts for you",
+    "heading": "{{count}} texts",
+    "understood": "{{percent}}% understood",
+    "fit": {
+      "easy": "Easy",
+      "fits": "Fits",
+      "hard": "Hard"
+    },
+    "meta": "{{level}} · {{topic}} · {{minutes}} min",
+    "finished": "Read",
+    "started": "In progress",
+    "offlineReady": "Reads offline",
+    "openFailed": "The text could not be opened. Check your connection and try again.",
+    "noMatch": "No text matches these filters.",
+    "clearFilters": "Clear filters",
+    "more": "Show more ({{count}})",
+    "loading": "Downloading the library…",
+    "emptyTitle": "The library is empty for now",
+    "emptyOffline": "Connect to the internet once to download the library. After that it reads offline.",
+    "emptyNoBackend": "The library is not available in this setup.",
+    "emptySoon": "New texts are being prepared; they will be here soon.",
+    "emptyFailed": "The library could not be downloaded.",
+    "retry": "Try again",
+    "topics": {
+      "business": "Business English",
+      "technology": "Technology",
+      "daily_life": "Everyday life",
+      "travel": "Travel",
+      "science": "Science",
+      "health": "Health",
+      "sports": "Sports",
+      "culture": "Culture",
+      "history": "History",
+      "news": "News",
+      "education": "Education",
+      "food": "Food",
+      "nature": "Nature",
+      "arts": "Arts",
+      "literature": "Literature",
+      "film": "Film and TV",
+      "games": "Games",
+      "politics": "Society and government",
+      "law": "Law"
+    }
+  },
+  "article": {
+    "sheetTitle": "Article from a link",
+    "sheetBody": "Open a news story or blog post in the reader",
+    "subtitleSheetTitle": "Subtitle file (.srt / .vtt)",
+    "subtitleSheetBody": "Turn series or video subtitles into text",
+    "pageTitle": "Article from a link",
+    "pageLead": "Paste the address of an article. Ads, menus and comments are dropped; only the text comes through.",
+    "urlLabel": "Article address",
+    "urlPlaceholder": "https://…",
+    "urlInvalid": "This does not look like a web address. Paste the address from your browser's address bar.",
+    "fetch": "Get the article",
+    "fetching": "Getting the article…",
+    "privacy": "The address goes to our server, the page is read there and the text is saved only on this device. The server keeps neither the address nor the text.",
+    "words_one": "{{count}} word",
+    "words_other": "{{count}} words",
+    "truncated": "The article is very long, so its first part was taken.",
+    "notEnglish": "This page does not look English. You can still open it.",
+    "openReader": "Open in the reader",
+    "extract": "Find words",
+    "extractNeedsSignIn": "Finding words needs a Google sign-in. The reader works without one.",
+    "saveFailed": "Could not save the text. Try again.",
+    "extractFailed": "Could not start finding words. Try again.",
+    "failTitle": "This page could not be fetched",
+    "pasteHint": "You can copy the text from the page and paste it; the reader and word finding work the same way.",
+    "pasteCta": "Copy and paste the text",
+    "retry": "Try again",
+    "titleOnly": "You can still use the page title:",
+    "errors": {
+      "offline": "No internet connection. Try again once you are online.",
+      "not_signed_in": "Fetching articles needs a Google sign-in.",
+      "daily_limit": "You have used today's articles (30 a day). Try again tomorrow.",
+      "blocked_url": "This address cannot be opened. Paste the address of a public web page.",
+      "robots_disallowed": "This site does not allow apps to fetch its pages.",
+      "not_html": "This address is not a web page (for example a PDF or an image).",
+      "too_large": "This page is too large to fetch.",
+      "fetch_failed": "The site did not answer in time or did not show the page.",
+      "paywalled": "This page is for subscribers only. The paywall is not worked around.",
+      "extract_failed": "No readable article text was found on this page.",
+      "generic": "Could not fetch the article. Try again in a little while."
+    },
+    "subtitles": {
+      "title": "Subtitle file",
+      "lead": "Choose an .srt or .vtt file. It is read on this device and sent nowhere.",
+      "choose": "Choose a file",
+      "chooseOther": "Choose another file",
+      "defaultTitle": "Subtitles",
+      "cues_one": "{{count}} subtitle line",
+      "cues_other": "{{count}} subtitle lines",
+      "tooBig": "The file is too large (5 MB at most). Subtitle files are usually much smaller.",
+      "notSubtitle": "This is not a subtitle file. Choose an .srt or .vtt file.",
+      "empty": "No text to read was found in this file.",
+      "readFailed": "Could not read the file. Try again."
+    }
+  },
+  "quick": {
+    "title": "Quick card",
+    "close": "Close",
+    "waiting": "Opening your selection…",
+    "emptyTitle": "No selected text arrived",
+    "emptyBody": "Select a word in any app and tap Engapp in the menu that appears.",
+    "selected": "You selected: {{selected}}",
+    "listen": "Listen: {{term}}",
+    "meanings": "Meanings",
+    "pickHint": "Tap the meanings the card should have.",
+    "picked": "Selected",
+    "owned": {
+      "carded": "Already in your cards",
+      "known": "You marked this word as known"
+    },
+    "searching": "Looking up the meaning…",
+    "offline": "This word is not on your phone yet. Connect to the internet to look it up.",
+    "signIn": "This word is not on your phone yet. Sign in to look it up, or write it yourself.",
+    "notFound": "No meaning found for this word.",
+    "failed": "The lookup failed. You can write the meaning yourself.",
+    "writeOwn": "I'll write the meaning",
+    "add": "Add card",
+    "saved": "“{{term}}” added to your cards",
+    "savedCards": "{{count}} cards created.",
+    "nothingNew": "“{{term}}” is already in your cards with this meaning.",
+    "addFailed": "The card could not be added. Try again.",
+    "textTitle": "Your selection",
+    "textWords": "{{count}} words",
+    "openReader": "Open in the reader",
+    "openReaderHint": "Tap a word you don't know while reading to see its meaning.",
+    "extract": "Find the words",
+    "extractHint": "New words in the text come to a preview with the sentence they are in.",
+    "linkTitle": "Your selected link",
+    "openLink": "Open in Engapp",
+    "openFailed": "Could not open it. Try again."
+  },
+  "widget": {
+    "answers": {
+      "toggle": "Answer from the notification",
+      "hint": "The reminder asks one due word: \"Show answer\", then \"I knew it\" or \"I didn't\". Your answer is counted when you open the app."
+    },
+    "notify": {
+      "question": "What does {{term}} mean?",
+      "answer": "{{term}}: {{meaning}}",
+      "reveal": "Show answer",
+      "knew": "I knew it",
+      "forgot": "I didn't",
+      "saved": "Answer saved. It is counted when you open the app."
+    }
+  },
+  "reader": {
+    "tab": "Reading",
+    "close": "Close the reader",
+    "coverage": "You know {{pct}}% of this text",
+    "words_one": "{{count}} word",
+    "words_other": "{{count}} words",
+    "readMinutes_one": "{{count}} min read",
+    "readMinutes_other": "{{count}} min read",
+    "resumed": "Where you left off",
+    "emptyBody": "This text is not on this device yet.",
+    "notFound": {
+      "title": "Text not found",
+      "body": "It may have been deleted, or it has not arrived from another device yet.",
+      "cta": "Back to my texts"
+    },
+    "listen": {
+      "start": "Read along",
+      "stop": "Stop",
+      "noVoice": "Reading aloud is not available on this device."
+    },
+    "options": {
+      "open": "Reading settings",
+      "title": "Reading settings"
+    },
+    "legend": {
+      "sample": "word",
+      "new": "Probably new",
+      "learning": "Learning",
+      "consolidating": "Consolidating",
+      "known": "Known or learned: no mark"
+    },
+    "finished": {
+      "cta": "I finished",
+      "title": "Finished",
+      "again": "Read again"
+    },
+    "feedback": {
+      "question": "How was this text for you?",
+      "hard": "Too hard",
+      "easy": "Too easy",
+      "thanks": "Thanks. Your next suggestions will take this into account."
+    },
+    "word": {
+      "lemma": "Dictionary form: {{lemma}}",
+      "listen": "Listen",
+      "extendBefore": "← With previous",
+      "extendAfter": "With next →",
+      "guessHint": "Look at the sentence and guess the meaning first. Trying to guess sticks better than looking it up.",
+      "reveal": "Show the meaning",
+      "loading": "Looking up the meaning…",
+      "meanings": "Meanings",
+      "fromOnline": "The meaning came from the shared dictionary.",
+      "inCards": "This word is in your cards.",
+      "addCard": "Add a card",
+      "added": "\"{{term}}\" added to your cards",
+      "addFailed": "The card could not be added. Try again.",
+      "addYourself": "Add the card yourself",
+      "none": {
+        "offline": "You are offline and this word is not in the dictionary on this device.",
+        "signIn": "This word is not in the dictionary on this device. Sign in with Google to look it up in the shared dictionary.",
+        "notFound": "No meaning was found for this word."
+      }
+    },
+    "stage": {
+      "new": "New card",
+      "learning": "Learning",
+      "consolidating": "Consolidating",
+      "learned": "Learned",
+      "mastered": "Mastered"
+    },
+    "pos": {
+      "noun": "noun",
+      "verb": "verb",
+      "adjective": "adjective",
+      "adverb": "adverb",
+      "preposition": "preposition",
+      "pronoun": "pronoun",
+      "conjunction": "conjunction",
+      "determiner": "determiner",
+      "interjection": "interjection",
+      "phrase": "phrase",
+      "phrasal_verb": "phrasal verb",
+      "idiom": "idiom",
+      "other": "other"
+    },
+    "encounters": {
+      "none": "You have not met this word in a card or a text yet.",
+      "line_one": "You have seen this word {{count}} time: {{cards}} in cards, {{texts}} in texts",
+      "line_other": "You have seen this word {{count}} times: {{cards}} in cards, {{texts}} in texts"
+    },
+    "difficulty": {
+      "label": "Reading difficulty",
+      "rahat": "Comfortable",
+      "dengeli": "Balanced",
+      "zorlayici": "Stretch",
+      "hint": "Suggested texts have about {{min}}–{{max}}% words you do not know. Never more than 10%."
+    },
+    "highlight": {
+      "label": "Colour words",
+      "hint": "New words and words you are learning get a light mark. Words you know stay plain."
+    },
+    "settings": {
+      "title": "Reading"
+    },
+    "kind": {
+      "paste": "Pasted text",
+      "pdf": "PDF",
+      "article": "Article",
+      "ocr": "Photo",
+      "subtitle": "Subtitles",
+      "graded": "Library",
+      "story": "Today's story"
+    },
+    "list": {
+      "title": "My texts",
+      "add": "Add a text",
+      "empty": "No texts yet. Paste a text or upload a PDF and choose \"Open in reader\".",
+      "unread": "Not read",
+      "progress": "{{pct}}% read",
+      "finished": "Finished",
+      "delete": "Delete \"{{title}}\"",
+      "confirmTitle": "Delete this text?",
+      "confirmBody": "\"{{title}}\" is deleted from this device and your account. Cards you added from it stay.",
+      "confirm": "Delete",
+      "deleted": "Text deleted",
+      "deleteFailed": "The text could not be deleted. Try again."
+    },
+    "today": {
+      "title": "Today's reading",
+      "continue": "{{pct}}% read, continue where you left off",
+      "start": "Start reading",
+      "suggested": "{{level}} · {{count}} words · fits your difficulty",
+      "open": "Read",
+      "empty": "Paste a text you want to read and its words are coloured by what you know.",
+      "paste": "Add a text"
+    },
+    "open": {
+      "cta": "Open in reader",
+      "defaultTitle": "My text",
+      "failed": "The text could not be opened. Try again.",
+      "tooShort": "Paste some English text to read.",
+      "tooLong": "This text is too long for the reader (300,000 characters at most).",
+      "boxTitle": "Read in the reader",
+      "expand": "Paste a text",
+      "boxBody": "No account or internet needed. The text stays with you.",
+      "textLabel": "English text",
+      "titleLabel": "Title"
+    }
+  },
+  "story": {
+    "title": "Today's story",
+    "ready_one": "A short story with {{count}} of your words and 3 questions",
+    "ready_other": "A short story with {{count}} of your words and 3 questions",
+    "make": "Write it",
+    "retry": "Try again",
+    "loading": "Writing your story, this takes a few seconds…",
+    "open": "Read",
+    "again": "Read again",
+    "guest": "A short story with your review words. Sign in to have it written.",
+    "signIn": "Sign in",
+    "glossed": "Look at these words first",
+    "words": "Your words in this story",
+    "questions": {
+      "title": "Did you follow it?",
+      "right": "Correct.",
+      "wrong": "The answer: {{answer}}"
+    },
+    "errors": {
+      "offline": "It will be written once you are online.",
+      "guest": "Sign in with Google for the story.",
+      "used": "Today's story was written on another device. It opens here after syncing; a new one comes tomorrow.",
+      "budget": "This month's stories are used up. They return at the start of next month; your reviews go on as usual.",
+      "notEnough": "A story needs at least 5 review words today.",
+      "generic": "The story could not be written right now. Try again a little later."
+    }
+  },
+  "smart": {
+    "rotation": {
+      "fromText": "From your text"
+    },
+    "freeze": {
+      "title": "Your streak is safe",
+      "body_one": "There was no review yesterday. One of this month's streak protections covered the day automatically.",
+      "body_other": "There were no reviews on the last {{count}} days. This month's streak protections covered them automatically.",
+      "left_one": "{{count}} protection left this month.",
+      "left_other": "{{count}} protections left this month.",
+      "leftNone": "This month's protections are used. Next month there will be {{perMonth}} again.",
+      "rule": "One review a day keeps the streak. A missed day is covered automatically up to {{perMonth}} times a month; vacation days do not count."
+    }
+  },
+  "modes": {
+    "typed": {
+      "synonym": "Also right: a word with the same meaning",
+      "synonymNote": "This card's word:",
+      "typeInstead": "Type the answer",
+      "flipInstead": "Answer in my head, without typing",
+      "flipHint": "Say the word in your head, then look at the answer."
+    },
+    "handsFree": {
+      "title": "Hands-free",
+      "short": "Listening review",
+      "intro_one": "{{count}} word is read aloud: the English first, a short pause, then the Turkish and an example sentence. You can listen without looking.",
+      "intro_other": "{{count}} words are read aloud: the English first, a short pause, then the Turkish and an example sentence. You can listen without looking.",
+      "practiceNote": "This is practice: your review schedule does not change.",
+      "start": "Start listening",
+      "pause": "Pause",
+      "resume": "Resume",
+      "next": "Next",
+      "stop": "Finish",
+      "controls": "Listening controls",
+      "playing": "Reading…",
+      "paused": "Paused",
+      "progress": "{{n}} / {{total}} words",
+      "dim": "Black out the screen",
+      "undim": "Tap to come back",
+      "empty": "No words to listen to",
+      "doneTitle": "Round finished",
+      "doneBody_one": "You listened to {{count}} word.",
+      "doneBody_other": "You listened to {{count}} words.",
+      "again": "One more round",
+      "moreTitle": "Study by listening",
+      "moreBody": "While walking or on the road: the words are read aloud, you listen. Your schedule does not change.",
+      "moreDictation": "Dictation: {{count}} cards",
+      "moreDictationNone": "No dictation cards today",
+      "moreStart": "Start a hands-free round"
+    },
+    "dictation": {
+      "name": "Dictation",
+      "dir": "Listen and type",
+      "desc": "You hear the sentence and type the missing word. Recognising a word by ear is a skill of its own.",
+      "note": "Words that are settling open with their spoken example sentences",
+      "cardType": "Dictation",
+      "prompt": "Listen and type the missing word",
+      "empty": "No dictation cards today",
+      "emptyBody": "Words that settle in word study open here with their spoken example sentences.",
+      "start": "Start dictation",
+      "replay": "Play again",
+      "slow": "Play slowly",
+      "typeAnswer": "Type the word you hear",
+      "hidden": "The sentence is hidden: listen first",
+      "showSentence": "Show the sentence"
     }
   }
 }

@@ -43,13 +43,13 @@ describe('push service worker', () => {
       'push',
       pushEvent({
         title: 'Engapp',
-        body: 'Bugün 23 tekrar seni bekliyor (~6 dk)',
+        body: 'Bugün 23 kart tekrara hazır, yaklaşık 6 dk.',
         url: '/review',
         tag: 'engapp-due',
       }),
     );
     expect(sw.registration.showNotification).toHaveBeenCalledWith('Engapp', {
-      body: 'Bugün 23 tekrar seni bekliyor (~6 dk)',
+      body: 'Bugün 23 kart tekrara hazır, yaklaşık 6 dk.',
       tag: 'engapp-due',
       lang: 'tr',
       icon: '/icons/icon-192.png',

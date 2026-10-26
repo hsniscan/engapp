@@ -4,16 +4,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { TTS_BUCKET, type TtsVoice } from '../../supabase/functions/_shared/tts-contract.ts';
 import { TTS_BUCKET_MIME_TYPES } from '../../supabase/functions/_shared/tts-store.ts';
+import { addToListing, emptyListing, type AudioListing } from './audio-r2.ts';
 import type { PublicRows } from './tts-pregen.ts';
 
 const PAGE = 1000;
 
-export interface BucketListing {
-  /** Object paths `<voice>/<name>`. */
-  paths: Set<string>;
-  bytes: { mp3: number; wav: number };
-  counts: { mp3: number; wav: number };
-}
+export type BucketListing = AudioListing;
 
 export class SupabasePregenStore {
   private readonly db: SupabaseClient;
@@ -53,13 +49,31 @@ export class SupabasePregenStore {
     return { terms, examples };
   }
 
+  /** English sentences of every approved graded text (decision 0047; keyset pages by id). */
+  async gradedSentences(): Promise<string[]> {
+    const out: string[] = [];
+    for (let after = ''; ;) {
+      let q = this.db
+        .from('graded_texts')
+        .select('id, sentences')
+        .eq('status', 'approved')
+        .order('id')
+        .limit(200);
+      if (after) q = q.gt('id', after);
+      const { data, error } = await q;
+      if (error) throw new Error(`graded_texts: ${error.message}`);
+      const rows = (data ?? []) as { id: string; sentences: { en?: unknown }[] }[];
+      for (const r of rows)
+        for (const s of r.sentences ?? []) if (typeof s?.en === 'string') out.push(s.en);
+      if (rows.length < 200) break;
+      after = rows.at(-1)!.id;
+    }
+    return out;
+  }
+
   /** What the bucket holds for these voices (names and sizes; files cannot be listed publicly). */
   async listBucket(voices: readonly TtsVoice[]): Promise<BucketListing> {
-    const out: BucketListing = {
-      paths: new Set(),
-      bytes: { mp3: 0, wav: 0 },
-      counts: { mp3: 0, wav: 0 },
-    };
+    const out: BucketListing = emptyListing();
     for (const voice of voices) {
       for (let offset = 0; ; offset += PAGE) {
         const { data, error } = await this.db.storage
@@ -70,11 +84,8 @@ export class SupabasePregenStore {
           throw new Error(`list ${voice}: ${error.message}`);
         }
         for (const f of data ?? []) {
-          out.paths.add(`${voice}/${f.name}`);
           const size = Number((f.metadata as { size?: unknown } | null)?.size) || 0;
-          const kind = f.name.endsWith('.mp3') ? 'mp3' : 'wav';
-          out.bytes[kind] += size;
-          out.counts[kind]++;
+          addToListing(out, `${voice}/${f.name}`, size);
         }
         if ((data ?? []).length < PAGE) break;
       }
@@ -123,6 +134,13 @@ export class SupabasePregenStore {
       last = error.message;
     }
     throw new Error(`upload: ${last}`);
+  }
+
+  /** One object's bytes (service role; for the copy to R2, decision 0053). */
+  async download(path: string): Promise<Uint8Array> {
+    const { data, error } = await this.db.storage.from(TTS_BUCKET).download(path);
+    if (error || !data) throw new Error(`download: ${error?.message ?? 'no data'}`);
+    return new Uint8Array(await data.arrayBuffer());
   }
 
   async remove(paths: readonly string[]): Promise<number> {

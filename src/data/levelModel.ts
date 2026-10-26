@@ -36,6 +36,7 @@ import { levelDataNow, loadLevelData } from './levelData';
 import { getCurrentUserId, getMeta, setMeta } from './meta';
 import { dayConfig, defaultSettings, getSettings, schedulerFor, SETTINGS_ID } from './settings';
 import { writeTx } from './writer';
+import { scanWhere } from './scan';
 
 /** Lemmas per level in the word list (data/level-test/band-sizes.json, built with the bank). */
 export const BAND_SIZES = bandSizesJson as Record<CefrLevel, number>;
@@ -94,11 +95,11 @@ async function loadModel(now: Millis): Promise<LoadedModel> {
     async () => {
       const settings = await getSettings(now);
       const [notes, senses, cards, tests, known] = await Promise.all([
-        db.notes.filter((n) => n.deleted_at === null).toArray(),
-        db.senses.filter((s) => s.deleted_at === null).toArray(),
-        db.cards.filter((c) => c.deleted_at === null).toArray(),
+        scanWhere(db.notes, (n) => n.deleted_at === null),
+        scanWhere(db.senses, (s) => s.deleted_at === null),
+        scanWhere(db.cards, (c) => c.deleted_at === null),
         db.level_tests.toArray(),
-        db.known_terms.filter((k) => k.deleted_at === null).toArray(),
+        scanWhere(db.known_terms, (k) => k.deleted_at === null),
       ]);
       const lexIds = [
         ...new Set(senses.map((s) => s.lexicon_sense_id).filter((x): x is Id => !!x)),

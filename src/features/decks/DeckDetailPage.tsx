@@ -38,6 +38,7 @@ import {
   StatusPill,
 } from './parts';
 import { specHref, titleIndex } from './suggested';
+import { scanWhere } from '@/data/scan';
 
 const PAGE = 60;
 type Group = 'all' | 'studying' | 'learned' | 'new';
@@ -333,7 +334,7 @@ function WordPicker({
 }) {
   const { t } = useTranslation();
   const notes = useLiveQuery(
-    () => (open ? db.notes.filter((n) => n.deleted_at === null && !hasTag(n.tags, tag)).toArray() : []),
+    () => (open ? scanWhere(db.notes, (n) => n.deleted_at === null && !hasTag(n.tags, tag)) : []),
     [open, tag],
   );
   const [q, setQ] = useState('');

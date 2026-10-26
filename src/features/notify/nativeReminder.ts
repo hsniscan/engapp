@@ -8,9 +8,10 @@
 // @capacitor/local-notifications), so this file is testable without a phone.
 import { useSyncExternalStore } from 'react';
 import { getReminderFacts, type ReminderFacts } from '@/data/reminder';
+import { getReminderCards } from '@/data/widget';
 import { dayKeyOf } from '@/domain/day';
 import { parseNotify } from '@/domain/notify';
-import { planReminders, REMINDER_CHAIN, type PlannedReminder } from '@/domain/reminderSchedule';
+import { onePerDay, planReminders, REMINDER_CHAIN, type PlannedReminder } from '@/domain/reminderSchedule';
 import type { Millis } from '@/domain/types';
 import { dayConfig } from '@/data/settings';
 
@@ -22,12 +23,23 @@ const STORE_KEY = 'engapp.nativeReminder';
 
 export type Permission = 'granted' | 'denied' | 'prompt';
 
+/** A due recognition card the reminder asks (docs/decisions/0048-widget-notification-answers.md). */
+export interface ReminderCard {
+  card_id: string;
+  /** English term (the question). */
+  term: string;
+  /** Turkish meaning (shown after "Cevabı gör"). */
+  meaning: string;
+}
+
 export interface ScheduledNotification {
   id: number;
   at: Millis;
   title: string;
   body: string;
   url: string;
+  /** Set when the reminder can be answered from the notification. */
+  card?: ReminderCard;
 }
 
 export interface NotifierPort {
@@ -51,6 +63,8 @@ export interface ReminderState {
   lastShownDay: string | null;
   /** Account whose Web Push subscriptions were removed for this phone's reminder. */
   webCleanedFor: string | null;
+  /** The reminder asks one due card ("Cevabı gör", then "Bildim / Bilemedim"). Default on. */
+  answerCards: boolean;
 }
 
 const EMPTY: ReminderState = {
@@ -58,6 +72,7 @@ const EMPTY: ReminderState = {
   scheduled: [],
   lastShownDay: null,
   webCleanedFor: null,
+  answerCards: true,
 };
 
 // ------------------------------------------------------------------ device store
@@ -134,25 +149,41 @@ export function planFromFacts(
 ): PlannedReminder[] {
   if (!state.enabled) return [];
   const pref = parseNotify(facts.settings.notify);
-  return planReminders({
+  const shown = shownDay(state, now);
+  // One a day, the card question included (v0.5 İP10): the rule already plans so; the budget
+  // check keeps it so whatever the plan.
+  return onePerDay(planReminders({
     candidate: {
       timezone: facts.settings.timezone,
       day_start_hour: facts.settings.day_start_hour,
       notify: { enabled: true, mode: pref?.mode ?? 'auto', hour: pref?.hour ?? null },
       vacation: facts.settings.vacation ?? null,
       last_review_at: facts.lastReviewAt,
-      last_push_day: shownDay(state, now),
+      last_push_day: shown,
     },
     dueTimes: facts.dueTimes,
     secPerCard: facts.secPerCard,
     now,
-  });
+  }), shown);
 }
 
 export interface RescheduleDeps {
   port: NotifierPort;
   facts?: (now: Millis) => Promise<ReminderFacts>;
+  /** One due card (or null) per planned time; default from the local database. */
+  cards?: (ats: Millis[]) => Promise<(ReminderCard | null)[]>;
   now?: () => Millis;
+}
+
+/** The cards for the planned reminders; a failed lookup only means plain reminders. */
+async function cardsFor(deps: RescheduleDeps, state: ReminderState, plans: PlannedReminder[]) {
+  if (!state.answerCards || plans.length === 0) return plans.map(() => null);
+  try {
+    const list = await (deps.cards ?? getReminderCards)(plans.map((p) => p.at));
+    return plans.map((_, i) => list[i] ?? null);
+  } catch {
+    return plans.map(() => null);
+  }
 }
 
 let queue: Promise<unknown> = Promise.resolve();
@@ -177,15 +208,20 @@ export function rescheduleReminder(deps: RescheduleDeps): Promise<PlannedReminde
     const cfg = dayConfig(facts.settings);
     if (facts.lastReviewAt !== null && dayKeyOf(facts.lastReviewAt, cfg) === dayKeyOf(now, cfg))
       await deps.port.clearShown(REMINDER_IDS).catch(() => {});
+    const cards = await cardsFor(deps, state, plans);
     if (plans.length)
       await deps.port.schedule(
-        plans.map((p, i) => ({
-          id: REMINDER_ID + i,
-          at: p.at,
-          title: p.message.title,
-          body: p.message.body,
-          url: p.message.url,
-        })),
+        plans.map((p, i) => {
+          const card = cards[i];
+          return {
+            id: REMINDER_ID + i,
+            at: p.at,
+            title: p.message.title,
+            body: p.message.body,
+            url: p.message.url,
+            ...(card ? { card: { card_id: card.card_id, term: card.term, meaning: card.meaning } } : {}),
+          };
+        }),
       );
     writeReminderState({ scheduled: plans.map((p) => ({ day: p.day, at: p.at })), lastShownDay });
     return plans;
@@ -221,6 +257,12 @@ export async function enableReminder(
   }
   const web = await syncWebPushCleanup(deps.userId, deps.cleanWebPush, true);
   return { ok: true, webRemoved: web.removed, webFailed: web.failed };
+}
+
+/** "Bildirimden cevap ver": whether the reminder asks a card. Replans at once. */
+export async function setAnswerCards(on: boolean, deps: RescheduleDeps): Promise<void> {
+  writeReminderState({ answerCards: on });
+  if (readReminderState().enabled) await rescheduleReminder(deps);
 }
 
 export async function disableReminder(deps: RescheduleDeps): Promise<void> {

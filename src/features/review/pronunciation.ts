@@ -8,9 +8,11 @@
 //
 // Where the audio comes from (docs/decisions/0042-pregenerated-tts.md), first hit wins:
 //   1. memory (object URLs: instant replays) and Cache Storage (offline, after a reload);
-//   2. the pre-generated MP3 in the public `tts` bucket, fetched straight from Storage: the
-//      client computes the object path itself (same key as the server, tts-contract.ts), so
-//      a dictionary word or sentence plays with no edge-function round trip;
+//   2. the pre-generated MP3, fetched straight from the public bucket: the client computes the
+//      object path itself (same key as the server, tts-contract.ts), so a dictionary word or
+//      sentence plays with no edge-function round trip. Cloudflare R2 first when
+//      VITE_AUDIO_BASE_URL is set (decision 0053), then the Supabase `tts` bucket, which is
+//      also used when R2 is unreachable or does not have the file yet;
 //   3. the `tts` edge function, only when that file is not there (a 4xx): private text and
 //      dictionary entries newer than the last pre-generation run;
 //   4. the device voice, on any failure.
@@ -28,8 +30,9 @@ import {
   TTS_CACHE_VERSION,
   ttsKeyMaterial,
   TTS_MAX_CHARS,
+  parseAudioBaseUrl,
+  ttsAudioUrls,
   ttsObjectPath,
-  ttsPublicUrl,
   ttsSha256Hex,
   ttsTextCandidates,
   type TtsResponse,
@@ -45,6 +48,11 @@ const CACHE_NAME = 'engapp-tts';
 export interface PlayOptions {
   /** Called once when playback ends, fails, or is replaced by a newer tap. */
   onDone?: () => void;
+  /**
+   * Playback speed, 1 = normal ("Yavaş dinle" in Dikte uses 0.7, v0.5 İP9). Server audio keeps
+   * its pitch; the device voice speaks more slowly.
+   */
+  rate?: number;
 }
 
 export interface AudioCache {
@@ -58,8 +66,11 @@ export interface PronunciationDeps {
   online: () => boolean;
   request: (text: string, voice: VoicePref) => Promise<TtsResponse>;
   fetchBlob: (url: string) => Promise<Blob>;
-  /** Public URL of an object in the `tts` bucket; null when no backend is configured. */
-  publicUrl: (path: string) => string | null;
+  /**
+   * Public URLs of an object, best first (R2, then the Supabase `tts` bucket; decision 0053).
+   * Empty when neither is configured.
+   */
+  publicUrls: (path: string) => string[];
   /**
    * Fetches a pre-generated file: the audio, or null when it is not there (any 4xx: Storage
    * answers 400 or 404 for a missing object). Throws on network errors.
@@ -69,7 +80,7 @@ export interface PronunciationDeps {
   createAudio: () => HTMLAudioElement;
   createObjectURL: (b: Blob) => string;
   revokeObjectURL: (u: string) => void;
-  fallback: (text: string, voice: VoicePref, onDone: () => void) => boolean;
+  fallback: (text: string, voice: VoicePref, onDone: () => void, rate?: number) => boolean;
   setTimeout: (fn: () => void, ms: number) => unknown;
   clearTimeout: (id: unknown) => void;
 }
@@ -168,6 +179,13 @@ export interface Pronouncer {
    * texts are now ready.
    */
   prefetch(texts: readonly string[], voice: VoicePref): Promise<number>;
+  /** The audio of `text` is in memory: play() starts at once and asks no server. */
+  ready(text: string, voice: VoicePref): boolean;
+  /**
+   * Stops whatever is playing or loading (the hands-free round's "Duraklat", v0.5 İP9); its
+   * onDone is not called. The device voice is stopped by the caller.
+   */
+  stop(): void;
   /** For tests: forget the in-memory URLs. */
   reset(): void;
 }
@@ -177,6 +195,7 @@ export function createPronouncer(deps: PronunciationDeps): Pronouncer {
   let el: HTMLAudioElement | null = null;
   let seq = 0;
   let finishCurrent: (() => void) | null = null;
+  let silenced = false;
 
   const remember = (key: string, url: string) => {
     memory.delete(key);
@@ -188,16 +207,26 @@ export function createPronouncer(deps: PronunciationDeps): Pronouncer {
     }
   };
 
-  /** The pre-generated file of `text` (or of its lower-case headword form), or null. */
+  /**
+   * The pre-generated file of `text` (or of its lower-case headword form), or null. Each
+   * source in order (R2, then Supabase Storage), every candidate within a source; a source
+   * that cannot be reached is skipped for the rest of this lookup.
+   */
   async function fetchPregenerated(text: string, voice: VoicePref): Promise<Blob | null> {
-    for (const t of ttsTextCandidates(text)) {
-      const url = deps.publicUrl(await ttsObjectPath(voice, t));
-      if (!url) return null;
-      try {
-        const blob = await deps.fetchPregenerated(url);
-        if (blob) return blob;
-      } catch {
-        return null; // network trouble: let the edge function (or the device voice) decide
+    const urls: string[][] = [];
+    for (const t of ttsTextCandidates(text))
+      urls.push(deps.publicUrls(await ttsObjectPath(voice, t)));
+    const sources = Math.max(0, ...urls.map((u) => u.length));
+    for (let s = 0; s < sources; s++) {
+      for (const candidate of urls) {
+        const url = candidate[s];
+        if (!url) continue;
+        try {
+          const blob = await deps.fetchPregenerated(url);
+          if (blob) return blob;
+        } catch {
+          break; // unreachable: the next source, then the edge function (or the device voice)
+        }
       }
     }
     return null;
@@ -258,11 +287,29 @@ export function createPronouncer(deps: PronunciationDeps): Pronouncer {
   }
 
   return {
+    stop() {
+      ++seq; // a load still in flight sees a newer id and does nothing
+      el?.pause();
+      const f = finishCurrent;
+      if (!f) return;
+      silenced = true; // clean up (timers, loading state) without telling the caller
+      try {
+        f();
+      } finally {
+        silenced = false;
+      }
+    },
+
     reset() {
       for (const u of memory.values()) deps.revokeObjectURL(u);
       memory.clear();
       inflight.clear();
       el = null;
+    },
+
+    ready(rawText, voice) {
+      const text = normalizeTtsText(rawText);
+      return !!text && memory.has(ttsKeyMaterial(voice, text));
     },
 
     async prefetch(texts, voice) {
@@ -304,11 +351,15 @@ export function createPronouncer(deps: PronunciationDeps): Pronouncer {
         if (loadingTimer !== null) deps.clearTimeout(loadingTimer);
         if (loadingOwner === owner) setLoadingOwner(null);
         if (finishCurrent === finish) finishCurrent = null;
-        opts.onDone?.();
+        if (!silenced) opts.onDone?.();
       };
       const fallback = () => {
         if (id !== seq) return finish();
-        if (!deps.fallback(rawText, voice, finish)) finish();
+        const spoke =
+          opts.rate === undefined
+            ? deps.fallback(rawText, voice, finish)
+            : deps.fallback(rawText, voice, finish, opts.rate);
+        if (!spoke) finish();
       };
 
       // Guests (and texts the server would refuse) use the device voice, still inside the tap.
@@ -330,6 +381,11 @@ export function createPronouncer(deps: PronunciationDeps): Pronouncer {
           if (id === seq && !done) fallback();
         };
         audio.src = src;
+        // The element is shared: every play sets its speed (normal unless asked otherwise).
+        const rate = opts.rate ?? 1;
+        audio.defaultPlaybackRate = rate;
+        audio.playbackRate = rate;
+        if ('preservesPitch' in audio) audio.preservesPitch = true;
         audio.play().catch(() => {
           if (id === seq && !done) fallback();
         });
@@ -386,14 +442,20 @@ export function deviceVoice(
   voice: VoicePref,
   onDone: () => void,
   native: boolean = isNativeApp(),
+  rate?: number,
 ): boolean {
-  if (!native) return speakEnglish(text, voice, { onDone });
+  // The device voice's normal speed is 0.92 (useSpeech, native/tts.ts).
+  const speed = rate === undefined ? undefined : 0.92 * rate;
+  if (!native) return speakEnglish(text, voice, speed === undefined ? { onDone } : { onDone, rate: speed });
   void import('@/native/tts')
-    .then((m) => m.speakNative(text, voice))
+    .then((m) => m.speakNative(text, voice, speed))
     .catch(() => {})
     .finally(onDone);
   return true;
 }
+
+/** Public base URL of the audio on Cloudflare R2 (build-time, decision 0053), or null. */
+const AUDIO_BASE_URL = parseAudioBaseUrl(import.meta.env.VITE_AUDIO_BASE_URL);
 
 const defaultPronouncer = createPronouncer({
   serverAllowed: () => {
@@ -407,7 +469,8 @@ const defaultPronouncer = createPronouncer({
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     return r.blob();
   },
-  publicUrl: (path) => (backendConfig ? ttsPublicUrl(backendConfig.url, path) : null),
+  publicUrls: (path) =>
+    ttsAudioUrls(path, { audioBaseUrl: AUDIO_BASE_URL, supabaseUrl: backendConfig?.url ?? null }),
   fetchPregenerated: fetchPregeneratedAudio,
   cache: (() => {
     let c: AudioCache | null | undefined;
@@ -417,7 +480,7 @@ const defaultPronouncer = createPronouncer({
   createObjectURL: (b) => URL.createObjectURL(b),
   revokeObjectURL: (u) => URL.revokeObjectURL(u),
   // Offline without a cached copy (and every failure) goes straight to the device voice.
-  fallback: (text, voice, onDone) => deviceVoice(text, voice, onDone),
+  fallback: (text, voice, onDone, rate) => deviceVoice(text, voice, onDone, isNativeApp(), rate),
   setTimeout: (fn, ms) => window.setTimeout(fn, ms),
   clearTimeout: (id) => window.clearTimeout(id as number),
 });
@@ -456,11 +519,30 @@ export function prefetchPronunciations(texts: readonly string[], voice: VoicePre
 }
 
 /**
+ * The reader's listen-along (decision 0043): fetches only the pre-generated files of these
+ * sentences (never the edge function, so the user's text is not sent anywhere) and resolves
+ * to how many are ready; then `pronunciationReady` tells which can play from memory.
+ */
+export function prefetchPregenerated(texts: readonly string[], voice: VoicePref): Promise<number> {
+  return defaultPronouncer.prefetch(texts, voice).catch(() => 0);
+}
+
+/** True when `text` plays from memory (pre-generated or already played): no server call. */
+export function pronunciationReady(text: string, voice: VoicePref): boolean {
+  return defaultPronouncer.ready(text, voice);
+}
+
+/**
  * Plays `text` in the chosen accent: server audio when possible, else the browser voice.
  * Call it directly from a tap handler. Returns false when there is nothing to say.
  */
 export function playPronunciation(text: string, voice: VoicePref, opts?: PlayOptions): boolean {
   return defaultPronouncer.play(text, voice, opts);
+}
+
+/** Stops the pronunciation that is playing or loading, without calling its onDone. */
+export function stopPronunciation(): void {
+  defaultPronouncer.stop();
 }
 
 /** True when this browser can play pronunciations at all (audio element or speech engine). */

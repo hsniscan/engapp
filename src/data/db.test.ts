@@ -5,7 +5,11 @@ import { PULL_BACKFILL_KEY } from './backfill';
 import { EngDb, STAGE_RULE_NOTICE_KEY } from './db';
 
 /** The current schema version; bump with every new Dexie version. */
-const LATEST = 26;
+const LATEST = 34;
+
+/** A re-pull list after the later upgrades: v29 (reader) adds settings, texts and encounters; v33 (dictation) cards; v34 settings. */
+const withLater = (list: readonly string[] | undefined) =>
+  list && [...new Set([...list, 'settings', 'texts', 'encounters', 'cards'])];
 
 describe('Dexie schema', () => {
   it('opens with every table and the indexes the queries rely on', async () => {
@@ -13,7 +17,7 @@ describe('Dexie schema', () => {
     await d.open();
     expect(d.verno).toBe(LATEST);
     expect(d.tables.map((t) => t.name).sort()).toEqual(
-      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs', 'decks', 'theme_previews', 'level_tests', 'known_terms', 'anki_imports', 'lexicon_pair_notes', 'weekly_reports', 'report_drafts', 'images', 'word_bank'].sort(),
+      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs', 'decks', 'theme_previews', 'level_tests', 'known_terms', 'anki_imports', 'lexicon_pair_notes', 'weekly_reports', 'report_drafts', 'images', 'word_bank', 'texts', 'encounters', 'graded_catalog', 'graded_bodies'].sort(),
     );
     const idx = (table: string) => d.table(table).schema.indexes.map((i) => i.name);
     expect(idx('decks')).toEqual(expect.arrayContaining(['sort', 'deleted_at']));
@@ -24,6 +28,10 @@ describe('Dexie schema', () => {
     expect(idx('known_terms')).toEqual(expect.arrayContaining(['term_norm', 'deleted_at']));
     expect(idx('level_tests')).toEqual(expect.arrayContaining(['taken_at']));
     expect(idx('images')).toEqual(expect.arrayContaining(['sense_id', 'fetched_at']));
+    expect(idx('texts')).toEqual(expect.arrayContaining(['kind', 'updated_at', 'graded_id']));
+    expect(idx('encounters')).toEqual(expect.arrayContaining(['note_id', 'day']));
+    expect(idx('graded_catalog')).toEqual(expect.arrayContaining(['level', 'topic', 'server_seq']));
+    expect(idx('graded_bodies')).toEqual(expect.arrayContaining(['fetched_at']));
     d.close();
     await d.delete();
   });
@@ -438,7 +446,7 @@ describe('Dexie schema', () => {
       const d = new EngDb(name);
       await d.open();
       expect(d.verno).toBe(LATEST);
-      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
+      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(withLater(expected));
       // The row itself is untouched: no notify key means "off".
       expect(await d.settings.get('settings')).toEqual({ id: 'settings', theme: 'dark' });
       expect(await d.outbox.count()).toBe(0);
@@ -464,7 +472,7 @@ describe('Dexie schema', () => {
       const d = new EngDb(name);
       await d.open();
       expect(d.verno).toBe(LATEST);
-      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
+      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(withLater(expected));
       expect(await d.notes.get('n1')).toEqual({ id: 'n1', term: 'affect', term_norm: 'affect', term_type: 'word' });
       expect(await d.outbox.count()).toBe(0);
       d.close();
@@ -489,7 +497,7 @@ describe('Dexie schema', () => {
       const d = new EngDb(name);
       await d.open();
       expect(d.verno).toBe(LATEST);
-      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
+      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(withLater(expected));
       // No goals key means "no goals"; the row is untouched.
       expect(await d.settings.get('settings')).toEqual({ id: 'settings', theme: 'dark', notify: null });
       expect(await d.weekly_reports.count()).toBe(0);
@@ -521,7 +529,7 @@ describe('Dexie schema', () => {
       const d = new EngDb(name);
       await d.open();
       expect(d.verno).toBe(LATEST);
-      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
+      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(withLater(expected));
       // No show_image_front key means "off"; the rows are untouched.
       expect(await d.settings.get('settings')).toEqual({ id: 'settings', theme: 'dark', goals: null });
       expect(await d.user_content.get('u1')).toEqual({ id: 'u1', kind: 'mnemonic', text: 'x', deleted_at: null });
@@ -558,7 +566,7 @@ describe('Dexie schema', () => {
       const d = new EngDb(name);
       await d.open();
       expect(d.verno).toBe(LATEST);
-      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
+      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(withLater(expected));
       // No image_cards key means "on"; no row is rewritten and nothing is queued.
       expect(await d.settings.get('settings')).toEqual({ id: 'settings', theme: 'dark', show_image_front: true });
       expect(await d.cards.get('c1')).toEqual(card);
@@ -589,7 +597,7 @@ describe('Dexie schema', () => {
     expect(await d.settings.get('settings')).toEqual({ id: 'settings', level: 'B1' });
     expect((await d.meta.get('sync_cursor'))?.value).toBe(12);
     // v24 itself queues no re-pull; only the later v25 step adds settings.
-    expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(['settings']);
+    expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(withLater(['settings']));
     expect(await d.word_bank.count()).toBe(0);
     expect(d.word_bank.schema.primKey.name).toBe('id');
     expect(d.word_bank.schema.indexes.map((i) => i.name)).toEqual(expect.arrayContaining(['cefr', 'lemma_norm']));
@@ -616,7 +624,7 @@ describe('Dexie schema', () => {
       const d = new EngDb(name);
       await d.open();
       expect(d.verno).toBe(LATEST);
-      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
+      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(withLater(expected));
       // No new_card_order key means "smart"; the row is untouched.
       expect(await d.settings.get('settings')).toEqual({ id: 'settings', theme: 'dark', show_image_front: true });
       expect(await d.outbox.count()).toBe(0);
@@ -645,7 +653,7 @@ describe('Dexie schema', () => {
     expect(d.verno).toBe(LATEST);
     expect(await d.cards.get('c1')).toEqual({ ...oldCard, ramp_step: 0, learned_at: null });
     expect((await d.meta.get(STAGE_RULE_NOTICE_KEY))?.value).toBe(false);
-    expect(await d.meta.get(PULL_BACKFILL_KEY)).toBeUndefined();
+    expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(withLater([]));
     expect(await d.outbox.count()).toBe(0);
     d.close();
     await d.delete();
@@ -661,5 +669,113 @@ describe('Dexie schema', () => {
     expect(await e.meta.get(STAGE_RULE_NOTICE_KEY)).toBeUndefined();
     e.close();
     await e.delete();
+  });
+
+  it('v31 upgrade adds the graded library tables and keeps every existing row', async () => {
+    // A database as the reading-text contract left it (version 28).
+    const old = new Dexie('upgrade-v31');
+    old.version(1).stores({ cards: 'id, note_id, sense_id, [state+due], due, card_type, deleted_at', meta: 'key' });
+    old.version(28).stores({ texts: 'id, kind, updated_at, deleted_at, graded_id', encounters: 'id, note_id, day' });
+    await old.open();
+    await old.table('texts').add({ id: 't1', kind: 'graded', graded_id: 'g1', title: 'A', body: '', updated_at: 1, deleted_at: null });
+    await old.table('meta').put({ key: 'sync_cursor', value: 7 });
+    old.close();
+
+    const d = new EngDb('upgrade-v31');
+    await d.open();
+    expect(d.verno).toBe(LATEST);
+    expect(await d.texts.get('t1')).toMatchObject({ graded_id: 'g1' });
+    expect(await d.graded_catalog.count()).toBe(0);
+    expect(await d.graded_bodies.count()).toBe(0);
+    expect((await d.meta.get('sync_cursor'))?.value).toBe(7);
+    expect(await d.outbox.count()).toBe(0);
+    d.close();
+    await d.delete();
+  });
+
+  it('v29 upgrade queues texts saved under v28, drops unsynced encounter rows and re-pulls the reading tables once', async () => {
+    for (const [name, cursor, expected] of [
+      ['upgrade-v29-synced', 70, ['settings', 'texts', 'encounters', 'cards']],
+      ['upgrade-v29-fresh', 0, undefined],
+    ] as const) {
+      const old = new Dexie(name);
+      old.version(1).stores({ settings: 'id', meta: 'key', outbox: '++seq, [table+row_id], next_attempt_at' });
+      old.version(28).stores({ texts: 'id, kind, updated_at, deleted_at, graded_id', encounters: 'id, note_id, day' });
+      await old.open();
+      const text = {
+        id: 't1', user_id: null, created_at: 1, updated_at: 1, deleted_at: null, hlc: '000000000000001:00000:dev',
+        kind: 'paste', title: 'A walk', body: 'I went for a walk.', source_url: null, graded_id: null,
+        progress_offset: 0, read_ms: 0, finished_at: null,
+      };
+      await old.table('texts').add(text);
+      await old.table('encounters').add({ id: 'n1|2026-10-26|reader', note_id: 'n1', day: '2026-10-26', source: 'reader', n: 2 });
+      await old.table('settings').add({ id: 'settings', theme: 'dark' });
+      await old.table('meta').put({ key: 'sync_cursor', value: cursor });
+      old.close();
+
+      const d = new EngDb(name);
+      await d.open();
+      expect(d.verno).toBe(LATEST);
+      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
+      expect(await d.texts.get('t1')).toEqual(text);
+      expect(await d.encounters.count()).toBe(0);
+      expect(await d.settings.get('settings')).toEqual({ id: 'settings', theme: 'dark' });
+      const queued = await d.outbox.toArray();
+      expect(queued.map((r) => [r.table, r.row_id, r.op])).toEqual([['texts', 't1', 'upsert']]);
+      d.close();
+      await d.delete();
+    }
+  });
+
+  it('v34 upgrade keeps settings and re-pulls them once for streak_freezes', async () => {
+    for (const [name, cursor, expected] of [
+      ['upgrade-v34-synced', 40, ['cards', 'settings']],
+      ['upgrade-v34-fresh', 0, undefined],
+    ] as const) {
+      // A database as the graded library left it (version 31), with every earlier backfill done.
+      const old = new Dexie(name);
+      old.version(1).stores({ settings: 'id', meta: 'key' });
+      old.version(31).stores({ graded_catalog: 'id, level, topic, server_seq', graded_bodies: 'id, fetched_at' });
+      await old.open();
+      await old.table('settings').add({ id: 'settings', theme: 'dark', vacation: null });
+      await old.table('meta').put({ key: 'sync_cursor', value: cursor });
+      old.close();
+
+      const d = new EngDb(name);
+      await d.open();
+      expect(d.verno).toBe(LATEST);
+      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
+      // No streak_freezes key means none; the row is untouched and nothing is queued.
+      expect(await d.settings.get('settings')).toEqual({ id: 'settings', theme: 'dark', vacation: null });
+      expect(await d.outbox.count()).toBe(0);
+      d.close();
+      await d.delete();
+    }
+  });
+
+  it('v33 upgrade keeps cards untouched and re-pulls them once for dictation cards', async () => {
+    for (const [name, cursor, expected] of [
+      ['upgrade-v33-synced', 140, ['cards', 'settings']],
+      ['upgrade-v33-fresh', 0, undefined],
+    ] as const) {
+      // A database as the graded-library package left it (version 31), every backfill done.
+      const old = new Dexie(name);
+      old.version(1).stores({ cards: 'id, note_id, sense_id, [state+due], due, card_type, deleted_at', meta: 'key' });
+      old.version(31).stores({ graded_catalog: 'id, level, topic, server_seq', graded_bodies: 'id, fetched_at' });
+      await old.open();
+      const card = makeCard({ id: 'c1', note_id: 'n1', sense_id: 's1', card_type: 'cloze', unlocked: false });
+      await old.table('cards').add(card);
+      await old.table('meta').put({ key: 'sync_cursor', value: cursor });
+      old.close();
+
+      const d = new EngDb(name);
+      await d.open();
+      expect(d.verno).toBe(LATEST);
+      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
+      expect(await d.cards.get('c1')).toEqual(card);
+      expect(await d.outbox.count()).toBe(0);
+      d.close();
+      await d.delete();
+    }
   });
 });

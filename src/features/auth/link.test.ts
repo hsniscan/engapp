@@ -12,6 +12,8 @@ import {
   getCurrentUserId,
   getStreakSummary,
   META,
+  recordReaderEncounters,
+  saveText,
   reconcileImageCards,
   setGoals,
   setImageHidden,
@@ -98,7 +100,8 @@ async function guestDevice() {
 async function otherAccountDevice() {
   await resetDb();
   await db.transaction('rw', db.meta, () => setMeta(META.userId, OTHER));
-  await updateSettings({ daily_new_limit: 3, level: 'C1' }, T);
+  // v0.5 İP10: its streak protections are its own.
+  await updateSettings({ daily_new_limit: 3, level: 'C1', streak_freezes: ['2026-10-20'] }, T);
   const src = await createSource({ kind: 'text', title: 'Article' }, T);
   const cope = await addNoteWithSenses(
     {
@@ -299,6 +302,8 @@ describe('account linking', () => {
     const settings = (await db.settings.get('settings'))!;
     expect(settings.daily_new_limit).toBe(25);
     expect(settings.level).not.toBe('C1');
+    expect(settings.streak_freezes ?? null).toBeNull();
+    expect(JSON.stringify(server.rowsOf('settings'))).not.toContain('2026-10-20');
 
     // All rows belong to this account and none reuses an id of the other account.
     const notes = (await db.notes.toArray()).filter((n) => n.deleted_at === null);
@@ -482,7 +487,7 @@ describe('account linking', () => {
     await resetDb();
     await db.transaction('rw', db.meta, () => setMeta(META.userId, OTHER));
     // v0.3 İP8: the other account's reminder setting stays behind as well.
-    await updateSettings({ daily_new_limit: 3, notify: { enabled: true, mode: 'fixed', hour: 9 } }, T);
+    await updateSettings({ daily_new_limit: 3, notify: { enabled: true, mode: 'fixed', hour: 9 }, streak_freezes: ['2026-10-21'] }, T);
     // v0.3 İP7: and so do its goals.
     await setGoals({ week_active_days: 6 }, T);
     configureLink({ transport: server, engine: engine() });
@@ -494,6 +499,9 @@ describe('account linking', () => {
     expect(JSON.stringify(server.rowsOf('settings'))).not.toContain('"notify":{"enabled":true');
     expect((await db.settings.get('settings'))!.goals ?? null).toBeNull();
     expect(JSON.stringify(server.rowsOf('settings'))).not.toContain('week_active_days');
+    // v0.5 İP10: nor its streak protections.
+    expect((await db.settings.get('settings'))!.streak_freezes ?? null).toBeNull();
+    expect(JSON.stringify(server.rowsOf('settings'))).not.toContain('2026-10-21');
   });
 
   it('a guest’s weekly reports and goals go with the guest data to the account', async () => {
@@ -508,6 +516,36 @@ describe('account linking', () => {
     expect((await db.settings.get('settings'))!.goals).toEqual({ week_active_days: 6, week_minutes: 120 });
     // The waiting report stays on the device and gets its comment later.
     expect(await db.report_drafts.count()).toBe(1);
+  });
+
+  it('v0.5: a guest’s texts and encounters go with the guest data to the account', async () => {
+    await guestDevice();
+    const textId = await saveText({ kind: 'paste', title: 'Walk', body: 'I cope with it.' }, T + 3);
+    const note = (await db.notes.toArray())[0]!;
+    expect(await recordReaderEncounters(textId, 'open-1', [note.id], T + 4)).toBe(1);
+    configureLink({ transport: server, engine: engine() });
+    await linkAccount(USER);
+    expect(getLinkState()).toMatchObject({ phase: 'done' });
+    expect(server.rowsOf('texts').map((r) => [r.id, r.user_id])).toEqual([[textId, USER]]);
+    expect(server.rowsOf('encounters').map((r) => [r.note_id, r.user_id, r.n])).toEqual([[note.id, USER, 1]]);
+  });
+
+  it("v0.5: another account's texts and encounters are never copied with its cards", async () => {
+    await otherAccountDevice();
+    const textId = await saveText({ kind: 'paste', title: 'Private', body: 'My diary: I cope.' }, T + 5);
+    await recordReaderEncounters(textId, 'open-1', (await db.notes.toArray()).map((n) => n.id), T + 6);
+    expect(await db.encounters.count()).toBeGreaterThan(0);
+    const img = await saveDevice();
+    await accountWithData();
+    await loadDevice(img);
+    configureLink({ transport: server, engine: engine() });
+    await linkAccount(USER);
+    await resolveLink('copy_cards');
+    expect(getLinkState()).toMatchObject({ phase: 'done' });
+    expect(await db.texts.count()).toBe(0);
+    expect(server.rowsOf('texts')).toHaveLength(0);
+    expect(JSON.stringify(server.rowsOf('encounters'))).not.toContain('reader');
+    expect((await db.encounters.toArray()).every((r) => r.source === 'review' && r.user_id === USER)).toBe(true);
   });
 
   it("another account's data is never copied silently into an empty account", async () => {

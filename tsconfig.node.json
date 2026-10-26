@@ -29,6 +29,9 @@
     "scripts/img-*.ts",
     "scripts/system-jobs.ts",
     "scripts/word-bank.ts",
-    "scripts/tts-pregen.ts"
+    "scripts/graded-batch.ts",
+    "scripts/tts-pregen.ts",
+    "scripts/audio-migrate.ts",
+    "scripts/check-*.ts"
   ]
 }

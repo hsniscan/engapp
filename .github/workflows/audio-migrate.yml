@@ -1,0 +1,98 @@
+# One-time copy of the pronunciation audio from the Supabase `tts` bucket to Cloudflare R2
+# (decision 0053; steps in docs/setup-backend.md, step 19). Run by hand only.
+#
+# Safe to run any number of times: it lists both buckets and copies only the files R2 does
+# not have yet (idempotent), so a cancelled or timed-out run is simply run again (resumable).
+# It never deletes anything from Supabase; that is a later, manual step (setup step 19.9).
+#
+#   dry_run (default on): only counts what Supabase has, what R2 has and what is left.
+#   dry_run off:          copies what is left, then checks a sample through the public
+#                         address (AUDIO_BASE_URL) with the app's origin, CORS included.
+#
+# Repository secrets: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET, and the
+# service-role key as for the pronunciation audio job (SUPABASE_SERVICE_ROLE_KEY, or else
+# SUPABASE_ACCESS_TOKEN). For the check: the repository variable AUDIO_BASE_URL or, before it
+# is set (the app and the jobs switch to R2 when it is), the public_url input.
+name: Audio copy to R2
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Only count; copy nothing'
+        type: boolean
+        default: true
+      max:
+        description: 'At most this many files in this run (empty: all)'
+        type: string
+        default: ''
+      public_url:
+        description: 'Public address of the bucket (https://pub-….r2.dev), when the AUDIO_BASE_URL variable is not set yet'
+        type: string
+        default: ''
+
+concurrency:
+  group: audio-migrate
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  SUPABASE_PROJECT_REF: bikcjlomrjaxymifxogi
+
+jobs:
+  copy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      SERVICE_KEY_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      AUDIO_BASE_URL: ${{ vars.AUDIO_BASE_URL || inputs.public_url }}
+      APP_ORIGIN: https://engapp-65y.pages.dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Check secrets
+        run: |
+          missing=0
+          for v in R2_ACCOUNT_ID R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET; do
+            if [ -z "${!v}" ]; then echo "::error::Repository secret $v is not set (docs/setup-backend.md, step 19)"; missing=1; fi
+          done
+          exit $missing
+
+      - name: Count (reads only)
+        if: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          source scripts/supabase-service-env.sh
+          node scripts/audio-migrate.ts plan
+
+      - name: Copy what R2 does not have yet
+        if: ${{ !inputs.dry_run }}
+        env:
+          MAX: ${{ inputs.max }}
+        run: |
+          set -euo pipefail
+          if [ -n "$MAX" ] && ! [[ "$MAX" =~ ^[0-9]{1,7}$ ]]; then echo "::error::max must be a whole number"; exit 1; fi
+          source scripts/supabase-service-env.sh
+          args=(copy --minutes 330)
+          if [ -n "$MAX" ]; then args+=(--max "$MAX"); fi
+          node scripts/audio-migrate.ts "${args[@]}"
+
+      - name: Check the public address
+        if: ${{ !inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          source scripts/supabase-service-env.sh
+          node scripts/audio-migrate.ts verify --sample 20

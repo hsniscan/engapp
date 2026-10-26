@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 2x1: due count and "Tekrara başla" (docs/decisions/0048). updatePeriodMillis is the
+     30-minute floor: the widget re-reads widget_state on its own, so the count is at most
+     30 minutes late even while the app is closed (it also redraws after every answer). -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="110dp"
+    android:minHeight="40dp"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="40dp"
+    android:targetCellWidth="2"
+    android:targetCellHeight="1"
+    android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="1800000"
+    android:initialLayout="@layout/glance_default_loading_layout"
+    android:description="@string/widget_due_description"
+    android:widgetCategory="home_screen" />

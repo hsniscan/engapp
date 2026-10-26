@@ -281,6 +281,8 @@ describe('Dexie v8 upgrade', () => {
       'sources',
       'weekly_reports',
       'cards',
+      'texts',
+      'encounters',
     ]);
     d.close();
     await d.delete();

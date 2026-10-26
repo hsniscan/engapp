@@ -233,6 +233,8 @@ export async function newOrderInput(
   fresh: readonly Card[],
   today: Pick<TodayFacts, 'bounds' | 'introducedNoteIds'>,
   settings: Pick<Settings, 'level' | 'user_id' | 'created_at'>,
+  /** v0.5 İP10 (decision 0052): the order and the cards the guard postponed on earlier days. */
+  guard: { order?: 'smart' | 'added'; carry?: readonly Id[] } = {},
 ): Promise<NewOrderInput> {
   listen();
   const levels = levelDataNow();
@@ -285,5 +287,7 @@ export async function newOrderInput(
     activeSources,
     pairs,
     introducedToday: today.introducedNoteIds,
+    ...(guard.carry?.length ? { carry: guard.carry } : {}),
+    ...(guard.order === 'added' ? { order: 'added' as const } : {}),
   };
 }

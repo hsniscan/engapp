@@ -1,6 +1,7 @@
 // zod schemas for synced rows. Used to validate backup files and (later) sync payloads.
 import { z } from 'zod';
 import { clampNotifyHour } from '../../supabase/functions/_shared/push-rule';
+import { MAX_FREEZE_DAYS } from './streakFreeze';
 import type {
   Card,
   ContentFeedback,
@@ -17,6 +18,7 @@ import type {
   UserContent,
   WeeklyReport,
 } from './types';
+import { MAX_TEXT_CHARS, READING_OFFSET_MAX, TEXT_KINDS, type EncounterRow, type ReaderText } from './texts';
 
 const millis = z.number().int();
 const id = z.string().min(1);
@@ -80,7 +82,7 @@ export const cardSchema: z.ZodType<Card> = z.object({
   ...synced,
   note_id: id,
   sense_id: id.nullable(),
-  card_type: z.enum(['recognition', 'production', 'cloze', 'image']),
+  card_type: z.enum(['recognition', 'production', 'cloze', 'image', 'dictation']),
   suspended: z.boolean(),
   unlocked: z.boolean(),
   due: millis,
@@ -185,6 +187,13 @@ export const settingsSchema: z.ZodType<Settings> = z.object({
   image_cards: z.boolean().nullish().catch(null),
   // v0.4 new-card order (absent = smart). A value a newer client adds must not reject the row.
   new_card_order: z.enum(['smart', 'added']).nullish().catch(null),
+  // v0.5 İP1 reading (decision 0043); absent = dengeli, no correction, colours on. A value a
+  // newer client adds must not reject the row.
+  reading_difficulty: z.enum(['rahat', 'dengeli', 'zorlayici']).nullish().catch(null),
+  reading_offset: z.number().min(-READING_OFFSET_MAX).max(READING_OFFSET_MAX).nullish().catch(null),
+  reader_highlight: z.boolean().nullish().catch(null),
+  // v0.5 İP10 streak protections (absent = none). A malformed list reads as none.
+  streak_freezes: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).max(MAX_FREEZE_DAYS).nullish().catch(null),
   // v0.3 İP3 load management; absent in older rows and backups (= the defaults). Malformed
   // values (a newer client, a hand-edited backup) fall back to "unset" instead of rejecting
   // the whole settings row.
@@ -357,4 +366,59 @@ export const weeklyReportSchema: z.ZodType<WeeklyReport> = z.object({
   device_id: z.string(),
   created_at: millis,
   hlc: z.string().min(1),
+});
+
+// ------------------------------------------------------------------ v0.5 reading (decision 0043)
+
+/** A reading text (Dexie texts ⇄ server user_texts). Loose on what an older client lacks. */
+export const readerTextSchema: z.ZodType<ReaderText> = z.object({
+  ...synced,
+  kind: z.enum(TEXT_KINDS as [ReaderText['kind'], ...ReaderText['kind'][]]),
+  title: z.string().max(300),
+  body: z.string().max(MAX_TEXT_CHARS),
+  source_url: z.string().max(2000).nullable(),
+  graded_id: z.string().max(200).nullable(),
+  progress_offset: z.number().int().min(0),
+  read_ms: z.number().int().min(0),
+  finished_at: millis.nullable(),
+  feedback: z.enum(['hard', 'easy']).nullish().catch(null),
+  // The daily story's extras (İP8, decision 0050); a malformed value only drops them.
+  story: z
+    .object({
+      day: dayKey,
+      prompt_version: z.string().max(40),
+      targets: z
+        .array(
+          z.object({
+            note_id: id,
+            lemma: z.string().max(80),
+            used: z.boolean(),
+            gloss_tr: z.string().max(120).nullable(),
+          }),
+        )
+        .max(12),
+      questions: z
+        .array(
+          z.object({
+            q: z.string().max(400),
+            options: z.array(z.string().max(200)).min(2).max(4),
+            answer: z.number().int().min(0).max(3),
+          }),
+        )
+        .max(5),
+      glossed: z.array(z.object({ lemma: z.string().max(80), gloss_tr: z.string().max(120) })).max(12),
+      unknown_rate: z.number().min(0).max(1),
+    })
+    .nullish()
+    .catch(null),
+});
+
+/** Encounters of one note on one day from one source on one device. */
+export const encounterRowSchema: z.ZodType<EncounterRow> = z.object({
+  ...synced,
+  note_id: id,
+  day: dayKey,
+  source: z.enum(['review', 'reader', 'story']),
+  n: z.number().int().min(0),
+  device_id: z.string().min(1).max(100),
 });
