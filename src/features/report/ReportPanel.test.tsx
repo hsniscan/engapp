@@ -139,7 +139,7 @@ describe('weekly report tab', () => {
     renderRoute(<ReportPanel onOpen={noop} />);
     const focus = await screen.findByTestId('report-focus');
     expect(within(focus).getByText('Her şey yolunda. Böyle devam et.')).toBeInTheDocument();
-    expect(within(focus).getByRole('link', { name: 'Tekrara başla' })).toHaveAttribute(
+    expect(within(focus).getByRole('link', { name: 'Çalışmaya başla' })).toHaveAttribute(
       'href',
       '/study?mode=word',
     );

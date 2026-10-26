@@ -142,7 +142,7 @@ test('themes: preview, rename, remove a word, reject a group → tags, with only
   await page.getByRole('link', { name: /temalara ayır/ }).click();
   await expect(page).toHaveURL(/\/decks\/themes$/);
   await expect(page.getByText('Etiketi olmayan 9 kelimen var.')).toBeVisible();
-  await expect(page.getByText('Günlük AI hakkından 1 çağrı kullanır.')).toBeVisible();
+  await expect(page.getByText('Günlük yapay zekâ hakkından 1 kullanım düşer.')).toBeVisible();
   await page.getByRole('button', { name: 'Temalara ayır' }).click();
 
   const groups = page.getByRole('list', { name: 'Önerilen temalar' });

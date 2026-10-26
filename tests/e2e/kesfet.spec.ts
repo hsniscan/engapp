@@ -232,13 +232,13 @@ test('Keşfet offline: a friendly note and "Tekrar dene", never developer words'
   }
 });
 
-test('Kelimelerim: two segments, "Kelime bankası" on one line', async ({ page }) => {
+test('Kelimelerim: two segments, "Kelime Bankası" on one line', async ({ page }) => {
   await page.setViewportSize(PHONE);
   await page.goto('/decks');
   await expect(page.getByRole('heading', { level: 1, name: 'Kelimelerim' })).toBeVisible();
   const seg = page.getByRole('navigation', { name: 'Deste görünümü' });
-  await expect(seg.getByRole('link')).toHaveText(['Destelerim', 'Kelime bankası']);
-  const bank = seg.getByRole('link', { name: 'Kelime bankası' });
+  await expect(seg.getByRole('link')).toHaveText(['Destelerim', 'Kelime Bankası']);
+  const bank = seg.getByRole('link', { name: 'Kelime Bankası' });
   const fits = await bank.evaluate((el) => {
     const r = document.createRange();
     r.selectNodeContents(el);

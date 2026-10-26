@@ -405,7 +405,7 @@ describe('Okuma tab and Bugünün okuması', () => {
       `/oku/${a}`,
     );
     expect(within(list).getByText('Bitti')).toBeInTheDocument();
-    await user.click(within(list).getByRole('button', { name: '"First text" metnini sil' }));
+    await user.click(within(list).getByRole('button', { name: '“First text” metnini sil' }));
     await user.click(await screen.findByRole('button', { name: 'Sil' }));
     await waitFor(() => expect(screen.queryByRole('link', { name: /First text/ })).toBeNull());
     expect((await db.texts.get(a))!.deleted_at).not.toBeNull();

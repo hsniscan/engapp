@@ -168,11 +168,11 @@ test('signed in: levels stored with the lexicon by ai-extract; an AI guess has a
     row('reluctant').getByRole('img', { name: 'Seviye B2, CEFR-J listesi' }),
   ).toBeVisible();
   // Not in the list: the guess, bounded by frequency; dashed.
-  const ai = row('backfire').getByRole('img', { name: 'Seviye B2, AI tahmini' });
+  const ai = row('backfire').getByRole('img', { name: 'Seviye B2, Yapay zekâ tahmini' });
   await expect(ai).toBeVisible();
   await expect(ai).toHaveCSS('border-top-style', 'dashed');
   await expect(
-    row('cut corners').getByRole('img', { name: 'Seviye C1, AI tahmini' }),
+    row('cut corners').getByRole('img', { name: 'Seviye C1, Yapay zekâ tahmini' }),
   ).toBeVisible();
 
   // The level came with the lexicon row (shared data), not from the device's level file.

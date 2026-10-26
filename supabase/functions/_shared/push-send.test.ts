@@ -121,7 +121,7 @@ describe('runPushTick', () => {
     const { sent, send } = recorder();
     const r = await runPushTick(store, send, NOW);
     expect(sent.map((s) => s.id)).toEqual(['a-phone', 'a-laptop']);
-    expect(sent[0]!.message.body).toBe('Bugün 23 kart tekrara hazır, yaklaşık 6 dk.');
+    expect(sent[0]!.message.body).toBe('Bugün 23 kart çalışmaya hazır, yaklaşık 6 dk.');
     expect(r).toMatchObject({ candidates: 4, sent: 1, delivered: 2, failed: 0, removed: 0 });
     expect(r.skipped).toEqual({ reviewed_today: 1, nothing_due: 1, before_hour: 1 });
     expect(store.log.get('a|2026-10-23')).toEqual({ due: 23, delivered: 2, failed: 0 });

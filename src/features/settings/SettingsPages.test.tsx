@@ -190,7 +190,7 @@ describe('settings index and sub-pages', () => {
       await within(learning).findByRole('link', { name: /Günde 10 yeni · hedef %90/ }),
     ).toHaveTextContent('Çalışma');
     for (const name of [
-      'Tekrar yükü ve tatil',
+      'Çalışma yükü ve tatil',
       'Hatırlatmalar',
       'Seviye',
       'Kartlar ve içerik',

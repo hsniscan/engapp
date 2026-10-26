@@ -68,7 +68,7 @@ test('Kelime Bankası: guest download, level list, add one, quick-add ten, offli
   // longer links it; the bank lives in Desteler / Kelimelerim).
   await page.goto('/kelime-bankasi');
   await expect(page).toHaveURL(/\/decks\?tab=bank$/);
-  await expect(page.getByRole('link', { name: 'Kelime bankası' })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: 'Kelime Bankası' })).toHaveAttribute(
     'aria-current',
     'page',
   );
@@ -136,9 +136,9 @@ test('Keşfet: a suggested deck adds only new words, once, and shows up in Deste
   await page.getByRole('button', { name: 'journey: biliyorum' }).click();
   await page.getByRole('button', { name: 'Taramayı bitir' }).click();
   await expect(page.getByRole('button', { name: 'Biliyorsun 1' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Kartında 1' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Çalışıyorsun 1' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Destemlere ekle' }).click();
+  await page.getByRole('button', { name: 'Destelerime ekle' }).click();
   await expect(page.getByText('“B1 kelimeleri” destelerine eklendi', { exact: true })).toBeVisible();
   const { notes, decks } = await dumpTables(page, ['notes', 'decks']);
   const terms = (notes as { term: string; tags: string[] }[]).map((n) => n.term);
@@ -151,9 +151,9 @@ test('Keşfet: a suggested deck adds only new words, once, and shows up in Deste
   expect(decks).toEqual([
     expect.objectContaining({ name: 'B1 kelimeleri', filter: { v: 1, tags: ['B1 kelimeleri'] } }),
   ]);
-  await expect(page.getByRole('button', { name: 'Destemlere ekle' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Destelerime ekle' })).toHaveCount(0);
 
-  await page.getByRole('link', { name: /Destemde aç/ }).click();
+  await page.getByRole('link', { name: /Destelerimde aç/ }).click();
   await expect(page).toHaveURL(/\/decks\/[^/?]+$/);
   await expect(page.getByRole('heading', { level: 1, name: 'B1 kelimeleri' })).toBeVisible();
   await expect(

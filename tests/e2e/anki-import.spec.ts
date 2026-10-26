@@ -36,7 +36,7 @@ test('guest imports an Anki deck with its history; a second import adds nothing'
 
   await pick(page, 'ingilizce.apkg', fixture('anki21b'));
   await expect(page.getByTestId('anki-summary')).toHaveText('7 not, 13 kart, 18 tekrar kaydı');
-  await expect(page.getByText('Tekrar aralıkları yeniden hesaplanacak')).toBeVisible();
+  await expect(page.getByText('Kart aralıkları yeniden hesaplanacak')).toBeVisible();
   await expect(page.getByText('Boşluk doldurma (cloze) notları aktarılmaz: 1 not.')).toBeVisible();
   const preview = page.getByTestId('anki-preview');
   await expect(preview.getByRole('listitem')).toHaveCount(3);

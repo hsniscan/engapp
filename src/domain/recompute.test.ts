@@ -123,7 +123,7 @@ describe('deriveUnlocked', () => {
   });
 });
 
-describe('early review ("Yarının kartlarını şimdi tekrar et")', () => {
+describe('early review ("Yarının kartlarını şimdi çalış")', () => {
   const DAY = 86_400_000;
 
   /** Graduate a card to Review, then answer the next reviews `early` ms before they are due. */

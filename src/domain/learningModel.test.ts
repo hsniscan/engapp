@@ -261,7 +261,7 @@ describe('the ramp', () => {
     expect(nextRampStep(CardState.Review, G, 1, 0.4, 1, true)).toBe(2);
   });
 
-  it('an early review ("Yarının kartlarını şimdi tekrar et") does not count', () => {
+  it('an early review ("Yarının kartlarını şimdi çalış") does not count', () => {
     // Under 12 hours.
     expect(nextRampStep(CardState.Review, G, 1, 0.4, 0)).toBe(1);
     // Under half the planned interval.

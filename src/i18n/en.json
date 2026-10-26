@@ -2031,6 +2031,7 @@
       "user": "You chose this level; it applies only to you."
     },
     "correction": "{{list}}: {{from}} → {{to}} for Turkish learners",
+    "correction_reason": "{{list}}: {{from}} → {{to}} for Turkish learners (AI: {{reason}})",
     "autoWas": "Automatic level: {{level}} ({{source}}).",
     "autoUnknown": "The automatic level of this word is not known.",
     "unknown": "Level not known yet.",

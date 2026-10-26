@@ -16,7 +16,7 @@ describe('old addresses', () => {
     expect(legacyRedirect('/decks', '?tab=discover')).toBe('/kesfet?f=desteler');
     expect(legacyRedirect('/decks', '?tab=reading')).toBe('/kesfet?f=okuma');
     expect(legacyRedirect('/decks/', '?tab=reading&from=push')).toBe('/kesfet?from=push&f=okuma');
-    // Destelerim and Kelime bankası stay where they are.
+    // Destelerim and Kelime Bankası stay where they are.
     expect(legacyRedirect('/decks', '?tab=bank')).toBeNull();
     expect(legacyRedirect('/decks', '?tab=mine')).toBeNull();
     expect(legacyRedirect('/decks', '')).toBeNull();

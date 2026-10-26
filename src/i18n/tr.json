@@ -62,7 +62,7 @@
   },
   "home": {
     "title": "Bugün",
-    "startReview": "Tekrara başla",
+    "startReview": "Çalışmaya başla",
     "addCard": "Kart ekle",
     "streakTitle": "Günlük seri",
     "nextLater": "Sıradaki kart {{time}} sonra ({{clock}})",
@@ -73,8 +73,8 @@
     "emptyTitle": "Hoş geldin",
     "emptyBody": "Kelime defterin henüz boş. İlk kelimeni ekle; tekrar takvimini uygulama kurar.",
     "emptyStep1": "İngilizce bir kelime ya da kalıp ekle: Türkçe anlamı ve bir örnek cümleyle.",
-    "emptyStep2": "Her gün birkaç dakika tekrar et; kartlar tam unutmak üzereyken geri gelir.",
-    "emptyStep3": "Serini buradan izle; tekrar yaptığın her gün seriye eklenir.",
+    "emptyStep2": "Her gün birkaç dakika çalış; kartlar tam unutmak üzereyken geri gelir.",
+    "emptyStep3": "Serini buradan izle; çalıştığın her gün seriye eklenir.",
     "emptyAction": "İlk kelimeni ekle",
     "moreStudy": "Biraz daha çalış"
   },
@@ -140,7 +140,7 @@
     "moreNewBody_one": "Bugünün limitinin üstüne · {{count}} kelime bekliyor",
     "moreNewBody_other": "Bugünün limitinin üstüne · {{count}} kelime bekliyor",
     "morePracticeBody": "Takvim ve seri değişmez, sadece alıştırma",
-    "moreAheadTitle": "Yarının kartlarını şimdi tekrar et",
+    "moreAheadTitle": "Yarının kartlarını şimdi çalış",
     "moreAheadBody_one": "{{count}} kart · yarın daha hafif başlarsın",
     "moreAheadBody_other": "{{count}} kart · yarın daha hafif başlarsın",
     "goalsTitle": "Hedeflerin",
@@ -252,7 +252,7 @@
     "readText": "Metni oku"
   },
   "review": {
-    "title": "Tekrar",
+    "title": "Çalışma",
     "progress": "{{done}} / {{total}} kart",
     "repeatsLeft_one": "+{{count}} tekrar",
     "repeatsLeft_other": "+{{count}} tekrar",
@@ -296,7 +296,7 @@
     "saveError": "Kaydedilemedi; tekrar dene.",
     "emptyTitle": "Bugünlük bitti",
     "noCardsTitle": "Henüz kart yok",
-    "noCardsBody": "Tekrar edecek kart yok. İlk kelimeni ekleyerek başla.",
+    "noCardsBody": "Çalışacak kart yok. İlk kelimeni ekleyerek başla.",
     "backHome": "Ana ekrana dön",
     "addCards": "Kart ekle",
     "summary": {
@@ -718,10 +718,10 @@
       "cards": "Kartlar",
       "senseRef": "{{n}}. anlam",
       "locked": "Kilitli",
-      "dueNow": "Vadesi geldi",
+      "dueNow": "Sırası geldi",
       "due": "Sıradaki: {{when}}",
       "suspendNote": "Bu notu askıya al",
-      "suspendHint": "Askıdaki kartlar tekrara gelmez; geçmişleri korunur.",
+      "suspendHint": "Askıdaki kartlar çalışmaya gelmez; geçmişleri korunur.",
       "deleteNote": "Notu sil",
       "deleteNoteTitle": "“{{term}}” silinsin mi?",
       "deleteSenseTitle": "“{{meaning}}” anlamı silinsin mi?",
@@ -784,8 +784,8 @@
     "keyboardHint": "Günler arasında ok tuşlarıyla gezinebilirsin. Home ve End haftanın başına ve sonuna gider.",
     "metricsTitle": "Ölçütler",
     "currentStreak": "Güncel seri",
-    "currentStreakToday": "Bugün de tekrar yaptın.",
-    "currentStreakPending": "Bugün tekrar yaparsan seri sürer.",
+    "currentStreakToday": "Bugün de çalıştın.",
+    "currentStreakPending": "Bugün çalışırsan seri sürer.",
     "longestStreak": "En uzun seri",
     "daysUnit_one": "gün",
     "daysUnit_other": "gün",
@@ -911,7 +911,7 @@
       "noWeakest": "En zayıf noktanı göstermek için bir kategoride en az 20 cevap gerekiyor.",
       "row": "{{label}}: {{rate}}, {{answers}}. Büyük olasılıkla {{low}} ile {{high}} arasında.",
       "rowFew": "{{label}}: veri az, {{answers}}.",
-      "interval": "Büyük olasılıkla {{low}} ile {{high}} arasında (%95 güven aralığı)",
+      "interval": "Büyük olasılıkla {{low}} ile {{high}} arasında",
       "unknownSource": "Silinmiş kaynak",
       "none": {
         "level": "Seviyesi belli değil",
@@ -948,7 +948,7 @@
     "sections": {
       "hesap": "Hesap",
       "senkron": "Eşitleme",
-      "yuk": "Tekrar yükü",
+      "yuk": "Çalışma yükü",
       "bildirim": "Bildirim",
       "seviye": "Seviye",
       "gorunum": "Görünüm",
@@ -977,8 +977,8 @@
       "noNew": "Yeni kart yok",
       "dailyNewHint": "Her yeni kart, sonraki günlerde birkaç tekrar daha getirir. Günde 10 kart, çoğu kişi için sürdürülebilir.",
       "retention": "Hedef hatırlama oranı",
-      "retentionExplain": "Bir kart tekrara geldiğinde onu hatırlama olasılığın yaklaşık %{{pct}} olur.",
-      "retentionLow": "Daha az tekrar yaparsın ama daha çok unutursun.",
+      "retentionExplain": "Bir kartın sırası geldiğinde onu hatırlama olasılığın yaklaşık %{{pct}} olur.",
+      "retentionLow": "Daha az çalışırsın ama daha çok unutursun.",
       "retentionMid": "Çoğu kişi için iyi bir denge.",
       "retentionHigh": "Daha az unutursun ama tekrar sayısı belirgin artar.",
       "dayStart": "Gün başlangıcı",
@@ -1064,7 +1064,7 @@
     "notify": {
       "description": "Günde en fazla bir kez kısa bir hatırlatma. Uygulama kapalıyken de gelir.",
       "daily": "Günlük hatırlatma",
-      "dailyHint": "O gün tekrar yaptıysan, bekleyen kartın yoksa ya da tatildeysen gelmez. 22.00 ile 09.00 arasında hiç gelmez.",
+      "dailyHint": "O gün çalıştıysan, bekleyen kartın yoksa ya da tatildeysen gelmez. 22.00 ile 09.00 arasında hiç gelmez.",
       "when": "Ne zaman gelsin?",
       "auto": "Otomatik",
       "fixed": "Sabit saat",
@@ -1116,7 +1116,7 @@
         "lead": "Her gün ne kadar yeni kelime göreceğini ve tekrarların ne sıklıkla geleceğini belirler."
       },
       "yuk": {
-        "title": "Tekrar yükü ve tatil",
+        "title": "Çalışma yükü ve tatil",
         "keywords": "günlük süre dakika kapasite telafi birikme tatil ara yük"
       },
       "bildirim": {
@@ -1186,7 +1186,7 @@
     }
   },
   "fsrsOpt": {
-    "title": "Algoritmayı hafızama göre ayarla",
+    "title": "Kart zamanlamasını hafızama göre ayarla",
     "body": "Uygulama, şimdiye kadarki cevaplarına bakarak kartların ne zaman geleceğini senin hafızana göre ayarlar. Hesap bu cihazda yapılır; cevapların hiçbir yere gönderilmez.",
     "needMore": "Bunun için en az {{min}} tekrar gerekiyor. Şu an {{count}} tekrarın var.",
     "progressText": "{{count}} / {{min}} tekrar",
@@ -1214,11 +1214,11 @@
     "saveFailed": "Ayar kaydedilemedi.",
     "helper": {
       "title": "Hedef orana göre günlük tekrar",
-      "hint": "Şu anki kartlarına göre kaba bir tahmin. Oranı yükseltirsen daha az unutursun ama daha sık tekrar yaparsın.",
+      "hint": "Şu anki kartlarına göre kaba bir tahmin. Oranı yükseltirsen daha az unutursun ama daha sık çalışırsın.",
       "retention": "%{{pct}} hatırlama",
       "reviews": "~{{count}}/gün",
       "current": "Şu anki hedefin",
-      "empty": "Kart tekrar etmeye başlayınca burada tahmini göreceksin."
+      "empty": "Kartlarını çalışmaya başlayınca burada tahmini göreceksin."
     },
     "offer": {
       "title": "Algoritmayı hafızana göre ayarlayalım mı?",
@@ -1416,14 +1416,14 @@
       "submitSense": "Anlamı ekle",
       "saved": "“{{term}}” eklendi",
       "senseAdded": "“{{term}}” için {{count}} yeni anlam eklendi",
-      "cardsCreated": "{{count}} kart oluşturuldu; yeni kart olarak sırayla tekrara gelecek.",
+      "cardsCreated": "{{count}} kart oluşturuldu; yeni kart olarak sırayla çalışmana gelecek.",
       "nothingNew": "“{{term}}” için bu anlam zaten kayıtlı",
       "invalid": "Kelime ve anlam boş olamaz.",
       "failed": "Kart kaydedilemedi. Tekrar dene."
     },
     "ai": {
       "hint": "Ortak sözlükte bu kelimenin anlamlarını bul.",
-      "fill": "AI ile doldur",
+      "fill": "Yapay zekâyla doldur",
       "loading": "Anlamlar aranıyor…",
       "fromLexicon": "Sözlükteki anlamlar",
       "fromAi": "Yeni bulunan anlamlar",
@@ -1579,7 +1579,7 @@
       "nextNone": "Şu an planlanmış hatırlatma yok: bugün çalıştın, bekleyen kartın yok ya da tatildesin.",
       "failed": "Hatırlatma ayarlanamadı. Tekrar dene.",
       "channelName": "Günlük hatırlatma",
-      "channelDescription": "Tekrar zamanı gelince günde en fazla bir kez."
+      "channelDescription": "Çalışma zamanı gelince günde en fazla bir kez."
     }
   },
   "ocr": {
@@ -1711,7 +1711,7 @@
       "lead": "Engapp hesabını ve sunucudaki bütün verilerini buradan ya da uygulamanın içinden kalıcı olarak silebilirsin.",
       "inApp": "Uygulamada: Profil → ⚙ Ayarlar → Hesap ve eşitleme → Hesabımı ve verilerimi sil.",
       "whatTitle": "Neler silinir",
-      "what": "Kartların ve kelimelerin, çalışma geçmişin ve istatistiklerin, ayarların, haftalık raporların, bildirim kayıtların, AI önbelleğin ve kullanım sayaçların, ardından hesabının kendisi. Silme hemen yapılır ve geri alınamaz.",
+      "what": "Kartların ve kelimelerin, çalışma geçmişin ve istatistiklerin, ayarların, haftalık raporların, bildirim kayıtların, yapay zekâ önbelleğin ve kullanım sayaçların, ardından hesabının kendisi. Silme hemen yapılır ve geri alınamaz.",
       "keptTitle": "Neler kalır",
       "kept": "Ortak sözlük (kelime anlamları, örnek cümleler, ses dosyaları) kimseye ait değildir ve senin bilgini içermez; olduğu gibi kalır. Hizmet sağlayıcıların teknik kayıtları kendi sürelerine tabidir.",
       "guestTitle": "Misafir modundaysan",
@@ -1747,12 +1747,12 @@
   },
   "importer": {
     "privacy": "Gizli iş belgelerini yükleme.",
-    "privacyWhy": "Ücretsiz yapay zekâ katmanında gönderilen metinleri Google okuyabilir ve modellerini geliştirmek için kullanabilir.",
-    "signInTitle": "AI ile kart çıkarmak için giriş yap",
-    "signInBody": "Kelime ve kalıp önerileri sunucudaki AI ile hazırlanır, bu yüzden Google hesabıyla giriş gerekir. Elle kart eklemek misafir olarak da çalışır.",
+    "privacyWhy": "Ücretsiz yapay zekâ hizmetinde gönderilen metinleri Google okuyabilir ve modellerini geliştirmek için kullanabilir.",
+    "signInTitle": "Yapay zekâyla kart çıkarmak için giriş yap",
+    "signInBody": "Kelime ve kalıp önerileri sunucudaki yapay zekâyla hazırlanır, bu yüzden Google hesabıyla giriş gerekir. Elle kart eklemek misafir olarak da çalışır.",
     "signInCta": "Google ile giriş yap",
-    "unavailableTitle": "AI bu sürümde kapalı",
-    "unavailableBody": "AI sunucusu ayarlanmamış. Kartları “Elle” sekmesinden ekleyebilirsin.",
+    "unavailableTitle": "Yapay zekâ bu sürümde kapalı",
+    "unavailableBody": "Yapay zekâ sunucusu ayarlanmamış. Kartları “Elle” sekmesinden ekleyebilirsin.",
     "paste": {
       "label": "İngilizce metin",
       "placeholder": "Bir makale, e-posta ya da kitap bölümü yapıştır…",
@@ -1787,8 +1787,8 @@
       "queued": "Sırada",
       "processing": "Parça {{done}}/{{total}} işleniyor…",
       "progress": "{{done}}/{{total}} parça",
-      "cacheHits_one": "{{count}} parça önbellekten geldi, AI çağrılmadı.",
-      "cacheHits_other": "{{count}} parça önbellekten geldi, AI çağrılmadı.",
+      "cacheHits_one": "{{count}} parça daha önce işlenmişti; yeniden gönderilmedi.",
+      "cacheHits_other": "{{count}} parça daha önce işlenmişti; yeniden gönderilmedi.",
       "ready": "Adaylar hazır",
       "readyBody_one": "{{count}} aday bulundu.",
       "readyBody_other": "{{count}} aday bulundu.",
@@ -1801,12 +1801,12 @@
       "recent": "Son içe aktarmalar"
     },
     "errors": {
-      "daily_limit": "Bugünkü AI kullanım sınırına ulaştın. Yarın kaldığın yerden devam edebilirsin; işlenen parçalar kaybolmadı.",
-      "quota_exceeded": "AI şu an çok yoğun. Birkaç dakika sonra tekrar dene; işlenen parçalar kaybolmadı.",
-      "ai_failed": "AI bu parçayı işleyemedi. Tekrar dene.",
+      "daily_limit": "Bugünkü yapay zekâ kullanım sınırına ulaştın. Yarın kaldığın yerden devam edebilirsin; işlenen parçalar kaybolmadı.",
+      "quota_exceeded": "Yapay zekâ şu an çok yoğun. Birkaç dakika sonra tekrar dene; işlenen parçalar kaybolmadı.",
+      "ai_failed": "Yapay zekâ bu parçayı işleyemedi. Tekrar dene.",
       "unreachable": "Sunucuya ulaşılamadı. Bağlantını kontrol edip tekrar dene; sorun sürerse biraz sonra yeniden dene.",
       "not_signed_in": "Oturumun kapanmış. Tekrar giriş yapıp dene.",
-      "not_configured": "AI sunucusu ayarlanmamış.",
+      "not_configured": "Yapay zekâ sunucusu ayarlanmamış.",
       "invalid_input": "Bu metin işlenemedi. Biraz kısaltıp tekrar dene.",
       "bad_response": "Sunucudan beklenmedik bir cevap geldi. Tekrar dene.",
       "unknown": "Bir şeyler ters gitti. Tekrar dene.",
@@ -1834,7 +1834,7 @@
       "addSenseHint": "Kelime kartlarında var; bu anlam yeni.",
       "new": "Yeni",
       "lowConfidence": "Emin değil",
-      "lowConfidenceHint": "AI bu adaydan pek emin değil (güven %{{pct}}); anlamı kontrol et.",
+      "lowConfidenceHint": "Yapay zekâ bu adaydan pek emin değil (güven %{{pct}}); anlamı kontrol et.",
       "meaning": "Türkçe anlamı: {{term}}",
       "meaningEdited": "Düzeltildi",
       "resetMeaning": "Sözlükteki anlama dön",
@@ -1844,7 +1844,7 @@
       "confirmNone": "Eklenecek aday seç",
       "confirming": "Ekleniyor…",
       "added": "{{notes}} kelime eklendi",
-      "addedBody": "{{senses}} anlam, {{cards}} kart. Kartlar sırayla tekrara gelecek.",
+      "addedBody": "{{senses}} anlam, {{cards}} kart. Kartlar sırayla çalışmana gelecek.",
       "confirmFailed": "Kartlar eklenemedi. Tekrar dene.",
       "discard": "Bu içe aktarmayı sil",
       "discardTitle": "İçe aktarma silinsin mi?",
@@ -1881,14 +1881,14 @@
     },
     "lookup": {
       "offline": "Çevrimdışısın. Bu kelime sözlük önbelleğinde yok; bağlantı gelince tekrar dene.",
-      "signIn": "AI ile doldurmak için giriş yap.",
-      "noSenses": "Bu kelime için sözlükte ya da AI'da anlam bulunamadı.",
+      "signIn": "Yapay zekâyla doldurmak için giriş yap.",
+      "noSenses": "Bu kelime için sözlükte ya da yapay zekâda anlam bulunamadı.",
       "noMore": "Başka yaygın anlam bulunamadı."
     }
   },
   "more": {
     "title": "Biraz daha çalış",
-    "descDone": "Bugünkü tekrarların bitti. İstersen biraz daha devam et.",
+    "descDone": "Bugünkü çalışman bitti. İstersen biraz daha devam et.",
     "descPending_one": "Bugün {{count}} kart daha var · yaklaşık {{min}} dk.",
     "descPending_other": "Bugün {{count}} kart daha var · yaklaşık {{min}} dk.",
     "newTitle": "Yeni kartlar",
@@ -1916,12 +1916,12 @@
     "size_one": "{{count}} kart",
     "size_other": "{{count}} kart",
     "practiceStart": "Pratiğe başla",
-    "practiceNone": "Pratik için önce birkaç kartı tekrar etmelisin.",
+    "practiceNone": "Pratik için önce birkaç kartı çalışmalısın.",
     "aheadTitle": "Yarının kartları",
-    "aheadBody_one": "Yarın vadesi gelecek {{count}} kartı şimdi tekrar edebilirsin.",
-    "aheadBody_other": "Yarın vadesi gelecek {{count}} kartı şimdi tekrar edebilirsin.",
+    "aheadBody_one": "Yarın sırası gelecek {{count}} kartı şimdi çalışabilirsin.",
+    "aheadBody_other": "Yarın sırası gelecek {{count}} kartı şimdi çalışabilirsin.",
     "aheadNote": "Normal bir tekrar sayılır ve takvime işlenir. Yarınki yükün azalır; erken bildiğin kartın sonraki aralığı biraz kısa olur.",
-    "aheadStart": "Şimdi tekrar et",
+    "aheadStart": "Şimdi çalış",
     "aheadNone": "Yarın için bekleyen kart yok.",
     "addFailed": "Yeni kartlar açılamadı; tekrar dene.",
     "sourceDeck": "Deste",
@@ -1931,8 +1931,8 @@
     "deckLabel": "Deste"
   },
   "load": {
-    "settingsDescription": "Günde ne kadar zaman ayırabileceğini söyle; tekrar yükü buna göre ayarlanır.",
-    "capacity": "Günlük tekrar süresi",
+    "settingsDescription": "Günde ne kadar zaman ayırabileceğini söyle; çalışma yükü buna göre ayarlanır.",
+    "capacity": "Günlük çalışma süresi",
     "capacityValue": "{{min}} dk",
     "capacityHint": "Senin hızınla bu, günde yaklaşık {{cards}} kart demek (kart başına ~{{sec}} sn).",
     "catchupAuto": "Telafi modu",
@@ -1957,14 +1957,14 @@
     "catchupDays_one": "Telafi bugün biter",
     "catchupDays_other": "Telafi: {{count}} günde biter",
     "catchupLong": "Telafi bir aydan uzun sürebilir. Günlük süreni artırmayı düşünebilirsin.",
-    "rampZero": "Tekrar hoş geldin! Bugün yalnızca tekrar yapıyoruz; yeni kartlar yarından itibaren yavaş yavaş gelecek.",
+    "rampZero": "Tekrar hoş geldin! Bugün yalnızca eski kartlarını çalışıyoruz; yeni kartlar yarından itibaren yavaş yavaş gelecek.",
     "rampHalf_one": "Yeni kartlar yavaş yavaş dönüyor: bugün {{count}} yeni kart.",
     "rampHalf_other": "Yeni kartlar yavaş yavaş dönüyor: bugün {{count}} yeni kart.",
     "vacationNow": "Tatildesin (son gün: {{end}}). Yeni kart açılmıyor ve serin korunuyor.",
     "vacationSoon": "Tatilin {{date}} başlıyor.",
     "vacationAhead_one": "Tatilde gelecek {{count}} tekrarı şimdi yapabilirsin.",
     "vacationAhead_other": "Tatilde gelecek {{count}} tekrarı şimdi yapabilirsin.",
-    "vacationAheadAction": "Tekrarları öne al",
+    "vacationAheadAction": "Tatildekileri şimdi çalış",
     "warningTitle": "Önümüzdeki günlerde yükün artıyor",
     "warningBody": "{{day}} günü yaklaşık {{count}} tekrar bekleniyor; günlük süren {{cap}} karta yetiyor.",
     "warningSuggest": "Günlük yeni kart limitini {{from}} yerine {{to}} yapmanı öneririm.",
@@ -2017,7 +2017,7 @@
     "source": {
       "cefrj": "CEFR-J listesi",
       "octanove": "Octanove listesi",
-      "ai": "AI tahmini",
+      "ai": "Yapay zekâ tahmini",
       "freq": "Sıklık verisi",
       "words": "İçindeki kelimeler",
       "user": "Senin seçimin"
@@ -2025,12 +2025,13 @@
     "sourceHint": {
       "cefrj": "Kelime, CEFR-J kelime listesinde bu seviyede.",
       "octanove": "Kelime, ileri seviye Octanove C1/C2 listesinde bu seviyede.",
-      "ai": "Listelerde yok. Seviyeyi AI tahmin etti; kelimenin ne kadar sık kullanıldığına göre sınırlandı.",
+      "ai": "Listelerde yok. Seviyeyi yapay zekâ tahmin etti; kelimenin ne kadar sık kullanıldığına göre sınırlandı.",
       "freq": "Listelerde yok. Seviye, kelimenin İngilizcede ne kadar sık geçtiğinden hesaplandı.",
       "words": "Listelerde yok. İfadedeki en zor kelimenin seviyesi.",
       "user": "Bu seviyeyi sen seçtin; yalnızca sende geçerli."
     },
     "correction": "{{list}}: {{from}} → Türk öğrenci için {{to}}",
+    "correction_reason": "{{list}}: {{from}} → Türk öğrenci için {{to}} (yapay zekâ: {{reason}})",
     "autoWas": "Otomatik seviye: {{level}} ({{source}}).",
     "autoUnknown": "Bu kelimenin otomatik seviyesi bilinmiyor.",
     "unknown": "Seviye henüz bilinmiyor.",
@@ -2045,7 +2046,7 @@
   "sources": {
     "title": "Kaynaklar",
     "back": "Ayarlar",
-    "intro": "Engapp, kelimelerin A1–C2 seviyesini aşağıdaki açık verilerle belirler. Kelime bir listede varsa liste seviyesi kullanılır; Türkçe konuşanlar için belirgin biçimde daha kolay ya da daha zor bir kelimede bu seviye en fazla bir basamak kaydırılır. Listede olmayan kelimelerde seviyeyi AI tahmini ve kelimenin İngilizcedeki sıklığı belirler.",
+    "intro": "Engapp, kelimelerin A1–C2 seviyesini aşağıdaki açık verilerle belirler. Kelime bir listede varsa liste seviyesi kullanılır; Türkçe konuşanlar için belirgin biçimde daha kolay ya da daha zor bir kelimede bu seviye en fazla bir basamak kaydırılır. Listede olmayan kelimelerde seviyeyi yapay zekâ tahmini ve kelimenin İngilizcedeki sıklığı belirler.",
     "license": "Lisans",
     "link": "Kaynağa git",
     "cefrj": {
@@ -2071,10 +2072,10 @@
       "what": "Bu kaynaklardan türetilen seviye dosyaları ve Türk öğrenciler için yapılan düzeltmeler.",
       "license": "CC BY-SA 4.0 (türetilmiş veri, aynı lisansla paylaşılır)."
     },
-    "aiTitle": "AI tahminleri",
+    "aiTitle": "Yapay zekâ tahminleri",
     "aiBody": "Listede olmayan kelimelerin seviyesi ve Türk öğrenci düzeltmeleri Google Gemini ile üretilir. Bunlar tahmindir: düzeltme liste seviyesini en fazla bir basamak değiştirir, tahmin de kelimenin sıklığıyla sınırlanır. Bir kelimenin seviyesini her zaman kendin değiştirebilirsin.",
     "wordBankTitle": "Kelime Bankası",
-    "wordBankBody": "Kelime Bankası, CEFR-J ve Octanove listelerindeki kelimeleri gösterir. Türkçe anlamları ve örnek cümleleri bir kez Claude (Anthropic) ile üretildi; ortak sözlükte anlamı zaten olan kelimelerde o anlam kullanıldı. Octanove verisinden türetildiği için kelime bankası da CC BY-SA 4.0 lisanslıdır."
+    "wordBankBody": "Kelime Bankası, CEFR-J ve Octanove listelerindeki kelimeleri gösterir. Türkçe anlamları ve örnek cümleleri bir kez Claude (Anthropic) ile üretildi; ortak sözlükte anlamı zaten olan kelimelerde o anlam kullanıldı. Octanove verisinden türetildiği için Kelime Bankası da CC BY-SA 4.0 lisanslıdır."
   },
   "levelTest": {
     "title": "Seviye testi",
@@ -2143,7 +2144,7 @@
     "changeUndone": "Seviyen yeniden {{level}}.",
     "vocabTitle": "Tahmini kelime hazinen",
     "vocabUnit": "kelime",
-    "vocabDisclaimer": "Seviye testi, 'Biliyorum' dediklerin ve çalışmana dayanan bir tahmin. Öğrendiğin kelime sayısı değildir.",
+    "vocabDisclaimer": "Seviye testi, “Biliyorum” dediklerin ve çalışmana dayanan bir tahmin. Öğrendiğin kelime sayısı değildir.",
     "vocabLevel": "Seviyen {{level}}",
     "toNext": "{{nextTo}} ~{{count}} kelime kaldı",
     "reachedNext": "{{next}} kelimelerinin %80'ini biliyorsun",
@@ -2454,7 +2455,7 @@
   },
   "themes": {
     "title": "Temalara ayır",
-    "description": "AI, kelimelerini konulara göre gruplar; sen onaylarsın.",
+    "description": "Yapay zekâ, kelimelerini konulara göre gruplar; sen onaylarsın.",
     "untagged_one": "Etiketi olmayan {{count}} kelimen var.",
     "untagged_other": "Etiketi olmayan {{count}} kelimen var.",
     "selected_one": "Gruplanacak: {{count}} kelime.",
@@ -2462,19 +2463,19 @@
     "includeTagged": "Etiketli kelimeleri de dahil et",
     "includeTaggedHint": "Mevcut etiketleri değişmez; onaylarsan yeni etiket eklenir.",
     "limitNote": "En yeni {{count}} kelime gruplanır.",
-    "calls_one": "Günlük AI hakkından {{count}} çağrı kullanır.",
-    "calls_other": "Günlük AI hakkından {{count}} çağrı kullanır.",
+    "calls_one": "Günlük yapay zekâ hakkından {{count}} kullanım düşer.",
+    "calls_other": "Günlük yapay zekâ hakkından {{count}} kullanım düşer.",
     "privacy": "Yalnızca kelimeler ve sözlükteki kısa İngilizce tanımları gönderilir. Cümlelerin, Türkçe anlamların ve notların gönderilmez; gruplar yalnızca sende kalır.",
     "start": "Temalara ayır",
     "tooFew": "Gruplamak için en az {{count}} kelime gerekir.",
-    "signIn": "Tema gruplama AI kullanır; Google ile giriş yapınca açılır.",
+    "signIn": "Tema gruplama yapay zekâ kullanır; Google ile giriş yapınca açılır.",
     "signInAction": "Giriş yap",
     "running": "Kelimelerin gruplanıyor…",
     "runningStep": "{{done}} / {{total}} parça",
     "cancel": "Durdur",
     "errorOffline": "İnternet bağlantısı yok. Bağlanınca tekrar dene.",
-    "errorDaily": "Bugünkü AI hakkın doldu. Yarın tekrar deneyebilirsin.",
-    "errorBusy": "AI şu an çok yoğun. Birkaç dakika sonra tekrar dene.",
+    "errorDaily": "Bugünkü yapay zekâ hakkın doldu. Yarın tekrar deneyebilirsin.",
+    "errorBusy": "Yapay zekâ şu an çok yoğun. Birkaç dakika sonra tekrar dene.",
     "errorFailed": "Gruplama yapılamadı. Tekrar dene.",
     "errorPartial": "Kelimelerin bir kısmı gruplanamadı; hazır olanlar aşağıda.",
     "retry": "Tekrar dene",
@@ -2498,8 +2499,8 @@
     "saveNone": "Kaydedilecek grup yok",
     "discard": "Önizlemeyi sil",
     "discardTitle": "Önizleme silinsin mi?",
-    "discardBody": "Gruplar kaydedilmez. Yeniden gruplamak yeni bir AI çağrısı kullanır.",
-    "noGroups": "AI bu kelimelerden anlamlı bir grup çıkaramadı. Daha fazla kelime ekleyince tekrar deneyebilirsin.",
+    "discardBody": "Gruplar kaydedilmez. Yeniden gruplamak yapay zekâ hakkından bir kullanım daha düşer.",
+    "noGroups": "Yapay zekâ bu kelimelerden anlamlı bir grup çıkaramadı. Daha fazla kelime ekleyince tekrar deneyebilirsin.",
     "saved_one": "{{count}} etiket eklendi",
     "saved_other": "{{count}} etiket eklendi",
     "savedNotes_one": "{{count}} kelime etiketlendi.",
@@ -2532,8 +2533,8 @@
     "media_one": "{{n}} ses veya resim dosyası aktarılmayacak.",
     "media_other": "{{n}} ses veya resim dosyası aktarılmayacak.",
     "fsrs": {
-      "title": "Tekrar aralıkları yeniden hesaplanacak",
-      "body": "Anki'nin eski algoritmasındaki (SM-2) aralıklar, buradaki algoritmaya (FSRS) göre tekrar kayıtlarından yeniden hesaplanır. İlk birkaç hafta bazı kartlar beklediğinden erken veya geç gelebilir; sonra senin cevaplarına göre oturur."
+      "title": "Kart aralıkları yeniden hesaplanacak",
+      "body": "Anki'deki aralıklar, buradaki zamanlamaya göre çalışma kayıtlarından yeniden hesaplanır. İlk birkaç hafta bazı kartlar beklediğinden erken veya geç gelebilir; sonra senin cevaplarına göre oturur."
     },
     "mapping": {
       "title": "Alanları eşleştir",
@@ -2582,11 +2583,11 @@
     "enrich": {
       "title": "Sözlükle eşleştir",
       "body": "Kelimelerini ortak sözlüğe bağlar: seviye, örnek cümleler ve kelime ailesi gelir. Senin yazdığın anlamlar değişmez. İsteğe bağlı; kartların bunsuz da çalışır.",
-      "quota": "Sözlükte zaten olan kelimeler AI kullanmaz. Olmayanlar günlük AI hakkından düşer; hak biterse ertesi gün kaldığı yerden devam eder.",
+      "quota": "Sözlükte zaten olan kelimeler yapay zekâ kullanmaz. Olmayanlar günlük yapay zekâ hakkından düşer; hak biterse ertesi gün kaldığı yerden devam eder.",
       "start": "Sözlükle eşleştir",
       "signIn": "Sözlükle eşleştirmek için Google ile giriş yap. Kartların giriş yapmadan da çalışır.",
       "running": "Eşleştiriliyor: {{done}} / {{total}} kelime. İnternet yoksa bağlantı gelince devam eder.",
-      "paused": "Bugünlük AI hakkı doldu. Yarın kaldığı yerden devam edecek ({{done}} / {{total}} kelime).",
+      "paused": "Bugünlük yapay zekâ hakkı doldu. Yarın kaldığı yerden devam edecek ({{done}} / {{total}} kelime).",
       "pausedRetry": "Kısa bir ara verildi, birazdan devam edecek ({{done}} / {{total}} kelime).",
       "done": "Eşleştirme bitti: {{matched}} kelime anlamıyla, {{termOnly}} kelime yalnızca sözlük kaydıyla eşleşti, {{unmatched}} kelime bulunamadı."
     },
@@ -2639,14 +2640,14 @@
       "lower_new_limit": "Sınırı {{value}} yap",
       "lower_new_limitDone": "Günlük yeni kart sınırın artık {{value}}.",
       "lower_new_limitAlready": "Günlük yeni kart sınırın zaten {{limit}}; değiştirmen gerekmiyor.",
-      "come_back": "Tekrara başla",
+      "come_back": "Çalışmaya başla",
       "practice_weakest_one": "{{count}} kelimeyle pratik yap",
       "practice_weakest_other": "{{count}} kelimeyle pratik yap",
       "practice_gap_one": "{{count}} kelimeyle pratik yap",
       "practice_gap_other": "{{count}} kelimeyle pratik yap",
       "mnemonic_hard": "İlk kelimeyi aç",
       "add_words": "Kelime ekle",
-      "keep_going": "Tekrara başla"
+      "keep_going": "Çalışmaya başla"
     },
     "pastTitle": "Önceki raporlar",
     "pastEmpty": "Henüz önceki rapor yok.",
@@ -2835,10 +2836,10 @@
     "more_one": "{{count}} kelime daha göster",
     "more_other": "Daha fazla göster ({{count}} kelime daha)",
     "noMatch": "Bu seçimle kelime yok.",
-    "emptyTitle": "Kelime bankası henüz indirilmedi",
+    "emptyTitle": "Kelime Bankası henüz indirilmedi",
     "emptyOffline": "İnternet gelince yüklenecek. Bir kez indikten sonra internetsiz de çalışır.",
     "emptyFailed": "İndirme şu an olmadı. Biraz sonra tekrar dene.",
-    "emptyNoBackend": "Kelime bankası şu an yüklenemiyor. İnternet gelince yüklenecek.",
+    "emptyNoBackend": "Kelime Bankası şu an yüklenemiyor. İnternet gelince yüklenecek.",
     "retry": "Tekrar dene",
     "credit": "Kelime listeleri: CEFR-J Wordlist 1.5 (© Tono Laboratuvarı, TUFS) ve Octanove Vocabulary Profile C1/C2 (Octanove Labs, CC BY-SA 4.0). Anlamlar ve örnek cümleler yapay zekâyla bir kez üretildi.",
     "creditLink": "Kaynaklar",
@@ -2913,7 +2914,7 @@
       "label": "Yeni kelimeler",
       "add": "“{{word}}” kelimesini ekle",
       "added": "“{{word}}” eklendi",
-      "bank": "Kelime bankasını aç"
+      "bank": "Kelime Bankası'nı aç"
     },
     "missing": {
       "title": "Bazı öneriler internet gelince yüklenecek",
@@ -2943,7 +2944,7 @@
     "segments": "Deste görünümü",
     "tabMine": "Destelerim",
     "tabDiscover": "Keşfet",
-    "tabBank": "Kelime bankası",
+    "tabBank": "Kelime Bankası",
     "import": "İçe aktar: Anki, CSV ya da yedek",
     "back": "Geri",
     "study": "Çalış",
@@ -2997,7 +2998,7 @@
       "exists": "Bu adla bir deste zaten var."
     },
     "discover": {
-      "loading": "Kelime bankası indiriliyor…",
+      "loading": "Kelime Bankası indiriliyor…",
       "featured": "Seviyen için öne çıkan",
       "featuredBody": {
         "verb": "Konuşmanı en çok açacak grup. Cümleyi fiil kurar.",
@@ -3021,7 +3022,7 @@
       "open": "Aç",
       "topLegend": "Koyu dolgu: bildiğin kısım.",
       "byLevel": "Seviyene göre",
-      "byLevelSource": "CEFR-J + Octanove",
+      "byLevelSource": "Açık kelime listelerine göre",
       "yourLevel": "Seviyen",
       "byPos": "Kelime türüne göre",
       "posLegend": "Renkler seviyeyi gösterir: A1'den C2'ye",
@@ -3056,7 +3057,7 @@
     },
     "deckBody": {
       "top": "İngilizce metinlerde en sık geçen {{size}} isim, fiil, sıfat ve zarf. Bunları bilmek, okuduğun hemen her sayfanın iskeletini tanımak demek. Sıralama wordfreq verisinden.",
-      "level": "{{level}} seviyesindeki tüm kelimeler, en sık kullanılandan başlayarak. Listeler CEFR-J ve Octanove'dan.",
+      "level": "{{level}} seviyesindeki tüm kelimeler, en sık kullanılandan başlayarak.",
       "pos": "Her seviyeden {{pos}}, en sık kullanılandan başlayarak.",
       "levelPos": "{{level}} seviyesindeki {{pos}}, en sık kullanılandan başlayarak.",
       "falseFriends": "Türkçede benzer bir kelime olduğu için yanlış anlaşılan İngilizce kelimeler. Kartın arkasında hangi Türkçe kelimeyle karıştığı da yazar."
@@ -3076,7 +3077,7 @@
       "knownPct": "%{{pct}}",
       "knownLabel": "biliyorsun",
       "learned": "öğrendin",
-      "studying": "kartında",
+      "studying": "çalışıyorsun",
       "known": "zaten biliyordun",
       "fresh": "yeni",
       "levels": "Seviye dağılımı",
@@ -3086,7 +3087,7 @@
       "paceBody_other": "{{count}} yeni kelime yaklaşık {{days}} günde biter",
       "paceNone": "Eklenecek yeni kelime kalmadı",
       "paceChange": "Değiştir",
-      "add": "Destemlere ekle",
+      "add": "Destelerime ekle",
       "addMore_one": "Kalan {{count}} kelimeyi ekle",
       "addMore_other": "Kalan {{count}} kelimeyi ekle",
       "adding": "Ekleniyor… {{done}} / {{total}}",
@@ -3095,7 +3096,7 @@
       "addedNothing": "Bu destedeki kelimelerin hepsi zaten sende.",
       "addFailed": "Eklenemedi. Tekrar dene.",
       "inMine": "Destelerinde",
-      "openMine": "Destemde aç",
+      "openMine": "Destelerimde aç",
       "scan": "Bildiklerimi işaretle",
       "scanHint": "hızlı tarama",
       "scanDone": "Taramayı bitir",
@@ -3104,16 +3105,16 @@
       "markKnownLabel": "{{term}}: biliyorum",
       "markedKnown": "{{term}} bildiğin kelimelere eklendi",
       "undo": "Geri al",
-      "skipNote": "Bildiğin {{known}} ve kartında olan {{carded}} kelime tekrar eklenmez.",
+      "skipNote": "Bildiğin {{known}} ve kartlarında olan {{carded}} kelime tekrar eklenmez.",
       "words": "Destedeki kelimeler",
       "order": "Sıklık sırasıyla",
       "filter": "Duruma göre süz",
       "fAll": "Tümü {{count}}",
       "fNew": "Yeni {{count}}",
-      "fCarded": "Kartında {{count}}",
+      "fCarded": "Çalışıyorsun {{count}}",
       "fKnown": "Biliyorsun {{count}}",
       "sLearned": "Öğrendin",
-      "sStudying": "Kartında",
+      "sStudying": "Çalışıyorsun",
       "sKnown": "Biliyorsun",
       "sNew": "Yeni",
       "more": "{{count}} kelime daha göster",
@@ -3305,7 +3306,7 @@
     "selected": "Seçtiğin: {{selected}}",
     "listen": "Dinle: {{term}}",
     "meanings": "Anlamları",
-    "mine": "Kartındaki anlam",
+    "mine": "Kartlarındaki anlam",
     "pickHint": "Karta girecek anlamlara dokun.",
     "picked": "Seçili",
     "owned": {
@@ -3336,7 +3337,7 @@
   "widget": {
     "answers": {
       "toggle": "Bildirimden cevap ver",
-      "hint": "Hatırlatma bekleyen bir kelimeyi sorar: \"Cevabı gör\", sonra \"Bildim\" ya da \"Bilemedim\". Cevabın uygulamayı açınca işlenir."
+      "hint": "Hatırlatma bekleyen bir kelimeyi sorar: “Cevabı gör”, sonra “Bildim” ya da “Bilemedim”. Cevabın uygulamayı açınca işlenir."
     },
     "notify": {
       "question": "{{term}} ne demek?",
@@ -3437,7 +3438,7 @@
       "fromOnline": "Anlam ortak sözlükten geldi.",
       "inCards": "Bu kelime kartlarında var.",
       "addCard": "Karta ekle",
-      "added": "\"{{term}}\" kartlarına eklendi",
+      "added": "“{{term}}” kartlarına eklendi",
       "addFailed": "Kart eklenemedi. Tekrar dene.",
       "addYourself": "Kartı kendin ekle",
       "none": {
@@ -3503,15 +3504,15 @@
     "list": {
       "title": "Metinlerim",
       "add": "Metin ekle",
-      "empty": "Henüz metin yok. Bir metin yapıştır ya da PDF yükle, \"Okuyucuda aç\" de.",
+      "empty": "Henüz metin yok. Bir metin yapıştır ya da PDF yükle, “Okuyucuda aç” de.",
       "unread": "Okunmadı",
       "progress": "%{{pct}} okundu",
       "reading": "Okunuyor %{{pct}}",
       "continue": "Devam et",
       "finished": "Bitti",
-      "delete": "\"{{title}}\" metnini sil",
+      "delete": "“{{title}}” metnini sil",
       "confirmTitle": "Metin silinsin mi?",
-      "confirmBody": "\"{{title}}\" bu cihazdan ve hesabından silinir. Bu metinden eklediğin kartlar kalır.",
+      "confirmBody": "“{{title}}” bu cihazdan ve hesabından silinir. Bu metinden eklediğin kartlar kalır.",
       "confirm": "Sil",
       "deleted": "Metin silindi",
       "deleteFailed": "Metin silinemedi. Tekrar dene."
@@ -3656,8 +3657,8 @@
     },
     "freeze": {
       "title": "Serin korundu",
-      "body_one": "Dün tekrar yapılmadı. Ayın seri korumalarından biri bu günü kendiliğinden karşıladı.",
-      "body_other": "Son {{count}} gün tekrar yapılmadı. Ayın seri korumaları bu günleri kendiliğinden karşıladı.",
+      "body_one": "Dün çalışılmadı. Ayın seri korumalarından biri bu günü kendiliğinden karşıladı.",
+      "body_other": "Son {{count}} gün çalışılmadı. Ayın seri korumaları bu günleri kendiliğinden karşıladı.",
       "left_one": "Bu ay {{count}} koruma daha var.",
       "left_other": "Bu ay {{count}} koruma daha var.",
       "leftNone": "Bu ayın korumaları kullanıldı. Gelecek ay yine {{perMonth}} tane olacak.",

@@ -56,7 +56,7 @@ test.describe('offline', () => {
     });
     await page.reload(); // controlled by the worker from here on
 
-    // The bank is downloaded once (Desteler → Kelime bankası), as on any device.
+    // The bank is downloaded once (Desteler → Kelime Bankası), as on any device.
     await page.goto('/decks?tab=bank');
     await expect(page.getByTestId('word-bank-row').first()).toBeVisible();
 
