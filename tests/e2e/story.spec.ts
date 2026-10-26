@@ -2,6 +2,7 @@
 // mocked ai-story writes it from the words it is sent, the reader shows the words in bold and
 // the three questions, and Bugün opens the same story again without a second request. Only
 // the allowed fields leave the device (the privacy snapshot of the request's keys).
+import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 import { buildBackup } from '../../src/domain/backup.ts';
 import { applyRating, createScheduler, emptyFsrs } from '../../src/domain/fsrs.ts';
@@ -47,6 +48,22 @@ async function restoreFile(page: Page, file: unknown) {
 }
 
 test.use({ viewport: { width: 360, height: 780 } });
+
+/** axe (WCAG 2.2 AA) in light and dark. */
+async function axe(page: Page, name: string) {
+  for (const colorScheme of ['light', 'dark'] as const) {
+    await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+    await page.waitForTimeout(300);
+    const { violations } = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+    expect(
+      violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(' | ')}`),
+      `${name} ${colorScheme}`,
+    ).toEqual([]);
+  }
+  await page.emulateMedia({ colorScheme: 'light' });
+}
 
 async function noSideScroll(page: Page) {
   const overflow = await page.evaluate(
@@ -103,6 +120,7 @@ test('Bugün → "Bugünün hikâyesi": written once, read with bold words and t
   const row = page.getByTestId('today-story');
   await expect(row).toBeVisible({ timeout: 20_000 });
   await noSideScroll(page);
+  await axe(page, 'bugün');
   await row.getByTestId('today-story-make').click();
   await expect(page).toHaveURL(/\/oku\/[0-9a-f-]+$/, { timeout: 20_000 });
   const url = page.url();
@@ -127,7 +145,9 @@ test('Bugün → "Bugünün hikâyesi": written once, read with bold words and t
   await expect(questions).toHaveCount(3);
   await questions.nth(1).getByRole('button', { name: 'Her friend' }).click();
   await expect(questions.nth(1).getByRole('status')).toHaveText('Doğru.');
+  await questions.nth(0).getByRole('button', { name: 'To the sea' }).click();
   await noSideScroll(page);
+  await axe(page, 'reader story');
 
   // Bugün again: the same story, no new request.
   const asked = calls.length;
