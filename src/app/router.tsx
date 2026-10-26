@@ -227,6 +227,13 @@ routes.unshift(
     HydrateFallback: () => null,
     lazy: async () => ({ Component: (await loadLegal()).DeleteAccountPage }),
   },
+  {
+    // "Engapp" in the text-selection menu: only the quick sheet, no shell (decision 0046).
+    path: '/quick',
+    errorElement: <RouteErrorPage />,
+    HydrateFallback: () => null,
+    lazy: async () => ({ Component: (await import('@/features/quick/QuickPage')).QuickPage }),
+  },
 );
 
 // Dev-only component gallery, outside the shell. Tree-shaken from production builds.

@@ -3072,5 +3072,41 @@
       "showing": "Showing {{shown}} / {{total}}",
       "quick": "A mix of {{count}} words from your level"
     }
+  },
+  "quick": {
+    "title": "Quick card",
+    "close": "Close",
+    "waiting": "Opening your selection…",
+    "emptyTitle": "No selected text arrived",
+    "emptyBody": "Select a word in any app and tap Engapp in the menu that appears.",
+    "selected": "You selected: {{selected}}",
+    "listen": "Listen: {{term}}",
+    "meanings": "Meanings",
+    "pickHint": "Tap the meanings the card should have.",
+    "picked": "Selected",
+    "owned": {
+      "carded": "Already in your cards",
+      "known": "You marked this word as known"
+    },
+    "searching": "Looking up the meaning…",
+    "offline": "This word is not on your phone yet. Connect to the internet to look it up.",
+    "signIn": "This word is not on your phone yet. Sign in to look it up, or write it yourself.",
+    "notFound": "No meaning found for this word.",
+    "failed": "The lookup failed. You can write the meaning yourself.",
+    "writeOwn": "I'll write the meaning",
+    "add": "Add card",
+    "saved": "“{{term}}” added to your cards",
+    "savedCards": "{{count}} cards created.",
+    "nothingNew": "“{{term}}” is already in your cards with this meaning.",
+    "addFailed": "The card could not be added. Try again.",
+    "textTitle": "Your selection",
+    "textWords": "{{count}} words",
+    "openReader": "Open in the reader",
+    "openReaderHint": "Tap a word you don't know while reading to see its meaning.",
+    "extract": "Find the words",
+    "extractHint": "New words in the text come to a preview with the sentence they are in.",
+    "linkTitle": "Your selected link",
+    "openLink": "Open in Engapp",
+    "openFailed": "Could not open it. Try again."
   }
 }

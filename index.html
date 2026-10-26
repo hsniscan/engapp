@@ -24,6 +24,13 @@
             });
           }
         } catch (e) {}
+        // Android text-selection sheet (docs/decisions/0046): its activity starts on /quick and
+        // is see-through, so the page must not paint the canvas over the calling app.
+        try {
+          var cap = window.Capacitor;
+          if (location.pathname === '/quick' && cap && cap.isNativePlatform && cap.isNativePlatform())
+            document.documentElement.dataset.quickHost = 'true';
+        } catch (e) {}
       })();
     </script>
   </head>

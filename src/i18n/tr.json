@@ -3072,5 +3072,41 @@
       "showing": "{{shown}} / {{total}} gösteriliyor",
       "quick": "Seviyenden karışık {{count}} kelime"
     }
+  },
+  "quick": {
+    "title": "Hızlı kart",
+    "close": "Kapat",
+    "waiting": "Seçtiğin metin açılıyor…",
+    "emptyTitle": "Seçili bir metin gelmedi",
+    "emptyBody": "Bir uygulamada kelime seç, açılan menüde Engapp'e dokun.",
+    "selected": "Seçtiğin: {{selected}}",
+    "listen": "Dinle: {{term}}",
+    "meanings": "Anlamları",
+    "pickHint": "Karta girecek anlamlara dokun.",
+    "picked": "Seçili",
+    "owned": {
+      "carded": "Kartlarında var",
+      "known": "Biliyorum dediğin kelime"
+    },
+    "searching": "Anlamı aranıyor…",
+    "offline": "Bu kelime telefonunda yok. İnternete bağlanınca anlamını bulabilirim.",
+    "signIn": "Bu kelime telefonunda yok. Anlamını bulmak için giriş yap ya da kendin yaz.",
+    "notFound": "Bu kelimenin anlamını bulamadım.",
+    "failed": "Anlam aranamadı. İstersen kendin yaz.",
+    "writeOwn": "Anlamını kendim yazayım",
+    "add": "Karta ekle",
+    "saved": "“{{term}}” kartlarına eklendi",
+    "savedCards": "{{count}} kart oluşturuldu.",
+    "nothingNew": "“{{term}}” bu anlamla zaten kartlarında.",
+    "addFailed": "Kart eklenemedi. Tekrar dene.",
+    "textTitle": "Seçtiğin metin",
+    "textWords": "{{count}} kelime",
+    "openReader": "Okuyucuda aç",
+    "openReaderHint": "Okurken bilmediğin kelimeye dokun, anlamını gör.",
+    "extract": "Kelimeleri çıkar",
+    "extractHint": "Metindeki yeni kelimeler, geçtikleri cümleyle önizlemeye gelir.",
+    "linkTitle": "Seçtiğin bağlantı",
+    "openLink": "Engapp'te aç",
+    "openFailed": "Açılamadı. Tekrar dene."
   }
 }
