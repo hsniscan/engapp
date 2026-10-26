@@ -605,7 +605,7 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
             <Button
               variant="ghost"
               size="sm"
-              aria-pressed={showTr}
+              aria-expanded={showTr}
               onClick={() => setShowTr((v) => !v)}
               data-testid="reader-translate"
               className="-ml-2"
