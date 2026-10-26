@@ -3662,7 +3662,7 @@
       "left_one": "Bu ay {{count}} koruma daha var.",
       "left_other": "Bu ay {{count}} koruma daha var.",
       "leftNone": "Bu ayın korumaları kullanıldı. Gelecek ay yine {{perMonth}} tane olacak.",
-      "rule": "Seri için günde 1 tekrar yeter. Kaçan bir günü ayda {{perMonth}} kez kendiliğinden koruruz; tatil günleri bundan sayılmaz."
+      "rule": "Seri için günde 1 kart çalışman yeter. Kaçan bir günü ayda {{perMonth}} kez kendiliğinden koruruz; tatil günleri bundan sayılmaz."
     }
   },
   "modes": {

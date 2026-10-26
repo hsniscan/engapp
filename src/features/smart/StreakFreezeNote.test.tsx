@@ -27,7 +27,7 @@ describe('StreakFreezeNote', () => {
     renderRoute(<StreakFreezeNote />);
     const note = await screen.findByTestId('streak-freeze-note');
     expect(note).toHaveTextContent('Serin korundu');
-    expect(note).toHaveTextContent('Dün tekrar yapılmadı.');
+    expect(note).toHaveTextContent('Dün çalışılmadı.');
     expect(note).toHaveTextContent('Bu ay 1 koruma daha var.');
     expect(note).not.toHaveTextContent(/kaybett|üzül|kaçırdın/i);
     expect((await getStreakSummary()).currentStreak).toBe(8);
