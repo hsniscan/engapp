@@ -1022,7 +1022,7 @@
     },
     "level": {
       "description": "Decides which words are suggested to you and drives the vocabulary counter.",
-      "current": "Current level",
+      "current": "Your level",
       "source": {
         "default": "Default; not measured yet.",
         "test": "From the level test, {{date}}.",

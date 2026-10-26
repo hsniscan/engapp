@@ -1022,7 +1022,7 @@
     },
     "level": {
       "description": "Sana önerilen kelimeleri ve kelime sayacını belirler.",
-      "current": "Şu anki seviye",
+      "current": "Seviyen",
       "source": {
         "default": "Varsayılan; henüz ölçülmedi.",
         "test": "Seviye testinden, {{date}}.",

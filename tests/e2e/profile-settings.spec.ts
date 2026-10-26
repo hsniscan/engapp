@@ -24,7 +24,7 @@ test('reminders for a web guest: a sign-in button, no dead end', async ({ page }
   await expect(page.getByText(/Yukarıdaki Hesap/)).toHaveCount(0);
   // The web has no home-screen widgets: no widget card.
   await expect(page.getByText('Ana ekran araçları')).toHaveCount(0);
-  await page.getByRole('link', { name: 'Giriş yap' }).click();
+  await page.getByRole('link', { name: 'Giriş yap', exact: true }).click();
   await expect(page).toHaveURL(/\/auth$/);
 });
 
@@ -38,7 +38,7 @@ test('İlerleme for a new user: one first-steps card and the calendar, no wall o
   await expect(first.getByText('Çalıştığın ilk haftadan sonraki pazartesi')).toBeVisible();
   await expect(page.getByRole('region', { name: 'Devamlılık' })).toBeVisible();
   await expect(page.getByTestId('hard-tile')).toHaveCount(0);
-  await expect(page.getByText('Önümüzdeki 30 gün')).toHaveCount(0);
+  await expect(page.getByText('Önümüzdeki 30 gün', { exact: true })).toHaveCount(0);
 });
 
 test('Profil: an unmeasured level is not shown as B1; stats live on İlerleme', async ({ page }) => {
