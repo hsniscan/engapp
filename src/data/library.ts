@@ -314,6 +314,8 @@ export const summaryOf = (s: ScoredGradedText): GradedSummary => ({
  * when the library opens); never calls the network itself.
  */
 export async function suggestedGradedTexts(difficulty: ReadingDifficulty, limit: number): Promise<GradedSummary[]> {
+  // Nothing to suggest yet: skip the knowledge model (it reads every card).
+  if ((await db.graded_catalog.count()) === 0) return [];
   const lib = await scoreLibrary(isDifficulty(difficulty) ? difficulty : DEFAULT_DIFFICULTY);
   return suggestTexts(lib.texts, lib.difficulty, limit, lib.finished).map(summaryOf);
 }

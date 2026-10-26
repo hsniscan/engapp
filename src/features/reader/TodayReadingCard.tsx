@@ -12,6 +12,8 @@ import { openAddSheet } from '@/features/add/addSheetStore';
 import { useAppSettings } from '@/features/settings/useAppSettings';
 import { Button } from '@/ui';
 
+const SUGGEST_DELAY_MS = 1500;
+
 function useSuggestion(enabled: boolean): GradedSummary | null | undefined {
   const { settings } = useAppSettings();
   const difficulty = settings ? readingDifficultyOf(settings) : null;
@@ -19,14 +21,18 @@ function useSuggestion(enabled: boolean): GradedSummary | null | undefined {
   useEffect(() => {
     if (!enabled || !difficulty) return;
     let live = true;
-    suggestedGradedTexts(difficulty, 1)
-      .then((list) => live && setState({ key: difficulty, value: list[0] ?? null }))
-      .catch((e: unknown) => {
-        void logError(e, 'reader.today.suggest');
-        if (live) setState({ key: difficulty, value: null });
-      });
+    // Scoring the library reads every card: wait until Bugün itself has painted.
+    const timer = setTimeout(() => {
+      suggestedGradedTexts(difficulty, 1)
+        .then((list) => live && setState({ key: difficulty, value: list[0] ?? null }))
+        .catch((e: unknown) => {
+          void logError(e, 'reader.today.suggest');
+          if (live) setState({ key: difficulty, value: null });
+        });
+    }, SUGGEST_DELAY_MS);
     return () => {
       live = false;
+      clearTimeout(timer);
     };
   }, [enabled, difficulty]);
   if (!enabled) return null;
