@@ -12,7 +12,7 @@ import { HomeIcon } from './homeIcons';
 import { Ring } from './Ring';
 import { levelPath, type HomeGoals } from './todayQueries';
 
-export const GOALS_EDIT_HREF = '/profile?edit=goals';
+export const GOALS_EDIT_HREF = '/progress?edit=goals';
 
 /** Daily minutes offered in one tap when no goal is set. */
 const DAY_GOAL_PRESETS = [10, 15, 20] as const;

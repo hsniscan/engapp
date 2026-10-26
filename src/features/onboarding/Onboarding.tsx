@@ -17,7 +17,7 @@ import { OFFER_DISMISSED_KEY } from '@/features/leveltest/levelText';
 import { saveFirstInterests, skipInterests } from '@/features/profile/actions';
 import { TopicChips } from '@/features/profile/TopicChips';
 import { formatNumber } from '@/features/stats/format';
-import { Button, cn, Logo, ProgressBar, Skeleton, Surface, toast } from '@/ui';
+import { Button, cn, Icon, Logo, ProgressBar, Skeleton, Surface, toast } from '@/ui';
 import { finishOnboarding, setOnboardingStep } from './state';
 
 /** Where the first session starts: today's word study. */
@@ -140,7 +140,8 @@ function Welcome({ onStart }: { onStart: () => void }) {
                   i === 0 ? 'bg-accent text-accent-fg' : 'border border-border text-fg-muted',
                 )}
               >
-                {i + 1}
+                {/* Three numbered steps (Adım 1 / 3 …), then the first study session. */}
+                {i < steps.length - 1 ? i + 1 : <Icon name="arrow-right" size={18} />}
               </span>
               <p className="pt-1.5 text-[0.9375rem] text-fg">{s}</p>
             </li>
