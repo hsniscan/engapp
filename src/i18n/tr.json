@@ -241,19 +241,51 @@
   },
   "addSheet": {
     "title": "Ne eklemek istersin?",
-    "quickLabel": "Hızlı ekle · anlamı ve örnekleri AI bulur",
     "quickPlaceholder": "Bir kelime yaz…",
-    "quickSubmit": "Kelimeyi ekle",
-    "wordTitle": "Kelime yaz",
-    "wordBody": "Tek kelime yaz, anlamını AI bulsun",
-    "textTitle": "Metin ya da PDF",
-    "textBody": "İçinden seviyene uygun kelimeleri seçer",
-    "bankTitle": "Kelime bankasından",
-    "bankBody": "A1–C2 seviyeli listeden seç",
-    "decksTitle": "Hazır desteler",
-    "decksBody": "En sık kelimeler, seviye ve tür desteleri",
-    "ankiTitle": "Anki'den taşı",
-    "ankiBody": ".apkg dosyanı seç, destelerin buraya gelsin"
+    "word": {
+      "title": "Kelime ekle",
+      "label": "Anlamı kartlarından, Kelime Bankası'ndan ya da sözlükten gelir; yoksa yapay zekâ bulur",
+      "submit": "Anlamını bul",
+      "manual": "Elle ekle",
+      "edit": "Elle düzenle",
+      "another": "Başka kelime ekle",
+      "offline": "Bu kelime telefonunda yok. İnternete bağlanınca anlamını bulabilirim; istersen elle ekle.",
+      "signIn": "Bu kelime telefonunda yok. Yapay zekânın anlamını bulması için giriş yap ya da elle ekle.",
+      "notFound": "Bu kelimenin anlamını bulamadım. Elle ekleyebilirsin."
+    },
+    "text": {
+      "title": "Metin ekle",
+      "paste": "Yapıştır",
+      "pdf": "PDF",
+      "link": "Bağlantı",
+      "photo": "Fotoğraf",
+      "subtitle": "Altyazı",
+      "body": "Metin kaydedilir ve okuyucuda açılır. İstersen içindeki yeni kelimeleri çıkarırsın."
+    },
+    "compose": {
+      "title": "Kelimelerimle metin",
+      "cta": "Kelimelerimle metin oluştur",
+      "body": "3–8 kelimeni seç; hikâye, diyalog, haber ya da e-posta olarak gelsin."
+    },
+    "import": {
+      "title": "İçe aktar",
+      "anki": "Anki destesi",
+      "ankiBody": ".apkg dosyanı seç, destelerin buraya gelsin",
+      "csv": "CSV ya da kelime listesi",
+      "csvBody": "Her satırda bir kelime ve anlamı",
+      "backup": "Yedek dosyası",
+      "backupBody": "Engapp yedeğini geri yükle"
+    }
+  },
+  "capture": {
+    "openReader": "Okuyucuda aç",
+    "openReaderHint": "Bilmediğin kelimeye dokun, anlamını gör. Hesap gerekmez.",
+    "extract": "Bu metindeki kelimeleri çıkar",
+    "extractHint": "Yapay zekâ seviyene uygun yeni kelimeleri, geçtikleri cümleyle önerir. Metin de kaydedilir.",
+    "extractSignIn": "Kelimeleri çıkarmayı yapay zekâ yapar; bunun için giriş yap. Okumak için hesap gerekmez.",
+    "signInCta": "Google ile giriş yap",
+    "extractUnavailable": "Kelime çıkarma bu sürümde kapalı. Okuyucu her zaman çalışır.",
+    "readText": "Metni oku"
   },
   "review": {
     "title": "Tekrar",
@@ -634,7 +666,12 @@
     }
   },
   "add": {
-    "title": "Kart ekle"
+    "title": "Kart ekle",
+    "wordTitle": "Kelime ekle",
+    "wordLead": "Kelimeyi yaz; anlamı kartlarından, Kelime Bankası'ndan ya da sözlükten gelir. İstersen kendin yaz, örnek cümle ekle.",
+    "textTitle": "Metin ekle",
+    "textLead": "Metin kaydedilir ve okuyucuda açılır. İstersen içindeki yeni kelimeleri çıkarırsın.",
+    "otherWays": "Ya da başka bir yerden"
   },
   "import": {
     "title": "Önizleme"
@@ -1303,11 +1340,6 @@
     "hoursMinutes": "{{h}} sa {{m}} dk"
   },
   "cards": {
-    "tabs": {
-      "manual": "Elle",
-      "paste": "Metin yapıştır",
-      "pdf": "PDF yükle"
-    },
     "termType": {
       "word": "Kelime",
       "phrase": "Söz öbeği",
@@ -1359,7 +1391,6 @@
       "notFound": "Kelime bu cümlede bulunamadı; boşluk doldurma kartı oluşmaz. Cümlede kelimenin geçtiğinden emin ol."
     },
     "add": {
-      "pageHint": "Yeni bir kelime ya da kalıp; anlamını ve istersen bir örnek cümle.",
       "manualTitle": "Elle kart ekle",
       "term": "İngilizce kelime ya da kalıp",
       "termHint": "Sözlük biçimiyle yaz: “gave up” değil “give up”.",
@@ -1558,8 +1589,6 @@
     }
   },
   "ocr": {
-    "addTitle": "Fotoğraftan metin",
-    "addBody": "Kitap sayfasını çek, metnini okusun",
     "title": "Fotoğraftan metin",
     "lead": "Kitap, dergi ya da tabela fotoğrafındaki İngilizce metni okur.",
     "camera": "Fotoğraf çek",
@@ -1600,15 +1629,10 @@
     "title": "Paylaşılan",
     "emptyTitle": "Paylaşılan bir metin yok",
     "emptyBody": "Başka bir uygulamada bir kelime ya da cümle seç, Paylaş'a dokun ve Engapp'i seç.",
-    "textTitle": "Metinden kelime çıkar",
-    "textLead": "Bu metindeki kelimeler aranıyor. Bulunanlar önizlemede, geçtikleri cümleyle birlikte görünür.",
-    "textStart": "Kelimeleri bul",
-    "textStarting": "Başlatılıyor…",
-    "textFailed": "Kelime çıkarma başlatılamadı. Tekrar dene.",
+    "textTitle": "Paylaşılan metin",
+    "textLead": "Okuyucuda okuyabilir ya da içindeki yeni kelimeleri çıkarabilirsin. Hiçbiri kendiliğinden başlamaz.",
     "defaultTitle": "Paylaşılan metin",
     "linkTitle": "Paylaşılan bağlantı",
-    "linkLead": "Şimdilik bağlantıdan yalnızca sayfanın başlığı alınır. Makalenin tamamını içe aktarma sonraki sürümde gelecek.",
-    "linkNoTitle": "Bu bağlantının başlığı gelmedi; aşağıda adresi görüyorsun. Makalenin tamamını içe aktarma sonraki sürümde gelecek.",
     "linkFromTitle": "Başlıktaki kelimeleri bul",
     "linkTermFromTitle": "Başlığı kart olarak ekle",
     "toHome": "Ana sayfaya dön"
@@ -1729,7 +1753,7 @@
   },
   "importer": {
     "privacy": "Gizli iş belgelerini yükleme.",
-    "privacyWhy": "Ücretsiz AI katmanında gönderilen metinleri Google okuyabilir ve modellerini geliştirmek için kullanabilir.",
+    "privacyWhy": "Ücretsiz yapay zekâ katmanında gönderilen metinleri Google okuyabilir ve modellerini geliştirmek için kullanabilir.",
     "signInTitle": "AI ile kart çıkarmak için giriş yap",
     "signInBody": "Kelime ve kalıp önerileri sunucudaki AI ile hazırlanır, bu yüzden Google hesabıyla giriş gerekir. Elle kart eklemek misafir olarak da çalışır.",
     "signInCta": "Google ile giriş yap",
@@ -1742,6 +1766,8 @@
       "label": "İngilizce metin",
       "placeholder": "Bir makale, e-posta ya da kitap bölümü yapıştır…",
       "stats": "{{chars}} karakter · {{chunks}} parça",
+      "words_one": "{{count}} kelime · {{chars}} karakter",
+      "words_other": "{{count}} kelime · {{chars}} karakter",
       "statsEmpty": "Cümleleri bölmeden yapıştır; uzun metinler parçalara ayrılır.",
       "titleLabel": "Başlık",
       "titlePlaceholder": "Örn. The Guardian — iklim yazısı",
@@ -1759,7 +1785,7 @@
       "summary": "{{pages}} sayfa · {{chars}} karakter · {{chunks}} parça",
       "change": "Başka dosya seç",
       "noText": "Bu PDF'te okunabilir metin yok",
-      "noTextBody": "Taranmış (görüntü) PDF'ler henüz desteklenmiyor. Metni kopyalayabiliyorsan “Metin yapıştır” sekmesini kullan.",
+      "noTextBody": "Taranmış (görüntü) PDF'ler henüz desteklenmiyor. Sayfanın fotoğrafını çekebilir ya da metni kopyalayıp “Yapıştır” sekmesine koyabilirsin.",
       "notPdf": "Bu dosya bir PDF değil.",
       "tooBig": "Dosya çok büyük (en fazla {{mb}} MB).",
       "encrypted": "Bu PDF parola korumalı; açılamadı.",
@@ -2495,8 +2521,6 @@
     "title": "Anki'den taşı",
     "description": "Anki destelerini tekrar geçmişiyle birlikte buraya taşı.",
     "entry": {
-      "title": "Anki kullanıyor musun?",
-      "body": "Destelerini tekrar geçmişiyle birlikte taşıyabilirsin.",
       "link": "Anki dosyası (.apkg) yükle"
     },
     "pick": {
@@ -2845,8 +2869,6 @@
     "retry": "Tekrar dene",
     "credit": "Kelime listeleri: CEFR-J Wordlist 1.5 (© Tono Laboratuvarı, TUFS) ve Octanove Vocabulary Profile C1/C2 (Octanove Labs, CC BY-SA 4.0). Anlamlar ve örnek cümleler yapay zekâyla bir kez üretildi.",
     "creditLink": "Kaynaklar",
-    "entryTitle": "Ne ekleyeceğini bilmiyor musun?",
-    "entryBody": "Kelime Bankası'nda seviyene göre binlerce kelime anlamı ve örneğiyle hazır.",
     "entryLink": "Kelime Bankası'nı aç"
   },
   "deckHub": {
@@ -3175,10 +3197,6 @@
     }
   },
   "article": {
-    "sheetTitle": "Bağlantıdan makale",
-    "sheetBody": "Bir haber ya da blog yazısını okuyucuda aç",
-    "subtitleSheetTitle": "Altyazı dosyası (.srt / .vtt)",
-    "subtitleSheetBody": "Dizi ya da video altyazısını metne çevir",
     "pageTitle": "Bağlantıdan makale",
     "pageLead": "Bir makalenin adresini yapıştır. Reklam, menü ve yorumlar atılır; yalnızca yazının metni gelir.",
     "urlLabel": "Makalenin adresi",
@@ -3199,11 +3217,13 @@
     "failTitle": "Bu sayfa alınamadı",
     "pasteHint": "Sayfadaki metni kopyalayıp yapıştırabilirsin; okuyucu ve kelime çıkarma aynı şekilde çalışır.",
     "pasteCta": "Metni kopyala-yapıştır",
+    "guestBody": "Makale sunucumuz üzerinden getirilir, bu yüzden hesap gerekir. Sayfadaki metni kopyalayıp yapıştırırsan girişsiz de okuyabilirsin.",
+    "unavailable": "Makale getirme bu sürümde kapalı",
     "retry": "Tekrar dene",
     "titleOnly": "Yine de sayfanın başlığını kullanabilirsin:",
     "errors": {
       "offline": "İnternet bağlantısı yok. Bağlanınca tekrar dene.",
-      "not_signed_in": "Makale getirmek için Google ile giriş yapman gerekiyor.",
+      "not_signed_in": "Makale getirmek için giriş yap",
       "daily_limit": "Bugünlük makale hakkın doldu (günde 30). Yarın yeniden dene.",
       "blocked_url": "Bu adres açılamıyor. Herkese açık bir web sayfasının adresini yapıştır.",
       "robots_disallowed": "Bu site, sayfalarının uygulamalarca alınmasına izin vermiyor.",
@@ -3237,6 +3257,7 @@
     "selected": "Seçtiğin: {{selected}}",
     "listen": "Dinle: {{term}}",
     "meanings": "Anlamları",
+    "mine": "Kartındaki anlam",
     "pickHint": "Karta girecek anlamlara dokun.",
     "picked": "Seçili",
     "owned": {
@@ -3453,6 +3474,100 @@
       "notEnough": "Hikâye için bugün en az 5 tekrar kelimesi gerekir.",
       "generic": "Hikâye şu an hazırlanamadı. Biraz sonra yeniden dene."
     }
+  },
+  "compose": {
+    "title": "Kelimelerimle metin",
+    "lead": "Seçtiğin kelimelerle kısa bir metin. Okuyucuda kelimelerin vurgulu açılır, sonunda 3 soru var.",
+    "steps": "Adımlar",
+    "step1": "Kelimeler",
+    "step2": "Ayarlar",
+    "step3": "Oku",
+    "search": "Kelimelerinde ara",
+    "searchPlaceholder": "Kelimelerinde ara…",
+    "searchResults": "Arama sonuçları",
+    "noMatch": "Bu aramaya uyan kelimen yok.",
+    "listDue": "Tekrar zamanı gelenler",
+    "listHard": "Zorlandıkların",
+    "listRecent": "Son eklediklerin",
+    "picked": "{{count}}/{{max}} kelime seçtin",
+    "pickMore_one": "{{count}} kelime daha seç",
+    "pickMore_other": "{{count}} kelime daha seç",
+    "pickedList": "Seçtiğin kelimeler",
+    "remove": "{{term}} kelimesini çıkar",
+    "next": "Devam",
+    "back": "Geri",
+    "genre": "Tür",
+    "genres": {
+      "story": "Hikâye",
+      "dialogue": "Diyalog",
+      "news": "Haber",
+      "email": "E-posta"
+    },
+    "length": "Uzunluk",
+    "lengths": {
+      "short": "Kısa · ~120 kelime",
+      "medium": "Orta · ~220 kelime"
+    },
+    "difficulty": "Zorluk",
+    "topic": "Konu",
+    "topicHint": "Metin bu konulardan birinde geçer.",
+    "topicNone": "Konu seçmezsen gündelik bir konu seçilir.",
+    "noInterests": "İlgi alanı seçmediğin için gündelik bir konu seçilir.",
+    "setInterests": "İlgi alanlarını seç",
+    "make": "Metni oluştur",
+    "retry": "Tekrar dene",
+    "writing": "Metnin yazılıyor…",
+    "writingHint": "Yaklaşık 10 saniye sürer. Hazır olunca okuyucuda açılır.",
+    "limit_one": "Günde {{count}} metin oluşturabilirsin · bugün {{used}}",
+    "limit_other": "Günde {{count}} metin oluşturabilirsin · bugün {{used}}",
+    "signInTitle": "Metni oluşturmak için giriş yap",
+    "signInBody": "Metni yapay zekâ yazar, bu yüzden Google hesabı gerekir. Seçtiğin kelimeler burada kalır.",
+    "unavailable": "Metin oluşturma bu sürümde kapalı.",
+    "fewTitle": "Önce birkaç kelime ekle",
+    "fewBody_one": "Metin için kartlarında en az {{count}} kelime olmalı.",
+    "fewBody_other": "Metin için kartlarında en az {{count}} kelime olmalı.",
+    "fewCta": "Kelime ekle",
+    "errors": {
+      "offline": "İnternet bağlantısı yok. Bağlanınca tekrar dene; seçtiklerin kalır.",
+      "guest": "Metin için Google hesabınla giriş yap.",
+      "used": "Bugünkü {{count}} metin hakkın doldu. Yarın yenilenir.",
+      "budget": "Bu ayın metin hakkı doldu. Ay başında yeniden açılır.",
+      "notEnough": "En az 3 kelime seç.",
+      "generic": "Metin şu an hazırlanamadı. Biraz sonra yeniden dene."
+    }
+  },
+  "wordList": {
+    "title": "CSV ya da kelime listesi",
+    "lead": "Her satırda bir kelime ve anlamı; istersen üçüncü sütunda bir örnek cümle. Kartlar bu cihazda oluşur, hesap gerekmez.",
+    "pickFile": "Dosya seç (.csv, .txt)",
+    "otherFile": "Başka dosya seç",
+    "pasteLabel": "Ya da listeyi buraya yapıştır",
+    "placeholder": "give up - vazgeçmek\nbank;kıyı;We sat on the bank of the river.",
+    "hint": "Ayraç olarak sekme, noktalı virgül, virgül ya da “ - ” kullanabilirsin.",
+    "preview_one": "{{count}} kelime bulundu",
+    "preview_other": "{{count}} kelime bulundu",
+    "more_one": "ve {{count}} kelime daha",
+    "more_other": "ve {{count}} kelime daha",
+    "skipped_one": "Kelimesi ya da anlamı olmayan {{count}} satır atlandı.",
+    "skipped_other": "Kelimesi ya da anlamı olmayan {{count}} satır atlandı.",
+    "truncated": "Liste çok uzun; ilk {{max}} satır eklenecek.",
+    "add_one": "{{count}} kelimeyi ekle",
+    "add_other": "{{count}} kelimeyi ekle",
+    "addEmpty": "Kelimeleri ekle",
+    "adding": "{{done}}/{{total}} kelime eklendi",
+    "done_one": "{{count}} yeni kelime eklendi",
+    "done_other": "{{count}} yeni kelime eklendi",
+    "addedSenses_one": "Var olan kelimelerine {{count}} yeni anlam eklendi.",
+    "addedSenses_other": "Var olan kelimelerine {{count}} yeni anlam eklendi.",
+    "unchanged_one": "{{count}} kelime bu anlamla zaten kartlarındaydı.",
+    "unchanged_other": "{{count}} kelime bu anlamla zaten kartlarındaydı.",
+    "failedRows_one": "{{count}} satır eklenemedi (çok uzun ya da boş).",
+    "failedRows_other": "{{count}} satır eklenemedi (çok uzun ya da boş).",
+    "toWords": "Kelimelerime git",
+    "again": "Başka liste ekle",
+    "tooBig": "Dosya çok büyük (en fazla 2 MB).",
+    "readFailed": "Dosya okunamadı. Tekrar dene.",
+    "failed": "Kelimeler eklenemedi. Tekrar dene."
   },
   "smart": {
     "rotation": {

@@ -16,7 +16,8 @@ export interface OcrReviewProps {
   /** Object URL of the photo, shown on demand to compare against. */
   photoUrl?: string | null;
   onOpenReader: (text: string) => Promise<void> | void;
-  onExtract: (text: string) => void;
+  /** Absent for guests: word extraction needs an account (the screen says so instead). */
+  onExtract?: (text: string) => Promise<void> | void;
   onRetake: () => void;
 }
 
@@ -145,6 +146,7 @@ export function OcrReview({
   const [lines, setLines] = useState(initialLines);
   const [editing, setEditing] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [extracting, setExtracting] = useState(false);
 
   const text = useMemo(() => rebuildText(lines), [lines]);
   const quality = useMemo(() => ocrQuality(initialLines), [initialLines]);
@@ -252,16 +254,26 @@ export function OcrReview({
         >
           {t('ocr.openReader')}
         </Button>
-        <Button
-          size="lg"
-          variant="secondary"
-          leadingIcon="search"
-          disabled={!text}
-          onClick={() => onExtract(text)}
-          data-testid="ocr-extract"
-        >
-          {t('ocr.extract')}
-        </Button>
+        {onExtract ? (
+          <Button
+            size="lg"
+            variant="secondary"
+            leadingIcon="search"
+            disabled={!text || extracting}
+            loading={extracting}
+            onClick={() => {
+              setExtracting(true);
+              void Promise.resolve(onExtract(text)).finally(() => setExtracting(false));
+            }}
+            data-testid="ocr-extract"
+          >
+            {t('capture.extract')}
+          </Button>
+        ) : (
+          <p className="text-sm text-fg-muted sm:self-center" data-testid="ocr-extract-signin">
+            {t('capture.extractSignIn')}
+          </p>
+        )}
         <Button size="lg" variant="ghost" leadingIcon="camera" onClick={onRetake}>
           {t('ocr.retake')}
         </Button>

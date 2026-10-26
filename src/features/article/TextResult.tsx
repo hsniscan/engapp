@@ -1,14 +1,12 @@
 // A fetched article or a parsed subtitle file, before it is saved: title, source line, the
-// first paragraphs, and the two ways on: "Okuyucuda aç" (saved as a reader text) and
-// "Kelimeleri çıkar" (the existing extraction preview).
-import { useState, type ReactNode } from 'react';
+// first paragraphs, and the capture's two ways on (CaptureActions): "Okuyucuda aç" and
+// "Bu metindeki kelimeleri çıkar" (the text is saved first and linked to the extraction).
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router';
-import { logError } from '@/data';
-import { readerPath, type TextKind } from '@/domain/texts';
-import { useAuth } from '@/features/auth/session';
-import { Button, Surface } from '@/ui';
-import { saveForReader, startTextExtraction, wordCount } from './useArticle';
+import type { TextKind } from '@/domain/texts';
+import { CaptureActions } from '@/features/add/CaptureActions';
+import { Surface } from '@/ui';
+import { wordCount } from './useArticle';
 
 export interface TextResultProps {
   kind: Extract<TextKind, 'article' | 'subtitle'>;
@@ -22,39 +20,7 @@ export interface TextResultProps {
 
 export function TextResult({ kind, title, meta, paragraphs, sourceUrl, notes }: TextResultProps) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const auth = useAuth();
-  const [busy, setBusy] = useState<'reader' | 'extract' | null>(null);
-  const [failed, setFailed] = useState<'reader' | 'extract' | null>(null);
   const body = paragraphs.join('\n\n');
-
-  const openReader = async () => {
-    setBusy('reader');
-    setFailed(null);
-    try {
-      const id = await saveForReader({ kind, title, body, sourceUrl });
-      void navigate(readerPath(id));
-    } catch (e) {
-      void logError(e, 'article.save');
-      setFailed('reader');
-      setBusy(null);
-    }
-  };
-
-  const extract = async () => {
-    setBusy('extract');
-    setFailed(null);
-    try {
-      const jobId = await startTextExtraction(body, title);
-      void navigate(`/import/${jobId}`);
-    } catch (e) {
-      void logError(e, 'article.extract');
-      setFailed('extract');
-      setBusy(null);
-    }
-  };
-
-  const signedIn = auth.status === 'signed_in';
   return (
     <div className="flex flex-col gap-5" data-testid="text-result">
       <Surface padding="md" className="flex flex-col gap-3">
@@ -83,39 +49,11 @@ export function TextResult({ kind, title, meta, paragraphs, sourceUrl, notes }: 
         </div>
       </Surface>
       {notes}
-      {failed && (
-        <p role="alert" className="text-sm text-danger-text">
-          {failed === 'reader' ? t('article.saveFailed') : t('article.extractFailed')}
-        </p>
-      )}
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <Button
-          size="lg"
-          leadingIcon="file"
-          loading={busy === 'reader'}
-          disabled={busy !== null}
-          onClick={() => void openReader()}
-          data-testid="text-open-reader"
-        >
-          {t('article.openReader')}
-        </Button>
-        {signedIn && (
-          <Button
-            size="lg"
-            variant="secondary"
-            leadingIcon="search"
-            loading={busy === 'extract'}
-            disabled={busy !== null}
-            onClick={() => void extract()}
-            data-testid="text-extract"
-          >
-            {t('article.extract')}
-          </Button>
-        )}
-      </div>
-      {!signedIn && auth.status !== 'loading' && (
-        <p className="text-sm text-fg-muted">{t('article.extractNeedsSignIn')}</p>
-      )}
+      <CaptureActions
+        input={() => ({ kind, title, body, sourceUrl })}
+        readerTestId="text-open-reader"
+        extractTestId="text-extract"
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db, findNoteByTerm } from '@/data';
@@ -64,12 +64,29 @@ describe('manual add (Elle)', () => {
     expect(senses.map((s) => s.meaning_tr)).toEqual(['banka', 'kıyı']);
   });
 
-  it('picks "phrase" for a multi-word term and keeps the privacy note on the import tabs', async () => {
+  it('picks "phrase" for a multi-word term', async () => {
     const user = userEvent.setup();
     renderRoute(<AddPage />, { path: '/add' });
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Kelime ekle');
     await user.type(screen.getByLabelText('İngilizce kelime ya da kalıp'), 'give up');
     expect(screen.getByRole('radio', { name: 'Söz öbeği' })).toBeChecked();
-    await user.click(screen.getByRole('tab', { name: /Metin yapıştır/ }));
-    expect(await screen.findByText('Gizli iş belgelerini yükleme.')).toBeInTheDocument();
+  });
+
+  it('follows ?term= when the address changes on the same page (v0.5.1)', async () => {
+    const { router } = renderRoute(<AddPage />, { path: '/add', url: '/add?term=postpone' });
+    const term = screen.getByLabelText('İngilizce kelime ya da kalıp');
+    expect(term).toHaveValue('postpone');
+    await act(() => router.navigate('/add?term=run%20out'));
+    await waitFor(() => expect(term).toHaveValue('run out'));
+    expect(screen.getByRole('radio', { name: 'Söz öbeği' })).toBeChecked();
+  });
+
+  it('/add?tab=paste is the text page: paste and the other ways, no word form', () => {
+    renderRoute(<AddPage />, { path: '/add', url: '/add?tab=paste' });
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Metin ekle');
+    expect(screen.getByRole('tab', { name: 'Yapıştır' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByLabelText('İngilizce kelime ya da kalıp')).toBeNull();
+    expect(screen.getByRole('link', { name: 'Bağlantı' })).toHaveAttribute('href', '/makale');
+    expect(screen.queryAllByRole('complementary')).toHaveLength(0);
   });
 });

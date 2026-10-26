@@ -1,15 +1,12 @@
 import { useId, useRef, useState, type DragEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { createImportJob, logError } from '@/data';
+import { logError } from '@/data';
 import { chunkText } from '@/domain/chunking';
-import { Button, Icon, ProgressBar, Spinner, TextField, cn, toast } from '@/ui';
-import { ImportGate } from './ImportGate';
-import { OpenInReaderButton } from '@/features/reader/OpenInReader';
+import { CaptureActions } from '@/features/add/CaptureActions';
+import { Button, Icon, ProgressBar, Spinner, TextField, cn } from '@/ui';
 import { ActiveJobs } from './JobCard';
 import { MAX_PDF_BYTES, PdfError, extractPdfText, type PdfErrorCode } from './pdf';
-import { ImportPrivacyNote } from './PrivacyNote';
-import { kickImportQueue } from './queue';
-import { MAX_IMPORT_CHARS, useImportLevel } from './shared';
+import { MAX_IMPORT_CHARS } from './shared';
 import type { ImportPanelProps } from './TextImportPanel';
 
 type PdfState =
@@ -20,14 +17,14 @@ type PdfState =
 
 const MB = Math.round(MAX_PDF_BYTES / 1024 / 1024);
 
-/** "PDF yükle": pick a PDF → text extracted in a worker → queued AI import. */
-export function PdfImportPanel({ hidePrivacyNote }: ImportPanelProps) {
+/**
+ * "PDF" (v0.5.1, decision 0056): pick a PDF, its text is read on this device (a worker), then
+ * the capture's two ways on: the reader (anyone) or word extraction (signed in).
+ */
+export function PdfImportPanel(_props: ImportPanelProps) {
   return (
     <>
-      {!hidePrivacyNote && <ImportPrivacyNote />}
-      <ImportGate>
-        <PdfImportForm />
-      </ImportGate>
+      <PdfImportForm />
       <ActiveJobs kind="pdf" />
     </>
   );
@@ -35,13 +32,11 @@ export function PdfImportPanel({ hidePrivacyNote }: ImportPanelProps) {
 
 function PdfImportForm() {
   const { t } = useTranslation();
-  const level = useImportLevel();
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [state, setState] = useState<PdfState>({ phase: 'empty' });
   const [title, setTitle] = useState('');
   const [dragging, setDragging] = useState(false);
-  const [busy, setBusy] = useState(false);
   const readId = useRef(0);
 
   const read = async (file: File) => {
@@ -84,29 +79,6 @@ function PdfImportForm() {
     e.preventDefault();
     setDragging(false);
     onPick(e.dataTransfer.files);
-  };
-
-  const submit = async () => {
-    if (state.phase !== 'ready') return;
-    setBusy(true);
-    try {
-      await createImportJob({
-        kind: 'pdf',
-        title: title.trim() || state.name,
-        file_name: state.name,
-        page_count: state.pages,
-        chunks: state.chunks,
-        level,
-      });
-      kickImportQueue();
-      setState({ phase: 'empty' });
-      setTitle('');
-    } catch (err) {
-      void logError(err, 'import.pdf.create');
-      toast({ title: t('importer.errors.unknown'), tone: 'danger' });
-    } finally {
-      setBusy(false);
-    }
   };
 
   const errorText = (code: PdfErrorCode | 'too_long') =>
@@ -260,23 +232,15 @@ function PdfImportForm() {
         onChange={(e) => setTitle(e.target.value)}
         maxLength={120}
       />
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-fg-muted">{t('importer.level', { level })}</p>
-        <div className="flex flex-col gap-2 sm:flex-row-reverse">
-          <Button
-            size="lg"
-            leadingIcon="search"
-            loading={busy}
-            onClick={() => void submit()}
-            className="sm:min-w-48"
-          >
-            {busy ? t('importer.starting') : t('importer.submit')}
-          </Button>
-          <OpenInReaderButton
-            input={() => ({ kind: 'pdf', title, body: state.text, source_url: state.name })}
-          />
-        </div>
-      </div>
+      <CaptureActions
+        input={() => ({
+          kind: 'pdf',
+          title: title.trim() || state.name.replace(/\.pdf$/i, ''),
+          body: state.text,
+          sourceUrl: state.name,
+          pageCount: state.pages,
+        })}
+      />
     </div>
   );
 }

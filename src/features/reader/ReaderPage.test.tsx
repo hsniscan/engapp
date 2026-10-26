@@ -238,11 +238,11 @@ describe('Okuyucuda aç', () => {
     const user = userEvent.setup();
     setAuthStateForTesting({ status: 'guest', user: null });
     const { router } = panel();
-    expect(screen.queryByRole('textbox')).toBeNull();
-    await user.click(screen.getByTestId('reader-paste-open'));
+    // v0.5.1: the paste box is open for guests too; only extraction asks for sign-in.
+    expect(screen.queryByTestId('capture-extract')).toBeNull();
     await user.click(screen.getByRole('textbox', { name: 'İngilizce metin' }));
     await user.paste('The cat sat on the mat.');
-    await user.click(screen.getByRole('button', { name: 'Okuyucuda aç' }));
+    await user.click(screen.getByRole('button', { name: /^Okuyucuda aç/ }));
     await waitFor(() => expect(router.state.location.pathname).toMatch(/^\/oku\//));
     const id = router.state.location.pathname.split('/')[2]!;
     expect(await getText(id)).toMatchObject({

@@ -1,10 +1,10 @@
 /*
- * Tab registry for /add ("Elle" | "Metin yapıştır" | "PDF yükle").
+ * Tab registry for /add?tab=paste|pdf, the "Metin ekle" page ("Yapıştır" | "PDF"); /add with no
+ * tab is "Kelime ekle", the hand-written form (v0.5.1, decision 0056).
  *
- * The import agent mounts its panels by replacing the two placeholders below (or by calling
+ * The import feature mounts its panels by replacing the two placeholders below (or by calling
  * `registerAddTabPanel('paste' | 'pdf', Component)` from a module imported before the page
- * renders). AddPage renders the permanent privacy note ("Gizli iş belgelerini yükleme.")
- * above both panels, so a panel does not need to repeat it.
+ * renders). The privacy note sits next to "Bu metindeki kelimeleri çıkar" (CaptureActions).
  */
 import type { ComponentType } from 'react';
 import { PastePlaceholder, PdfPlaceholder } from './AddTabPlaceholders';

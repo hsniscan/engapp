@@ -5,7 +5,7 @@
 import * as RadixDialog from '@radix-ui/react-dialog';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { QuickAddResult, QuickPreview } from '@/data/quick';
+import type { QuickAddResult, QuickMine, QuickPreview, QuickSense } from '@/data/quick';
 import { posLabel } from '@/features/cards/labels';
 import { CardPicture } from '@/features/images/CardPicture';
 import { Badge, Button, cn, Icon, IconButton, Skeleton } from '@/ui';
@@ -179,6 +179,7 @@ function TermBody({
   }
 
   const senses = preview?.senses ?? [];
+  const mine = preview?.mine ?? [];
   const loading = preview === undefined || (senses.length === 0 && lookup === 'searching');
 
   return (
@@ -227,6 +228,8 @@ function TermBody({
         )}
       </div>
 
+      {mine.length > 0 && <MineMeanings mine={mine} />}
+
       {loading ? (
         <div aria-busy="true" className="flex flex-col gap-2.5">
           {lookup === 'searching' && (
@@ -238,57 +241,8 @@ function TermBody({
           <Skeleton className="h-14 w-full rounded-[14px]" />
         </div>
       ) : senses.length > 0 ? (
-        <section aria-label={t('quick.meanings')} className="flex flex-col gap-2">
-          {senses.length > 1 && <p className="text-sm text-fg-muted">{t('quick.pickHint')}</p>}
-          <ul className="flex flex-col gap-2">
-            {senses.map((s) => {
-              const on = picked?.has(s.key) ?? false;
-              return (
-                <li key={s.key}>
-                  <button
-                    type="button"
-                    aria-pressed={on}
-                    onClick={() => onToggleSense?.(s.key)}
-                    data-testid="quick-sense"
-                    className={cn(
-                      'flex w-full items-start gap-3 rounded-[14px] border px-4 py-3 text-left',
-                      'transition-colors duration-(--duration-micro)',
-                      on
-                        ? 'border-accent bg-accent-soft'
-                        : 'border-border bg-surface hover:border-border-strong',
-                    )}
-                  >
-                    <span
-                      aria-hidden="true"
-                      className={cn(
-                        'mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border',
-                        on ? 'border-accent bg-accent text-accent-fg' : 'border-border-strong',
-                      )}
-                    >
-                      {on && <Icon name="check" size={13} strokeWidth={3} />}
-                    </span>
-                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <span className="text-[1.0625rem] font-medium text-fg">{s.meaning_tr}</span>
-                      {(s.pos || s.gloss_en) && (
-                        <span className="text-sm text-fg-muted">
-                          {s.pos && posLabel(t, s.pos)}
-                          {s.pos && s.gloss_en && ' · '}
-                          {s.gloss_en && <span lang="en">{s.gloss_en}</span>}
-                        </span>
-                      )}
-                      {s.example_en && (
-                        <span lang="en" className="font-serif text-sm text-fg-muted italic">
-                          {s.example_en}
-                        </span>
-                      )}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ) : (
+        <SenseChoices senses={senses} picked={picked} onToggle={onToggleSense} />
+      ) : mine.length > 0 ? null : (
         <Notice tone={lookup === 'failed' ? 'danger' : 'muted'}>
           {t(
             lookup === 'offline'
@@ -318,6 +272,7 @@ function TermBody({
         </Button>
       ) : (
         !loading &&
+        mine.length === 0 &&
         onWriteOwn && (
           <Button
             size="lg"
@@ -332,6 +287,92 @@ function TermBody({
         )
       )}
     </div>
+  );
+}
+
+/** The meanings on the user's own card (v0.5.1): a carded word always shows what it means. */
+export function MineMeanings({ mine }: { mine: readonly QuickMine[] }) {
+  const { t } = useTranslation();
+  return (
+    <section
+      aria-label={t('quick.mine')}
+      className="flex flex-col gap-1 rounded-[14px] bg-accent-soft px-4 py-3"
+      data-testid="quick-mine"
+    >
+      <span className="text-sm text-accent-text">{t('quick.mine')}</span>
+      <ul className="flex flex-col gap-0.5">
+        {mine.map((m, i) => (
+          <li key={i} className="text-[1.0625rem] font-medium text-fg">
+            {m.meaning_tr}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** The meanings to put on the card, each a toggle; the first is on by default. */
+export function SenseChoices({
+  senses,
+  picked,
+  onToggle,
+}: {
+  senses: readonly QuickSense[];
+  picked?: ReadonlySet<string>;
+  onToggle?: (key: string) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <section aria-label={t('quick.meanings')} className="flex flex-col gap-2">
+      {senses.length > 1 && <p className="text-sm text-fg-muted">{t('quick.pickHint')}</p>}
+      <ul className="flex flex-col gap-2">
+        {senses.map((s) => {
+          const on = picked?.has(s.key) ?? false;
+          return (
+            <li key={s.key}>
+              <button
+                type="button"
+                aria-pressed={on}
+                onClick={() => onToggle?.(s.key)}
+                data-testid="quick-sense"
+                className={cn(
+                  'flex w-full items-start gap-3 rounded-[14px] border px-4 py-3 text-left',
+                  'transition-colors duration-(--duration-micro)',
+                  on
+                    ? 'border-accent bg-accent-soft'
+                    : 'border-border bg-surface hover:border-border-strong',
+                )}
+              >
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    'mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border',
+                    on ? 'border-accent bg-accent text-accent-fg' : 'border-border-strong',
+                  )}
+                >
+                  {on && <Icon name="check" size={13} strokeWidth={3} />}
+                </span>
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="text-[1.0625rem] font-medium text-fg">{s.meaning_tr}</span>
+                  {(s.pos || s.gloss_en) && (
+                    <span className="text-sm text-fg-muted">
+                      {s.pos && posLabel(t, s.pos)}
+                      {s.pos && s.gloss_en && ' · '}
+                      {s.gloss_en && <span lang="en">{s.gloss_en}</span>}
+                    </span>
+                  )}
+                  {s.example_en && (
+                    <span lang="en" className="font-serif text-sm text-fg-muted italic">
+                      {s.example_en}
+                    </span>
+                  )}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 

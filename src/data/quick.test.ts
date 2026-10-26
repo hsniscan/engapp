@@ -98,6 +98,24 @@ describe('quickPreview: on the device first', () => {
     expect((await preview('postponing')).owned).toBe('carded');
   });
 
+  it('a carded word nobody else knows shows the meaning on the user’s card (v0.5.1)', async () => {
+    await addNoteWithSenses(
+      {
+        term: 'flibbertigibbet',
+        senses: [{ meaning_tr: 'geveze' }, { meaning_tr: 'havai kişi', pos: 'noun' }],
+      },
+      T,
+    );
+    const p = await preview('flibbertigibbet');
+    expect(p.origin).toBe('none');
+    expect(p.owned).toBe('carded');
+    expect(p.mine).toEqual([
+      { meaning_tr: 'geveze', pos: null },
+      { meaning_tr: 'havai kişi', pos: 'noun' },
+    ]);
+    expect((await preview('serendipity')).mine).toEqual([]);
+  });
+
   it('shows a cached picture of the sense', async () => {
     await db.word_bank.put(entryFromRow(bankRow()));
     await db.images.put({
