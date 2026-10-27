@@ -3,8 +3,9 @@
 // `graded_catalog` is a read-only copy of the approved texts' metadata in public.graded_texts
 // (system content, the same for every user and guest), pulled page by page after
 // meta.graded_cursor like the word bank; `graded_bodies` keeps the sentences of every text the
-// user opened, so it reads offline after the first open. Nothing is ever written back, and the
-// user's own reading rows (`texts`, kind 'graded') only point at a library text by graded_id.
+// user opened, so it reads offline after the first open. Nothing is ever written back. The
+// user's own reading rows (`texts`, kind 'graded') point at a library text by graded_id and,
+// from v0.5.1 (decision 0054), carry its plain text too, so progress works like any text's.
 //
 // The reader (İP1) shows suggestedGradedTexts on Bugün and reads a text's sentences with
 // getGradedBody; GradedLibraryList (Desteler → Okuma, /kitaplik) uses the rest.
@@ -17,6 +18,7 @@ import {
 } from '../../supabase/functions/_shared/graded-contract';
 import type { GradedRemote } from '@/ai/graded';
 import {
+  gradedReaderBody,
   scoreGradedText,
   suggestTexts,
   type GradedBody,
@@ -31,6 +33,7 @@ import { loadKnowledge } from './knowledge';
 import { getMeta, setMeta } from './meta';
 import { getSettings } from './settings';
 import { saveText } from './texts';
+import { writeTx } from './writer';
 
 export interface GradedSummary {
   id: string;
@@ -234,20 +237,58 @@ export async function gradedReadingRows(): Promise<Map<string, ReaderText>> {
 }
 
 /**
+ * Keeps the reading row's body equal to the library text's plain text (decision 0054), so its
+ * progress (offset / body length), "Devam et" and offline reading work like every other text.
+ * The sentences' Turkish and audio still come from `graded_bodies`. No write when equal.
+ */
+export async function setGradedTextBody(
+  id: Id,
+  body: string,
+  now: Millis = Date.now(),
+): Promise<void> {
+  await writeTx([db.texts], now, async (w) => {
+    const row = await db.texts.get(id);
+    if (!row || row.deleted_at !== null || row.kind !== 'graded' || row.body === body) return;
+    // A resume point past the end (the text was rebuilt shorter) goes back to its start.
+    const progress_offset = row.progress_offset > body.length ? 0 : row.progress_offset;
+    await w.put('texts', { ...row, body, progress_offset });
+  });
+}
+
+/**
  * The reading row for a library text: the user's existing one (resume point kept), else a new
- * `texts` row (kind 'graded', empty body: the sentences are shared). The body is fetched now
- * when it can be, so the text reads offline from here on. Returns the row id for readerPath.
+ * `texts` row (kind 'graded'). The sentences are fetched now when they can be, so the text reads
+ * offline from here on, and the row gets the text's plain body (decision 0054). Returns the row
+ * id for readerPath.
  */
 export async function openGradedText(entry: { id: string; title: string }, now: Millis = Date.now()): Promise<Id> {
   const existing = (await gradedReadingRows()).get(entry.id);
   const id = existing?.id ?? (await saveText({ kind: 'graded', graded_id: entry.id, title: entry.title, body: '' }, now));
   try {
-    await getGradedBody(entry.id, now);
+    const body = await getGradedBody(entry.id, now);
+    await setGradedTextBody(id, gradedReaderBody(body.sentences).body, now);
   } catch (e) {
     // Offline before the first open: the reader asks again when it shows the text.
     if (!(e instanceof GradedUnavailableError)) void logError(e, 'library.open');
   }
   return id;
+}
+
+/**
+ * Opens a library text by its library id (a suggestion on Bugün or Keşfet, a link
+ * `readerPath(gradedId)`): the user's reading row for it, made when needed. Null when this
+ * device knows no such text (not in the catalogue and never opened).
+ */
+export async function openGradedById(
+  gradedId: string,
+  now: Millis = Date.now(),
+): Promise<Id | null> {
+  if (!gradedId) return null;
+  const existing = (await gradedReadingRows()).get(gradedId);
+  if (existing) return openGradedText({ id: gradedId, title: existing.title }, now);
+  const entry = (await db.graded_catalog.get(gradedId)) ?? (await db.graded_bodies.get(gradedId));
+  if (!entry) return null;
+  return openGradedText({ id: gradedId, title: entry.title }, now);
 }
 
 // ------------------------------------------------------------------ suggestions

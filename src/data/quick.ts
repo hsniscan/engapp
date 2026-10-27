@@ -23,6 +23,12 @@ export interface QuickSense {
   lexicon_sense_id: Id | null;
 }
 
+/** One meaning of the user's own card (their override wins). */
+export interface QuickMine {
+  meaning_tr: string;
+  pos: string | null;
+}
+
 export interface QuickPicture {
   id: Id;
   svg: string;
@@ -44,6 +50,11 @@ export interface QuickPreview {
   lexiconTermId: Id | null;
   /** The user already has a card for it, or marked it known. */
   owned: 'carded' | 'known' | null;
+  /**
+   * The meanings on the user's own card for the word (v0.5.1): shown even when nothing on the
+   * device or the server knows the word, so a carded word never asks the user to sign in.
+   */
+  mine: QuickMine[];
   picture: QuickPicture | null;
 }
 
@@ -73,13 +84,32 @@ async function pictureFor(lexiconSenseIds: readonly Id[]): Promise<QuickPicture 
   return null;
 }
 
-async function ownedStatus(forms: readonly string[]): Promise<QuickPreview['owned']> {
+async function ownedStatus(
+  forms: readonly string[],
+): Promise<Pick<QuickPreview, 'owned' | 'mine'>> {
   for (const f of forms) {
-    const notes = await db.notes.where('term_norm').equals(f).toArray();
-    if (notes.some((n) => n.deleted_at === null)) return 'carded';
+    const notes = (await db.notes.where('term_norm').equals(f).toArray()).filter(
+      (n) => n.deleted_at === null,
+    );
+    if (!notes.length) continue;
+    const senses = (
+      await db.senses
+        .where('note_id')
+        .anyOf(notes.map((n) => n.id))
+        .toArray()
+    )
+      .filter((x) => x.deleted_at === null)
+      .sort((a, b) => a.sense_no - b.sense_no);
+    return {
+      owned: 'carded',
+      mine: senses.map((x) => ({
+        meaning_tr: (x.meaning_tr_override ?? x.meaning_tr).trim(),
+        pos: x.pos,
+      })),
+    };
   }
   const known = await getKnownTermKeys();
-  return forms.some((f) => known.has(f)) ? 'known' : null;
+  return { owned: forms.some((f) => known.has(f)) ? 'known' : null, mine: [] };
 }
 
 function fromBank(entries: WordBankEntry[]): QuickSense[] {
@@ -115,7 +145,7 @@ export async function quickPreview(
   forms: readonly string[],
 ): Promise<QuickPreview> {
   const keys = forms.length ? forms : [normalizeTerm(selected)];
-  const owned = await ownedStatus(keys);
+  const { owned, mine } = await ownedStatus(keys);
   for (const form of keys) {
     const bank = (await db.word_bank.where('lemma_norm').equals(form).toArray()).sort(
       (a, b) => (b.zipf ?? -1) - (a.zipf ?? -1) || a.pos.localeCompare(b.pos),
@@ -133,6 +163,7 @@ export async function quickPreview(
         bank,
         lexiconTermId: bank[0]!.lexicon_term_id,
         owned,
+        mine,
         picture: await pictureFor(
           senses.map((s) => s.lexicon_sense_id).filter((x): x is Id => !!x),
         ),
@@ -150,6 +181,7 @@ export async function quickPreview(
         bank: [],
         lexiconTermId: lex[0]!.term_id,
         owned,
+        mine,
         picture: await pictureFor(lex.map((s) => s.id)),
       };
     }
@@ -164,6 +196,7 @@ export async function quickPreview(
     bank: [],
     lexiconTermId: null,
     owned,
+    mine,
     picture: null,
   };
 }

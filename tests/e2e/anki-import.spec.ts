@@ -27,14 +27,16 @@ async function axe(page: Page, label: string) {
 }
 
 test('guest imports an Anki deck with its history; a second import adds nothing', async ({ page }) => {
-  await page.goto('/add');
-  await page.getByRole('link', { name: 'Anki dosyası (.apkg) yükle' }).click();
+  // v0.5.1: reached from the Add sheet's "İçe aktar" group.
+  await page.goto('/');
+  await page.getByRole('navigation', { name: 'Ana gezinme' }).getByRole('button', { name: 'Ekle' }).first().click();
+  await page.getByTestId('add-way-anki').click();
   await expect(page).toHaveURL(/\/import\/anki$/);
   await expect(page.getByRole('heading', { name: "Anki'den taşı", level: 1 })).toBeVisible();
 
   await pick(page, 'ingilizce.apkg', fixture('anki21b'));
   await expect(page.getByTestId('anki-summary')).toHaveText('7 not, 13 kart, 18 tekrar kaydı');
-  await expect(page.getByText('Tekrar aralıkları yeniden hesaplanacak')).toBeVisible();
+  await expect(page.getByText('Kart aralıkları yeniden hesaplanacak')).toBeVisible();
   await expect(page.getByText('Boşluk doldurma (cloze) notları aktarılmaz: 1 not.')).toBeVisible();
   const preview = page.getByTestId('anki-preview');
   await expect(preview.getByRole('listitem')).toHaveCount(3);

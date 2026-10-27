@@ -5,7 +5,8 @@ import { db, listErrors, logError } from '@/data';
 import { ImageReviewEntry } from '@/features/images/ImageSettings';
 import { Badge, Button, toast } from '@/ui';
 import { version } from '../../../package.json';
-import { downloadText, errorLogFileName } from './download';
+import { saveFileWithToast } from './backupActions';
+import { errorLogFileName } from './download';
 import { checkIntegrityNow, integrityProblems, repairNow, useIntegrity } from './integrity';
 import { SettingsRow, SettingsSection } from './SettingsLayout';
 
@@ -60,7 +61,15 @@ export function AdvancedSection() {
       user_agent: navigator.userAgent,
       errors: rows.map((r) => ({ ...r, at: new Date(r.at).toISOString() })),
     };
-    downloadText(errorLogFileName(), JSON.stringify(payload, null, 2), 'application/json');
+    await saveFileWithToast(
+      errorLogFileName(),
+      JSON.stringify(payload, null, 2),
+      'application/json',
+      {
+        done: t('errors.downloaded'),
+        failed: t('errors.downloadFailed'),
+      },
+    );
   };
 
   return (

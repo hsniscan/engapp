@@ -2,7 +2,7 @@ import { LIMITS } from '@/domain/limits';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { addNoteWithSenses, ActionError, findNoteByTerm, logError, db } from '@/data';
 import { normalizeTerm } from '@/domain/normalize';
 import type { TermType } from '@/domain/types';
@@ -79,10 +79,13 @@ export function ManualAddForm() {
   const { t } = useTranslation();
   const formId = useId();
   const termRef = useRef<HTMLInputElement>(null);
-  // /add?term=inspector: opened from a word family ("Aile") when no meaning could be looked up.
-  const [term, setTerm] = useState(() =>
-    typeof window === 'undefined' ? '' : (new URLSearchParams(window.location.search).get('term') ?? '').slice(0, LIMITS.term),
-  );
+  // /add?term=inspector: the Add sheet's "Elle düzenle", a word family ("Aile"), a share. The
+  // form follows the address: a new ?term= while the page is open (the (+) sheet on /add)
+  // starts the form over on that word (v0.5.1, report item 12).
+  const [params] = useSearchParams();
+  const termParam = (params.get('term') ?? '').slice(0, LIMITS.term);
+  const [term, setTerm] = useState(termParam);
+  const [shownParam, setShownParam] = useState(termParam);
   // The term type follows the spelling (a space → phrase) until the user picks one.
   const [chosenType, setChosenType] = useState<TermType | null>(null);
   const termType: TermType = chosenType ?? (term.trim().includes(' ') ? 'phrase' : 'word');
@@ -90,6 +93,16 @@ export function ManualAddForm() {
   const [tags, setTags] = useState<string[]>([]);
   const [senses, setSenses] = useState<SenseDraft[]>(() => [blankSense()]);
   const [errors, setErrors] = useState<{ term?: string; senses?: Record<string, string> }>({});
+  if (termParam !== shownParam) {
+    setShownParam(termParam);
+    if (termParam) {
+      setTerm(termParam);
+      setChosenType(null);
+      setIpa('');
+      setSenses([blankSense()]);
+      setErrors({});
+    }
+  }
   const [saving, setSaving] = useState(false);
 
   const debouncedTerm = useDebounced(term.trim(), 250);

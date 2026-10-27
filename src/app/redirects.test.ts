@@ -9,6 +9,17 @@ describe('old addresses', () => {
     expect(legacyRedirect('/kelime-bankasi')).toBe('/decks?tab=bank');
     expect(legacyRedirect('/stats')).toBe('/progress');
     expect(legacyRedirect('/settings/profile')).toBe('/settings/ilgi-alanlari');
+    expect(legacyRedirect('/kitaplik')).toBe('/kesfet?f=okuma');
+  });
+
+  it('sends Desteler’s old Keşfet and Okuma segments to the Keşfet tab', () => {
+    expect(legacyRedirect('/decks', '?tab=discover')).toBe('/kesfet?f=desteler');
+    expect(legacyRedirect('/decks', '?tab=reading')).toBe('/kesfet?f=okuma');
+    expect(legacyRedirect('/decks/', '?tab=reading&from=push')).toBe('/kesfet?from=push&f=okuma');
+    // Destelerim and Kelime Bankası stay where they are.
+    expect(legacyRedirect('/decks', '?tab=bank')).toBeNull();
+    expect(legacyRedirect('/decks', '?tab=mine')).toBeNull();
+    expect(legacyRedirect('/decks', '')).toBeNull();
   });
 
   it('keeps the query string (report tab, word bank filters)', () => {

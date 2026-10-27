@@ -2,7 +2,7 @@
  * Acceptance criterion 4 in the production build: with 1,000 cards (and 10,000, for headroom)
  * a review session opens in < 1 s and a card switch takes < 100 ms.
  *
- *   session open (warm): home → tap "Tekrara başla" → first card on screen (client navigation,
+ *   session open (warm): home → tap "Çalışmaya başla" → first card on screen (client navigation,
  *                         queue built from IndexedDB, first card view loaded, painted)
  *   session open (cold):  full page load of /review → first card on screen (JS parse included)
  *   card switch:          key "3" on a flipped card → next card painted (median and p95 of 20)

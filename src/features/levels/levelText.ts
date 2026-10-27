@@ -10,7 +10,7 @@ export function useLevelLabel(level: WordLevel): string {
 const LIST_NAME = { cefrj: 'CEFR-J', octanove: 'Octanove' } as const;
 
 /**
- * "CEFR-J: B1 → Türk öğrenci için A2 (AI: Türkçede 'televizyon')" for a corrected list level;
+ * "CEFR-J: B1 → Türk öğrenci için A2 (yapay zekâ: Türkçede 'televizyon')" for a corrected list level;
  * null otherwise.
  */
 export function useCorrectionLine(

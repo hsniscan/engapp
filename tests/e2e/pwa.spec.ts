@@ -34,8 +34,9 @@ test.describe('PWA', () => {
     await context.setOffline(true);
     for (const [path, heading] of [
       ['/library', 'Tüm kelimelerim'],
-      ['/decks', 'Desteler'],
-      ['/add', 'Kart ekle'],
+      ['/decks', 'Kelimelerim'],
+      ['/kesfet', 'Keşfet'],
+      ['/add', 'Kelime ekle'],
       ['/progress', 'İlerleme'],
       ['/profile', 'Misafir'],
       ['/settings', 'Ayarlar'],
@@ -68,10 +69,10 @@ test('a screen whose code cannot be downloaded shows a friendly error inside the
 }) => {
   await page.goto('/');
   await page.route(/\/assets\/DecksPage-.*\.js$/, (r) => r.abort('internetdisconnected'));
-  await page.getByRole('link', { name: 'Desteler' }).first().click();
+  await page.getByRole('link', { name: 'Kelimelerim' }).first().click();
   await expect(page.getByRole('heading', { name: 'Bu ekran yüklenemedi', level: 2 })).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Ana gezinme' }).first()).toBeVisible();
   await page.unroute(/\/assets\/DecksPage-.*\.js$/);
   await page.getByRole('button', { name: 'Sayfayı yenile' }).click();
-  await expect(page.getByRole('heading', { name: 'Desteler', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Kelimelerim', level: 1 })).toBeVisible();
 });

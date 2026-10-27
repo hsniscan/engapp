@@ -5,7 +5,7 @@ import { PULL_BACKFILL_KEY } from './backfill';
 import { EngDb, STAGE_RULE_NOTICE_KEY } from './db';
 
 /** The current schema version; bump with every new Dexie version. */
-const LATEST = 34;
+const LATEST = 36;
 
 /** A re-pull list after the later upgrades: v29 (reader) adds settings, texts and encounters; v33 (dictation) cards; v34 settings. */
 const withLater = (list: readonly string[] | undefined) =>
@@ -722,6 +722,32 @@ describe('Dexie schema', () => {
       expect(await d.settings.get('settings')).toEqual({ id: 'settings', theme: 'dark' });
       const queued = await d.outbox.toArray();
       expect(queued.map((r) => [r.table, r.row_id, r.op])).toEqual([['texts', 't1', 'upsert']]);
+      d.close();
+      await d.delete();
+    }
+  });
+
+  it('v36 upgrade keeps settings and re-pulls them once for reader_always_guess', async () => {
+    for (const [name, cursor, expected] of [
+      ['upgrade-v36-synced', 40, ['settings']],
+      ['upgrade-v36-fresh', 0, undefined],
+    ] as const) {
+      // A database as v0.5 left it (version 34), with every earlier backfill done.
+      const old = new Dexie(name);
+      old.version(1).stores({ settings: 'id', meta: 'key' });
+      old.version(34).stores({ graded_catalog: 'id, level, topic, server_seq', graded_bodies: 'id, fetched_at' });
+      await old.open();
+      await old.table('settings').add({ id: 'settings', theme: 'dark', reader_highlight: false });
+      await old.table('meta').put({ key: 'sync_cursor', value: cursor });
+      old.close();
+
+      const d = new EngDb(name);
+      await d.open();
+      expect(d.verno).toBe(LATEST);
+      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
+      // No reader_always_guess key means off; the row is untouched and nothing is queued.
+      expect(await d.settings.get('settings')).toEqual({ id: 'settings', theme: 'dark', reader_highlight: false });
+      expect(await d.outbox.count()).toBe(0);
       d.close();
       await d.delete();
     }

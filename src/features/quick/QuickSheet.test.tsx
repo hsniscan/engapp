@@ -35,6 +35,7 @@ const PREVIEW: QuickPreview = {
   bank: [],
   lexiconTermId: null,
   owned: null,
+  mine: [],
   picture: null,
 };
 
@@ -47,7 +48,10 @@ vi.mock('@/data/quick', () => ({
   addQuickCard: (...a: unknown[]) => addQuickCard(...(a as [])),
   previewFromSenses: (p: QuickPreview) => p,
 }));
-vi.mock('@/data/texts', () => ({ saveText: (...a: unknown[]) => saveText(...(a as [])) }));
+vi.mock('@/data/texts', () => ({
+  saveText: (...a: unknown[]) => saveText(...(a as [])),
+  getText: async () => undefined,
+}));
 vi.mock('@/features/review/pronunciation', () => ({
   playPronunciation: vi.fn(() => true),
   pronunciationSupported: () => true,
@@ -186,6 +190,7 @@ describe('QuickPage (web)', () => {
       expect(router.state.location.pathname).toBe('/oku/0192f3a0-1b2c-7d4e-8f90-123456789abc'),
     );
     expect(saveText).toHaveBeenCalledWith({
+      source_url: null,
       kind: 'paste',
       title: 'The committee reluctantly postponed the decision.',
       body: 'The committee reluctantly postponed the decision.',

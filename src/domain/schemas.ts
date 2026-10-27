@@ -192,6 +192,8 @@ export const settingsSchema: z.ZodType<Settings> = z.object({
   reading_difficulty: z.enum(['rahat', 'dengeli', 'zorlayici']).nullish().catch(null),
   reading_offset: z.number().min(-READING_OFFSET_MAX).max(READING_OFFSET_MAX).nullish().catch(null),
   reader_highlight: z.boolean().nullish().catch(null),
+  // v0.5.1 "Hep tahmin ettir" (decision 0054); absent = off.
+  reader_always_guess: z.boolean().nullish().catch(null),
   // v0.5 İP10 streak protections (absent = none). A malformed list reads as none.
   streak_freezes: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).max(MAX_FREEZE_DAYS).nullish().catch(null),
   // v0.3 İP3 load management; absent in older rows and backups (= the defaults). Malformed
@@ -386,6 +388,9 @@ export const readerTextSchema: z.ZodType<ReaderText> = z.object({
   story: z
     .object({
       day: dayKey,
+      // v0.5.1 "Kelimelerimle metin oluştur" (decision 0056); absent on daily stories.
+      source: z.enum(['daily', 'picked']).optional().catch(undefined),
+      genre: z.enum(['story', 'dialogue', 'news', 'email']).optional().catch(undefined),
       prompt_version: z.string().max(40),
       targets: z
         .array(

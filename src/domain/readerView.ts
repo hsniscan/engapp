@@ -141,3 +141,33 @@ export function knownPercent(c: CoverageResult): number {
   if (c.tokens === 0) return 100;
   return Math.max(0, Math.min(100, Math.floor((1 - c.unknownRate) * 100 + 1e-9)));
 }
+
+/** A word the reader marked as new, at its first place in the text. */
+export interface NewWord {
+  /** Dictionary form (the card's term). */
+  lemma: string;
+  /** As first written in the text. */
+  written: string;
+  /** Index of the sentence it first appears in. */
+  sentence: number;
+}
+
+/**
+ * The words drawn as new ("Muhtemelen yeni"), each once, in reading order (v0.5.1 end-of-text
+ * summary "Bu metinde N yeni kelime gördün" and "Bu metindeki yeni kelimeler").
+ */
+export function newWordsIn(
+  text: TokenizedText,
+  view: Pick<ReaderView, 'marks' | 'lemmas'>,
+): NewWord[] {
+  const out: NewWord[] = [];
+  const seen = new Set<string>();
+  text.tokens.forEach((t, i) => {
+    if (view.marks[i] !== 'new') return;
+    const lemma = view.lemmas[i] ?? t.norm;
+    if (!lemma || seen.has(lemma)) return;
+    seen.add(lemma);
+    out.push({ lemma, written: t.text, sentence: t.sentence });
+  });
+  return out;
+}

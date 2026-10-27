@@ -60,12 +60,15 @@ test('interests: pick on the home screen, see why in the profile, turn a topic o
     .poll(() => backend.rows.get('settings:settings')?.row.interests, { timeout: 15_000 })
     .toEqual(['technology', 'travel']);
 
-  // Ayarlar → Kartlar ve içerik → İlgi alanların (also Profil → İlgi alanların → Düzenle).
+  // Profil → İlgi alanların → Düzenle (v0.5.1: the one interests page, /settings/ilgi-alanlari).
   await addTechTexts(page);
-  await page.goto('/settings/kartlar');
-  const section = page.getByRole('region', { name: 'Profil' });
-  await expect(section.getByText('Teknoloji, Seyahat')).toBeVisible();
-  await section.getByRole('link', { name: 'Profili aç' }).click();
+  await page.goto('/profile');
+  const section = page.getByRole('region', { name: 'İlgi alanların' });
+  await expect(section.getByRole('list', { name: 'Seçili ilgi alanları' }).getByRole('listitem')).toHaveText([
+    'Teknoloji',
+    'Seyahat',
+  ]);
+  await section.getByRole('link', { name: 'İlgi alanların: Düzenle' }).click();
   await expect(page).toHaveURL(/\/settings\/ilgi-alanlari$/);
   const weights = page.getByRole('region', { name: 'Profilin' });
   await expect(weights.getByRole('progressbar')).toHaveCount(2);
@@ -116,8 +119,8 @@ test('interests: "Şimdi değil" answers the question for good (guest)', async (
   await page.reload();
   await expect(page.getByTestId('start-study')).toBeVisible();
   await expect(page.getByRole('region', { name: PROMPT })).toBeHidden();
-  await page.goto('/settings/kartlar');
+  await page.goto('/profile');
   await expect(
-    page.getByRole('region', { name: 'Profil' }).getByText('Henüz bir konu yok.'),
+    page.getByRole('region', { name: 'İlgi alanların' }).getByText('Henüz bir konu seçmedin.'),
   ).toBeVisible();
 });

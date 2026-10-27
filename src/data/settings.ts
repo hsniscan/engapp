@@ -102,6 +102,8 @@ export const settingsPatchSchema = z
     reading_difficulty: z.enum(['rahat', 'dengeli', 'zorlayici']),
     reading_offset: z.number().min(-READING_OFFSET_MAX).max(READING_OFFSET_MAX),
     reader_highlight: z.boolean(),
+    // v0.5.1 (decision 0054): "Hep tahmin ettir" in the reader.
+    reader_always_guess: z.boolean(),
     // v0.5 İP10: days a streak protection covered (domain/streakFreeze.ts, decision 0052).
     streak_freezes: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).max(MAX_FREEZE_DAYS).nullable(),
     // v0.3 İP3 load management (domain/capacity.ts, catchup.ts, vacation.ts).
@@ -170,8 +172,10 @@ export function dayConfig(s: Pick<Settings, 'timezone' | 'day_start_hour'>): Day
 let cached: { key: string; scheduler: Scheduler } | null = null;
 
 /** Scheduler for these settings (memoized); falls back to defaults on invalid stored values. */
-export function schedulerFor(s: Pick<Settings, 'request_retention' | 'fsrs_params'>): Scheduler {
-  const key = `${s.request_retention}|${s.fsrs_params?.join(',') ?? ''}`;
+export function schedulerFor(
+  s: Pick<Settings, 'request_retention' | 'fsrs_params'> & Partial<Pick<Settings, 'timezone' | 'day_start_hour'>>,
+): Scheduler {
+  const key = `${s.request_retention}|${s.fsrs_params?.join(',') ?? ''}|${s.timezone ?? ''}|${s.day_start_hour ?? ''}`;
   if (cached?.key === key) return cached.scheduler;
   let scheduler: Scheduler;
   try {
@@ -180,6 +184,8 @@ export function schedulerFor(s: Pick<Settings, 'request_retention' | 'fsrs_param
     scheduler = createScheduler({
       request_retention: DEFAULT_SETTINGS.request_retention,
       fsrs_params: null,
+      ...(s.timezone !== undefined ? { timezone: s.timezone } : {}),
+      ...(s.day_start_hour !== undefined ? { day_start_hour: s.day_start_hour } : {}),
     });
   }
   cached = { key, scheduler };

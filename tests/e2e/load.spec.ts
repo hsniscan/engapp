@@ -6,6 +6,7 @@ import type { Page } from '@playwright/test';
 import { buildBackup } from '../../src/domain/backup.ts';
 import type { Card, Note } from '../../src/domain/types.ts';
 import { addWord, dumpTables, expect, test, type Word } from './support/app.ts';
+import { restoreSeed } from './support/restore.ts';
 import { buildSeedBackup } from './support/seed.ts';
 
 const DAY = 86_400_000;
@@ -26,7 +27,7 @@ async function restoreFile(page: Page, file: unknown) {
   });
 }
 
-/** The hero's word-study split, "N tekrar · M yeni · yaklaşık K dk", as numbers. */
+/** The hero's split over every mode, "N tekrar · M yeni · yaklaşık K dk", as numbers. */
 async function todaySplit(page: Page): Promise<{ due: number; fresh: number }> {
   const split = page.getByTestId('today-split');
   await expect(split).toBeVisible();
@@ -34,12 +35,11 @@ async function todaySplit(page: Page): Promise<{ due: number; fresh: number }> {
   return { due: Number(m?.[1]), fresh: Number(m?.[2]) };
 }
 
-/** Cards waiting today summed over the "Çalışma türleri" tiles (a finished tile counts 0). */
+/** Cards waiting today summed over the hero's mode chips, "Kelime 7" (a finished chip counts 0). */
 async function studyTypesTotal(page: Page): Promise<number> {
   let total = 0;
-  for (const mode of ['word', 'production', 'cloze']) {
-    const text = (await page.getByTestId(`study-type-${mode}`).textContent()) ?? '';
-    total += Number(/(\d+)\s*(kart|cümle)/.exec(text)?.[1] ?? 0);
+  for (const text of await page.locator('[data-testid^="study-type-"]').allTextContents()) {
+    total += Number(/(\d+)/.exec(text)?.[1] ?? 0);
   }
   return total;
 }
@@ -162,8 +162,8 @@ test('vacation: no new cards, streak frozen, new cards ramp back 0 → ½ → fu
 });
 
 test('stats: 30-day forecast with the capacity line and a text summary', async ({ page }) => {
-  await page.goto('/');
-  await addWord(page, VOCAB[0]!);
+  // İlerleme shows the forecast once there are 10 answers (v0.5.1, ADR 0058): a small history.
+  await restoreSeed(page, 60);
   await page.goto('/progress');
   const section = page.getByRole('region', { name: 'Önümüzdeki 30 gün' });
   await expect(section.getByRole('img', { name: /beklenen tekrar sayısı/ })).toBeVisible();

@@ -112,7 +112,7 @@ describe('card faces', () => {
     const button = await screen.findByRole('button', { name: /Seviye A2, CEFR-J listesi/ });
     expect(button).toHaveAttribute('data-level-source', 'cefrj');
     fireEvent.click(button);
-    expect(await screen.findByText("CEFR-J: B1 → Türk öğrenci için A2 (AI: Türkçede yıldönümü)")).toBeInTheDocument();
+    expect(await screen.findByText("CEFR-J: B1 → Türk öğrenci için A2 (yapay zekâ: Türkçede yıldönümü)")).toBeInTheDocument();
     cleanup();
 
     // A lexicon level (here an AI estimate) wins over the client file.
@@ -125,7 +125,7 @@ describe('card faces', () => {
       senses: view.senses.map((s) => ({ ...s, lexicon_sense_id: 'lex-1' })),
     };
     renderRoute(<CardBack view={lexView} isNew={false} speech={speech} />);
-    const ai = await screen.findByRole('button', { name: /Seviye B2, AI tahmini/ });
+    const ai = await screen.findByRole('button', { name: /Seviye B2, Yapay zekâ tahmini/ });
     expect(ai.querySelector('span')!.className).toContain('border-dashed');
     setLevelDataForTests(null);
   });

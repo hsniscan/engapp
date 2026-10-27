@@ -49,7 +49,7 @@ select is((select count(*)::int from public.story_usage where user_id = '5050505
 
 select is((select count(*)::int from information_schema.columns
   where table_schema = 'public' and table_name = 'story_usage'
-    and column_name not in ('user_id', 'day', 'stories', 'retries')), 0,
+    and column_name not in ('user_id', 'day', 'stories', 'retries', 'picked', 'picked_retries')), 0,
   'the counter table has no column that could hold a word or a text');
 
 -- user_texts.story: pushed with the row through sync_push, read back only by the owner.

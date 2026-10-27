@@ -1,15 +1,21 @@
 // "Çalış" (redesign board StudyModes): the study types with what each has left today, a
-// "Karışık çalış" switch, and a button that starts the main one. "Dikte" (v0.5 İP9) is the
-// fourth type; its cards open with the word's spoken example sentences.
+// "Karışık çalış" switch, and a button that starts the next one. "Dikte" (v0.5 İP9) is the
+// fourth type; its cards open with the word's spoken example sentences, and it is listed only
+// when this device can read them. The totals are the same as on Bugün (ADR 0055). A new user
+// with no words gets a real empty state instead of a start button with nothing to study.
+import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { STUDY_MODES, type StudyMode } from '@/domain/studyMode';
+import { db } from '@/data';
+import type { StudyMode } from '@/domain/studyMode';
+import { openAddSheet } from '@/features/add/addSheetStore';
+import { DISCOVER_DECKS_HREF } from '@/features/home/DecksForYou';
 import { flags } from '@/features/settings/platform';
-import { cn, Icon, Skeleton, Switch } from '@/ui';
+import { buttonClasses, cn, EmptyState, Icon, Skeleton, Switch } from '@/ui';
 import { reconcileDictationCards } from '@/data/dictation';
-import { modeText, startLabel } from './modeText';
-import { type StudyModeCount, useStudyModeCounts } from './studyModes';
+import { mixedHint, modeText, startLabel } from './modeText';
+import { type StudyModeCount, useTodayStudy } from './studyModes';
 
 const MIXED_FLAG = 'study.mixed';
 
@@ -144,7 +150,11 @@ function ModeCard({
 
 export function StudyModesPage() {
   const { t } = useTranslation();
-  const counts = useStudyModeCounts();
+  const study = useTodayStudy();
+  const hasWords = useLiveQuery(
+    async () => (await db.notes.filter((n) => n.deleted_at === null).first()) !== undefined,
+    [],
+  );
   const [mixed, setMixed] = useState(() => flags.get(MIXED_FLAG) === '1');
   // Dictation cards of words whose example sentences arrived since the last visit (cheap
   // when nothing changed; the counts follow through the live query).
@@ -152,12 +162,13 @@ export function StudyModesPage() {
     void reconcileDictationCards().catch(() => {});
   }, []);
 
-  const total = counts ? STUDY_MODES.reduce((n, m) => n + left(counts[m]), 0) : 0;
-  const minutes = counts ? STUDY_MODES.reduce((n, m) => n + counts[m].estMinutes, 0) : 0;
-  const main: StudyMode = counts
-    ? (STUDY_MODES.find((m) => left(counts[m]) > 0) ?? 'word')
-    : 'word';
+  if (hasWords === false) return <StudyWelcome />;
+  const counts = study?.counts;
+  const total = study?.left ?? 0;
+  const minutes = study?.minutes ?? 0;
+  const main: StudyMode = study?.next ?? 'word';
   const startTo = mixed ? '/study?mode=mixed' : `/study?mode=${main}`;
+  const done = !!study && total === 0;
 
   return (
     <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] w-full max-w-xl flex-col gap-3.5 px-4 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6">
@@ -174,8 +185,8 @@ export function StudyModesPage() {
         </p>
       </div>
 
-      {counts ? (
-        STUDY_MODES.map((m) => (
+      {study && counts ? (
+        study.modes.map((m) => (
           <ModeCard key={m} mode={m} count={counts[m]} main={m === main && !mixed} />
         ))
       ) : (
@@ -190,7 +201,7 @@ export function StudyModesPage() {
       <Switch
         className="px-1 pt-1"
         label={<span className="font-semibold">{t('study.mixed')}</span>}
-        description={t('study.mixedHint')}
+        description={study ? mixedHint(t, study.modes) : t('study.mixedHint')}
         checked={mixed}
         onCheckedChange={(v) => {
           setMixed(v);
@@ -198,14 +209,67 @@ export function StudyModesPage() {
         }}
       />
 
-      <Link
-        to={startTo}
-        data-testid="study-start"
-        className="mt-auto flex h-14 items-center justify-center gap-2 rounded-[14px] bg-accent text-[1.0625rem] font-semibold text-accent-fg no-underline transition-colors hover:bg-accent-hover"
-      >
-        {startLabel(t, mixed ? 'mixed' : main)}
-        <Icon name="arrow-right" size={20} />
-      </Link>
+      {done ? (
+        <Link
+          to="/study/more"
+          data-testid="study-more"
+          className="mt-auto flex h-14 items-center justify-center gap-2 rounded-[14px] border border-border bg-surface text-[1.0625rem] font-semibold text-accent-text no-underline transition-colors hover:bg-surface-hover"
+        >
+          {t('review.moreStudy')}
+          <Icon name="arrow-right" size={20} />
+        </Link>
+      ) : (
+        <Link
+          to={startTo}
+          data-testid="study-start"
+          aria-disabled={!study || undefined}
+          className={cn(
+            'mt-auto flex h-14 items-center justify-center gap-2 rounded-[14px] bg-accent text-[1.0625rem] font-semibold text-accent-fg no-underline transition-colors hover:bg-accent-hover',
+            !study && 'pointer-events-none opacity-60',
+          )}
+        >
+          {startLabel(t, mixed ? 'mixed' : main)}
+          <Icon name="arrow-right" size={20} />
+        </Link>
+      )}
+    </div>
+  );
+}
+
+/** No words yet: the first steps instead of "Bugünlük bitti" and a start button with 0 cards. */
+function StudyWelcome() {
+  const { t } = useTranslation();
+  return (
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-3.5 px-4 pt-3 pb-8 sm:px-6">
+      <h1 className="px-1 font-serif text-[1.75rem] leading-tight font-semibold">
+        {t('study.pickerTitle')}
+      </h1>
+      <div data-testid="study-welcome">
+        <EmptyState
+          icon="cards"
+          title={t('study.welcomeTitle')}
+          description={t('study.welcomeBody')}
+          action={
+            <>
+              <button
+                type="button"
+                onClick={() => openAddSheet()}
+                aria-haspopup="dialog"
+                className={buttonClasses({ size: 'lg', className: 'min-w-60' })}
+              >
+                <Icon name="plus" size={20} />
+                {t('home.emptyAction')}
+              </button>
+              <Link
+                to={DISCOVER_DECKS_HREF}
+                className={buttonClasses({ variant: 'secondary', className: 'min-w-60' })}
+              >
+                {t('study.welcomeDecks')}
+              </Link>
+            </>
+          }
+        />
+      </div>
     </div>
   );
 }

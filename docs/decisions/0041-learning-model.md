@@ -13,7 +13,9 @@ settings) produced every interval and stage table in it.
 
 1. **A ramp counter per card** (`cards.ramp_step`, "sağlam tekrar"). It counts reviews in
    Review state answered Hard, Good or Easy on another day. An early review does not count:
-   under 12 h, or under half the planned interval ("Yarının kartlarını şimdi tekrar et"). A
+   under 12 h, or under half the planned interval ("Yarının kartlarını şimdi tekrar et").
+   Amended by ADR 0055: an answer on a later local calendar day (day start 04:00) that is not
+   before the card's due day counts even under 12 h. A
    long recalled gap proves a level by itself: 3 / 7 / 14 / 30 days → at least 1 / 2 / 3 / 4.
    Again resets the counter to 0, or to 1 when it was ≥ 3, so one slip does not undo months.
    Learning steps never move it.

@@ -1,111 +1,82 @@
+// /add (v0.5.1, decision 0056): the two pages behind the (+) sheet that need room.
+//
+//   /add, /add?term=…          "Kelime ekle": the full form (the sheet's "Elle düzenle")
+//   /add?tab=paste | tab=pdf   "Metin ekle": paste or PDF, then the capture's two ways on
+//
+// The tab is kept in the URL so links and reloads land on it; old links (?tab=manual) still work.
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router';
-import { Icon, Page, Tabs } from '@/ui';
-import { addTabPanels, type AddTabId } from './addTabs';
+import { Icon, Page, Tabs, type IconName } from '@/ui';
+import { addTabPanels } from './addTabs';
 import { ManualAddForm } from './ManualAddForm';
 
-const TABS: AddTabId[] = ['manual', 'paste', 'pdf'];
-const isTab = (v: string | null): v is AddTabId => !!v && (TABS as string[]).includes(v);
+type TextTab = 'paste' | 'pdf';
+const isTextTab = (v: string | null): v is TextTab => v === 'paste' || v === 'pdf';
 
-/** Permanent note on the import tabs: free-tier AI may be read by reviewers (plan, "Gizlilik uyarısı"). */
-export function PrivacyNote() {
+const OTHER_WAYS: { to: string; icon: IconName; key: 'link' | 'photo' | 'subtitle' }[] = [
+  { to: '/makale', icon: 'link', key: 'link' },
+  { to: '/fotograf', icon: 'camera', key: 'photo' },
+  { to: '/altyazi', icon: 'captions', key: 'subtitle' },
+];
+
+/** The other text sources, one tap away (each ends on the same two choices). */
+function OtherWays() {
   const { t } = useTranslation();
   return (
-    <p className="mb-5 flex items-start gap-2 rounded-control bg-warn-soft px-3 py-2.5 text-sm text-warn-text">
-      <Icon name="alert" size={18} className="mt-px shrink-0" />
-      <span>
-        <strong className="font-semibold">{t('cards.import.privacy')}</strong>{' '}
-        {t('cards.import.privacyWhy')}
-      </span>
-    </p>
+    <nav aria-label={t('add.otherWays')} className="mt-8 flex flex-col gap-2">
+      <p className="text-sm text-fg-muted">{t('add.otherWays')}</p>
+      <ul className="flex flex-wrap gap-2">
+        {OTHER_WAYS.map((w) => (
+          <li key={w.key}>
+            <Link
+              to={w.to}
+              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-surface px-4 text-[0.9375rem] font-medium text-fg transition-colors duration-(--duration-micro) hover:border-border-strong"
+            >
+              <Icon name={w.icon} size={18} className="text-fg-muted" />
+              {t(`addSheet.text.${w.key}`)}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
   );
 }
 
-/** Way into the word bank (decision 0038), above the tabs. */
-function WordBankEntry() {
-  const { t } = useTranslation();
-  return (
-    <aside className="mb-6 flex flex-col gap-1 rounded-card border border-border bg-surface px-4 py-3">
-      <p className="font-medium text-fg">{t('wordBank.entryTitle')}</p>
-      <p className="text-sm text-fg-muted">{t('wordBank.entryBody')}</p>
-      <Link
-        to="/kelime-bankasi"
-        className="inline-flex min-h-11 items-center gap-1.5 self-start text-[0.9375rem] font-medium text-accent-text underline-offset-4 hover:underline"
-      >
-        <Icon name="layers" size={18} />
-        {t('wordBank.entryLink')}
-      </Link>
-    </aside>
-  );
-}
-
-/** Way into the Anki import (v0.3 İP1), under every tab. */
-function AnkiEntry() {
-  const { t } = useTranslation();
-  return (
-    <aside className="mt-8 flex flex-col gap-1 border-t border-border pt-5">
-      <p className="font-medium text-fg">{t('anki.entry.title')}</p>
-      <p className="text-sm text-fg-muted">{t('anki.entry.body')}</p>
-      <Link
-        to="/import/anki"
-        className="inline-flex min-h-11 items-center gap-1.5 self-start text-[0.9375rem] font-medium text-accent-text underline-offset-4 hover:underline"
-      >
-        <Icon name="layers" size={18} />
-        {t('anki.entry.link')}
-      </Link>
-    </aside>
-  );
-}
-
-/** /add — three tabs. The tab is kept in the URL (?tab=paste) so links and reloads land on it. */
 export function AddPage() {
   const { t } = useTranslation();
   const [params, setParams] = useSearchParams();
   const tabParam = params.get('tab');
-  const tab: AddTabId = isTab(tabParam) ? tabParam : 'manual';
+
+  if (!isTextTab(tabParam)) {
+    return (
+      <Page title={t('add.wordTitle')} description={t('add.wordLead')}>
+        <ManualAddForm />
+      </Page>
+    );
+  }
+
   const Paste = addTabPanels.paste;
   const Pdf = addTabPanels.pdf;
   return (
-    <Page title={t('add.title')} description={t('cards.add.pageHint')}>
-      <WordBankEntry />
+    <Page title={t('add.textTitle')} description={t('add.textLead')}>
       <Tabs
-        label={t('add.title')}
-        value={tab}
+        label={t('add.textTitle')}
+        value={tabParam}
         onValueChange={(v) =>
           setParams(
             (p) => {
-              if (v === 'manual') p.delete('tab');
-              else p.set('tab', v);
+              p.set('tab', v);
               return p;
             },
             { replace: true },
           )
         }
         items={[
-          { value: 'manual', label: t('cards.tabs.manual'), content: <ManualAddForm /> },
-          {
-            value: 'paste',
-            label: t('cards.tabs.paste'),
-            content: (
-              <>
-                <PrivacyNote />
-                <Paste />
-              </>
-            ),
-          },
-          {
-            value: 'pdf',
-            label: t('cards.tabs.pdf'),
-            content: (
-              <>
-                <PrivacyNote />
-                <Pdf />
-              </>
-            ),
-          },
+          { value: 'paste', label: t('addSheet.text.paste'), content: <Paste /> },
+          { value: 'pdf', label: t('addSheet.text.pdf'), content: <Pdf /> },
         ]}
       />
-      <AnkiEntry />
+      <OtherWays />
     </Page>
   );
 }

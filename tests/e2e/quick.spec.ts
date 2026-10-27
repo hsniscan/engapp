@@ -56,7 +56,7 @@ test.describe('offline', () => {
     });
     await page.reload(); // controlled by the worker from here on
 
-    // The bank is downloaded once (Desteler → Kelime bankası), as on any device.
+    // The bank is downloaded once (Desteler → Kelime Bankası), as on any device.
     await page.goto('/decks?tab=bank');
     await expect(page.getByTestId('word-bank-row').first()).toBeVisible();
 
@@ -126,12 +126,16 @@ test('a long selection: "Okuyucuda aç" saves it as a reading text', async ({ pa
   expect(texts).toEqual([expect.objectContaining({ kind: 'paste', body: text })]);
 });
 
-test('a long selection: "Kelimeleri çıkar" opens the extraction preview', async ({ page }) => {
+test('a long selection, guest: "Kelimeleri çıkar" shows the two choices with the text', async ({
+  page,
+}) => {
   const text = 'The committee reluctantly postponed the decision until the spring.';
   await page.goto(`/quick?text=${encodeURIComponent(text)}`);
   await page.getByTestId('quick-extract').click();
-  await expect(page.getByRole('heading', { name: 'Metinden kelime çıkar' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Paylaşılan metin' })).toBeVisible();
   await expect(page.getByTestId('shared-text')).toHaveText(text);
+  await expect(page.getByTestId('open-in-reader')).toBeVisible();
+  await expect(page.getByTestId('capture-extract-signin')).toBeVisible();
 });
 
 test('an unknown word for a guest: invited to sign in or write the meaning', async ({ page }) => {
@@ -141,4 +145,20 @@ test('an unknown word for a guest: invited to sign in or write the meaning', asy
   await sheet.getByRole('button', { name: 'Anlamını kendim yazayım' }).click();
   await expect(page).toHaveURL(/\/add\?term=flibbertigibbet$/);
   await expect(page.getByLabel('İngilizce kelime ya da kalıp')).toHaveValue('flibbertigibbet');
+});
+
+test('a word on the user’s own cards shows the user’s meaning, no sign-in line (v0.5.1)', async ({
+  page,
+}) => {
+  await page.goto('/add?term=flibbertigibbet');
+  await page.getByLabel('Türkçe anlamı').fill('geveze');
+  await page.getByRole('button', { name: 'Kartı kaydet' }).click();
+  await expect(page.getByLabel('İngilizce kelime ya da kalıp')).toHaveValue('');
+
+  await page.goto('/quick?text=flibbertigibbet');
+  const sheet = page.getByRole('dialog', { name: 'flibbertigibbet' });
+  await expect(sheet.getByTestId('quick-mine')).toContainText('geveze');
+  await expect(sheet.getByText('Kartlarında var')).toBeVisible();
+  await expect(sheet.getByText(/giriş yap/)).toHaveCount(0);
+  await noSideScroll(page);
 });

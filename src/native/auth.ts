@@ -57,7 +57,7 @@ export async function signInNative(): Promise<void> {
     toast({ title: i18n.t(`native.signIn.${kind}`), tone: 'danger', duration: 10_000 });
     return;
   }
-  const { error } = await requireSupabase().auth.signInWithIdToken({
+  const { error } = await (await requireSupabase()).auth.signInWithIdToken({
     provider: 'google',
     token: idToken,
     nonce: nonce.raw,

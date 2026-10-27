@@ -28,12 +28,12 @@ async function shots(page: Page, name: string, at?: Locator) {
 
 async function extract(page: Page, text: string, title: string) {
   await page.goto('/add?tab=paste');
-  await expect(page.getByRole('status', { name: 'Senkron durumu: Senkronlandı' })).toBeVisible();
+  await expect(page.getByRole('status', { name: 'Eşitleme durumu: Eşitlendi' })).toBeVisible();
   await page.getByLabel('İngilizce metin').fill(text);
   await page.getByLabel('Başlık').fill(title);
   await page.getByRole('button', { name: 'Kelimeleri çıkar' }).click();
-  await page.getByRole('link', { name: 'Önizlemeyi aç' }).first().click();
   await expect(page).toHaveURL(/\/import\//);
+  await expect(page.getByTestId('smart-summary')).toBeVisible();
 }
 
 test('B1 learner: "Senin için" by level, "Kolay" closed, "Biliyorum"; the known list stays on the device', async ({

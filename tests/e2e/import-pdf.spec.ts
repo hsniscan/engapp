@@ -9,7 +9,7 @@ test.beforeEach(async ({ context, page, backend }) => {
   void backend; // installs the mocked Supabase routes
   await FakeBackend.signIn(context);
   await page.goto('/add?tab=pdf');
-  await expect(page.getByRole('status', { name: 'Senkron durumu: Senkronlandı' })).toBeVisible();
+  await expect(page.getByRole('status', { name: 'Eşitleme durumu: Eşitlendi' })).toBeVisible();
 });
 
 async function pick(page: import('@playwright/test').Page, name: string, buffer: Buffer) {
@@ -27,12 +27,14 @@ test('text PDF (3 pages) → read with pdf.js → candidates → preview', async
   await pick(page, 'haber.pdf', textPdf(pages));
   await expect(page.getByText(/^3 sayfa · [\d.]+ karakter · 1 parça$/)).toBeVisible();
   await page.getByRole('button', { name: 'Kelimeleri çıkar' }).click();
-  await expect(page.getByText('Adaylar hazır')).toBeVisible();
+  // v0.5.1: the PDF's text is saved first and the extraction opens its preview.
+  await expect(page).toHaveURL(/\/import\//);
+  await expect(page.getByTestId('smart-summary')).toBeVisible();
+  await expect(page.getByTestId('read-text')).toBeVisible();
   expect(backend.count('ai-extract')).toBe(1);
   const sent = (backend.calls.find((c) => c.name === 'ai-extract')!.body as { text: string }).text;
   expect(sent).not.toContain('Weekly Review');
   expect(sent).not.toMatch(/Page \d/);
-  await page.getByRole('link', { name: 'Önizlemeyi aç' }).click();
   await expect(page.getByTestId('smart-summary')).toContainText(`bu metinde ${ascii.length} aday`);
 });
 

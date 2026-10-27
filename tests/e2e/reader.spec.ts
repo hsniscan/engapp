@@ -72,11 +72,11 @@ test('reader: paste offline, tap a word, guess, see the meaning, add a card', as
   await page.goto('/decks?tab=bank');
   await expect(page.getByTestId('word-bank-row').first()).toBeVisible();
   await page.goto('/add?tab=paste');
-  await expect(page.getByTestId('reader-paste-open')).toBeVisible();
+  // v0.5.1: the paste box is open for guests; only extraction asks for sign-in.
+  await expect(page.getByTestId('open-in-reader')).toBeVisible();
   await page.waitForLoadState('networkidle');
 
   await context.setOffline(true);
-  await page.getByTestId('reader-paste-open').click();
   await page.getByRole('textbox', { name: 'İngilizce metin' }).fill(TEXT);
   await page.getByRole('textbox', { name: 'Başlık' }).fill('A walk');
   await page.getByRole('button', { name: 'Okuyucuda aç' }).click();
@@ -114,7 +114,6 @@ for (const scheme of ['light', 'dark'] as const) {
     await page.goto('/decks?tab=bank');
     await expect(page.getByTestId('word-bank-row').first()).toBeVisible();
     await page.goto('/add?tab=paste');
-    await page.getByTestId('reader-paste-open').click();
     await page.getByRole('textbox', { name: 'İngilizce metin' }).fill(TEXT);
     await page.getByRole('button', { name: 'Okuyucuda aç' }).click();
     await expect(page.getByTestId('reader-coverage')).toBeVisible();
@@ -127,7 +126,7 @@ for (const scheme of ['light', 'dark'] as const) {
     await expect(page.getByRole('dialog', { name: 'Okuma ayarları' })).toBeVisible();
     await axe(page, `reader options ${scheme}`);
     await page.keyboard.press('Escape');
-    await page.goto('/decks?tab=reading');
+    await page.goto('/kesfet?f=okuma');
     await expect(page.getByTestId('my-texts')).toBeVisible();
     await axe(page, `okuma tab ${scheme}`);
   });

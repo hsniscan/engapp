@@ -94,7 +94,10 @@ const sameParams = (a: number[] | null | undefined, b: number[] | null | undefin
  * Recompute FSRS fields (from logs) and `unlocked` (from the recognition card) for the given
  * cards, or all cards. Writes only cards that changed. Call inside writeTx.
  */
-export async function recomputeCardsIn(w: SyncWriter, cardIds: Iterable<Id> | 'all'): Promise<number> {
+export async function recomputeCardsIn(
+  w: SyncWriter,
+  cardIds: Iterable<Id> | 'all',
+): Promise<number> {
   const settings = await getSettings(w.now);
   const scheduler = schedulerFor(settings);
   let cards: Card[];
@@ -154,7 +157,8 @@ export async function recomputeAllCards(now: Millis = Date.now()): Promise<numbe
 // ------------------------------------------------------------------ learning model (ADR 0041)
 
 /** Meta key: the one-off replay that fills ramp_step / learned_at has run on this device. */
-export const LEARNING_MODEL_BACKFILL_KEY = 'learning_model_backfill_v1';
+// v2 (ADR 0055): replays again once so an answer on a later calendar day under 12 h counts.
+export const LEARNING_MODEL_BACKFILL_KEY = 'learning_model_backfill_v2';
 
 /**
  * One-off job after the upgrade to the learning model: replay every card from its logs to fill
@@ -227,7 +231,10 @@ async function undoLogsIn(w: SyncWriter, logs: ReviewLog[]): Promise<number> {
  * Runs in transactions of `chunkNotes` notes; an interrupted reset is finished by
  * running it again (answers already undone no longer count).
  */
-export async function resetStudyHistory(now: Millis = Date.now(), chunkNotes = RESET_CHUNK_NOTES): Promise<ResetHistoryResult> {
+export async function resetStudyHistory(
+  now: Millis = Date.now(),
+  chunkNotes = RESET_CHUNK_NOTES,
+): Promise<ResetHistoryResult> {
   const res: ResetHistoryResult = { undoneLogs: 0, resetCards: 0 };
   const cardNote = new Map<Id, Id>();
   await db.cards.each((c) => cardNote.set(c.id, c.note_id));
@@ -236,16 +243,24 @@ export async function resetStudyHistory(now: Millis = Date.now(), chunkNotes = R
     const chunk = noteIds.slice(i, i + chunkNotes);
     await writeTx([db.cards, db.review_logs, db.settings], now, async (w) => {
       const cardIds = (await db.cards.where('note_id').anyOf(chunk).primaryKeys()) as Id[];
-      res.undoneLogs += await undoLogsIn(w, await db.review_logs.where('card_id').anyOf(cardIds).toArray());
+      res.undoneLogs += await undoLogsIn(
+        w,
+        await db.review_logs.where('card_id').anyOf(cardIds).toArray(),
+      );
       res.resetCards += await recomputeCardsIn(w, cardIds);
     });
   }
   // Logs whose card is not on this device (it may still arrive by sync) are history too.
-  const orphanCardIds = ((await db.review_logs.orderBy('card_id').uniqueKeys()) as Id[]).filter((id) => !cardNote.has(id));
+  const orphanCardIds = ((await db.review_logs.orderBy('card_id').uniqueKeys()) as Id[]).filter(
+    (id) => !cardNote.has(id),
+  );
   for (let i = 0; i < orphanCardIds.length; i += chunkNotes) {
     const chunk = orphanCardIds.slice(i, i + chunkNotes);
     await writeTx([db.review_logs], now, async (w) => {
-      res.undoneLogs += await undoLogsIn(w, await db.review_logs.where('card_id').anyOf(chunk).toArray());
+      res.undoneLogs += await undoLogsIn(
+        w,
+        await db.review_logs.where('card_id').anyOf(chunk).toArray(),
+      );
     });
   }
   await rebuildDailyActivity(now);
@@ -404,7 +419,10 @@ async function applyRemoteReport(r: WeeklyReport): Promise<boolean> {
   if (others.length) {
     await db.weekly_reports.bulkDelete(others);
     for (const id of others) {
-      const queued = await db.outbox.where('[table+row_id]').equals(['weekly_reports', id]).primaryKeys();
+      const queued = await db.outbox
+        .where('[table+row_id]')
+        .equals(['weekly_reports', id])
+        .primaryKeys();
       await db.outbox.bulkDelete(queued);
     }
   }
@@ -426,7 +444,8 @@ async function flagDuplicates(w: SyncWriter, termNorms: Iterable<string>): Promi
   const flag: Note[] = [];
   for (const live of byTerm.values()) {
     if (live.length < 2) continue;
-    for (const note of live) if (!note.possible_duplicate) flag.push({ ...note, possible_duplicate: true });
+    for (const note of live)
+      if (!note.possible_duplicate) flag.push({ ...note, possible_duplicate: true });
   }
   await w.putMany('notes', flag);
   return flag.length;
@@ -456,15 +475,19 @@ async function readTables(): Promise<BackupTables> {
 
 /**
  * Build the JSON backup (all synced tables incl. tombstones, settings, schema_version,
- * checksum) and record last_backup_at. The UI serializes it with JSON.stringify.
+ * checksum). The UI serializes it with JSON.stringify, saves the file and only then calls
+ * recordBackup: a file that never reached the disk must not count as a backup (ADR 0058).
  */
 export async function exportBackup(now: Millis = Date.now()): Promise<BackupFile> {
-  const backup = await buildBackup(await readTables(), {
+  return buildBackup(await readTables(), {
     exported_at: now,
     device_id: await getDeviceId(),
   });
+}
+
+/** Record a backup that was really saved ("Son yedek: bugün"). */
+export async function recordBackup(now: Millis = Date.now()): Promise<void> {
   await updateSettings({ last_backup_at: now }, now);
-  return backup;
 }
 
 /** Notes as CSV (UTF-8 BOM, ";" separated). Pass translated column headers from tr.json. */
@@ -588,9 +611,14 @@ async function restoreBackupNow(
     if (mode === 'overwrite' && fromFile && table !== 'settings') {
       const ids = new Set(incoming.map((r) => r.id));
       const localIds = (await db.table(table).toCollection().primaryKeys()) as Id[];
-      for (const chunk of chunks(localIds.filter((id) => !ids.has(id)), chunkSize)) {
+      for (const chunk of chunks(
+        localIds.filter((id) => !ids.has(id)),
+        chunkSize,
+      )) {
         await writeTx([db.table(table)], now, async (w) => {
-          const locals = (await db.table(table).bulkGet(chunk)) as (MutableRows[MutableTable] | undefined)[];
+          const locals = (await db.table(table).bulkGet(chunk)) as (
+            MutableRows[MutableTable] | undefined
+          )[];
           const gone = locals
             .filter((l): l is MutableRows[MutableTable] => !!l && l.deleted_at === null)
             .map((l) => ({ ...l, deleted_at: now }) as MutableRows[MutableTable]);

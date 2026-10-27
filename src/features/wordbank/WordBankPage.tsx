@@ -20,7 +20,7 @@ import {
 } from '@/domain/wordBank';
 import { Button, Checkbox, cn, Icon, Skeleton, Switch, TextField, toast } from '@/ui';
 import { posLabel } from '@/features/cards/labels';
-import { BankMissing } from '@/features/decks/DiscoverTab';
+import { BankMissing } from '@/features/decks/DeckCatalog';
 import { nf } from '@/features/decks/deckUi';
 import { FilterChip, FreqDots } from '@/features/decks/parts';
 import { specHref, useBankData, useWordBankDownload } from '@/features/decks/suggested';

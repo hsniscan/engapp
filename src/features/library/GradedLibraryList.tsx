@@ -1,7 +1,9 @@
 // The graded reading library list (v0.5 İP5, decision 0047): "Sana uygun" first (texts that
 // fit the user's reading difficulty, measured against what they know), then every text with
 // level and topic filters and a coverage chip. Opening a text makes (or reuses) its reading
-// row and goes to the reader. Rendered by /kitaplik and inside Desteler → Okuma (İP1).
+// row and goes to the reader. Rendered by /kitaplik and inside Okuma (İP1). With `hideOwn`
+// (under "Metinlerim"), texts the user already has a reading row for are left out: they are
+// listed once, above, with their progress (v0.5.1, decision 0054).
 //
 // Everything reads the downloaded catalogue in Dexie; the only network call is the catalogue
 // pull when the list mounts (public data, nothing about the user is sent).
@@ -35,7 +37,10 @@ const TOPIC_ORDER: readonly string[] = GRADED_TOPIC_KEYS;
 const FIT_KEY = { '-1': 'easy', '0': 'fits', '1': 'hard' } as const;
 const FIT_TONE: Record<string, BadgeTone> = { '-1': 'neutral', '0': 'success', '1': 'warn' };
 
-export function GradedLibraryList({ className }: { className?: string } = {}) {
+export function GradedLibraryList({
+  className,
+  hideOwn = false,
+}: { className?: string; hideOwn?: boolean } = {}) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const lib = useLiveQuery(() => scoreLibrary(), []);
@@ -66,10 +71,15 @@ export function GradedLibraryList({ className }: { className?: string } = {}) {
     const present = new Set(lib?.texts.map((s) => s.entry.level));
     return GRADED_LEVELS.filter((l) => present.has(l));
   }, [lib]);
-  const filtered = useMemo(() => (lib ? filterLibrary(lib.texts, { level, topic }) : []), [lib, level, topic]);
+  // The texts listed: all of them, or (under "Metinlerim") those the user has not opened.
+  const listed = useMemo(
+    () => (lib ? (hideOwn ? lib.texts.filter((s) => !lib.rows.has(s.entry.id)) : lib.texts) : []),
+    [lib, hideOwn],
+  );
+  const filtered = useMemo(() => filterLibrary(listed, { level, topic }), [listed, level, topic]);
   const suggestions = useMemo(
-    () => (lib ? suggestTexts(lib.texts, lib.difficulty, SUGGESTIONS, lib.finished) : []),
-    [lib],
+    () => (lib ? suggestTexts(listed, lib.difficulty, SUGGESTIONS, lib.finished) : []),
+    [lib, listed],
   );
 
   const open = async (s: ScoredGradedText) => {

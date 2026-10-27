@@ -7,10 +7,17 @@ import { DEFAULT_CLAUDE_TEXT_MODEL } from './ai-claude-text.ts';
 import { ApiError } from './errors.ts';
 import { createStoryFunction } from './setup.ts';
 import { claudeStoryModel, createClaudeStoryModel } from './story-claude.ts';
-import { storyRequest, storyResponse, STORY_PROMPT_VERSION } from './story-contract.ts';
-import { buildStoryUserPrompt, STORY_SYSTEM_PROMPT } from './story-prompt.ts';
+import {
+  pickedMinUsed,
+  PICKED_PROMPT_VERSION,
+  storyRequest,
+  storyResponse,
+  STORY_PROMPT_VERSION,
+} from './story-contract.ts';
+import { buildStoryUserPrompt, PICKED_SYSTEM_PROMPT, STORY_SYSTEM_PROMPT } from './story-prompt.ts';
 import { MemoryStoryStore } from './story-store.ts';
 import {
+  pickedDailyLimit,
   runStory,
   usedTargets,
   validateStoryOutput,
@@ -252,6 +259,87 @@ describe('runStory', () => {
     expect(await code(runStory(STORY_REQUEST, d))).toBe('ai_failed');
     expect(budgetStore.spent).toBe(0);
     expect(budgetStore.reserved).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// "Kelimelerimle metin oluştur": source 'picked' (v0.5.1, decision 0056)
+// ---------------------------------------------------------------------------
+
+const PICKED_REQUEST = {
+  ...STORY_REQUEST,
+  source: 'picked',
+  genre: 'dialogue',
+  length: 'medium',
+  target_lemmas: ['decide', 'journey', 'borrow'],
+};
+
+describe('picked texts', () => {
+  it('takes 3–8 picked words; the daily story still needs 5', () => {
+    expect(storyRequest.safeParse(PICKED_REQUEST).success).toBe(true);
+    expect(
+      storyRequest.safeParse({ ...PICKED_REQUEST, target_lemmas: ['decide', 'journey'] }).success,
+    ).toBe(false);
+    expect(
+      storyRequest.safeParse({ ...STORY_REQUEST, target_lemmas: ['decide', 'journey', 'borrow'] })
+        .success,
+    ).toBe(false);
+    // A daily story is always a medium story; a form or a length is a picked text's only.
+    expect(storyRequest.safeParse({ ...STORY_REQUEST, genre: 'email' }).success).toBe(false);
+    expect(storyRequest.safeParse({ ...PICKED_REQUEST, genre: 'poem' }).success).toBe(false);
+    expect(storyRequest.safeParse({ ...PICKED_REQUEST, text: 'my diary' }).success).toBe(false);
+  });
+
+  it('needs all of 3 words, at most two left out of more', () => {
+    expect([3, 4, 5, 6, 8].map(pickedMinUsed)).toEqual([3, 3, 3, 4, 6]);
+  });
+
+  it('sends the picked prompt: the daily fields plus FORM and LENGTH (snapshot)', async () => {
+    const { d, calls } = deps();
+    const r = await runStory(PICKED_REQUEST, d);
+    expect(calls[0]!.system).toBe(PICKED_SYSTEM_PROMPT);
+    expect(calls[0]!.user).toBe(
+      [
+        'LEVEL: B1',
+        'DIFFICULTY: dengeli',
+        'FORM: dialogue',
+        'LENGTH: 180-250',
+        'TOPICS: food, travel',
+        'TARGET_WORDS: decide, journey, borrow',
+        'AVOID_WORDS: (none)',
+      ].join('\n'),
+    );
+    expect(r.prompt_version).toBe(PICKED_PROMPT_VERSION);
+    expect(r.story.used_lemmas).toEqual(['decide', 'journey', 'borrow']);
+  });
+
+  it('has its own limit of 5 a day, apart from the day’s story', async () => {
+    const { d, store } = deps({ dailyLimit: 1 });
+    for (let i = 0; i < 5; i++) expect(await code(runStory(PICKED_REQUEST, d))).toBe('ok');
+    expect(await code(runStory(PICKED_REQUEST, d))).toBe('daily_limit');
+    // The day's story is not touched by picked texts.
+    expect(await code(runStory(STORY_REQUEST, d))).toBe('ok');
+    expect(store.days.get('u1|2026-11-02')).toEqual({ stories: 1, retries: 0 });
+    expect(store.days.get('u1|2026-11-02|picked')).toEqual({ stories: 5, retries: 0 });
+  });
+
+  it('a failed picked text gives its own count back', async () => {
+    const { d, store } = deps({}, [new AiError('ai_failed', 'socket hang up')]);
+    expect(await code(runStory(PICKED_REQUEST, d))).toBe('ai_failed');
+    expect(store.days.get('u1|2026-11-02|picked')).toEqual({ stories: 0, retries: 0 });
+    expect(store.days.has('u1|2026-11-02')).toBe(false);
+  });
+
+  it('a text far longer than the length asked for is refused', async () => {
+    const long = { ...clone(GOOD_STORY), paragraphs: [...GOOD_STORY.paragraphs, ...GOOD_STORY.paragraphs] };
+    const { d } = deps({}, [long]);
+    expect(await code(runStory({ ...PICKED_REQUEST, length: 'short' }, d))).toBe('ai_failed');
+  });
+
+  it('PICKED_STORY_DAILY_LIMIT overrides the default of 5', () => {
+    expect(pickedDailyLimit(() => undefined)).toBe(5);
+    expect(pickedDailyLimit((k) => (k === 'PICKED_STORY_DAILY_LIMIT' ? '7' : undefined))).toBe(7);
+    expect(pickedDailyLimit(() => 'x')).toBe(5);
   });
 });
 

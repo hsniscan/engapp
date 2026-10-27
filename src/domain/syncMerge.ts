@@ -53,6 +53,8 @@ const LATE_COLUMNS: Readonly<Record<string, Readonly<Record<string, unknown>>>> 
     reading_difficulty: null,
     reading_offset: null,
     reader_highlight: undefined,
+    // v0.5.1 "Hep tahmin ettir" (decision 0054): absent/null/false = off.
+    reader_always_guess: null,
     // v0.5 İP10 streak protections (decision 0052)
     streak_freezes: null,
   },

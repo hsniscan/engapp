@@ -5,11 +5,11 @@
 (function (sw) {
   'use strict';
 
-  /** Only same-site paths; anything else opens the review screen. */
+  /** Only same-site paths; anything else opens the study screen. */
   function safePath(url) {
     return typeof url === 'string' && url.charAt(0) === '/' && url.charAt(1) !== '/'
       ? url
-      : '/review';
+      : '/study';
   }
 
   sw.addEventListener('push', function (event) {

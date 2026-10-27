@@ -122,7 +122,9 @@ describe('DeleteDialog (device)', () => {
     const user = userEvent.setup();
     const deps = fakeDeps();
     const onDone = vi.fn();
-    renderAt(<DeleteDialog open onOpenChange={() => {}} mode="device" deps={deps} onDone={onDone} />);
+    renderAt(
+      <DeleteDialog open onOpenChange={() => {}} mode="device" deps={deps} onDone={onDone} />,
+    );
     const dialog = await screen.findByRole('dialog', { name: 'Bu cihazdaki veriler silinsin mi?' });
     await user.type(within(dialog).getByLabelText('Onaylamak için SİL yaz'), 'SİL');
     await user.click(within(dialog).getByRole('button', { name: 'Bu cihazdaki verileri sil' }));
@@ -172,7 +174,9 @@ describe('AccountDeleteRow', () => {
 describe('public pages', () => {
   it('/gizlilik: Turkish policy with every section, KVKK rights and the processors', () => {
     renderAt(<PrivacyPage lang="tr" />, '/gizlilik');
-    expect(screen.getByRole('heading', { level: 1, name: 'Gizlilik politikası' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Gizlilik politikası' }),
+    ).toBeInTheDocument();
     for (const h of [
       'Veri sorumlusu ve iletişim',
       'Hangi verileri işliyoruz',
@@ -183,11 +187,17 @@ describe('public pages', () => {
       'Çocuklar',
       'Değişiklikler',
     ])
-      expect(screen.getByRole('heading', { level: 2, name: new RegExp(h.replace(/[()]/g, '\\$&')) })).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { level: 2, name: new RegExp(h.replace(/[()]/g, '\\$&')) }),
+      ).toBeInTheDocument();
     for (const name of ['Supabase', 'Cloudflare', 'Google Gemini', 'Anthropic Claude'])
       expect(screen.getAllByText(name).length).toBeGreaterThan(0);
-    // No VITE_CONTACT_EMAIL in tests: a visible placeholder, never a made-up address.
-    expect(screen.getAllByText('(iletişim adresi henüz eklenmedi)').length).toBeGreaterThan(0);
+    // No VITE_CONTACT_EMAIL in tests: never a placeholder (Play reviews this page) and never a
+    // made-up address; the public feedback page instead.
+    expect(screen.queryByText(/iletişim adresi henüz eklenmedi/)).toBeNull();
+    const contact = screen.getAllByRole('link', { name: 'github.com/hsniscan/engapp/issues' });
+    expect(contact.length).toBeGreaterThan(0);
+    expect(contact[0]).toHaveAttribute('href', 'https://github.com/hsniscan/engapp/issues');
     expect(screen.getAllByRole('link', { name: 'hesap silme sayfası' })[0]).toHaveAttribute(
       'href',
       '/hesap-sil',
@@ -197,9 +207,14 @@ describe('public pages', () => {
   it('/privacy: English version, lang="en"', () => {
     renderAt(<PrivacyPage lang="en" />, '/privacy');
     expect(screen.getByRole('heading', { level: 1, name: 'Privacy policy' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: /Your rights \(KVKK art. 11\)/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 2, name: /Your rights \(KVKK art. 11\)/ }),
+    ).toBeInTheDocument();
     expect(document.documentElement.lang).toBe('en');
-    expect(screen.getAllByRole('link', { name: 'Back to the app' })[0]).toHaveAttribute('href', '/');
+    expect(screen.getAllByRole('link', { name: 'Back to the app' })[0]).toHaveAttribute(
+      'href',
+      '/',
+    );
   });
 
   it('/hesap-sil signed out: explains and offers Google sign-in', () => {
@@ -209,7 +224,14 @@ describe('public pages', () => {
       screen.getByRole('heading', { level: 1, name: 'Hesabını ve verilerini sil' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Google ile giriş yap' })).toBeInTheDocument();
-    expect(screen.getByText(/Ayarlar → Hesap → Hesabımı ve verilerimi sil/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Profil → ⚙ Ayarlar → Hesap ve eşitleme → Hesabımı ve verilerimi sil/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/iletişim adresi henüz eklenmedi/)).toBeNull();
+    expect(screen.getByRole('link', { name: 'github.com/hsniscan/engapp/issues' })).toHaveAttribute(
+      'href',
+      'https://github.com/hsniscan/engapp/issues',
+    );
   });
 
   it('/hesap-sil signed in: shows the account and the delete button', async () => {
@@ -225,6 +247,8 @@ describe('public pages', () => {
 
   it('/hesap-sil?durum=silindi: the confirmation', () => {
     renderAt(<DeleteAccountPage />, '/hesap-sil?durum=silindi');
-    expect(screen.getByRole('heading', { name: 'Hesabın ve verilerin silindi' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Hesabın ve verilerin silindi' }),
+    ).toBeInTheDocument();
   });
 });

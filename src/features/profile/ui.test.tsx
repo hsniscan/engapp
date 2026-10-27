@@ -13,18 +13,23 @@ import { HomeScreen } from '@/features/home/HomeScreen';
 import { resetDb } from '@/test/db';
 import { renderRoute } from '@/test/ui';
 import { InterestsBody } from './InterestsPage';
+import { InterestsPrompt } from './InterestsPrompt';
 
 beforeEach(async () => {
   await resetDb();
   await ensureSettings(Date.now() - 3 * 86_400_000);
 });
 
-describe('first-run interests question on the home screen', () => {
+// The card's behaviour is tested on the card itself: rendering all of Bugün (a dozen live
+// queries) for each click made these tests slow and flaky on a busy machine. Bugün is
+// rendered only to check where the card shows.
+describe('first-run interests question', () => {
+  const region = () => screen.findByRole('region', { name: 'Hangi konular ilgini çekiyor?' });
+
   it('asks once: picking and saving answers it for good', async () => {
-    await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] });
     const user = userEvent.setup();
-    renderRoute(<HomeScreen />);
-    const card = await screen.findByRole('region', { name: 'Hangi konular ilgini çekiyor?' });
+    renderRoute(<InterestsPrompt />);
+    const card = await region();
     const save = within(card).getByRole('button', { name: 'Kaydet' });
     expect(save).toBeDisabled();
     await user.click(within(card).getByRole('button', { name: 'Teknoloji' }));
@@ -41,21 +46,33 @@ describe('first-run interests question on the home screen', () => {
   });
 
   it('"Şimdi değil" hides it and does not pick anything', async () => {
-    await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] });
     const user = userEvent.setup();
-    renderRoute(<HomeScreen />);
-    await user.click(await screen.findByRole('button', { name: 'Şimdi değil' }));
+    renderRoute(<InterestsPrompt />);
+    await user.click(within(await region()).getByRole('button', { name: 'Şimdi değil' }));
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Şimdi değil' })).toBeNull());
     expect((await getSettings()).interests).toEqual([]);
   });
 
-  it('is not shown to a brand-new user before the first word, nor once answered', async () => {
+  it('Bugün shows it once there is a word', async () => {
+    await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] });
+    renderRoute(<HomeScreen />);
+    // Bugün shows its notes once the hero has its numbers: no tight bound on a busy machine.
+    expect(
+      await screen.findByRole(
+        'region',
+        { name: 'Hangi konular ilgini çekiyor?' },
+        { timeout: 10_000 },
+      ),
+    ).toBeInTheDocument();
+  }, 20_000);
+
+  it('is not shown to a brand-new user before the first word', async () => {
     renderRoute(<HomeScreen />);
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Hoş geldin' }),
+      await screen.findByRole('heading', { level: 1, name: 'Hoş geldin' }, { timeout: 10_000 }),
     ).toBeInTheDocument();
     expect(screen.queryByText('Hangi konular ilgini çekiyor?')).toBeNull();
-  });
+  }, 20_000);
 });
 
 describe('interests page', () => {

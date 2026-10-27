@@ -1,5 +1,6 @@
 // Constants and helpers shared by the Desteler screens (no components here, for fast refresh).
 import type { DeckFilter } from '@/domain/deckFilter';
+import { openAddSheet } from '@/features/add/addSheetStore';
 import type { CefrLevel } from '@/domain/types';
 
 /**
@@ -56,7 +57,8 @@ export function soleTag(f: DeckFilter | null): string | null {
   return f.tags[0]!;
 }
 
-export const DECK_TABS = ['mine', 'discover', 'bank', 'reading'] as const;
+/** Kelimelerim's segments (v0.5.1): the old discover / reading segments are in Keşfet. */
+export const DECK_TABS = ['mine', 'bank'] as const;
 export type DeckTab = (typeof DECK_TABS)[number];
 
 export function parseDeckTab(raw: string | null): DeckTab {
@@ -64,3 +66,12 @@ export function parseDeckTab(raw: string | null): DeckTab {
 }
 
 export const deckTabHref = (tab: DeckTab) => (tab === 'mine' ? '/decks' : `/decks?tab=${tab}`);
+
+/** Keşfet with its suggested decks (the old Desteler › Keşfet segment). */
+export const DISCOVER_DECKS_HREF = '/kesfet?f=desteler';
+
+/**
+ * Opens the (+) sheet at its "İçe aktar" group. The sheet takes the group as an optional
+ * argument (v0.5.1 Add rework); a sheet without groups ignores it and opens as usual.
+ */
+export const openImportSheet = () => openAddSheet('import');

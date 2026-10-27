@@ -1,9 +1,10 @@
-// Desteler › Keşfet (board DecksDiscover): suggested decks cut from the word bank on the device:
-// a featured deck for the learner's level, "Senin için", the most-used words (100 … 3000), by
-// level, by part of speech (with level × part of speech chips), false friends; phrasal verbs,
-// idioms and topic decks have no data yet and are marked "Yakında".
+// Keşfet › Desteler (board DecksDiscover; was Desteler › Keşfet): suggested decks cut from the
+// word bank on the device: a featured deck for the learner's level, "Senin için", the most-used
+// words (100 … 3000), by level, by part of speech (with level × part of speech chips), false
+// friends. Kinds without data yet (phrasal verbs, idioms, topics) are not shown at all (v0.5.1:
+// no "Yakında" tiles). The Keşfet feed reuses Featured and ForYouRow.
 import { useLiveQuery } from 'dexie-react-hooks';
-import { type ReactNode, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { listDecks } from '@/data';
@@ -12,61 +13,40 @@ import { CEFR, levelRank } from '@/domain/level';
 import {
   CONTENT_POS,
   type ContentPos,
-  deckProgress,
-  deckWords,
-  type DeckProgress,
   deckWordStatus,
   DONE_SHARE,
-  featuredSpec,
-  forYouSpecs,
   knownShare,
   type OwnedIndex,
-  posLevelCounts,
   type SuggestedSpec,
-  TOP_SIZES,
   type TopSize,
 } from '@/domain/suggestedDecks';
-import { TOPIC_KEYS, type TopicKey } from '@/domain/topics';
 import type { CefrLevel } from '@/domain/types';
-import type { WordBankEntry } from '@/domain/wordBank';
 import { Button, cn, EmptyState, Icon, Skeleton, Spinner, Surface } from '@/ui';
-import { useTopicProfile } from '@/features/profile/useTopicProfile';
 import { LEVEL_MARK, MARK, nf, pct } from './deckUi';
 import { LevelPill, ProgressBar2, SegBar } from './parts';
-import {
-  falseFriendLemmas,
-  specHref,
-  specTitle,
-  useBankData,
-  useFalseFriends,
-  useWordBankDownload,
-} from './suggested';
-
-interface DeckCard {
-  spec: SuggestedSpec;
-  words: WordBankEntry[];
-  progress: DeckProgress;
-}
-
-const card = (
-  entries: readonly WordBankEntry[],
-  idx: OwnedIndex,
-  spec: SuggestedSpec,
-  ff?: ReadonlySet<string>,
-): DeckCard => {
-  const words = deckWords(entries, spec, { falseFriends: ff });
-  return { spec, words, progress: deckProgress(words, idx) };
-};
+import { type BankData, falseFriendLemmas, specHref, specTitle } from './suggested';
+import { type DeckCard, deckCard, useDeckView } from './deckView';
+import type { FalseFriendNote } from '@/domain/pairNotes';
 
 /** Bar heights of the frequency steps (px), as on the board. */
 const TOP_HEIGHT: Record<TopSize, number> = { 100: 28, 500: 52, 1000: 72, 2000: 94, 3000: 116 };
 
-export function DiscoverTab() {
+/**
+ * Every suggested deck (Keşfet › Desteler). The page owns the word bank download and passes
+ * the bank rows in; `data` undefined while they load.
+ */
+export function DeckCatalog({
+  data,
+  ffNotes,
+  download,
+  onRetry,
+}: {
+  data: BankData | undefined;
+  ffNotes: FalseFriendNote[] | null;
+  download: string;
+  onRetry: () => void;
+}) {
   const { t } = useTranslation();
-  const { download, retry } = useWordBankDownload();
-  const data = useBankData();
-  const ffNotes = useFalseFriends();
-  const profile = useTopicProfile();
   // Tags of the decks in Destelerim made from a suggestion ("Destende").
   const mineTags = useLiveQuery(async () => {
     const out = new Set<string>();
@@ -76,35 +56,18 @@ export function DiscoverTab() {
     }
     return out;
   }, []);
-
-  const view = useMemo(() => {
-    if (!data || data.entries.length === 0) return null;
-    const { entries, idx, level } = data;
-    const featured = featuredSpec(entries, idx, level);
-    return {
-      featured: featured ? card(entries, idx, featured) : null,
-      forYou: forYouSpecs(entries, idx, level, featured).map((x) => ({
-        ...card(entries, idx, x.spec),
-        upLevel: x.upLevel,
-      })),
-      top: TOP_SIZES.map((size) => card(entries, idx, { kind: 'top', size })),
-      levels: CEFR.map((lv) => card(entries, idx, { kind: 'level', level: lv })),
-      pos: posLevelCounts(entries),
-      levelPos: CONTENT_POS.map((pos) => card(entries, idx, { kind: 'levelPos', level, pos })),
-    };
-  }, [data]);
+  const view = useDeckView(data);
 
   const ff = useMemo(() => {
     if (!data || !ffNotes || ffNotes.length === 0) return null;
-    return card(data.entries, data.idx, { kind: 'falseFriends' }, falseFriendLemmas(ffNotes));
+    return deckCard(data.entries, data.idx, { kind: 'falseFriends' }, falseFriendLemmas(ffNotes));
   }, [data, ffNotes]);
 
   if (!data) return <Skeleton lines={6} />;
-  if (!view) return <BankMissing download={download} onRetry={retry} />;
+  if (!view) return <BankMissing download={download} onRetry={onRetry} />;
 
   const inMine = (spec: SuggestedSpec) => mineTags?.has(specTitle(t, spec).toLocaleLowerCase('tr')) ?? false;
   const level = data.level;
-  const interests = profile?.ranked.length ? profile.ranked : (profile?.interests ?? []);
 
   return (
     <div className="flex flex-col gap-[22px]">
@@ -112,53 +75,7 @@ export function DiscoverTab() {
 
       <section aria-labelledby="dc-foryou" className="flex flex-col gap-2.5">
         <SectionHead id="dc-foryou" title={t('deckHub.discover.forYou')} sub={t('deckHub.discover.forYouBody', { level })} />
-        <ul className="-mr-4 flex snap-x gap-3 overflow-x-auto pr-4 pb-1 [scrollbar-width:none]">
-          {view.forYou.map((d) => (
-            <li key={specHref(d.spec)} className="w-[168px] shrink-0 snap-start">
-              <Link
-                to={specHref(d.spec)}
-                className="flex h-full flex-col gap-2 rounded-[18px] border border-border bg-surface p-3.5 text-fg hover:border-border-strong"
-              >
-                {d.upLevel ? (
-                  <span className="self-start rounded-[5px] bg-success-soft px-1.5 py-0.5 text-xs font-semibold text-success-text">
-                    {t('deckHub.discover.upLevel')}
-                  </span>
-                ) : (
-                  <LevelPill level={level} className="self-start" />
-                )}
-                <span className="font-serif text-lg leading-tight font-semibold">{specTitle(t, d.spec)}</span>
-                <ProgressBar2
-                  total={d.progress.total}
-                  first={d.progress.learned + d.progress.known}
-                  second={0}
-                  height={6}
-                  label={t('deckHub.discover.knownLeft', {
-                    pct: pct(d.progress.learned + d.progress.known, d.progress.total),
-                    left: nf.format(d.progress.fresh),
-                  })}
-                />
-                <span className="text-[13px] text-fg-muted">
-                  {t('deckHub.discover.deckPct', {
-                    words: nf.format(d.progress.total),
-                    pct: Math.round(knownShare(d.progress) * 100),
-                  })}
-                </span>
-              </Link>
-            </li>
-          ))}
-          {interests.slice(0, 1).map((topic) => (
-            <li
-              key={topic}
-              className="flex w-[168px] shrink-0 snap-start flex-col gap-2 rounded-[18px] border-[1.5px] border-dashed border-border-strong/45 bg-surface p-3.5"
-            >
-              <span className="self-start rounded-[5px] bg-warn-soft px-1.5 py-0.5 text-xs font-semibold text-warn-text">
-                {t('deckHub.discover.interest')}
-              </span>
-              <span className="font-serif text-lg leading-tight font-semibold text-fg">{t(`topics.${topic}`)}</span>
-              <span className="text-[13px] leading-snug text-fg-muted">{t('deckHub.discover.aiSoon')}</span>
-            </li>
-          ))}
-        </ul>
+        <ForYouRow decks={view.forYou} level={level} />
       </section>
 
       <TopSection decks={view.top} inMine={inMine} />
@@ -179,7 +96,6 @@ export function DiscoverTab() {
               <li key={lv}>
                 <Link
                   to={specHref(d.spec)}
-                  aria-label={`${specTitle(t, d.spec)}, ${t('deckHub.words', { count: d.progress.total, formatted: nf.format(d.progress.total) })}, %${Math.round(share * 100)}`}
                   className={cn(
                     'flex flex-col gap-1.5 rounded-2xl p-3 text-fg',
                     mine
@@ -188,13 +104,15 @@ export function DiscoverTab() {
                   )}
                 >
                   <span className="flex items-center justify-between">
-                    <span className="font-serif text-2xl leading-none font-semibold">{lv}</span>
+                    <span aria-hidden="true" className="font-serif text-2xl leading-none font-semibold">{lv}</span>
+                    <span className="sr-only">{specTitle(t, d.spec)}</span>
                     {mine && (
                       <span className="text-[11px] font-semibold text-accent-text">{t('deckHub.discover.yourLevel')}</span>
                     )}
                   </span>
                   <span className="text-[13px] text-fg-muted">
                     {t('deckHub.words', { count: d.progress.total, formatted: nf.format(d.progress.total) })}
+                    <span className="sr-only">, %{Math.round(share * 100)}</span>
                   </span>
                   <span aria-hidden="true" className="h-1 overflow-hidden rounded-full" style={{ background: mine ? MARK.trackOnSoft : MARK.track }}>
                     <span
@@ -212,7 +130,7 @@ export function DiscoverTab() {
         </ul>
       </section>
 
-      <PosSection counts={view.pos} levelPos={view.levelPos} idx={data.idx} />
+      <PosSection counts={view.pos} levelPos={view.levelPos} idx={data.idx} ambiguous={view.ambiguous} />
 
       {ff && ffNotes && ff.words.length > 0 && (
         <section aria-labelledby="dc-ff">
@@ -252,39 +170,11 @@ export function DiscoverTab() {
         </section>
       )}
 
-      <section aria-labelledby="dc-patterns" className="flex flex-col gap-2.5">
-        <SoonHead id="dc-patterns" title={t('deckHub.discover.patterns')} />
-        <ul className="grid grid-cols-2 gap-2.5">
-          <SoonCard title={t('deckHub.discover.phrasal')} example={t('deckHub.discover.phrasalExample')} />
-          <SoonCard title={t('deckHub.discover.idioms')} example={t('deckHub.discover.idiomsExample')} />
-        </ul>
-      </section>
-
-      <section aria-labelledby="dc-topics" className="flex flex-col gap-2.5">
-        <SoonHead id="dc-topics" title={t('deckHub.discover.topics')} />
-        <ul className="grid grid-cols-3 gap-2">
-          {topicOrder(interests).map((k) => (
-            <li
-              key={k}
-              className="flex flex-col gap-1.5 rounded-[14px] border border-border bg-surface px-3 py-2.5"
-            >
-              <TopicGlyph topic={k} />
-              <span className="text-sm leading-tight font-semibold text-fg">{t(`topics.${k}`)}</span>
-            </li>
-          ))}
-        </ul>
-        <Link
-          to="/settings/profile"
-          className="flex h-11 items-center justify-center rounded-xl border border-border bg-surface text-sm font-semibold text-accent-text hover:border-border-strong"
-        >
-          {t('deckHub.discover.topicsInterests')}
-        </Link>
-      </section>
     </div>
   );
 }
 
-function SectionHead({ id, title, sub }: { id: string; title: string; sub?: string }) {
+export function SectionHead({ id, title, sub }: { id: string; title: string; sub?: string }) {
   return (
     <div className="flex flex-col gap-0.5 px-1">
       <h2 id={id} className="font-serif text-[19px] font-semibold text-fg">
@@ -295,34 +185,55 @@ function SectionHead({ id, title, sub }: { id: string; title: string; sub?: stri
   );
 }
 
-function SoonHead({ id, title }: { id: string; title: string }) {
+/** "Senin için": a row of suggested decks that scrolls sideways. */
+export function ForYouRow({
+  decks,
+  level,
+}: {
+  decks: (DeckCard & { upLevel: boolean })[];
+  level: CefrLevel;
+}) {
   const { t } = useTranslation();
   return (
-    <div className="flex items-baseline justify-between px-1">
-      <h2 id={id} className="font-serif text-[19px] font-semibold text-fg">
-        {title}
-      </h2>
-      <span className="text-[13px] font-semibold text-warn-text">{t('deckHub.discover.soon')}</span>
-    </div>
+    <ul className="-mr-4 flex snap-x gap-3 overflow-x-auto pr-4 pb-1 [scrollbar-width:none]">
+      {decks.map((d) => (
+        <li key={specHref(d.spec)} className="w-[168px] shrink-0 snap-start">
+          <Link
+            to={specHref(d.spec)}
+            className="flex h-full flex-col gap-2 rounded-[18px] border border-border bg-surface p-3.5 text-fg hover:border-border-strong"
+          >
+            {d.upLevel ? (
+              <span className="self-start rounded-[5px] bg-success-soft px-1.5 py-0.5 text-xs font-semibold text-success-text">
+                {t('deckHub.discover.upLevel')}
+              </span>
+            ) : (
+              <LevelPill level={level} className="self-start" />
+            )}
+            <span className="font-serif text-lg leading-tight font-semibold">{specTitle(t, d.spec)}</span>
+            <ProgressBar2
+              total={d.progress.total}
+              first={d.progress.learned + d.progress.known}
+              second={0}
+              height={6}
+              label={t('deckHub.discover.knownLeft', {
+                pct: pct(d.progress.learned + d.progress.known, d.progress.total),
+                left: nf.format(d.progress.fresh),
+              })}
+            />
+            <span className="text-[13px] text-fg-muted">
+              {t('deckHub.discover.deckPct', {
+                words: nf.format(d.progress.total),
+                pct: Math.round(knownShare(d.progress) * 100),
+              })}
+            </span>
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }
 
-function SoonCard({ title, example }: { title: string; example: string }) {
-  const { t } = useTranslation();
-  return (
-    <li className="flex flex-col gap-1.5 rounded-[18px] border-[1.5px] border-dashed border-border-strong/45 p-3.5">
-      <span lang="en" className="font-serif text-lg font-semibold text-fg">
-        {title}
-      </span>
-      <span lang="en" className="font-serif text-sm text-fg-muted italic">
-        {example}
-      </span>
-      <span className="text-xs text-warn-text">{t('deckHub.discover.aiPreparing')}</span>
-    </li>
-  );
-}
-
-function Featured({ deck, idx }: { deck: DeckCard; idx: OwnedIndex }) {
+export function Featured({ deck, idx }: { deck: DeckCard; idx: OwnedIndex }) {
   const { t } = useTranslation();
   const spec = deck.spec;
   const pos = spec.kind === 'levelPos' ? spec.pos : 'verb';
@@ -438,10 +349,13 @@ function PosSection({
   counts,
   levelPos,
   idx,
+  ambiguous,
 }: {
   counts: Record<ContentPos, Record<CefrLevel, number>>;
   levelPos: DeckCard[];
   idx: OwnedIndex;
+  /** Words listed under several parts of speech: not used as examples. */
+  ambiguous: ReadonlySet<string>;
 }) {
   const { t } = useTranslation();
   // Two words to show per part of speech: open words at the learner's level.
@@ -449,11 +363,12 @@ function PosSection({
     const out = {} as Record<ContentPos, string[]>;
     for (const d of levelPos) {
       const pos = (d.spec as { pos: ContentPos }).pos;
-      const open = d.words.filter((w) => deckWordStatus(w, idx) === 'new');
-      out[pos] = (open.length >= 2 ? open : d.words).slice(0, 2).map((w) => w.lemma);
+      const clear = d.words.filter((w) => !ambiguous.has(w.lemma_norm));
+      const open = clear.filter((w) => deckWordStatus(w, idx) === 'new');
+      out[pos] = (open.length >= 2 ? open : clear).slice(0, 2).map((w) => w.lemma);
     }
     return out;
-  }, [levelPos, idx]);
+  }, [levelPos, idx, ambiguous]);
   return (
     <section aria-labelledby="dc-pos" className="flex flex-col gap-2.5">
       <div className="flex flex-col gap-1.5 px-1">
@@ -512,59 +427,6 @@ function PosSection({
         ))}
       </ul>
     </section>
-  );
-}
-
-const DEFAULT_TOPICS: TopicKey[] = ['travel', 'business', 'health', 'technology', 'food', 'sports'];
-
-function topicOrder(interests: readonly TopicKey[]): TopicKey[] {
-  const out: TopicKey[] = [];
-  for (const k of [...interests, ...DEFAULT_TOPICS, ...TOPIC_KEYS]) if (!out.includes(k)) out.push(k);
-  return out.slice(0, 6);
-}
-
-const TOPIC_PATHS: Partial<Record<TopicKey, ReactNode>> = {
-  travel: <path d="M3 14l18-7-6 15-3-6z" />,
-  business: (
-    <>
-      <rect x="3" y="7" width="18" height="13" rx="2" />
-      <path d="M9 7V5h6v2" />
-    </>
-  ),
-  health: <path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z" />,
-  technology: (
-    <>
-      <rect x="4" y="5" width="16" height="11" rx="1.5" />
-      <path d="M2 19h20" />
-    </>
-  ),
-  food: <path d="M6 3v8a2 2 0 0 0 4 0V3M8 11v10M17 21V3c-2 1-3 4-3 8h3" />,
-  sports: (
-    <>
-      <circle cx="12" cy="12" r="8" />
-      <path d="M4.5 9.5c3 1 5.5 3.5 6.5 10M19.5 9.5c-3 1-5.5 3.5-6.5 10" />
-    </>
-  ),
-};
-
-function TopicGlyph({ topic }: { topic: TopicKey }) {
-  const path = TOPIC_PATHS[topic];
-  if (!path) return <Icon name="layers" size={20} className="text-fg-subtle" />;
-  return (
-    <svg
-      aria-hidden="true"
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="text-fg-subtle"
-    >
-      {path}
-    </svg>
   );
 }
 

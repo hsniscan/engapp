@@ -122,5 +122,39 @@ describe('study modes picker', () => {
     // The first type with cards is the main one.
     expect(screen.getByTestId('study-start')).toHaveAttribute('href', '/study?mode=production');
     expect(screen.getByTestId('study-start')).toHaveTextContent('Üretime başla');
+    // Dikte cannot give cards on this device (no dictation cards): not listed (ADR 0055).
+    expect(screen.queryByTestId('study-mode-dictation')).toBeNull();
+    expect(screen.getByText(/tek oturumda karışık gelir/)).toHaveTextContent(
+      'Kelime çalışma, Üretim ve Boşluk doldurma tek oturumda karışık gelir',
+    );
+  });
+
+  it('a new user gets first steps, not a start button with no cards', async () => {
+    await resetDb();
+    await ensureSettings(Date.now());
+    renderRoute(<StudyModesPage />, { path: '/study' });
+    expect(await screen.findByTestId('study-welcome')).toBeInTheDocument();
+    expect(screen.queryByTestId('study-start')).toBeNull();
+    expect(screen.queryByText('Bugünlük bütün türler bitti')).toBeNull();
+    expect(screen.getByRole('button', { name: /İlk kelimeni ekle/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Hazır desteye göz at' })).toHaveAttribute(
+      'href',
+      '/kesfet?f=desteler',
+    );
+  });
+});
+
+describe('a wrong typed answer', () => {
+  it('suggests Tekrar and asks before İyi', async () => {
+    const user = userEvent.setup();
+    renderRoute(<ReviewScreen studyMode="production" />, { path: '/study' });
+    await screen.findByText('isteksiz');
+    await user.type(screen.getByTestId('answer-input'), 'zzz{Enter}');
+    expect(await screen.findByText('Bu sefer olmadı')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /İyi/ }));
+    expect(await db.review_logs.count()).toBe(0);
+    expect(screen.getByTestId('rating-confirm')).toHaveTextContent('Yine de “İyi” mi?');
+    await user.click(screen.getByRole('button', { name: /İyi/ }));
+    await waitFor(async () => expect(await db.review_logs.count()).toBe(1));
   });
 });

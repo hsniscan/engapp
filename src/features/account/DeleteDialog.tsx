@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { logError } from '@/data';
 import { DELETE_CONFIRM_WORD, isDeleteConfirmation } from '@/domain/deletion';
 import { downloadBackup } from '@/features/settings/backupActions';
-import { Button, Dialog, DialogClose, Icon, TextField, toast } from '@/ui';
+import { Button, Dialog, DialogClose, Icon, TextField } from '@/ui';
 import {
   deleteAccount,
   DeletionError,
@@ -28,7 +28,15 @@ export interface DeleteDialogProps {
   onDone?: (path: string) => void;
 }
 
-const ITEMS = ['cards', 'history', 'settings', 'reports', 'notifications', 'pictures', 'account'] as const;
+const ITEMS = [
+  'cards',
+  'history',
+  'settings',
+  'reports',
+  'notifications',
+  'pictures',
+  'account',
+] as const;
 
 /**
  * "Hesabımı ve verilerimi sil" / "Bu cihazdaki verileri sil": what goes, an optional JSON
@@ -63,13 +71,8 @@ export function DeleteDialog({
 
   const backup = async () => {
     setBusy('backup');
-    const ok = await downloadBackup();
+    await downloadBackup();
     setBusy(null);
-    toast(
-      ok
-        ? { title: t('backup.done'), description: t('backup.doneHint'), tone: 'success' }
-        : { title: t('backup.failed'), tone: 'danger' },
-    );
   };
 
   const run = async () => {

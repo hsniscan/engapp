@@ -20,20 +20,24 @@ import {
   toast,
 } from '@/ui';
 import { ListenSection } from '@/features/practice/ListenSection';
+import { startLabel } from '@/features/review/modeText';
+import { useTodayStudy } from '@/features/review/studyModes';
 import { extraNewSteps, practiceHref } from './links';
 
 export function MoreStudyPage() {
   const { t } = useTranslation();
   const data = useLiveQuery(() => getMoreStudyOverview(), []);
-  const description = !data
-    ? ' '
-    : data.dueNow > 0
-      ? t('more.descPending', { count: data.dueNow })
+  // The day's numbers are Bugün's (every mode, the same estimate; ADR 0055).
+  const today = useTodayStudy();
+  const description = !data || !today
+    ? ' '
+    : today.left > 0
+      ? t('more.descPending', { count: today.left, min: today.minutes })
       : t('more.descDone');
 
   return (
     <Page title={t('more.title')} description={description}>
-      {!data ? (
+      {!data || !today ? (
         <div aria-busy="true" className="flex flex-col gap-4">
           {[0, 1, 2].map((i) => (
             <Surface key={i} padding="lg">
@@ -43,9 +47,13 @@ export function MoreStudyPage() {
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {data.dueNow > 0 && (
-            <Link to="/study?mode=word" className={buttonClasses({ size: 'lg', fullWidth: true })}>
-              {t('more.startReview')}
+          {today.next && (
+            <Link
+              to={`/study?mode=${today.next}`}
+              data-testid="more-start"
+              className={buttonClasses({ size: 'lg', fullWidth: true })}
+            >
+              {startLabel(t, today.next)}
               <Icon name="chevron-right" size={20} />
             </Link>
           )}

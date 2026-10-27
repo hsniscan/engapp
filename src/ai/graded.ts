@@ -6,7 +6,7 @@ import {
   GRADED_BODY_COLUMNS,
   GRADED_CATALOG_COLUMNS,
 } from '../../supabase/functions/_shared/graded-contract';
-import { supabase } from '@/lib/supabase';
+import { backendConfig, requireSupabase } from '@/lib/supabase';
 
 /** What data/library.ts needs from the network (tests pass fakes). */
 export interface GradedRemote {
@@ -16,12 +16,10 @@ export interface GradedRemote {
   body(id: string): Promise<unknown | null>;
 }
 
-const sb = supabase;
-
-export const supabaseGradedRemote: GradedRemote | null = sb
+export const supabaseGradedRemote: GradedRemote | null = backendConfig
   ? {
       async catalogPage(after, limit) {
-        const { data, error } = await sb
+        const { data, error } = await (await requireSupabase())
           .from('graded_texts')
           .select(GRADED_CATALOG_COLUMNS)
           .gt('server_seq', after)
@@ -31,7 +29,7 @@ export const supabaseGradedRemote: GradedRemote | null = sb
         return (data ?? []) as unknown[];
       },
       async body(id) {
-        const { data, error } = await sb
+        const { data, error } = await (await requireSupabase())
           .from('graded_texts')
           .select(GRADED_BODY_COLUMNS)
           .eq('id', id)

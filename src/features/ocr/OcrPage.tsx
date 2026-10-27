@@ -1,7 +1,8 @@
 // /fotograf — "Fotoğraftan metin" (v0.5 İP3, plan criterion 4, docs/decisions/0045-ocr.md).
 // Pick a photo (camera or gallery) → it is read on the device (ML Kit in the Android app,
 // tesseract.js on the web) → the review screen → "Okuyucuda aç" (a texts row of kind 'ocr',
-// opened at readerPath) or "Kelimeleri çıkar" (the existing extraction flow via /share).
+// opened at readerPath) or "Bu metindeki kelimeleri çıkar" (signed in; the text is saved first
+// and linked to the extraction, features/add/capture.ts).
 //
 // Camera and gallery are plain file inputs: in the Android app Capacitor's WebView answers
 // `capture` with the system camera (no camera permission is declared, so none is asked) and the
@@ -10,10 +11,10 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { logError } from '@/data';
-import { saveText } from '@/data/texts';
 import { ocrQuality, ocrTitle, toReviewLines, type ReviewLine } from '@/domain/ocr';
 import { readerPath } from '@/domain/texts';
-import { shareHref } from '@/features/share/route';
+import { extractCapture, saveCapture } from '@/features/add/capture';
+import { useAuth } from '@/features/auth/session';
 import { isNativeApp } from '@/native/platform';
 import { Button, EmptyState, Icon, Page, ProgressBar, Spinner, cn, toast } from '@/ui';
 import { NotAnImageError, prepareImage } from './image';
@@ -49,6 +50,7 @@ export function OcrPage({
 }: OcrPageProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const signedIn = useAuth().status === 'signed_in';
   const [state, setState] = useState<State>({ kind: 'pick' });
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const run = useRef(0);
@@ -99,11 +101,10 @@ export function OcrPage({
 
   const openReader = async (text: string) => {
     try {
-      const id = await saveText({
-        kind: 'ocr',
-        title: ocrTitle(text) || t('ocr.title'),
-        body: text,
-      });
+      const id = await saveCapture(
+        { kind: 'ocr', title: ocrTitle(text), body: text },
+        t('ocr.title'),
+      );
       void navigate(readerPath(id));
     } catch (e) {
       void logError(e, 'ocr.saveText');
@@ -111,7 +112,18 @@ export function OcrPage({
     }
   };
 
-  const extract = (text: string) => void navigate(shareHref({ text, title: ocrTitle(text) }));
+  const extract = async (text: string) => {
+    try {
+      const job = await extractCapture(
+        { kind: 'ocr', title: ocrTitle(text), body: text },
+        t('ocr.title'),
+      );
+      void navigate(`/import/${job}`);
+    } catch (e) {
+      void logError(e, 'ocr.extract');
+      toast({ title: t('article.extractFailed'), tone: 'danger' });
+    }
+  };
 
   const inputs = (
     <>
@@ -145,7 +157,7 @@ export function OcrPage({
         initialLines={state.lines}
         photoUrl={photoUrl}
         onOpenReader={openReader}
-        onExtract={extract}
+        onExtract={signedIn ? extract : undefined}
         onRetake={reset}
       />
     );

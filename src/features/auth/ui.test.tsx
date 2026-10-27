@@ -54,7 +54,7 @@ describe('AuthPage', () => {
     setAuthStateForTesting({ status: 'guest', user: null });
     const router = renderAt(<AuthPage />, '/auth');
     expect(
-      screen.getByText(/senkronlanır ve metinlerden AI ile kart çıkarabilirsin/),
+      screen.getByText(/eşitlenir ve metinlerden yapay zekâ ile kart çıkarabilirsin/),
     ).toBeInTheDocument();
     const google = screen.getByRole('button', { name: 'Google ile giriş yap' });
     // No backend in tests: starting the redirect fails and says so.
@@ -72,7 +72,7 @@ describe('AuthPage', () => {
     renderAt(<AuthPage />, '/auth');
     expect(screen.getByText('Hasan Basri')).toBeInTheDocument();
     expect(screen.getByText('hasan@example.com')).toBeInTheDocument();
-    expect(screen.getByText('Henüz senkronlanmadı')).toBeInTheDocument();
+    expect(screen.getByText('Henüz eşitlenmedi')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Çıkış yap' }));
     expect(await screen.findByRole('dialog', { name: 'Çıkış yapılsın mı?' })).toBeInTheDocument();
   });

@@ -17,7 +17,7 @@ import {
 } from '../../supabase/functions/_shared/image-contract';
 import { errorBody } from '../../supabase/functions/_shared/contracts';
 import type { ImageManifestRow } from '@/domain/images';
-import { backendConfig, getAccessToken, supabase } from '@/lib/supabase';
+import { backendConfig, getAccessToken, loadSupabase } from '@/lib/supabase';
 import { AiClientError, type AiClientDeps } from './client';
 
 export type { AiImageResponse, LexiconImageRow };
@@ -89,8 +89,8 @@ const manifestRow = z.object({
   created_at: z.string(),
 });
 
-function client(c?: SupabaseClient | null): SupabaseClient {
-  const s = c === undefined ? supabase : c;
+async function client(c?: SupabaseClient | null): Promise<SupabaseClient> {
+  const s = c === undefined ? await loadSupabase() : c;
   if (!s) throw new ImageApiError('not_configured', 'Supabase is not configured (guest mode)');
   return s;
 }
@@ -123,7 +123,7 @@ async function select(
 
 /** The pictures the server has for these lexicon senses, without their SVG. */
 export async function listImageManifest(senseIds: readonly string[], c?: SupabaseClient | null): Promise<ImageManifestRow[]> {
-  const cl = client(c);
+  const cl = await client(c);
   const out: ImageManifestRow[] = [];
   for (const part of chunks(senseIds)) {
     for (const row of await select(cl, MANIFEST_COLUMNS, 'sense_id', part)) {
@@ -136,7 +136,7 @@ export async function listImageManifest(senseIds: readonly string[], c?: Supabas
 
 /** Full rows of these pictures. Rows that do not match the contract are left out. */
 export async function downloadImages(ids: readonly string[], c?: SupabaseClient | null): Promise<LexiconImageRow[]> {
-  const cl = client(c);
+  const cl = await client(c);
   const out: LexiconImageRow[] = [];
   for (const part of chunks(ids, 40)) {
     for (const row of await select(cl, ROW_COLUMNS, 'id', part)) {
@@ -175,12 +175,12 @@ async function rpc(c: SupabaseClient, fn: string, args: Record<string, unknown>)
 
 /** Is the signed-in user an app admin? (Checked again by every admin function on the server.) */
 export async function isAppAdmin(c?: SupabaseClient | null): Promise<boolean> {
-  return (await rpc(client(c), IMAGE_RPC.isAdmin, {})) === true;
+  return (await rpc(await client(c), IMAGE_RPC.isAdmin, {})) === true;
 }
 
 /** The oldest pictures waiting for review. Rows that do not match the contract are left out. */
 export async function fetchReviewQueue(limit = 20, c?: SupabaseClient | null): Promise<ReviewQueueRow[]> {
-  const data = await rpc(client(c), IMAGE_RPC.reviewQueue, { p_limit: limit });
+  const data = await rpc(await client(c), IMAGE_RPC.reviewQueue, { p_limit: limit });
   if (!Array.isArray(data)) throw new ImageApiError('invalid_response', 'not a list');
   return data.flatMap((r) => {
     const p = reviewQueueRow.safeParse(r);
@@ -194,7 +194,7 @@ export async function decideReview(
   reason: ImageRejectReason | null = null,
   c?: SupabaseClient | null,
 ): Promise<void> {
-  await rpc(client(c), IMAGE_RPC.reviewDecide, {
+  await rpc(await client(c), IMAGE_RPC.reviewDecide, {
     p_image_id: imageId,
     p_decision: decision,
     p_reason: decision === 'reject' ? reason : null,

@@ -190,12 +190,12 @@ describe('settings index and sub-pages', () => {
       await within(learning).findByRole('link', { name: /Günde 10 yeni · hedef %90/ }),
     ).toHaveTextContent('Çalışma');
     for (const name of [
-      'Tekrar yükü ve tatil',
+      'Çalışma yükü ve tatil',
       'Hatırlatmalar',
       'Seviye',
       'Kartlar ve içerik',
       'Görünüm',
-      'Hesap ve senkron',
+      'Hesap ve eşitleme',
       'Yedek ve veri',
       'Hakkında ve yardım',
       'Gelişmiş',
@@ -245,7 +245,7 @@ describe('settings index and sub-pages', () => {
   it('keeps every group of the old single page on some sub-page', async () => {
     // Each old anchor must exist as an element on the page it now points to.
     for (const [key, { page, anchor }] of Object.entries(LEGACY)) {
-      if (key === 'profile') continue; // a page of its own, not a group
+      if (key === 'profile' || key === 'profil') continue; // a page of its own, not a group
       renderSection(page);
       await waitFor(() => expect(document.getElementById(anchor ?? key)).not.toBeNull());
       cleanup();

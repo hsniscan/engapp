@@ -1,11 +1,16 @@
+// End of a study session (v0.5.1, ADR 0055): words studied and how many moved up a stage
+// ("15 kelime çalıştın · 3 kelime Pekişiyor'a geçti"), time, and recall on reviews only (a new
+// word's learning steps are not recall). The main button goes to the next mode that still has
+// cards today, else home; "Biraz daha çalış" only once the whole day is done.
 import { motion, useReducedMotion } from 'motion/react';
-import { type ReactNode, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { getSettings, getStreakSummary } from '@/data';
 import { cfgOf, getNextDue, type NextDue } from '@/features/home/queries';
 import { nextDueText } from '@/features/home/nextDueText';
 import { formatDuration, formatPercent } from '@/features/stats/format';
+import type { StudyMode } from '@/domain/studyMode';
 import { Rating } from '@/domain/types';
 import {
   buttonClasses,
@@ -17,6 +22,8 @@ import {
   ratings,
   type Rating as RatingName,
 } from '@/ui';
+import { sessionFacts } from './study';
+import { modeLeft, useTodayStudy } from './studyModes';
 import type { SessionAnswer, SessionStart } from './useReviewSession';
 
 const ratingValue: Record<RatingName, number> = {
@@ -41,8 +48,8 @@ export interface SessionSummaryProps {
   onUndo: () => void;
   /** Words whose recognition card reached Öğrenildi with this session's answers (spec 5.2). */
   learnedToday?: number;
-  /** Links to the other study modes that still have cards today. */
-  continueWith?: ReactNode;
+  /** The session's study mode (absent: mixed or tomorrow's cards). */
+  studyMode?: StudyMode;
 }
 
 interface After {
@@ -59,7 +66,7 @@ export function SessionSummary({
   canUndo,
   onUndo,
   learnedToday = 0,
-  continueWith,
+  studyMode,
 }: SessionSummaryProps) {
   const { t } = useTranslation();
   const reduce = useReducedMotion();
@@ -89,7 +96,12 @@ export function SessionSummary({
 
   const total = answers.length;
   const timeMs = answers.reduce((a, x) => a + x.durationMs, 0);
-  const passed = answers.filter((a) => a.rating !== Rating.Again).length;
+  const facts = sessionFacts(answers);
+  const today = useTodayStudy();
+  // The next mode with cards today ("Üretime geç (29)"); the session's own mode only if it
+  // still has cards (a learning step due later does not count: learnAheadMs 0 counts due now).
+  const next = today?.waiting[0] ?? null;
+  const allDone = !!today && today.left === 0;
   const byRating = Object.fromEntries(
     ratings.map((r) => [r, answers.filter((a) => a.rating === ratingValue[r]).length]),
   ) as Record<RatingName, number>;
@@ -105,9 +117,12 @@ export function SessionSummary({
         };
 
   const stats = [
-    { label: t('review.summary.cards'), value: String(total) },
+    { label: t('review.summary.words'), value: String(facts.words) },
     { label: t('review.summary.time'), value: formatDuration(timeMs) },
-    { label: t('review.summary.retention'), value: total ? formatPercent(passed / total) : '—' },
+    {
+      label: t('review.summary.retention'),
+      value: facts.reviews ? formatPercent(facts.recalled / facts.reviews) : '—',
+    },
   ];
 
   return (
@@ -125,9 +140,16 @@ export function SessionSummary({
         >
           {t('review.summary.title')}
         </h1>
-        <p className="mt-2 text-[0.9375rem] text-fg-muted" aria-live="polite">
-          {after ? nextDueText(t, after.next, after.now, after.timezone) : ' '}
+        <p className="mt-2 text-[0.9375rem] text-fg" data-testid="summary-words">
+          {t('review.summary.studied', { count: facts.words })}
+          {facts.consolidated > 0 &&
+            ` · ${t('review.summary.consolidated', { count: facts.consolidated })}`}
         </p>
+        {allDone && (
+          <p className="mt-1 text-[0.9375rem] text-fg-muted" aria-live="polite">
+            {after ? nextDueText(t, after.next, after.now, after.timezone) : ' '}
+          </p>
+        )}
         {learnedToday > 0 && (
           <p
             className="mt-1 text-[0.9375rem] font-medium text-success-text"
@@ -187,19 +209,37 @@ export function SessionSummary({
         </div>
       </motion.div>
 
-      {continueWith && (
-        <motion.div {...item(4)} className="mt-4">
-          {continueWith}
-        </motion.div>
-      )}
-
       <motion.div {...item(4)} className="mt-8 flex flex-col gap-2">
-        <Link to="/" className={buttonClasses({ size: 'lg', fullWidth: true })}>
-          {t('review.backHome')}
-        </Link>
-        <Link to="/study/more" className={buttonClasses({ variant: 'secondary', fullWidth: true })}>
-          {t('review.moreStudy')}
-        </Link>
+        {next && today ? (
+          <>
+            <Link
+              to={`/study?mode=${next}`}
+              data-testid="summary-next"
+              className={buttonClasses({ size: 'lg', fullWidth: true })}
+            >
+              {next === studyMode
+                ? t('review.summary.continueMode')
+                : t(`today.goTo.${next}`, { count: modeLeft(today.counts[next]) })}
+            </Link>
+            <Link to="/" className={buttonClasses({ variant: 'secondary', fullWidth: true })}>
+              {t('review.backHome')}
+            </Link>
+          </>
+        ) : (
+          <>
+            <Link to="/" className={buttonClasses({ size: 'lg', fullWidth: true })}>
+              {t('review.backHome')}
+            </Link>
+            {allDone && (
+              <Link
+                to="/study/more"
+                className={buttonClasses({ variant: 'secondary', fullWidth: true })}
+              >
+                {t('review.moreStudy')}
+              </Link>
+            )}
+          </>
+        )}
         {canUndo && (
           <Button variant="ghost" leadingIcon="undo" onClick={onUndo}>
             {t('review.undoLast')}

@@ -6,7 +6,6 @@ import { LevelSettingsSection } from '@/features/leveltest/LevelSettingsSection'
 import { LoadSettingsSection } from '@/features/load/LoadSettingsSection';
 import { NotifySection } from '@/features/notify/NotifySection';
 import { InterestsBody } from '@/features/profile/InterestsPage';
-import { ProfileSettingsSection } from '@/features/profile/ProfileSettingsSection';
 import { ReadingSettingsSection } from '@/features/reader/ReadingSettings';
 import { AboutSection } from './AboutSection';
 import { AdvancedSection } from './AdvancedSection';
@@ -69,7 +68,9 @@ export const PAGE_CONTENT: Record<SettingsPageId, { parts: ComponentType[]; solo
   yuk: { parts: [LoadSettingsSection], solo: true },
   bildirim: { parts: [NotifySection], solo: true },
   seviye: { parts: [LevelSettingsSection], solo: true },
-  kartlar: { parts: [VoiceSection, ExamplesSettingsSection, ProfileSettingsSection] },
+  // Interests live on one page (/settings/ilgi-alanlari, reached from Profil); no "Profil"
+  // heading inside Ayarlar (v0.5.1).
+  kartlar: { parts: [VoiceSection, ExamplesSettingsSection] },
   gorunum: { parts: [AppearanceSection], solo: true },
   hesap: { parts: [AccountGroup, SyncGroup] },
   veri: { parts: [DataSection, ImportSection] },
@@ -91,7 +92,7 @@ export const LEGACY: Record<string, { page: SettingsPageId; anchor?: string }> =
   seviye: { page: 'seviye' },
   ornekler: { page: 'kartlar', anchor: 'ornekler' },
   ses: { page: 'kartlar', anchor: 'ses' },
-  profil: { page: 'kartlar', anchor: 'profil' },
+  profil: { page: 'ilgi-alanlari' },
   profile: { page: 'ilgi-alanlari' },
   gorunum: { page: 'gorunum' },
   veri: { page: 'veri' },

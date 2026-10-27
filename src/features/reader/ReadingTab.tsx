@@ -1,5 +1,7 @@
-// Desteler → Okuma (v0.5 İP1): "Metinlerim" (continue where you left off, delete) and the
-// graded library below it (İP5's GradedLibraryList).
+// Okuma (v0.5 İP1; Keşfet → Okuma from v0.5.1): "Metinlerim" (continue where you left off,
+// delete) and the graded library below it (İP5's GradedLibraryList). A library text the user
+// opened is listed once, here, as "Okunuyor %x · Devam et" (v0.5.1, decision 0054); the
+// library list below leaves it out.
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -43,7 +45,7 @@ export function ReadingTab() {
           <h2 id="my-texts" className="font-serif text-xl font-semibold text-fg">
             {t('reader.list.title')}
           </h2>
-          <Button variant="ghost" size="sm" leadingIcon="plus" onClick={() => openAddSheet()}>
+          <Button variant="ghost" size="sm" leadingIcon="plus" onClick={() => openAddSheet('text')}>
             {t('reader.list.add')}
           </Button>
         </div>
@@ -79,9 +81,17 @@ export function ReadingTab() {
                         {text.finished_at !== null
                           ? t('reader.list.finished')
                           : pct > 0
-                            ? t('reader.list.progress', { pct })
+                            ? t('reader.list.reading', { pct })
                             : t('reader.list.unread')}
                       </span>
+                      {text.finished_at === null && pct > 0 && (
+                        <>
+                          <span aria-hidden="true">·</span>
+                          <span className="font-medium text-accent-text">
+                            {t('reader.list.continue')}
+                          </span>
+                        </>
+                      )}
                     </span>
                     <span
                       aria-hidden="true"
@@ -106,7 +116,7 @@ export function ReadingTab() {
         )}
       </section>
 
-      <GradedLibraryList />
+      <GradedLibraryList hideOwn />
 
       <ConfirmDialog
         open={toDelete !== null}

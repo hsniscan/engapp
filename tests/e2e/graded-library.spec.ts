@@ -3,7 +3,8 @@ import { dumpTables, expect, test } from './support/app.ts';
 
 // v0.5 graded library (decision 0047): a guest opens /kitaplik, the public catalogue comes down
 // once, the level and topic filters narrow the list, every row has a coverage chip, and opening
-// a text makes one reading row and caches its sentences for offline reading.
+// a text makes one reading row and caches its sentences for offline reading. v0.5.1: the text
+// is on screen with its Turkish and recorded audio, and an opened text is listed once in Okuma.
 
 const ID = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const text = (n: number, level: string, topic: string, title: string) => ({
@@ -31,8 +32,10 @@ test('Okuma kitaplığı: catalogue, filters, coverage chip, open and cache', as
     text(2, 'B1', 'science', 'Why the Sky Is Blue'),
     text(3, 'B2', 'business', 'A Meeting That Went Well'),
   );
+  // The library is Keşfet's "Okuma" filter (v0.5.1); the old /kitaplik redirects there.
   await page.goto('/kitaplik');
-  await expect(page.getByRole('heading', { level: 1, name: 'Okuma kitaplığı' })).toBeVisible();
+  await expect(page).toHaveURL(/\/kesfet\?f=okuma$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Keşfet' })).toBeVisible();
 
   const list = page.getByRole('list', { name: 'Metinler', exact: true });
   await expect(list.getByRole('listitem')).toHaveCount(3);
@@ -62,28 +65,85 @@ test('Okuma kitaplığı: catalogue, filters, coverage chip, open and cache', as
   expect(axe.violations).toEqual([]);
 
   // Only the public catalogue was asked for; nothing about the guest went out.
-  expect([...new Set(backend.calls.map((c) => c.name))]).toEqual(['/rest/v1/graded_texts']);
+  // (Keşfet, where /kitaplik leads since v0.5.1, also pulls the public word bank.)
+  expect([...new Set(backend.calls.map((c) => c.name))].filter((n) => n !== '/rest/v1/word_bank')).toEqual([
+    '/rest/v1/graded_texts',
+  ]);
 
   // Open: one reading row for the library text, the reader's address, the body on the device.
   await list.getByRole('button', { name: /^The Late Train/ }).click();
   await expect(page).toHaveURL(/\/oku\/[^/]+$/);
+  // v0.5.1: the user sees the text itself (it opened empty in v0.5), its Turkish on request,
+  // and "Dinleyerek oku" asks for the sentence's recorded clip.
+  const reader = page.getByTestId('reader-text');
+  await expect(reader).toContainText('The train was late. We waited at the station.');
+  await expect(reader.getByText('station', { exact: true })).toBeVisible();
+  await expect(page.getByText('Bu metnin içeriği henüz bu cihazda yok.')).toHaveCount(0);
+  await page.getByTestId('reader-translate').click();
+  await expect(page.getByTestId('reader-translation')).toHaveText('Tren geç kaldı. İstasyonda bekledik.');
+  await page.getByTestId('reader-listen').click();
+  await expect
+    .poll(() => backend.calls.some((c) => c.name.endsWith('/storage/v1/object/public/tts/en-US/aaa.mp3')))
+    .toBe(true);
+  await page.getByTestId('reader-listen').click();
   await expect
     .poll(async () => (await dumpTables(page, ['graded_bodies'])).graded_bodies!.length)
     .toBe(1);
   const { texts, graded_bodies } = await dumpTables(page, ['texts', 'graded_bodies']);
-  expect(texts).toEqual([expect.objectContaining({ kind: 'graded', graded_id: ID(1), title: 'The Late Train', body: '' })]);
+  expect(texts).toEqual([
+    expect.objectContaining({
+      kind: 'graded',
+      graded_id: ID(1),
+      title: 'The Late Train',
+      body: 'The train was late. We waited at the station.',
+    }),
+  ]);
   expect(graded_bodies![0]).toMatchObject({
     id: ID(1),
     sentences: [expect.objectContaining({ en: 'The train was late.', audio_key: 'en-US/aaa.mp3' }), expect.anything()],
   });
 
-  // Back in the library offline: it lists from the device and the text is marked offline-ready;
-  // opening it again reuses the same reading row.
+  // Back in Okuma offline: the opened text is listed once, under Metinlerim (v0.5.1), and opens
+  // from the device with the same reading row.
   backend.offline = true;
   await page.goto('/kitaplik');
-  const first = list.getByRole('listitem').filter({ hasText: 'The Late Train' });
-  await expect(first.getByText('İnternetsiz okunur')).toBeVisible();
-  await first.getByRole('button').click();
+  await expect(list.getByRole('listitem')).toHaveCount(2);
+  await expect(list).not.toContainText('The Late Train');
+  await page.getByTestId('my-texts').getByRole('link', { name: /The Late Train/ }).click();
   await expect(page).toHaveURL(new RegExp(`/oku/${(texts![0] as { id: string }).id}$`));
   expect((await dumpTables(page, ['texts'])).texts).toHaveLength(1);
+});
+
+test('Okuma: an opened library text is listed once, as "Okunuyor", and a suggestion link opens it', async ({
+  page,
+  backend,
+}) => {
+  backend.graded.push(text(1, 'A2', 'travel', 'The Late Train'), text(2, 'B1', 'science', 'Why the Sky Is Blue'));
+  // A link by library id (Bugün / Keşfet suggestions) opens the text and makes its reading row.
+  await page.goto('/kitaplik');
+  await expect(page.getByRole('list', { name: 'Metinler', exact: true }).getByRole('listitem')).toHaveCount(2);
+  await page.goto(`/oku/${ID(1)}`);
+  await expect(page.getByTestId('reader-text')).toContainText('The train was late.');
+  if (process.env.SCREENSHOTS_DIR) {
+    // Pictures for the owner: the library text at phone width, light with the legend and the
+    // Turkish, then dark.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.getByTestId('reader-translate').click();
+    await expect(page.getByTestId('reader-translation')).toBeVisible();
+    await page.screenshot({ path: `${process.env.SCREENSHOTS_DIR}/kitaplik-metni-turkcesi.png` });
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.getByTestId('reader-text').getByText('station', { exact: true }).click();
+    await page.getByRole('button', { name: 'Cümlenin Türkçesini göster' }).click();
+    await page.screenshot({ path: `${process.env.SCREENSHOTS_DIR}/kelime-sayfasi-koyu.png` });
+    await page.keyboard.press('Escape');
+    await page.emulateMedia({ colorScheme: 'light' });
+  }
+  await expect(page).not.toHaveURL(new RegExp(`/oku/${ID(1)}$`));
+  await page.goto('/decks?tab=reading');
+  const mine = page.getByTestId('my-texts');
+  await expect(mine.getByRole('link', { name: /The Late Train/ })).toContainText('Okunmadı');
+  const library = page.getByRole('list', { name: 'Metinler', exact: true });
+  await expect(library.getByRole('listitem')).toHaveCount(1);
+  await expect(library).toContainText('Why the Sky Is Blue');
+  await expect(library).not.toContainText('The Late Train');
 });

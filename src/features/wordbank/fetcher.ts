@@ -14,7 +14,7 @@ import {
   logError,
   markWordBankSynced,
 } from '@/data';
-import { supabase } from '@/lib/supabase';
+import { backendConfig, requireSupabase } from '@/lib/supabase';
 
 /**
  * A filled copy is asked for changes again after this long. Short on purpose: an up-to-date
@@ -32,12 +32,10 @@ export interface WordBankFetchDeps {
   now: () => number;
 }
 
-const sb = supabase;
-
 export const defaultWordBankDeps: WordBankFetchDeps = {
-  fetchPage: sb
+  fetchPage: backendConfig
     ? async (after, limit) => {
-        const { data, error } = await sb
+        const { data, error } = await (await requireSupabase())
           .from('word_bank')
           .select(WORDBANK_COLUMNS)
           .gt('server_seq', after)

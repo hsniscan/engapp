@@ -275,16 +275,17 @@ export function estimateMinutes(due: number, secPerCard: number | null): number 
 export function dueMessage(due: number, secPerCard: number | null): PushMessage {
   return {
     title: 'Engapp',
-    body: `Bugün ${due} kart tekrara hazır, yaklaşık ${estimateMinutes(due, secPerCard)} dk.`,
-    url: '/review',
+    body: `Bugün ${due} kart çalışmaya hazır, yaklaşık ${estimateMinutes(due, secPerCard)} dk.`,
+    // The study picker with every mode (v0.5.1), not only Kelime çalışma.
+    url: '/study',
     tag: 'engapp-due',
   };
 }
 
 export const TEST_MESSAGE: PushMessage = {
   title: 'Engapp',
-  body: 'Bildirimler çalışıyor. Tekrar zamanı gelince sana buradan haber vereceğim.',
-  url: '/review',
+  body: 'Bildirimler çalışıyor. Çalışma zamanı gelince sana buradan haber vereceğim.',
+  url: '/study',
   tag: 'engapp-test',
 };
 

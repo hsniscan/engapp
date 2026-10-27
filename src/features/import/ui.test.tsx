@@ -50,28 +50,33 @@ const row = (items: HTMLElement[], term: string) =>
   items.find((li) => li.querySelector('span[lang="en"]')?.textContent === term)!;
 
 describe('import panels', () => {
-  it('guests see a calm sign-in prompt and the privacy note', () => {
+  it('guests can paste and read; only the extraction asks for sign-in (v0.5.1)', () => {
     setAuthStateForTesting({ status: 'guest', user: null });
     renderAt('/', [{ path: '/', element: <TextImportPanel /> }]);
-    expect(screen.getByText('Gizli iş belgelerini yükleme.')).toBeInTheDocument();
-    expect(
-      screen.getByRole('heading', { name: /AI ile kart çıkarmak için giriş yap/ }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'İngilizce metin' })).toBeInTheDocument();
+    expect(screen.getByTestId('open-in-reader')).toHaveTextContent('Okuyucuda aç');
+    expect(screen.queryByTestId('capture-extract')).toBeNull();
+    expect(screen.getByTestId('capture-extract-signin')).toHaveTextContent(
+      'Kelimeleri çıkarmayı yapay zekâ yapar; bunun için giriş yap.',
+    );
     expect(screen.getByRole('button', { name: /Google ile giriş yap/ })).toBeInTheDocument();
-    expect(screen.queryByRole('textbox')).toBeNull();
   });
 
-  it('without a backend the panels say AI is off', () => {
+  it('without a backend extraction says it is off; reading still works', () => {
     setAuthStateForTesting({ status: 'unavailable', user: null });
-    renderAt('/', [{ path: '/', element: <PdfImportPanel /> }]);
-    expect(screen.getByText('AI bu sürümde kapalı')).toBeInTheDocument();
-    expect(screen.getByText('Gizli iş belgelerini yükleme.')).toBeInTheDocument();
+    renderAt('/', [{ path: '/', element: <TextImportPanel /> }]);
+    expect(screen.getByText(/Kelime çıkarma bu sürümde kapalı/)).toBeInTheDocument();
+    expect(screen.getByTestId('open-in-reader')).toBeInTheDocument();
   });
 
-  it('pasting text queues a job and shows its progress card', async () => {
+  it('extraction saves the text first, links the job to it and opens the job', async () => {
     const user = userEvent.setup();
-    renderAt('/', [{ path: '/', element: <TextImportPanel hidePrivacyNote /> }]);
-    expect(screen.queryByText('Gizli iş belgelerini yükleme.')).toBeNull();
+    const router = renderAt('/', [
+      { path: '/', element: <TextImportPanel /> },
+      { path: '/import/:jobId', element: <p>job page</p> },
+    ]);
+    // The privacy note sits next to the extraction choice.
+    expect(screen.getByText('Gizli iş belgelerini yükleme.')).toBeInTheDocument();
     const area = screen.getByRole('textbox', { name: 'İngilizce metin' });
     await user.click(area);
     await user.paste(
@@ -79,13 +84,16 @@ describe('import panels', () => {
         .map((s) => s.sentence)
         .join(' '),
     );
-    expect(screen.getByText(/karakter · 1 parça/)).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Kelimeleri çıkar' }));
-    await waitFor(async () => expect(await db.import_jobs.count()).toBe(1));
+    expect(screen.getByText(/kelime ·/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Bu metindeki kelimeleri çıkar/ }));
+    expect(await screen.findByText('job page')).toBeInTheDocument();
     const job = (await db.import_jobs.toArray())[0] as ImportJobRecord;
     expect(job.title).toMatch(/^After years of trying/);
-    expect(await screen.findByText(/0\/1 parça/)).toBeInTheDocument();
-    expect(area).toHaveValue('');
+    expect(router.state.location.pathname).toBe(`/import/${job.id}`);
+    expect(job.text_id).toBeTruthy();
+    const text = await db.texts.get(job.text_id!);
+    expect(text?.kind).toBe('paste');
+    expect(text?.body).toMatch(/^After years of trying/);
   });
 
   it('the PDF panel rejects a non-PDF file with a clear message', async () => {
@@ -102,6 +110,16 @@ describe('import panels', () => {
 });
 
 describe('ImportPreviewPage', () => {
+  it('"Metni oku" opens the text the words came from (v0.5.1)', async () => {
+    const { saveText } = await import('@/data/texts');
+    const jobId = await seedReadyJob(5);
+    const textId = await saveText({ kind: 'paste', title: 'Kaynak', body: 'The cat sat.' });
+    await db.import_jobs.update(jobId, { text_id: textId } as Partial<ImportJobRecord>);
+    renderAt(`/import/${jobId}`, [{ path: '/import/:jobId', element: <ImportPreviewPage /> }]);
+    expect(await screen.findByTestId('read-text')).toHaveAttribute('href', `/oku/${textId}`);
+    expect(screen.getByTestId('read-text')).toHaveTextContent('Metni oku');
+  });
+
   it('smart sections: for you (selected by level), easy and known closed; Biliyorum; confirm creates notes', async () => {
     // "bank" (kıyı) already exists with the same lexicon sense → "Biliyorsun", not selected.
     const { addNoteWithSenses } = await import('@/data');

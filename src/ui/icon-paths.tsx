@@ -27,6 +27,19 @@ export const paths = {
       <path d="M7.5 16v-5M12 16V6.5M16.5 16v-3" />
     </>
   ),
+  // v0.5.1: the Keşfet tab, and reading items in its feed.
+  compass: (
+    <>
+      <circle cx="12" cy="12" r="7.75" />
+      <path d="m14.75 9.25-1.6 3.9-3.9 1.6 1.6-3.9z" />
+    </>
+  ),
+  book: (
+    <>
+      <path d="M12 7.25c-1.6-1.35-3.9-2-7.25-2v12.5c3.35 0 5.65.65 7.25 2 1.6-1.35 3.9-2 7.25-2V5.25c-3.35 0-5.65.65-7.25 2z" />
+      <path d="M12 7.25v12.5" />
+    </>
+  ),
   settings: (
     <>
       <path d="M4.5 7h8M17.5 7h2M4.5 17h2.5M12 17h7.5" />

@@ -37,7 +37,7 @@ import {
   cn,
   toast,
 } from '@/ui';
-import { JobCard } from './JobCard';
+import { JobCard, ReadTextLink } from './JobCard';
 
 /** Candidates below this confidence are flagged ("Emin değil"). */
 export const LOW_CONFIDENCE = 0.7;
@@ -324,6 +324,7 @@ function CandidateList({ job, rows }: { job: ImportJobRecord; rows: ImportCandid
         />
       }
     >
+      <ReadTextLink textId={job.text_id} className="-mt-2 mb-2" />
       <p className="text-[0.9375rem] text-fg-muted" data-testid="smart-summary">
         {t('importer.preview.smartSummary', {
           level: job.level,

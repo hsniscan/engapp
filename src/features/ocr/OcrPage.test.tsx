@@ -2,8 +2,10 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider, useLocation } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ImportJobRecord } from '@/data';
 import { db } from '@/data/db';
 import type { OcrBlock, OcrResult } from '@/domain/ocr';
+import { setAuthStateForTesting } from '@/features/auth/session';
 import { resetDb } from '@/test/db';
 import { installDomPolyfills } from '@/test/ui';
 import { TooltipProvider } from '@/ui';
@@ -76,6 +78,14 @@ function renderPage(
   return router;
 }
 
+const signedIn = () =>
+  setAuthStateForTesting({
+    status: 'signed_in',
+    user: { id: 'u1', email: 'h@example.com', name: 'Hasan', avatarUrl: null },
+  });
+
+beforeEach(() => setAuthStateForTesting({ status: 'guest', user: null }));
+
 const photo = () =>
   new File([new Uint8Array([0xff, 0xd8, 0xff])], 'page.jpg', { type: 'image/jpeg' });
 
@@ -144,15 +154,27 @@ describe('Fotoğraftan metin', () => {
     });
   });
 
-  it('"Kelimeleri çıkar" hands the text to the extraction flow', async () => {
+  it('"Bu metindeki kelimeleri çıkar" saves the text, then opens its extraction (v0.5.1)', async () => {
+    signedIn();
     const router = renderPage(recognizerOf(BOOK));
     await pickPhoto();
     fireEvent.click(screen.getByTestId('ocr-extract'));
-    await waitFor(() => expect(router.state.location.pathname).toBe('/share'));
-    const q = new URLSearchParams(router.state.location.search);
-    expect(q.get('text')).toBe(
+    await waitFor(() => expect(router.state.location.pathname).toMatch(/^\/import\//));
+    const job = (await db.import_jobs.toArray())[0] as ImportJobRecord;
+    expect(router.state.location.pathname).toBe(`/import/${job.id}`);
+    const text = await db.texts.get(job.text_id!);
+    expect(text?.kind).toBe('ocr');
+    expect(text?.body).toBe(
       'CHAPTER ONE\n\nIt was a bright cold day in April, and the clocks were striking thirteen.',
     );
+  });
+
+  it('a guest reads the photo; extraction asks for sign-in', async () => {
+    renderPage(recognizerOf(BOOK));
+    await pickPhoto();
+    expect(screen.getByTestId('ocr-open-reader')).toBeEnabled();
+    expect(screen.queryByTestId('ocr-extract')).toBeNull();
+    expect(screen.getByTestId('ocr-extract-signin')).toHaveTextContent('giriş yap');
   });
 
   it('warns when the photo read poorly and marks the unsure lines', async () => {
@@ -175,6 +197,7 @@ describe('Fotoğraftan metin', () => {
   });
 
   it('disables the actions when nothing is selected', async () => {
+    signedIn();
     renderPage(recognizerOf(BOOK));
     await pickPhoto();
     fireEvent.click(screen.getByRole('button', { name: 'Hiçbirini seçme' }));

@@ -16,8 +16,11 @@ mkdirSync(out, { recursive: true });
 const pages: [name: string, path: string, fullPage: boolean][] = [
   ['gallery', '/dev/ui', true],
   ['home', '/', false],
-  ['review', '/review', false],
-  ['library', '/library', false],
+  ['study', '/study', false],
+  ['study-word', '/study?mode=word', false],
+  ['decks', '/decks', false],
+  ['kesfet', '/kesfet', false],
+  ['profile', '/profile', false],
   ['settings', '/settings', false],
 ];
 const axePaths = [
@@ -25,8 +28,12 @@ const axePaths = [
   '/dev/ui?flipped=1',
   '/dev/ui?open=dialog',
   '/',
-  '/review',
+  '/study',
+  '/decks',
+  '/kesfet',
   '/library',
+  '/profile',
+  '/progress',
   '/settings',
   '/auth',
 ];
@@ -49,10 +56,12 @@ for (const theme of ['light', 'dark'] as const) {
       await page.goto(base + path, { waitUntil: 'networkidle' });
       await page.waitForTimeout(300);
       await page.screenshot({ path: `${out}/${name}-${width}-${theme}.png`, fullPage });
-      if (name === 'review') {
-        await page.getByRole('button', { name: /Cevabı göster|Show answer/ }).click();
+      // A fresh guest may have nothing due: flip the card only when there is one.
+      const reveal = page.getByRole('button', { name: /Cevabı göster|Anlamı göster|Show answer/ });
+      if (name === 'study-word' && (await reveal.count()) > 0) {
+        await reveal.first().click();
         await page.waitForTimeout(400);
-        await page.screenshot({ path: `${out}/review-flipped-${width}-${theme}.png` });
+        await page.screenshot({ path: `${out}/study-word-flipped-${width}-${theme}.png` });
       }
     }
     for (const path of axePaths) {

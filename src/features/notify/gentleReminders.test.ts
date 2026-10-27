@@ -34,7 +34,7 @@ describe('reminder copy', () => {
       const m = dueMessage(due, 9);
       expect(m.body).not.toMatch(GUILT_TR);
       expect(m.title).toBe('Engapp');
-      expect(m.body).toMatch(new RegExp(`^Bugün ${due} kart tekrara hazır, yaklaşık \\d+ dk\\.$`));
+      expect(m.body).toMatch(new RegExp(`^Bugün ${due} kart çalışmaya hazır, yaklaşık \\d+ dk\\.$`));
     }
     expect(TEST_MESSAGE.body).not.toMatch(GUILT_TR);
   });

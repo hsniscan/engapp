@@ -77,7 +77,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Build the web app (bundled into the APK)
-        # .env.production holds the public Supabase URL and publishable key. The Google *web*
+        # .env.production holds the public Supabase URL and publishable key and the contact
+        # e-mail of the privacy page (VITE_CONTACT_EMAIL, same value as the web). The Google *web*
         # OAuth client id is public too; it comes from the repository variable.
         env:
           VITE_GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}

@@ -5,8 +5,8 @@
  *
  * Reads dist/index.html, takes the entry script and every modulepreload (what a first visit
  * downloads before the app runs), and fails when
- *   - one of them holds the OCR engine (tesseract) or the reader / OCR screens, which must
- *     stay lazy route chunks, or
+ *   - one of them holds the OCR engine (tesseract), the reader / OCR screens (lazy route
+ *     chunks) or the Supabase client (loaded on first use), or
  *   - their gzip size passes the budget below.
  * Prints the size and the ten largest start-up files either way.
  */
@@ -14,13 +14,18 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 
-/** Start-up JS + CSS, gzip. Measured 2026-10-26 after V0.5 wave 1: ~475 KB. */
-export const BUDGET_GZIP_KB = 525;
+/**
+ * Start-up JS + CSS, gzip. Measured 2026-10-26: ~518 KB after the v0.5.1 merges, ~466 KB once
+ * supabase-js became lazy (decision 0059).
+ */
+export const BUDGET_GZIP_KB = 500;
 
 /** File names of chunks that must never load at start-up. */
 const LAZY_ONLY_NAMES = /^(OcrPage|ocr|tesseract|Reader|ReaderPage|reader)[-.]/i;
 /** Code markers of the OCR engine. */
 const LAZY_ONLY_CODE = ['tesseract.js', 'tesseract-core', 'createWorker('];
+/** Code marker of supabase-js: loaded on first use, so a guest never downloads it (0059). */
+const LAZY_CLIENT_CODE = 'GoTrueClient';
 
 export interface StartupFile {
   name: string;
@@ -43,6 +48,8 @@ export function checkStartup(
     if (LAZY_ONLY_NAMES.test(name)) problems.push(`${name} must not load at start-up`);
     for (const marker of LAZY_ONLY_CODE)
       if (f.content.includes(marker)) problems.push(`${name} contains "${marker}" (OCR engine)`);
+    if (f.content.includes(LAZY_CLIENT_CODE))
+      problems.push(`${name} contains the Supabase client (must load on first use)`);
     const buf = Buffer.from(f.content);
     sizes.push({ name, raw: buf.length, gzip: gzipSync(buf).length });
   }

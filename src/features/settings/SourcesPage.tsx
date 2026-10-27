@@ -77,7 +77,7 @@ export function SourcesPage() {
           </h2>
           <p className="text-[0.9375rem] text-fg-muted">{t('sources.wordBankBody')}</p>
           <Link
-            to="/kelime-bankasi"
+            to="/decks?tab=bank"
             className="inline-flex min-h-11 items-center gap-1 self-start text-sm font-medium text-accent-text underline-offset-4 hover:underline"
           >
             {t('wordBank.entryLink')}

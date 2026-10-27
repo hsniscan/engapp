@@ -23,9 +23,13 @@ const legacy = (path: (typeof LEGACY_PATHS)[number]): RouteObject => ({
   },
 });
 
+/** The (+) pages: no tab owns them (decision 0056; RootLayout reads it with navSectionOf). */
+const ADD_SECTION = { navSection: 'add' } satisfies RouteHandle;
+
 /*
- * Information architecture of the redesign (five places): Bugün `/` · Desteler `/decks` ·
- * (+) the Add sheet (a modal, not a route) · İlerleme `/progress` · Profil `/profile`.
+ * Information architecture (v0.5.1, ADR 0057; five places): Bugün `/` · Kelimelerim `/decks` ·
+ * (+) the Add sheet (a modal, not a route) · Keşfet `/kesfet` · Profil `/profile` (İlerleme
+ * `/progress` is reached from the top of Profil and from Bugün's numbers).
  * Feature screens are lazy chunks; the names below are the agreed exports of each feature.
  */
 const children: RouteObject[] = [
@@ -60,9 +64,15 @@ const children: RouteObject[] = [
     }),
   },
 
-  // ---- Desteler: ?tab=mine|discover|bank; a deck; a suggested deck; all my words.
+  // ---- Kelimelerim: ?tab=mine|bank; a deck; a suggested deck; all my words. The old
+  // ?tab=discover|reading segments live in Keşfet now (redirect).
   {
     path: 'decks',
+    loader: ({ request }) => {
+      const url = new URL(request.url);
+      const to = legacyRedirect(url.pathname, url.search);
+      return to ? redirect(to) : null;
+    },
     HydrateFallback: () => null,
     lazy: async () => ({ Component: (await import('@/features/decks/DecksPage')).DecksPage }),
   },
@@ -87,15 +97,16 @@ const children: RouteObject[] = [
     }),
   },
   {
-    // The graded reading library (v0.5 İP5); also shown in Desteler → Okuma.
-    path: 'kitaplik',
+    // Keşfet (v0.5.1): a feed of texts, suggested decks and words, with ?f=okuma|desteler|
+    // kelimeler filters. The graded library (old /kitaplik) is its "Okuma" filter.
+    path: 'kesfet',
     HydrateFallback: () => null,
     lazy: async () => ({
-      Component: (await import('@/features/library/GradedLibraryPage')).GradedLibraryPage,
+      Component: (await import('@/features/discover/DiscoverPage')).DiscoverPage,
     }),
   },
   {
-    // "Tüm kelimelerim" (reached from Desteler and Profil).
+    // "Tüm kelimelerim" (reached from Kelimelerim and Profil).
     path: 'library',
     HydrateFallback: () => null,
     lazy: async () => ({ Component: (await import('@/features/cards/LibraryPage')).LibraryPage }),
@@ -107,21 +118,24 @@ const children: RouteObject[] = [
     handle: {
       immersive: true,
       ownTopBar: true,
-      exitTo: '/decks?tab=reading',
+      exitTo: '/kesfet?f=okuma',
     } satisfies RouteHandle,
     HydrateFallback: () => null,
     lazy: async () => ({ Component: (await import('@/features/reader/ReaderPage')).ReaderPage }),
   },
 
-  // ---- Adding: the sheet leads into these flows.
+  // ---- Adding: the (+) sheet leads into these flows (v0.5.1: they belong to the (+), not to
+  // a tab, decision 0056).
   {
     path: 'add',
+    handle: ADD_SECTION,
     HydrateFallback: () => null,
     lazy: async () => ({ Component: (await import('@/features/cards/AddPage')).AddPage }),
   },
   {
     // v0.5 İP2 (decision 0044): an article from a link, a subtitle file.
     path: 'makale',
+    handle: ADD_SECTION,
     HydrateFallback: () => null,
     lazy: async () => ({
       Component: (await import('@/features/article/ArticlePage')).ArticlePage,
@@ -129,6 +143,7 @@ const children: RouteObject[] = [
   },
   {
     path: 'altyazi',
+    handle: ADD_SECTION,
     HydrateFallback: () => null,
     lazy: async () => ({
       Component: (await import('@/features/article/SubtitlePage')).SubtitlePage,
@@ -137,25 +152,46 @@ const children: RouteObject[] = [
   {
     // "Fotoğraftan metin" (v0.5 İP3, decision 0045).
     path: 'fotograf',
+    handle: ADD_SECTION,
     HydrateFallback: () => null,
     lazy: async () => ({ Component: (await import('@/features/ocr/OcrPage')).OcrPage }),
   },
   {
+    // "Kelimelerimle metin oluştur" (v0.5.1, decision 0056). Keşfet may link here too.
+    path: 'metin-olustur',
+    handle: ADD_SECTION,
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/compose/ComposePage')).ComposePage,
+    }),
+  },
+  {
     path: 'import/anki',
+    handle: ADD_SECTION,
     HydrateFallback: () => null,
     lazy: async () => ({
       Component: (await import('@/features/anki/AnkiImportPage')).AnkiImportPage,
     }),
   },
   {
+    // A CSV file or a typed word list (v0.5.1).
+    path: 'import/csv',
+    handle: ADD_SECTION,
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/import/CsvImportPage')).CsvImportPage,
+    }),
+  },
+  {
     path: 'import/:jobId',
+    handle: ADD_SECTION,
     HydrateFallback: () => null,
     lazy: async () => ({
       Component: (await import('@/features/import/ImportPreviewPage')).ImportPreviewPage,
     }),
   },
 
-  // ---- İlerleme
+  // ---- İlerleme (under Profil since v0.5.1)
   {
     path: 'progress',
     HydrateFallback: () => null,

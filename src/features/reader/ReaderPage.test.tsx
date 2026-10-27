@@ -12,6 +12,7 @@ import {
   updateSettings,
 } from '@/data';
 import { setLevelDataForTests } from '@/data/levelData';
+import { applyGradedCatalogPage, setGradedRemoteForTests } from '@/data/library';
 import { resetKnowledgeCache } from '@/data/knowledge';
 import { parseClientLevels } from '@/domain/level';
 import { resetDb } from '@/test/db';
@@ -19,7 +20,7 @@ import { renderRoute } from '@/test/ui';
 import { setAuthStateForTesting } from '@/features/auth/session';
 import { DecksPage } from '@/features/decks/DecksPage';
 import { TextImportPanel } from '@/features/import/TextImportPanel';
-import { ReaderPage } from './ReaderPage';
+import { READER_EXIT, ReaderPage } from './ReaderPage';
 import { ReadingTab } from './ReadingTab';
 import { TodayReadingCard } from './TodayReadingCard';
 import { useListenAlong, type ListenAlongDeps } from './useListenAlong';
@@ -66,7 +67,10 @@ beforeEach(async () => {
     },
   ]);
 });
-afterEach(() => setLevelDataForTests(null));
+afterEach(() => {
+  setLevelDataForTests(null);
+  setGradedRemoteForTests(undefined);
+});
 
 const openReader = (id: string) =>
   renderRoute(<ReaderPage />, { path: '/oku/:textId', url: `/oku/${id}` });
@@ -158,6 +162,172 @@ describe('ReaderPage', () => {
   });
 });
 
+// ------------------------------------------------------------------ v0.5.1 (decision 0054)
+
+const GID = '00000000-0000-4000-8000-000000000001';
+const GRADED_SENTENCES = [
+  { en: 'The train was late.', tr: 'Tren geç kaldı.', audio_key: 'en-US/aaa.mp3', p: 0 },
+  { en: 'We waited at the station.', tr: 'İstasyonda bekledik.', audio_key: 'en-US/bbb.mp3', p: 0 },
+  { en: 'Then it came.', tr: 'Sonra geldi.', audio_key: null, p: 1 },
+];
+const GRADED_BODY = 'The train was late. We waited at the station.\n\nThen it came.';
+const catalogRow = (n: number, title: string) => ({
+  id: `00000000-0000-4000-8000-00000000000${n}`,
+  level: 'A2',
+  topic: 'travel',
+  title,
+  words: 12,
+  tokens: 10,
+  cov_level: 0.97,
+  lemma_profile: { train: 1, late: 1, station: 1 },
+  target_lemmas: ['station'],
+  status: 'approved',
+  server_seq: n,
+});
+
+async function seedGraded() {
+  setGradedRemoteForTests(null);
+  await applyGradedCatalogPage([catalogRow(1, 'The Late Train'), catalogRow(2, 'Another Day')]);
+  await db.graded_bodies.put({
+    id: GID,
+    title: 'The Late Train',
+    sentences: GRADED_SENTENCES,
+    glosses: [],
+    fetched_at: 1,
+  });
+}
+
+describe('library texts in the reader', () => {
+  it('shows the text from its sentences, each sentence’s Turkish, and keeps the body', async () => {
+    const user = userEvent.setup();
+    await seedGraded();
+    // A row made by v0.5 (empty body): it opens all the same.
+    const id = await saveText({
+      kind: 'graded',
+      graded_id: GID,
+      title: 'The Late Train',
+      body: '',
+    });
+    openReader(id);
+    expect(await screen.findByRole('heading', { name: 'The Late Train' })).toBeInTheDocument();
+    expect(screen.getByTestId('reader-text')).toHaveTextContent(
+      'The train was late. We waited at the station.',
+    );
+    expect(word('station')).toBeInTheDocument();
+    expect(screen.queryByText('Bu metnin içeriği henüz bu cihazda yok.')).toBeNull();
+    await waitFor(async () => expect((await getText(id))!.body).toBe(GRADED_BODY));
+
+    await user.click(screen.getByTestId('reader-translate'));
+    const tr = screen.getAllByTestId('reader-translation');
+    expect(tr.map((p) => p.textContent)).toEqual([
+      'Tren geç kaldı. İstasyonda bekledik.',
+      'Sonra geldi.',
+    ]);
+
+    // A tapped word's sheet offers its sentence's Turkish.
+    await user.click(word('station'));
+    const sheet = await screen.findByRole('dialog');
+    await user.click(within(sheet).getByRole('button', { name: 'Cümlenin Türkçesini göster' }));
+    expect(within(sheet).getByTestId('reader-sentence-tr')).toHaveTextContent(
+      'İstasyonda bekledik.',
+    );
+  });
+
+  it('/oku/<library id> makes the reading row and opens it', async () => {
+    await seedGraded();
+    const { router } = renderRoute(<ReaderPage />, { path: '/oku/:textId', url: `/oku/${GID}` });
+    expect(await screen.findByRole('heading', { name: 'The Late Train' })).toBeInTheDocument();
+    const rows = await db.texts.toArray();
+    expect(rows).toEqual([expect.objectContaining({ kind: 'graded', graded_id: GID })]);
+    expect(router.state.location.pathname).toBe(`/oku/${rows[0]!.id}`);
+  });
+
+  it('a library text that is not on the device and cannot be fetched says so', async () => {
+    setGradedRemoteForTests(null);
+    const id = await saveText({ kind: 'graded', graded_id: GID, title: 'Gone', body: '' });
+    openReader(id);
+    expect(await screen.findByText('Bu metin henüz bu cihazda değil')).toBeInTheDocument();
+  });
+});
+
+describe('reading position (v0.5.1)', () => {
+  it('leaving saves the position on screen, not the end of the text', async () => {
+    const id = await saveText({ kind: 'paste', title: 'A walk', body: BODY });
+    const { unmount } = openReader(id);
+    await screen.findByTestId('reader-coverage');
+    unmount();
+    await waitFor(async () => expect((await getText(id))!.read_ms).toBeGreaterThanOrEqual(0));
+    await new Promise((r) => setTimeout(r, 50));
+    expect((await getText(id))!.progress_offset).toBe(0);
+  });
+
+  it('a resumed text keeps its place when left without scrolling', async () => {
+    const id = await saveText({ kind: 'paste', title: 'A walk', body: BODY });
+    const third = BODY.indexOf('One day');
+    await db.texts.update(id, { progress_offset: third });
+    const { unmount } = openReader(id);
+    expect(await screen.findByText('Kaldığın yerden')).toBeInTheDocument();
+    unmount();
+    await new Promise((r) => setTimeout(r, 50));
+    expect((await getText(id))!.progress_offset).toBe(third);
+  });
+});
+
+describe('own words, the colour legend and the new words (v0.5.1)', () => {
+  it('a word in the user’s cards shows its meaning at once; "Hep tahmin ettir" asks first', async () => {
+    const user = userEvent.setup();
+    await addNoteWithSenses({ term: 'cope', senses: [{ meaning_tr: 'başa çıkmak' }] });
+    const id = await saveText({ kind: 'paste', title: 'A walk', body: BODY });
+    openReader(id);
+    await waitFor(() => expect(word('cope')).toHaveAttribute('data-mark', 'learning'));
+    await user.click(word('cope'));
+    let sheet = await screen.findByRole('dialog');
+    expect(await within(sheet).findByText('başa çıkmak')).toBeInTheDocument();
+    expect(within(sheet).queryByTestId('reader-reveal')).toBeNull();
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+    await updateSettings({ reader_always_guess: true });
+    await user.click(word('cope'));
+    sheet = await screen.findByRole('dialog');
+    expect(within(sheet).getByTestId('reader-reveal')).toBeInTheDocument();
+    expect(within(sheet).queryByText('başa çıkmak')).toBeNull();
+  });
+
+  it('shows the colour legend once', async () => {
+    const id = await saveText({ kind: 'paste', title: 'A walk', body: BODY });
+    const first = openReader(id);
+    expect(await screen.findByTestId('reader-legend')).toHaveTextContent('Renklerin anlamı');
+    first.unmount();
+    openReader(id);
+    await screen.findByTestId('reader-coverage');
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByTestId('reader-legend')).toBeNull();
+  });
+
+  it('sums up the new words and adds several at once', async () => {
+    const user = userEvent.setup();
+    const id = await saveText({ kind: 'paste', title: 'A walk', body: BODY });
+    openReader(id);
+    const summary = await screen.findByTestId('reader-summary');
+    expect(summary).toHaveTextContent(/Bu metinde \d+ yeni kelime gördün · 0 tanesini ekledin/);
+    await user.click(within(summary).getByTestId('reader-new-words-open'));
+    const sheet = await screen.findByRole('dialog', { name: 'Bu metindeki yeni kelimeler' });
+    const list = await within(sheet).findByTestId('reader-new-words');
+    expect(within(list).getByRole('checkbox', { name: /serendipity mutlu tesadüf/ })).toBeChecked();
+    await user.click(within(sheet).getByTestId('reader-new-words-add'));
+    await waitFor(async () =>
+      expect((await db.notes.toArray()).map((n) => n.term_norm)).toContain('serendipity'),
+    );
+    const note = (await db.notes.toArray()).find((n) => n.term_norm === 'serendipity')!;
+    expect((await db.senses.where('note_id').equals(note.id).toArray())[0]).toMatchObject({
+      meaning_tr: 'mutlu tesadüf',
+      source_sentence: 'One day I found serendipity in the park.',
+    });
+    await waitFor(() => expect(summary).toHaveTextContent(/· 1 tanesini ekledin/));
+  });
+});
+
 describe('useListenAlong', () => {
   it('reads sentence by sentence, pre-generated audio first, device voice otherwise', () => {
     const played: string[] = [];
@@ -167,6 +337,8 @@ describe('useListenAlong', () => {
       playReady: (t, _v, onDone) => (played.push(`mp3:${t}`), done.push(onDone), true),
       device: (t, _v, onDone) => (played.push(`tts:${t}`), done.push(onDone), true),
       prefetch: vi.fn(),
+      playClip: vi.fn(() => true),
+      prefetchClips: vi.fn(),
       cancel: vi.fn(),
     };
     const { result } = renderHook(() =>
@@ -186,6 +358,37 @@ describe('useListenAlong', () => {
   });
 });
 
+describe('useListenAlong with recorded sentences (library texts)', () => {
+  it('plays each sentence’s clip, the device voice where a clip fails or is missing', () => {
+    const played: string[] = [];
+    const done: (() => void)[] = [];
+    const deps: ListenAlongDeps = {
+      ready: () => false,
+      playReady: () => false,
+      device: (t, _v, onDone) => (played.push(`tts:${t}`), done.push(onDone), true),
+      prefetch: vi.fn(),
+      playClip: (key, onDone, fallback) => {
+        if (key === 'bad') return fallback();
+        played.push(`clip:${key}`);
+        done.push(onDone);
+        return true;
+      },
+      prefetchClips: vi.fn(),
+      cancel: vi.fn(),
+    };
+    const { result } = renderHook(() =>
+      useListenAlong(['One.', 'Two.', 'Three.'], 'en-GB', true, deps, ['a.mp3', 'bad', null]),
+    );
+    act(() => void result.current.start(0));
+    act(() => done.shift()!());
+    act(() => done.shift()!());
+    act(() => done.shift()!());
+    expect(played).toEqual(['clip:a.mp3', 'tts:Two.', 'tts:Three.']);
+    expect(deps.prefetchClips).toHaveBeenCalledWith(['bad', null]);
+    expect(result.current.current).toBeNull();
+  });
+});
+
 describe('Okuma tab and Bugünün okuması', () => {
   it('lists my texts with their progress and deletes one', async () => {
     const user = userEvent.setup();
@@ -202,20 +405,37 @@ describe('Okuma tab and Bugünün okuması', () => {
       `/oku/${a}`,
     );
     expect(within(list).getByText('Bitti')).toBeInTheDocument();
-    await user.click(within(list).getByRole('button', { name: '"First text" metnini sil' }));
+    await user.click(within(list).getByRole('button', { name: '“First text” metnini sil' }));
     await user.click(await screen.findByRole('button', { name: 'Sil' }));
     await waitFor(() => expect(screen.queryByRole('link', { name: /First text/ })).toBeNull());
     expect((await db.texts.get(a))!.deleted_at).not.toBeNull();
   });
 
-  it('Desteler has the Okuma segment', async () => {
+  it('a library text I opened is listed once, as "Okunuyor %x · Devam et"', async () => {
+    await seedGraded();
+    const id = await saveText({
+      kind: 'graded',
+      graded_id: GID,
+      title: 'The Late Train',
+      body: GRADED_BODY,
+    });
+    await db.texts.update(id, { progress_offset: GRADED_BODY.indexOf('Then') });
+    renderRoute(<ReadingTab />);
+    const mine = await screen.findByTestId('my-texts');
+    const link = within(mine).getByRole('link', { name: /The Late Train/ });
+    expect(link).toHaveTextContent(/Okunuyor %\d+/);
+    expect(link).toHaveTextContent('Devam et');
+    const library = await screen.findByRole('list', { name: 'Metinler' });
+    await waitFor(() => expect(within(library).getAllByRole('listitem')).toHaveLength(1));
+    expect(library).toHaveTextContent('Another Day');
+    expect(library).not.toHaveTextContent('The Late Train');
+  });
+
+  it('Kelimelerim has no Okuma segment any more (it lives in Keşfet › Okuma)', async () => {
     renderRoute(<DecksPage />, { path: '/decks', url: '/decks?tab=reading' });
-    const nav = screen.getByRole('navigation', { name: 'Deste görünümü' });
-    expect(within(nav).getByRole('link', { name: 'Okuma' })).toHaveAttribute(
-      'aria-current',
-      'page',
-    );
-    expect(await screen.findByRole('heading', { name: 'Metinlerim' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Okuma' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Metinlerim' })).toBeNull();
+    expect(READER_EXIT).toBe('/kesfet?f=okuma');
   });
 
   it('Bugün: continue the unfinished text, else invite a paste', async () => {
@@ -238,11 +458,11 @@ describe('Okuyucuda aç', () => {
     const user = userEvent.setup();
     setAuthStateForTesting({ status: 'guest', user: null });
     const { router } = panel();
-    expect(screen.queryByRole('textbox')).toBeNull();
-    await user.click(screen.getByTestId('reader-paste-open'));
+    // v0.5.1: the paste box is open for guests too; only extraction asks for sign-in.
+    expect(screen.queryByTestId('capture-extract')).toBeNull();
     await user.click(screen.getByRole('textbox', { name: 'İngilizce metin' }));
     await user.paste('The cat sat on the mat.');
-    await user.click(screen.getByRole('button', { name: 'Okuyucuda aç' }));
+    await user.click(screen.getByRole('button', { name: /^Okuyucuda aç/ }));
     await waitFor(() => expect(router.state.location.pathname).toMatch(/^\/oku\//));
     const id = router.state.location.pathname.split('/')[2]!;
     expect(await getText(id)).toMatchObject({

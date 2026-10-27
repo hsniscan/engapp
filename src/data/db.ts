@@ -402,6 +402,13 @@ export class EngDb extends Dexie {
     this.version(34)
       .stores({})
       .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
+    // v36 (v0.5.1 reader, decision 0054; 35 and 37–40 belong to the other v0.5.1 packages): the
+    // settings row gains reader_always_guess ("Hep tahmin ettir", optional, absent = off). A
+    // device that pulled settings while it ran an older version dropped it: re-pull settings
+    // once. No new table or index.
+    this.version(36)
+      .stores({})
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
   }
 }
 

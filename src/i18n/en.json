@@ -6,14 +6,11 @@
   "nav": {
     "home": "Today",
     "add": "Add",
-    "library": "Cards",
-    "stats": "Stats",
-    "settings": "Settings",
     "primary": "Main navigation",
     "skipToContent": "Skip to content",
     "backHome": "Back to home",
-    "decks": "Decks",
-    "progress": "Progress",
+    "decks": "My words",
+    "discover": "Discover",
     "profile": "Profile",
     "addLong": "Add"
   },
@@ -24,12 +21,9 @@
     "delete": "Delete",
     "edit": "Edit",
     "undo": "Undo",
-    "confirm": "Confirm",
     "continue": "Continue",
     "back": "Back",
-    "next": "Next",
     "search": "Search",
-    "filter": "Filter",
     "more": "More options",
     "loading": "Loading…",
     "retry": "Try again",
@@ -38,8 +32,7 @@
     "upload": "Upload file",
     "suspend": "Suspend",
     "listen": "Listen",
-    "optional": "Optional",
-    "required": "Required"
+    "optional": "Optional"
   },
   "rating": {
     "group": "How well did you remember?",
@@ -69,48 +62,14 @@
   },
   "home": {
     "title": "Today",
-    "streakLine": "Streak: {{streak}} days · Today: {{done}} / {{total}} cards · Longest: {{longest}}",
-    "due": "Due",
-    "new": "New",
     "startReview": "Start review",
     "addCard": "Add a card",
     "streakTitle": "Daily streak",
-    "streakUnit_one": "day",
-    "streakUnit_other": "days",
-    "streakTodayDone": "today is done",
-    "streakTodayPending": "review today to keep it",
-    "streakStart": "starts with your first review",
-    "longest": "Longest streak",
-    "totalActive": "Total active",
-    "days_one": "day",
-    "days_other": "days",
-    "todayTitle": "Today's review",
-    "progressValue": "Today's progress: {{done}} / {{total}} cards",
-    "doneTitle": "All done for today",
-    "doneBody_one": "You reviewed {{count}} card today.",
-    "doneBody_other": "You reviewed {{count}} cards today.",
-    "doneNothing": "No cards are due today.",
-    "estimate": "Estimated time",
-    "estimateValue": "About {{time}}",
     "nextLater": "Next card in {{time}} ({{clock}})",
-    "nextTomorrow_one": "{{count}} card waits for you tomorrow",
-    "nextTomorrow_other": "{{count}} cards wait for you tomorrow",
+    "nextTomorrow_one": "{{count}} card planned for tomorrow",
+    "nextTomorrow_other": "{{count}} cards planned for tomorrow",
     "nextDate": "Next review: {{date}}",
     "nextNone": "No reviews scheduled",
-    "last14": "Last 14 days",
-    "seeStats": "See all",
-    "stripLabel": "Last 14 days, {{active}} active days",
-    "stripSummary": "You reviewed on {{active}} of the last {{total}} days.",
-    "forecast": "Next 7 days",
-    "forecastToday": "Today",
-    "forecastItem": "{{day}}: {{count}} cards",
-    "metrics": "Summary",
-    "learned": "Words learned",
-    "learnedDetail": "Words you got right on at least 3 separate days",
-    "retention": "Retention",
-    "retentionDetail": "Last 30 days",
-    "recent": "Recently added",
-    "seeAll": "All",
     "emptyTitle": "Welcome",
     "emptyBody": "Your word list is empty. Add your first word; the app builds the review schedule.",
     "emptyStep1": "Add an English word or phrase with its Turkish meaning and an example sentence.",
@@ -128,28 +87,15 @@
     "mode": {
       "word": "Words",
       "production": "Production",
-      "cloze": "Fill the gap"
-    },
-    "modeHint": {
-      "word": "EN → TR",
-      "production": "TR → EN",
-      "cloze": "In a sentence"
-    },
-    "modeHintLong": {
-      "word": "English to Turkish",
-      "production": "Turkish to English",
-      "cloze": "fill the gap in a sentence"
+      "cloze": "Fill the gap",
+      "dictation": "Dictation"
     },
     "typesTitle": "Study types",
-    "typesDue": "Due today",
-    "typesWaiting_one": "{{count}} type is waiting",
-    "typesWaiting_other": "{{count}} types are waiting",
-    "typesAllDone": "All done",
     "typeDone": "Done for today",
     "typeNone": "None today",
-    "unitCard": "cards",
-    "unitSentence": "sentences",
-    "heroCaption": "Today's review",
+    "chipCount_one": "{{count}} card",
+    "chipCount_other": "{{count}} cards",
+    "heroCaption": "Today's study",
     "ringLabel": "Today {{done}} / {{total}} cards",
     "cardsLeft_one": "{{count}} card left",
     "cardsLeft_other": "{{count}} cards left",
@@ -158,10 +104,16 @@
     "aboutMinutes_other": "about {{count}} min",
     "continue": "Continue",
     "start": "Start",
+    "goTo": {
+      "word": "Go to Word study ({{count}})",
+      "production": "Go to Production ({{count}})",
+      "cloze": "Go to Fill the gap ({{count}})",
+      "dictation": "Go to Dictation ({{count}})"
+    },
     "doneTitle": "Done for today",
     "doneSplit": "{{reviewed}} reviews · {{fresh}} new words",
-    "nothingTitle": "No reviews today",
-    "nothingBody": "No cards are due.",
+    "nothingTitle": "No cards today",
+    "nothingBody": "No cards are left for today.",
     "weekDots_one": "This week: {{count}} day studied",
     "weekDots_other": "This week: {{count}} days studied",
     "dayActive": "studied",
@@ -172,11 +124,22 @@
     "streakGoesOn": "goes on",
     "streakLongest_one": "· longest {{count}}",
     "streakLongest_other": "· longest {{count}}",
+    "streakMore": "about the streak",
+    "streakSheet": {
+      "title": "Your streak",
+      "rule": "The streak counts the days in a row you studied. One answered card is enough for a day.",
+      "longest_one": "Longest streak: {{count}} day",
+      "longest_other": "Longest streak: {{count}} days",
+      "protectTitle": "Streak protection",
+      "protectLeft": "{{left}} of {{perMonth}} protections left this month.",
+      "protectRule": "A day you miss is covered automatically up to {{perMonth}} times a month. Vacation days do not count.",
+      "practice": "Practice rounds and hands-free do not count for the streak and do not change your schedule."
+    },
     "moreBody": "If you have the energy, keep going without breaking your plan.",
     "moreNewTitle": "Add new cards",
     "moreNewBody_one": "On top of today's limit · {{count}} word waiting",
     "moreNewBody_other": "On top of today's limit · {{count}} words waiting",
-    "morePracticeBody": "The schedule stays the same, practice only",
+    "morePracticeBody": "Schedule and streak stay the same, practice only",
     "moreAheadTitle": "Review tomorrow's cards now",
     "moreAheadBody_one": "{{count}} card · a lighter start tomorrow",
     "moreAheadBody_other": "{{count}} cards · a lighter start tomorrow",
@@ -189,7 +152,12 @@
     "goalWeek": "This week",
     "goalMonth": "New · this month",
     "goalNotSet": "no goal set",
+    "goalSetDay": "Set a daily goal",
+    "goalPreset_one": "{{count}} min",
+    "goalPreset_other": "{{count}} min",
+    "goalSetFailed": "The goal was not saved; try again.",
     "levelEstimate": "Level estimate: {{level}}",
+    "levelUnmeasured": "Level not measured yet",
     "levelTarget": "Goal",
     "levelPathLabel": "Level path: now {{level}}, next goal {{target}}",
     "levelPathReached": "Level path: now {{level}}",
@@ -234,30 +202,61 @@
     "deckBadgeFreq": "Most common",
     "deckBadgeLevel": "For your level",
     "deckHave": "{{have}} / {{size}} yours",
-    "deckReady": "Ready-made deck",
-    "deckSoon": "Coming soon",
-    "deckPhrasal": "Phrasal verbs",
-    "deckSoonBody": "Being prepared with AI"
+    "deckReady": "Ready-made deck"
   },
   "addSheet": {
     "title": "What would you like to add?",
-    "quickLabel": "Quick add · AI finds the meaning and examples",
     "quickPlaceholder": "Type a word…",
-    "quickSubmit": "Add the word",
-    "wordTitle": "Type a word",
-    "wordBody": "Type one word, let AI find its meaning",
-    "textTitle": "Text or PDF",
-    "textBody": "Picks the words that suit your level",
-    "bankTitle": "From the word bank",
-    "bankBody": "Pick from the A1–C2 lists",
-    "decksTitle": "Ready-made decks",
-    "decksBody": "Most common words, level and word-type decks",
-    "ankiTitle": "Move from Anki",
-    "ankiBody": "Choose your .apkg file and bring your decks here"
+    "word": {
+      "title": "Add a word",
+      "label": "Its meaning comes from your cards, the Word Bank or the dictionary; otherwise AI finds it",
+      "submit": "Find the meaning",
+      "manual": "Add by hand",
+      "edit": "Edit by hand",
+      "another": "Add another word",
+      "offline": "This word is not on your phone. Once online I can find its meaning; or add it by hand.",
+      "signIn": "This word is not on your phone. Sign in so AI can find its meaning, or add it by hand.",
+      "notFound": "I couldn't find this word's meaning. You can add it by hand."
+    },
+    "text": {
+      "title": "Add a text",
+      "paste": "Paste",
+      "pdf": "PDF",
+      "link": "Link",
+      "photo": "Photo",
+      "subtitle": "Subtitles",
+      "body": "The text is saved and opens in the reader. You can pick out its new words too."
+    },
+    "compose": {
+      "title": "A text from my words",
+      "cta": "Create a text from my words",
+      "body": "Pick 3–8 of your words; get a story, dialogue, news item or email."
+    },
+    "import": {
+      "title": "Import",
+      "anki": "Anki deck",
+      "ankiBody": "Choose your .apkg file and bring your decks here",
+      "csv": "CSV or word list",
+      "csvBody": "One word and its meaning per line",
+      "backup": "Backup file",
+      "backupBody": "Restore an Engapp backup"
+    }
+  },
+  "capture": {
+    "openReader": "Open in the reader",
+    "openReaderHint": "Tap a word you don't know to see its meaning. No account needed.",
+    "extract": "Pick out the words in this text",
+    "extractHint": "AI suggests new words at your level, with the sentence they appear in. The text is saved too.",
+    "extractSignIn": "Picking out words is done by AI, so sign in for it. Reading needs no account.",
+    "signInCta": "Sign in with Google",
+    "extractUnavailable": "Word extraction is off in this version. The reader always works.",
+    "readText": "Read the text"
   },
   "review": {
     "title": "Review",
     "progress": "{{done}} / {{total}} cards",
+    "repeatsLeft_one": "+{{count}} repeat",
+    "repeatsLeft_other": "+{{count}} repeats",
     "showAnswer": "Show answer",
     "tapToFlip": "Tap the card to flip it",
     "endSession": "End session",
@@ -304,6 +303,12 @@
     "summary": {
       "title": "Session complete",
       "cards": "Cards",
+      "words": "Words",
+      "studied_one": "You studied {{count}} word",
+      "studied_other": "You studied {{count}} words",
+      "consolidated_one": "{{count}} word moved to Consolidating",
+      "consolidated_other": "{{count}} words moved to Consolidating",
+      "continueMode": "Continue",
       "time": "Time",
       "retention": "Recall",
       "ratings": "Answer breakdown",
@@ -327,6 +332,11 @@
     "minutes": "~{{count}} min",
     "mixed": "Mixed study",
     "mixedHint": "Mixes the three types in one session",
+    "mixedHintList": "{{modes}} come mixed in one session",
+    "listLocale": "en",
+    "welcomeTitle": "No words to study yet",
+    "welcomeBody": "Add your first word or take words from a ready deck; studying starts here.",
+    "welcomeDecks": "Browse ready decks",
     "start": {
       "word": "Start word study",
       "production": "Start production",
@@ -361,13 +371,15 @@
     "answerShown": "Answer shown",
     "scrollCard": "Card, scrollable",
     "suggested": "Our suggestion:",
+    "wrongHint": "Your answer was wrong; we suggest Again. Tap another button twice to pick it.",
+    "confirmRating": "“{{rating}}” anyway? Tap it once more to confirm.",
+    "confirmTap": "sure?",
     "stage": {
       "newWord": "New word",
       "relearning": "Relearning",
       "explain": "A word counts as learned once you know it on three separate days, with growing gaps."
     },
     "firstLetter": "Show the first letter",
-    "firstLetterShown": "First letter: {{hint}}",
     "dontKnow": "I don't know, show me",
     "typeAnswer": "Type the English",
     "check": "Check",
@@ -389,8 +401,7 @@
       "typeAnswer": "Type the word for the blank",
       "correctTag": "Correct",
       "yourPick": "Your pick",
-      "pickedWord": "The word you picked",
-      "pickFirst": "Pick or type an answer first"
+      "pickedWord": "The word you picked"
     },
     "empty": {
       "word": "Word study is done for today",
@@ -634,7 +645,12 @@
     }
   },
   "add": {
-    "title": "Add a card"
+    "title": "Add a card",
+    "wordTitle": "Add a word",
+    "wordLead": "Type the word; its meaning comes from your cards, the Word Bank or the dictionary. Write your own and add an example if you like.",
+    "textTitle": "Add a text",
+    "textLead": "The text is saved and opens in the reader. You can pick out its new words too.",
+    "otherWays": "Or from somewhere else"
   },
   "import": {
     "title": "Preview"
@@ -657,8 +673,6 @@
     "deleteBody": "Its meanings and cards are deleted. Review history is kept; adding the word again brings it back.",
     "filter": {
       "title": "Filter and sort",
-      "button": "Filters",
-      "buttonActive": "Filters, {{count}} active",
       "short": "Filter",
       "type": "Card type",
       "allTypes": "All types",
@@ -720,10 +734,6 @@
     },
     "cardCount": "{{count}} cards",
     "decks": {
-      "label": "Decks",
-      "all": "All words",
-      "manage": "Decks",
-      "create": "Create a deck",
       "unsupported": "This deck was made in a newer version of the app. Update the app to see it.",
       "empty": "No words in this deck right now",
       "emptyHint": "Edit the deck or pick another one.",
@@ -803,7 +813,7 @@
       "tabGeneral": "Overview",
       "stagesTitle": "Words you learned",
       "stagesRule": "Words you got right on at least 3 separate days",
-      "weekDelta": "This week +{{count}}",
+      "weekDelta": "Last 7 days +{{count}}",
       "stagesBarLabel": "Your words by stage",
       "stage": {
         "learning": "Learning",
@@ -828,11 +838,41 @@
       "activeDays": "Active days",
       "hardTitle": "Struggling words",
       "hardPractice": "Practise",
-      "hardNone": "None right now",
+      "hardNone": "Nothing to practise now",
       "recallTitle": "Recall",
       "recallDetail": "Last 30 days, in reviews",
       "reportLink": "Your weekly report",
       "reportHint": "This week in short: words learned, struggles, time spent"
+    },
+    "unlock": {
+      "title": "Do your first study session",
+      "body": "This page fills up as you study a few words. For now there is only your calendar; each day you study fills a square.",
+      "start": "Start studying",
+      "listTitle": "What opens, and when",
+      "open": "Open",
+      "items": {
+        "stages": {
+          "name": "Word stages, goals and the next 30 days",
+          "when_one": "after {{count}} more answer",
+          "when_other": "after {{count}} more answers"
+        },
+        "recall": {
+          "name": "Recall rate",
+          "when_one": "after {{count}} more answer to cards that come back for review",
+          "when_other": "after {{count}} more answers to cards that come back for review"
+        },
+        "gap": {
+          "name": "Progress: English to Turkish and Turkish to English",
+          "when_one": "after 20 answers in each direction",
+          "when_other": "after 20 answers in each direction"
+        },
+        "report": {
+          "name": "Weekly report",
+          "when_one": "on the Monday after your first week of study",
+          "when_other": "on the Monday after your first week of study"
+        }
+      },
+      "reportLater": "Your weekly report opens here on the Monday after your first week of study."
     }
   },
   "progress": {
@@ -851,11 +891,12 @@
       "practice_one": "Practise the {{count}} word with the biggest gap",
       "practice_other": "Practise the {{count}} words with the biggest gap",
       "practiceHint": "You remember these better from English to Turkish:",
-      "noList": "No word has been reviewed at least 3 times in both directions with a gap yet."
+      "noList": "No word has been reviewed at least 3 times in both directions with a gap yet.",
+      "equal": "You remember about equally well in both directions. No extra practice needed for now."
     },
     "groups": {
       "title": "Retention by category",
-      "subtitle": "Last 90 days. A rate is shown from 20 answers.",
+      "subtitle": "A rate is shown once a group has at least 20 answers.",
       "overall": "Retention, last 90 days",
       "dimension": "Category",
       "dimensions": {
@@ -880,15 +921,15 @@
         "pos": "Not given"
       },
       "empty": "No counted answers in the last 90 days.",
-      "overallHint": "\"Recall, last 30 days\" on the Continuity tab counts every answer; this rate counts only the first answer of the day to each card, so the two can differ."
+      "overallHint": "The “Recall” box on Genel counts every answer of the last 30 days; this rate counts only the first answer of the day to each card, so the two can differ."
     },
     "series": {
       "title": "Last 12 weeks",
       "learnedTitle": "Words you learned",
       "learnedLabel": "Words learned each week, last 12 weeks",
-      "learnedTotal_one": "{{count}} word in total",
-      "learnedTotal_other": "{{count}} words in total",
-      "learnedHint": "A word counts as learned once you get it right on three separate days, with growing gaps. It counts in that week.",
+      "learnedTotal_one": "Learned now: {{count}} word",
+      "learnedTotal_other": "Learned now: {{count}} words",
+      "learnedHint": "A word counts as learned once you get it right on three separate days, spaced out; it is added to that week's bar (Monday–Sunday). The weekly report counts the same way.",
       "retentionTitle": "Weekly retention",
       "retentionLabel": "Retention of each week, last 12 weeks",
       "retentionHint": "Gaps in the line are weeks with fewer than 20 answers.",
@@ -905,15 +946,12 @@
   },
   "settings": {
     "title": "Settings",
-    "sectionsNav": "Settings sections",
     "sections": {
       "hesap": "Account",
       "senkron": "Sync",
-      "calisma": "Study",
       "yuk": "Review load",
       "bildirim": "Notifications",
       "seviye": "Level",
-      "profil": "Profile",
       "gorunum": "Appearance",
       "ses": "Sound",
       "veri": "Data",
@@ -925,7 +963,7 @@
     "saveFailed": "The setting could not be saved.",
     "account": {
       "guest": "Guest",
-      "guestHint": "Your data lives only on this device. With an account it syncs across your devices.",
+      "guestHint": "Your data lives only on this device. Sign in and it syncs across your devices.",
       "signedIn": "Signed in",
       "signIn": "Sign in or create an account"
     },
@@ -935,7 +973,6 @@
       "lastNever": "Not synced yet"
     },
     "study": {
-      "description": "Changes apply immediately.",
       "dailyNew": "New cards per day",
       "cardsPerDay": "{{count}} cards",
       "noNew": "No new cards",
@@ -947,8 +984,6 @@
       "retentionHigh": "You forget less, but reviews increase noticeably.",
       "dayStart": "Day starts at",
       "dayStartHint": "Reviews before this hour count for the previous day, so late nights do not break your streak.",
-      "level": "Estimated level",
-      "levelHint": "AI skips very basic words below this level.",
       "showEasy": "Show easy candidates open",
       "showEasyHint": "When words are extracted from a text, those below your level come in a closed section. Turn this on to always show it open.",
       "newOrder": "New word order",
@@ -991,7 +1026,7 @@
       "sourcesHint": "The word lists and data behind word levels, and their licences."
     },
     "level": {
-      "description": "Your level decides which words are suggested to you and drives the vocabulary counter.",
+      "description": "Decides which words are suggested to you and drives the vocabulary counter.",
       "current": "Your level",
       "source": {
         "default": "Default; not measured yet.",
@@ -1000,8 +1035,8 @@
         "manual": "Your choice, {{date}}."
       },
       "hint": "The AI does not suggest very basic words below this level.",
-      "lock": "Lock my level",
-      "lockHint": "While locked, your level does not change by itself.",
+      "lock": "Don't change my level by itself",
+      "lockHint": "While on, the level changes only when you pick one or take the test.",
       "test": "Level test",
       "testNone": "5 minutes, at most 70 questions. The result sets your level and the vocabulary counter.",
       "testLast": "Last test: {{date}}, result {{level}}.",
@@ -1046,12 +1081,14 @@
       "disabled": "Reminder turned off.",
       "denied": "Notifications are blocked. Allow them for Engapp in your browser's site settings.",
       "otherDevice": "The reminder is on for another of your devices. Turn it on to get it here too.",
-      "guest": "Notifications need a Google account, because the server sends the reminder. You can sign in in the Account section above.",
+      "guest": "Notifications need a Google account, because the server sends the reminder. Sign in, then turn it on here.",
+      "signIn": "Sign in",
       "unavailable": "Notifications are not available in this build: no server is connected.",
       "unsupported": "This browser does not support notifications. Try a current Chrome, Edge, Firefox or Safari.",
       "iosTitle": "On iPhone, add to Home Screen first",
       "iosWhy": "On iPhone and iPad notifications only work in the app added to the Home Screen (iOS 16.4 or later). Add it, open Engapp from the Home Screen and turn this on there.",
-      "androidInstall": "On Android, install the app to your home screen: reminders then arrive even when the app is closed. The install button is in the App section below.",
+      "androidInstall": "On Android, install the app to your home screen: reminders then arrive even when the app is closed.",
+      "androidInstallLink": "Install the app",
       "errors": {
         "denied": "Permission was not given. Choose “Allow” when the browser asks.",
         "unsupported": "This browser does not support notifications.",
@@ -1093,7 +1130,7 @@
       },
       "kartlar": {
         "title": "Cards and content",
-        "keywords": "voice pronunciation accent american british example sentences contexts translation interests topics"
+        "keywords": "audio pronunciation accent american british listen example sentence context turkish prepare"
       },
       "gorunum": {
         "title": "Appearance",
@@ -1132,8 +1169,9 @@
       "notifyOff": "Off",
       "notifyAuto": "Every day, automatic time",
       "notifyFixed": "Every day at {{time}}",
-      "level": "{{level}} · not locked",
-      "levelLocked": "{{level}} · locked",
+      "level": "{{level}} · updates by itself",
+      "levelLocked": "{{level}} · fixed",
+      "levelUnmeasured": "Not measured yet",
       "cards_one": "{{voice}} · {{count}} context",
       "cards_other": "{{voice}} · {{count}} contexts",
       "theme": {
@@ -1146,7 +1184,7 @@
       "backupLast": "Last backup {{when}}",
       "backupNever": "No backup yet",
       "about": "Sources, privacy, install the app",
-      "advanced": "Data integrity, error log"
+      "advanced": "Data check, error log"
     }
   },
   "fsrsOpt": {
@@ -1194,15 +1232,12 @@
     }
   },
   "auth": {
-    "title": "Sign in",
     "heading": "Take your words with you",
     "lead": "With an account your reviews sync across devices and you can pull cards out of texts with AI.",
     "google": "Sign in with Google",
     "guest": "Continue as guest",
     "guestNote": "In guest mode everything works on this device. You can sign in any time.",
     "privacy": "We only use your name, email address and profile photo from your Google account.",
-    "benefitSync": "Sync across devices",
-    "benefitAi": "Cards from texts with AI",
     "unavailableTitle": "Sign-in is off in this version",
     "unavailableBody": "No account server is configured. As a guest, reviews, adding cards and stats work fully on this device; sync and AI card extraction need an account.",
     "redirecting": "Taking you to Google…",
@@ -1220,7 +1255,6 @@
     "signOutPending_other": "{{count}} changes have not reached your account yet. If you sign out they stay on this device and are sent when you sign in again with the same account.",
     "signOutAnyway": "Sign out anyway",
     "signOutFailed": "Couldn't sign out. Try again.",
-    "avatar": "Profile photo",
     "noName": "Google account",
     "lastSync": "Last synced {{when}}",
     "lastSyncNever": "Not synced yet",
@@ -1231,9 +1265,6 @@
     "guestHint": "Your data lives only on this device. Sign in to sync across devices and pull cards out of texts with AI.",
     "signIn": "Sign in",
     "or": "or"
-  },
-  "placeholder": {
-    "body": "This screen is still being built."
   },
   "notFound": {
     "title": "Page not found",
@@ -1303,11 +1334,6 @@
     "hoursMinutes": "{{h}} h {{m}} min"
   },
   "cards": {
-    "tabs": {
-      "manual": "Manual",
-      "paste": "Paste text",
-      "pdf": "Upload PDF"
-    },
     "termType": {
       "word": "Word",
       "phrase": "Phrase",
@@ -1359,7 +1385,6 @@
       "notFound": "The term was not found in this sentence, so no cloze card will be made. Make sure the sentence contains it."
     },
     "add": {
-      "pageHint": "A new word or phrase, its meaning and, if you like, an example sentence.",
       "manualTitle": "Add a card by hand",
       "term": "English word or phrase",
       "termHint": "Use the dictionary form: “give up”, not “gave up”.",
@@ -1405,13 +1430,6 @@
       "fromLexicon": "Dictionary meanings",
       "fromAi": "Newly found meanings",
       "searchMore": "Find other meanings"
-    },
-    "import": {
-      "privacy": "Do not upload confidential work documents.",
-      "privacyWhy": "Text is processed on the free AI tier; Google may read it.",
-      "pasteSoonTitle": "Cards from text",
-      "pdfSoonTitle": "Cards from a PDF",
-      "soonBody": "Coming here soon. For now, add words in the “Manual” tab."
     }
   },
   "backup": {
@@ -1421,6 +1439,10 @@
     "never": "No backup yet",
     "done": "Backup downloaded",
     "doneHint": "Save the file to a cloud folder or your email.",
+    "savedAt": "Backup saved: {{file}}",
+    "savedHint": "Find it in your phone's Files app. You can also send it to Drive or your email.",
+    "share": "Share",
+    "shareTitle": "Engapp backup",
     "failed": "Backup failed. Try again.",
     "reminderLabel": "Backup reminder",
     "reminderTitle": "Last backup {{when}}.",
@@ -1437,6 +1459,9 @@
     "mergeHint": "Records from the backup are added; where both sides have a record, the newest wins. Nothing on this device is deleted.",
     "overwrite": "Overwrite",
     "overwriteHint": "Notes and cards on this device go back to the backup; anything not in it is deleted. Review history is always kept.",
+    "backupFirst": "Back up your current data first",
+    "backupFirstHint": "If something goes wrong, you can go back to this file.",
+    "backedUp": "Backed up",
     "done": "Restore finished",
     "doneDetail": "{{added}} records added, {{updated}} updated, {{logs}} reviews added.",
     "failed": "Restore failed. Your data was not changed.",
@@ -1462,17 +1487,17 @@
     "created": "Added"
   },
   "storage": {
-    "persistTitle": "Persistent storage",
+    "persistTitle": "Keep data safe in the browser",
     "on": "On",
     "off": "Off",
     "onHint": "The browser will not delete your data to free up space.",
     "offHint": "The browser may delete data to free up space; your data is also in your account.",
-    "deniedTitle": "Persistent storage was not granted",
+    "deniedTitle": "The browser did not agree to keep the data safe",
     "deniedGuest": "Create an account or back up; the browser may delete data to free up space.",
     "deniedHelp": "Installing the app to your home screen or desktop usually grants it.",
-    "granted": "Persistent storage is on",
+    "granted": "Your data is now kept safe in the browser",
     "request": "Ask for it",
-    "unsupported": "This browser does not support persistent storage.",
+    "unsupported": "This browser does not support keeping data safe.",
     "usedTitle": "Storage used",
     "used": "{{used}} used · {{quota}} available",
     "unknown": "This browser does not report storage use."
@@ -1506,7 +1531,7 @@
     "failed": "Couldn't reset the study history."
   },
   "integrity": {
-    "title": "Data integrity",
+    "title": "Data check",
     "hint": "Checks that cards, notes and review records are consistent.",
     "problemsHint": "Some records are inconsistent. Repair recomputes card states from the review history; review records are never deleted.",
     "check": "Check",
@@ -1523,7 +1548,9 @@
     "title": "Error log",
     "count": "{{count}} entries on this device (max 200).",
     "none": "No errors recorded.",
-    "download": "Download as file"
+    "download": "Download as file",
+    "downloaded": "Error log downloaded",
+    "downloadFailed": "Could not save the error log."
   },
   "pwa": {
     "updateReady": "New version ready — reload",
@@ -1558,8 +1585,6 @@
     }
   },
   "ocr": {
-    "addTitle": "Text from a photo",
-    "addBody": "Snap a book page and get its text",
     "title": "Text from a photo",
     "lead": "Reads the English text in a photo of a book, magazine or sign.",
     "camera": "Take a photo",
@@ -1600,15 +1625,10 @@
     "title": "Shared",
     "emptyTitle": "Nothing was shared",
     "emptyBody": "Select a word or sentence in another app, tap Share and choose Engapp.",
-    "textTitle": "Find words in the text",
-    "textLead": "Looking for words in this text. They appear in the preview with the sentence they came from.",
-    "textStart": "Find words",
-    "textStarting": "Starting…",
-    "textFailed": "Could not start finding words. Try again.",
+    "textTitle": "Shared text",
+    "textLead": "Read it in the reader or pick out its new words. Nothing starts on its own.",
     "defaultTitle": "Shared text",
     "linkTitle": "Shared link",
-    "linkLead": "For now only the page title is used. Importing the full article comes in a later version.",
-    "linkNoTitle": "No title came with this link; the address is shown below. Importing the full article comes in a later version.",
     "linkFromTitle": "Find words in the title",
     "linkTermFromTitle": "Add the title as a card",
     "toHome": "Back to home"
@@ -1638,7 +1658,7 @@
     "continueAsGuest": "Continue as guest",
     "done": "Connected to your account",
     "doneCopied": "{{count}} words were copied as new cards.",
-    "doneDuplicates": "{{count}} words were marked “possible duplicate”; you can review them in Cards."
+    "doneDuplicates": "{{count}} words were marked “possible duplicate”; you can review them in Kelimelerim (My words)."
   },
   "accountDelete": {
     "rowTitle": "Delete my account and data",
@@ -1686,18 +1706,18 @@
     "privacyEnLink": "Privacy policy",
     "deleteLink": "Account deletion",
     "updated": "Last updated: {{date}}",
-    "contactMissing": "(contact address not added yet)",
+    "contactFallback": "github.com/hsniscan/engapp/issues",
     "contents": "Contents",
     "deletePage": {
       "title": "Delete your account and data",
       "lead": "Delete your Engapp account and all your data on the server permanently, here or inside the app.",
-      "inApp": "In the app: Ayarlar (Settings) → Hesap (Account) → Hesabımı ve verilerimi sil.",
+      "inApp": "In the app: Profil → ⚙ Ayarlar (Settings) → Hesap ve eşitleme (Account and sync) → Hesabımı ve verilerimi sil.",
       "whatTitle": "What is deleted",
       "what": "Your cards and words, study history and statistics, settings, weekly reports, notification records, AI cache and usage counters, and then the account itself. Deletion is immediate and cannot be undone.",
       "keptTitle": "What stays",
       "kept": "The shared dictionary (word meanings, example sentences, audio) belongs to no one and contains none of your information; it stays as it is. Technical logs of the service providers follow their own retention periods.",
       "guestTitle": "If you use guest mode",
-      "guest": "In guest mode your data is only on your device; there is nothing to delete on the server. Delete it in the app with Ayarlar → Hesap → Bu cihazdaki verileri sil.",
+      "guest": "In guest mode your data is only on your device; there is nothing to delete on the server. Delete it in the app with Profil → ⚙ Ayarlar → Hesap ve eşitleme → Bu cihazdaki verileri sil.",
       "signInLead": "Sign in with Google, with the account you want to delete.",
       "signedInAs": "Signed in as",
       "notYou": "Another account? Sign out",
@@ -1711,7 +1731,7 @@
     }
   },
   "syncPanel": {
-    "localTitle": "Sync is off",
+    "localTitle": "Only on this device",
     "localHint": "In guest mode changes are kept only on this device.",
     "signedOutHint": "Signed out; changes collect on this device and are sent when you sign in.",
     "lastSync": "Last successful sync: {{when}}",
@@ -1735,17 +1755,15 @@
     "signInCta": "Sign in with Google",
     "unavailableTitle": "AI is off in this version",
     "unavailableBody": "No AI server is configured. You can add cards from the “Manual” tab.",
-    "level": "Your level: {{level}} — very basic words below it aren't suggested.",
-    "submit": "Extract words",
-    "starting": "Preparing…",
     "paste": {
       "label": "English text",
       "placeholder": "Paste an article, email or book chapter…",
       "stats": "{{chars}} characters · {{chunks}} parts",
+      "words_one": "{{count}} word · {{chars}} characters",
+      "words_other": "{{count}} words · {{chars}} characters",
       "statsEmpty": "Paste whole sentences; long texts are split into parts.",
       "titleLabel": "Title",
       "titlePlaceholder": "e.g. The Guardian — climate piece",
-      "defaultTitle": "Pasted text",
       "tooShort": "Paste at least one full sentence.",
       "tooLong": "The text is too long (at most {{max}} characters). Split it and upload the parts separately."
     },
@@ -1759,16 +1777,14 @@
       "summary": "{{pages}} pages · {{chars}} characters · {{chunks}} parts",
       "change": "Choose another file",
       "noText": "This PDF has no readable text",
-      "noTextBody": "Scanned (image) PDFs aren't supported yet. If you can copy the text, use the “Paste text” tab.",
+      "noTextBody": "Scanned (image) PDFs are not supported yet. Take a photo of the page, or copy the text and use the “Paste” tab.",
       "notPdf": "This file isn't a PDF.",
       "tooBig": "The file is too large (at most {{mb}} MB).",
       "encrypted": "This PDF is password-protected and couldn't be opened.",
       "readerUnavailable": "Couldn't download the PDF reader. The first PDF needs an internet connection; try again when you're online.",
-      "failed": "Couldn't read the PDF. The file may be damaged.",
-      "fileLabel": "PDF file"
+      "failed": "Couldn't read the PDF. The file may be damaged."
     },
     "job": {
-      "title": "Import",
       "queuedOffline": "Queued — starts on its own when you're back online",
       "queued": "Queued",
       "processing": "Processing part {{done}}/{{total}}…",
@@ -1784,9 +1800,7 @@
       "retry": "Try again",
       "discard": "Dismiss",
       "done": "Added to cards",
-      "recent": "Recent imports",
-      "candidates_one": "{{count}} candidate",
-      "candidates_other": "{{count}} candidates"
+      "recent": "Recent imports"
     },
     "errors": {
       "daily_limit": "You've reached today's AI limit. You can continue tomorrow where you left off; processed parts aren't lost.",
@@ -1877,9 +1891,8 @@
   "more": {
     "title": "Study a bit more",
     "descDone": "Today's reviews are done. Keep going if you like.",
-    "descPending_one": "{{count}} more card is waiting today.",
-    "descPending_other": "{{count}} more cards are waiting today.",
-    "startReview": "Start review",
+    "descPending_one": "{{count}} more card today · about {{min}} min.",
+    "descPending_other": "{{count}} more cards today · about {{min}} min.",
     "newTitle": "New cards",
     "newBody": "On top of your daily limit, for today only.",
     "newWaiting_one": "New cards waiting: {{count}}",
@@ -1890,7 +1903,7 @@
     "newNone": "No new cards waiting.",
     "addCards": "Add cards",
     "practiceTitle": "Practice round",
-    "practiceBody": "Not scored; your cards' schedule does not change.",
+    "practiceBody": "Not scored. Your cards' schedule does not change and it does not count for the streak.",
     "sourceLegend": "Which cards?",
     "sourceHard": "Cards I struggle with",
     "sourceHardHint": "Often forgotten, or missed in the last two weeks",
@@ -1981,7 +1994,7 @@
   },
   "practice": {
     "title": "Practice",
-    "badge": "Practice · schedule unchanged",
+    "badge": "Practice · schedule and streak unchanged",
     "dontKnow": "Didn't know",
     "know": "Knew it",
     "group": "Did you know it?",
@@ -1995,7 +2008,7 @@
       "time": "Time",
       "hardest": "Hardest for you",
       "allKnown": "You knew them all on the first try.",
-      "scheduleSame": "Your cards' schedule did not change.",
+      "scheduleSame": "Your cards' schedule did not change; practice does not count for the streak.",
       "again": "Another round"
     }
   },
@@ -2098,7 +2111,6 @@
     "atTop": "You are at the top level.",
     "vocab": "Estimated vocabulary",
     "ladder": "Share you know per level",
-    "ladderItem": "{{level}}: {{pct}}%",
     "markedKnown_one": "{{count}} word you said you know was added to your known words; it will not be suggested as new.",
     "markedKnown_other": "{{count}} words you said you know were added to your known words; they will not be suggested as new.",
     "unreliableTitle": "This result does not look reliable",
@@ -2121,20 +2133,19 @@
     "offerBody": "A short word test. Suggested words and your vocabulary counter adjust to the result.",
     "offerStart": "Start the test",
     "offerDismiss": "No thanks",
-    "offerDismissed": "You can take the test any time from Settings → Level.",
+    "offerDismissed": "You can take the test any time from Profil.",
     "change": "Your level went from {{from}} to {{to}}.",
     "changeWhy": "Why?",
     "changeTitle": "Your level went from {{from}} to {{to}}",
     "changeUp": "For two weeks you have known about {{pct}}% of the {{band}} words (the week before: {{prev}}%). After two weeks in a row above 80% your level moves up one step.",
     "changeDown": "For two weeks you have known only about {{pct}}% of the {{band}} words (the week before: {{prev}}%). After two weeks in a row below 60% your level moves down one step.",
     "changeEvidence": "{{band}} words counted: {{known}} you know, {{unknown}} you struggled with (your cards, reviews, tests and words you marked as known).",
-    "changeRule": "Your level changes at most one step a week. To stop automatic changes, lock it in Settings → Level.",
+    "changeRule": "Your level changes at most one step a week. To stop automatic changes, turn them off in Profil → ⚙ Ayarlar → Seviye.",
     "changeOk": "OK",
     "changeUndo": "Undo (keep {{from}})",
     "changeUndone": "Your level is {{level}} again.",
     "vocabTitle": "Estimated vocabulary",
     "vocabUnit": "words",
-    "vocabCaption": "Estimated vocabulary",
     "vocabDisclaimer": "An estimate from the level test, the words you marked 'I know' and your study. Not the number of words you learned.",
     "vocabLevel": "Your level {{level}}",
     "toNext": "~{{count}} words to {{next}}",
@@ -2250,9 +2261,6 @@
     "law": "Law"
   },
   "profile": {
-    "title": "Profile",
-    "description": "Your interests decide which example-sentence context opens first.",
-    "backToSettings": "Settings",
     "pickTitle": "Your interests",
     "pickBody": "Pick the topics you care about. Choose as many as you like and change them any time.",
     "weightsTitle": "Your profile",
@@ -2285,21 +2293,20 @@
     "promptLater": "Not now",
     "saved": "Interests saved",
     "savedHint": "Change them any time in Profile → Your interests.",
-    "settingsLabel": "Interests",
-    "settingsNone": "No topics yet.",
-    "settingsMore_one": "{{list}} and {{count}} more topic",
-    "settingsMore_other": "{{list}} and {{count}} more topics",
-    "settingsOpen": "Open profile",
     "home": {
-      "title": "Profile",
       "guestName": "Guest",
       "signedInGoogle": "Signed in with Google",
       "guestLine": "Your data is on this device only",
       "signIn": "Sign in",
       "settings": "Settings",
       "levelLabel": "Level",
+      "unmeasured": "Not measured yet",
+      "unmeasuredHint": "Find your level with a 2-minute test.",
       "vocabLabel": "Estimated vocabulary",
       "vocabNone": "No estimate yet",
+      "vocabFloor_one": "at least {{value}} word",
+      "vocabFloor_other": "at least {{value}} words",
+      "vocabFloorHint": "Words you learned or marked “I know”. The level test gives a better estimate.",
       "vocabDisclaimer": "An estimate based on the level test, the words you marked “I know” and your study. It is not the number of words you learned.",
       "source": {
         "default": "Not measured yet",
@@ -2308,16 +2315,7 @@
         "manual": "Your choice · {{date}}"
       },
       "testAgain": "Retake the test",
-      "testStart": "Take the level test",
-      "streakTitle": "Streak",
-      "streakValue_one": "{{count}} day",
-      "streakValue_other": "{{count}} days",
-      "longest": "Longest",
-      "learned": "Words learned",
-      "goalsTitle": "Your goals",
-      "goalsEdit": "Edit",
-      "goalsSet": "Set a goal",
-      "goalsNone": "Choose how many minutes a day and days a week to study, how many new words a month to learn and the level you aim for.",
+      "testStart": "Start the test",
       "interestsTitle": "Your interests",
       "interestsEdit": "Edit",
       "interestsChosen": "Chosen interests",
@@ -2328,30 +2326,59 @@
       "knownWords": "Words I know",
       "sync": "Sync",
       "settingsHint": "Study, reminders, appearance, backup",
-      "learnedShort": "Learned",
-      "wordsValue_one": "{{count}} word",
-      "wordsValue_other": "{{count}} words",
-      "goalCaption": {
-        "week_active_days_one": "{{count}} day a week",
-        "week_active_days_other": "{{count}} days a week",
-        "week_minutes_one": "{{count}} min a week",
-        "week_minutes_other": "{{count}} min a week",
-        "month_new_terms_one": "{{count}} new word a month",
-        "month_new_terms_other": "{{count}} new words a month"
-      },
-      "goalDay_one": "{{count}} min a day",
-      "goalDay_other": "{{count}} min a day",
       "goalLevel": "Target level {{level}}"
+    }
+  },
+  "onboarding": {
+    "title": "Welcome",
+    "stepOf": "Step {{n}} of {{total}}",
+    "progressLabel": "Getting started",
+    "manual": "I want to add words myself",
+    "welcome": {
+      "title": "Let's start learning words for good",
+      "body": "Engapp asks you a few words every day and brings each back just before you forget it. Three short steps, then your first study session:",
+      "step1": "Measure your level: a word test of about 2 minutes (skip it if you like).",
+      "step2": "Pick your interests: example sentences come from these topics.",
+      "step3": "Pick a ready deck, such as “The 500 most used words”.",
+      "step4": "Do your first session: a few minutes, a few new words.",
+      "start": "Let's begin"
+    },
+    "level": {
+      "title": "Let's measure your level",
+      "body": "You see a word and say whether you know it. It takes about 2 minutes. Suggestions then fit your level.",
+      "start": "Start the test",
+      "skip": "Not now, skip"
+    },
+    "interests": {
+      "title": "Which topics interest you?",
+      "body": "Pick a few; example sentences and suggestions come from them first. You can change them in Profil later.",
+      "save_one": "Continue with {{count}} topic",
+      "save_other": "Continue with {{count}} topics",
+      "continue": "Continue",
+      "skip": "Continue without topics"
+    },
+    "deck": {
+      "title": "Start with a ready deck",
+      "body": "Pick a deck; its words are added to your cards and a few come each day.",
+      "recommended": "Recommended",
+      "hint": {
+        "top500_one": "Most of everyday English · {{value}} word",
+        "top500_other": "Most of everyday English · {{value}} words",
+        "top100_one": "A light start · {{value}} word",
+        "top100_other": "A light start · {{value}} words",
+        "verbs_one": "Verbs for your level · {{value}} word",
+        "verbs_other": "Verbs for your level · {{value}} words"
+      },
+      "pace": "They don't all come at once: a few new words each day. Words you know are left out.",
+      "start": "Start my first session with this deck",
+      "adding": "Adding… {{done}} / {{total}}",
+      "loading": "Loading ready decks",
+      "offline": "Ready decks need the internet. Try again once you're online, or add words yourself.",
+      "retry": "Try again"
     }
   },
   "decks": {
     "title": "Decks",
-    "description": "Your saved filters. Pick them above the Cards list and in practice rounds; they update as you add words.",
-    "new": "New deck",
-    "listLabel": "Decks",
-    "emptyTitle": "No decks yet",
-    "emptyBody": "For example “Work · struggling”: words tagged work that you find hard.",
-    "emptyAction": "Create your first deck",
     "count_one": "{{count}} word",
     "count_other": "{{count}} words",
     "needsUpdate": "Update needed",
@@ -2363,12 +2390,9 @@
     "levels": "Level: {{levels}}",
     "topics_one": "{{count}} topic",
     "topics_other": "{{count}} topics",
-    "actions": "Actions for “{{name}}”",
-    "open": "Show in Cards",
     "practice": "Practice",
     "edit": "Edit",
     "up": "Move up",
-    "down": "Move down",
     "delete": "Delete",
     "deleteTitle": "Delete “{{name}}”?",
     "deleteBody": "Only the deck is deleted; your words and tags stay as they are.",
@@ -2428,11 +2452,7 @@
       "deleted": "Tag deleted"
     },
     "themes": {
-      "title": "Group into themes",
-      "body": "AI groups your untagged words by topic. You preview first; approved group names become tags.",
-      "start": "Group my words into themes",
-      "pending": "You have a preview waiting for approval.",
-      "resume": "Back to the preview"
+      "title": "Group into themes"
     }
   },
   "themes": {
@@ -2482,21 +2502,17 @@
     "discard": "Delete preview",
     "discardTitle": "Delete the preview?",
     "discardBody": "The groups are not saved. Grouping again uses a new AI call.",
-    "regroup": "Group again",
     "noGroups": "The AI found no useful groups in these words. Try again after adding more words.",
     "saved_one": "{{count}} tag added",
     "saved_other": "{{count}} tags added",
     "savedNotes_one": "{{count}} word tagged.",
     "savedNotes_other": "{{count}} words tagged.",
-    "saveFailed": "Could not save the tags. Try again.",
-    "gone": "deleted"
+    "saveFailed": "Could not save the tags. Try again."
   },
   "anki": {
     "title": "Move from Anki",
     "description": "Bring your Anki decks here together with their review history.",
     "entry": {
-      "title": "Using Anki?",
-      "body": "You can move your decks here with their review history.",
       "link": "Upload an Anki file (.apkg)"
     },
     "pick": {
@@ -2625,6 +2641,7 @@
     "action": {
       "lower_new_limit": "Set the limit to {{value}}",
       "lower_new_limitDone": "Your daily new-card limit is now {{value}}.",
+      "lower_new_limitAlready": "Your daily new-card limit is already {{limit}}; no change needed.",
       "come_back": "Start reviewing",
       "practice_weakest_one": "Practise {{count}} word",
       "practice_weakest_other": "Practise {{count}} words",
@@ -2636,13 +2653,12 @@
     },
     "pastTitle": "Earlier reports",
     "pastEmpty": "No earlier reports yet.",
-    "pastSummary": "{{days}} days · {{reviews}} reviews · {{learned}} new words",
-    "homeNote": "Last week's report is ready.",
-    "homeOpen": "Open the report"
+    "pastSummary": "{{days}} days · {{reviews}} reviews · {{learned}} new words"
   },
   "goals": {
     "title": "Your goals",
     "intro": "Set yourself a goal and follow your progress here.",
+    "dayLine": "{{count}} min a day",
     "set": "Set a goal",
     "change": "Change goals",
     "dialogTitle": "Your goals",
@@ -2752,7 +2768,6 @@
       "no_lexicon": "This meaning is not in the shared dictionary, so no picture can be made."
     },
     "settings": {
-      "title": "Pictures",
       "front": "Show the picture on the front too",
       "frontHint": "The picture also shows on the front of the card. Off by default, because it can give the meaning away.",
       "stored_one": "{{count}} picture is stored on this device ({{size}}); it shows offline too.",
@@ -2798,21 +2813,9 @@
     "failed": "The decision could not be saved; the picture is back in the queue."
   },
   "wordBank": {
-    "title": "Word bank",
-    "description": "Over 8,800 words from the CEFR-J and Octanove lists, by level, ready with their Turkish meaning and an example sentence: add the ones you like and get their cards.",
-    "level": "Level",
-    "search": "Search a word or meaning",
-    "pos": "Part of speech",
-    "posAll": "All parts of speech",
-    "showOwned": "Also show words I know or have cards for",
-    "countLevel_one": "{{level}}: {{count}} word",
-    "countLevel_other": "{{level}}: {{count}} words",
     "countSearch_one": "{{count}} word found",
     "countSearch_other": "{{count}} words found",
     "listLabel": "Words",
-    "quickTitle_one": "Add {{count}} word from this level",
-    "quickTitle_other": "Add {{count}} words from this level",
-    "quickHint": "Mostly {{level}}, the rest easier words; at most one from the next level. Words you know or have cards for never come.",
     "quickAction_one": "Add {{count}} word",
     "quickAction_other": "Add {{count}} words",
     "quickNone": "No new words left at this level.",
@@ -2820,8 +2823,6 @@
     "addLabel": "Add {{term}}",
     "select": "Select {{term}}",
     "meaningsPick": "Meanings to add",
-    "known": "I know it",
-    "carded": "You have a card",
     "selected_one": "{{count}} word selected",
     "selected_other": "{{count}} words selected",
     "selectionBar": "Selected words",
@@ -2837,25 +2838,116 @@
     "more_one": "Show {{count}} more word",
     "more_other": "Show more ({{count}} more words)",
     "noMatch": "No words for this selection.",
-    "loading": "Downloading the word bank…",
     "emptyTitle": "The word bank is not downloaded yet",
     "emptyOffline": "The first time needs the internet. Once downloaded it works offline.",
     "emptyFailed": "The download did not work just now. Try again in a moment.",
-    "emptyNoBackend": "This installation has no word bank.",
+    "emptyNoBackend": "The word bank cannot load right now. It will load when you are online.",
     "retry": "Try again",
     "credit": "Word lists: CEFR-J Wordlist 1.5 (© Tono Laboratory, TUFS) and Octanove Vocabulary Profile C1/C2 (Octanove Labs, CC BY-SA 4.0). Meanings and example sentences were generated once with AI.",
     "creditLink": "Sources",
-    "entryTitle": "Not sure what to add?",
-    "entryBody": "The word bank has thousands of words for your level, with meanings and examples.",
     "entryLink": "Open the word bank"
   },
+  "discover": {
+    "title": "Discover",
+    "lead": "Texts to read, ready-made decks, new words. A little different every day.",
+    "filters": "Discover filter",
+    "filter": {
+      "hepsi": "All",
+      "okuma": "Reading",
+      "desteler": "Decks",
+      "kelimeler": "Words"
+    },
+    "seeAll": "See all",
+    "loading": "Preparing Discover",
+    "continue": {
+      "eyebrow": "Continue",
+      "pct": "{{pct}}% read",
+      "start": "Opened, not started yet",
+      "action": "Continue reading"
+    },
+    "story": {
+      "eyebrow": "Today's story"
+    },
+    "suggestions": {
+      "eyebrow": "Texts for you",
+      "body": "{{difficulty}} difficulty, chosen by the words you know",
+      "label": "Texts for you"
+    },
+    "createText": {
+      "eyebrow": "A text of your own",
+      "title": "Write a text with my words",
+      "body": "Pick a few of your words; a short text is written with them and opens in the reader.",
+      "action": "Pick words"
+    },
+    "newTexts": {
+      "eyebrow": "New in the library",
+      "label": "New texts"
+    },
+    "myTexts": {
+      "eyebrow": "My texts",
+      "count_one": "{{count}} text",
+      "count_other": "{{count}} texts",
+      "label": "Your recent texts"
+    },
+    "forYou": {
+      "eyebrow": "Decks for you",
+      "body": "By your level {{level}} and your interests"
+    },
+    "shelf": {
+      "eyebrow": "Ready-made decks",
+      "levels": "By level",
+      "pos": "At your level, by part of speech"
+    },
+    "word": {
+      "eyebrow": "Word of the day",
+      "add": "Add to my cards",
+      "added": "Added to your cards",
+      "addedToast": "“{{word}}” added to your cards",
+      "failed": "Could not add. Try again.",
+      "example": "Example"
+    },
+    "falseFriend": {
+      "eyebrow": "False friend of the day",
+      "deck": "All false friends · {{count}} pairs"
+    },
+    "wordsAtLevel": {
+      "eyebrow": "New words",
+      "body": "{{level}} words not in your cards yet",
+      "label": "New words",
+      "add": "Add “{{word}}”",
+      "added": "“{{word}}” added",
+      "bank": "Open the word bank"
+    },
+    "missing": {
+      "title": "Some suggestions will load when you are online",
+      "body": "Once downloaded, texts and decks show offline too.",
+      "retry": "Try again"
+    },
+    "empty": "Nothing to show yet. Add a word or a text and this page starts to fill."
+  },
+  "progressGlance": {
+    "title": "Progress",
+    "seeAll": "See all",
+    "seeAllLabel": "Progress: see all",
+    "streak": "Streak",
+    "streakValue_one": "{{count}} day",
+    "streakValue_other": "{{count}} days",
+    "learned": "Learned",
+    "learnedValue_one": "{{formatted}} word",
+    "learnedValue_other": "{{formatted}} words",
+    "retention": "Recall",
+    "week": "Last 7 days",
+    "weekLabel_one": "You studied on {{count}} day in the last 7",
+    "weekLabel_other": "You studied on {{count}} days in the last 7",
+    "none": "No study yet. It shows here after your first session."
+  },
   "deckHub": {
-    "title": "Decks",
+    "title": "My words",
     "segments": "Deck view",
     "tabMine": "My decks",
     "tabDiscover": "Discover",
     "tabBank": "Word bank",
-    "import": "Import: Anki, text or PDF",
+    "import": "Import: Anki, CSV or a backup",
     "back": "Back",
     "study": "Study",
     "studyAnyway": "Study anyway",
@@ -2897,7 +2989,7 @@
       "tagsBody_other": "{{count}} tags · rename, delete",
       "tagsNone": "No tags yet",
       "importTitle": "Import",
-      "importBody": "Anki deck, text or PDF"
+      "importBody": "Anki deck, CSV or a backup file"
     },
     "manual": {
       "title": "Hand-picked deck",
@@ -2921,10 +3013,6 @@
       "forYou": "For you",
       "forYouBody": "For your level {{level}} and your interests",
       "upLevel": "One level up",
-      "interest": "Your interest",
-      "soon": "Coming soon",
-      "aiSoon": "Coming soon · being prepared with AI",
-      "aiPreparing": "Being prepared with AI",
       "deckPct": "{{words}} words · {{pct}}%",
       "top": "Most used",
       "topBody": "Content words only: no the, of, and",
@@ -2943,15 +3031,7 @@
       "falseFriends": "False friends",
       "pairs": "{{count}} pairs",
       "notEqual": "not equal",
-      "falseFriendsBody": "Words that look Turkish but mean something else: {{examples}}…",
-      "patterns": "Patterns",
-      "phrasal": "Phrasal verbs",
-      "phrasalExample": "give up, look after",
-      "idioms": "Idioms",
-      "idiomsExample": "break the ice",
-      "topics": "By topic",
-      "topicsInterests": "Choose your interests",
-      "unavailable": "Suggested decks are built from the word bank. They appear here once it is downloaded."
+      "falseFriendsBody": "Words that look Turkish but mean something else: {{examples}}…"
     },
     "kind": {
       "top": "Most frequent · content words",
@@ -3073,7 +3153,6 @@
       "title": "Add words to “{{name}}”",
       "search": "Search my words",
       "list": "Your words",
-      "pick": "Pick {{term}}",
       "apply_one": "Add {{count}} word",
       "apply_other": "Add {{count}} words",
       "none": "No words to add.",
@@ -3106,16 +3185,12 @@
       "known": "Known",
       "carded": "Added",
       "select": "Pick {{term}}",
-      "details": "{{term}}: meanings and examples",
       "selectedBody": "Will be added to All my words",
       "showing": "Showing {{shown}} / {{total}}",
       "quick": "A mix of {{count}} words from your level"
     }
   },
   "gradedLibrary": {
-    "title": "Reading library",
-    "description": "Short texts written for your level. Every sentence has its Turkish translation and audio.",
-    "back": "Decks",
     "forYou": "For you",
     "forYouHint": "Picked for the {{difficulty}} difficulty from the words you know.",
     "forYouNone": "No text fits your chosen difficulty right now. Pick one from the list below.",
@@ -3148,7 +3223,7 @@
     "loading": "Downloading the library…",
     "emptyTitle": "The library is empty for now",
     "emptyOffline": "Connect to the internet once to download the library. After that it reads offline.",
-    "emptyNoBackend": "The library is not available in this setup.",
+    "emptyNoBackend": "The library cannot load right now. It will load when you are online.",
     "emptySoon": "New texts are being prepared; they will be here soon.",
     "emptyFailed": "The library could not be downloaded.",
     "retry": "Try again",
@@ -3175,10 +3250,6 @@
     }
   },
   "article": {
-    "sheetTitle": "Article from a link",
-    "sheetBody": "Open a news story or blog post in the reader",
-    "subtitleSheetTitle": "Subtitle file (.srt / .vtt)",
-    "subtitleSheetBody": "Turn series or video subtitles into text",
     "pageTitle": "Article from a link",
     "pageLead": "Paste the address of an article. Ads, menus and comments are dropped; only the text comes through.",
     "urlLabel": "Article address",
@@ -3191,19 +3262,19 @@
     "words_other": "{{count}} words",
     "truncated": "The article is very long, so its first part was taken.",
     "notEnglish": "This page does not look English. You can still open it.",
-    "openReader": "Open in the reader",
     "extract": "Find words",
-    "extractNeedsSignIn": "Finding words needs a Google sign-in. The reader works without one.",
     "saveFailed": "Could not save the text. Try again.",
     "extractFailed": "Could not start finding words. Try again.",
     "failTitle": "This page could not be fetched",
     "pasteHint": "You can copy the text from the page and paste it; the reader and word finding work the same way.",
     "pasteCta": "Copy and paste the text",
+    "guestBody": "Articles are fetched through our server, so this needs an account. Copy the page's text and paste it to read it without signing in.",
+    "unavailable": "Fetching articles is off in this version",
     "retry": "Try again",
     "titleOnly": "You can still use the page title:",
     "errors": {
       "offline": "No internet connection. Try again once you are online.",
-      "not_signed_in": "Fetching articles needs a Google sign-in.",
+      "not_signed_in": "Sign in to fetch articles",
       "daily_limit": "You have used today's articles (30 a day). Try again tomorrow.",
       "blocked_url": "This address cannot be opened. Paste the address of a public web page.",
       "robots_disallowed": "This site does not allow apps to fetch its pages.",
@@ -3237,6 +3308,7 @@
     "selected": "You selected: {{selected}}",
     "listen": "Listen: {{term}}",
     "meanings": "Meanings",
+    "mine": "Meaning on your card",
     "pickHint": "Tap the meanings the card should have.",
     "picked": "Selected",
     "owned": {
@@ -3276,10 +3348,14 @@
       "knew": "I knew it",
       "forgot": "I didn't",
       "saved": "Answer saved. It is counted when you open the app."
+    },
+    "explain": {
+      "title": "Home-screen widgets",
+      "body": "Engapp has two widgets for your home screen: “Tekrara başla” counts your waiting cards, “Günün kelimesi” shows one word a day. You see them without opening the app.",
+      "how": "To add one: long-press an empty spot on the home screen → Widgets → Engapp."
     }
   },
   "reader": {
-    "tab": "Reading",
     "close": "Close the reader",
     "coverage": "You know {{pct}}% of this text",
     "words_one": "{{count}} word",
@@ -3288,15 +3364,25 @@
     "readMinutes_other": "{{count}} min read",
     "resumed": "Where you left off",
     "emptyBody": "This text is not on this device yet.",
+    "graded": {
+      "unavailableTitle": "This text is not on this device yet",
+      "offline": "It downloads once when you are online; after that it reads offline.",
+      "missing": "This text may have been removed from the library.",
+      "retry": "Try again"
+    },
     "notFound": {
       "title": "Text not found",
       "body": "It may have been deleted, or it has not arrived from another device yet.",
-      "cta": "Back to my texts"
+      "cta": "Back to reading"
     },
     "listen": {
       "start": "Read along",
       "stop": "Stop",
       "noVoice": "Reading aloud is not available on this device."
+    },
+    "translation": {
+      "show": "Show Turkish",
+      "hide": "Hide Turkish"
     },
     "options": {
       "open": "Reading settings",
@@ -3307,12 +3393,33 @@
       "new": "Probably new",
       "learning": "Learning",
       "consolidating": "Consolidating",
-      "known": "Known or learned: no mark"
+      "known": "Known or learned: no mark",
+      "title": "What the colours mean",
+      "close": "Close the colour key",
+      "later": "You can find this in ⚙ Reading settings at any time."
     },
     "finished": {
       "cta": "I finished",
       "title": "Finished",
       "again": "Read again"
+    },
+    "summary": {
+      "line_one": "You met {{count}} new word in this text · added {{added}}",
+      "line_other": "You met {{count}} new words in this text · added {{added}}",
+      "cta": "New words in this text"
+    },
+    "newWords": {
+      "title": "New words in this text",
+      "description": "Words with a meaning are ticked. Untick the ones you don't want, then add.",
+      "noMeaning": "no meaning on this device",
+      "lookUp_one": "Find the meaning of {{count}} word with AI",
+      "lookUp_other": "Find the meanings of {{count}} words with AI",
+      "someMissing": "Some meanings could not be found.",
+      "add_one": "Add {{count}} word",
+      "add_other": "Add {{count}} words",
+      "added_one": "{{count}} word added to your cards",
+      "added_other": "{{count}} words added to your cards",
+      "none": "All new words in this text are already in your cards."
     },
     "feedback": {
       "question": "How was this text for you?",
@@ -3326,6 +3433,7 @@
       "extendBefore": "← With previous",
       "extendAfter": "With next →",
       "guessHint": "Look at the sentence and guess the meaning first. Trying to guess sticks better than looking it up.",
+      "showTranslation": "Show the sentence in Turkish",
       "reveal": "Show the meaning",
       "loading": "Looking up the meaning…",
       "meanings": "Meanings",
@@ -3379,6 +3487,10 @@
       "label": "Colour words",
       "hint": "New words and words you are learning get a light mark. Words you know stay plain."
     },
+    "alwaysGuess": {
+      "label": "Always guess first",
+      "hint": "Words already in your cards ask for a guess too before their meaning shows. When off, their meaning shows at once."
+    },
     "settings": {
       "title": "Reading"
     },
@@ -3397,6 +3509,8 @@
       "empty": "No texts yet. Paste a text or upload a PDF and choose \"Open in reader\".",
       "unread": "Not read",
       "progress": "{{pct}}% read",
+      "reading": "Reading {{pct}}%",
+      "continue": "Continue",
       "finished": "Finished",
       "delete": "Delete \"{{title}}\"",
       "confirmTitle": "Delete this text?",
@@ -3415,16 +3529,7 @@
       "paste": "Add a text"
     },
     "open": {
-      "cta": "Open in reader",
-      "defaultTitle": "My text",
-      "failed": "The text could not be opened. Try again.",
-      "tooShort": "Paste some English text to read.",
-      "tooLong": "This text is too long for the reader (300,000 characters at most).",
-      "boxTitle": "Read in the reader",
-      "expand": "Paste a text",
-      "boxBody": "No account or internet needed. The text stays with you.",
-      "textLabel": "English text",
-      "titleLabel": "Title"
+      "defaultTitle": "My text"
     }
   },
   "story": {
@@ -3454,6 +3559,100 @@
       "generic": "The story could not be written right now. Try again a little later."
     }
   },
+  "compose": {
+    "title": "Make a text with my words",
+    "lead": "A short text with the words you pick. It opens in the reader with your words marked and 3 questions at the end.",
+    "steps": "Steps",
+    "step1": "Words",
+    "step2": "Options",
+    "step3": "Read",
+    "search": "Search your words",
+    "searchPlaceholder": "Search your words…",
+    "searchResults": "Search results",
+    "noMatch": "None of your words match.",
+    "listDue": "Due for review",
+    "listHard": "Hard for you",
+    "listRecent": "Recently added",
+    "picked": "{{count}}/{{max}} words picked",
+    "pickMore_one": "pick {{count}} more",
+    "pickMore_other": "pick {{count}} more",
+    "pickedList": "Your picked words",
+    "remove": "Remove {{term}}",
+    "next": "Continue",
+    "back": "Back",
+    "genre": "Form",
+    "genres": {
+      "story": "Story",
+      "dialogue": "Dialogue",
+      "news": "News",
+      "email": "Email"
+    },
+    "length": "Length",
+    "lengths": {
+      "short": "Short · ~120 words",
+      "medium": "Medium · ~220 words"
+    },
+    "difficulty": "Difficulty",
+    "topic": "Topic",
+    "topicHint": "The text is set in one of these topics.",
+    "topicNone": "With no topic, an everyday one is chosen.",
+    "noInterests": "You picked no interests, so an everyday topic is chosen.",
+    "setInterests": "Pick your interests",
+    "make": "Create the text",
+    "retry": "Try again",
+    "writing": "Writing your text…",
+    "writingHint": "It takes about 10 seconds and opens in the reader.",
+    "limit_one": "You can create {{count}} text a day · today {{used}}",
+    "limit_other": "You can create {{count}} texts a day · today {{used}}",
+    "signInTitle": "Sign in to create the text",
+    "signInBody": "AI writes the text, so a Google account is needed. Your picked words stay here.",
+    "unavailable": "Creating texts is off in this version.",
+    "fewTitle": "Add a few words first",
+    "fewBody_one": "You need at least {{count}} word on your cards.",
+    "fewBody_other": "You need at least {{count}} words on your cards.",
+    "fewCta": "Add a word",
+    "errors": {
+      "offline": "You're offline. Try again once connected; your pick stays.",
+      "guest": "Sign in with Google for the text.",
+      "used": "Today's {{count}} texts are used up. They renew tomorrow.",
+      "budget": "This month's text budget is used up. It reopens at the start of the month.",
+      "notEnough": "Pick at least 3 words.",
+      "generic": "The text could not be written right now. Try again a bit later."
+    }
+  },
+  "wordList": {
+    "title": "CSV or word list",
+    "lead": "One word and its meaning per line; an example sentence in a third column if you like. The cards are made on this device, no account needed.",
+    "pickFile": "Choose a file (.csv, .txt)",
+    "otherFile": "Choose another file",
+    "pasteLabel": "Or paste the list here",
+    "placeholder": "give up - vazgeçmek\nbank;kıyı;We sat on the bank of the river.",
+    "hint": "Separate with a tab, semicolon, comma or “ - ”.",
+    "preview_one": "{{count}} word found",
+    "preview_other": "{{count}} words found",
+    "more_one": "and {{count}} more word",
+    "more_other": "and {{count}} more words",
+    "skipped_one": "{{count}} line without a word or meaning was skipped.",
+    "skipped_other": "{{count}} lines without a word or meaning were skipped.",
+    "truncated": "The list is long; the first {{max}} lines will be added.",
+    "add_one": "Add {{count}} word",
+    "add_other": "Add {{count}} words",
+    "addEmpty": "Add the words",
+    "adding": "{{done}}/{{total}} words added",
+    "done_one": "{{count}} new word added",
+    "done_other": "{{count}} new words added",
+    "addedSenses_one": "{{count}} new meaning added to words you had.",
+    "addedSenses_other": "{{count}} new meanings added to words you had.",
+    "unchanged_one": "{{count}} word was already on your cards with that meaning.",
+    "unchanged_other": "{{count}} words were already on your cards with that meaning.",
+    "failedRows_one": "{{count}} line could not be added (too long or empty).",
+    "failedRows_other": "{{count}} lines could not be added (too long or empty).",
+    "toWords": "Go to my words",
+    "again": "Add another list",
+    "tooBig": "The file is too large (2 MB at most).",
+    "readFailed": "The file could not be read. Try again.",
+    "failed": "The words could not be added. Try again."
+  },
   "smart": {
     "rotation": {
       "fromText": "From your text"
@@ -3478,10 +3677,9 @@
     },
     "handsFree": {
       "title": "Hands-free",
-      "short": "Listening review",
       "intro_one": "{{count}} word is read aloud: the English first, a short pause, then the Turkish and an example sentence. You can listen without looking.",
       "intro_other": "{{count}} words are read aloud: the English first, a short pause, then the Turkish and an example sentence. You can listen without looking.",
-      "practiceNote": "This is practice: your review schedule does not change.",
+      "practiceNote": "This is practice: your schedule does not change and it does not count for the streak.",
       "start": "Start listening",
       "pause": "Pause",
       "resume": "Resume",
@@ -3499,9 +3697,8 @@
       "doneBody_other": "You listened to {{count}} words.",
       "again": "One more round",
       "moreTitle": "Study by listening",
-      "moreBody": "While walking or on the road: the words are read aloud, you listen. Your schedule does not change.",
+      "moreBody": "While walking or on the road: the words are read aloud, you listen. Hands-free does not change your schedule or count for the streak.",
       "moreDictation": "Dictation: {{count}} cards",
-      "moreDictationNone": "No dictation cards today",
       "moreStart": "Start a hands-free round"
     },
     "dictation": {

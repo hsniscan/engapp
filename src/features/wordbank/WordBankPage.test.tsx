@@ -52,7 +52,7 @@ beforeEach(async () => {
   await updateSettings({ level: 'A2' });
 });
 
-describe('word bank (Desteler › Kelime bankası)', () => {
+describe('word bank (Desteler › Kelime Bankası)', () => {
   it('opens on the user level and hides words already known or carded', async () => {
     await applyWordBankPage([
       row('garden', 'A2', 'bahçe', 5),
@@ -181,9 +181,11 @@ describe('word bank (Desteler › Kelime bankası)', () => {
     expect(at('atwo')).toBeGreaterThanOrEqual(5);
   });
 
-  it('explains an empty bank when this installation has no backend', async () => {
+  it('explains an empty bank in plain words when there is no server to download it from', async () => {
     renderBank();
-    expect(await screen.findByText('Bu kurulumda kelime bankası yok.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Kelime Bankası şu an yüklenemiyor. İnternet gelince yüklenecek.'),
+    ).toBeInTheDocument();
   });
 
   it('the old /kelime-bankasi page sends to the bank segment', async () => {

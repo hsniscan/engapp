@@ -18,7 +18,7 @@ test('offline: review, add a card and open stats; back online the outbox is push
   });
   await page.reload(); // now controlled by the worker
   await page.goto('/add');
-  await expect(page.getByRole('status', { name: 'Senkron durumu: Senkronlandı' })).toBeVisible();
+  await expect(page.getByRole('status', { name: 'Eşitleme durumu: Eşitlendi' })).toBeVisible();
   for (const w of WORDS.slice(0, 2)) await addWord(page, w);
   await expect.poll(() => backend.pushedIds('notes').length, { timeout: 15_000 }).toBe(2);
   await page.goto('/');
@@ -29,7 +29,7 @@ test('offline: review, add a card and open stats; back online the outbox is push
   // Airplane mode.
   backend.offline = true;
   await context.setOffline(true);
-  await expect(page.getByRole('status', { name: /Senkron durumu: Çevrimdışı/ })).toBeVisible();
+  await expect(page.getByRole('status', { name: /Eşitleme durumu: Çevrimdışı/ })).toBeVisible();
 
   await page.getByTestId('start-study').click();
   const reviewed = await reviewAll(page, '3');
@@ -42,7 +42,9 @@ test('offline: review, add a card and open stats; back online the outbox is push
   await expect(page).toHaveURL(/\/add$/);
   await addWord(page, WORDS[2]!);
 
-  await page.getByRole('link', { name: 'İlerleme' }).first().click();
+  // İlerleme is reached from the top of Profil (v0.5.1).
+  await page.getByRole('link', { name: 'Profil', exact: true }).first().click();
+  await page.getByRole('link', { name: 'İlerleme: tümünü gör' }).click();
   await expect(page.getByRole('heading', { name: 'İlerleme', level: 1 })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Devamlılık' })).toBeVisible();
   await expect(page.getByRole('grid', { name: /Günlük tekrar takvimi/ })).toBeVisible();
@@ -73,7 +75,7 @@ test('offline: review, add a card and open stats; back online the outbox is push
   expect(backend.pushedIds('notes')).toHaveLength(3);
   test.info().annotations.push({ type: 'sync-after-online-ms', description: String(elapsed) });
   console.log(`offline → online: ${localLogs.length} review logs pushed in ${elapsed} ms`);
-  await expect(page.getByRole('status', { name: 'Senkron durumu: Senkronlandı' })).toBeVisible({
+  await expect(page.getByRole('status', { name: 'Eşitleme durumu: Eşitlendi' })).toBeVisible({
     timeout: 15_000,
   });
 });

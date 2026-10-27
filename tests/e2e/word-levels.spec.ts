@@ -152,10 +152,10 @@ test('signed in: levels stored with the lexicon by ai-extract; an AI guess has a
   await page.getByRole('option', { name: /^B2/ }).click();
   await expect(page.getByRole('combobox', { name: 'Seviyen' })).toContainText('B2');
   await page.goto('/add?tab=paste');
-  await expect(page.getByRole('status', { name: 'Senkron durumu: Senkronlandı' })).toBeVisible();
+  await expect(page.getByRole('status', { name: 'Eşitleme durumu: Eşitlendi' })).toBeVisible();
   await page.getByLabel('İngilizce metin').fill(specs.map((s) => s.sentence).join(' '));
   await page.getByRole('button', { name: 'Kelimeleri çıkar' }).click();
-  await page.getByRole('link', { name: 'Önizlemeyi aç' }).click();
+  await expect(page.getByTestId('smart-summary')).toBeVisible();
   expect(backend.model.calls).toBe(1);
   await page.getByRole('checkbox', { name: 'cut corners seç' }).click();
   await page.getByRole('button', { name: '3 kelimeyi ekle' }).click();
@@ -168,11 +168,11 @@ test('signed in: levels stored with the lexicon by ai-extract; an AI guess has a
     row('reluctant').getByRole('img', { name: 'Seviye B2, CEFR-J listesi' }),
   ).toBeVisible();
   // Not in the list: the guess, bounded by frequency; dashed.
-  const ai = row('backfire').getByRole('img', { name: 'Seviye B2, AI tahmini' });
+  const ai = row('backfire').getByRole('img', { name: 'Seviye B2, Yapay zekâ tahmini' });
   await expect(ai).toBeVisible();
   await expect(ai).toHaveCSS('border-top-style', 'dashed');
   await expect(
-    row('cut corners').getByRole('img', { name: 'Seviye C1, AI tahmini' }),
+    row('cut corners').getByRole('img', { name: 'Seviye C1, Yapay zekâ tahmini' }),
   ).toBeVisible();
 
   // The level came with the lexicon row (shared data), not from the device's level file.

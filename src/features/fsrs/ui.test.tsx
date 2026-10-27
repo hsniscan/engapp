@@ -38,7 +38,7 @@ beforeEach(async () => {
   await ensureSettings(Date.UTC(2026, 9, 22));
 });
 
-describe('Settings → Algoritmayı hafızama göre ayarla', { timeout: 30_000 }, () => {
+describe('Settings → Kart zamanlamasını hafızama göre ayarla', { timeout: 30_000 }, () => {
   it('below 1 000 reviews: explains how many are needed, no button', async () => {
     await seed(20);
     renderRoute(<FsrsOptimizerRow />);

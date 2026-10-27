@@ -146,3 +146,42 @@ export function understoodPercent(unknownRate: number): number {
 export function readingMinutes(words: number): number {
   return Math.max(1, Math.round(words / 120));
 }
+
+// ------------------------------------------------------------------ reading a library text
+
+export interface GradedSpan {
+  /** [start, end) of the sentence in the built body. */
+  start: number;
+  end: number;
+  /** Index into GradedBody.sentences. */
+  index: number;
+}
+
+export interface GradedReaderBody {
+  /** Plain text: sentences joined by a space, paragraphs by a blank line. */
+  body: string;
+  /** One span per non-empty sentence, in order (the reader's sentences, one to one). */
+  spans: GradedSpan[];
+}
+
+/**
+ * The reader's text of a library text (v0.5.1, decision 0054): the sentences as written (inner
+ * whitespace folded), with each sentence's place in the body, so the reader keeps the library's
+ * own sentence boundaries and can show each sentence's Turkish and play its recorded audio.
+ */
+export function gradedReaderBody(
+  sentences: readonly Pick<GradedSentenceRow, 'en' | 'p'>[],
+): GradedReaderBody {
+  let body = '';
+  const spans: GradedSpan[] = [];
+  let para: number | null = null;
+  sentences.forEach((s, index) => {
+    const en = s.en.replace(/\s+/g, ' ').trim();
+    if (!en) return;
+    if (para !== null) body += s.p !== para ? '\n\n' : ' ';
+    para = s.p;
+    spans.push({ start: body.length, end: body.length + en.length, index });
+    body += en;
+  });
+  return { body, spans };
+}

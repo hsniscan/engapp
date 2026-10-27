@@ -7,7 +7,13 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router';
-import { getHeatmap, getStreakSummary, listLeechCards } from '@/data';
+import { db, getHardPracticeCount, getHeatmap, getStreakSummary } from '@/data';
+import {
+  activityBasics,
+  isProgressBeginner,
+  progressUnlocks,
+  type UnlockInfo,
+} from '@/domain/progressView';
 import type { HeatmapCell, StreakSummary } from '@/domain/streak';
 import { practiceHref } from '@/features/extra/links';
 import { LeechStatsSection } from '@/features/leech';
@@ -16,7 +22,7 @@ import { WorkloadSection } from '@/features/load/WorkloadChart';
 import { GoalsSection } from '@/features/report/GoalsSection';
 import { REPORT_TAB_PARAM } from '@/features/report/links';
 import { ReportPanel } from '@/features/report/ReportPanel';
-import { cn, Icon, Page, Skeleton, Surface, Tabs } from '@/ui';
+import { buttonClasses, cn, Icon, Page, Skeleton, Surface, Tabs } from '@/ui';
 import { formatDuration, formatNumber, formatPercent } from './format';
 import { Heatmap } from './Heatmap';
 import { ProgressPanel } from './ProgressPanel';
@@ -74,44 +80,132 @@ export function ProgressPage() {
 
 function General({ onReport }: { onReport: () => void }) {
   const { t } = useTranslation();
+  const [search] = useSearchParams();
+  const editGoals = search.get('edit') === 'goals';
   const data = useLiveQuery(async () => {
-    const [weeks, streak, leeches] = await Promise.all([
+    const [weeks, streak, hard, activity, reports] = await Promise.all([
       getHeatmap(),
       getStreakSummary(),
-      listLeechCards(),
+      getHardPracticeCount(Date.now()),
+      db.daily_activity.toArray(),
+      db.weekly_reports.count(),
     ]);
-    return { weeks, streak, leeches: new Set(leeches.map((l) => l.note_id)).size };
+    return { weeks, streak, hard, basics: activityBasics(activity, streak.today), reports };
   }, []);
 
+  if (!data) {
+    return (
+      <div className="mt-5 flex flex-col gap-4">
+        <Surface padding="lg" aria-busy="true">
+          <Skeleton className="h-40 w-full" />
+        </Surface>
+      </div>
+    );
+  }
+
+  const unlocks = progressUnlocks({
+    totalAnswers: data.basics.totalAnswers,
+    last30Answers: data.basics.last30Answers,
+    // The Gelişim tab counts each direction itself; here only "when" is said.
+    recognitionAnswers: 0,
+    productionAnswers: 0,
+    hasReport: data.reports > 0,
+  });
+
+  // Progressive İlerleme (v0.5.1): a new user sees one card and the calendar, not a wall of 0s.
+  if (isProgressBeginner(data.basics.totalAnswers)) {
+    return (
+      <div className="mt-5 flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5">
+        <FirstStepsCard unlocks={unlocks} />
+        <Continuity weeks={data.weeks} streak={data.streak} />
+        {/* Goals are set here only; a link with ?edit=goals must work on day one too. */}
+        {editGoals && <GoalsSection />}
+      </div>
+    );
+  }
+
+  const recall = unlocks.find((u) => u.key === 'recall')!;
   return (
     <div className="mt-5 flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5">
       <StagesSection />
       <VocabTile />
-      {data ? (
-        <Continuity weeks={data.weeks} streak={data.streak} className="lg:col-span-2" />
-      ) : (
-        <Surface padding="lg" aria-busy="true" className="lg:col-span-2">
-          <Skeleton className="h-40 w-full" />
-        </Surface>
-      )}
+      <Continuity weeks={data.weeks} streak={data.streak} className="lg:col-span-2" />
       <GoalsSection />
       <WorkloadSection />
       <div className="grid grid-cols-2 gap-3 lg:col-span-2 lg:gap-5">
-        <HardTile count={data?.leeches} />
-        <RecallTile rate={data ? data.streak.retentionRate : undefined} />
+        <HardTile count={data.hard} />
+        <RecallTile
+          rate={recall.open ? data.streak.retentionRate : null}
+          remaining={recall.remaining}
+        />
       </div>
-      <button
-        type="button"
-        onClick={onReport}
-        className="flex min-h-[3.75rem] items-center gap-3.5 rounded-card border border-border bg-surface px-4 py-3 text-left text-fg hover:bg-surface-hover lg:col-span-2"
-      >
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="text-[0.9375rem] font-semibold">{t('stats.overview.reportLink')}</span>
-          <span className="text-[0.8125rem] text-fg-muted">{t('stats.overview.reportHint')}</span>
-        </span>
-        <Icon name="chevron-right" size={18} className="shrink-0 text-fg-subtle" />
-      </button>
+      {data.reports > 0 ? (
+        <button
+          type="button"
+          onClick={onReport}
+          className="flex min-h-[3.75rem] items-center gap-3.5 rounded-card border border-border bg-surface px-4 py-3 text-left text-fg hover:bg-surface-hover lg:col-span-2"
+        >
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="text-[0.9375rem] font-semibold">{t('stats.overview.reportLink')}</span>
+            <span className="text-[0.8125rem] text-fg-muted">{t('stats.overview.reportHint')}</span>
+          </span>
+          <Icon name="chevron-right" size={18} className="shrink-0 text-fg-subtle" />
+        </button>
+      ) : (
+        <p className="px-1 text-sm text-fg-muted lg:col-span-2" data-testid="report-locked">
+          {t('stats.unlock.reportLater')}
+        </p>
+      )}
     </div>
+  );
+}
+
+/** The one card a new user sees: start studying, and what opens when. */
+function FirstStepsCard({ unlocks }: { unlocks: UnlockInfo[] }) {
+  const { t } = useTranslation();
+  return (
+    <Surface
+      as="section"
+      aria-labelledby="first-steps-title"
+      padding="none"
+      className="flex flex-col gap-4 p-5 sm:p-6"
+      data-testid="progress-first-steps"
+    >
+      <div className="flex flex-col gap-1.5">
+        <h2 id="first-steps-title" className="font-serif text-[1.375rem] font-semibold text-fg">
+          {t('stats.unlock.title')}
+        </h2>
+        <p className="text-[0.9375rem] text-fg-muted">{t('stats.unlock.body')}</p>
+      </div>
+      <Link to="/study" className={buttonClasses({ className: 'self-start' })}>
+        {t('stats.unlock.start')}
+      </Link>
+      <div className="flex flex-col gap-2 border-t border-border pt-4">
+        <h3 className="text-sm font-semibold text-fg">{t('stats.unlock.listTitle')}</h3>
+        <ul className="flex flex-col gap-2.5" aria-label={t('stats.unlock.listTitle')}>
+          {unlocks.map((u) => (
+            <li key={u.key} className="flex items-start gap-2.5 text-sm">
+              {u.open ? (
+                <Icon name="check" size={16} className="mt-0.5 shrink-0 text-success-text" />
+              ) : (
+                <span
+                  aria-hidden="true"
+                  className="mt-[0.3125rem] ml-[0.1875rem] size-2.5 shrink-0 rounded-full border-[1.5px] border-fg-subtle"
+                />
+              )}
+              <span className="flex min-w-0 flex-col">
+                <span className="font-medium text-fg">{t(`stats.unlock.items.${u.key}.name`)}</span>
+                <span className="text-fg-muted">
+                  {u.open
+                    ? t('stats.unlock.open')
+                    : t(`stats.unlock.items.${u.key}.when`, { count: u.remaining })}
+                </span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </Surface>
   );
 }
 
@@ -183,33 +277,41 @@ function Continuity({
   );
 }
 
-function HardTile({ count }: { count: number | undefined }) {
+/** "Zorlandıkların": cards the hard-words practice would ask now; a link only when there are any. */
+function HardTile({ count }: { count: number }) {
   const { t } = useTranslation();
-  const has = !!count;
+  const body = (
+    <>
+      <span className="text-[0.8125rem] font-semibold">{t('stats.overview.hardTitle')}</span>
+      <span className="tabular font-serif text-[2rem] leading-none font-semibold">
+        {formatNumber(count)}
+      </span>
+      <span className="mt-auto inline-flex items-center gap-1 text-sm font-semibold">
+        {count > 0 ? t('stats.overview.hardPractice') : t('stats.overview.hardNone')}
+        {count > 0 && <Icon name="chevron-right" size={16} />}
+      </span>
+    </>
+  );
+  const base = 'flex min-h-32 flex-col gap-1 rounded-card border p-4 sm:p-5';
+  if (count === 0) {
+    return (
+      <div className={cn(base, 'border-border bg-surface text-fg')} data-testid="hard-tile">
+        {body}
+      </div>
+    );
+  }
   return (
     <Link
       to={practiceHref({ source: 'hard', size: 10, tag: null })}
-      className={cn(
-        'flex min-h-32 flex-col gap-1 rounded-card border p-4 sm:p-5',
-        has
-          ? 'border-warn-soft bg-warn-soft text-warn-text hover:brightness-[0.98]'
-          : 'border-border bg-surface text-fg hover:bg-surface-hover',
-      )}
+      className={cn(base, 'border-warn-soft bg-warn-soft text-warn-text hover:brightness-[0.98]')}
       data-testid="hard-tile"
     >
-      <span className="text-[0.8125rem] font-semibold">{t('stats.overview.hardTitle')}</span>
-      <span className="tabular font-serif text-[2rem] leading-none font-semibold">
-        {count === undefined ? '—' : formatNumber(count)}
-      </span>
-      <span className="mt-auto inline-flex items-center gap-1 text-sm font-semibold">
-        {has ? t('stats.overview.hardPractice') : t('stats.overview.hardNone')}
-        {has && <Icon name="chevron-right" size={16} />}
-      </span>
+      {body}
     </Link>
   );
 }
 
-function RecallTile({ rate }: { rate: number | null | undefined }) {
+function RecallTile({ rate, remaining }: { rate: number | null; remaining: number }) {
   const { t } = useTranslation();
   return (
     <div className="flex min-h-32 flex-col gap-1 rounded-card border border-border bg-surface p-4 sm:p-5">
@@ -217,10 +319,12 @@ function RecallTile({ rate }: { rate: number | null | undefined }) {
         {t('stats.overview.recallTitle')}
       </span>
       <span className="tabular font-serif text-[2rem] leading-none font-semibold text-fg">
-        {rate === undefined || rate === null ? '—' : formatPercent(rate)}
+        {rate === null ? '—' : formatPercent(rate)}
       </span>
       <span className="mt-auto text-[0.8125rem] text-fg-muted">
-        {rate === null ? t('stats.retentionNone') : t('stats.overview.recallDetail')}
+        {rate === null
+          ? t('stats.unlock.items.recall.when', { count: Math.max(1, remaining) })
+          : t('stats.overview.recallDetail')}
       </span>
     </div>
   );

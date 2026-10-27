@@ -86,15 +86,33 @@ for (const width of [360, 1280]) {
         await check(page, `study-${mode}-result`, tag);
       }
 
+      // v0.5.1: /add is "Kelime ekle"; ?tab=paste|pdf is "Metin ekle" with two tabs.
+      await page.goto('/add');
+      await expect(page.getByRole('heading', { level: 1, name: 'Kelime ekle' })).toBeVisible();
+      await check(page, 'add-manual', tag);
       for (const [tab, label] of [
-        ['manual', 'Elle'],
-        ['paste', 'Metin yapıştır'],
-        ['pdf', 'PDF yükle'],
+        ['paste', 'Yapıştır'],
+        ['pdf', 'PDF'],
       ] as const) {
-        await page.goto(`/add${tab === 'manual' ? '' : `?tab=${tab}`}`);
+        await page.goto(`/add?tab=${tab}`);
         await expect(page.getByRole('tab', { name: label, selected: true })).toBeVisible();
         await check(page, `add-${tab}`, tag);
       }
+      await page.goto('/');
+      await page
+        .getByRole('navigation', { name: 'Ana gezinme' })
+        .getByRole('button', { name: 'Ekle' })
+        .first()
+        .click();
+      await expect(page.getByTestId('add-sheet-word')).toBeVisible();
+      await check(page, 'add-sheet', tag);
+      await page.keyboard.press('Escape');
+      await page.goto('/metin-olustur');
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+      await check(page, 'compose', tag);
+      await page.goto('/import/csv');
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+      await check(page, 'word-list', tag);
 
       await page.goto('/library');
       await expect(page.getByRole('list', { name: /./ }).first()).toBeVisible();
@@ -161,7 +179,7 @@ for (const width of [360, 1280]) {
       ).toBeVisible();
       await check(page, 'more', tag);
       await page.getByRole('button', { name: 'Pratiğe başla' }).click();
-      await expect(page.getByText('Pratik · takvimin değişmez')).toBeVisible();
+      await expect(page.getByText('Pratik · takvim ve seri değişmez')).toBeVisible();
       await check(page, 'practice-front', tag);
       await page.locator('body').press('Space');
       await expect(page.getByRole('group', { name: 'Bildin mi?' })).toBeVisible();

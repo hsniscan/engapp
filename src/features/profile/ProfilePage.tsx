@@ -1,16 +1,15 @@
-// /profile (redesign, "Profil" board): who you are (account), where you stand (level, estimated
-// vocabulary, streak, words learned), what you aim for (goals) and what you like (interests),
-// plus shortcuts. Settings moved behind the gear in the header.
+// /profile (redesign, "Profil" board): who you are (account), your level and estimated
+// vocabulary, what you like (interests), plus shortcuts. Settings sit behind the gear in the
+// header. v0.5.1: numbers (streak, words learned) and goals live only on İlerleme; goals are
+// edited there (/progress?edit=goals), so the old ?edit=goals link forwards.
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useSearchParams } from 'react-router';
-import { db, getGoalsView, getStreakSummary } from '@/data';
-import { dayMinutesGoal, type GoalProgress } from '@/domain/goals';
+import { Link, Navigate, useSearchParams } from 'react-router';
+import { db } from '@/data';
+import { vocabularyFloor } from '@/domain/progressView';
 import { Avatar } from '@/features/auth/Avatar';
 import { useAuth } from '@/features/auth/session';
 import { formatDate, useLevelOverview } from '@/features/leveltest/levelText';
-import { GoalsDialog } from '@/features/report/GoalsSection';
 import {
   Glyph,
   GlyphTile,
@@ -19,6 +18,7 @@ import {
 } from '@/features/settings/SettingsGlyph';
 import { useAppSettings } from '@/features/settings/useAppSettings';
 import { formatNumber } from '@/features/stats/format';
+import { ProgressGlance } from '@/features/stats/ProgressGlance';
 import { useWordStages } from '@/features/stats/useWordStages';
 import { formatSince } from '@/features/auth/time';
 import { useSyncStatus } from '@/sync/status';
@@ -28,12 +28,15 @@ import { scanCount, scanWhere } from '@/data/scan';
 const card = 'flex flex-col rounded-card border border-border bg-surface';
 
 export function ProfilePage() {
+  const [params] = useSearchParams();
+  if (params.get('edit') === 'goals') return <Navigate to="/progress?edit=goals" replace />;
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pt-5 pb-10 sm:px-6 md:pt-10">
       <ProfileHeader />
       <div className="mt-3 flex flex-col gap-4">
+        {/* İlerleme moved here from the tab bar (v0.5.1, ADR 0057). */}
+        <ProgressGlance />
         <LevelCard />
-        <GoalsCard />
         <InterestsCard />
         <Shortcuts />
       </div>
@@ -100,7 +103,6 @@ function ProfileHeader() {
 function LevelCard() {
   const { t } = useTranslation();
   const overview = useLevelOverview();
-  const streak = useLiveQuery(() => getStreakSummary(), []);
   const stages = useWordStages();
   if (!overview) {
     return (
@@ -109,8 +111,12 @@ function LevelCard() {
       </Surface>
     );
   }
-  const source =
-    overview.source === 'default' || !overview.updatedAt
+  // Never show the default "B1" as if it were measured (v0.5.1).
+  const measured = overview.source !== 'default' || overview.testCount > 0;
+  const floor = stages ? vocabularyFloor(stages.learnedTotal, stages.alreadyKnown) : null;
+  const source = !measured
+    ? t('profile.home.unmeasuredHint')
+    : overview.source === 'default' || !overview.updatedAt
       ? t('profile.home.source.default')
       : t(`profile.home.source.${overview.source}`, { date: formatDate(overview.updatedAt) });
   return (
@@ -124,181 +130,54 @@ function LevelCard() {
       <dl className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
           <dt className="text-[0.8125rem] text-fg-muted">{t('profile.home.levelLabel')}</dt>
-          <dd
-            className="font-serif text-[2.5rem] leading-none font-semibold text-fg"
-            data-testid="profile-level"
-          >
-            {overview.level}
-          </dd>
-        </div>
-        <div className="flex flex-col gap-1 border-l border-border pl-4">
-          <dt className="text-[0.8125rem] text-fg-muted">{t('profile.home.vocabLabel')}</dt>
-          <dd className="tabular font-serif text-[2.5rem] leading-none font-semibold text-fg">
-            {overview.hasBasis ? (
-              `~${formatNumber(overview.vocab.estimate)}`
+          <dd data-testid="profile-level">
+            {measured ? (
+              <span className="font-serif text-[2.5rem] leading-none font-semibold text-fg">
+                {overview.level}
+              </span>
             ) : (
-              <span className="font-sans text-[0.9375rem] font-normal text-fg-muted">
-                {t('profile.home.vocabNone')}
+              <span className="font-serif text-xl leading-tight font-semibold text-fg">
+                {t('profile.home.unmeasured')}
               </span>
             )}
           </dd>
         </div>
+        <div className="flex flex-col gap-1 border-l border-border pl-4">
+          <dt className="text-[0.8125rem] text-fg-muted">{t('profile.home.vocabLabel')}</dt>
+          <dd data-testid="profile-vocab">
+            {overview.hasBasis ? (
+              <span className="tabular font-serif text-[2.5rem] leading-none font-semibold text-fg">
+                ~{formatNumber(overview.vocab.estimate)}
+              </span>
+            ) : floor !== null ? (
+              <span className="font-serif text-xl leading-tight font-semibold text-fg">
+                {t('profile.home.vocabFloor', { count: floor, value: formatNumber(floor) })}
+              </span>
+            ) : (
+              <span className="text-[0.9375rem] text-fg-muted">{t('profile.home.vocabNone')}</span>
+            )}
+          </dd>
+        </div>
       </dl>
-      {overview.hasBasis && (
+      {overview.hasBasis ? (
         <p className="-mt-1 text-xs text-fg-muted">{t('profile.home.vocabDisclaimer')}</p>
-      )}
-      <dl className="grid grid-cols-3 gap-2 rounded-control bg-surface-sunken px-3 py-2.5">
-        <MiniStat
-          label={t('profile.home.streakTitle')}
-          value={streak ? t('profile.home.streakValue', { count: streak.currentStreak }) : '—'}
-        />
-        <MiniStat
-          label={t('profile.home.longest')}
-          value={streak ? t('profile.home.streakValue', { count: streak.longestStreak }) : '—'}
-        />
-        <MiniStat
-          label={t('profile.home.learnedShort')}
-          value={stages ? t('profile.home.wordsValue', { count: stages.learnedTotal }) : '—'}
-        />
-      </dl>
-      <div className="flex items-center justify-between gap-3 border-t border-border pt-3.5">
-        <span className="text-[0.8125rem] text-fg-muted">{source}</span>
+      ) : floor !== null ? (
+        <p className="-mt-1 text-xs text-fg-muted">{t('profile.home.vocabFloorHint')}</p>
+      ) : null}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3.5">
+        <span className="min-w-0 flex-1 text-[0.8125rem] text-fg-muted">{source}</span>
         <Link
           to="/level-test"
           className={buttonClasses({
-            variant: 'secondary',
-            className: 'shrink-0 text-accent-text',
+            variant: measured ? 'secondary' : 'primary',
+            className: cn('shrink-0', measured && 'text-accent-text'),
           })}
         >
-          <Icon name="refresh" size={18} />
+          {measured && <Icon name="refresh" size={18} />}
           {overview.testCount > 0 ? t('profile.home.testAgain') : t('profile.home.testStart')}
         </Link>
       </div>
     </section>
-  );
-}
-
-function MiniStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex min-w-0 flex-col">
-      <dt className="truncate text-xs text-fg-muted">{label}</dt>
-      <dd className="tabular truncate text-[0.9375rem] font-semibold text-fg">{value}</dd>
-    </div>
-  );
-}
-
-function GoalsCard() {
-  const { t } = useTranslation();
-  const view = useLiveQuery(() => getGoalsView(Date.now()), []);
-  // The home's "Hedeflerin · Düzenle" lands here with ?edit=goals: the dialog opens at once.
-  const [params, setParams] = useSearchParams();
-  const [open, setOpen] = useState(() => params.get('edit') === 'goals');
-  const close = () => {
-    setOpen(false);
-    if (params.has('edit')) {
-      const next = new URLSearchParams(params);
-      next.delete('edit');
-      setParams(next, { replace: true });
-    }
-  };
-  const day = view ? dayMinutesGoal(view.goals) : null;
-  const level = view?.goals.target_level ?? null;
-  const has = !!view && (view.progress.length > 0 || day !== null || level !== null);
-  return (
-    <section
-      aria-labelledby="profile-goals"
-      className={cn(card, 'gap-3.5 px-[1.125rem] pt-2 pb-[1.125rem]')}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <h2 id="profile-goals" className="font-serif text-[1.1875rem] font-semibold text-fg">
-          {t('profile.home.goalsTitle')}
-        </h2>
-        <button
-          type="button"
-          disabled={!view}
-          onClick={() => setOpen(true)}
-          className="-mr-2 inline-flex min-h-11 items-center rounded-control px-2 text-sm font-medium text-accent-text hover:bg-hover"
-        >
-          {has ? t('profile.home.goalsEdit') : t('profile.home.goalsSet')}
-        </button>
-      </div>
-      {!view ? (
-        <Skeleton className="h-20 w-full" />
-      ) : has ? (
-        <>
-          {view.progress.length > 0 && (
-            <ul className="grid grid-cols-3 gap-2">
-              {view.progress.map((p) => (
-                <GoalRing key={p.key} progress={p} />
-              ))}
-            </ul>
-          )}
-          {(day !== null || level !== null) && (
-            <p className="text-sm text-fg-muted" data-testid="profile-home-goals">
-              {[
-                day !== null ? t('profile.home.goalDay', { count: day }) : null,
-                level !== null ? t('profile.home.goalLevel', { level }) : null,
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-            </p>
-          )}
-        </>
-      ) : (
-        <p className="text-[0.9375rem] text-fg-muted">{t('profile.home.goalsNone')}</p>
-      )}
-      {open && view ? <GoalsDialog view={view} onClose={close} /> : null}
-    </section>
-  );
-}
-
-const R = 30;
-const CIRC = 2 * Math.PI * R;
-
-function GoalRing({ progress: p }: { progress: GoalProgress }) {
-  const { t } = useTranslation();
-  const label = t(`goals.short.${p.key}`);
-  const target = t(`goals.unit.${p.key}`, { count: p.target });
-  return (
-    <li className="flex flex-col items-center gap-2 text-center">
-      <span className="relative size-[4.5rem]">
-        <svg
-          viewBox="0 0 72 72"
-          className="size-full -rotate-90"
-          role="img"
-          aria-label={t('goals.ringLabel', { label, value: formatNumber(p.value), target })}
-        >
-          <circle
-            cx="36"
-            cy="36"
-            r={R}
-            fill="none"
-            strokeWidth="7"
-            className="stroke-surface-sunken"
-          />
-          <circle
-            cx="36"
-            cy="36"
-            r={R}
-            fill="none"
-            strokeWidth="7"
-            strokeLinecap="round"
-            strokeDasharray={CIRC}
-            strokeDashoffset={CIRC * (1 - p.ratio)}
-            className={p.ratio > 0 ? 'stroke-accent-text' : 'stroke-transparent'}
-          />
-        </svg>
-        <span
-          aria-hidden="true"
-          className="tabular absolute inset-0 flex items-center justify-center font-serif text-xl font-semibold text-fg"
-        >
-          {formatNumber(p.value)}
-        </span>
-      </span>
-      <span aria-hidden="true" className="text-[0.8125rem] leading-snug text-fg-muted">
-        {t(`profile.home.goalCaption.${p.key}`, { count: p.target })}
-      </span>
-    </li>
   );
 }
 

@@ -13,7 +13,7 @@ import {
   isValidTimeZone,
 } from '@/domain/day';
 import type { StreakSummary } from '@/domain/streak';
-import { type Card, CardState, type Millis, type Settings } from '@/domain/types';
+import { type Card, CardState, type CardType, type Millis, type Settings } from '@/domain/types';
 
 const STUDIED_STATES = [CardState.Learning, CardState.Review, CardState.Relearning] as const;
 
@@ -47,8 +47,11 @@ async function nextDueFrom(
   now: Millis,
   cfg: DayConfig,
   settings: Settings,
-  soon: Card[],
+  all: Card[],
+  types?: readonly CardType[],
 ): Promise<NextDue> {
+  const ofTypes = (c: Card) => !types || types.includes(c.card_type);
+  const soon = types ? all.filter(ofTypes) : all;
   const today = dayBounds(now, cfg);
   let later: Millis | null = null;
   for (const c of soon) {
@@ -66,7 +69,7 @@ async function nextDueFrom(
       .where('[state+due]')
       .between([CardState.New, Dexie.minKey], [CardState.New, Dexie.maxKey])
       .toArray()
-  ).filter(studiable).length;
+  ).filter((c) => studiable(c) && ofTypes(c)).length;
   const count = dueTomorrow + Math.min(fresh, settings.daily_new_limit);
   if (count > 0) return { kind: 'tomorrow', count };
 
@@ -75,18 +78,22 @@ async function nextDueFrom(
     const c = await db.cards
       .where('[state+due]')
       .between([s, Dexie.minKey], [s, Dexie.maxKey])
-      .filter(studiable)
+      .filter((c) => studiable(c) && ofTypes(c))
       .first();
     if (c && (first === null || c.due < first)) first = c.due;
   }
   return first === null ? { kind: 'none' } : { kind: 'date', day: dayKeyOf(first, cfg) };
 }
 
-export async function getNextDue(now: Millis = Date.now()): Promise<NextDue> {
+/** `types`: only these card types (one study mode's empty screen counts its own cards). */
+export async function getNextDue(
+  now: Millis = Date.now(),
+  types?: readonly CardType[],
+): Promise<NextDue> {
   const settings = await getSettings(now);
   const cfg = cfgOf(settings);
   const until = dayEndMs(addDays(dayKeyOf(now, cfg), 1), cfg);
-  return nextDueFrom(now, cfg, settings, await studiedDueBefore(until));
+  return nextDueFrom(now, cfg, settings, await studiedDueBefore(until), types);
 }
 
 export interface HomeCore {

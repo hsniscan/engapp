@@ -6,9 +6,28 @@ export { expect };
 interface Fixtures {
   /** Fake Supabase, installed on the context (guests never call it, but nothing leaks out). */
   backend: FakeBackend;
+  /**
+   * The first-run onboarding (v0.5.1) replaces the empty Bugün of a brand-new user. Most specs
+   * test other things from an empty device, so it is marked done before the app loads;
+   * `test.use({ firstRun: true })` keeps it (onboarding.spec.ts).
+   */
+  firstRun: boolean;
 }
 
 export const test = base.extend<Fixtures>({
+  firstRun: [false, { option: true }],
+  context: async ({ context, firstRun }, provide) => {
+    if (!firstRun)
+      await context.addInitScript(() => {
+        try {
+          if (!localStorage.getItem('engapp.onboarding'))
+            localStorage.setItem('engapp.onboarding', 'done');
+        } catch {
+          // Storage blocked: the onboarding shows, as for a real new user.
+        }
+      });
+    await provide(context);
+  },
   backend: async ({ context }, provide) => {
     const backend = new FakeBackend();
     await backend.install(context);

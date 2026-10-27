@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   compareSuggestions,
   filterLibrary,
+  gradedReaderBody,
   readingMinutes,
   scoreGradedText,
   suggestTexts,
@@ -103,5 +104,27 @@ describe('row numbers', () => {
     expect(readingMinutes(30)).toBe(1);
     expect(readingMinutes(240)).toBe(2);
     expect(readingMinutes(600)).toBe(5);
+  });
+});
+
+describe('gradedReaderBody (decision 0054)', () => {
+  it('joins sentences by paragraph and remembers where each one is', () => {
+    const { body, spans } = gradedReaderBody([
+      { en: 'Mr. Lee  was late.', p: 0 },
+      { en: 'He ran.', p: 0 },
+      { en: '   ', p: 0 },
+      { en: 'The end.', p: 1 },
+    ]);
+    expect(body).toBe('Mr. Lee was late. He ran.\n\nThe end.');
+    expect(spans).toEqual([
+      { start: 0, end: 17, index: 0 },
+      { start: 18, end: 25, index: 1 },
+      { start: 27, end: 35, index: 3 },
+    ]);
+    for (const s of spans) expect(body.slice(s.start, s.end)).not.toMatch(/^\s|\s$/);
+  });
+
+  it('an empty text is an empty body', () => {
+    expect(gradedReaderBody([])).toEqual({ body: '', spans: [] });
   });
 });

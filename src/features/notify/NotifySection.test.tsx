@@ -35,6 +35,10 @@ describe('Settings → Bildirim', () => {
     renderRoute(<NotifySection env={fakeBrowser().env} />);
     expect(await screen.findByText(/Bildirimler Google hesabıyla çalışır/)).toBeInTheDocument();
     expect(screen.queryByRole('switch')).toBeNull();
+    expect(screen.queryByText('Ana ekran araçları')).toBeNull(); // web: no widgets
+    // No dead end ("Yukarıdaki Hesap bölümü" does not exist on this page): a real button.
+    expect(screen.queryByText(/Yukarıdaki/)).toBeNull();
+    expect(screen.getByRole('link', { name: 'Giriş yap' })).toHaveAttribute('href', '/auth');
   });
 
   it('turns the reminder on (permission, subscription, setting) and off again', async () => {

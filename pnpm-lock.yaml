@@ -20,12 +20,18 @@ importers:
       '@capacitor/core':
         specifier: ^8.5.3
         version: 8.5.3
+      '@capacitor/filesystem':
+        specifier: 8.1.4
+        version: 8.1.4(@capacitor/core@8.5.3)
       '@capacitor/local-notifications':
         specifier: ^8.3.1
         version: 8.3.1(@capacitor/core@8.5.3)
       '@capacitor/preferences':
         specifier: ^8.0.1
         version: 8.0.1(@capacitor/core@8.5.3)
+      '@capacitor/share':
+        specifier: 8.0.2
+        version: 8.0.2(@capacitor/core@8.5.3)
       '@capawesome/capacitor-google-sign-in':
         specifier: ^0.1.4
         version: 0.1.4(@capacitor/core@8.5.3)
@@ -761,6 +767,11 @@ packages:
   '@capacitor/core@8.5.3':
     resolution: {integrity: sha512-oBE1oGuYE4ZzYYrulC75OuHdSsD6zLUy7d5o1tFwDLG4govGoubY15cxpiI5l0+q87Lm5p0bhbehMdzJg4aFag==}
 
+  '@capacitor/filesystem@8.1.4':
+    resolution: {integrity: sha512-8MXmt10cb+dGWoh8jUeO8on0U6iETQCX5k+fmdB278PZ3MYDEVGQo08+hroaOtUbK3+5stiRk4/K6QBHKepv0A==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+
   '@capacitor/local-notifications@8.3.1':
     resolution: {integrity: sha512-F7zu/+p/mIR958YP4axOkeI5hBKRaXDyYjbNPrAil2wWfd7OxScPSTvP9t85NpQ0eULVRu0/sntoxOg6ck477A==}
     peerDependencies:
@@ -770,6 +781,14 @@ packages:
     resolution: {integrity: sha512-T6no3ebi79XJCk91U3Jp/liJUwgBdvHR+s6vhvPkPxSuch7z3zx5Rv1bdWM6sWruNx+pViuEGqZvbfCdyBvcHQ==}
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
+
+  '@capacitor/share@8.0.2':
+    resolution: {integrity: sha512-L2M4iBLTf/IaMmg+ruuriAoJyBzu1EgayWhgC5cX1HJGkA665g2ROz8c2Z5lfkT/XSLbAuG3bb7VlW3eGgUCNQ==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+
+  '@capacitor/synapse@1.0.4':
+    resolution: {integrity: sha512-/C1FUo8/OkKuAT4nCIu/34ny9siNHr9qtFezu4kxm6GY1wNFxrCFWjfYx5C1tUhVGz3fxBABegupkpjXvjCHrw==}
 
   '@capawesome/capacitor-google-sign-in@0.1.4':
     resolution: {integrity: sha512-+8+3mfWN1B0+qB5r1xUZpy0hrYkpEDD5XHxa5LQ5wwDIVKoFLj/orYGRf/RrsB1AbkSpRfZZ1N2U7C3gPcjAdA==}
@@ -4683,6 +4702,11 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
+  '@capacitor/filesystem@8.1.4(@capacitor/core@8.5.3)':
+    dependencies:
+      '@capacitor/core': 8.5.3
+      '@capacitor/synapse': 1.0.4
+
   '@capacitor/local-notifications@8.3.1(@capacitor/core@8.5.3)':
     dependencies:
       '@capacitor/core': 8.5.3
@@ -4690,6 +4714,12 @@ snapshots:
   '@capacitor/preferences@8.0.1(@capacitor/core@8.5.3)':
     dependencies:
       '@capacitor/core': 8.5.3
+
+  '@capacitor/share@8.0.2(@capacitor/core@8.5.3)':
+    dependencies:
+      '@capacitor/core': 8.5.3
+
+  '@capacitor/synapse@1.0.4': {}
 
   '@capawesome/capacitor-google-sign-in@0.1.4(@capacitor/core@8.5.3)':
     dependencies:

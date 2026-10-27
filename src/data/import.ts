@@ -57,6 +57,11 @@ export interface ImportJobRecord extends ImportJob {
    * before). When the job is done they are aggregated into sources.topics.
    */
   chunk_topics?: string[][];
+  /**
+   * v0.5.1: the reading text the words come from (texts row, saved before the extraction), so
+   * the preview can open it ("Metni oku"). Absent on older jobs and on vocabulary lists.
+   */
+  text_id?: Id | null;
 }
 
 /** A preview row, with the lexicon term id kept for the note it may create. */
@@ -130,6 +135,8 @@ export interface CreateImportJobInput {
   page_count?: number | null;
   chunks: string[];
   level: CefrLevel;
+  /** The saved reading text the chunks come from (v0.5.1); null/absent for none. */
+  text_id?: Id | null;
 }
 
 /** Saves the source and queues a job. Nothing is sent anywhere here. */
@@ -157,6 +164,7 @@ export async function createImportJob(input: CreateImportJobInput, now: Millis =
     level: input.level,
     chunks,
     next_attempt_at: null,
+    text_id: input.text_id ?? null,
   };
   await jobs().add(job);
   return job;
