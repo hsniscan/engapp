@@ -89,11 +89,7 @@ env:
   KOKORO_BASE_URL: https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0
   KOKORO_MODEL_SHA256: 7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5
   KOKORO_VOICES_SHA256: bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d
-  # Cloudflare R2 (decision 0053); empty when the secrets are not set.
-  R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-  R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-  R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-  R2_BUCKET: ${{ secrets.R2_BUCKET }}
+  # Cloudflare R2 (decision 0053); the R2 write keys are given only to the steps that run the upload scripts (decision 0060).
   AUDIO_BASE_URL: ${{ vars.AUDIO_BASE_URL }}
 
 jobs:
@@ -106,6 +102,11 @@ jobs:
       count: ${{ steps.shards.outputs.count }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Service key (the only step that may use the access token)
+        env:
+          SERVICE_KEY_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: scripts/resolve-service-key.sh
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -127,8 +128,10 @@ jobs:
 
       - name: Plan (reads only)
         env:
-          SERVICE_KEY_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
           VOICE: ${{ inputs.voice || 'both' }}
           SOURCE: ${{ inputs.source || 'dictionary' }}
         run: |
@@ -148,6 +151,11 @@ jobs:
         shard: ${{ fromJSON(needs.plan.outputs.shards) }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Service key (the only step that may use the access token)
+        env:
+          SERVICE_KEY_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: scripts/resolve-service-key.sh
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -181,8 +189,10 @@ jobs:
 
       - name: Make and upload the missing clips
         env:
-          SERVICE_KEY_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
           VOICE: ${{ inputs.voice || 'both' }}
           SOURCE: ${{ inputs.source || 'dictionary' }}
           SHARD: ${{ matrix.shard }}
@@ -207,6 +217,11 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Service key (the only step that may use the access token)
+        env:
+          SERVICE_KEY_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: scripts/resolve-service-key.sh
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -215,8 +230,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Delete the on-demand WAVs that an MP3 replaces
         env:
-          SERVICE_KEY_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: |
           set -euo pipefail
           source scripts/supabase-service-env.sh
