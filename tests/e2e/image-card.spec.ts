@@ -19,13 +19,16 @@ const PHONE = { width: 360, height: 780 };
 const DAY = 86_400_000;
 
 /**
- * "apple", recognised two days ago: its recognition, production and cloze cards were all
- * answered "Kolay", so nothing is due today and the picture card is the only card to study.
+ * "apple", recognised on two days (Kolay six days ago, Kolay again two days ago): the second
+ * day's recall puts the word at Pekişiyor (ramp step 1), which is what unlocks its sense cards,
+ * the picture card among them (ADR 0041; one same-day answer alone keeps them locked). Its
+ * production and cloze cards were answered "Kolay" two days ago, so nothing is due today and
+ * the picture card is the only card to study.
  */
 async function learnedApple(now = Date.now()) {
   const at = now - 2 * DAY;
   const hlc = (t: number) => encodeHlc({ ms: t, counter: 0, node: 'seed' });
-  const base = (id: string) => ({ id, user_id: null, created_at: at - DAY, updated_at: at, deleted_at: null, hlc: hlc(at) });
+  const base = (id: string) => ({ id, user_id: null, created_at: at - 5 * DAY, updated_at: at, deleted_at: null, hlc: hlc(at) });
   const s = SAMPLE_PICTURES.apple;
   const sentence = 'She put an apple in her bag.';
   const note: Note = { ...base('n-apple'), term: 'apple', term_norm: 'apple', term_type: 'word', lexicon_term_id: null, ipa: '/ˈæp.əl/', tags: [], possible_duplicate: false, level_override: null };
@@ -45,6 +48,20 @@ async function learnedApple(now = Date.now()) {
   };
   const cards: Card[] = [];
   const logs: ReviewLog[] = [];
+  // The recognition card's first day (four days before `at`).
+  logs.push({
+    id: '0199f0a0-0000-7000-8000-0000000c0000',
+    user_id: null,
+    card_id: 'c-apple-r',
+    rating: 4,
+    reviewed_at: at - 4 * DAY,
+    duration_ms: 3000,
+    device_id: 'seed',
+    undo_of: null,
+    shown_sense_id: sense.id,
+    created_at: at - 4 * DAY,
+    hlc: hlc(at - 4 * DAY),
+  });
   for (const type of ['recognition', 'production', 'cloze'] as const) {
     const card: Card = {
       ...base(`c-apple-${type[0]}`),
@@ -53,7 +70,7 @@ async function learnedApple(now = Date.now()) {
       card_type: type,
       suspended: false,
       unlocked: true,
-      ...emptyFsrs(at - DAY),
+      ...emptyFsrs(at - 5 * DAY),
     };
     cards.push(card);
     logs.push({

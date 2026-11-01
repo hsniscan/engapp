@@ -15,7 +15,10 @@ function dayStart(now: number, k: number): number {
 
 test('a missed day is covered: the streak goes on and Bugün shows a calm note once', async ({ page }) => {
   test.setTimeout(180_000);
-  const now = Date.now();
+  // A fixed mid-month clock: on the 1st the missed day falls in the previous month, and the
+  // note correctly says 2 protections are left this month (the real clock failed monthly).
+  const now = Date.UTC(2026, 5, 15, 9, 0); // 15 June 2026, 12:00 in Istanbul
+  await page.clock.install({ time: now });
   const seed = await buildSeedBackup(30, now);
   // Nothing yesterday or today; one review a day on the eight days before.
   const before = seed.tables.review_logs.filter((l) => l.reviewed_at < dayStart(now, 1));

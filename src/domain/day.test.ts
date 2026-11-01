@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, dayBounds, dayEndMs, dayKeyOf, dayRange, dayStartMs, diffDays, weekdayMon0, zonedTimeToUtc } from './day';
+import { addDays, dayBounds, dayEndMs, dayKeyOf, dayRange, dayStartMs, diffDays, weekdayMon0, wallClock, zonedTimeToUtc } from './day';
 
 const IST = { timezone: 'Europe/Istanbul', day_start_hour: 4 };
 const NY = { timezone: 'America/New_York', day_start_hour: 4 };
@@ -75,5 +75,29 @@ describe('repeated wall hour (DST fall-back) as the day start', () => {
         expect([dayKeyOf(start, cfg), dayKeyOf(end - 1, cfg)], `${timezone} ${k}`).toEqual([k, k]);
       }
     }
+  });
+});
+
+describe('wallClock offset cache (v0.5.2 perf)', () => {
+  it('matches Intl on every quarter hour around DST changes', () => {
+    const fmt = (tz: string) =>
+      new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    for (const tz of ['Europe/Berlin', 'America/New_York', 'Australia/Lord_Howe', 'Asia/Kathmandu', 'Europe/Istanbul']) {
+      const f = fmt(tz);
+      for (const from of [Date.UTC(2026, 2, 28), Date.UTC(2026, 9, 24), Date.UTC(2026, 3, 4), Date.UTC(2026, 10, 1)]) {
+        for (let t = from; t < from + 3 * 86_400_000; t += 7 * 60_000 + 13_000) {
+          const p = Object.fromEntries(f.formatToParts(new Date(t)).map((x) => [x.type, Number(x.value)]));
+          const w = wallClock(t, tz);
+          expect([w.year, w.month, w.day, w.hour, w.minute, w.second]).toEqual([p.year, p.month, p.day, p.hour! % 24, p.minute, p.second]);
+        }
+      }
+    }
+  });
+
+  it('keeps 10 000 day keys cheap', () => {
+    const cfg = { timezone: 'Europe/Istanbul', day_start_hour: 4 };
+    const t0 = performance.now();
+    for (let i = 0; i < 10_000; i++) dayKeyOf(Date.UTC(2026, 0, 1) + i * 3_600_000 * 7, cfg);
+    expect(performance.now() - t0).toBeLessThan(1500);
   });
 });

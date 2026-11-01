@@ -1,5 +1,5 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db, ensureSettings, getStreakSummary, updateSettings } from '@/data';
 import { addDays, dayKeyOf } from '@/domain/day';
 import { emptyDay } from '@/domain/streak';
@@ -9,7 +9,12 @@ import { StreakFreezeNote } from './StreakFreezeNote';
 
 const DAY = 86_400_000;
 
+// A fixed mid-month clock: on the 1st, "yesterday" falls in the previous month and the
+// protection counts against that month, so the real clock made this test fail once a month.
+const NOW = Date.UTC(2026, 5, 15, 9, 0); // 15 June 2026, 12:00 in Istanbul
+
 beforeEach(async () => {
+  vi.useFakeTimers({ now: NOW, toFake: ['Date'] });
   await resetDb();
   await ensureSettings(Date.now() - 40 * DAY);
   await updateSettings({ timezone: 'Europe/Istanbul' });
@@ -20,6 +25,10 @@ async function studiedUntil(daysAgo: number, run = 8) {
   const rows = Array.from({ length: run }, (_, i) => ({ ...emptyDay(addDays(today, -daysAgo - i)), reviews: 2, time_ms: 30_000 }));
   await db.daily_activity.bulkPut(rows);
 }
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe('StreakFreezeNote', () => {
   it('covers a missed day on open, shows a calm note and closes', async () => {
