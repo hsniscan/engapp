@@ -42,6 +42,7 @@
   --color-accent-text: var(--accent-text);
   --color-accent-soft: var(--accent-soft);
   --color-focus: var(--focus);
+  --color-accent-on-inverse: var(--accent-on-inverse);
   --color-success: var(--success);
   --color-success-text: var(--success-text);
   --color-success-soft: var(--success-soft);
@@ -68,12 +69,15 @@
   --color-heat-empty: var(--heat-empty);
   --color-heat-active: var(--heat-active);
   --color-heat-completed: var(--heat-completed);
+  --color-chart-bar: var(--chart-bar);
+  --color-chart-bar-muted: var(--chart-bar-muted);
   --color-scrim: var(--scrim);
   --color-hero-ring: var(--hero-ring);
   --color-hero-muted: var(--hero-muted);
   --color-hero-action: var(--hero-action);
   --color-hero-action-fg: var(--hero-action-fg);
   --color-streak-flame: var(--streak-flame);
+  --color-stage-new: var(--stage-new);
   --color-stage-learning: var(--stage-learning);
   --color-stage-consolidating: var(--stage-consolidating);
   --color-stage-learned: var(--stage-learned);
@@ -85,26 +89,84 @@
   --color-transparent: transparent;
   --color-current: currentColor;
 
-  --shadow-raised: 0 1px 2px var(--shadow-color), 0 8px 24px -6px var(--shadow-color);
-  --shadow-overlay: 0 2px 4px var(--shadow-color), 0 24px 48px -12px var(--shadow-color);
+  /*
+   * Elevation: four levels. The UI is flat (hairline borders); shadows are only for things
+   * that float above the page. Tailwind's names map onto the same four levels, so
+   * shadow-sm/md/lg/xl can never silently compile to nothing again (ADR 0065).
+   */
+  --shadow-e1: 0 1px 2px var(--shadow-color);
+  --shadow-e2: 0 1px 2px var(--shadow-color), 0 6px 16px -6px var(--shadow-color-strong);
+  --shadow-e3: 0 2px 6px var(--shadow-color), 0 18px 40px -14px var(--shadow-color-strong);
+  --shadow-e4: 0 4px 10px var(--shadow-color), 0 32px 64px -20px var(--shadow-color-strong);
+  --shadow-xs: var(--shadow-e1);
+  --shadow-sm: var(--shadow-e1);
+  --shadow: var(--shadow-e2);
+  --shadow-md: var(--shadow-e2);
+  --shadow-lg: var(--shadow-e3);
+  --shadow-xl: var(--shadow-e4);
+  --shadow-2xl: var(--shadow-e4);
+  --shadow-raised: var(--shadow-e2);
+  --shadow-overlay: var(--shadow-e3);
 }
 
 @theme {
+  /* Instrument Sans = the app's voice; Literata = the English being learned (ADR 0065). */
   --font-sans:
-    system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', 'Noto Sans', Arial, sans-serif;
-  --font-serif: 'Source Serif 4', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+    'Instrument Sans', system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', Arial, sans-serif;
+  --font-serif: 'Literata', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
   --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 
-  /* Type: Tailwind's 12/14/16/18/20/24/30/36 scale plus a display size for the card term */
+  /*
+   * Type scale (named roles; Tailwind's xs…9xl stay available for legacy code).
+   * caption 12 · meta 13 · ui 15 · body 16 · lead 17 · title 20 · heading 24 · page 28 · display 40 · numeral 48
+   */
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1rem;
+  --text-meta: 0.8125rem;
+  --text-meta--line-height: 1.125rem;
+  --text-ui: 0.9375rem;
+  --text-ui--line-height: 1.375rem;
+  --text-body: 1rem;
+  --text-body--line-height: 1.5rem;
+  --text-lead: 1.0625rem;
+  --text-lead--line-height: 1.625rem;
+  --text-title: 1.25rem;
+  --text-title--line-height: 1.625rem;
+  --text-title--letter-spacing: -0.01em;
+  --text-heading: 1.5rem;
+  --text-heading--line-height: 1.875rem;
+  --text-heading--letter-spacing: -0.015em;
+  --text-page: 1.75rem;
+  --text-page--line-height: 2.125rem;
+  --text-page--letter-spacing: -0.02em;
+  --text-page-lg: 2rem;
+  --text-page-lg--line-height: 2.375rem;
+  --text-page-lg--letter-spacing: -0.02em;
   --text-display: 2.5rem;
-  --text-display--line-height: 1.15;
-  --text-display--letter-spacing: -0.01em;
+  --text-display--line-height: 1.1;
+  --text-display--letter-spacing: -0.015em;
+  --text-numeral: 3rem;
+  --text-numeral--line-height: 1;
+  --text-numeral--letter-spacing: -0.03em;
 
-  /* Radii: crisp controls, softer containers */
-  --radius-sm: 4px;
-  --radius-control: 8px;
-  --radius-card: 12px;
-  --radius-sheet: 16px;
+  /*
+   * Radii: ONE scale. Tailwind's own names (rounded-sm … rounded-3xl, bare `rounded`) are
+   * redefined onto it so no radius class can compile to nothing. Semantic names on top:
+   * control 12 (buttons, inputs, segmented) · inner 16 (tiles inside cards) · card 20 · sheet 28.
+   */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-3xl: 28px;
+  --radius-4xl: 32px;
+  --radius-control: 12px;
+  --radius-inner: 16px;
+  --radius-card: 20px;
+  --radius-sheet: 28px;
   --radius-full: 9999px;
 
   /* Motion tiers (keep in sync with src/ui/tokens/motion.ts) */
@@ -173,8 +235,11 @@
   --duration-medium: 280ms;
   --duration-large: 520ms;
   --nav-height: 64px;
-  /* The (+) button in the tab bar rises this far above it; floating bars clear it. */
-  --nav-fab-rise: 1.25rem;
+  /* v0.5.2: the (+) sits inside the tab bar (no raised FAB); kept for callers that add it. */
+  --nav-fab-rise: 0px;
+  /* One content width for every tab (PageFrame), one for reading/forms. */
+  --page-wide: 64rem;
+  --page-reading: 40rem;
 }
 
 @layer base {
@@ -203,6 +268,7 @@
     min-height: 100dvh;
     font-size: 1rem;
     line-height: 1.5;
+    font-feature-settings: 'kern', 'calt';
   }
   /* The Android text-selection sheet (decision 0046): the calling app shows through. */
   html[data-quick-host],
@@ -247,6 +313,26 @@
   }
   .safe-top {
     padding-top: env(safe-area-inset-top);
+  }
+  /* Extends a small control's hit area to 44 px without changing its look (WCAG 2.5.8). */
+  .hit-44 {
+    position: relative;
+  }
+  .hit-44::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+  /* Horizontal scroller without a visible bar (chips row); keeps keyboard/touch scrolling. */
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 }
 

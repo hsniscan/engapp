@@ -66,18 +66,18 @@ export function Dialog({
             <div
               aria-hidden="true"
               className={cn(
-                'mx-auto -mt-2 mb-3 h-1 w-9 shrink-0 rounded-full bg-border-strong/40',
+                'mx-auto -mt-2 mb-3 h-1 w-10 shrink-0 rounded-full bg-border-strong/40',
                 variant === 'responsive' && 'sm:hidden',
               )}
             />
           )}
           <div className="flex items-start gap-3">
             <div className="flex min-w-0 flex-1 flex-col gap-1.5 pt-1.5">
-              <RadixDialog.Title className="font-serif text-xl leading-snug font-semibold text-fg">
+              <RadixDialog.Title className="text-title font-semibold text-fg">
                 {title}
               </RadixDialog.Title>
               {description ? (
-                <RadixDialog.Description className="text-[0.9375rem] text-fg-muted">
+                <RadixDialog.Description className="text-ui text-fg-muted">
                   {description}
                 </RadixDialog.Description>
               ) : (

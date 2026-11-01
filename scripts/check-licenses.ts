@@ -45,9 +45,13 @@ const ALIASES: Record<string, string> = {
  * Key: package name; value: the exact licence string reviewed, and why it is acceptable.
  */
 export const REVIEWED: Record<string, { license: string; why: string }> = {
-  '@fontsource/source-serif-4': {
+  '@fontsource-variable/instrument-sans': {
     license: 'OFL-1.1',
-    why: 'the Source Serif 4 font (shipped); SIL Open Font License allows commercial use and embedding',
+    why: 'the Instrument Sans UI font (shipped, ADR 0065); SIL Open Font License allows commercial use and embedding',
+  },
+  '@fontsource-variable/literata': {
+    license: 'OFL-1.1',
+    why: 'the Literata reading font (shipped, ADR 0065); SIL Open Font License allows commercial use and embedding',
   },
   pako: {
     license: '(MIT AND Zlib)',

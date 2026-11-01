@@ -1,10 +1,10 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useOutlet } from 'react-router';
-import { Logo } from './brand/Logo';
 import { cn } from './cn';
 import { Icon } from './Icon';
-import { isNavActive, navItems, type NavLinkItem } from './nav';
+import { isNavActive, type NavLinkItem } from './nav';
+import { SideRail, TabBar } from './TabBar';
 import { Tooltip } from './Tooltip';
 
 export interface AppShellProps {
@@ -82,66 +82,13 @@ export function AppShell({
       </a>
 
       {!immersive && (
-        <aside className="fixed inset-y-0 left-0 z-30 hidden w-22 flex-col border-r border-border bg-canvas md:flex lg:w-60">
-          <Link
-            to="/"
-            className="mx-auto mt-5 mb-6 flex h-11 items-center rounded-control px-1 lg:mx-4 lg:px-2"
-          >
-            <span className="lg:hidden">
-              <Logo size={32} wordmark={false} />
-            </span>
-            <span className="hidden lg:inline-flex">
-              <Logo size={28} />
-            </span>
-          </Link>
-          <nav aria-label={t('nav.primary')} className="flex-1">
-            <ul className="flex flex-col gap-1 px-3">
-              {navItems.map((item) =>
-                item.kind === 'add' ? (
-                  <li key="add" className="my-2">
-                    <button
-                      type="button"
-                      onClick={onAdd}
-                      aria-haspopup="dialog"
-                      aria-expanded={addOpen ?? false}
-                      aria-current={addSection ? 'page' : undefined}
-                      className={cn(
-                        addSection && 'ring-2 ring-accent ring-offset-2 ring-offset-canvas',
-                        'flex min-h-14 w-full flex-col items-center justify-center gap-1 rounded-control bg-fg px-2 text-xs font-medium text-fg-inverse',
-                        'lg:min-h-11 lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-[0.9375rem]',
-                        'transition-opacity duration-(--duration-micro) hover:opacity-90',
-                      )}
-                    >
-                      <Icon name={item.icon} size={22} strokeWidth={2} />
-                      <span>{t(item.labelKey)}</span>
-                    </button>
-                  </li>
-                ) : (
-                  <li key={item.to}>
-                    <Link
-                      to={item.to}
-                      aria-current={isActive(item) ? 'page' : undefined}
-                      className={cn(
-                        'group flex min-h-14 flex-col items-center justify-center gap-1 rounded-control px-2 text-xs font-medium',
-                        'lg:min-h-11 lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-[0.9375rem]',
-                        'transition-colors duration-(--duration-micro)',
-                        isActive(item)
-                          ? 'bg-selected text-fg'
-                          : 'text-fg-muted hover:bg-hover hover:text-fg',
-                      )}
-                    >
-                      <Icon name={item.icon} size={22} />
-                      <span>{t(item.labelKey)}</span>
-                    </Link>
-                  </li>
-                ),
-              )}
-            </ul>
-          </nav>
-          {syncSlot && (
-            <div className="flex justify-center px-3 pb-5 lg:justify-start lg:px-4">{syncSlot}</div>
-          )}
-        </aside>
+        <SideRail
+          isActive={isActive}
+          onAdd={onAdd}
+          addOpen={addOpen}
+          addSection={addSection}
+          syncSlot={syncSlot}
+        />
       )}
 
       {immersive && !ownTopBar && (
@@ -151,7 +98,7 @@ export function AppShell({
               <Link
                 to={exit?.to ?? '/'}
                 aria-label={exit?.label ?? t('review.endSession')}
-                className="inline-flex size-11 items-center justify-center rounded-control text-fg-muted hover:bg-hover hover:text-fg"
+                className="inline-flex size-11 items-center justify-center rounded-full text-fg-muted hover:bg-hover hover:text-fg"
               >
                 <Icon name="x" size={22} />
               </Link>
@@ -178,51 +125,7 @@ export function AppShell({
       </main>
 
       {!immersive && (
-        <nav
-          aria-label={t('nav.primary')}
-          className="safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface md:hidden"
-        >
-          <ul className="mx-auto grid h-(--nav-height) max-w-md grid-cols-5">
-            {navItems.map((item) =>
-              item.kind === 'add' ? (
-                <li key="add" className="flex items-start justify-center">
-                  <button
-                    type="button"
-                    onClick={onAdd}
-                    aria-label={t('nav.addLong')}
-                    aria-haspopup="dialog"
-                    aria-expanded={addOpen ?? false}
-                    aria-current={addSection ? 'page' : undefined}
-                    data-testid="nav-add"
-                    className={cn(
-                      '-mt-5 flex size-14 items-center justify-center rounded-[18px] bg-fg text-fg-inverse shadow-raised transition-transform duration-(--duration-micro) active:scale-95',
-                      addSection && 'ring-2 ring-accent ring-offset-2 ring-offset-surface',
-                    )}
-                  >
-                    <Icon name={item.icon} size={26} strokeWidth={2} />
-                  </button>
-                </li>
-              ) : (
-                <li key={item.to} className="flex">
-                  <Link
-                    to={item.to}
-                    aria-current={isActive(item) ? 'page' : undefined}
-                    className={cn(
-                      'relative flex flex-1 flex-col items-center justify-center gap-1 text-[0.75rem]',
-                      'transition-colors duration-(--duration-micro) focus-visible:outline-offset-[-4px]',
-                      isActive(item)
-                        ? 'font-semibold text-accent-text'
-                        : 'font-medium text-fg-muted',
-                    )}
-                  >
-                    <Icon name={item.icon} size={24} strokeWidth={isActive(item) ? 1.8 : 1.6} />
-                    <span>{t(item.labelKey)}</span>
-                  </Link>
-                </li>
-              ),
-            )}
-          </ul>
-        </nav>
+        <TabBar isActive={isActive} onAdd={onAdd} addOpen={addOpen} addSection={addSection} />
       )}
     </div>
   );

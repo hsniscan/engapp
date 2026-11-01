@@ -15,7 +15,7 @@ export function Skeleton({ className, lines }: SkeletonProps) {
           <div
             key={i}
             className={cn(
-              'h-3.5 animate-shimmer rounded-sm bg-surface-sunken',
+              'h-3.5 animate-shimmer rounded-xs bg-surface-sunken',
               i === lines - 1 ? 'w-3/5' : 'w-full',
             )}
           />
@@ -26,7 +26,7 @@ export function Skeleton({ className, lines }: SkeletonProps) {
   return (
     <div
       aria-hidden="true"
-      className={cn('h-4 animate-shimmer rounded-sm bg-surface-sunken', className)}
+      className={cn('h-4 animate-shimmer rounded-xs bg-surface-sunken', className)}
     />
   );
 }

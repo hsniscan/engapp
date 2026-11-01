@@ -37,7 +37,7 @@ export function Toaster() {
             }}
             type={tone === 'danger' ? 'foreground' : 'background'}
             className={cn(
-              'pointer-events-auto flex w-full items-start gap-3 rounded-card bg-fg py-3 pr-2 pl-4 text-fg-inverse shadow-overlay',
+              'pointer-events-auto flex w-full items-center gap-3 rounded-lg bg-fg py-2.5 pr-2 pl-4 text-fg-inverse shadow-overlay',
               'data-[state=open]:animate-toast-in data-[state=closed]:animate-fade-out',
               'data-[swipe=move]:translate-y-(--radix-toast-swipe-move-y) data-[swipe=end]:animate-fade-out',
             )}
@@ -53,11 +53,11 @@ export function Toaster() {
               </span>
             )}
             <div className="flex min-w-0 flex-1 flex-col gap-0.5 py-0.5">
-              <RadixToast.Title className="text-[0.9375rem] font-medium">
+              <RadixToast.Title className="text-ui font-medium">
                 {item.title}
               </RadixToast.Title>
               {item.description && (
-                <RadixToast.Description className="text-sm opacity-80">
+                <RadixToast.Description className="text-meta opacity-80">
                   {item.description}
                 </RadixToast.Description>
               )}
@@ -66,14 +66,14 @@ export function Toaster() {
               <RadixToast.Action
                 altText={item.action.altText ?? item.action.label}
                 onClick={item.action.onClick}
-                className="h-9 shrink-0 rounded-control px-3 text-sm font-semibold underline-offset-4 hover:underline focus-visible:outline-fg-inverse"
+                className="hit-44 h-9 shrink-0 rounded-sm px-3 text-ui font-semibold text-accent-on-inverse hover:bg-fg-inverse/10 focus-visible:outline-fg-inverse"
               >
                 {item.action.label}
               </RadixToast.Action>
             )}
             <RadixToast.Close
               aria-label={t('a11y.dismiss')}
-              className="flex size-9 shrink-0 items-center justify-center rounded-control opacity-70 hover:opacity-100 focus-visible:outline-fg-inverse"
+              className="hit-44 flex size-9 shrink-0 items-center justify-center rounded-full opacity-70 hover:opacity-100 focus-visible:outline-fg-inverse"
             >
               <Icon name="x" size={18} />
             </RadixToast.Close>
