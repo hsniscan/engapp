@@ -224,3 +224,17 @@ export {
 export { getChoiceCandidates } from './clozeChoices';
 export * from './smart';
 export * from './streakFreeze';
+export {
+  bulkSetSuspended,
+  bulkSoftDeleteNotes,
+  markNotesKnown,
+  resetNoteProgress,
+  restoreDeck,
+  restoreNotes,
+  undoMarkNotesKnown,
+  undoNoteReset,
+  type BulkDeleteResult,
+  type MarkKnownResult,
+  type Progress,
+  type ResetResult,
+} from './wordActions';

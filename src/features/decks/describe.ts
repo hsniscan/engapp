@@ -5,7 +5,11 @@ import type { DeckFilter } from '@/domain/deckFilter';
 export function describeDeckFilter(t: TFunction, f: DeckFilter | null): string {
   if (!f) return t('decks.needsUpdate');
   const parts: string[] = [];
-  if (f.states?.length) parts.push(f.states.map((s) => t(`decks.state.${s}`)).join(', '));
+  const status = [
+    ...(f.stages ?? []).map((s) => t(`library.stage.${s}`)),
+    ...(f.states ?? []).map((s) => t(`decks.state.${s}`)),
+  ];
+  if (status.length) parts.push(status.join(', '));
   if (f.tags?.length) {
     const tags = f.tags.map((x) => `#${x}`).join(', ');
     parts.push(f.tagMode === 'all' ? t('decks.tagsAll', { tags }) : t('decks.tagsAny', { tags }));

@@ -75,10 +75,25 @@ describe('libraryFilter', () => {
     expect(out.map((r) => r.note.term)).toEqual(['bank', 'riverbank', 'word4']);
     expect(filterRows(rows, { ...EMPTY_FILTERS, tag: 'a' })).toHaveLength(500);
     expect(
-      filterRows(rows, { ...EMPTY_FILTERS, state: 'review', suspended: 'suspended' }).every((r) =>
-        r.cards.some((c) => c.state === 2 && c.suspended),
+      filterRows(rows, { ...EMPTY_FILTERS, state: 'new', suspended: 'active' }).every(
+        (r) => r.cards.some((c) => c.state === 0 && !c.suspended),
       ),
     ).toBe(true);
+  });
+
+  it('filters by the five word stages and compares tags case-insensitively (B5, B9)', () => {
+    const notes = [note('n1', 'apple', { tags: ['İş'] }), note('n2', 'bread', { tags: ['ev'] })];
+    const cards = [
+      makeCard({ note_id: 'n1', state: 2, ramp_step: 3, stability: 30 }),
+      makeCard({ note_id: 'n2', state: 2, ramp_step: 1, stability: 4 }),
+    ];
+    const rows = buildRows(notes, [], cards);
+    const terms = (f: Partial<LibraryFilters>) => filterRows(rows, { ...EMPTY_FILTERS, ...f }).map((r) => r.note.term);
+    expect(terms({ state: 'learned' })).toEqual(['apple']);
+    expect(terms({ state: 'consolidating' })).toEqual(['bread']);
+    expect(terms({ tag: 'iş' })).toEqual(['apple']);
+    // An old v0.5.1 link with a raw FSRS state still opens.
+    expect(filtersFromParams(new URLSearchParams('state=relearning')).state).toBe('learning');
   });
 
   it('round-trips filters through URL params', () => {

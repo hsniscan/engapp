@@ -14,13 +14,24 @@
 // ignored (that would show the wrong words), and its raw JSON is kept untouched on rename.
 import { z } from 'zod';
 import { HARD_MIN_DIFFICULTY, HARD_MIN_LAPSES, HARD_WINDOW_MS } from './practice';
+import { cardStage, WORD_STAGES, type WordStage } from './stages';
 import { hasTag, tagKey } from './tags';
 import { type Card, CardState, type CefrLevel, type Id, type Millis, type Note } from './types';
 
 export const DECK_FILTER_VERSION = 1;
 
+/**
+ * Stored `states` values. Since v0.5.2 (ADR 0063) only 'struggling' and 'suspended' are
+ * written; the raw-FSRS values 'new' / 'learning' / 'learned' are read from old decks and
+ * turned into the user-facing word stages (`stages`) by normalizeDeckFilter.
+ */
 export const DECK_STATES = ['new', 'learning', 'learned', 'struggling', 'suspended'] as const;
 export type DeckState = (typeof DECK_STATES)[number];
+/** The overlays the editor still offers next to the five stages. */
+export const DECK_OVERLAYS = ['struggling', 'suspended'] as const satisfies readonly DeckState[];
+export type DeckOverlay = (typeof DECK_OVERLAYS)[number];
+/** The five stages shown everywhere (Yeni, Öğreniyor, Pekişiyor, Öğrenildi, Kalıcı). */
+export const DECK_STAGES = WORD_STAGES;
 
 export const CEFR_ORDER: readonly CefrLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
@@ -33,6 +44,8 @@ export const ADDED_WITHIN_CHOICES = [7, 30] as const;
 
 export interface DeckFilter {
   v: typeof DECK_FILTER_VERSION;
+  /** Word stages (src/domain/stages.ts) of the note's recognition card. */
+  stages?: WordStage[];
   states?: DeckState[];
   tags?: string[];
   tagMode?: 'any' | 'all';
@@ -46,6 +59,7 @@ export interface DeckFilter {
 export type DeckFilterKey = Exclude<keyof DeckFilter, 'v'>;
 const KNOWN_KEYS: readonly string[] = [
   'v',
+  'stages',
   'states',
   'tags',
   'tagMode',
@@ -56,6 +70,7 @@ const KNOWN_KEYS: readonly string[] = [
 
 export const deckFilterSchema = z.object({
   v: z.literal(DECK_FILTER_VERSION),
+  stages: z.array(z.enum(['new', 'learning', 'consolidating', 'learned', 'mastered'])).max(5).optional(),
   states: z.array(z.enum(DECK_STATES)).max(DECK_STATES.length).optional(),
   tags: z.array(z.string().min(1).max(100)).max(MAX_DECK_TAGS).optional(),
   tagMode: z.enum(['any', 'all']).optional(),
@@ -102,7 +117,15 @@ function uniqueBy<T>(items: readonly T[], key: (x: T) => string): T[] {
  */
 export function normalizeDeckFilter(f: Omit<DeckFilter, 'v'> & { v?: number }): DeckFilter {
   const out: DeckFilter = { v: DECK_FILTER_VERSION };
-  const states = DECK_STATES.filter((s) => f.states?.includes(s));
+  // Old raw-FSRS states become stages: new → Yeni, learning → Öğreniyor, learned (FSRS
+  // Review) → Pekişiyor, Öğrenildi and Kalıcı.
+  const wanted = new Set<WordStage>(f.stages ?? []);
+  if (f.states?.includes('new')) wanted.add('new');
+  if (f.states?.includes('learning')) wanted.add('learning');
+  if (f.states?.includes('learned')) for (const s of ['consolidating', 'learned', 'mastered'] as const) wanted.add(s);
+  const stages = DECK_STAGES.filter((s) => wanted.has(s));
+  if (stages.length) out.stages = stages;
+  const states = DECK_OVERLAYS.filter((s) => f.states?.includes(s));
   if (states.length) out.states = states;
   const tags = uniqueBy(
     (f.tags ?? []).map((t) => t.normalize('NFC').trim()).filter(Boolean),
@@ -127,7 +150,7 @@ export function normalizeDeckFilter(f: Omit<DeckFilter, 'v'> & { v?: number }): 
 /** Number of criteria kinds in use (0 = every note). */
 export function criteriaCount(f: DeckFilter): number {
   return (
-    (f.states?.length ? 1 : 0) +
+    (f.states?.length || f.stages?.length ? 1 : 0) +
     (f.tags?.length ? 1 : 0) +
     (f.levels?.length ? 1 : 0) +
     (f.topics?.length ? 1 : 0) +
@@ -140,7 +163,8 @@ export function criteriaCount(f: DeckFilter): number {
 export type DeckCard = Pick<
   Card,
   'id' | 'card_type' | 'state' | 'suspended' | 'deleted_at' | 'lapses' | 'difficulty' | 'reps'
->;
+> &
+  Partial<Pick<Card, 'ramp_step' | 'stability'>>;
 
 /** What the evaluator needs about one live note, gathered by the data layer. */
 export interface DeckNoteFacts {
@@ -192,6 +216,17 @@ export function noteStatus(facts: Pick<DeckNoteFacts, 'cards'>): NoteStatus | nu
   }
 }
 
+/**
+ * The note's word stage (its main unsuspended recognition card, as on the list rows); null
+ * when it has no live card or every card is suspended.
+ */
+export function noteStage(facts: Pick<DeckNoteFacts, 'cards'>): WordStage | null {
+  const live = facts.cards.filter((c) => c.deleted_at === null && !c.suspended);
+  if (live.length === 0) return null;
+  const main = live.find((c) => c.card_type === 'recognition') ?? live[0]!;
+  return cardStage({ state: main.state, ramp_step: main.ramp_step ?? 0, stability: main.stability ?? 0 });
+}
+
 /** "Zorlandıklarım" at note level: the practice 'hard' rule on any studied, unsuspended card. */
 export function isStruggling(facts: DeckNoteFacts, now: Millis): boolean {
   const since = now - HARD_WINDOW_MS;
@@ -239,11 +274,14 @@ export function matchesDeck(f: DeckFilter, facts: DeckNoteFacts, ctx: DeckContex
     const topics = ctx.topicsOf?.(facts.note.id) ?? [];
     if (!f.topics.some((t) => topics.includes(t))) return false;
   }
-  if (f.states?.length) {
+  if (f.states?.length || f.stages?.length) {
+    // Stages and overlays are one criterion kind: any of them is enough (OR).
     const status = noteStatus(facts);
+    const stage = f.stages?.length ? noteStage(facts) : null;
     const ok =
-      (status !== null && (f.states as readonly string[]).includes(status)) ||
-      (f.states.includes('struggling') && status !== 'suspended' && isStruggling(facts, ctx.now));
+      (stage !== null && f.stages!.includes(stage)) ||
+      (!!f.states?.includes('suspended') && status === 'suspended') ||
+      (!!f.states?.includes('struggling') && status !== 'suspended' && isStruggling(facts, ctx.now));
     if (!ok) return false;
   }
   return true;

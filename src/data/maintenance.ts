@@ -491,9 +491,17 @@ export async function recordBackup(now: Millis = Date.now()): Promise<void> {
 }
 
 /** Notes as CSV (UTF-8 BOM, ";" separated). Pass translated column headers from tr.json. */
-export async function exportCsv(headers?: CsvHeaders, now: Millis = Date.now()): Promise<string> {
+export async function exportCsv(
+  headers?: CsvHeaders,
+  now: Millis = Date.now(),
+  /** Only these notes (a deck or a selection, v0.5.2); every note when absent. */
+  noteIds?: Iterable<Id>,
+): Promise<string> {
   const settings = await getSettings(now);
-  const [notes, senses] = await Promise.all([db.notes.toArray(), db.senses.toArray()]);
+  const only = noteIds ? new Set(noteIds) : null;
+  const [allNotes, allSenses] = await Promise.all([db.notes.toArray(), db.senses.toArray()]);
+  const notes = only ? allNotes.filter((n) => only.has(n.id)) : allNotes;
+  const senses = only ? allSenses.filter((s) => only.has(s.note_id)) : allSenses;
   return buildNotesCsv(notes, senses, {
     timezone: dayConfig(settings).timezone,
     ...(headers ? { headers } : {}),

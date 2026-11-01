@@ -5,10 +5,10 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
-import { db, deleteDeck, logError, setNoteTags } from '@/data';
+import { db, deleteDeck, listDecks, logError, moveDeck, restoreDeck, setNoteTags } from '@/data';
 import { type DeckWordRow, getDeckWords } from '@/data/deckHub';
 import { foldForSearch } from '@/features/cards/libraryFilter';
-import { STAGE_LABEL_TR, type WordStage } from '@/domain/stages';
+import type { WordStage } from '@/domain/stages';
 import { hasTag } from '@/domain/tags';
 import {
   Button,
@@ -38,6 +38,7 @@ import {
   StatusPill,
 } from './parts';
 import { specHref, titleIndex } from './suggested';
+import { exportWordsCsv } from './exportWords';
 import { scanWhere } from '@/data/scan';
 
 const PAGE = 60;
@@ -61,6 +62,7 @@ export function DeckDetailPage() {
   const navigate = useNavigate();
   const levelData = useLevelData();
   const data = useLiveQuery(async () => (await getDeckWords(id)) ?? null, [id, levelData]);
+  const order = useLiveQuery(async () => (await listDecks()).map((d) => d.id), []);
   const titles = useMemo(() => titleIndex(t), [t]);
   const [editing, setEditing] = useState(false);
   const [confirm, setConfirm] = useState(false);
@@ -115,6 +117,14 @@ export function DeckDetailPage() {
   for (const w of words) counts[groupOf(w.stage)]++;
   const list = words.filter((w) => group === 'all' || groupOf(w.stage) === group);
   const studied = counts.learned + counts.studying;
+  // A deck of only new words can be studied too (its new cards come under the daily limit).
+  const studiable = words.length > 0;
+  const pos = order?.indexOf(deck.id) ?? -1;
+  const move = (dir: -1 | 1) =>
+    void moveDeck(deck.id, dir).catch((e) => {
+      void logError(e, 'DeckDetail.move');
+      toast({ title: t('decks.failed'), tone: 'danger' });
+    });
 
   return (
     <div className="pb-10">
@@ -127,7 +137,22 @@ export function DeckDetailPage() {
             trigger={<IconButton icon="more" label={t('deckHub.detail.actions')} />}
             items={[
               { label: t('deckHub.detail.edit'), icon: 'pencil', onSelect: () => setEditing(true) },
-              { kind: 'separator' },
+              ...(pos > 0
+                ? [{ label: t('deckHub.detail.up'), icon: 'chevron-up' as const, onSelect: () => move(-1) }]
+                : []),
+              ...(pos >= 0 && order && pos < order.length - 1
+                ? [{ label: t('deckHub.detail.down'), icon: 'chevron-down' as const, onSelect: () => move(1) }]
+                : []),
+              ...(words.length > 0
+                ? [
+                    {
+                      label: t('deckHub.detail.export'),
+                      icon: 'file' as const,
+                      onSelect: () => void exportWordsCsv(t, words.map((w) => w.note.id), deck.name),
+                    },
+                  ]
+                : []),
+              { kind: 'separator' as const },
               {
                 label: t('deckHub.detail.delete'),
                 icon: 'trash',
@@ -149,7 +174,11 @@ export function DeckDetailPage() {
             {deck.name}
           </h1>
           <p className="text-[15px] text-fg-muted">
-            {filter ? describeDeckFilter(t, filter) : t('deckHub.detail.unsupported')}
+            {!filter
+              ? t('deckHub.detail.unsupported')
+              : tag && !suggested
+                ? t('deckHub.detail.handPicked')
+                : describeDeckFilter(t, filter)}
           </p>
         </div>
 
@@ -176,12 +205,12 @@ export function DeckDetailPage() {
         )}
 
         <div className="flex flex-col gap-2.5">
-          {studied > 0 && (
+          {studiable && (
             <Link
               to={deckStudyHref(deck.id)}
               className="flex h-[54px] items-center justify-center rounded-[14px] bg-accent text-[17px] font-semibold text-accent-fg hover:bg-accent-hover"
             >
-              {t('deckHub.study')}
+              {studied > 0 ? t('deckHub.study') : t('deckHub.start')}
             </Link>
           )}
           {tag && !suggested && (
@@ -273,7 +302,15 @@ export function DeckDetailPage() {
           setBusy(true);
           try {
             await deleteDeck(deck.id);
-            toast({ title: t('decks.deleted'), tone: 'success' });
+            const deckId = deck.id;
+            toast({
+              title: t('deckHub.detail.deleted', { name: deck.name }),
+              tone: 'success',
+              action: {
+                label: t('library.undo'),
+                onClick: () => void restoreDeck(deckId).catch((e) => logError(e, 'DeckDetail.undo')),
+              },
+            });
             void navigate('/decks', { replace: true });
           } catch (e) {
             void logError(e, 'DeckDetail.delete');
@@ -314,7 +351,7 @@ function WordRow({ row }: { row: DeckWordRow }) {
           </span>
           <span className="truncate text-sm text-fg-muted">{row.meaning ?? t('deckHub.detail.noMeaning')}</span>
         </span>
-        <StatusPill tone={STAGE_TONE[stage]}>{STAGE_LABEL_TR[stage]}</StatusPill>
+        <StatusPill tone={STAGE_TONE[stage]}>{t(`library.stage.${stage}`)}</StatusPill>
       </Link>
     </li>
   );

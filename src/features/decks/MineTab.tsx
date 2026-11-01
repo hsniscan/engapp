@@ -12,6 +12,7 @@ import { cleanDeckName, MAX_DECK_NAME } from '@/domain/deckFilter';
 import { cleanTag } from '@/domain/tags';
 import { Button, cn, Dialog, DialogClose, Icon, Skeleton, TextField, toast } from '@/ui';
 import { useLevelData } from '@/features/levels/useLevelData';
+import { useNow } from '@/features/settings/useNow';
 import { DeckEditorDialog } from './DeckEditorDialog';
 import { MIN_THEME_WORDS } from '@/domain/themes';
 import { deckStudyHref, DISCOVER_DECKS_HREF, MARK, nf, openImportSheet } from './deckUi';
@@ -25,7 +26,7 @@ function kindOf(d: MyDeck, titles: Map<string, unknown>): Kind {
   const f = d.filter;
   if (!f) return 'smart';
   const tagOnly =
-    f.tags?.length === 1 && !f.states?.length && !f.levels?.length && !f.topics?.length && !f.addedWithinDays;
+    f.tags?.length === 1 && !f.states?.length && !f.stages?.length && !f.levels?.length && !f.topics?.length && !f.addedWithinDays;
   if (tagOnly && titles.has(f.tags![0]!.toLocaleLowerCase('tr'))) return 'suggested';
   if (f.states?.includes('struggling')) return 'struggling';
   return tagOnly ? 'tag' : 'smart';
@@ -35,7 +36,9 @@ export function MineTab() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const levelData = useLevelData();
-  const data = useLiveQuery(() => getMyDecks(), [levelData]);
+  // "bugün N kart" rolls over at the day boundary: count again every hour, not only on writes.
+  const hour = Math.floor(useNow() / 3_600_000);
+  const data = useLiveQuery(() => getMyDecks(), [levelData, hour]);
   const pending = useLiveQuery(async () => !!(await getThemePreview()), []);
   const titles = useMemo(() => titleIndex(t), [t]);
   const [editing, setEditing] = useState(false);
@@ -286,13 +289,13 @@ function WideDeckCard({ d }: { d: MyDeck }) {
             t('deckHub.mine.needsUpdate')
           )}
         </span>
-        {studied > 0 && (
+        {mix && mix.total > 0 && (
           <Link
             to={deckStudyHref(d.deck.id)}
             aria-label={t('deckHub.studyLabel', { name: d.deck.name })}
             className="inline-flex h-11 shrink-0 items-center rounded-xl bg-accent px-5 text-[15px] font-semibold text-accent-fg hover:bg-accent-hover"
           >
-            {t('deckHub.study')}
+            {studied > 0 ? t('deckHub.study') : t('deckHub.start')}
           </Link>
         )}
       </div>
@@ -346,7 +349,7 @@ function GridDeckCard({ d, kind }: { d: MyDeck; kind: Kind }) {
           })}
         />
       )}
-      {studied > 0 && (
+      {mix && mix.total > 0 && (
         <Link
           to={deckStudyHref(d.deck.id)}
           aria-label={t('deckHub.studyLabel', { name: d.deck.name })}
@@ -359,7 +362,7 @@ function GridDeckCard({ d, kind }: { d: MyDeck; kind: Kind }) {
                 : 'bg-surface-sunken text-fg hover:bg-hover',
           )}
         >
-          {d.dueToday > 0 || warm ? t('deckHub.study') : t('deckHub.studyAnyway')}
+          {studied === 0 ? t('deckHub.start') : d.dueToday > 0 || warm ? t('deckHub.study') : t('deckHub.studyAnyway')}
         </Link>
       )}
     </li>
@@ -433,7 +436,8 @@ function ManualDeckDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
   const [busy, setBusy] = useState(false);
   const clean = cleanTag(cleanDeckName(name));
   const create = async () => {
-    if (!clean) return;
+    // Enter and the button share this guard: one deck per name, never two (B10).
+    if (!clean || busy) return;
     setBusy(true);
     try {
       if (await findTagDeck(clean)) {

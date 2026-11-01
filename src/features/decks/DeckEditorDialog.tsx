@@ -7,15 +7,17 @@ import { ActionError, countDeckFilter, createDeck, listTags, logError, updateDec
 import {
   ADDED_WITHIN_CHOICES,
   CEFR_ORDER,
-  DECK_STATES,
+  DECK_OVERLAYS,
+  DECK_STAGES,
   type DeckFilter,
-  type DeckState,
+  type DeckOverlay,
   MAX_DECK_NAME,
   normalizeDeckFilter,
   parseDeckFilter,
 } from '@/domain/deckFilter';
 import { hasTag, sameTag } from '@/domain/tags';
 import { TOPIC_KEYS } from '@/domain/topics';
+import type { WordStage } from '@/domain/stages';
 import type { CefrLevel, Deck } from '@/domain/types';
 import { useLevelData } from '@/features/levels/useLevelData';
 import { Button, Dialog, DialogClose, SegmentedControl, TextField, toast } from '@/ui';
@@ -69,7 +71,10 @@ function EditorBody({ deck, onDone }: { deck: Deck | null; onDone: (d: Deck) => 
 
   const [name, setName] = useState(deck?.name ?? '');
   const [nameError, setNameError] = useState<string>();
-  const [states, setStates] = useState<DeckState[]>(original?.states ?? []);
+  const [stages, setStages] = useState<WordStage[]>(original?.stages ?? []);
+  const [states, setStates] = useState<DeckOverlay[]>(
+    (original?.states ?? []).filter((s): s is DeckOverlay => (DECK_OVERLAYS as readonly string[]).includes(s)),
+  );
   const [tags, setTags] = useState<string[]>(original?.tags ?? []);
   const [tagMode, setTagMode] = useState<'any' | 'all'>(original?.tagMode ?? 'any');
   const [levels, setLevels] = useState<CefrLevel[]>(original?.levels ?? []);
@@ -104,6 +109,7 @@ function EditorBody({ deck, onDone }: { deck: Deck | null; onDone: (d: Deck) => 
         : normalizeDeckFilter({
             // Keys this editor has no controls for are kept as they were.
             ...original,
+            stages,
             states,
             tags,
             tagMode,
@@ -111,7 +117,7 @@ function EditorBody({ deck, onDone }: { deck: Deck | null; onDone: (d: Deck) => 
             topics,
             addedWithinDays: added === 'any' ? undefined : Number(added),
           }),
-    [unsupported, original, states, tags, tagMode, levels, topics, added],
+    [unsupported, original, stages, states, tags, tagMode, levels, topics, added],
   );
   const filterKey = JSON.stringify(filter);
   // Levels from the client level file count once it has loaded: count again then.
@@ -129,7 +135,9 @@ function EditorBody({ deck, onDone }: { deck: Deck | null; onDone: (d: Deck) => 
     [original?.topics],
   );
 
-  const toggleState = (s: DeckState) =>
+  const toggleStage = (s: WordStage) =>
+    setStages((cur) => (cur.includes(s) ? cur.filter((x) => x !== s) : [...cur, s]));
+  const toggleState = (s: DeckOverlay) =>
     setStates((cur) => (cur.includes(s) ? cur.filter((x) => x !== s) : [...cur, s]));
   const toggleLevel = (l: CefrLevel) =>
     setLevels((cur) => (cur.includes(l) ? cur.filter((x) => x !== l) : [...cur, l]));
@@ -191,7 +199,12 @@ function EditorBody({ deck, onDone }: { deck: Deck | null; onDone: (d: Deck) => 
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-1 text-sm font-medium text-fg">{t('decks.editor.states')}</legend>
             <div className="flex flex-wrap gap-2">
-              {DECK_STATES.map((s) => (
+              {DECK_STAGES.map((s) => (
+                <Chip key={s} pressed={stages.includes(s)} onClick={() => toggleStage(s)}>
+                  {t(`library.stage.${s}`)}
+                </Chip>
+              ))}
+              {DECK_OVERLAYS.map((s) => (
                 <Chip key={s} pressed={states.includes(s)} onClick={() => toggleState(s)}>
                   {t(`decks.state.${s}`)}
                 </Chip>
@@ -276,6 +289,7 @@ function EditorBody({ deck, onDone }: { deck: Deck | null; onDone: (d: Deck) => 
             {count === undefined || count === null ? ' ' : t('decks.editor.preview', { count })}
             {filter &&
               !filter.states &&
+              !filter.stages &&
               !filter.tags &&
               !filter.addedWithinDays &&
               !filter.levels &&
