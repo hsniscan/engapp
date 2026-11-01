@@ -8,6 +8,9 @@
 #                             in this run: installs, guest mode works, Google sign-in does NOT
 #   engapp-debug-apk          debug APK (debug key of this runner)
 #   engapp-aab                release bundle for Play (signed only with the upload key)
+#   engapp-lint-report        Android lint report of the release variant (advisory)
+#
+# The release build is shrunk with R8 and must pass the 16 KB page-size check (ADR 0064).
 #
 # versionCode = this workflow's run number (always increases, so a newer APK installs over the
 # older one and keeps its data); versionName = package.json "version".
@@ -22,6 +25,7 @@ on:
       - 'index.html'
       - 'capacitor.config.ts'
       - 'vite.config.ts'
+      - 'scripts/check-16kb.sh'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - '.github/workflows/android.yml'
@@ -151,6 +155,31 @@ jobs:
           ENGAPP_KEY_ALIAS: ${{ env.UPLOAD_KEY_ALIAS || 'engapp-test' }}
         run: ./gradlew --no-daemon -PversionCode="$VERSION_CODE" assembleRelease
 
+      - name: Android lint (release)
+        # Advisory until the first report is clean (docs/decisions/0064): the report is uploaded
+        # as engapp-lint-report and a failure shows as a warning, not a red build.
+        id: lint
+        continue-on-error: true
+        working-directory: android
+        run: ./gradlew --no-daemon -PversionCode="$VERSION_CODE" :app:lintRelease
+      - if: steps.lint.outcome == 'failure'
+        run: echo "::warning::Android lint found errors; see the engapp-lint-report artifact (lint-results-release.html)."
+      - if: always() && steps.lint.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: engapp-lint-report
+          path: android/app/build/reports/lint-results-release.html
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: 16 KB page-size check (Google Play, Android 15+)
+        # Blocking: Play rejects a bundle whose 64-bit native libraries (ML Kit) are not
+        # 16 KB-aligned. scripts/check-16kb.sh checks the ELF segments and the zip alignment.
+        run: |
+          set -euo pipefail
+          bt="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          bash scripts/check-16kb.sh android/app/build/outputs/apk/release/app-release.apk "$bt/zipalign"
+
       - name: Name and check the outputs
         id: out
         run: |
@@ -229,7 +258,9 @@ jobs:
           name: engapp-aab
           path: aab
       - if: steps.pre.outputs.go == 'true'
-        uses: r0adkll/upload-google-play@v1
+        # Third-party action that receives the Play service account: pinned to a reviewed commit
+        # (v1.1.5), never a moving tag. Update deliberately: check the diff, then the SHA.
+        uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1.1.5
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: io.github.hsniscan.engapp

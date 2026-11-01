@@ -3,12 +3,38 @@
 // on its own: the user taps "Yenile" on the toast, and the toast is held back while a review
 // session (/study, or its old address /review) is open so a session is never interrupted.
 import { registerSW } from 'virtual:pwa-register';
+import { watchDbReplaced } from '@/data';
 import i18n from '@/i18n';
 import { toast } from '@/ui';
 import { router } from './router';
 
 const inReview = (path: string) =>
   ['/study', '/review', '/practice'].some((p) => path === p || path.startsWith(`${p}/`));
+
+/** Activates a waiting service worker (if any) and reloads; set by registerServiceWorker. */
+let reloadToLatest: (() => void) | null = null;
+
+/**
+ * A newer version in another tab upgraded the database (ADR 0064): this page's connection is
+ * closed, so it asks for a reload instead of failing on the next query. If that version's
+ * service worker is still waiting, the reload activates it first, so the page does not come
+ * back with the old code.
+ */
+export function watchSchemaReplaced(): void {
+  watchDbReplaced(() => {
+    toast({
+      title: i18n.t('pwa.dbReplacedTitle'),
+      description: i18n.t('pwa.dbReplaced'),
+      tone: 'warn',
+      duration: Infinity,
+      action: {
+        label: i18n.t('pwa.reload'),
+        altText: i18n.t('pwa.reloadAlt'),
+        onClick: () => (reloadToLatest ? reloadToLatest() : window.location.reload()),
+      },
+    });
+  });
+}
 
 export function registerServiceWorker(): void {
   if (!('serviceWorker' in navigator)) return;
@@ -64,4 +90,8 @@ export function registerServiceWorker(): void {
       console.warn('Service worker registration failed', e);
     },
   });
+  reloadToLatest = () => {
+    if (waiting) void updateSW(true);
+    else window.location.reload();
+  };
 }

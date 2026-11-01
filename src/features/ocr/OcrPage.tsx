@@ -7,15 +7,18 @@
 // Camera and gallery are plain file inputs: in the Android app Capacitor's WebView answers
 // `capture` with the system camera (no camera permission is declared, so none is asked) and the
 // gallery with the system picker; on the web the browser does the same. No plugin, no upload.
+// A photo shared into the Android app ("Paylaş → Engapp", ADR 0064) arrives as router state
+// with a local URL of its cached copy and is read straight away.
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { logError } from '@/data';
 import { ocrQuality, ocrTitle, toReviewLines, type ReviewLine } from '@/domain/ocr';
 import { readerPath } from '@/domain/texts';
 import { extractCapture, saveCapture } from '@/features/add/capture';
 import { useAuth } from '@/features/auth/session';
 import { isNativeApp } from '@/native/platform';
+import type { SharedImageState } from '@/native/share';
 import { Button, EmptyState, Icon, Page, ProgressBar, Spinner, cn, toast } from '@/ui';
 import { NotAnImageError, prepareImage } from './image';
 import { OcrReview } from './OcrReview';
@@ -65,6 +68,28 @@ export function OcrPage({
     },
     [photoUrl],
   );
+
+  // "Paylaş → Engapp" with a photo (src/native/share.ts): read it once, then drop the state so
+  // going back or reloading does not read it again.
+  const location = useLocation();
+  const shared = (location.state as Partial<SharedImageState> | null)?.sharedImage;
+  const handledShare = useRef<string | null>(null);
+  useEffect(() => {
+    if (!shared || handledShare.current === shared.id) return;
+    handledShare.current = shared.id;
+    void navigate(location.pathname, { replace: true, state: null });
+    void (async () => {
+      try {
+        const blob = await (await fetch(shared.url)).blob();
+        void read(new File([blob], 'shared-image', { type: blob.type || shared.mimeType }));
+      } catch (e) {
+        void logError(e, 'ocr.sharedImage');
+        setState({ kind: 'pick', error: 'failed' });
+      }
+    })();
+    // read/navigate are stable enough for a one-shot start; keyed on the share id.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shared?.id]);
 
   const reset = () => {
     run.current++;

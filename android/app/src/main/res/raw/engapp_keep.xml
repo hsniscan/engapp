@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Resource shrinking (docs/decisions/0064): resources looked up by name at run time are kept.
+     The local-notifications plugin finds its small icon by the name in capacitor.config.ts. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_stat_engapp,@drawable/splash" />

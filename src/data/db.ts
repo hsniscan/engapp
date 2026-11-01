@@ -413,3 +413,24 @@ export class EngDb extends Dexie {
 }
 
 export const db = new EngDb();
+
+/**
+ * Another tab, or the installed PWA, opened a newer schema (v0.5.2, ADR 0064). Dexie's default
+ * closes this connection and silently reopens it on the next query, so old code would keep
+ * running against tables it does not know. Instead the connection stays closed and the page is
+ * asked to reload (`onReplaced`, wired in src/app/pwa.ts). A delete from another tab is treated
+ * the same way. Only the app calls this; tests that open several connections are unaffected.
+ */
+export function watchDbReplaced(onReplaced: () => void, target: Dexie = db): void {
+  let fired = false;
+  // Dexie runs the newest subscriber first; returning false skips its default handler (which
+  // would close with auto-reopen enabled).
+  target.on('versionchange', () => {
+    target.close({ disableAutoOpen: true });
+    if (!fired) {
+      fired = true;
+      onReplaced();
+    }
+    return false;
+  });
+}

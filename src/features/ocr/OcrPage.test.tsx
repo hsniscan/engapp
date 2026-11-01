@@ -58,6 +58,7 @@ function Where() {
 function renderPage(
   recognizer: Recognizer,
   prepare: (f: Blob) => Promise<PreparedImage> = async () => fakeImage,
+  initial: string | { pathname: string; state: unknown } = '/fotograf',
 ) {
   installDomPolyfills();
   const router = createMemoryRouter(
@@ -68,7 +69,7 @@ function renderPage(
       },
       { path: '*', element: <Where /> },
     ],
-    { initialEntries: ['/fotograf'] },
+    { initialEntries: [initial] },
   );
   render(
     <TooltipProvider>
@@ -220,6 +221,27 @@ describe('Fotoğraftan metin', () => {
     });
     fireEvent.change(screen.getByTestId('ocr-gallery-input'), { target: { files: [photo()] } });
     expect(await screen.findByTestId('ocr-error')).toHaveTextContent('fotoğraf olarak açılamadı');
+  });
+
+  it('reads a photo shared into the Android app straight away (ADR 0064)', async () => {
+    const fetchMock = vi.fn(async (_url: string) => ({
+      blob: async () => new Blob([new Uint8Array([1, 2])], { type: 'image/png' }),
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const recognizer = recognizerOf(BOOK);
+      const router = renderPage(recognizer, async () => fakeImage, {
+        pathname: '/fotograf',
+        state: { sharedImage: { id: 's1', url: 'https://localhost/_capacitor_file_/x.png', mimeType: 'image/png' } },
+      });
+      await screen.findByRole('heading', { name: 'Okunan metni kontrol et' });
+      expect(fetchMock).toHaveBeenCalledWith('https://localhost/_capacitor_file_/x.png');
+      expect(recognizer.calls).toBe(1);
+      // The state is dropped: going back or reloading does not read the photo again.
+      expect(router.state.location.state).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('reports a recogniser failure without leaving the page', async () => {

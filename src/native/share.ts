@@ -4,7 +4,7 @@
 // held until this listener is added, a share into the running app (warm start) arrives at once.
 //
 // The same plugin serves the text-selection menu (v0.5 İP4, docs/decisions/0046): see quick.ts.
-import { registerPlugin, type PluginListenerHandle } from '@capacitor/core';
+import { Capacitor, registerPlugin, type PluginListenerHandle } from '@capacitor/core';
 import { router } from '@/app/router';
 import { shareHref } from '@/features/share/route';
 
@@ -28,6 +28,19 @@ export interface OpenPathIntent {
   path: string;
 }
 
+/** A shared photo or screenshot, copied into the app's cache (ADR 0064). */
+export interface SharedImageIntent {
+  id: string;
+  /** Absolute path of the cached copy. */
+  path: string;
+  mimeType: string;
+}
+
+/** Router state /fotograf reads to start on a shared image (features/ocr/OcrPage.tsx). */
+export interface SharedImageState {
+  sharedImage: { id: string; url: string; mimeType: string };
+}
+
 export interface ShareTargetPlugin {
   addListener(
     event: 'shareReceived',
@@ -40,6 +53,10 @@ export interface ShareTargetPlugin {
   addListener(
     event: 'openPathReceived',
     cb: (data: OpenPathIntent) => void,
+  ): Promise<PluginListenerHandle>;
+  addListener(
+    event: 'imageShared',
+    cb: (data: SharedImageIntent) => void,
   ): Promise<PluginListenerHandle>;
   /** Which activity this WebView lives in: the translucent quick sheet or the main app. */
   host(): Promise<{ quick: boolean }>;
@@ -60,6 +77,20 @@ export function openShared(data: SharedIntent, navigate = router.navigate): void
   void navigate(shareHref(data));
 }
 
+/** Opens "Fotoğraftan metin" on a shared image (once per intent id). */
+export function openSharedImage(
+  data: SharedImageIntent,
+  navigate = router.navigate,
+  toUrl: (path: string) => string = (p) => Capacitor.convertFileSrc(`file://${p}`),
+): void {
+  if (!data?.path || seen.has(data.id)) return;
+  seen.add(data.id);
+  const state: SharedImageState = {
+    sharedImage: { id: data.id, url: toUrl(data.path), mimeType: data.mimeType || 'image/jpeg' },
+  };
+  void navigate('/fotograf', { state });
+}
+
 let started = false;
 
 /** Main app: shares, and addresses the quick sheet hands over ("Okuyucuda aç"). */
@@ -67,6 +98,7 @@ export async function startShareTarget(): Promise<void> {
   if (started) return;
   started = true;
   await ShareTarget.addListener('shareReceived', (d) => openShared(d));
+  await ShareTarget.addListener('imageShared', (d) => openSharedImage(d));
   const { openPath } = await import('./quick');
   await ShareTarget.addListener('openPathReceived', (d) => openPath(d));
 }

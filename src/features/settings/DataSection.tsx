@@ -4,6 +4,7 @@ import { exportCsv, logError, resetStudyHistory, restoreBackup, type RestoreMode
 import { verifyBackup, type BackupError, type BackupSummary } from '@/domain/backup';
 import { ConfirmDialog } from '@/features/cards/ConfirmDialog';
 import { Link } from 'react-router';
+import { isNativeApp } from '@/native/platform';
 import { Badge, Button, buttonClasses, Dialog, DialogClose, Icon, toast } from '@/ui';
 import { downloadBackup, saveFileWithToast } from './backupActions';
 import { csvFileName, formatBytes, relativeDays } from './download';
@@ -42,6 +43,7 @@ export function DataSection() {
   const { settings } = useAppSettings();
   const userId = useUserId();
   const storage = useStorageInfo();
+  const native = isNativeApp();
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<
     'backup' | 'csv' | 'read' | RestoreMode | 'persist' | 'reset' | null
@@ -230,49 +232,58 @@ export function DataSection() {
           {t('csv.button')}
         </Button>
       </SettingsRow>
-      <SettingsRow
-        label={
-          <span className="flex flex-wrap items-center gap-2">
-            {t('storage.persistTitle')}
-            {storage.persisted === true && <Badge tone="success">{t('storage.on')}</Badge>}
-            {storage.persisted === false && (
-              <Badge tone={guest ? 'warn' : 'neutral'}>{t('storage.off')}</Badge>
-            )}
-          </span>
-        }
-        description={
-          !storage.supported
-            ? t('storage.unsupported')
-            : storage.persisted
-              ? t('storage.onHint')
-              : guest
-                ? t('storage.deniedGuest')
-                : t('storage.offHint')
-        }
-      >
-        {storage.supported && storage.persisted === false && (
-          <Button
-            variant="secondary"
-            loading={busy === 'persist'}
-            onClick={async () => {
-              setBusy('persist');
-              const granted = await requestPersistence();
-              setBusy(null);
-              toast(
-                granted
-                  ? { title: t('storage.granted'), tone: 'success' }
-                  : {
-                      title: t('storage.deniedTitle'),
-                      description: t('storage.deniedHelp'),
-                      tone: 'warn',
-                    },
-              );
-            }}
-          >
-            {t('storage.request')}
-          </Button>
-        )}
-      </SettingsRow>
+      {native ? (
+        // Android app (ADR 0064): app storage is not evicted like a browser's; only uninstalling
+        // or clearing the app's data removes it.
+        <SettingsRow
+          label={t('storage.appTitle')}
+          description={guest ? t('storage.appGuest') : t('storage.appSignedIn')}
+        />
+      ) : (
+        <SettingsRow
+          label={
+            <span className="flex flex-wrap items-center gap-2">
+              {t('storage.persistTitle')}
+              {storage.persisted === true && <Badge tone="success">{t('storage.on')}</Badge>}
+              {storage.persisted === false && (
+                <Badge tone={guest ? 'warn' : 'neutral'}>{t('storage.off')}</Badge>
+              )}
+            </span>
+          }
+          description={
+            !storage.supported
+              ? t('storage.unsupported')
+              : storage.persisted
+                ? t('storage.onHint')
+                : guest
+                  ? t('storage.deniedGuest')
+                  : t('storage.offHint')
+          }
+        >
+          {storage.supported && storage.persisted === false && (
+            <Button
+              variant="secondary"
+              loading={busy === 'persist'}
+              onClick={async () => {
+                setBusy('persist');
+                const granted = await requestPersistence();
+                setBusy(null);
+                toast(
+                  granted
+                    ? { title: t('storage.granted'), tone: 'success' }
+                    : {
+                        title: t('storage.deniedTitle'),
+                        description: t('storage.deniedHelp'),
+                        tone: 'warn',
+                      },
+                );
+              }}
+            >
+              {t('storage.request')}
+            </Button>
+          )}
+        </SettingsRow>
+      )}
       <SettingsRow
         label={t('storage.usedTitle')}
         description={

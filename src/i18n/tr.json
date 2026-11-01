@@ -1500,7 +1500,11 @@
     "unsupported": "Bu tarayıcı verileri korumaya alma iznini desteklemiyor.",
     "usedTitle": "Kullanılan alan",
     "used": "{{used}} kullanılıyor · {{quota}} kullanılabilir",
-    "unknown": "Bu tarayıcı kullanılan alanı göstermiyor."
+    "unknown": "Bu tarayıcı kullanılan alanı göstermiyor.",
+    "appGuestTitle": "Verilerin bu telefonda duruyor",
+    "appGuest": "Uygulamayı kaldırırsan ya da verilerini temizlersen kelimelerin silinir. Hesap aç ya da yedek al.",
+    "appTitle": "Verilerin nerede?",
+    "appSignedIn": "Verilerin bu telefonda ve hesabında duruyor; uygulamayı kaldırsan da hesabından geri gelir."
   },
   "install": {
     "title": "Uygulamayı yükle",
@@ -1556,7 +1560,9 @@
     "updateReady": "Yeni sürüm hazır — yenile",
     "reload": "Yenile",
     "reloadAlt": "Sayfayı yenileyip yeni sürümü aç",
-    "offlineReady": "Engapp artık internetsiz de çalışır"
+    "offlineReady": "Engapp artık internetsiz de çalışır",
+    "dbReplacedTitle": "Engapp başka bir sekmede güncellendi",
+    "dbReplaced": "Kaldığın yerden devam etmek için bu sayfayı yenile."
   },
   "native": {
     "signIn": {
