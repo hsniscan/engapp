@@ -4,6 +4,7 @@ import { syncNow } from '@/sync';
 import { useSyncStatus } from '@/sync/status';
 import { Button, Icon, toast } from '@/ui';
 import { useAuth } from './session';
+import { syncTitle } from './syncText';
 import { formatSince } from './time';
 
 /** "Senkron" section body for Settings: state, last successful sync, "Şimdi senkronla". */
@@ -14,17 +15,8 @@ export function SyncPanel() {
   const [running, setRunning] = useState(false);
 
   const account = s.mode === 'account';
-  const title = !account
-    ? t('syncPanel.localTitle')
-    : s.state === 'pending'
-      ? t('sync.pending', { count: s.pending })
-      : s.state === 'offline'
-        ? t('sync.offline')
-        : s.state === 'error'
-          ? t('sync.error')
-          : s.state === 'syncing'
-            ? t('sync.syncing')
-            : t('sync.synced');
+  const title = syncTitle(t, s);
+  const quota = account && s.state === 'error' && s.error === 'quota';
   const hint = !account
     ? auth.status === 'guest' && s.pending > 0
       ? t('syncPanel.signedOutHint')
@@ -41,6 +33,8 @@ export function SyncPanel() {
       else if (out.reason === 'offline' || (out.reason === 'error' && out.error === 'network'))
         toast({ title: t('syncPanel.offline') });
       else if (out.reason === 'busy') toast({ title: t('syncPanel.busy') });
+      else if (out.reason === 'error' && out.error === 'quota')
+        toast({ title: t('syncPanel.quotaToast'), tone: 'warn' });
       else if (out.reason === 'error' && out.error === 'auth')
         toast({ title: t('syncPanel.authFailed'), tone: 'warn' });
       else if (out.reason === 'error') toast({ title: t('syncPanel.failed'), tone: 'danger' });
@@ -50,11 +44,13 @@ export function SyncPanel() {
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4 sm:p-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <div className="flex min-w-0 flex-1 flex-col">
-          <p className="font-medium text-fg">{title}</p>
-          <p className="text-sm text-fg-muted">{hint}</p>
+    <div className="flex flex-col gap-4 px-4 py-3.5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <p className="text-ui font-medium text-fg" data-testid="sync-title">
+            {title}
+          </p>
+          <p className="text-meta text-fg-muted">{hint}</p>
         </div>
         {account && (
           <Button
@@ -68,14 +64,25 @@ export function SyncPanel() {
           </Button>
         )}
       </div>
-      {account && s.stuck > 0 && (
+      {quota ? (
         <p
-          role="alert"
-          className="flex items-start gap-2 rounded-control bg-danger-soft px-3 py-2.5 text-sm text-danger-text"
+          role="status"
+          className="flex items-start gap-2 rounded-control bg-warn-soft px-3 py-2.5 text-meta text-warn-text"
         >
-          <Icon name="alert" size={18} className="mt-px shrink-0" />
-          <span>{t('syncPanel.stuck', { count: s.stuck })}</span>
+          <Icon name="info" size={18} className="mt-px shrink-0" />
+          <span>{t('syncPanel.quotaHint')}</span>
         </p>
+      ) : (
+        account &&
+        s.stuck > 0 && (
+          <p
+            role="alert"
+            className="flex items-start gap-2 rounded-control bg-danger-soft px-3 py-2.5 text-meta text-danger-text"
+          >
+            <Icon name="alert" size={18} className="mt-px shrink-0" />
+            <span>{t('syncPanel.stuck', { count: s.stuck })}</span>
+          </p>
+        )
       )}
     </div>
   );

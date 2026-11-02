@@ -19,7 +19,7 @@ import { OFFER_DISMISSED_KEY } from '@/features/leveltest/levelText';
 import { saveFirstInterests, skipInterests } from '@/features/profile/actions';
 import { TopicChips } from '@/features/profile/TopicChips';
 import { formatNumber } from '@/features/stats/format';
-import { Button, cn, Icon, Logo, ProgressBar, Skeleton, Surface, toast } from '@/ui';
+import { Badge, Button, cn, Logo, ProgressBar, Skeleton, toast } from '@/ui';
 import { finishOnboarding, setOnboardingStep } from './state';
 
 /** Where the first session starts: today's word study. */
@@ -40,25 +40,32 @@ export function Onboarding({ step }: { step: OnboardingStep }) {
     if (n) go(n);
   };
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4 pt-3.5 pb-8 md:pt-8">
-      <header className="flex items-center gap-2.5 px-1">
-        <Logo size={34} wordmark={false} />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <h1 className="font-serif text-xl font-semibold md:text-3xl">{t('onboarding.title')}</h1>
+    <div className="mx-auto flex w-full max-w-(--page-reading) flex-col gap-6 px-4 pt-6 pb-10 sm:px-6 md:pt-10">
+      <header className="flex flex-col gap-3">
+        <div className="flex items-center gap-3">
+          <Logo size={index === 0 ? 48 : 32} wordmark={false} />
+          <h1
+            className={cn(
+              'min-w-0 flex-1 font-semibold text-fg',
+              index === 0 ? 'text-title' : 'text-ui text-fg-muted',
+            )}
+          >
+            {t('onboarding.title')}
+          </h1>
           {index > 0 && (
-            <span className="text-[0.8125rem] text-fg-muted" data-testid="onboarding-step">
+            <span className="tabular text-meta text-fg-muted" data-testid="onboarding-step">
               {t('onboarding.stepOf', { n: index, total: ONBOARDING_STEPS.length - 1 })}
             </span>
           )}
         </div>
+        {index > 0 && (
+          <ProgressBar
+            value={index}
+            max={ONBOARDING_STEPS.length - 1}
+            label={t('onboarding.progressLabel')}
+          />
+        )}
       </header>
-      {index > 0 && (
-        <ProgressBar
-          value={index}
-          max={ONBOARDING_STEPS.length - 1}
-          label={t('onboarding.progressLabel')}
-        />
-      )}
       {step === 'welcome' && <Welcome onStart={next} />}
       {step === 'level' && <LevelStep onSkip={next} />}
       {step === 'interests' && <InterestsStep onDone={next} />}
@@ -77,7 +84,7 @@ function ManualLink() {
         openAddSheet();
       }}
       aria-haspopup="dialog"
-      className="mx-auto inline-flex min-h-11 items-center px-2 text-sm text-fg-muted underline decoration-1 underline-offset-2 hover:text-fg"
+      className="mx-auto inline-flex min-h-11 items-center rounded-control px-3 text-meta text-fg-muted underline decoration-1 underline-offset-2 hover:bg-hover hover:text-fg"
     >
       {t('onboarding.manual')}
     </button>
@@ -96,24 +103,19 @@ function StepCard({
   testId: string;
 }) {
   return (
-    <Surface
-      as="section"
+    <section
       aria-labelledby={`${testId}-title`}
-      padding="lg"
-      className="flex flex-col gap-5 rounded-[20px]"
+      className="flex flex-col gap-6"
       data-testid={testId}
     >
       <div className="flex flex-col gap-2">
-        <h2
-          id={`${testId}-title`}
-          className="font-serif text-[1.375rem] leading-snug font-semibold"
-        >
+        <h2 id={`${testId}-title`} className="text-page font-semibold text-fg">
           {title}
         </h2>
-        <p className="text-[0.9375rem] text-fg-muted">{body}</p>
+        <p className="text-lead text-fg-muted">{body}</p>
       </div>
       {children}
-    </Surface>
+    </section>
   );
 }
 
@@ -132,20 +134,16 @@ function Welcome({ onStart }: { onStart: () => void }) {
         title={t('onboarding.welcome.title')}
         body={t('onboarding.welcome.body')}
       >
-        <ol className="flex flex-col gap-4">
+        <ol className="flex flex-col divide-y divide-border rounded-card border border-border bg-surface">
           {steps.map((s, i) => (
-            <li key={s} className="flex items-start gap-4">
+            <li key={s} className="flex min-h-14 items-center gap-3 px-4 py-3">
               <span
                 aria-hidden="true"
-                className={cn(
-                  'flex size-9 shrink-0 items-center justify-center rounded-full font-serif text-lg font-semibold',
-                  i === 0 ? 'bg-accent text-accent-fg' : 'border border-border text-fg-muted',
-                )}
+                className="tabular flex size-8 shrink-0 items-center justify-center rounded-full bg-accent-soft text-meta font-semibold text-accent-text"
               >
-                {/* Three numbered steps (Adım 1 / 3 …), then the first study session. */}
-                {i < steps.length - 1 ? i + 1 : <Icon name="arrow-right" size={18} />}
+                {i + 1}
               </span>
-              <p className="pt-1.5 text-[0.9375rem] text-fg">{s}</p>
+              <p className="text-ui text-fg">{s}</p>
             </li>
           ))}
         </ol>
@@ -181,7 +179,7 @@ function HaveAccount() {
     }
   };
   return (
-    <p className="flex flex-wrap items-center justify-center gap-x-1 text-sm text-fg-muted">
+    <p className="flex flex-wrap items-center justify-center gap-x-1 text-meta text-fg-muted">
       {t('onboarding.welcome.haveAccount')}
       <Button variant="ghost" size="sm" loading={busy} onClick={() => void signIn()} data-testid="onboarding-signin">
         {t('onboarding.welcome.signIn')}
@@ -335,7 +333,7 @@ function DeckStep() {
   } else if (decks.length === 0) {
     body = (
       <div className="flex flex-col gap-3" data-testid="onboarding-deck-offline">
-        <p className="text-[0.9375rem] text-fg">{t('onboarding.deck.offline')}</p>
+        <p className="text-ui text-fg">{t('onboarding.deck.offline')}</p>
         <Button variant="secondary" onClick={retry}>
           {t('onboarding.deck.retry')}
         </Button>
@@ -357,7 +355,7 @@ function DeckStep() {
               <label
                 key={key}
                 className={cn(
-                  'flex min-h-16 cursor-pointer items-center gap-3 rounded-card border px-4 py-3',
+                  'flex min-h-16 cursor-pointer items-center gap-3 rounded-card border px-4 py-3 transition-colors duration-(--duration-micro) has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus',
                   on
                     ? 'border-accent bg-accent-soft'
                     : 'border-border bg-surface hover:bg-surface-hover',
@@ -373,10 +371,10 @@ function DeckStep() {
                   className="size-5 shrink-0 accent-(--color-accent)"
                 />
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="font-serif text-[1.0625rem] leading-tight font-semibold text-fg">
+                  <span className="text-ui font-semibold text-fg">
                     {specTitle(t, spec)}
                   </span>
-                  <span className="text-[0.8125rem] text-fg-muted">
+                  <span className="text-meta text-fg-muted">
                     {t(
                       `onboarding.deck.hint.${i === 0 ? 'top500' : i === 1 ? 'top100' : measured ? 'verbs' : 'verbsLevel'}`,
                       {
@@ -388,15 +386,15 @@ function DeckStep() {
                   </span>
                 </span>
                 {i === 0 && (
-                  <span className="shrink-0 rounded-md bg-surface px-2 py-0.5 text-xs font-semibold text-accent-text">
+                  <Badge tone={on ? 'outline' : 'accent'} className="shrink-0">
                     {t('onboarding.deck.recommended')}
-                  </span>
+                  </Badge>
                 )}
               </label>
             );
           })}
         </fieldset>
-        <p className="text-[0.8125rem] text-fg-muted">{t('onboarding.deck.pace')}</p>
+        <p className="text-meta text-fg-muted">{t('onboarding.deck.pace')}</p>
         <Button size="lg" fullWidth loading={adding !== null} onClick={() => void start()}>
           {adding
             ? t('onboarding.deck.adding', {

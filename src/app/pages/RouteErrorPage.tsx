@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useRouteError } from 'react-router';
 import { logError } from '@/data';
-import { Button, EmptyState, Page, buttonClasses } from '@/ui';
+import { Button, EmptyState, PageFrame, buttonClasses } from '@/ui';
 
 /** A lazy route chunk could not be downloaded (offline without a cached copy, or a new deploy). */
 function isChunkLoadError(e: unknown): boolean {
@@ -24,9 +24,10 @@ export function RouteErrorPage() {
     void logError(error, chunk ? 'route.chunk' : 'route.render');
   }, [error, chunk]);
   return (
-    <Page title={t(chunk ? 'routeError.chunkTitle' : 'routeError.title')} hideTitle>
+    <PageFrame width="reading" title={t(chunk ? 'routeError.chunkTitle' : 'routeError.title')} hideTitle>
       <EmptyState
         icon="alert"
+        tone="error"
         title={t(chunk ? 'routeError.chunkTitle' : 'routeError.title')}
         description={t(chunk ? 'routeError.chunkBody' : 'routeError.body')}
         action={
@@ -40,6 +41,6 @@ export function RouteErrorPage() {
           </>
         }
       />
-    </Page>
+    </PageFrame>
   );
 }

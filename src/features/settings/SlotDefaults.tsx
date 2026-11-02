@@ -19,7 +19,7 @@ export function DefaultAccount() {
           <p className="font-medium text-fg">
             {guest ? t('settings.account.guest') : t('settings.account.signedIn')}
           </p>
-          <p className="text-sm text-fg-muted">
+          <p className="text-meta text-fg-muted">
             {guest ? t('settings.account.guestHint') : userId}
           </p>
         </div>
@@ -44,7 +44,7 @@ export function DefaultSync() {
         <p className="font-medium text-fg">
           {guest ? t('settings.sync.off') : t('sync.pending', { count: pending })}
         </p>
-        <p className="text-sm text-fg-muted">
+        <p className="text-meta text-fg-muted">
           {guest ? t('settings.sync.offHint') : t('settings.sync.lastNever')}
         </p>
       </div>

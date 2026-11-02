@@ -144,9 +144,9 @@ export function NativeNotifySection({
               disabled={busy}
               onCheckedChange={(v) => void toggle(v)}
             />
-            <p className="text-sm text-fg-muted">{t('native.reminders.perDevice')}</p>
+            <p className="text-meta text-fg-muted">{t('native.reminders.perDevice')}</p>
             {denied && !state.enabled && (
-              <p className="text-sm text-fg">{t('native.reminders.denied')}</p>
+              <p className="text-meta text-fg">{t('native.reminders.denied')}</p>
             )}
           </SettingsRow>
           {state.enabled && (
@@ -161,7 +161,7 @@ export function NativeNotifySection({
                 onValueChange={(m) => void save({ mode: m })}
               />
               {mode === 'auto' ? (
-                <p className="text-sm text-fg-muted">
+                <p className="text-meta text-fg-muted">
                   {t('settings.notify.autoHint', { time: hourLabel(hour) })}
                 </p>
               ) : (
@@ -172,7 +172,7 @@ export function NativeNotifySection({
                   onValueChange={(v) => void save({ mode: 'fixed', hour: Number(v) })}
                 />
               )}
-              <p className="text-sm text-fg-muted" aria-live="polite">
+              <p className="text-meta text-fg-muted" aria-live="polite">
                 {when ? t('native.reminders.next', { when }) : t('native.reminders.nextNone')}
               </p>
             </SettingsRow>
@@ -206,8 +206,8 @@ function WidgetExplainer() {
         data-testid="widget-explainer"
       >
         <p className="font-medium text-fg">{t('widget.explain.title')}</p>
-        <p className="text-sm text-fg-muted">{t('widget.explain.body')}</p>
-        <p className="text-sm text-fg">{t('widget.explain.how')}</p>
+        <p className="text-meta text-fg-muted">{t('widget.explain.body')}</p>
+        <p className="text-meta text-fg">{t('widget.explain.how')}</p>
       </div>
     </SettingsRow>
   );

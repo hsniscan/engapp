@@ -83,7 +83,7 @@ export function Heatmap({ weeks }: HeatmapProps) {
         <div className="w-full max-w-[46rem] min-w-[26rem]">
           <div
             aria-hidden="true"
-            className="mb-1.5 grid gap-[3px] text-xs text-fg-muted"
+            className="mb-1.5 grid gap-[3px] text-caption text-fg-muted"
             style={COLS(n)}
           >
             <span />
@@ -102,7 +102,7 @@ export function Heatmap({ weeks }: HeatmapProps) {
           >
             {Array.from({ length: 7 }, (_, d) => (
               <div role="row" key={d} className="grid gap-[3px]" style={COLS(n)}>
-                <span role="rowheader" className="self-center text-xs leading-none text-fg-muted">
+                <span role="rowheader" className="self-center text-caption text-fg-muted">
                   <span aria-hidden="true">
                     {d % 2 === 0 ? formatWeekdayShort(weeks[0]![d]!.date) : ''}
                   </span>
@@ -129,7 +129,7 @@ export function Heatmap({ weeks }: HeatmapProps) {
                       onPointerEnter={() => !cell.future && setHover(i)}
                       onPointerLeave={() => setHover(null)}
                       className={cn(
-                        'aspect-square rounded-[3px] focus-visible:outline-offset-1',
+                        'aspect-square rounded-xs focus-visible:outline-offset-1',
                         cell.future ? 'border border-dashed border-border' : heatBg[cell.level],
                         isToday && 'outline-2 outline-offset-1 outline-fg',
                       )}
@@ -143,7 +143,7 @@ export function Heatmap({ weeks }: HeatmapProps) {
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-        <p className="tabular min-h-5 text-sm text-fg" aria-hidden="true">
+        <p className="tabular min-h-5 text-meta text-fg" aria-hidden="true">
           {shown && (
             <>
               <span className="font-medium">{formatDayLong(shown.date)}</span>
@@ -158,12 +158,12 @@ export function Heatmap({ weeks }: HeatmapProps) {
           )}
         </p>
         <ul
-          className="flex items-center gap-4 text-sm text-fg-muted"
+          className="flex items-center gap-4 text-meta text-fg-muted"
           aria-label={t('stats.legend')}
         >
           {(['legendEmpty', 'legendActive', 'legendCompleted'] as const).map((k, level) => (
             <li key={k} className="flex items-center gap-1.5">
-              <span aria-hidden="true" className={cn('size-3 rounded-[3px]', heatBg[level])} />
+              <span aria-hidden="true" className={cn('size-3 rounded-xs', heatBg[level])} />
               {t(`stats.${k}`)}
             </li>
           ))}

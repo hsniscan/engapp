@@ -22,7 +22,7 @@ export function LevelSection({ detail }: { detail: NoteDetail }) {
   const auto = level?.auto ?? null;
   return (
     <section aria-labelledby={`${id}-level`} className="flex flex-col gap-3" data-testid="level-section">
-      <h3 id={`${id}-level`} className="flex items-center gap-2 font-serif text-lg font-semibold text-fg">
+      <h3 id={`${id}-level`} className="flex items-center gap-2 font-serif text-lead font-semibold text-fg">
         {t('wordLevel.section')}
         {level && <LevelBadge level={level} />}
       </h3>
@@ -30,7 +30,7 @@ export function LevelSection({ detail }: { detail: NoteDetail }) {
         {level ? (
           <LevelExplanation level={level} />
         ) : (
-          <p className="text-[0.9375rem] text-fg-muted">{t('wordLevel.unknown')}</p>
+          <p className="text-ui text-fg-muted">{t('wordLevel.unknown')}</p>
         )}
         <Select
           label={t('wordLevel.override')}

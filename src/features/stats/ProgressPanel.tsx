@@ -17,7 +17,7 @@ import {
 } from '@/domain/retention';
 import { shouldNudgeGap } from '@/domain/progressView';
 import { practiceHref } from '@/features/extra/links';
-import { buttonClasses, Select, Skeleton, Surface, Tooltip } from '@/ui';
+import { buttonClasses, Card, Select, Skeleton, Tooltip } from '@/ui';
 import { formatPercent } from './format';
 import { groupLabel } from './groupLabel';
 import { useWordStages } from './useWordStages';
@@ -44,9 +44,9 @@ export function ProgressPanel() {
       <div aria-busy="true" className="flex flex-col gap-5">
         <span className="sr-only">{t('progress.loading')}</span>
         {Array.from({ length: 3 }, (_, i) => (
-          <Surface key={i} padding="lg">
+          <Card key={i}>
             <Skeleton lines={4} />
-          </Surface>
+          </Card>
         ))}
       </div>
     );
@@ -58,9 +58,9 @@ export function ProgressPanel() {
   return (
     <div className="flex flex-col gap-5">
       {nothing ? (
-        <Surface padding="lg">
-          <p className="text-[0.9375rem] text-fg">{t('progress.empty')}</p>
-        </Surface>
+        <Card>
+          <p className="text-ui text-fg">{t('progress.empty')}</p>
+        </Card>
       ) : (
         <>
           <GapSection view={view} />
@@ -69,7 +69,7 @@ export function ProgressPanel() {
           <SeriesSection view={view} />
         </>
       )}
-      <p className="text-xs text-fg-muted">{t('progress.rule')}</p>
+      <p className="text-caption text-fg-muted">{t('progress.rule')}</p>
     </div>
   );
 }
@@ -93,32 +93,32 @@ function GapSection({ view }: { view: ProgressView }) {
     { key: 'production', label: t('progress.gap.production'), stat: gap.production },
   ] as const;
   return (
-    <Surface as="section" aria-labelledby="gap-title" padding="lg">
-      <h2 id="gap-title" className="font-serif text-xl font-semibold">
+    <Card as="section" aria-labelledby="gap-title">
+      <h2 id="gap-title" className="text-title font-semibold">
         {t('progress.gap.title')}
       </h2>
       <dl className="mt-4 grid grid-cols-2 gap-4">
         {directions.map((d) => (
           <div key={d.key} className="flex min-w-0 flex-col">
-            <dt className="text-sm text-fg-muted">{d.label}</dt>
+            <dt className="text-meta text-fg-muted">{d.label}</dt>
             <dd className="contents">
               <span
                 className={
                   d.stat.enough
-                    ? 'tabular mt-1 font-serif text-3xl leading-tight font-semibold'
-                    : 'mt-1 font-serif text-xl leading-tight text-fg-muted'
+                    ? 'tabular mt-1 text-heading font-semibold'
+                    : 'mt-1 text-title text-fg-muted'
                 }
               >
                 {rateText(t, d.stat)}
               </span>
-              <span className="mt-1 text-xs text-fg-muted">
+              <span className="mt-1 text-caption text-fg-muted">
                 {t('progress.answers', { count: d.stat.n })}
               </span>
             </dd>
           </div>
         ))}
       </dl>
-      <p className="mt-4 text-[0.9375rem] text-fg">
+      <p className="mt-4 text-ui text-fg">
         {gap.gap !== null
           ? t('progress.gap.sentence', {
               rec: formatPercent(gap.recognition.rate!),
@@ -127,14 +127,14 @@ function GapSection({ view }: { view: ProgressView }) {
           : t('progress.gap.sentenceFew')}
       </p>
       {!nudge && ids.length > 0 ? (
-        <p className="mt-3 text-sm text-fg-muted" data-testid="gap-equal">
+        <p className="mt-3 text-meta text-fg-muted" data-testid="gap-equal">
           {t('progress.gap.equal')}
         </p>
       ) : nudge ? (
         <div className="mt-4 flex flex-col items-start gap-3">
-          <p className="text-sm text-fg-muted">
+          <p className="text-meta text-fg-muted">
             {t('progress.gap.practiceHint')}{' '}
-            <span lang="en" className="text-fg">
+            <span lang="en" className="font-serif text-fg">
               {view.gapTerms.filter(Boolean).join(', ')}
               {ids.length > view.gapTerms.length ? '…' : ''}
             </span>
@@ -154,9 +154,9 @@ function GapSection({ view }: { view: ProgressView }) {
           </Link>
         </div>
       ) : (
-        <p className="mt-3 text-sm text-fg-muted">{t('progress.gap.noList')}</p>
+        <p className="mt-3 text-meta text-fg-muted">{t('progress.gap.noList')}</p>
       )}
-    </Surface>
+    </Card>
   );
 }
 
@@ -172,37 +172,37 @@ function PictureSection({ view }: { view: ProgressView }) {
     { key: 'without', label: t('imageCard.progress.without'), stat: p.withoutPicture },
   ] as const;
   return (
-    <Surface
+    <Card
       as="section"
       aria-labelledby="picture-recall-title"
-      padding="lg"
+     
       data-testid="picture-recall"
     >
-      <h2 id="picture-recall-title" className="font-serif text-xl font-semibold">
+      <h2 id="picture-recall-title" className="text-title font-semibold">
         {t('imageCard.progress.title')}
       </h2>
       <dl className="mt-4 grid grid-cols-2 gap-4">
         {sides.map((d) => (
           <div key={d.key} className="flex min-w-0 flex-col">
-            <dt className="text-sm text-fg-muted">{d.label}</dt>
+            <dt className="text-meta text-fg-muted">{d.label}</dt>
             <dd className="contents">
               <span
                 className={
                   d.stat.enough
-                    ? 'tabular mt-1 font-serif text-3xl leading-tight font-semibold'
-                    : 'mt-1 font-serif text-xl leading-tight text-fg-muted'
+                    ? 'tabular mt-1 text-heading font-semibold'
+                    : 'mt-1 text-title text-fg-muted'
                 }
               >
                 {rateText(t, d.stat)}
               </span>
-              <span className="mt-1 text-xs text-fg-muted">
+              <span className="mt-1 text-caption text-fg-muted">
                 {t('progress.answers', { count: d.stat.n })}
               </span>
             </dd>
           </div>
         ))}
       </dl>
-      <p className="mt-4 text-[0.9375rem] text-fg">
+      <p className="mt-4 text-ui text-fg">
         {p.diff !== null
           ? t('imageCard.progress.sentence', {
               with: formatPercent(p.withPicture.rate!),
@@ -211,15 +211,15 @@ function PictureSection({ view }: { view: ProgressView }) {
           : t('imageCard.progress.few', { min: MIN_ANSWERS })}
       </p>
       {p.pictureAnswers.n > 0 && (
-        <p className="mt-2 text-sm text-fg-muted">
+        <p className="mt-2 text-meta text-fg-muted">
           {t('imageCard.progress.own', {
             rate: rateText(t, p.pictureAnswers),
             answers: t('progress.answers', { count: p.pictureAnswers.n }),
           })}
         </p>
       )}
-      <p className="mt-3 text-xs text-fg-muted">{t('imageCard.progress.hint')}</p>
-    </Surface>
+      <p className="mt-3 text-caption text-fg-muted">{t('imageCard.progress.hint')}</p>
+    </Card>
   );
 }
 
@@ -231,21 +231,21 @@ function GroupsSection({ view }: { view: ProgressView }) {
   const label = (g: GroupRetention) => groupLabel(t, g, view.sourceTitles);
   const dimLabel = t(`progress.groups.dimensions.${dimension}`);
   return (
-    <Surface as="section" aria-labelledby="groups-title" padding="lg">
+    <Card as="section" aria-labelledby="groups-title">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 id="groups-title" className="font-serif text-xl font-semibold">
+        <h2 id="groups-title" className="text-title font-semibold">
           {t('progress.groups.title')}
         </h2>
-        <p className="text-sm text-fg-muted">
+        <p className="text-meta text-fg-muted">
           {t('progress.groups.overall')}:{' '}
           <span className="tabular text-fg">{rateText(t, report.overall)}</span>
           {' · '}
           {t('progress.answers', { count: report.overall.n })}
         </p>
       </div>
-      <p className="mt-1 text-sm text-fg-muted">{t('progress.groups.subtitle')}</p>
-      <p className="mt-1 text-xs text-fg-muted">{t('progress.groups.overallHint')}</p>
-      <p className="mt-4 text-[0.9375rem] text-fg">
+      <p className="mt-1 text-meta text-fg-muted">{t('progress.groups.subtitle')}</p>
+      <p className="mt-1 text-caption text-fg-muted">{t('progress.groups.overallHint')}</p>
+      <p className="mt-4 text-ui text-fg">
         {report.weakest
           ? t('progress.groups.weakest', {
               group: `${label(report.weakest)} (${t(`progress.groups.dimensions.${report.weakest.dimension}`).toLocaleLowerCase('tr')})`,
@@ -264,7 +264,7 @@ function GroupsSection({ view }: { view: ProgressView }) {
         }))}
       />
       {groups.length === 0 ? (
-        <p className="mt-4 text-sm text-fg-muted">{t('progress.groups.empty')}</p>
+        <p className="mt-4 text-meta text-fg-muted">{t('progress.groups.empty')}</p>
       ) : (
         <ul
           className="mt-4 flex flex-col gap-1"
@@ -298,8 +298,8 @@ function GroupsSection({ view }: { view: ProgressView }) {
                 className="flex flex-col gap-1.5 rounded-control px-2 py-2 hover:bg-hover"
               >
                 <div aria-hidden="true" className="flex items-baseline justify-between gap-3">
-                  <span className="min-w-0 truncate text-[0.9375rem] text-fg">{name}</span>
-                  <span className="tabular shrink-0 text-sm">
+                  <span className="min-w-0 truncate text-ui text-fg">{name}</span>
+                  <span className="tabular shrink-0 text-meta">
                     <span className={g.enough ? 'font-medium text-fg' : 'text-fg-muted'}>
                       {rateText(t, g)}
                     </span>
@@ -319,7 +319,7 @@ function GroupsSection({ view }: { view: ProgressView }) {
           })}
         </ul>
       )}
-    </Surface>
+    </Card>
   );
 }
 
@@ -331,30 +331,30 @@ function SeriesSection({ view }: { view: ProgressView }) {
   const stages = useWordStages();
   const total = stages?.learnedTotal ?? series.at(-1)?.learnedTotal ?? 0;
   return (
-    <Surface as="section" aria-labelledby="series-title" padding="lg">
-      <h2 id="series-title" className="font-serif text-xl font-semibold">
+    <Card as="section" aria-labelledby="series-title">
+      <h2 id="series-title" className="text-title font-semibold">
         {t('progress.series.title')}
       </h2>
       <div className="mt-4 grid gap-8 lg:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-2">
           <div className="flex flex-wrap items-baseline justify-between gap-x-3">
             <h3 className="font-medium">{t('progress.series.learnedTitle')}</h3>
-            <span className="tabular text-sm text-fg-muted">
+            <span className="tabular text-meta text-fg-muted">
               {t('progress.series.learnedTotal', { count: total })}
             </span>
           </div>
-          <p className="text-xs text-fg-muted">{t('progress.series.learnedHint')}</p>
+          <p className="text-caption text-fg-muted">{t('progress.series.learnedHint')}</p>
           <LearnedChart series={series} />
         </div>
         <div className="flex min-w-0 flex-col gap-2">
           <h3 className="font-medium">{t('progress.series.retentionTitle')}</h3>
-          <p className="text-xs text-fg-muted">{t('progress.series.retentionHint')}</p>
+          <p className="text-caption text-fg-muted">{t('progress.series.retentionHint')}</p>
           <RetentionLineChart series={series} />
         </div>
       </div>
       <div className="mt-4">
         <SeriesTable series={series} />
       </div>
-    </Surface>
+    </Card>
   );
 }

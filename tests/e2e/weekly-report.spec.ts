@@ -93,7 +93,7 @@ test('weekly report: numbers offline, comment once online, synced once', async (
   await dialog.getByRole('button', { name: 'Öneriyi kullan: Haftada çalışma günü' }).click();
   await dialog.getByRole('button', { name: 'Kaydet' }).click();
   await expect(
-    goals.getByRole('img', { name: /^Bu hafta çalıştığın gün: \d+ \/ \d gün$/ }),
+    goals.getByRole('progressbar', { name: /^Bu hafta çalıştığın gün: \d+ \/ \d gün$/ }),
   ).toBeVisible();
   if (SHOTS) {
     await page.screenshot({ path: `${SHOTS}/goals-light.png`, fullPage: true });

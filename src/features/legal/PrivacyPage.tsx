@@ -37,25 +37,25 @@ export function PrivacyPage({ lang }: { lang: 'tr' | 'en' }) {
     <PublicLayout t={t} lang={lang}>
       <article className="flex flex-col gap-8">
         <header className="flex flex-col gap-3">
-          <h1 className="font-serif text-3xl leading-tight font-semibold tracking-[-0.01em] text-fg md:text-4xl">
+          <h1 className="text-page font-semibold text-fg md:text-page-lg">
             {doc.title}
           </h1>
-          <p className="text-sm text-fg-muted">
+          <p className="text-meta text-fg-muted">
             {t('legal.updated', { date: formatDate(doc.updated, lang) })}
           </p>
           {contactVariants(doc.intro, !!email).map((p) => (
-            <p key={p} className="text-[1.0625rem] leading-relaxed text-fg">
+            <p key={p} className="text-lead leading-relaxed text-fg">
               <LegalText text={p} email={email} missingEmail={missing} />
             </p>
           ))}
         </header>
 
         <nav aria-label={t('legal.contents')} className="rounded-card border border-border bg-surface p-4 sm:p-5">
-          <h2 className="mb-2 text-sm font-medium text-fg-muted">{t('legal.contents')}</h2>
-          <ol className="grid gap-1 text-[0.9375rem] sm:grid-cols-2">
+          <h2 className="mb-1 text-caption font-semibold tracking-[0.08em] text-fg-muted uppercase">{t('legal.contents')}</h2>
+          <ol className="grid text-ui">
             {doc.sections.map((s, i) => (
               <li key={s.id}>
-                <a href={`#${s.id}`} className="text-accent-text hover:underline">
+                <a href={`#${s.id}`} className="inline-flex min-h-11 items-center text-accent-text hover:underline">
                   {i + 1}. {s.heading}
                 </a>
               </li>
@@ -67,11 +67,11 @@ export function PrivacyPage({ lang }: { lang: 'tr' | 'en' }) {
           <section key={s.id} id={s.id} aria-labelledby={`${s.id}-h`} className="scroll-mt-6">
             <h2
               id={`${s.id}-h`}
-              className="mb-3 font-serif text-2xl leading-snug font-semibold text-fg"
+              className="mb-3 text-title font-semibold text-fg"
             >
               {i + 1}. {s.heading}
             </h2>
-            <div className="flex flex-col gap-3 text-base leading-relaxed text-fg">
+            <div className="flex flex-col gap-3 text-body leading-relaxed text-fg">
               {s.blocks.map((b, j) => {
                 if ('p' in b) {
                   const text = contactVariant(b.p, !!email);

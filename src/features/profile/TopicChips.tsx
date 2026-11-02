@@ -32,8 +32,8 @@ export function TopicChips({
               className={cn(
                 'relative inline-flex items-center gap-1.5 rounded-full border',
                 compact
-                  ? "min-h-9 px-3 text-sm after:absolute after:-inset-y-1 after:inset-x-0 after:content-['']"
-                  : 'min-h-11 px-4 text-[0.9375rem]',
+                  ? "min-h-9 px-3 text-meta after:absolute after:-inset-y-1 after:inset-x-0 after:content-['']"
+                  : 'min-h-11 px-4 text-ui',
                 'transition-[background-color,border-color,color] duration-(--duration-micro) ease-standard',
                 on
                   ? 'border-accent bg-accent-soft font-medium text-accent-text'
@@ -43,7 +43,7 @@ export function TopicChips({
             >
               {on && <Icon name="check" size={compact ? 14 : 16} strokeWidth={2} />}
               {t(`topics.${topic}`)}
-              {off && <span className="text-sm text-fg-subtle">· {t('profile.mutedShort')}</span>}
+              {off && <span className="text-meta text-fg-subtle">· {t('profile.mutedShort')}</span>}
             </button>
           </li>
         );

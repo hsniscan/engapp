@@ -9,7 +9,7 @@ import { LEVELS, levelIndex, type TestResult } from '@/domain/levelTest';
 import type { CefrLevel } from '@/domain/types';
 import { formatDuration, formatNumber, formatPercent } from '@/features/stats/format';
 import { requestSync } from '@/sync';
-import { Button, buttonClasses, cn, Icon, Surface, toast } from '@/ui';
+import { Button, buttonClasses, Card, cn, Icon, toast } from '@/ui';
 import { levelDative, pct } from './levelText';
 import { LevelLadder } from './VocabTile';
 
@@ -51,35 +51,35 @@ export function LevelResult({ outcome }: { outcome: LevelTestOutcome }) {
       data-reliable={result.reliable}
     >
       <div className="flex flex-col gap-1">
-        <p className="text-sm font-medium tracking-wide text-accent-text uppercase">
+        <p className="text-meta font-medium tracking-wide text-accent-text uppercase">
           {t('levelTest.resultTitle')}
         </p>
-        <p className="mt-1 text-[0.9375rem] text-fg-muted">
+        <p className="mt-1 text-ui text-fg-muted">
           {result.reliable ? t('levelTest.resultLevel') : t('levelTest.unreliableLevel')}
         </p>
         <p className="flex items-baseline gap-3">
           <span
             className={cn(
-              'tabular font-serif text-7xl leading-none font-semibold tracking-[-0.02em]',
+              'tabular text-7xl font-semibold',
               result.reliable ? 'text-fg' : 'text-fg-muted',
             )}
             data-testid="result-level"
           >
             {result.level}
           </span>
-          <span className="font-serif text-2xl text-fg-muted">
+          <span className="text-heading text-fg-muted">
             {t(`settings.levels.${result.level}`)}
           </span>
         </p>
         {applied && (
-          <p className="mt-3 text-[0.9375rem] font-medium text-fg" role="status">
+          <p className="mt-3 text-ui font-medium text-fg" role="status">
             {from === result.level
               ? t('levelTest.resultSame', { level: result.level })
               : t('levelTest.resultChanged', { from, to: result.level })}
           </p>
         )}
         {result.reliable && (
-          <p className="mt-1 text-[0.9375rem] text-fg-muted">
+          <p className="mt-1 text-ui text-fg-muted">
             {next === null
               ? t('levelTest.atTop')
               : t(
@@ -107,14 +107,14 @@ export function LevelResult({ outcome }: { outcome: LevelTestOutcome }) {
             <Icon name="alert" size={18} />
             {t('levelTest.unreliableTitle')}
           </h2>
-          <p className="text-[0.9375rem] text-fg">
+          <p className="text-ui text-fg">
             {t(`levelTest.unreliable.${result.unreliableReason}`, {
               pct: formatPercent(result.falseAlarm),
             })}
           </p>
           {!applied && (
             <>
-              <p className="text-[0.9375rem] text-fg-muted">
+              <p className="text-ui text-fg-muted">
                 {t('levelTest.unreliableKept', { level: from })}
               </p>
               <div className="flex flex-col gap-2 sm:flex-row">
@@ -129,29 +129,29 @@ export function LevelResult({ outcome }: { outcome: LevelTestOutcome }) {
       )}
 
       {(result.reliable || applied) && (
-        <Surface padding="none" className="flex flex-col gap-5 p-5 sm:p-6">
+        <Card className="flex flex-col gap-5">
           <div className="flex flex-col gap-1">
-            <span className="text-sm text-fg-muted">{t('levelTest.vocab')}</span>
+            <span className="text-meta text-fg-muted">{t('levelTest.vocab')}</span>
             <span
-              className="tabular font-serif text-4xl leading-tight font-semibold text-fg"
+              className="tabular text-numeral font-semibold text-fg"
               data-testid="result-vocab"
             >
               ~{formatNumber(result.vocabEstimate)}
             </span>
           </div>
           <div className="flex flex-col gap-2">
-            <span className="text-sm text-fg-muted">{t('levelTest.ladder')}</span>
+            <span className="text-meta text-fg-muted">{t('levelTest.ladder')}</span>
             <LevelLadder level={result.level} ratios={result.ratios} />
           </div>
-        </Surface>
+        </Card>
       )}
 
       {result.reliable && outcome.marked > 0 && (
-        <p className="text-sm text-fg-muted">
+        <p className="text-meta text-fg-muted">
           {t('levelTest.markedKnown', { count: outcome.marked })}
         </p>
       )}
-      <p className="text-xs text-fg-subtle">
+      <p className="text-caption text-fg-subtle">
         {t('levelTest.duration', {
           count: outcome.questions,
           time: formatDuration(outcome.durationMs),

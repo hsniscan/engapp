@@ -150,7 +150,15 @@ export const supabaseTransport: SyncTransport = {
   listSyncTables: () => listSyncTables(),
 };
 
-export type SyncErrorKind = 'network' | 'auth' | 'server';
+/**
+ * quota: the server refused the call for the account's daily sync quota (SQLSTATE 53400,
+ * ADR 0060). Like 'network' it is not the rows' fault, so it does not count as a failed
+ * attempt; the rows wait in the outbox until the quota resets.
+ */
+export type SyncErrorKind = 'network' | 'auth' | 'server' | 'quota';
+
+/** "53400 ..." — the SQLSTATE of a refused sync quota (sync_limits, ADR 0060). */
+export const isQuotaMessage = (message: string): boolean => /^53400\b/.test(message.trim());
 
 export interface SyncReport {
   pushed: number;
@@ -180,6 +188,7 @@ function classify(e: unknown): SyncFailure {
   if (e instanceof SyncApiError) {
     if (e.kind === 'network') return new SyncFailure('network', e.message);
     if (e.kind === 'not_signed_in' || e.kind === 'not_configured') return new SyncFailure('auth', e.message);
+    if (isQuotaMessage(e.message)) return new SyncFailure('quota', e.message);
     return new SyncFailure('server', e.message);
   }
   return new SyncFailure('server', e instanceof Error ? e.message : String(e));
@@ -666,7 +675,7 @@ export class SyncEngine {
         return { ok: true, report };
       } catch (e) {
         const f = classify(e);
-        if (f.kind !== 'network') void logError(e, 'sync.run');
+        if (f.kind !== 'network' && f.kind !== 'quota') void logError(e, 'sync.run');
         this.setState({ running: false, error: f.kind, errorMessage: f.message, online: f.kind === 'network' ? this.deps.isOnline() : online });
         return { ok: false, reason: 'error', error: f.kind, message: f.message, report: emptyReport() };
       }

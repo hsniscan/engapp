@@ -16,6 +16,7 @@ import {
 import { pickFsrs } from '@/domain/fsrs';
 import { Rating, type Card, type LexiconSense } from '@/domain/types';
 import { resetDb } from '@/test/db';
+import { SyncApiError } from './api';
 import { FULL_RESYNC_KEY, runSync, SyncEngine } from './engine';
 import { deriveSyncState } from './status';
 import { FakeServer, loadDevice, onDevice, saveDevice, type DeviceImage } from './testing/fakeServer';
@@ -108,6 +109,27 @@ describe('push', () => {
     await sync(server, T + 2 * MIN);
     expect(await db.outbox.count()).toBe(0);
     expect(server.rowsOf('notes')).toHaveLength(40);
+  });
+
+  it('a refused sync quota (53400) keeps rows waiting without counting attempts (ADR 0070)', async () => {
+    await newDevice('dev-a');
+    await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] }, T);
+    const orig = server.pushBatch.bind(server);
+    let refuse = true;
+    server.pushBatch = async (items) => {
+      if (refuse) throw new SyncApiError('server', '53400 sync quota exceeded: rows_per_day');
+      return orig(items);
+    };
+    await expect(sync(server, T + MIN)).rejects.toMatchObject({ kind: 'quota' });
+    const rows = await db.outbox.toArray();
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every((r) => r.attempts === 0)).toBe(true);
+    const e = new SyncEngine({ transport: server, getSessionUserId: async () => USER, isOnline: () => true, now: () => T + 2 * MIN });
+    expect(await e.sync()).toMatchObject({ ok: false, reason: 'error', error: 'quota' });
+    expect(e.getSnapshot().error).toBe('quota');
+    refuse = false;
+    await sync(server, T + DAY);
+    expect(await db.outbox.count()).toBe(0);
   });
 
   it('rejected rows back off exponentially and are reported as stuck after 10 attempts', async () => {

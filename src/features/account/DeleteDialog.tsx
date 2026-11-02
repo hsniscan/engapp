@@ -129,7 +129,7 @@ export function DeleteDialog({
         </>
       }
     >
-      <div className="flex flex-col gap-4 text-[0.9375rem]">
+      <div className="flex flex-col gap-4 text-ui">
         {account && (
           <>
             <ul id={listId} className="flex flex-col gap-1.5">
@@ -141,14 +141,14 @@ export function DeleteDialog({
               ))}
             </ul>
             <p className="text-fg-muted">{t('accountDelete.device')}</p>
-            <p className="text-sm text-fg-muted">{t('accountDelete.shared')}</p>
-            <p className="text-sm text-fg-muted">{t('accountDelete.otherDevices')}</p>
+            <p className="text-meta text-fg-muted">{t('accountDelete.shared')}</p>
+            <p className="text-meta text-fg-muted">{t('accountDelete.otherDevices')}</p>
           </>
         )}
         {showBackup && (
           <div className="flex flex-col gap-2 rounded-control bg-surface-sunken px-4 py-3">
             <p className="font-medium text-fg">{t('accountDelete.backupTitle')}</p>
-            <p className="text-sm text-fg-muted">{t('accountDelete.backupHint')}</p>
+            <p className="text-meta text-fg-muted">{t('accountDelete.backupHint')}</p>
             <Button
               variant="secondary"
               size="sm"
@@ -177,7 +177,7 @@ export function DeleteDialog({
         {error && (
           <p
             role="alert"
-            className="rounded-control bg-danger-soft px-3 py-2.5 text-sm text-danger-text"
+            className="rounded-control bg-danger-soft px-3 py-2.5 text-meta text-danger-text"
           >
             {error}
           </p>

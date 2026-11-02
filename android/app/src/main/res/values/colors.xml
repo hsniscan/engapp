@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- The app canvas (src/ui/tokens: themeColor.light). Splash and window background. -->
-    <color name="engapp_canvas">#F5F2EC</color>
-    <!-- Ink-blue accent (src/ui/tokens: accent-text): the reminder's icon tint. -->
-    <color name="engapp_accent">#2A5A8C</color>
+    <!-- The app canvas (src/ui/tokens: canvas, light). Splash and window background. -->
+    <color name="engapp_canvas">#F3F4F1</color>
+    <!-- Pine accent (src/ui/tokens: accent-text, light): the reminder's icon tint. -->
+    <color name="engapp_accent">#1F5C4F</color>
 </resources>

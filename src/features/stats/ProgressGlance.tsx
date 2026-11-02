@@ -1,13 +1,26 @@
-// İlerleme at the top of Profil (v0.5.1, ADR 0057): İlerleme left the tab bar for Keşfet, so
-// Profil opens with a short summary (streak, words learned, recall, the last seven days) and
-// "Tümünü gör" to the full /progress page.
+// İlerleme at the top of Profil (v0.5.1, ADR 0057; v0.5.2 design 4.14): three numbers
+// (Öğrenilen · Seri · Hatırlama, labels under the values) and the last seven days as a
+// HeatStrip, with "Tümünü gör" to the full /progress page.
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { db, getHeatmap, getStreakSummary } from '@/data';
 import { activityBasics, progressUnlocks } from '@/domain/progressView';
-import { cn, Icon, Skeleton } from '@/ui';
+import {
+  buttonClasses,
+  Card,
+  HeatStrip,
+  Icon,
+  SectionHeader,
+  Skeleton,
+  StatRow,
+  StatTile,
+  type HeatLevel,
+} from '@/ui';
 import { formatNumber, formatPercent } from './format';
+import { heatLabel } from './heatLabel';
+
+const LEVELS: HeatLevel[] = ['empty', 'active', 'completed'];
 
 export function ProgressGlance() {
   const { t } = useTranslation();
@@ -17,92 +30,88 @@ export function ProgressGlance() {
       getHeatmap(Date.now(), 2),
       db.daily_activity.toArray(),
     ]);
-    const days = weeks.flat().filter((c) => !c.future).slice(-7);
+    const days = weeks
+      .flat()
+      .filter((c) => !c.future)
+      .slice(-7);
     // Recall shows from the same number of answers as on İlerleme (B8).
     const basics = activityBasics(activity, streak.today);
     const recallOpen =
-      progressUnlocks({ ...basics, recognitionAnswers: 0, productionAnswers: 0, hasReport: false }).find(
-        (u) => u.key === 'recall',
-      )?.open ?? false;
+      progressUnlocks({
+        ...basics,
+        recognitionAnswers: 0,
+        productionAnswers: 0,
+        hasReport: false,
+      }).find((u) => u.key === 'recall')?.open ?? false;
     return { streak, days, recallOpen };
   }, []);
   const active = data?.days.filter((d) => d.reviews > 0).length ?? 0;
 
   return (
-    <section
-      aria-labelledby="profile-progress"
-      className="flex flex-col gap-3.5 rounded-card border border-border bg-surface px-[1.125rem] pt-2 pb-[1.125rem]"
-      data-testid="profile-progress"
-    >
-      <div className="flex items-center justify-between gap-3">
-        <h2 id="profile-progress" className="font-serif text-[1.1875rem] font-semibold text-fg">
-          {t('progressGlance.title')}
-        </h2>
-        <Link
-          to="/progress"
-          aria-label={t('progressGlance.seeAllLabel')}
-          className="-mr-2 inline-flex min-h-11 items-center gap-0.5 rounded-control px-2 text-sm font-medium text-accent-text hover:bg-hover"
-        >
-          {t('progressGlance.seeAll')}
-          <Icon name="chevron-right" size={16} />
-        </Link>
-      </div>
+    <section aria-labelledby="profile-progress" data-testid="profile-progress">
+      <SectionHeader
+        id="profile-progress"
+        title={t('progressGlance.title')}
+        action={
+          <Link
+            to="/progress"
+            aria-label={t('progressGlance.seeAllLabel')}
+            className={buttonClasses({ variant: 'ghost', size: 'sm' })}
+          >
+            {t('progressGlance.seeAll')}
+            <Icon name="chevron-right" size={16} />
+          </Link>
+        }
+      />
       {!data ? (
-        <Skeleton className="h-20 w-full" />
+        <Card aria-busy="true">
+          <Skeleton lines={2} />
+        </Card>
       ) : data.streak.totalActiveDays === 0 ? (
-        <p className="text-[0.9375rem] text-fg-muted">{t('progressGlance.none')}</p>
+        <Card>
+          <p className="text-ui text-fg-muted">{t('progressGlance.none')}</p>
+        </Card>
       ) : (
-        <>
-          <dl className="grid grid-cols-3 gap-2">
-            <Stat
-              label={t('progressGlance.streak')}
-              value={t('progressGlance.streakValue', { count: data.streak.currentStreak })}
-            />
-            <Stat
+        <div className="flex flex-col gap-3">
+          <StatRow>
+            <StatTile
+              bare
+              value={formatNumber(data.streak.learnedCards)}
               label={t('progressGlance.learned')}
-              value={t('progressGlance.learnedValue', {
-                count: data.streak.learnedCards,
-                formatted: formatNumber(data.streak.learnedCards),
-              })}
             />
-            <Stat
-              label={t('progressGlance.retention')}
+            <StatTile
+              bare
+              value={formatNumber(data.streak.currentStreak)}
+              unit={t('progressGlance.dayUnit')}
+              label={t('progressGlance.streak')}
+            />
+            <StatTile
+              bare
               value={
                 !data.recallOpen || data.streak.retentionRate === null
                   ? '—'
                   : formatPercent(data.streak.retentionRate)
               }
+              label={t('progressGlance.retention')}
             />
-          </dl>
-          <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
-            <span className="text-[0.8125rem] text-fg-muted">{t('progressGlance.week')}</span>
-            <div
-              role="img"
-              aria-label={t('progressGlance.weekLabel', { count: active })}
-              className="flex gap-1.5"
-            >
-              {data.days.map((d) => (
-                <span
-                  key={d.date}
-                  className={cn(
-                    'size-4 rounded-[4px]',
-                    d.reviews > 0 ? 'bg-accent' : 'border border-border bg-surface-sunken',
-                  )}
-                />
-              ))}
+          </StatRow>
+          <Card className="flex flex-col gap-3">
+            <div className="flex items-baseline justify-between gap-3">
+              <h3 className="text-ui font-semibold text-fg">{t('progressGlance.week')}</h3>
+              <span className="tabular text-meta text-fg-muted">
+                {t('progressGlance.weekLabel', { count: active })}
+              </span>
             </div>
-          </div>
-        </>
+            <HeatStrip
+              label={t('progressGlance.weekLabel', { count: active })}
+              days={data.days.map((d) => ({
+                level: LEVELS[d.level] ?? 'empty',
+                label: heatLabel(t, d),
+              }))}
+            />
+          </Card>
+        </div>
       )}
     </section>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex min-w-0 flex-col justify-end gap-0.5">
-      <dt className="text-[0.8125rem] leading-snug text-fg-muted">{label}</dt>
-      <dd className="tabular truncate font-serif text-[1.375rem] leading-tight font-semibold text-fg">{value}</dd>
-    </div>
   );
 }

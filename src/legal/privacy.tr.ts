@@ -34,7 +34,7 @@ export const privacyTr: LegalDocument = {
           p: `[[email]] Veri sorumlusu, Engapp'i bireysel geliştirici olarak yayımlayan ${CONTROLLER_NAME}'dır. Bu metinle ya da verilerinle ilgili her soru ve başvuru için: {{email}}.`,
         },
         {
-          p: `[[noemail]] Veri sorumlusu, Engapp'i bireysel geliştirici olarak yayımlayan ${CONTROLLER_NAME}'dır. Henüz ayrı bir iletişim adresi yayımlanmadı; o zamana kadar verilerinle ilgili her şeyi uygulamanın içinden yapabilirsin: kopyasını **Profil → ⚙ Ayarlar → Yedek ve veri → Yedek al** ile alırsın, yanlış bir kaydı düzeltirsin, hesabını ve bütün verilerini **Profil → ⚙ Ayarlar → Hesap ve eşitleme → Hesabımı ve verilerimi sil** ile ya da [hesap silme sayfasından](/hesap-sil) silersin.`,
+          p: `[[noemail]] Veri sorumlusu, Engapp'i bireysel geliştirici olarak yayımlayan ${CONTROLLER_NAME}'dır. Henüz ayrı bir iletişim adresi yayımlanmadı; o zamana kadar verilerinle ilgili her şeyi uygulamanın içinden yapabilirsin: kopyasını **Profil → Ayarlar → Yedek ve veri → Yedek al** ile alırsın, yanlış bir kaydı düzeltirsin, hesabını ve bütün verilerini **Profil → Ayarlar → Hesap ve eşitleme → Hesabımı ve verilerimi sil** ile ya da [hesap silme sayfasından](/hesap-sil) silersin.`,
         },
       ],
     },
@@ -166,16 +166,16 @@ export const privacyTr: LegalDocument = {
       blocks: [
         {
           ul: [
-            'Uygulamada: **Profil → ⚙ Ayarlar → Hesap ve eşitleme → Hesabımı ve verilerimi sil.**',
+            'Uygulamada: **Profil → Ayarlar → Hesap ve eşitleme → Hesabımı ve verilerimi sil.**',
             "Web'den: [hesap silme sayfası](/hesap-sil) — Google ile giriş yapıp aynı işlemi yaparsın.",
             '[[email]] E-postayla: {{email}} adresine yaz; hesabını 30 gün içinde sileriz.',
           ],
         },
         {
-          p: 'Silinenler: kartların ve kelimelerin, okuma metinlerin ve karşılaşma sayıların, çalışma geçmişin ve istatistiklerin, ayarların, raporların, bildirim kayıtların, AI önbelleğin, AI ve eşitleme sayaçların, aylık AI harcama tutarın, görsel sayaçların, görsel isteklerin ve görsel cevapların (yöneticiysen yönetici kaydın ve görsel onay kararların da), ardından hesabının kendisi. Ortak sözlükteki görseller kalır. Silme geri alınamaz; istersen önce **Profil → ⚙ Ayarlar → Yedek ve veri** bölümünden JSON yedeğini indir.',
+          p: 'Silinenler: kartların ve kelimelerin, okuma metinlerin ve karşılaşma sayıların, çalışma geçmişin ve istatistiklerin, ayarların, raporların, bildirim kayıtların, AI önbelleğin, AI ve eşitleme sayaçların, aylık AI harcama tutarın, görsel sayaçların, görsel isteklerin ve görsel cevapların (yöneticiysen yönetici kaydın ve görsel onay kararların da), ardından hesabının kendisi. Ortak sözlükteki görseller kalır. Silme geri alınamaz; istersen önce **Profil → Ayarlar → Yedek ve veri** bölümünden JSON yedeğini indir.',
         },
         {
-          p: 'Misafir modundaki veriler yalnızca cihazındadır: **Profil → ⚙ Ayarlar → Hesap ve eşitleme → Bu cihazdaki verileri sil** ile ya da uygulamayı kaldırarak silebilirsin.',
+          p: 'Misafir modundaki veriler yalnızca cihazındadır: **Profil → Ayarlar → Hesap ve eşitleme → Bu cihazdaki verileri sil** ile ya da uygulamayı kaldırarak silebilirsin.',
         },
       ],
     },
@@ -203,7 +203,7 @@ export const privacyTr: LegalDocument = {
           p: "[[noemail]] Henüz ayrı bir başvuru adresi yayımlanmadı. O zamana kadar bu hakların çoğunu uygulamanın içinden kendin kullanabilirsin (aşağıya bak); hesabını ve verilerini [hesap silme sayfasından](/hesap-sil) silebilirsin. Kişisel Verileri Koruma Kurulu'na şikâyette bulunma hakkın her zaman saklıdır.",
         },
         {
-          p: 'Verilerinin bir kopyasını istediğin an **Profil → ⚙ Ayarlar → Yedek ve veri → Yedek al** ile kendin alabilir, yanlış bir kaydı uygulamada düzeltebilirsin.',
+          p: 'Verilerinin bir kopyasını istediğin an **Profil → Ayarlar → Yedek ve veri → Yedek al** ile kendin alabilir, yanlış bir kaydı uygulamada düzeltebilirsin.',
         },
       ],
     },

@@ -7,7 +7,7 @@ import { startAuth, useAuth } from '@/features/auth/session';
 import { DeleteDialog } from '@/features/account/DeleteDialog';
 import { contactEmail } from '@/legal/contact';
 import { signInWithGoogle } from '@/lib/supabase';
-import { Button, Icon, Spinner, Surface } from '@/ui';
+import { Button, Card, Icon, Spinner } from '@/ui';
 import { LegalText } from './LegalText';
 import { PublicLayout } from './PublicLayout';
 
@@ -57,13 +57,13 @@ export function DeleteAccountPage() {
           <span className="flex size-12 items-center justify-center rounded-full bg-success-soft text-success-text">
             <Icon name="check" size={26} />
           </span>
-          <h1 className="font-serif text-3xl leading-tight font-semibold text-fg md:text-4xl">
+          <h1 className="text-page font-semibold text-fg md:text-page-lg">
             {account ? t('legal.deletePage.doneTitle') : t('legal.deletePage.deviceDoneTitle')}
           </h1>
-          <p className="max-w-prose text-[1.0625rem] text-fg">
+          <p className="max-w-prose text-lead text-fg">
             {account ? t('legal.deletePage.doneBody') : t('legal.deletePage.deviceDoneBody')}
           </p>
-          <a href="/" className="mt-2 font-medium text-accent-text underline underline-offset-2">
+          <a href="/" className="mt-2 inline-flex min-h-11 items-center font-medium text-accent-text underline underline-offset-2">
             {t('legal.toApp')}
           </a>
         </div>
@@ -76,14 +76,14 @@ export function DeleteAccountPage() {
     <PublicLayout t={t} lang="tr">
       <div className="flex flex-col gap-8">
         <header className="flex flex-col gap-3">
-          <h1 className="font-serif text-3xl leading-tight font-semibold tracking-[-0.01em] text-fg md:text-4xl">
+          <h1 className="text-page font-semibold text-fg md:text-page-lg">
             {t('legal.deletePage.title')}
           </h1>
-          <p className="text-[1.0625rem] text-fg">{t('legal.deletePage.lead')}</p>
+          <p className="text-lead text-fg">{t('legal.deletePage.lead')}</p>
           <p className="text-fg-muted">{t('legal.deletePage.inApp')}</p>
         </header>
 
-        <Surface padding="lg" className="flex flex-col gap-4 border border-border">
+        <Card className="flex flex-col gap-4">
           {auth.status === 'unavailable' ? (
             <p className="text-fg">
               {email ? (
@@ -103,16 +103,16 @@ export function DeleteAccountPage() {
             </div>
           ) : auth.status === 'signed_in' && u ? (
             <>
-              <p className="text-sm text-fg-muted">{t('legal.deletePage.signedInAs')}</p>
+              <p className="text-meta text-fg-muted">{t('legal.deletePage.signedInAs')}</p>
               <div className="flex items-center gap-3">
                 <Avatar src={u.avatarUrl} name={u.name ?? u.email ?? ''} />
                 <div className="flex min-w-0 flex-col">
-                  <p className="truncate font-medium text-fg">{u.name ?? u.email}</p>
-                  {u.email && u.name && <p className="truncate text-sm text-fg-muted">{u.email}</p>}
+                  <p className="truncate text-ui font-medium text-fg">{u.name ?? u.email}</p>
+                  {u.email && u.name && <p className="truncate text-meta text-fg-muted">{u.email}</p>}
                 </div>
               </div>
               <div className="flex flex-wrap gap-3">
-                <Button variant="danger" leadingIcon="trash" onClick={() => setOpen(true)}>
+                <Button variant="secondary" className="text-danger-text" leadingIcon="trash" onClick={() => setOpen(true)}>
                   {t('legal.deletePage.deleteButton')}
                 </Button>
                 <Button variant="ghost" onClick={() => void auth.signOut().catch(() => undefined)}>
@@ -141,14 +141,14 @@ export function DeleteAccountPage() {
                 {redirecting ? t('auth.redirecting') : t('auth.google')}
               </Button>
               {signInFailed && (
-                <p role="alert" className="text-sm text-danger-text">
+                <p role="alert" className="text-meta text-danger-text">
                   {t('auth.startFailed')}
                 </p>
               )}
             </>
           )}
           {auth.status !== 'unavailable' && email && (
-            <p className="text-sm text-fg-muted">
+            <p className="text-meta text-fg-muted">
               <LegalText
                 text={t('legal.deletePage.emailAlt', { email: '{{email}}' })}
                 email={email}
@@ -156,18 +156,18 @@ export function DeleteAccountPage() {
               />
             </p>
           )}
-        </Surface>
+        </Card>
 
         <section className="flex flex-col gap-2">
-          <h2 className="font-serif text-xl font-semibold text-fg">{t('legal.deletePage.whatTitle')}</h2>
+          <h2 className="text-title font-semibold text-fg">{t('legal.deletePage.whatTitle')}</h2>
           <p className="text-fg">{t('legal.deletePage.what')}</p>
         </section>
         <section className="flex flex-col gap-2">
-          <h2 className="font-serif text-xl font-semibold text-fg">{t('legal.deletePage.keptTitle')}</h2>
+          <h2 className="text-title font-semibold text-fg">{t('legal.deletePage.keptTitle')}</h2>
           <p className="text-fg">{t('legal.deletePage.kept')}</p>
         </section>
         <section className="flex flex-col gap-2">
-          <h2 className="font-serif text-xl font-semibold text-fg">{t('legal.deletePage.guestTitle')}</h2>
+          <h2 className="text-title font-semibold text-fg">{t('legal.deletePage.guestTitle')}</h2>
           <p className="text-fg">{t('legal.deletePage.guest')}</p>
         </section>
       </div>

@@ -3,7 +3,7 @@
 import { useTranslation } from 'react-i18next';
 import type { TopicWeight } from '@/domain/profile';
 import type { TopicKey } from '@/domain/topics';
-import { Button, Icon, ProgressBar, Skeleton, Surface } from '@/ui';
+import { Button, Card, Icon, ProgressBar, Skeleton } from '@/ui';
 import { pickTopic, muteTopic } from './actions';
 import { formatWeight, topicReason } from './reasons';
 import { TopicChips } from './TopicChips';
@@ -17,9 +17,9 @@ export function InterestsBody() {
       {!profile ? (
         <div aria-busy="true" className="flex flex-col gap-4">
           {[0, 1].map((i) => (
-            <Surface key={i} padding="lg">
+            <Card key={i}>
               <Skeleton lines={4} />
-            </Surface>
+            </Card>
           ))}
         </div>
       ) : (
@@ -37,10 +37,10 @@ export function InterestsBody() {
 function SectionHead({ id, title, body }: { id: string; title: string; body?: string }) {
   return (
     <div className="mb-4 flex flex-col gap-1">
-      <h2 id={id} className="font-serif text-xl font-semibold text-fg">
+      <h2 id={id} className="text-title font-semibold text-fg">
         {title}
       </h2>
-      {body && <p className="text-[0.9375rem] text-fg-muted">{body}</p>}
+      {body && <p className="text-ui text-fg-muted">{body}</p>}
     </div>
   );
 }
@@ -50,7 +50,7 @@ function InterestsSection({ weights }: { weights: TopicWeight[] }) {
   const selected = new Set(weights.filter((w) => w.selected).map((w) => w.topic));
   const muted = new Set(weights.filter((w) => w.muted).map((w) => w.topic));
   return (
-    <Surface as="section" aria-labelledby="profile-pick" padding="none" className="p-5 sm:p-6">
+    <Card as="section" aria-labelledby="profile-pick" padding="none" className="p-5 sm:p-6">
       <SectionHead id="profile-pick" title={t('profile.pickTitle')} body={t('profile.pickBody')} />
       <TopicChips
         labelledBy="profile-pick"
@@ -58,7 +58,7 @@ function InterestsSection({ weights }: { weights: TopicWeight[] }) {
         muted={muted}
         onToggle={(topic, on) => void pickTopic(topic, on)}
       />
-    </Surface>
+    </Card>
   );
 }
 
@@ -67,14 +67,14 @@ function WeightsSection({ weights }: { weights: TopicWeight[] }) {
   const shown = weights.filter((w) => w.weight > 0);
   const max = Math.max(...shown.map((w) => w.weight), 1);
   return (
-    <Surface as="section" aria-labelledby="profile-weights" padding="none" className="p-5 sm:p-6">
+    <Card as="section" aria-labelledby="profile-weights" padding="none" className="p-5 sm:p-6">
       <SectionHead
         id="profile-weights"
         title={t('profile.weightsTitle')}
         body={shown.length ? t('profile.weightsBody') : undefined}
       />
       {shown.length === 0 ? (
-        <p className="text-[0.9375rem] text-fg-muted">{t('profile.weightsEmpty')}</p>
+        <p className="text-ui text-fg-muted">{t('profile.weightsEmpty')}</p>
       ) : (
         <ul className="-my-3 divide-y divide-border">
           {shown.map((w) => {
@@ -85,7 +85,7 @@ function WeightsSection({ weights }: { weights: TopicWeight[] }) {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-3">
                     <span className="font-medium text-fg">{name}</span>
-                    <span aria-hidden="true" className="tabular text-sm text-fg-muted">
+                    <span aria-hidden="true" className="tabular text-meta text-fg-muted">
                       {value}
                     </span>
                   </div>
@@ -97,7 +97,7 @@ function WeightsSection({ weights }: { weights: TopicWeight[] }) {
                     label={name}
                     valueText={t('profile.weightValue', { value })}
                   />
-                  <p className="mt-1.5 text-sm text-fg-muted">{topicReason(t, w)}</p>
+                  <p className="mt-1.5 text-meta text-fg-muted">{topicReason(t, w)}</p>
                 </div>
                 <Button
                   variant="ghost"
@@ -113,7 +113,7 @@ function WeightsSection({ weights }: { weights: TopicWeight[] }) {
           })}
         </ul>
       )}
-    </Surface>
+    </Card>
   );
 }
 
@@ -122,7 +122,7 @@ function MutedSection({ weights }: { weights: TopicWeight[] }) {
   const muted: TopicKey[] = weights.filter((w) => w.muted).map((w) => w.topic);
   if (muted.length === 0) return null;
   return (
-    <Surface as="section" aria-labelledby="profile-muted" padding="none" className="p-5 sm:p-6">
+    <Card as="section" aria-labelledby="profile-muted" padding="none" className="p-5 sm:p-6">
       <SectionHead
         id="profile-muted"
         title={t('profile.mutedTitle')}
@@ -146,14 +146,14 @@ function MutedSection({ weights }: { weights: TopicWeight[] }) {
           );
         })}
       </ul>
-    </Surface>
+    </Card>
   );
 }
 
 function RuleNote() {
   const { t } = useTranslation();
   return (
-    <details className="group rounded-card px-1 text-sm text-fg-muted">
+    <details className="group rounded-card px-1 text-meta text-fg-muted">
       <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 font-medium text-fg [&::-webkit-details-marker]:hidden">
         <Icon
           name="chevron-right"

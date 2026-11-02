@@ -1,102 +1,137 @@
-// /profile (redesign, "Profil" board): who you are (account), your level and estimated
-// vocabulary, what you like (interests), plus shortcuts. Settings sit behind the gear in the
-// header. v0.5.1: numbers (streak, words learned) and goals live only on İlerleme; goals are
-// edited there (/progress?edit=goals), so the old ?edit=goals link forwards.
+// /profile (v0.5.2 design 4.14): who you are (name, account, level as the eyebrow), the
+// İlerleme glance, level and estimated vocabulary, interests, and one list of places
+// (Hedefler, Tüm kelimelerim, Bildiğim kelimeler, Ayarlar, Eşitleme). Settings is a row, so
+// the header has no settings icon (one way in). The old ?edit=goals link forwards to İlerleme.
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useTranslation } from 'react-i18next';
 import { Link, Navigate, useSearchParams } from 'react-router';
 import { db } from '@/data';
+import { scanCount, scanWhere } from '@/data/scan';
 import { vocabularyFloor } from '@/domain/progressView';
 import { Avatar } from '@/features/auth/Avatar';
 import { useAuth } from '@/features/auth/session';
+import { syncTitle } from '@/features/auth/syncText';
+import { formatSince } from '@/features/auth/time';
 import { formatDate, useLevelOverview } from '@/features/leveltest/levelText';
-import {
-  Glyph,
-  GlyphTile,
-  type GlyphName,
-  type GlyphTone,
-} from '@/features/settings/SettingsGlyph';
 import { useAppSettings } from '@/features/settings/useAppSettings';
 import { formatNumber } from '@/features/stats/format';
 import { ProgressGlance } from '@/features/stats/ProgressGlance';
 import { useWordStages } from '@/features/stats/useWordStages';
-import { formatSince } from '@/features/auth/time';
 import { useSyncStatus } from '@/sync/status';
-import { buttonClasses, cn, Icon, Skeleton, Surface } from '@/ui';
-import { scanCount, scanWhere } from '@/data/scan';
-
-const card = 'flex flex-col rounded-card border border-border bg-surface';
+import {
+  Badge,
+  buttonClasses,
+  Card,
+  cn,
+  Icon,
+  ListGroup,
+  ListRow,
+  PageFrame,
+  SectionHeader,
+  Skeleton,
+  SyncStatus,
+} from '@/ui';
 
 export function ProfilePage() {
   const [params] = useSearchParams();
-  if (params.get('edit') === 'goals') return <Navigate to="/progress?edit=goals" replace />;
-  return (
-    <div className="mx-auto w-full max-w-2xl px-4 pt-5 pb-10 sm:px-6 md:pt-10">
-      <ProfileHeader />
-      <div className="mt-3 flex flex-col gap-4">
-        {/* İlerleme moved here from the tab bar (v0.5.1, ADR 0057). */}
-        <ProgressGlance />
-        <LevelCard />
-        <InterestsCard />
-        <Shortcuts />
-      </div>
-    </div>
-  );
-}
-
-function ProfileHeader() {
   const { t } = useTranslation();
   const auth = useAuth();
+  const overview = useLevelOverview();
+  if (params.get('edit') === 'goals') return <Navigate to="/progress?edit=goals" replace />;
   const signedIn = auth.status === 'signed_in' && auth.user;
   const name = signedIn
     ? (auth.user!.name ?? auth.user!.email ?? t('auth.noName'))
     : t('profile.home.guestName');
+  const measured = overview ? overview.source !== 'default' : false;
+  // "B1 · Hesaplı"; a guest's title already says "Misafir", so only a measured level shows.
+  const eyebrow =
+    [measured && overview ? overview.level : null, signedIn ? t('profile.home.planAccount') : null]
+      .filter(Boolean)
+      .join(' · ') || undefined;
+
   return (
-    <header className="flex items-center justify-between gap-3 pl-1">
-      <div className="flex min-w-0 items-center gap-3.5">
-        {signedIn ? (
-          <Avatar src={auth.user!.avatarUrl} name={name} size={60} />
+    <PageFrame
+      width="wide"
+      eyebrow={eyebrow}
+      title={name}
+      description={
+        auth.status === 'loading' ? (
+          <Skeleton className="h-4 w-40" />
+        ) : signedIn ? (
+          t('profile.home.signedInGoogle')
+        ) : (
+          <span className="flex flex-wrap items-center gap-x-2">
+            {t('profile.home.guestLine')}
+            {auth.status === 'guest' && (
+              <Link
+                to="/auth"
+                className="inline-flex min-h-11 items-center font-semibold text-accent-text underline-offset-4 hover:underline"
+              >
+                {t('profile.home.signIn')}
+              </Link>
+            )}
+          </span>
+        )
+      }
+      actions={
+        signedIn ? (
+          <Avatar src={auth.user!.avatarUrl} name={name} size={56} />
         ) : (
           <span
             aria-hidden="true"
-            className="flex size-[3.75rem] shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent-text"
+            className="flex size-14 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent-text"
           >
-            <Icon name="user" size={28} />
+            <Icon name="user" size={26} />
           </span>
-        )}
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <h1 className="truncate font-serif text-[1.75rem] leading-tight font-semibold text-fg">
-            {name}
-          </h1>
-          {auth.status === 'loading' ? (
-            <Skeleton className="h-4 w-40" />
-          ) : signedIn ? (
-            <span className="text-[0.8125rem] text-fg-muted">
-              {t('profile.home.signedInGoogle')}
-            </span>
-          ) : (
-            <span className="flex flex-wrap items-center gap-x-2 text-[0.8125rem] text-fg-muted">
-              {t('profile.home.guestLine')}
-              {auth.status === 'guest' && (
-                <Link
-                  to="/auth"
-                  className="inline-flex min-h-11 items-center font-medium text-accent-text"
-                >
-                  {t('profile.home.signIn')}
-                </Link>
-              )}
-            </span>
-          )}
+        )
+      }
+    >
+      <SyncAlert />
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+        <div className="flex flex-col gap-8">
+          <ProgressGlance />
+          <LevelCard />
+          <InterestsCard />
         </div>
+        <Shortcuts />
       </div>
-      <Link
-        to="/settings"
-        aria-label={t('profile.home.settings')}
-        className="flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-fg-muted hover:text-fg"
-      >
-        <Glyph name="gear" size={22} strokeWidth={1.6} />
-      </Link>
-    </header>
+    </PageFrame>
+  );
+}
+
+/**
+ * Bugün has no sync pill (design 4.1), so on phones Profil is where a sync problem shows:
+ * quiet when fine (the row at the bottom), explicit when not (this card at the top). A refused
+ * daily quota (ADR 0060/0070) says plainly that the changes are safe and go tomorrow.
+ */
+function SyncAlert() {
+  const { t } = useTranslation();
+  const sync = useSyncStatus();
+  if (sync.mode !== 'account' || sync.state !== 'error') return null;
+  const quota = sync.error === 'quota';
+  return (
+    <Link
+      to="/settings/hesap#senkron"
+      role="status"
+      data-testid="profile-sync-alert"
+      className={cn(
+        'mb-8 flex min-h-14 items-start gap-3 rounded-card px-4 py-3 transition-colors duration-(--duration-micro) hover:brightness-[0.98]',
+        quota ? 'bg-warn-soft text-warn-text' : 'bg-danger-soft text-danger-text',
+      )}
+    >
+      <Icon name="sync-error" size={20} className="mt-0.5 shrink-0" />
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="text-ui font-semibold">{quota ? t('sync.quota') : t('sync.error')}</span>
+        <span className="text-meta">
+          {quota
+            ? t('syncPanel.quotaHint')
+            : sync.stuck > 0
+              ? t('syncPanel.stuck', { count: sync.stuck })
+              : t('syncPanel.errorHint')}
+        </span>
+      </span>
+      <Icon name="chevron-right" size={18} className="mt-0.5 shrink-0" />
+    </Link>
   );
 }
 
@@ -106,9 +141,9 @@ function LevelCard() {
   const stages = useWordStages();
   if (!overview) {
     return (
-      <Surface padding="lg" aria-busy="true">
+      <Card padding="lg" aria-busy="true">
         <Skeleton lines={3} />
-      </Surface>
+      </Card>
     );
   }
   // Never show the default "B1" as if it were measured (v0.5.1). An unreliable test leaves the
@@ -119,67 +154,65 @@ function LevelCard() {
     ? overview.testCount > 0
       ? t('profile.home.unreliableHint')
       : t('profile.home.unmeasuredHint')
-    : overview.source === 'default' || !overview.updatedAt
+    : !overview.updatedAt
       ? t('profile.home.source.default')
       : t(`profile.home.source.${overview.source}`, { date: formatDate(overview.updatedAt) });
   return (
-    <section
-      aria-labelledby="profile-level"
-      className={cn(card, 'gap-4 px-[1.125rem] pt-5 pb-[1.125rem]')}
-    >
-      <h2 id="profile-level" className="sr-only">
-        {t('profile.home.levelSection')}
-      </h2>
-      <dl className="grid grid-cols-2 gap-3">
-        <div className="flex flex-col gap-1">
-          <dt className="text-[0.8125rem] text-fg-muted">{t('profile.home.levelLabel')}</dt>
-          <dd data-testid="profile-level">
-            {measured ? (
-              <span className="font-serif text-[2.5rem] leading-none font-semibold text-fg">
-                {overview.level}
-              </span>
-            ) : (
-              <span className="font-serif text-xl leading-tight font-semibold text-fg">
-                {t('profile.home.unmeasured')}
-              </span>
-            )}
-          </dd>
+    <section aria-labelledby="profile-level-title">
+      <SectionHeader id="profile-level-title" title={t('profile.home.levelSection')} />
+      <Card className="flex flex-col gap-4">
+        <dl className="grid grid-cols-2 divide-x divide-border">
+          <div className="flex min-w-0 flex-col-reverse justify-end gap-1 pr-4">
+            <dt className="text-meta text-fg-muted">{t('profile.home.levelLabel')}</dt>
+            <dd
+              data-testid="profile-level"
+              className={cn('font-semibold text-fg', measured ? 'text-heading' : 'text-title')}
+            >
+              {measured ? overview.level : t('profile.home.unmeasured')}
+            </dd>
+          </div>
+          <div className="flex min-w-0 flex-col-reverse justify-end gap-1 pl-4">
+            <dt className="text-meta text-fg-muted">{t('profile.home.vocabLabel')}</dt>
+            <dd
+              data-testid="profile-vocab"
+              className={cn(
+                'tabular font-semibold text-fg',
+                overview.hasBasis ? 'text-heading' : 'text-title',
+              )}
+            >
+              {overview.hasBasis ? (
+                `~${formatNumber(overview.vocab.estimate)}`
+              ) : floor !== null ? (
+                t('profile.home.vocabFloor', { count: floor, value: formatNumber(floor) })
+              ) : (
+                <span className="text-ui font-medium text-fg-muted">
+                  {t('profile.home.vocabNone')}
+                </span>
+              )}
+            </dd>
+          </div>
+        </dl>
+        {(overview.hasBasis || floor !== null) && (
+          <p className="text-meta text-fg-muted">
+            {overview.hasBasis
+              ? t('profile.home.vocabDisclaimer')
+              : t('profile.home.vocabFloorHint')}
+          </p>
+        )}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+          <p className="min-w-0 flex-1 basis-48 text-meta text-fg-muted">{source}</p>
+          <Link
+            to="/level-test"
+            className={buttonClasses({
+              variant: measured ? 'secondary' : 'primary',
+              className: 'shrink-0',
+            })}
+          >
+            {measured && <Icon name="refresh" size={18} />}
+            {overview.testCount > 0 ? t('profile.home.testAgain') : t('profile.home.testStart')}
+          </Link>
         </div>
-        <div className="flex flex-col gap-1 border-l border-border pl-4">
-          <dt className="text-[0.8125rem] text-fg-muted">{t('profile.home.vocabLabel')}</dt>
-          <dd data-testid="profile-vocab">
-            {overview.hasBasis ? (
-              <span className="tabular font-serif text-[2.5rem] leading-none font-semibold text-fg">
-                ~{formatNumber(overview.vocab.estimate)}
-              </span>
-            ) : floor !== null ? (
-              <span className="font-serif text-xl leading-tight font-semibold text-fg">
-                {t('profile.home.vocabFloor', { count: floor, value: formatNumber(floor) })}
-              </span>
-            ) : (
-              <span className="text-[0.9375rem] text-fg-muted">{t('profile.home.vocabNone')}</span>
-            )}
-          </dd>
-        </div>
-      </dl>
-      {overview.hasBasis ? (
-        <p className="-mt-1 text-xs text-fg-muted">{t('profile.home.vocabDisclaimer')}</p>
-      ) : floor !== null ? (
-        <p className="-mt-1 text-xs text-fg-muted">{t('profile.home.vocabFloorHint')}</p>
-      ) : null}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3.5">
-        <span className="min-w-0 flex-1 text-[0.8125rem] text-fg-muted">{source}</span>
-        <Link
-          to="/level-test"
-          className={buttonClasses({
-            variant: measured ? 'secondary' : 'primary',
-            className: cn('shrink-0', measured && 'text-accent-text'),
-          })}
-        >
-          {measured && <Icon name="refresh" size={18} />}
-          {overview.testCount > 0 ? t('profile.home.testAgain') : t('profile.home.testStart')}
-        </Link>
-      </div>
+      </Card>
     </section>
   );
 }
@@ -191,39 +224,36 @@ function InterestsCard() {
     (k) => !(settings?.muted_topics ?? []).includes(k),
   );
   return (
-    <section
-      aria-labelledby="profile-interests"
-      className={cn(card, 'gap-3 px-[1.125rem] pt-2 pb-[1.125rem]')}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <h2 id="profile-interests" className="font-serif text-[1.1875rem] font-semibold text-fg">
-          {t('profile.home.interestsTitle')}
-        </h2>
-        <Link
-          to="/settings/ilgi-alanlari"
-          aria-label={`${t('profile.home.interestsTitle')}: ${t('profile.home.interestsEdit')}`}
-          className="-mr-2 inline-flex min-h-11 items-center rounded-control px-2 text-sm font-medium text-accent-text hover:bg-hover"
-        >
-          {t('profile.home.interestsEdit')}
-        </Link>
-      </div>
-      {!settings ? (
-        <Skeleton className="h-9 w-full" />
-      ) : chosen.length ? (
-        <ul aria-label={t('profile.home.interestsChosen')} className="flex flex-wrap gap-2">
-          {chosen.map((k) => (
-            <li
-              key={k}
-              className="rounded-full bg-accent-soft px-3.5 py-2 text-sm font-semibold text-accent-text"
-            >
-              {t(`topics.${k}`, { defaultValue: k })}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-[0.9375rem] text-fg-muted">{t('profile.home.interestsNone')}</p>
-      )}
-      <p className="text-[0.8125rem] text-fg-muted">{t('profile.home.interestsHint')}</p>
+    <section aria-labelledby="profile-interests">
+      <SectionHeader
+        id="profile-interests"
+        title={t('profile.home.interestsTitle')}
+        action={
+          <Link
+            to="/settings/ilgi-alanlari"
+            aria-label={`${t('profile.home.interestsTitle')}: ${t('profile.home.interestsEdit')}`}
+            className={buttonClasses({ variant: 'ghost', size: 'sm' })}
+          >
+            {t('profile.home.interestsEdit')}
+          </Link>
+        }
+      />
+      <Card className="flex flex-col gap-3">
+        {!settings ? (
+          <Skeleton className="h-6 w-full" />
+        ) : chosen.length ? (
+          <ul aria-label={t('profile.home.interestsChosen')} className="flex flex-wrap gap-2">
+            {chosen.map((k) => (
+              <li key={k}>
+                <Badge tone="accent">{t(`topics.${k}`, { defaultValue: k })}</Badge>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-ui text-fg">{t('profile.home.interestsNone')}</p>
+        )}
+        <p className="text-meta text-fg-muted">{t('profile.home.interestsHint')}</p>
+      </Card>
     </section>
   );
 }
@@ -238,80 +268,56 @@ function Shortcuts() {
     return { notes, known: new Set(known.map((k) => k.term_norm)).size };
   }, []);
   const sync = useSyncStatus();
-  const syncLine =
-    sync.mode !== 'account'
-      ? t('syncPanel.localTitle')
-      : sync.state === 'synced' && sync.lastSyncAt
-        ? t('syncPanel.lastSync', { when: formatSince(sync.lastSyncAt) })
-        : sync.state === 'pending'
-          ? t('sync.pending', { count: sync.pending })
-          : t(`sync.${sync.state}`);
-  const rows: {
-    to: string;
-    glyph: GlyphName;
-    tone: GlyphTone;
-    title: string;
-    count?: number;
-    hint?: string;
-  }[] = [
-    {
-      to: '/library',
-      glyph: 'list',
-      tone: 'accent',
-      title: t('profile.home.allWords'),
-      count: counts?.notes,
-    },
-    {
-      to: '/settings/bilinen-kelimeler',
-      glyph: 'check',
-      tone: 'success',
-      title: t('profile.home.knownWords'),
-      count: counts?.known,
-    },
-    {
-      to: '/settings/hesap#senkron',
-      glyph: 'cloud',
-      tone: 'accent',
-      title: t('profile.home.sync'),
-      hint: syncLine,
-    },
-    {
-      to: '/settings',
-      glyph: 'sliders',
-      tone: 'neutral',
-      title: t('profile.home.settings'),
-      hint: t('profile.home.settingsHint'),
-    },
-  ];
+  const quota = sync.mode === 'account' && sync.state === 'error' && sync.error === 'quota';
+  const syncLine = quota
+    ? t('syncPanel.quotaHint')
+    : sync.mode === 'account' && sync.state === 'synced' && sync.lastSyncAt
+      ? t('syncPanel.lastSync', { when: formatSince(sync.lastSyncAt) })
+      : syncTitle(t, sync);
   return (
-    <nav aria-label={t('profile.home.shortcuts')}>
-      <ul className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
-        {rows.map((r) => (
-          <li key={r.to}>
-            <Link
-              to={r.to}
-              className="flex min-h-[3.75rem] items-center gap-3.5 px-4 py-3 text-fg hover:bg-surface-hover focus-visible:outline-offset-[-2px]"
-            >
-              <GlyphTile name={r.glyph} tone={r.tone} />
-              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="text-[0.9375rem] font-semibold">
-                  {r.title}
-                  {r.count !== undefined && (
-                    <span className="tabular font-normal text-fg-muted">
-                      {' '}
-                      · {formatNumber(r.count)}
-                    </span>
-                  )}
-                </span>
-                {r.hint && (
-                  <span className="truncate text-[0.8125rem] text-fg-muted">{r.hint}</span>
-                )}
-              </span>
-              <Icon name="chevron-right" size={18} className="shrink-0 text-fg-subtle" />
-            </Link>
-          </li>
-        ))}
-      </ul>
+    <nav aria-label={t('profile.home.shortcuts')} className="flex flex-col gap-3">
+      <h2 className="sr-only">{t('profile.home.shortcuts')}</h2>
+      <ListGroup>
+        <ListRow
+          to="/progress?edit=goals"
+          leadingIcon="target"
+          title={t('profile.home.goals')}
+          description={t('profile.home.goalsHint')}
+        />
+        <ListRow
+          to="/library"
+          leadingIcon="list"
+          title={t('profile.home.allWords')}
+          meta={counts ? formatNumber(counts.notes) : undefined}
+        />
+        <ListRow
+          to="/settings/bilinen-kelimeler"
+          leadingIcon="check"
+          title={t('profile.home.knownWords')}
+          meta={counts ? formatNumber(counts.known) : undefined}
+        />
+        <ListRow
+          to="/settings"
+          leadingIcon="settings"
+          title={t('profile.home.settings')}
+          description={t('profile.home.settingsHint')}
+        />
+      </ListGroup>
+      <ListGroup>
+        <ListRow
+          to="/settings/hesap#senkron"
+          leadingIcon="cloud"
+          title={t('profile.home.sync')}
+          description={syncLine}
+          trailing={
+            quota ? (
+              <Badge tone="warn">{t('sync.quotaShort')}</Badge>
+            ) : sync.mode === 'account' ? (
+              <SyncStatus state={sync.state} pendingCount={sync.pending} />
+            ) : undefined
+          }
+        />
+      </ListGroup>
     </nav>
   );
 }

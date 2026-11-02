@@ -123,7 +123,7 @@ export function AdvancedSection() {
         </Button>
       </SettingsRow>
       <SettingsRow label={t('settings.version')}>
-        <span className="tabular text-[0.9375rem] text-fg-muted">
+        <span className="tabular text-ui text-fg-muted">
           {version}
           {import.meta.env.DEV ? ' (dev)' : ''}
         </span>

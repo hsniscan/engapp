@@ -324,7 +324,7 @@ export function DataSection() {
         }
       />
       <SettingsRow label={t('resetHistory.title')} description={t('resetHistory.hint')}>
-        <Button variant="danger" onClick={() => setConfirmReset(true)}>
+        <Button variant="secondary" className="text-danger-text" onClick={() => setConfirmReset(true)}>
           {t('resetHistory.button')}
         </Button>
       </SettingsRow>
@@ -382,7 +382,7 @@ export function DataSection() {
         {pending && (
           <div className="flex flex-col gap-4">
             <p
-              className="rounded-control bg-surface-sunken px-4 py-3 font-serif text-lg text-fg"
+              className="rounded-control bg-surface-sunken px-4 py-3 text-lead text-fg"
               data-testid="restore-summary"
             >
               {t('restore.summary', {
@@ -392,11 +392,11 @@ export function DataSection() {
               })}
             </p>
             {pending.foreign && (
-              <p className="rounded-control border border-border px-4 py-3 text-sm text-fg" data-testid="restore-foreign">
+              <p className="rounded-control border border-border px-4 py-3 text-meta text-fg" data-testid="restore-foreign">
                 {t('restore.foreign')}
               </p>
             )}
-            <div className="flex flex-col gap-2 rounded-control border border-border px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-2 rounded-control border border-border px-4 py-3 text-meta sm:flex-row sm:items-center sm:justify-between">
               <p className="text-fg-muted">{t('restore.backupFirstHint')}</p>
               {backedUp ? (
                 <Badge tone="success">{t('restore.backedUp')}</Badge>
@@ -419,7 +419,7 @@ export function DataSection() {
                 </Button>
               )}
             </div>
-            {!pending.foreign && <dl className="flex flex-col gap-3 text-sm">
+            {!pending.foreign && <dl className="flex flex-col gap-3 text-meta">
               <div className="flex gap-3">
                 <Icon name="check" size={18} className="mt-0.5 shrink-0 text-success-text" />
                 <div>

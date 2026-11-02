@@ -60,11 +60,11 @@ test('theme switch persists across a reload (stored before first paint, no flash
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'system');
 });
 
-test('Profil → ⚙ → Ayarlar → a sub-page, and old #anchors land on their new page', async ({
+test('Profil → Ayarlar → a sub-page, and old #anchors land on their new page', async ({
   page,
 }) => {
   await page.goto('/profile');
-  await page.locator('main a[href="/settings"][aria-label="Ayarlar"]').click();
+  await page.locator('main a[href="/settings"]').click();
   await expect(page).toHaveURL(/\/settings$/);
   await page.getByRole('link', { name: /Hatırlatmalar/ }).click();
   await expect(page).toHaveURL(/\/settings\/bildirim$/);
