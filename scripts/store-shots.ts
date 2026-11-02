@@ -224,8 +224,8 @@ try {
         padding:0 72px;background:var(--canvas);color:var(--fg);font-family:var(--font-sans, system-ui)">
         <div style="flex:none;width:208px;height:208px">${mark}</div>
         <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
-          <div style="font-family:'Source Serif 4',serif;font-weight:600;font-size:64px;line-height:1;letter-spacing:-0.01em">Engapp</div>
-          <div style="font-family:'Source Serif 4',serif;font-size:34px;line-height:1.2;color:var(--fg)">İngilizce kelimeler,<br>her gün biraz.</div>
+          <div style="font-family:'Instrument Sans',sans-serif;font-weight:600;font-size:64px;line-height:1;letter-spacing:-0.02em">Engapp</div>
+          <div style="font-family:'Literata',serif;font-size:34px;line-height:1.2;color:var(--fg)">İngilizce kelimeler,<br>her gün biraz.</div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:19px">
             <span style="padding:7px 14px;border-radius:999px;background:var(--accent-soft);color:var(--accent-text)">Aralıklı tekrar</span>
             <span style="padding:7px 14px;border-radius:999px;background:var(--accent-soft);color:var(--accent-text)">Metinden kart</span>

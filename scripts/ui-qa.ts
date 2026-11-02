@@ -25,6 +25,10 @@ const pages: [name: string, path: string, fullPage: boolean][] = [
 ];
 const axePaths = [
   '/dev/ui',
+  '/dev/preview?screen=today',
+  '/dev/preview?screen=card',
+  '/dev/preview?screen=words',
+  '/dev/preview?screen=reader',
   '/dev/ui?flipped=1',
   '/dev/ui?open=dialog',
   '/',

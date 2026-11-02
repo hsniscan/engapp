@@ -6,8 +6,8 @@
     <title>Engapp</title>
     <meta name="description" content="İngilizce kelimeleri aralıklı tekrarla öğren. Çevrimdışı çalışır." />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#f5f2ec" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#1a1917" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f3f4f1" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#101312" media="(prefers-color-scheme: dark)" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon-180.png" />
     <script>
@@ -18,7 +18,7 @@
           if (p !== 'light' && p !== 'dark') p = 'system';
           document.documentElement.dataset.theme = p;
           if (p !== 'system') {
-            var c = p === 'dark' ? '#1a1917' : '#f5f2ec';
+            var c = p === 'dark' ? '#101312' : '#f3f4f1';
             document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) {
               m.content = c;
             });

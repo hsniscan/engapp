@@ -1,11 +1,12 @@
 /*
- * Engapp colour tokens — the single source of truth for both themes.
+ * Engapp colour tokens (v0.5.2 identity "Çam": porcelain + pine, ADR 0065).
+ * The single source of truth for both themes.
  *
  * Every colour is written once as light-dark(<light>, <dark>). The browser picks the
  * branch from `color-scheme`, which follows the OS by default and is pinned by
  * <html data-theme="light|dark">. `data-theme="system"` (or no attribute) follows the OS.
  *
- * scripts/check-contrast.mjs parses the `--name: light-dark(#a, #b);` lines below,
+ * scripts/check-contrast.ts parses the `--name: light-dark(#a, #b);` lines below,
  * so keep them on one line, solid 6-digit hex only.
  */
 
@@ -20,79 +21,90 @@
 }
 
 :root {
-  /* Surfaces: warm paper / warm charcoal */
-  --canvas: light-dark(#f5f2ec, #1a1917);
-  --surface: light-dark(#fdfcf9, #22201d);
-  --surface-raised: light-dark(#ffffff, #2a2825);
-  --surface-sunken: light-dark(#ede9e1, #161513);
+  /* Surfaces: cool porcelain (light) / green-black slate (dark) */
+  --canvas: light-dark(#f3f4f1, #101312);
+  --surface: light-dark(#fafbf9, #171b1a);
+  --surface-raised: light-dark(#ffffff, #1e2321);
+  --surface-sunken: light-dark(#e9ece6, #0b0d0c);
 
   /* Lines */
-  --border: light-dark(#e3ddd2, #34312d);
-  --border-strong: light-dark(#8c8476, #78726a);
+  --border: light-dark(#dde1da, #2b312e);
+  --border-strong: light-dark(#7d847c, #6e7772);
 
   /* Ink */
-  --fg: light-dark(#1f1d1a, #ece6dc);
-  --fg-muted: light-dark(#5e5850, #a79f93);
-  --fg-subtle: light-dark(#6f695f, #938c81);
-  --fg-inverse: light-dark(#fdfcf9, #1a1917);
+  --fg: light-dark(#141a17, #e6ebe8);
+  --fg-muted: light-dark(#4b544e, #a3aca7);
+  --fg-subtle: light-dark(#5d6660, #8f9893);
+  --fg-inverse: light-dark(#fafbf9, #101312);
 
-  /* The one accent: ink blue */
-  --accent: light-dark(#2a5a8c, #3b6c9e);
-  --accent-hover: light-dark(#224a74, #335f8c);
+  /* The one accent: pine */
+  --accent: light-dark(#1f5c4f, #2b7765);
+  --accent-hover: light-dark(#184c41, #256a5a);
   --accent-fg: light-dark(#ffffff, #ffffff);
-  --accent-text: light-dark(#2a5a8c, #9dbde3);
-  --accent-soft: light-dark(#e6edf5, #253244);
-  --focus: light-dark(#2a5a8c, #9dbde3);
+  --accent-text: light-dark(#1f5c4f, #88cdb9);
+  --accent-soft: light-dark(#e0ece7, #19302a);
+  --focus: light-dark(#1f5c4f, #88cdb9);
+  /* Accent text on the inverse surface (toast action "Geri al", tooltip links) */
+  --accent-on-inverse: light-dark(#88cdb9, #1f5c4f);
 
   /* Status */
-  --success: light-dark(#2e8c6a, #4fae8a);
-  --success-text: light-dark(#1b6a4e, #7fcdae);
-  --success-soft: light-dark(#e6f1eb, #1f3129);
-  --warn: light-dark(#b97f0e, #d6a03e);
-  --warn-text: light-dark(#7f5300, #e8c27a);
-  --warn-soft: light-dark(#f7efdc, #352c1c);
-  --danger: light-dark(#a63a2b, #b8493a);
-  --danger-hover: light-dark(#8e3123, #a53f31);
+  --success: light-dark(#3a7a2c, #63ad6f);
+  --success-text: light-dark(#2d6322, #9ad3a3);
+  --success-soft: light-dark(#e6f0e2, #1b2e1f);
+  --warn: light-dark(#a86b00, #d29a35);
+  --warn-text: light-dark(#7a4d00, #e7c178);
+  --warn-soft: light-dark(#f6ecd6, #33291a);
+  --danger: light-dark(#b03a24, #b9503c);
+  --danger-hover: light-dark(#962f1c, #a54533);
   --danger-fg: light-dark(#ffffff, #ffffff);
-  --danger-text: light-dark(#a63a2b, #f0907e);
-  --danger-soft: light-dark(#f8e9e5, #3a2420);
+  --danger-text: light-dark(#a6341f, #f09a87);
+  --danger-soft: light-dark(#f8e6e1, #3a221d);
 
-  /* Answer ratings (Okabe-Ito hues, muted). Graphic = bar/icon, text = label, soft = fill */
-  --rating-again: light-dark(#c8582a, #e07a50);
-  --rating-again-text: light-dark(#9c3f1b, #f0a585);
-  --rating-again-soft: light-dark(#f8ebe4, #3a2620);
-  --rating-hard: light-dark(#b97f0e, #d6a03e);
-  --rating-hard-text: light-dark(#7f5300, #e8c27a);
-  --rating-hard-soft: light-dark(#f7efdc, #352c1c);
-  --rating-good: light-dark(#2e8c6a, #4fae8a);
-  --rating-good-text: light-dark(#1b6a4e, #7fcdae);
-  --rating-good-soft: light-dark(#e6f1eb, #1f3129);
-  --rating-easy: light-dark(#3270a8, #5e9ad3);
-  --rating-easy-text: light-dark(#245a8c, #9cc3ea);
-  --rating-easy-soft: light-dark(#e5edf5, #1f2b38);
+  /* Answer ratings — ONE map everywhere (answer bar, summary, stats, docs):
+     Tekrar = rust · Zor = ochre · İyi = pine (the accent, the filled default) · Kolay = slate blue.
+     graphic = dot/bar, text = label, soft = tinted button fill. */
+  --rating-again: light-dark(#c0502a, #e07a52);
+  --rating-again-text: light-dark(#9a3a18, #f2a586);
+  --rating-again-soft: light-dark(#f7e7df, #3a241c);
+  --rating-hard: light-dark(#b07d12, #d3a23e);
+  --rating-hard-text: light-dark(#7a5300, #e8c47c);
+  --rating-hard-soft: light-dark(#f5eedb, #33291a);
+  --rating-good: light-dark(#1f5c4f, #4fae95);
+  --rating-good-text: light-dark(#1f5c4f, #88cdb9);
+  --rating-good-soft: light-dark(#e0ece7, #19302a);
+  --rating-easy: light-dark(#3d6593, #6f9bd0);
+  --rating-easy-text: light-dark(#2f5480, #a5c4ea);
+  --rating-easy-soft: light-dark(#e4ebf3, #1c2836);
 
-  /* Continuity heatmap: one Okabe-Ito hue (bluish green), three steps */
-  --heat-empty: light-dark(#e6e1d7, #2c2a27);
-  --heat-active: light-dark(#9fcfb9, #2f6150);
-  --heat-completed: light-dark(#1f7556, #63c49f);
+  /* Word stages — ONE sequential pine ramp everywhere (bars, pills, legends, rings):
+     Yeni · Öğreniyor · Pekişiyor · Öğrenildi · Kalıcı (light → deep in light theme, dim → bright in dark). */
+  --stage-new: light-dark(#d5d9d2, #3a413d);
+  --stage-learning: light-dark(#b6d6cb, #2a4f45);
+  --stage-consolidating: light-dark(#73ad9c, #3b8771);
+  --stage-learned: light-dark(#2b7563, #6cc0a8);
+  --stage-mastered: light-dark(#143a32, #c4ebde);
 
-  /* Today hero (home): the one filled card. Text on it is accent-fg / hero-muted. */
-  --hero-ring: light-dark(#9dbde3, #e6edf5);
-  --hero-muted: light-dark(#e6edf5, #e6edf5);
-  --hero-action: light-dark(#fdfcf9, #ece6dc);
-  --hero-action-fg: light-dark(#1f3f63, #1a2a3c);
-  --streak-flame: light-dark(#f3c77a, #f3c77a);
+  /* Activity: "studied day" is heat-completed everywhere (week strip, heatmap, profile) */
+  --heat-empty: light-dark(#e3e6e0, #232826);
+  --heat-active: light-dark(#a9d0c3, #24493f);
+  --heat-completed: light-dark(#1f5c4f, #6cc0a8);
 
-  /* Word stages (Öğreniyor · Pekişiyor · Öğrenildi · Kalıcı): bars, legends, rings */
-  --stage-learning: light-dark(#d7d1c6, #4a4640);
-  --stage-consolidating: light-dark(#9dbde3, #34506e);
-  --stage-learned: light-dark(#2a5a8c, #4274a6);
-  --stage-mastered: light-dark(#1f3f63, #9dbde3);
+  /* Charts: bars are the accent; the comparison series is a ramp step; grid is a hairline */
+  --chart-bar: light-dark(#1f5c4f, #6cc0a8);
+  --chart-bar-muted: light-dark(#a9d0c3, #2f6d5d);
 
-  /* Brand: the stress tick on the logo tile (inverse of accent-text) */
-  --logo-tick: light-dark(#9dbde3, #2a5a8c);
+  /* Legacy hero (v0.5.1 Bugün slab; replaced by the calm Today card in wave 2) */
+  --hero-ring: light-dark(#9fd0c0, #cfe9e0);
+  --hero-muted: light-dark(#e0ece7, #f2f7f5);
+  --hero-action: light-dark(#fafbf9, #e6ebe8);
+  --hero-action-fg: light-dark(#143a32, #12302a);
+  --streak-flame: light-dark(#f0c36d, #f0c36d);
+
+  /* Brand: the stress tick on the logo tile */
+  --logo-tick: light-dark(#9fd0c0, #b9e4d6);
 
   /* Non-hex helpers (not contrast-checked) */
-  --scrim: light-dark(rgb(31 29 26 / 0.36), rgb(0 0 0 / 0.6));
-  --shadow-color: light-dark(rgb(60 48 30 / 0.1), rgb(0 0 0 / 0.45));
+  --scrim: light-dark(rgb(20 26 23 / 0.32), rgb(0 0 0 / 0.62));
+  --shadow-color: light-dark(rgb(20 40 32 / 0.08), rgb(0 0 0 / 0.5));
+  --shadow-color-strong: light-dark(rgb(20 40 32 / 0.14), rgb(0 0 0 / 0.6));
 }

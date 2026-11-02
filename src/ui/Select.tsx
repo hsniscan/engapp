@@ -69,7 +69,7 @@ export function Select({
                     key={opt.value}
                     value={opt.value}
                     disabled={opt.disabled}
-                    className="relative flex min-h-11 cursor-pointer items-center rounded-[6px] py-2 pr-3 pl-9 text-[0.9375rem] text-fg outline-none select-none data-[disabled]:opacity-45 data-[highlighted]:bg-hover data-[state=checked]:font-medium"
+                    className="relative flex min-h-11 cursor-pointer items-center rounded-sm py-2 pr-3 pl-9 text-ui text-fg outline-none select-none data-[disabled]:opacity-45 data-[highlighted]:bg-hover data-[state=checked]:font-medium"
                   >
                     <RadixSelect.ItemIndicator className="absolute left-2.5 text-accent-text">
                       <Icon name="check" size={18} />

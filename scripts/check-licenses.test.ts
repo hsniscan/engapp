@@ -63,7 +63,7 @@ describe('isAllowed', () => {
 describe('checkLicenses', () => {
   const pkgs = fromPnpmJson({
     MIT: [{ name: 'react', versions: ['19.3.1'], license: 'MIT' }],
-    'OFL-1.1': [{ name: '@fontsource/source-serif-4', versions: ['5.3.1'], license: 'OFL-1.1' }],
+    'OFL-1.1': [{ name: '@fontsource-variable/literata', versions: ['5.3.0'], license: 'OFL-1.1' }],
     'GPL-3.0': [{ name: 'some-gpl-lib', versions: ['1.0.0'], license: 'GPL-3.0' }],
     'MPL-2.0': [{ name: 'lightningcss', versions: ['1.33.0'], license: 'MPL-2.0' }],
   });
@@ -72,7 +72,7 @@ describe('checkLicenses', () => {
     const r = checkLicenses(pkgs);
     expect(r.checked).toBe(4);
     expect(r.failed.map((p) => p.name)).toEqual(['some-gpl-lib']);
-    expect(r.reviewed.map((p) => p.name)).toEqual(['@fontsource/source-serif-4', 'lightningcss']);
+    expect(r.reviewed.map((p) => p.name)).toEqual(['@fontsource-variable/literata', 'lightningcss']);
   });
 
   it('fails again when a reviewed package changes its licence', () => {

@@ -3,7 +3,27 @@ import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 import {
   Badge,
+  BarChart,
   Button,
+  Card,
+  Chip,
+  ChipRow,
+  Eyebrow,
+  HeatStrip,
+  ListGroup,
+  ListRow,
+  ProgressRing,
+  RatingBar,
+  SectionHeader,
+  StageBar,
+  StagePill,
+  StatRow,
+  StatTile,
+  TabHeader,
+  Term,
+  ratingLook,
+  stageBg,
+  uiStages,
   Checkbox,
   Dialog,
   DialogClose,
@@ -42,7 +62,7 @@ import { sampleCards, sampleIntervals } from '../pages/sampleCards';
 function Section({ title, children, id }: { title: string; children: ReactNode; id: string }) {
   return (
     <section aria-labelledby={id} className="border-t border-border py-10 first-of-type:border-t-0">
-      <h2 id={id} className="mb-6 font-serif text-2xl font-semibold text-fg">
+      <h2 id={id} className="mb-6 text-heading font-semibold text-fg">
         {title}
       </h2>
       {children}
@@ -114,9 +134,7 @@ export function UiGallery() {
         <header className="mb-4 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex flex-col gap-3">
             <Logo size={32} />
-            <h1 className="font-serif text-4xl font-semibold tracking-[-0.01em]">
-              {t('dev.title')}
-            </h1>
+            <h1 className="text-page-lg font-semibold">{t('dev.title')}</h1>
             <p className="text-fg-muted">{t('dev.intro')}</p>
           </div>
           {!embed && (
@@ -168,24 +186,282 @@ export function UiGallery() {
           </ul>
         </Section>
 
+        <Section id="identity" title={t('dev.identity')}>
+          <p className="mb-6 max-w-prose text-lead text-fg-muted">{t('dev.identityBody')}</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Card tone="default" padding="lg" className="flex flex-col gap-2">
+              <Eyebrow>Instrument Sans</Eyebrow>
+              <p className="text-numeral font-semibold">Aa Ğğ İı Şş</p>
+              <p className="text-ui text-fg-muted">ıİ ğĞ şŞ çÇ öÖ üÜ · 0123456789</p>
+            </Card>
+            <Card tone="default" padding="lg" className="flex flex-col gap-2">
+              <Eyebrow>Literata</Eyebrow>
+              <Term size="display">meticulous</Term>
+              <Term italic className="text-fg-muted">
+                {card.example}
+              </Term>
+            </Card>
+          </div>
+        </Section>
+
         <Section id="type" title={t('dev.typography')}>
           <div className="flex flex-col gap-4">
-            <p lang="en" className="font-serif text-display font-semibold">
-              meticulous
-            </p>
-            <p className="font-serif text-4xl font-semibold">{t('home.title')} · 36</p>
-            <p className="font-serif text-3xl font-semibold">{t('library.title')} · 30</p>
-            <p className="font-serif text-2xl font-semibold">{t('dev.dialogTitle')} · 24</p>
-            <p className="font-serif text-xl">{card.meaning} · 20</p>
-            <p lang="en" className="font-serif text-lg italic">
-              {card.example}
-            </p>
-            <p className="text-base">{t('dev.dialogBody')} · 16</p>
-            <p className="text-sm text-fg-muted">{t('library.emptyHint')} · 14</p>
-            <p className="text-xs text-fg-muted">{t('sync.offline')} · 12</p>
-            <p lang="tr" className="font-serif text-2xl">
+            <Term size="display" as="p">
+              meticulous · display 40
+            </Term>
+            <p className="text-page-lg font-semibold">{t('home.title')} · page-lg 32</p>
+            <p className="text-page font-semibold">{t('library.title')} · page 28</p>
+            <p className="text-heading font-semibold">{t('dev.dialogTitle')} · heading 24</p>
+            <p className="text-title font-semibold">{card.meaning} · title 20</p>
+            <p className="text-lead">{t('dev.dialogBody')} · lead 17</p>
+            <p className="text-body">{t('dev.dialogBody')} · body 16</p>
+            <p className="text-ui">{t('library.emptyHint')} · ui 15</p>
+            <p className="text-meta text-fg-muted">{t('library.emptyHint')} · meta 13</p>
+            <p className="text-caption text-fg-muted">{t('sync.offline')} · caption 12</p>
+            <Eyebrow>{t('dev.sampleEyebrow')} · eyebrow</Eyebrow>
+            <p className="tabular text-numeral font-semibold">248 · numeral 48</p>
+            <p lang="tr" className="text-heading">
               Iğdır, İzmir, şiş, çöğür — ıİ ğĞ şŞ çÇ öÖ üÜ
             </p>
+            <p lang="tr" className="font-serif text-heading">
+              Iğdır, İzmir, şiş, çöğür — ıİ ğĞ şŞ çÇ öÖ üÜ
+            </p>
+          </div>
+        </Section>
+
+        <Section id="stages" title={t('dev.stages')}>
+          <div className="flex flex-col gap-5">
+            <div className="flex flex-wrap gap-2">
+              {uiStages.map((st) => (
+                <StagePill key={st} stage={st} count={[34, 52, 61, 70, 31][uiStages.indexOf(st)]} />
+              ))}
+            </div>
+            <StageBar
+              counts={{ new: 34, learning: 52, consolidating: 61, learned: 70, mastered: 31 }}
+            />
+            <div className="flex gap-1">
+              {uiStages.map((st) => (
+                <span
+                  key={st}
+                  className={`h-10 flex-1 first:rounded-l-md last:rounded-r-md ${stageBg[st]}`}
+                />
+              ))}
+            </div>
+          </div>
+        </Section>
+
+        <Section id="ratingmap" title={t('dev.ratingMap')}>
+          <div className="mb-5 flex flex-wrap gap-4">
+            {ratings.map((r) => (
+              <span key={r} className="flex items-center gap-2 text-ui">
+                <span className={`size-3 rounded-full ${ratingLook[r].dot}`} />
+                <span className={ratingLook[r].text + ' font-semibold'}>{t(`rating.${r}`)}</span>
+              </span>
+            ))}
+          </div>
+          <RatingBar onRate={() => {}} intervals={sampleIntervals} shortcuts className="max-w-md" />
+        </Section>
+
+        <Section id="radii" title={t('dev.radii')}>
+          <div className="flex flex-wrap items-end gap-4">
+            {(
+              [
+                ['xs 4', 'rounded-xs'],
+                ['sm 8', 'rounded-sm'],
+                ['control 12', 'rounded-control'],
+                ['inner 16', 'rounded-inner'],
+                ['card 20', 'rounded-card'],
+                ['sheet 28', 'rounded-sheet'],
+                ['full', 'rounded-full'],
+              ] as const
+            ).map(([label, cls]) => (
+              <div key={label} className="flex flex-col items-center gap-2">
+                <span className={`size-16 border border-border-strong/50 bg-accent-soft ${cls}`} />
+                <code className="text-caption text-fg-muted">{label}</code>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        <Section id="elevation" title={t('dev.elevation')}>
+          <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
+            {(['shadow-none', 'shadow-sm', 'shadow-md', 'shadow-lg'] as const).map((cls, i) => (
+              <div
+                key={cls}
+                className={`flex h-20 items-center justify-center rounded-card border border-border bg-surface-raised ${cls}`}
+              >
+                <code className="text-caption text-fg-muted">e{i}</code>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        <Section id="pageframe" title={t('dev.pageFrame')}>
+          <Card tone="outline" padding="md">
+            <TabHeader
+              eyebrow={t('dev.sampleEyebrow')}
+              title={t('dev.sampleTitle')}
+              headingLevel="h2"
+              description={t('dev.sampleDesc')}
+              back={{ to: '/', label: t('settings.title') }}
+              actions={<IconButton icon="search" label={t('common.search')} />}
+              className="mb-0 md:mb-0"
+            />
+          </Card>
+        </Section>
+
+        <Section id="cards" title={t('dev.cards')}>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Card>{t('dev.cardDefault')}</Card>
+            <Card tone="raised">{t('dev.cardRaised')}</Card>
+            <Card tone="sunken">{t('dev.cardSunken')}</Card>
+            <Card tone="accent">{t('dev.cardAccent')}</Card>
+            <Card tone="outline">{t('dev.cardOutline')}</Card>
+            <Card tone="placeholder">{t('dev.cardPlaceholder')}</Card>
+          </div>
+          <div className="mt-6 grid gap-3 sm:grid-cols-[auto_1fr]">
+            <Card className="flex items-center gap-4">
+              <ProgressRing
+                value={12}
+                max={30}
+                label={t('dev.preview.today.ring')}
+                valueText={t('dev.preview.today.ringValue')}
+              >
+                <span className="tabular text-title font-semibold">18</span>
+              </ProgressRing>
+              <ProgressRing value={30} max={30} size={44} label={t('dev.preview.today.ring')}>
+                <Icon name="check" size={18} className="text-accent-text" />
+              </ProgressRing>
+            </Card>
+            <StatRow>
+              <StatTile bare value="248" label={t('dev.preview.words.allUnit')} />
+              <StatTile
+                bare
+                value="5"
+                unit={t('stats.daysUnit', { count: 5 })}
+                label={t('dev.streak')}
+              />
+              <StatTile bare value="%91" label={t('dev.retention')} hint="+2" />
+            </StatRow>
+          </div>
+        </Section>
+
+        <Section id="lists" title={t('dev.lists')}>
+          <div className="grid gap-6 sm:grid-cols-2">
+            <ListGroup label={t('dev.preview.today.shortcuts')}>
+              <ListRow
+                to="/"
+                leadingIcon="alert"
+                leadingTone="warn"
+                title={t('dev.preview.today.hard')}
+                description={t('dev.preview.today.hardDesc')}
+                meta="7"
+              />
+              <ListRow
+                to="/"
+                leadingIcon="layers"
+                leadingTone="accent"
+                title={t('dev.preview.today.bank')}
+                description={t('dev.preview.today.bankDesc')}
+              />
+              <Switch label={t('dev.sound')} defaultChecked className="min-h-14 px-4" />
+            </ListGroup>
+            <ListGroup label={t('dev.preview.words.all')}>
+              {sampleCards.map((c, i) => (
+                <ListRow
+                  key={c.term}
+                  to="/"
+                  term
+                  title={c.term}
+                  description={c.meaning}
+                  trailing={<StagePill stage={uiStages[i + 1]!} />}
+                />
+              ))}
+            </ListGroup>
+          </div>
+        </Section>
+
+        <Section id="chips" title={t('dev.chips')}>
+          <ChipRow label={t('dev.preview.today.modes')}>
+            <Chip selected count={12}>
+              {t('dev.preview.today.review')}
+            </Chip>
+            <Chip count={6}>{t('dev.preview.today.new')}</Chip>
+            <Chip count={3}>{t('dev.preview.today.cloze')}</Chip>
+            <Chip icon="plus">{t('dev.preview.words.newDeck')}</Chip>
+          </ChipRow>
+        </Section>
+
+        <Section id="charts" title={t('dev.charts')}>
+          <div className="grid gap-6 sm:grid-cols-2">
+            <Card>
+              <SectionHeader as="h3" title={t('dev.heatmap')} />
+              <BarChart
+                label={t('dev.chartLabel')}
+                data={[3, 5, 2, 9, 4, 0, 6, 3, 2, 4, 7, 1, 0, 3].map((v, i) => ({
+                  label: String(i + 1),
+                  value: v,
+                  highlight: i === 0,
+                }))}
+                reference={{ value: 20, label: t('dev.capacity') }}
+              />
+            </Card>
+            <Card className="flex flex-col gap-4">
+              <HeatStrip
+                label={t('dev.heatLabel')}
+                days={(
+                  [
+                    'completed',
+                    'completed',
+                    'empty',
+                    'active',
+                    'completed',
+                    'completed',
+                    'completed',
+                  ] as const
+                ).map((level, i) => ({ level, label: String(i + 1) }))}
+              />
+              <p className="text-meta text-fg-muted">{t('dev.streak')}</p>
+              <HeatStrip
+                layout="grid"
+                label={t('dev.heatLabel')}
+                days={heat.map((level, i) => ({ level, label: String(i) }))}
+              />
+            </Card>
+          </div>
+        </Section>
+
+        <Section id="states" title={t('dev.states')}>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <EmptyState
+              tone="placeholder"
+              compact
+              icon="cards"
+              title={t('dev.preview.words.emptyTitle')}
+              description={t('dev.preview.words.emptyBody')}
+              action={
+                <Button variant="secondary" size="sm" leadingIcon="plus">
+                  {t('dev.preview.words.newDeck')}
+                </Button>
+              }
+            />
+            <Card className="flex flex-col gap-4" aria-busy="true">
+              <Skeleton className="h-6 w-2/5" />
+              <Skeleton lines={3} />
+              <Skeleton className="h-11 w-full rounded-control" />
+            </Card>
+            <EmptyState
+              tone="card"
+              compact
+              icon="sync-offline"
+              title={t('dev.errorTitle')}
+              description={t('dev.errorBody')}
+              action={
+                <Button variant="secondary" size="sm" leadingIcon="refresh">
+                  {t('dev.retry')}
+                </Button>
+              }
+            />
           </div>
         </Section>
 
@@ -193,6 +469,9 @@ export function UiGallery() {
           <Row label="variant">
             <Button>{t('home.startReview')}</Button>
             <Button variant="secondary">{t('common.edit')}</Button>
+            <Button variant="tonal" leadingIcon="plus">
+              {t('common.add')}
+            </Button>
             <Button variant="ghost">{t('common.cancel')}</Button>
             <Button variant="danger" leadingIcon="trash">
               {t('common.delete')}
@@ -224,6 +503,7 @@ export function UiGallery() {
             <IconButton icon="undo" label={t('common.undo')} />
             <IconButton icon="more" label={t('common.more')} variant="secondary" />
             <IconButton icon="plus" label={t('common.add')} variant="primary" />
+            <IconButton icon="plus" label={t('common.add')} variant="tonal" />
             <IconButton icon="pencil" label={t('common.edit')} size="sm" />
             <IconButton icon="speaker" label={t('common.listen')} pressed />
           </Row>
@@ -371,6 +651,14 @@ export function UiGallery() {
               }
             >
               {t('dev.showToast')}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() =>
+                toast.undo({ title: t('dev.undoToast'), undoLabel: t('ui.undo'), onUndo: () => {} })
+              }
+            >
+              {t('dev.showUndo')}
             </Button>
             <Button variant="ghost" onClick={() => toast({ title: t('sync.offline') })}>
               {t('sync.offlineShort')}

@@ -30,8 +30,8 @@ export function ProgressBar({
       aria-valuenow={value}
       aria-valuetext={valueText}
       className={cn(
-        'w-full overflow-hidden rounded-full bg-border',
-        size === 'sm' ? 'h-1' : 'h-2',
+        'w-full overflow-hidden rounded-full bg-surface-sunken',
+        size === 'sm' ? 'h-1.5' : 'h-2.5',
         className,
       )}
     >

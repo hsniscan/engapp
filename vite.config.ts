@@ -10,7 +10,7 @@ import { dirname, join } from 'node:path';
 
 // Light canvas token (`themeColor.light` in src/ui/tokens, `--canvas` in tokens.css). Kept as a
 // literal because the config is type-checked under nodenext, which cannot follow src/ imports.
-const themeColor = { light: '#f5f2ec' } as const;
+const themeColor = { light: '#f3f4f1' } as const;
 
 /**
  * "Fotoğraftan metin" on the web (docs/decisions/0045-ocr.md): tesseract.js loads its worker,

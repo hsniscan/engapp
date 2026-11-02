@@ -45,12 +45,20 @@ export const colorTokens = [
   'heat-empty',
   'heat-active',
   'heat-completed',
+  'stage-new',
+  'stage-learning',
+  'stage-consolidating',
+  'stage-learned',
+  'stage-mastered',
+  'chart-bar',
+  'chart-bar-muted',
+  'accent-on-inverse',
 ] as const;
 
 export type ColorToken = (typeof colorTokens)[number];
 
 /** Browser chrome colour (meta theme-color) per resolved theme = the canvas colour. */
 export const themeColor = {
-  light: '#f5f2ec',
-  dark: '#1a1917',
+  light: '#f3f4f1',
+  dark: '#101312',
 } as const;

@@ -20,7 +20,8 @@ export interface SegmentedControlProps<V extends string> {
 }
 
 /**
- * A single choice among 2–4 options (e.g. theme: Sistem / Açık / Koyu).
+ * A single choice among 2–4 options (e.g. theme: Sistem / Açık / Koyu), or switching between
+ * 2–3 views of the same place (Destelerim / Kelime Bankası). 44 px segments.
  * Built on native radio inputs: arrow keys, form semantics and screen readers work for free.
  */
 export function SegmentedControl<V extends string>({
@@ -36,22 +37,20 @@ export function SegmentedControl<V extends string>({
   const groupName = name ?? autoName;
   return (
     <fieldset className={cn('flex flex-col gap-1.5', className)}>
-      <legend className={cn('mb-1.5 text-sm font-medium text-fg', hideLegend && 'sr-only')}>
+      <legend className={cn('mb-1.5 text-meta font-semibold text-fg', hideLegend && 'sr-only')}>
         {legend}
       </legend>
-      <div className="flex rounded-control bg-surface-sunken p-1 ring-1 ring-border ring-inset">
+      <div className="flex gap-1 rounded-control bg-surface-sunken p-1">
         {options.map((opt) => {
           const selected = opt.value === value;
           return (
             <label
               key={opt.value}
               className={cn(
-                'relative flex min-h-10 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[6px] px-3 text-sm font-medium',
+                'relative flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-sm px-3 text-ui font-semibold whitespace-nowrap',
                 'transition-[background-color,color,box-shadow] duration-(--duration-micro) ease-standard',
                 'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-1 has-[:focus-visible]:outline-focus',
-                selected
-                  ? 'bg-surface-raised text-fg shadow-[0_1px_2px_var(--shadow-color)] ring-1 ring-border'
-                  : 'text-fg-muted hover:text-fg',
+                selected ? 'bg-surface-raised text-fg shadow-sm' : 'text-fg-muted hover:text-fg',
               )}
             >
               <input
