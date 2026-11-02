@@ -98,35 +98,39 @@ jobs:
       - name: Link project
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
 
-      # GitHub runners have no IPv6 and the direct database host is IPv6-only,
-      # so migrations go through the project's IPv4 session pooler.
-      - name: Apply database migrations
+      # GitHub runners have no IPv6 and the direct database host is IPv6-only, so the URL
+      # (kept in $RUNNER_TEMP/db-url for the steps below) points at the IPv4 session pooler.
+      - name: Find the database
+        run: scripts/supabase-db-url.sh
+
+      # Decision 0060: a migration that goes wrong must never be the end of users' data. The
+      # dump is taken before every push; without BACKUP_PASSPHRASE the deploy stops.
+      - name: Back up before migrating
+        env:
+          DB_URL_FILE: ${{ runner.temp }}/db-url
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BACKUP_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
+          R2_BACKUP_ACCESS_KEY_ID: ${{ secrets.R2_BACKUP_ACCESS_KEY_ID }}
+          R2_BACKUP_SECRET_ACCESS_KEY: ${{ secrets.R2_BACKUP_SECRET_ACCESS_KEY }}
+          SKIP_BACKUP: ${{ vars.SKIP_PRE_MIGRATION_BACKUP }}
         run: |
           set -euo pipefail
-          umask 077 # the working database URL is kept in $RUNNER_TEMP for the push step below
-          pass=$(jq -rn --arg p "$SUPABASE_DB_PASSWORD" '$p|@uri')
-          echo "::add-mask::$pass"
-          status=$(curl -sS -o pooler.json -w '%{http_code}' \
-            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
-            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/config/database/pooler")
-          if [ "$status" = "200" ]; then
-            host=$(jq -r '[.[] | select(.database_type == "PRIMARY")][0].db_host' pooler.json)
-            user=$(jq -r '[.[] | select(.database_type == "PRIMARY")][0].db_user' pooler.json)
-            name=$(jq -r '[.[] | select(.database_type == "PRIMARY")][0].db_name' pooler.json)
-            supabase db push --db-url "postgresql://$user:$pass@$host:5432/$name" --yes
-            echo "postgresql://$user:$pass@$host:5432/$name" > "$RUNNER_TEMP/db-url"
+          if [ "$SKIP_BACKUP" = "true" ]; then
+            echo "::warning::SKIP_PRE_MIGRATION_BACKUP=true: migrating WITHOUT a fresh backup."
             exit 0
           fi
-          # Token without 'Connection Pooling: Read': try the regional pooler hosts directly.
-          echo "::warning::Pooler config not readable (HTTP $status); trying regional pooler hosts."
-          for host in aws-0-$SUPABASE_REGION.pooler.supabase.com aws-1-$SUPABASE_REGION.pooler.supabase.com; do
-            if supabase db push --db-url "postgresql://postgres.$SUPABASE_PROJECT_REF:$pass@$host:5432/postgres" --yes; then
-              echo "postgresql://postgres.$SUPABASE_PROJECT_REF:$pass@$host:5432/postgres" > "$RUNNER_TEMP/db-url"
-              exit 0
-            fi
-          done
-          echo "::error::Could not reach the database pooler. Give the SUPABASE_ACCESS_TOKEN the 'Connection Pooling: Read' permission."
-          exit 1
+          if [ -z "$BACKUP_PASSPHRASE" ] || [ -z "$R2_ACCOUNT_ID" ]; then
+            echo "::error::BACKUP_PASSPHRASE / R2_ACCOUNT_ID is not set: refusing to migrate without a backup (docs/runbook-backup-restore.md). For one emergency deploy set the variable SKIP_PRE_MIGRATION_BACKUP=true."
+            exit 1
+          fi
+          scripts/db-backup.sh pre-migration
+
+      - name: Apply database migrations
+        run: supabase db push --db-url "$(cat "$RUNNER_TEMP/db-url")" --yes
 
       - name: Set function secrets
         env:
@@ -260,3 +264,7 @@ jobs:
             select id from auth.users where id = :'uid'::uuid on conflict do nothing;
           select 'picture admins: ' || count(*) from public.app_admins;
           SQL
+
+      - name: Forget the database URL
+        if: always()
+        run: rm -f "$RUNNER_TEMP/db-url"

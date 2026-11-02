@@ -5,12 +5,15 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import {
+  forUser,
   MemoryTextBudgetStore,
   recordTextSpend,
   reserveTextBudget,
   settleTextBudget,
   textMonthlyCapUsd,
+  textUserMonthlyCapUsd,
 } from './text-budget.ts';
+import { featureDailyLimit, dailyLimit } from './setup.ts';
 
 const env = (vars: Record<string, string>) => (k: string) => vars[k];
 
@@ -108,5 +111,57 @@ describe('text budget', () => {
       ),
       { numRuns: 60 },
     );
+  });
+});
+
+describe('per-user share (decision 0060)', () => {
+  it('is 1 USD by default, never more than 10 % of the global cap', () => {
+    expect(textUserMonthlyCapUsd(env({}))).toBe(1);
+    expect(textUserMonthlyCapUsd(env({ CLAUDE_TEXT_MONTHLY_USD: '5' }))).toBe(0.5);
+    expect(textUserMonthlyCapUsd(env({ AI_USER_MONTHLY_USD: '3', CLAUDE_TEXT_MONTHLY_USD: '100' }))).toBe(3);
+    expect(textUserMonthlyCapUsd(env({ AI_USER_MONTHLY_USD: '3', AI_USER_MAX_SHARE: '0.2' }))).toBe(2);
+    expect(textUserMonthlyCapUsd(env({ AI_USER_MAX_SHARE: 'x', AI_USER_MONTHLY_USD: '-1' }))).toBe(1);
+  });
+
+  it('one user cannot spend more than the share; another user still can', async () => {
+    const store = new MemoryTextBudgetStore();
+    const base = { store, capUsd: 10 };
+    const alice = forUser(base, 'alice', 1);
+    const bob = forUser(base, 'bob', 1);
+    let calls = 0;
+    const call = async () => ({ value: ++calls, costUsd: 0.3 });
+    const results = [];
+    for (let i = 0; i < 6; i++) results.push((await recordTextSpend(alice, { purpose: 'story', boundUsd: 0.3 }, call)).kind);
+    expect(results.filter((k) => k === 'ok')).toHaveLength(3);
+    expect(results.at(-1)).toBe('budget');
+    expect(store.users.get('alice')).toEqual({ spent: 0.9, reserved: 0 });
+    expect((await recordTextSpend(bob, { purpose: 'story', boundUsd: 0.3 }, call)).kind).toBe('ok');
+    expect(store.spent).toBeCloseTo(1.2, 6);
+  });
+
+  it('the global cap still applies to users with room in their share', async () => {
+    const store = new MemoryTextBudgetStore();
+    store.spent = 9.9;
+    const u = forUser({ store, capUsd: 10 }, 'u', 1);
+    expect(await reserveTextBudget(u, 0.2, 'ai-fallback')).toBeNull();
+    expect(store.users.get('u')).toBeUndefined();
+  });
+
+  it('batch holds of system jobs never count against a user', async () => {
+    const store = new MemoryTextBudgetStore();
+    const hold = await reserveTextBudget(forUser({ store, capUsd: 10 }, 'u', 1), 5, 'graded', { batch: true });
+    expect(hold).not.toBeNull();
+    expect(store.users.size).toBe(0);
+  });
+});
+
+describe('daily AI limits (decision 0060)', () => {
+  it('a lower shared default and one limit per feature, each overridable', () => {
+    expect(dailyLimit(env({}))).toBe(120);
+    expect(featureDailyLimit(env({}), 'ai-extract')).toBe(60);
+    expect(featureDailyLimit(env({}), 'ai-report')).toBe(4);
+    expect(featureDailyLimit(env({ AI_DAILY_LIMIT_EXTRACT: '80' }), 'ai-extract')).toBe(80);
+    expect(featureDailyLimit(env({ AI_DAILY_LIMIT_EXTRACT: 'lots' }), 'ai-extract')).toBe(60);
+    expect(featureDailyLimit(env({}), 'ai-new-thing')).toBe(20);
   });
 });

@@ -102,6 +102,15 @@ begin
   insert into public.image_feedback (image_id, sense_id, user_id, decision)
     select image_id, sense_id, u, 'approve' from pic;
   insert into public.app_admins (user_id) values (u);
+  -- v0.5.2 (decision 0060): per-feature AI counters, the user's text budget share and holds,
+  -- and the sync write-rate counters.
+  insert into public.ai_feature_usage (user_id, day, feature, calls) values (u, current_date, 'ai-extract', 1);
+  insert into public.text_budget_users (user_id, month) values (u, date_trunc('month', now() at time zone 'utc')::date);
+  insert into public.text_budget (month, cap_usd) values (date_trunc('month', now() at time zone 'utc')::date, 10)
+    on conflict do nothing;
+  insert into public.text_budget_holds (month, amount_usd, purpose, user_id)
+    values (date_trunc('month', now() at time zone 'utc')::date, 0.01, 'story', u);
+  insert into public.sync_usage (user_id, day) values (u, current_date);
 end;
 $f$;
 
