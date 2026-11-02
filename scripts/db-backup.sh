@@ -100,6 +100,12 @@ else
   put pre-migration
   prune pre-migration "${KEEP_PRE_MIGRATION:-10}"
 fi
+# Heartbeat (job_runs): ops_health() fails when the nightly backup stops running.
+if [ "$kind" = daily ]; then
+  PGCONNECT_TIMEOUT=15 psql "$url" -v ON_ERROR_STOP=1 -qAt \
+    -c "select public.job_heartbeat('db-backup', 'ok', jsonb_build_object('kb', $((size / 1024))))" >/dev/null \
+    || echo "::warning::Could not write the backup heartbeat (migration 20261103000400 not deployed yet?)"
+fi
 echo "Backup $kind/$stamp uploaded ($((size / 1024)) KB, $users users)."
 if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
   echo "Database backup **$kind** \`$stamp\`: $((size / 1024)) KB, $users users." >> "$GITHUB_STEP_SUMMARY"
