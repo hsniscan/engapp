@@ -27,6 +27,12 @@ test.describe('PWA', () => {
     expect(sizes).toEqual(
       expect.arrayContaining(['192x192:any', '512x512:any', '512x512:maskable']),
     );
+    // Long-press shortcuts (ADR 0064).
+    expect((manifest.shortcuts as { url: string }[]).map((s) => s.url)).toEqual([
+      '/study',
+      '/add',
+      '/kesfet?f=okuma',
+    ]);
 
     await page.reload(); // controlled from now on
     await addWord(page, WORDS[0]!);

@@ -232,7 +232,13 @@ describe('Fotoğraftan metin', () => {
       const recognizer = recognizerOf(BOOK);
       const router = renderPage(recognizer, async () => fakeImage, {
         pathname: '/fotograf',
-        state: { sharedImage: { id: 's1', url: 'https://localhost/_capacitor_file_/x.png', mimeType: 'image/png' } },
+        state: {
+          sharedImage: {
+            id: 's1',
+            url: 'https://localhost/_capacitor_file_/x.png',
+            mimeType: 'image/png',
+          },
+        },
       });
       await screen.findByRole('heading', { name: 'Okunan metni kontrol et' });
       expect(fetchMock).toHaveBeenCalledWith('https://localhost/_capacitor_file_/x.png');

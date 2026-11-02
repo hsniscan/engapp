@@ -1,8 +1,8 @@
 /**
- * Google Play store graphics (v0.4 İP7):
- *   - 6 phone screenshots × light and dark, 1080×1920 PNG, from seeded demo data
- *     (src/features/review/dev/seedDemo.ts): home, review front, review back, add from text,
- *     stats, settings;
+ * Google Play store graphics (v0.4 İP7; routes updated for the five-place app in v0.5.2):
+ *   - 8 phone screenshots × light and dark (Play's maximum), 1080×1920 PNG, from seeded demo
+ *     data (src/features/review/dev/seedDemo.ts): Bugün, a study card front and back,
+ *     Kelimelerim, the reader, words from a text, Keşfet, İlerleme;
  *   - the 512×512 app icon (the Engapp mark, full square: Play applies its own mask);
  *   - the 1024×500 feature graphic, from the design tokens.
  * Output: docs/play-store/screenshots/ and docs/play-store/graphics/.
@@ -154,7 +154,7 @@ try {
     );
     await page.goto(`${base}/`);
     await page
-      .getByRole('status', { name: 'Senkron durumu: Senkronlandı' })
+      .getByRole('status', { name: 'Eşitleme durumu: Eşitlendi' })
       .waitFor({ timeout: 60_000 });
     // The one-time prompts (level test offer, last week's report) answered, like a settled user.
     await page.evaluate(
@@ -169,31 +169,40 @@ try {
     );
 
     await page.goto(`${base}/`);
-    await shoot(page, '1-home', theme);
+    await shoot(page, '1-today', theme);
 
-    await page.goto(`${base}/review`);
+    // The study session (the old /review address redirects here).
+    await page.goto(`${base}/study?mode=word`);
     await settle(page);
-    await shoot(page, '2-review-front', theme);
+    await shoot(page, '2-study-front', theme);
     await page.getByRole('button', { name: /Cevabı göster/ }).click();
-    await shoot(page, '3-review-back', theme);
+    await shoot(page, '3-study-back', theme);
 
-    // Add from text: the fake model's candidates, in the import preview.
+    await page.goto(`${base}/decks`);
+    await shoot(page, '4-words', theme);
+
+    // A pasted text opened in the reader, then the same text's words (the fake model).
     await page.goto(`${base}/add?tab=paste`);
     await page.getByLabel('İngilizce metin').fill(SAMPLE_TEXT);
     await page.getByLabel('Başlık').fill('Şehirler ve iklim');
-    await page.getByRole('button', { name: 'Kelimeleri çıkar' }).click();
-    await page.getByRole('link', { name: 'Önizlemeyi aç' }).click({ timeout: 60_000 });
-    await page.waitForURL(/\/import\//);
-    await settle(page);
-    // Past the summary, onto the candidate cards.
-    await page.evaluate(() => window.scrollBy(0, 330));
-    await shoot(page, '4-add-from-text', theme);
+    await page.getByRole('button', { name: 'Okuyucuda aç' }).click();
+    await page.waitForURL(/\/oku\//);
+    await page.getByTestId('reader-text').waitFor();
+    await shoot(page, '5-reader', theme);
 
-    await page.goto(`${base}/stats?tab=gelisim`);
-    await shoot(page, '5-stats', theme);
+    await page.goto(`${base}/add?tab=paste`);
+    await page.getByLabel('İngilizce metin').fill(SAMPLE_TEXT);
+    await page.getByLabel('Başlık').fill('Şehirler ve iklim');
+    await page.getByRole('button', { name: /Bu metindeki kelimeleri çıkar/ }).click();
+    await page.waitForURL(/\/import\//, { timeout: 60_000 });
+    await page.getByTestId('smart-summary').waitFor({ timeout: 60_000 });
+    await shoot(page, '6-words-from-text', theme);
 
-    await page.goto(`${base}/settings`);
-    await shoot(page, '6-settings', theme);
+    await page.goto(`${base}/kesfet`);
+    await shoot(page, '7-discover', theme);
+
+    await page.goto(`${base}/progress`);
+    await shoot(page, '8-progress', theme);
     await ctx.close();
   }
 
