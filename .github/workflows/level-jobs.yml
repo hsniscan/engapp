@@ -67,8 +67,9 @@ jobs:
       - name: Run the level job
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.8-flash' }}
-          GEMINI_FALLBACK_MODEL: ${{ vars.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite' }}
+          # Only when a variable sets one; otherwise model-defaults.ts applies (decision 0060).
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          GEMINI_FALLBACK_MODEL: ${{ vars.GEMINI_FALLBACK_MODEL }}
           AI_SYSTEM_DAILY_LIMIT: ${{ vars.AI_SYSTEM_DAILY_LIMIT || '100' }}
           DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
           MAX_CALLS: ${{ inputs.max_calls }}
@@ -76,6 +77,9 @@ jobs:
         run: |
           set -euo pipefail
           if [ -n "$MAX_CALLS" ] && ! [[ "$MAX_CALLS" =~ ^[0-9]{1,5}$ ]]; then echo "::error::max_calls must be a whole number"; exit 1; fi
+          # An empty variable means "use the default", not "no fallback model".
+          if [ -z "$GEMINI_MODEL" ]; then unset GEMINI_MODEL; fi
+          if [ -z "$GEMINI_FALLBACK_MODEL" ]; then unset GEMINI_FALLBACK_MODEL; fi
           source scripts/supabase-service-env.sh
           args=(levels)
           if [ -n "$DRY_RUN" ]; then args+=("$DRY_RUN"); fi

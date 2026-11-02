@@ -8,6 +8,7 @@ import type Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import { answerText, type ModelMessage } from '../../supabase/functions/_shared/image-prompt.ts';
 import type { WordBankSense } from '../../supabase/functions/_shared/wordbank-contract.ts';
+import { MODELS_WITHOUT_REVIEW_THINKING } from '../../supabase/functions/_shared/model-defaults.ts';
 
 export const REVIEW_PROMPT_VERSION = 'wordbank-review-v1';
 /** Bank rows per request: the system prompt is paid once per group, not per word. */
@@ -121,7 +122,9 @@ export function reviewUserContent(
  * thinking at effort low.
  */
 function thinkingFor(model: string): Anthropic.ThinkingConfigParam {
-  return model.startsWith('claude-sonnet-5-5') ? { type: 'between_tools' } : { type: 'adaptive' };
+  return MODELS_WITHOUT_REVIEW_THINKING.some((m) => model.startsWith(m))
+    ? { type: 'between_tools' }
+    : { type: 'adaptive' };
 }
 
 export function buildReviewRequest(
