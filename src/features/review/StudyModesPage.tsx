@@ -34,7 +34,7 @@ const MIXED_FLAG = 'study.mixed';
 
 const left = (c: StudyModeCount) => c.due + c.newCount;
 
-export const MODE_ICON: Record<StudyMode, IconName> = {
+const MODE_ICON: Record<StudyMode, IconName> = {
   word: 'cards',
   production: 'pen',
   cloze: 'cloze',
