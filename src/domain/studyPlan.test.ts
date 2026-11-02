@@ -65,6 +65,9 @@ describe('shareNewBudget (ADR 0062)', () => {
     expect(a).toEqual({ word: 9, production: 0, cloze: 1, dictation: 0 });
     const b = shareNewBudget({ total: 0, introduced: {}, available: { cloze: 7 }, extra: { cloze: 5 } });
     expect(b.cloze).toBe(5);
+    // The extra is used up as cards are introduced: 2 of 5 done → 3 left, not 5 again.
+    const c = shareNewBudget({ total: 2, introduced: { word: 4 }, available: { word: 10 }, extra: { word: 5 } });
+    expect(c.word).toBe(3);
   });
   it('stops at the total even when modes went over their share earlier', () => {
     const a = shareNewBudget({ total: 10, introduced: { word: 9 }, available: plenty });

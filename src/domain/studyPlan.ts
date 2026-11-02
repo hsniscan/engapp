@@ -153,13 +153,18 @@ export function shareNewBudget(input: NewBudgetInput, order: readonly StudyMode[
   const demand: ModeNumbers = {};
   for (const m of order) demand[m] = Math.min(capOf(m), nonNeg(input.introduced[m]) + nonNeg(input.available[m]));
   const quota = fairShares(input.total, demand, NEW_BUDGET_WEIGHTS, order);
+  // Cards a mode introduced beyond its share came from its extra allowance first.
+  const usedExtra = zeros();
+  for (const m of order)
+    usedExtra[m] = Math.min(nonNeg(input.extra?.[m]), Math.max(0, nonNeg(input.introduced[m]) - quota[m]));
   const introducedAll = order.reduce((n, m) => n + nonNeg(input.introduced[m]), 0);
+  const usedTotal = introducedAll - order.reduce((n, m) => n + usedExtra[m], 0);
   const allowed = zeros();
   for (const m of order) allowed[m] = Math.min(nonNeg(input.available[m]), Math.max(0, quota[m] - nonNeg(input.introduced[m])));
-  fitTotal(allowed, Math.max(0, nonNeg(input.total) - introducedAll), order);
+  fitTotal(allowed, Math.max(0, nonNeg(input.total) - usedTotal), order);
   for (const m of order) {
-    const extra = nonNeg(input.extra?.[m]);
-    if (extra) allowed[m] = Math.min(nonNeg(input.available[m]), allowed[m] + extra);
+    const extraLeft = nonNeg(input.extra?.[m]) - usedExtra[m];
+    if (extraLeft > 0) allowed[m] = Math.min(nonNeg(input.available[m]), allowed[m] + extraLeft);
   }
   return allowed;
 }
