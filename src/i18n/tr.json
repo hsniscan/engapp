@@ -1,7 +1,6 @@
 {
   "app": {
-    "name": "Engapp",
-    "tagline": "İngilizce kelimeler, her gün biraz"
+    "name": "Engapp"
   },
   "nav": {
     "home": "Bugün",
@@ -302,7 +301,6 @@
     "addCards": "Kart ekle",
     "summary": {
       "title": "Oturum tamamlandı",
-      "cards": "Kart",
       "words": "Kelime",
       "studied_one": "{{count}} kelime çalıştın",
       "studied_other": "{{count}} kelime çalıştın",
@@ -418,7 +416,6 @@
   },
   "examples": {
     "title": "Örnek cümleler",
-    "count": "{{count}} cümle",
     "contextsLabel": "Bağlamlar",
     "contexts": {
       "daily": "Günlük",
@@ -638,9 +635,6 @@
     "textTitle": "Metin ekle",
     "textLead": "Metin kaydedilir ve okuyucuda açılır. İstersen içindeki yeni kelimeleri çıkarırsın.",
     "otherWays": "Ya da başka bir yerden"
-  },
-  "import": {
-    "title": "Önizleme"
   },
   "library": {
     "title": "Kartlar",
@@ -1731,15 +1725,9 @@
   "importer": {
     "privacy": "Gizli iş belgelerini yükleme.",
     "privacyWhy": "Ücretsiz yapay zekâ hizmetinde gönderilen metinleri Google okuyabilir ve modellerini geliştirmek için kullanabilir.",
-    "signInTitle": "Yapay zekâyla kart çıkarmak için giriş yap",
-    "signInBody": "Kelime ve kalıp önerileri sunucudaki yapay zekâyla hazırlanır, bu yüzden Google hesabıyla giriş gerekir. Elle kart eklemek misafir olarak da çalışır.",
-    "signInCta": "Google ile giriş yap",
-    "unavailableTitle": "Yapay zekâ bu sürümde kapalı",
-    "unavailableBody": "Yapay zekâ sunucusu ayarlanmamış. Kartları “Elle” sekmesinden ekleyebilirsin.",
     "paste": {
       "label": "İngilizce metin",
       "placeholder": "Bir makale, e-posta ya da kitap bölümü yapıştır…",
-      "stats": "{{chars}} karakter · {{chunks}} parça",
       "words_one": "{{count}} kelime · {{chars}} karakter",
       "words_other": "{{count}} kelime · {{chars}} karakter",
       "statsEmpty": "Cümleleri bölmeden yapıştır; uzun metinler parçalara ayrılır.",
@@ -2014,7 +2002,6 @@
       "user": "Bu seviyeyi sen seçtin; yalnızca sende geçerli."
     },
     "correction": "{{list}}: {{from}} → Türk öğrenci için {{to}}",
-    "correction_reason": "{{list}}: {{from}} → Türk öğrenci için {{to}} (yapay zekâ: {{reason}})",
     "autoWas": "Otomatik seviye: {{level}} ({{source}}).",
     "autoUnknown": "Bu kelimenin otomatik seviyesi bilinmiyor.",
     "unknown": "Seviye henüz bilinmiyor.",
@@ -2371,10 +2358,6 @@
     "levels": "Seviye: {{levels}}",
     "topics_one": "{{count}} konu",
     "topics_other": "{{count}} konu",
-    "practice": "Pratik yap",
-    "edit": "Düzenle",
-    "up": "Yukarı taşı",
-    "delete": "Sil",
     "deleteTitle": "“{{name}}” silinsin mi?",
     "deleteBody": "Yalnızca deste silinir; kelimelerin ve etiketlerin olduğu gibi kalır.",
     "deleted": "Deste silindi",
@@ -3136,7 +3119,6 @@
       "freq": "Sıklık 5 üzerinden {{n}}",
       "known": "Biliyorum",
       "carded": "Eklendi",
-      "select": "{{term}} seç",
       "selectedBody": "Tüm kelimelerim'e eklenecek",
       "showing": "{{shown}} / {{total}} gösteriliyor",
       "quick": "Seviyenden karışık {{count}} kelime"
@@ -3214,7 +3196,6 @@
     "words_other": "{{count}} kelime",
     "truncated": "Makale çok uzun olduğu için ilk bölümü alındı.",
     "notEnglish": "Bu sayfa İngilizce görünmüyor. Yine de açabilirsin.",
-    "extract": "Kelimeleri çıkar",
     "saveFailed": "Metin kaydedilemedi. Tekrar dene.",
     "extractFailed": "Kelime çıkarma başlatılamadı. Tekrar dene.",
     "failTitle": "Bu sayfa alınamadı",

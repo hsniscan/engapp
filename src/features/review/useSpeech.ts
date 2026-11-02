@@ -45,11 +45,6 @@ function synth(): SpeechSynthesis | null {
     : null;
 }
 
-/** True when the browser has a speech API at all (voices may still be loading or unlisted). */
-export function speechSupported(): boolean {
-  return synth() !== null;
-}
-
 /** How long an utterance may take to start before we assume the device cannot speak. */
 export const START_TIMEOUT_MS = 2500;
 

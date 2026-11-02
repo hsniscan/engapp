@@ -179,10 +179,6 @@ export async function listGradedCatalog(): Promise<GradedCatalogEntry[]> {
   return db.graded_catalog.toArray();
 }
 
-export async function countGradedCatalog(): Promise<number> {
-  return db.graded_catalog.count();
-}
-
 // ------------------------------------------------------------------ bodies
 
 export class GradedUnavailableError extends Error {
@@ -217,10 +213,6 @@ export async function getGradedBody(gradedId: string, now: Millis = Date.now()):
   };
   await db.graded_bodies.put(body);
   return body;
-}
-
-export async function hasGradedBody(gradedId: string): Promise<boolean> {
-  return (await db.graded_bodies.get(gradedId)) !== undefined;
 }
 
 // ------------------------------------------------------------------ reading rows

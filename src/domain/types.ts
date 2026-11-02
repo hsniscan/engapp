@@ -622,7 +622,6 @@ export const INSERT_ONLY_TABLES = [
   'level_tests',
   'weekly_reports',
 ] as const satisfies readonly OutboxTable[];
-export type InsertOnlyTable = (typeof INSERT_ONLY_TABLES)[number];
 
 export interface OutboxRow {
   seq?: number; // auto-increment key

@@ -15,7 +15,7 @@ Code (all under `supabase/functions/_shared/` unless noted):
 | `image-prompt.ts` | `image-v2`: system prompt, schema, `buildImageRequest`, `parseImageResponse`, redraw sentences |
 | `visual-prompt.ts` | `visual-v1`: visualizability score and drawing hint |
 | `image-check.ts` | contrast check, pixel coverage, `imagecheck-v2` (vision) |
-| `svg-sanitize.ts` | allowlist sanitizer (also used by the client: `src/domain/svgSanitize.ts`) |
+| `svg-sanitize.ts` | allowlist sanitizer (the client imports it directly) |
 | `image-models.ts` | model ids from the environment, the one price map, cost and reservation math |
 | `image-pipeline.ts` | `evaluateDrawing` (every check of one answer), `drawSense` (synchronous drawing) |
 | `image-instant.ts`, `ai-image/index.ts` | the `ai-image` edge function |

@@ -180,11 +180,6 @@ export async function listPendingImportJobs(): Promise<ImportJobRecord[]> {
   return rows.sort((a, b) => a.created_at - b.created_at);
 }
 
-/** Recent jobs (newest first), for "devam eden içe aktarmalar". */
-export async function listRecentImportJobs(limit = 5): Promise<ImportJobRecord[]> {
-  return jobs().orderBy('created_at').reverse().limit(limit).toArray();
-}
-
 export async function updateImportJob(id: Id, patch: Partial<ImportJobRecord>, now: Millis = Date.now()): Promise<void> {
   await jobs().update(id, { ...patch, updated_at: now });
 }
@@ -389,12 +384,6 @@ export async function listImportCandidates(jobId: Id): Promise<ImportCandidateRe
 /** Persist the user's selection / in-place meaning edit for a candidate. */
 export async function updateImportCandidate(id: Id, patch: Partial<Pick<ImportCandidate, 'selected' | 'meaning_tr_edit'>>): Promise<void> {
   await candidates().update(id, patch);
-}
-
-export async function setImportCandidatesSelected(ids: Id[], selected: boolean): Promise<void> {
-  await db.transaction('rw', db.import_candidates, async () => {
-    for (const id of ids) await candidates().update(id, { selected });
-  });
 }
 
 /** The preview's current state of a candidate (applied inside the confirm transaction). */

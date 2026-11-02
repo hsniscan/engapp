@@ -68,10 +68,6 @@ export function compareHlc(a: string, b: string): -1 | 0 | 1 {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-export function maxHlc(a: string, b: string): string {
-  return a >= b ? a : b;
-}
-
 /** True when a remote timestamp is further ahead of our clock than `maxDriftMs` (diagnostics only). */
 export function isClockSkewed(remote: string, now: number, maxDriftMs = 24 * 3600_000): boolean {
   return decodeHlc(remote).ms - now > maxDriftMs;

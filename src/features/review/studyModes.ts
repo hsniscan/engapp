@@ -68,14 +68,3 @@ export async function getTodayStudy(now: Millis = Date.now()): Promise<TodayStud
 export function useTodayStudy(): TodayStudy | undefined {
   return useLiveQuery(() => getTodayStudy(), []);
 }
-
-export async function getStudyModeCounts(
-  now: Millis = Date.now(),
-): Promise<Record<StudyMode, StudyModeCount>> {
-  return (await getTodayStudy(now)).counts;
-}
-
-/** Live counts per study mode; undefined while loading. */
-export function useStudyModeCounts(): Record<StudyMode, StudyModeCount> | undefined {
-  return useTodayStudy()?.counts;
-}

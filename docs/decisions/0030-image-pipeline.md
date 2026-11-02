@@ -9,7 +9,7 @@ nightly batch is the main path (half price); a user can also ask for one picture
 
 **Decision.**
 
-- **Sanitizer** (`_shared/svg-sanitize.ts`, re-exported as `src/domain/svgSanitize.ts`): a small
+- **Sanitizer** (`_shared/svg-sanitize.ts`, imported by the client as is): a small
   XML-subset tokenizer with an allowlist; no DOM, so the same code runs in Deno, Node and the
   browser. It rebuilds the SVG from what it accepted (normalised numbers, lowercase palette
   colours, fixed attribute order), so a sanitised picture is byte-stable and idempotent.

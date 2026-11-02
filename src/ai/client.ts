@@ -64,6 +64,32 @@ export class AiClientError extends Error {
   }
 }
 
+/**
+ * What a user-started AI request (mnemonic suggestions, contrast cards) tells the screen when it
+ * fails: the same few outcomes everywhere, each with one Turkish line. `no_lexicon` is decided
+ * before the call (the sense is not in the shared lexicon).
+ */
+export type AiRequestError = 'offline' | 'signed_out' | 'daily_limit' | 'busy' | 'no_lexicon' | 'failed';
+
+/** Maps a thrown error of `call` to an AiRequestError; anything that is not an AiClientError is 'failed'. */
+export function aiRequestError(e: unknown): Exclude<AiRequestError, 'no_lexicon'> {
+  if (!(e instanceof AiClientError)) return 'failed';
+  switch (e.code) {
+    case 'offline':
+      return 'offline';
+    case 'not_signed_in':
+    case 'unauthorized':
+    case 'not_configured':
+      return 'signed_out';
+    case 'daily_limit':
+      return 'daily_limit';
+    case 'quota_exceeded':
+      return 'busy';
+    default:
+      return 'failed';
+  }
+}
+
 export interface AiClientDeps {
   fetch?: typeof fetch;
   getAccessToken?: () => Promise<string | null>;

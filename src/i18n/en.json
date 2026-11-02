@@ -1,7 +1,6 @@
 {
   "app": {
-    "name": "Engapp",
-    "tagline": "English words, a little every day"
+    "name": "Engapp"
   },
   "nav": {
     "home": "Today",
@@ -302,7 +301,6 @@
     "addCards": "Add cards",
     "summary": {
       "title": "Session complete",
-      "cards": "Cards",
       "words": "Words",
       "studied_one": "You studied {{count}} word",
       "studied_other": "You studied {{count}} words",
@@ -418,7 +416,6 @@
   },
   "examples": {
     "title": "Example sentences",
-    "count": "{{count}} sentences",
     "contextsLabel": "Contexts",
     "contexts": {
       "daily": "Everyday",
@@ -638,9 +635,6 @@
     "textTitle": "Add a text",
     "textLead": "The text is saved and opens in the reader. You can pick out its new words too.",
     "otherWays": "Or from somewhere else"
-  },
-  "import": {
-    "title": "Preview"
   },
   "library": {
     "title": "Cards",
@@ -1731,15 +1725,9 @@
   "importer": {
     "privacy": "Don't upload confidential work documents.",
     "privacyWhy": "On the free AI tier, Google may read submitted text and use it to improve its models.",
-    "signInTitle": "Sign in to pull cards out with AI",
-    "signInBody": "Word and phrase suggestions come from AI on the server, so you need to sign in with Google. Adding cards by hand works as a guest too.",
-    "signInCta": "Sign in with Google",
-    "unavailableTitle": "AI is off in this version",
-    "unavailableBody": "No AI server is configured. You can add cards from the “Manual” tab.",
     "paste": {
       "label": "English text",
       "placeholder": "Paste an article, email or book chapter…",
-      "stats": "{{chars}} characters · {{chunks}} parts",
       "words_one": "{{count}} word · {{chars}} characters",
       "words_other": "{{count}} words · {{chars}} characters",
       "statsEmpty": "Paste whole sentences; long texts are split into parts.",
@@ -2014,7 +2002,6 @@
       "user": "You chose this level; it applies only to you."
     },
     "correction": "{{list}}: {{from}} → {{to}} for Turkish learners",
-    "correction_reason": "{{list}}: {{from}} → {{to}} for Turkish learners (AI: {{reason}})",
     "autoWas": "Automatic level: {{level}} ({{source}}).",
     "autoUnknown": "The automatic level of this word is not known.",
     "unknown": "Level not known yet.",
@@ -2371,10 +2358,6 @@
     "levels": "Level: {{levels}}",
     "topics_one": "{{count}} topic",
     "topics_other": "{{count}} topics",
-    "practice": "Practice",
-    "edit": "Edit",
-    "up": "Move up",
-    "delete": "Delete",
     "deleteTitle": "Delete “{{name}}”?",
     "deleteBody": "Only the deck is deleted; your words and tags stay as they are.",
     "deleted": "Deck deleted",
@@ -3136,7 +3119,6 @@
       "freq": "Frequency {{n}} of 5",
       "known": "Known",
       "carded": "Added",
-      "select": "Pick {{term}}",
       "selectedBody": "Will be added to All my words",
       "showing": "Showing {{shown}} / {{total}}",
       "quick": "A mix of {{count}} words from your level"
@@ -3214,7 +3196,6 @@
     "words_other": "{{count}} words",
     "truncated": "The article is very long, so its first part was taken.",
     "notEnglish": "This page does not look English. You can still open it.",
-    "extract": "Find words",
     "saveFailed": "Could not save the text. Try again.",
     "extractFailed": "Could not start finding words. Try again.",
     "failTitle": "This page could not be fetched",
