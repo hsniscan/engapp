@@ -76,7 +76,6 @@ export async function call<T>(
   fn:
     | 'ai-extract'
     | 'ai-enrich'
-    | 'ai-examples'
     | 'ai-themes'
     | 'ai-mnemonic'
     | 'ai-report'

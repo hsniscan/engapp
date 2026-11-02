@@ -93,25 +93,6 @@ export class SupabaseImageStore implements ImageStore {
     );
   }
 
-  async consumeDaily(
-    userId: string,
-    limit: number,
-  ): Promise<{ allowed: boolean; used: number; limit: number }> {
-    return check(
-      await this.db.rpc('image_consume', { p_user: userId, p_limit: limit }),
-      'image_consume',
-    );
-  }
-
-  async userHasSense(userId: string, senseId: string): Promise<boolean> {
-    return (
-      check(
-        await this.db.rpc('image_user_has_sense', { p_user: userId, p_sense: senseId }),
-        'image_user_has_sense',
-      ) === true
-    );
-  }
-
   async senseInputs(senseIds: string[]): Promise<ImageRequestInput[]> {
     if (senseIds.length === 0) return [];
     return check(

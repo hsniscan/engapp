@@ -225,7 +225,7 @@ export async function missingLexiconSenseIds(): Promise<Id[]> {
 // ------------------------------------------------------------------ example sentence cache
 
 /**
- * Store a lexicon_examples_pull page (or rows returned by ai-examples) in the local cache.
+ * Store a lexicon_examples_pull page in the local cache.
  * Retired rows are removed: a sentence taken out of the shared table is never shown again.
  * With `nextSeq` the examples cursor is stored in the same transaction.
  */

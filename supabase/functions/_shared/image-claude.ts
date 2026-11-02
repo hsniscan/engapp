@@ -1,5 +1,5 @@
-// The Claude client of the picture pipeline: the official SDK, shared by the ai-image edge
-// function (Deno, npm specifier from the import map) and the Node jobs. The API key comes only
+// The Claude client of the picture pipeline: the official SDK, used by the Node jobs
+// (scripts/img-*.ts, word bank, graded library). The API key comes only
 // from the environment (ANTHROPIC_API_KEY, a Supabase function secret / GitHub secret) and is
 // never logged.
 

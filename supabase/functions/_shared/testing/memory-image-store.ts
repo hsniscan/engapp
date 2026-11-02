@@ -3,8 +3,7 @@
 // spent + reserved + amount > cap, each call is atomic.
 
 import type { ImageRequestInput, LexiconImageRow } from '../image-contract.ts';
-import type { BudgetPurpose, NewImage } from '../image-pipeline.ts';
-import type { InstantStore } from '../image-instant.ts';
+import type { BudgetPurpose, ImageStore, NewImage } from '../image-pipeline.ts';
 
 const r6 = (n: number) => Math.round(n * 1e6) / 1e6;
 
@@ -34,7 +33,7 @@ export class BudgetLedger {
   }
 }
 
-export class MemoryImageStore implements InstantStore {
+export class MemoryImageStore implements ImageStore {
   readonly ledger = new BudgetLedger();
   readonly images: (LexiconImageRow & {
     cost_usd: number;
@@ -43,10 +42,7 @@ export class MemoryImageStore implements InstantStore {
   })[] = [];
   readonly requests = new Map<string, { state: string; source?: string }>();
   readonly purposes: BudgetPurpose[] = [];
-  readonly daily = new Map<string, number>();
   senses = new Map<string, ImageRequestInput>();
-  /** user id → lexicon sense ids in their cards */
-  cards = new Map<string, Set<string>>();
 
   async reserve(amountUsd: number, capUsd: number, purpose: BudgetPurpose) {
     this.purposes.push(purpose);
@@ -73,17 +69,6 @@ export class MemoryImageStore implements InstantStore {
     };
     this.images.push(out);
     return out;
-  }
-
-  async consumeDaily(userId: string, limit: number) {
-    const used = this.daily.get(userId) ?? 0;
-    if (used + 1 > limit) return { allowed: false, used, limit };
-    this.daily.set(userId, used + 1);
-    return { allowed: true, used: used + 1, limit };
-  }
-
-  async userHasSense(userId: string, senseId: string) {
-    return this.cards.get(userId)?.has(senseId) ?? false;
   }
 
   async senseInputs(ids: string[]) {

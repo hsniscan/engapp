@@ -10,7 +10,6 @@ import {
   ALT,
   cachedImageIds,
   imageId,
-  lexSenseId,
   pictureBackup,
   pictureRow,
   restoreFile,
@@ -108,16 +107,13 @@ test.describe('picture on the card', () => {
 test.describe('word detail: Görsel', () => {
   test.use({ viewport: PHONE });
 
-  test('pick another picture, answer "Hayır", hide it, and draw a new one', async ({ page, context, backend }) => {
+  test('shows the shipped picture, can hide it, and offers nothing to draw', async ({ page, context, backend }) => {
     test.setTimeout(120_000);
-    const second = pictureRow('umbrella', { variant: 1, svg: SAMPLE_PICTURES.apple.svg, alt_tr: 'Şemsiye yerine bir elma' });
-    backend.images.push(pictureRow('umbrella'), second);
-    const drawn = pictureRow('umbrella', { variant: 2, status: 'review', svg: SAMPLE_PICTURES.between.svg, alt_tr: 'Yeni çizilmiş bir şemsiye' });
-    backend.imageAnswers.push({ ok: false, reason: 'not_visual' }, { ok: true, image: drawn });
+    backend.images.push(pictureRow('umbrella'));
     await FakeBackend.signIn(context);
     await page.goto('/');
     await restoreFile(page, await pictureBackup(['umbrella', 'apple']));
-    await expect.poll(() => cachedImageIds(page), { timeout: 30_000 }).toHaveLength(2);
+    await expect.poll(() => cachedImageIds(page), { timeout: 30_000 }).toHaveLength(1);
 
     await page.goto('/library');
     await page.getByRole('list', { name: 'Notlar' }).getByText('umbrella', { exact: true }).click();
@@ -128,34 +124,17 @@ test.describe('word detail: Görsel', () => {
     await noHorizontalScroll(page);
     await shots(page, 'detail-picture-360');
 
-    // Another variant becomes the one on the cards.
-    await sheet.getByRole('button', { name: /^2\. görsel: Şemsiye yerine bir elma\. Bunu kullan$/ }).click();
-    await expect(shown.getByRole('img', { name: 'Şemsiye yerine bir elma' })).toBeVisible();
-
-    // "Hayır" asks why; the answer is synced as a verdict on the picture.
-    await shown.getByRole('button', { name: 'Hayır' }).click();
-    await shown.getByRole('group', { name: 'Neden anlatmıyor?' }).getByRole('button', { name: 'Başka bir anlamı gösteriyor' }).click();
-    await expect(page.getByText('Teşekkürler, bu görsel artık kartlarında çıkmayacak.', { exact: true })).toBeVisible();
-    await expect(shown.getByRole('img', { name: ALT.umbrella })).toBeVisible();
-    await expect
-      .poll(() => backend.pushedIds('content_feedback').length, { timeout: 20_000 })
-      .toBeGreaterThan(0);
+    // v0.5.2 (ADR 0061): no "Görsel üret" / "Yeniden üret", no variants, no Evet / Hayır.
+    await expect(sheet.getByRole('button', { name: /üret/ })).toHaveCount(0);
+    await expect(sheet.getByTestId('image-variant')).toHaveCount(0);
+    await expect(shown.getByRole('button', { name: 'Hayır' })).toHaveCount(0);
 
     // Hide, then show again.
     await sheet.getByRole('button', { name: 'Görseli gizle' }).click();
     await expect(sheet.getByText('Bu anlamın görselini gizledin; kartlarında görünmüyor.')).toBeVisible();
     await sheet.getByRole('button', { name: 'Görseli göster' }).click();
     await expect(shown).toBeVisible();
-
-    // "Yeniden üret": a refusal in plain Turkish, then a new picture marked as new.
-    await sheet.getByRole('button', { name: 'Yeniden üret' }).click();
-    await expect(page.getByText('Bu anlam resimle anlatılabilecek bir şey değil, o yüzden görsel çizilmedi.', { exact: true })).toBeVisible();
-    await sheet.getByRole('button', { name: 'Yeniden üret' }).click();
-    await expect(page.getByText('Yeni görsel hazır ve kartlarına eklendi.', { exact: true })).toBeVisible();
-    await expect(shown.getByRole('img', { name: 'Yeni çizilmiş bir şemsiye' })).toBeVisible();
-    await expect(shown.getByText('Bu görsel yeni; henüz kimse gözden geçirmedi.')).toBeVisible();
-    const asked = backend.calls.filter((c) => c.name === 'ai-image').map((c) => c.body);
-    expect(asked).toEqual([{ sense_id: lexSenseId(SAMPLE_NAMES.indexOf('umbrella')) }, { sense_id: lexSenseId(SAMPLE_NAMES.indexOf('umbrella')) }]);
+    expect(backend.calls.filter((c) => c.name === 'ai-image')).toEqual([]);
   });
 });
 

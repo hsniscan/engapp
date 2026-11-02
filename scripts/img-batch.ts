@@ -11,7 +11,7 @@
  *   node scripts/img-batch.ts collect [--vision-limit 200]
  *       Reads finished batches: settles the real cost, sanitizes, renders, runs the contrast
  *       and imagecheck-v2 checks, stores passing pictures as 'review'; one redraw after a failed
- *       check. Also runs the vision check the ai-image edge function left pending.
+ *       check. Also runs any vision check left pending.
  *
  * Environment: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ANTHROPIC_API_KEY (missing: the job
  * is skipped with a notice), CLAUDE_IMAGE_MODEL, CLAUDE_CHECK_MODEL, CLAUDE_MONTHLY_CREDIT_USD.

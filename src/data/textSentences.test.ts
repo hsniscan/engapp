@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { resetDb } from '../test/db';
 import { addNoteWithSenses } from './actions';
 import { db } from './db';
-import { storeExamples } from './examples';
+import { applyLexiconExamples as storeExamples } from './sync';
 import { META, setMeta } from './meta';
 import { getCardView } from './queries';
 import { saveText } from './texts';

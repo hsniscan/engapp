@@ -235,7 +235,7 @@ export class FakeServer implements SyncTransport {
     return ids.map((id) => this.lexicon.get(id)?.row).filter((x): x is LexiconSense => !!x);
   }
 
-  /** Add or change a shared example sentence (server-side write, e.g. by ai-examples). */
+  /** Add or change a shared example sentence (server-side write, e.g. by the bulk content job). */
   addExample(row: LexiconExample): void {
     this.examples.set(row.id, { row, seq: ++this.exSeq });
   }

@@ -1,10 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { SAMPLE_PICTURES } from '@/test/imageSamples';
-import { decideReview, downloadImages, fetchReviewQueue, isAppAdmin, listImageManifest, requestImage } from './image';
+import { decideReview, downloadImages, fetchReviewQueue, isAppAdmin, listImageManifest } from './image';
 
-const config = { url: 'https://p.supabase.co', key: 'pk' };
-const token = async () => 'jwt';
 const SENSE = '0199f0a0-0000-7000-8000-00000000a001';
 const IMG = '0199f0a0-0000-7000-8000-0000000b0001';
 const row = {
@@ -16,36 +14,6 @@ const row = {
   status: 'approved',
   created_at: '2026-10-25T01:30:00Z',
 };
-
-describe('requestImage (ai-image)', () => {
-  it('sends only the lexicon sense id with the session token', async () => {
-    const fetch = vi.fn(async (_u: string | URL | Request, _i?: RequestInit) => new Response(JSON.stringify({ ok: true, image: row })));
-    const res = await requestImage(SENSE, { config, getAccessToken: token, fetch: fetch as typeof globalThis.fetch });
-    expect(res).toEqual({ ok: true, image: row });
-    const [url, init] = fetch.mock.calls[0]!;
-    expect(url).toBe('https://p.supabase.co/functions/v1/ai-image');
-    expect(JSON.parse(String(init!.body))).toEqual({ sense_id: SENSE });
-    expect((init!.headers as Record<string, string>).authorization).toBe('Bearer jwt');
-  });
-
-  it('passes the four refusals through as answers', async () => {
-    for (const reason of ['daily_limit', 'budget', 'not_visual', 'failed'] as const) {
-      const fetch = vi.fn(async () => new Response(JSON.stringify({ ok: false, reason })));
-      expect(await requestImage(SENSE, { config, getAccessToken: token, fetch })).toEqual({ ok: false, reason });
-    }
-  });
-
-  it('needs a signed-in user; maps HTTP errors, a dropped connection and a bad answer', async () => {
-    await expect(requestImage(SENSE, { config, getAccessToken: async () => null })).rejects.toMatchObject({ code: 'not_signed_in' });
-    const limit = vi.fn(async () => new Response(JSON.stringify({ error: { code: 'daily_limit', message: 'x' } }), { status: 429 }));
-    await expect(requestImage(SENSE, { config, getAccessToken: token, fetch: limit })).rejects.toMatchObject({ code: 'daily_limit' });
-    const down = vi.fn(async () => Promise.reject(new TypeError('Failed to fetch')));
-    await expect(requestImage(SENSE, { config, getAccessToken: token, fetch: down })).rejects.toMatchObject({ code: 'offline' });
-    const bad = vi.fn(async () => new Response(JSON.stringify({ ok: true })));
-    await expect(requestImage(SENSE, { config, getAccessToken: token, fetch: bad })).rejects.toMatchObject({ code: 'bad_response' });
-    await expect(requestImage('not-a-uuid', { config, getAccessToken: token })).rejects.toThrow();
-  });
-});
 
 /** A supabase-js stand-in: from(t).select(c).in(col, ids).in('status', …) and rpc(fn, args). */
 function fakeClient(tables: { rows: Record<string, unknown>[] }, rpc: Record<string, unknown> = {}) {

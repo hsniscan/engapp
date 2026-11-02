@@ -15,25 +15,9 @@ import {
 } from '@/data/quick';
 import { startAuth, useAuth } from '@/features/auth/session';
 import { lookupLexicon, type LexiconSuggestion } from '@/features/import/lexicon';
+import { useOnline } from '@/lib/online';
 import type { LookupState } from './QuickSheet';
 import { lookupForms } from './route';
-
-export function useOnlineNow(): boolean {
-  const [online, setOnline] = useState(() =>
-    typeof navigator === 'undefined' ? true : navigator.onLine,
-  );
-  useEffect(() => {
-    const on = () => setOnline(true);
-    const off = () => setOnline(false);
-    window.addEventListener('online', on);
-    window.addEventListener('offline', off);
-    return () => {
-      window.removeEventListener('online', on);
-      window.removeEventListener('offline', off);
-    };
-  }, []);
-  return online;
-}
 
 /** One ai-enrich lookup per term per session (StrictMode runs effects twice). */
 const asking = new Map<string, ReturnType<typeof lookupLexicon>>();
@@ -66,7 +50,7 @@ export interface TermLookup {
 export function useTermLookup(term: string): TermLookup {
   const { t } = useTranslation();
   const auth = useAuth();
-  const online = useOnlineNow();
+  const online = useOnline();
   const forms = useMemo(() => lookupForms(term), [term]);
   const local = useLiveQuery(
     () => (term ? quickPreview(term, forms) : Promise.resolve(undefined)),

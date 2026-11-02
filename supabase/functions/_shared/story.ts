@@ -17,7 +17,7 @@
 
 import { AiError } from './ai-provider.ts';
 import { ApiError } from './errors.ts';
-import { cleanExampleText, locateExampleTerm, wordCount } from './examples.ts';
+import { cleanExampleText, locateExampleTerm, wordCount } from './sentences.ts';
 import { reserveUsd, tokenBound } from './image-models.ts';
 import {
   DEFAULT_PICKED_DAILY_LIMIT,

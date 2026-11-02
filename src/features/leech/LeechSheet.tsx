@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import {
   getConfusables,
   getContrastCard,
+  hasCachedImages,
   hideConfusablePair,
   logError,
   resetCard,
@@ -181,6 +182,10 @@ function Paths({
   const { note, card, cardSenses } = data;
   const index = useMorphology();
   const words = useUserWords();
+  // v0.5.2: pictures are shipped, not drawn on request, so the path shows only with one.
+  const lexIds = cardSenses.flatMap((s) => (s.lexicon_sense_id ? [s.lexicon_sense_id] : []));
+  const lexKey = lexIds.join(',');
+  const hasPicture = useLiveQuery(() => hasCachedImages(lexKey ? lexKey.split(',') : []), [lexKey]) ?? false;
   const type = note.term_type;
   const isContrast = type === 'contrast';
   const hasFamily =
@@ -214,8 +219,8 @@ function Paths({
       children: <MnemonicSection termNorm={note.term_norm} senses={cardSenses} />,
     });
   }
-  if (!isContrast && type !== 'affix' && cardSenses.some((s) => s.lexicon_sense_id)) {
-    // v0.4 İP3: the picture of the sense, or "Görsel üret" when it has none.
+  if (!isContrast && type !== 'affix' && hasPicture) {
+    // v0.4 İP3: the picture of the sense (only when the device has one).
     paths.push({
       id: 'image',
       icon: 'image',

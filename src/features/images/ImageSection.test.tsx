@@ -1,11 +1,13 @@
-// "Görsel" in the word detail and "Görselle çalış" in the leech sheet (v0.4 İP3): other
-// pictures, "Yeniden üret" with the four refusals in plain Turkish, "Görseli gizle", and
-// "Bu görsel anlamı anlatıyor mu? Evet / Hayır" with the reasons. No live call: ai-image is a
-// recorded answer.
+// "Görsel" in the word detail and "Görselle çalış" in the leech sheet (v0.4 İP3): the shipped
+// picture is displayed and can be hidden. Since v0.5.2 (ADR 0061) nothing is drawn on request:
+// no "Görsel üret", no variant picker, no Evet / Hayır. Earlier choices and "Hayır" answers in
+// the user's account are still honoured.
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { addNoteWithSenses, cardImageOf, db, ensureSettings, getSenseImages, storeImage } from '@/data';
+import { addNoteWithSenses, cardImageOf, db, ensureSettings, storeImage } from '@/data';
+import { IMAGE_CHOICE_KIND, IMAGE_TARGET, imageChoiceRowId } from '@/domain/images';
+import { feedbackRowId } from '@/domain/examples';
 import type { CachedImage } from '@/domain/images';
 import type { Sense } from '@/domain/types';
 import { setAuthStateForTesting } from '@/features/auth/session';
@@ -16,8 +18,6 @@ import { renderRoute } from '@/test/ui';
 import { Toaster } from '@/ui';
 import { ImageSection } from './ImageSection';
 import { clearPictureCache } from './picture';
-import type { ImageRequestDeps } from './request';
-import { resetAdminCache } from './useIsAdmin';
 
 const sanitizeSvg = vi.hoisted(() => vi.fn((svg: string) => ({ ok: true as const, svg })));
 vi.mock('../../../supabase/functions/_shared/svg-sanitize', () => ({ sanitizeSvg }));
@@ -40,22 +40,12 @@ function pic(n: number, p: Partial<CachedImage> = {}): CachedImage {
   };
 }
 
-function deps(answer: Awaited<ReturnType<ImageRequestDeps['request']>>): ImageRequestDeps {
-  return {
-    request: vi.fn(async () => answer),
-    isOnline: () => true,
-    isSignedIn: async () => true,
-    now: () => T,
-  };
-}
-
 let sense: Sense;
 const signedIn = (uid = 'u1') => setAuthStateForTesting({ status: 'signed_in', user: { id: uid, email: null, name: null, avatarUrl: null } });
 
 beforeEach(async () => {
   await resetDb();
   clearPictureCache();
-  resetAdminCache();
   await ensureSettings(T);
   const res = await addNoteWithSenses({ term: 'umbrella', senses: [{ meaning_tr: 'şemsiye', pos: 'noun', lexicon_sense_id: LEX }] }, T);
   sense = res.addedSenses[0]!;
@@ -66,59 +56,72 @@ afterEach(() => setAuthStateForTesting({ status: 'guest', user: null }));
 function renderSection(props: Partial<Parameters<typeof ImageSection>[0]> = {}) {
   return renderRoute(
     <>
-      <ImageSection senses={[sense]} admin={{ ask: async () => false, decide: vi.fn() }} {...props} />
+      <ImageSection senses={[sense]} {...props} />
       <Toaster />
     </>,
   );
 }
 
 describe('Görsel section', () => {
-  it('shows the picture, lets the user pick another one, and the card follows', async () => {
-    const user = userEvent.setup();
+  it('shows one picture, with no drawing, variant or verdict controls', async () => {
     await storeImage(pic(0));
-    await storeImage(pic(1));
+    await storeImage(pic(1, { created_at: '2026-10-26T01:30:00Z' }));
     renderSection();
     const shown = await screen.findByTestId('image-shown');
-    expect(within(shown).getByRole('img', { name: 'Mavi bir şemsiye 0' })).toBeInTheDocument();
-    const variants = screen.getAllByTestId('image-variant');
-    expect(variants).toHaveLength(2);
-    expect(variants[0]).toHaveAttribute('aria-pressed', 'true');
-    await user.click(screen.getByRole('button', { name: /^2\. görsel: Kırmızı bir elma 1\. Bunu kullan$/ }));
-    expect(await screen.findByText('Kartlarında artık bu görsel görünecek')).toBeInTheDocument();
-    await waitFor(() => expect(within(screen.getByTestId('image-shown')).getByRole('img', { name: 'Kırmızı bir elma 1' })).toBeInTheDocument());
-    expect((await cardImageOf(sense))?.id).toBe(id(1));
+    expect(within(shown).getAllByRole('img')).toHaveLength(1);
+    expect(screen.queryByTestId('image-variant')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /üret/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Evet' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Görseli gizle' })).toBeInTheDocument();
+    const card = await cardImageOf(sense);
+    expect(within(shown).getByRole('img', { name: card!.alt })).toBeInTheDocument();
   });
 
-  it('Evet is saved; Hayır asks why, hides the picture from cards and can be undone', async () => {
-    const user = userEvent.setup();
+  it('an earlier pick and an earlier "Hayır" stored in the account still decide the picture', async () => {
     await storeImage(pic(0));
     await storeImage(pic(1));
+    await storeImage(pic(2));
+    // Synced rows from an older app version: picked picture 1, said "Hayır" to picture 2.
+    await db.user_content.put({
+      id: await imageChoiceRowId(sense.id),
+      user_id: 'u1',
+      kind: IMAGE_CHOICE_KIND,
+      lexicon_sense_id: LEX,
+      sense_id: sense.id,
+      context: 'chosen',
+      replaces_id: id(1),
+      text: 'chosen',
+      translations: null,
+      span: null,
+      selected: true,
+      hlc: 'h1',
+      created_at: T,
+      updated_at: T,
+      deleted_at: null,
+    });
     renderSection();
     const shown = await screen.findByTestId('image-shown');
-    expect(within(shown).getByText('Bu görsel anlamı anlatıyor mu?')).toBeInTheDocument();
-    await user.click(within(shown).getByRole('button', { name: 'Evet' }));
-    expect(await within(shown).findByText('“Evet” dedin, teşekkürler.')).toBeInTheDocument();
-    expect((await getSenseImages(sense.id))?.verdicts).toEqual({ [id(0)]: 'like' });
+    expect(within(shown).getByRole('img', { name: 'Kırmızı bir elma 1' })).toBeInTheDocument();
+    expect((await cardImageOf(sense))?.id).toBe(id(1));
 
-    await user.click(within(shown).getByRole('button', { name: 'Cevabı değiştir' }));
-    await user.click(within(shown).getByRole('button', { name: 'Hayır' }));
-    const reasons = within(shown).getByRole('group', { name: 'Neden anlatmıyor?' });
-    expect(within(reasons).getAllByRole('button').map((b) => b.textContent)).toEqual([
-      'Başka bir anlamı gösteriyor',
-      'Ne olduğu anlaşılmıyor',
-      'Çizim kötü görünüyor',
-      'Başka bir sebep',
-      'Vazgeç',
-    ]);
-    await user.click(within(reasons).getByRole('button', { name: 'Ne olduğu anlaşılmıyor' }));
-    expect(await screen.findByText('Teşekkürler, bu görsel artık kartlarında çıkmayacak.')).toBeInTheDocument();
-    // The card falls back to the other picture.
-    await waitFor(async () => expect((await cardImageOf(sense))?.id).toBe(id(1)));
-    expect((await getSenseImages(sense.id))?.reasons).toEqual({ [id(0)]: 'unclear' });
-
-    await user.click(screen.getByRole('button', { name: 'Geri al' }));
-    await waitFor(async () => expect((await getSenseImages(sense.id))?.verdicts).toEqual({}));
-    expect((await cardImageOf(sense))?.id).toBe(id(0));
+    // Without the pick, the default picture; an earlier "Hayır" to it moves on to another.
+    const choice = (await db.user_content.toArray())[0]!;
+    await db.user_content.put({ ...choice, deleted_at: T + 1 });
+    await waitFor(async () => expect((await cardImageOf(sense))?.id).not.toBe(undefined));
+    const first = (await cardImageOf(sense))!;
+    await db.content_feedback.put({
+      id: await feedbackRowId(IMAGE_TARGET, first.id),
+      user_id: 'u1',
+      target_kind: IMAGE_TARGET,
+      target_id: first.id,
+      verdict: 'reject',
+      hlc: 'h2',
+      created_at: T,
+      updated_at: T,
+      deleted_at: null,
+    });
+    await waitFor(() => expect(within(screen.getByTestId('image-shown')).queryByRole('img', { name: first.alt })).not.toBeInTheDocument());
+    expect((await cardImageOf(sense))?.id).not.toBe(first.id);
   });
 
   it('"Görseli gizle" takes it off the cards; "Görseli göster" brings it back', async () => {
@@ -134,63 +137,30 @@ describe('Görsel section', () => {
     expect((await cardImageOf(sense))?.id).toBe(id(0));
   });
 
-  it('"Yeniden üret": each refusal reads as plain Turkish; a new picture becomes the one shown', async () => {
-    const user = userEvent.setup();
-    await storeImage(pic(0));
-    const cases = [
-      ['daily_limit', 'Bugün 10 görsel ürettin; günlük sınır bu kadar. Yarın yine deneyebilirsin.'],
-      ['budget', 'Bu ayın görsel bütçesi doldu. Gelecek ay yeniden üretebilirsin.'],
-      ['not_visual', 'Bu anlam resimle anlatılabilecek bir şey değil, o yüzden görsel çizilmedi.'],
-      ['failed', 'Görsel üretilemedi. Biraz sonra tekrar dene.'],
-    ] as const;
-    for (const [reason, text] of cases) {
-      const view = renderSection({ requestDeps: deps({ ok: false, reason }) });
-      await user.click(await screen.findByRole('button', { name: 'Yeniden üret' }));
-      expect(await screen.findByText(text)).toBeInTheDocument();
-      view.unmount();
-    }
-    const d = deps({
-      ok: true,
-      image: { id: id(7), sense_id: LEX, variant: 7, svg: SAMPLE_PICTURES.apple.svg, alt_tr: 'Yeni bir elma', status: 'review', created_at: '2026-10-25T09:00:00Z' },
-    });
-    renderSection({ requestDeps: d });
-    await user.click(await screen.findByRole('button', { name: 'Yeniden üret' }));
-    expect(await screen.findByText('Yeni görsel hazır ve kartlarına eklendi.')).toBeInTheDocument();
-    expect(d.request).toHaveBeenCalledWith(LEX);
-    await waitFor(() => expect(within(screen.getByTestId('image-shown')).getByRole('img', { name: 'Yeni bir elma' })).toBeInTheDocument());
-    expect(screen.getByText('Bu görsel yeni; henüz kimse gözden geçirmedi.')).toBeInTheDocument();
-  });
-
-  it('no picture yet: "Görsel üret" needs sign-in', async () => {
+  it('no picture yet: says how shipped pictures arrive, and offers nothing to press', async () => {
     setAuthStateForTesting({ status: 'guest', user: null });
     renderSection();
-    expect(await screen.findByText('Bu anlam için henüz bir görsel yok. Görsel üretmek için Google ile giriş yap.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Görsel üret' })).toBeDisabled();
-    expect(screen.queryByRole('button', { name: 'Görseli gizle' })).not.toBeInTheDocument();
+    expect(await screen.findByText('Bu anlam için henüz bir görsel yok. Hazır görseller Google ile giriş yapınca bu cihaza indirilir.')).toBeInTheDocument();
+    expect(within(screen.getByTestId('image-section')).queryByRole('button')).not.toBeInTheDocument();
   });
 
-  it("an admin's answer about a picture still in review is also the review decision", async () => {
-    const user = userEvent.setup();
-    signedIn('admin-1');
-    await storeImage(pic(0, { status: 'review' }));
-    const decide = vi.fn(async () => {});
-    renderSection({ admin: { ask: async () => true, decide } });
-    const shown = await screen.findByTestId('image-shown');
-    await user.click(within(shown).getByRole('button', { name: 'Hayır' }));
-    await user.click(within(shown).getByRole('button', { name: 'Başka bir anlamı gösteriyor' }));
-    await waitFor(() => expect(decide).toHaveBeenCalledWith(id(0), 'reject', 'wrong_meaning'));
+  it('a guest still sees a picture cached on the device', async () => {
+    setAuthStateForTesting({ status: 'guest', user: null });
+    await storeImage(pic(0));
+    renderSection();
+    expect(await screen.findByRole('img', { name: 'Mavi bir şemsiye 0' })).toBeInTheDocument();
   });
 });
 
 describe('leech sheet: "Görselle çalış"', () => {
-  it('opens the picture of the sense, or offers to make one', async () => {
+  it('is offered only when the device has a picture of the sense', async () => {
     const user = userEvent.setup();
     const card = (await db.cards.toArray()).find((c) => c.card_type === 'recognition')!;
     renderRoute(<LeechSheet cardId={card.id} onOpenChange={() => {}} />);
-    const path = await screen.findByRole('button', { name: /Görselle çalış/ });
-    await user.click(path);
-    expect(await screen.findByRole('button', { name: 'Görsel üret' })).toBeEnabled();
+    await screen.findByRole('button', { name: /Başka bir cümlede gör/ });
+    expect(screen.queryByRole('button', { name: /Görselle çalış/ })).not.toBeInTheDocument();
     await storeImage(pic(0));
+    await user.click(await screen.findByRole('button', { name: /Görselle çalış/ }));
     expect(await screen.findByRole('img', { name: 'Mavi bir şemsiye 0' })).toBeInTheDocument();
   });
 });

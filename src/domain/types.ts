@@ -538,24 +538,6 @@ export interface UserContent extends SyncedRow {
   selected: boolean | null;
 }
 
-/** Background preparation of example sentences for one lexicon sense (device-local queue). */
-export interface ExampleJob {
-  /** `${sense_id}|${level_band}` */
-  key: string;
-  sense_id: Id;
-  level_band: LevelBand;
-  /** Contexts asked for in the last attempt. */
-  contexts: string[];
-  status: 'queued' | 'done' | 'failed';
-  /** Higher runs first (opened on screen > new note > older note). */
-  priority: number;
-  attempts: number;
-  next_attempt_at: Millis;
-  created_at: Millis;
-  updated_at: Millis;
-  error: string | null;
-}
-
 export type ImportJobStatus = 'queued' | 'processing' | 'ready' | 'failed' | 'done';
 
 export interface ImportJob {

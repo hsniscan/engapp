@@ -21,7 +21,7 @@ import {
 } from '@/domain/mnemonics';
 import type { Id, Sense } from '@/domain/types';
 import { useAuth } from '@/features/auth/session';
-import { useOnline } from '@/features/import/shared';
+import { useOnline } from '@/lib/online';
 import { Badge, Button, cn, Dialog, TextArea, toast } from '@/ui';
 import { useMnemonicView } from './hooks';
 import { requestMnemonics, type MnemonicRequestDeps, type MnemonicRequestError } from './request';
