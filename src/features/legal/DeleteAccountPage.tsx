@@ -57,7 +57,7 @@ export function DeleteAccountPage() {
           <span className="flex size-12 items-center justify-center rounded-full bg-success-soft text-success-text">
             <Icon name="check" size={26} />
           </span>
-          <h1 className="font-serif text-page font-semibold text-fg md:text-numeral">
+          <h1 className="text-page font-semibold text-fg md:text-numeral">
             {account ? t('legal.deletePage.doneTitle') : t('legal.deletePage.deviceDoneTitle')}
           </h1>
           <p className="max-w-prose text-lead text-fg">
@@ -76,7 +76,7 @@ export function DeleteAccountPage() {
     <PublicLayout t={t} lang="tr">
       <div className="flex flex-col gap-8">
         <header className="flex flex-col gap-3">
-          <h1 className="font-serif text-page font-semibold tracking-[-0.01em] text-fg md:text-numeral">
+          <h1 className="text-page font-semibold text-fg md:text-numeral">
             {t('legal.deletePage.title')}
           </h1>
           <p className="text-lead text-fg">{t('legal.deletePage.lead')}</p>
@@ -159,15 +159,15 @@ export function DeleteAccountPage() {
         </Surface>
 
         <section className="flex flex-col gap-2">
-          <h2 className="font-serif text-title font-semibold text-fg">{t('legal.deletePage.whatTitle')}</h2>
+          <h2 className="text-title font-semibold text-fg">{t('legal.deletePage.whatTitle')}</h2>
           <p className="text-fg">{t('legal.deletePage.what')}</p>
         </section>
         <section className="flex flex-col gap-2">
-          <h2 className="font-serif text-title font-semibold text-fg">{t('legal.deletePage.keptTitle')}</h2>
+          <h2 className="text-title font-semibold text-fg">{t('legal.deletePage.keptTitle')}</h2>
           <p className="text-fg">{t('legal.deletePage.kept')}</p>
         </section>
         <section className="flex flex-col gap-2">
-          <h2 className="font-serif text-title font-semibold text-fg">{t('legal.deletePage.guestTitle')}</h2>
+          <h2 className="text-title font-semibold text-fg">{t('legal.deletePage.guestTitle')}</h2>
           <p className="text-fg">{t('legal.deletePage.guest')}</p>
         </section>
       </div>

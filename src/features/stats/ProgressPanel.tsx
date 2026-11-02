@@ -17,7 +17,7 @@ import {
 } from '@/domain/retention';
 import { shouldNudgeGap } from '@/domain/progressView';
 import { practiceHref } from '@/features/extra/links';
-import { buttonClasses, Select, Skeleton, Surface, Tooltip } from '@/ui';
+import { buttonClasses, Card, Select, Skeleton, Tooltip } from '@/ui';
 import { formatPercent } from './format';
 import { groupLabel } from './groupLabel';
 import { useWordStages } from './useWordStages';
@@ -44,9 +44,9 @@ export function ProgressPanel() {
       <div aria-busy="true" className="flex flex-col gap-5">
         <span className="sr-only">{t('progress.loading')}</span>
         {Array.from({ length: 3 }, (_, i) => (
-          <Surface key={i} padding="lg">
+          <Card key={i}>
             <Skeleton lines={4} />
-          </Surface>
+          </Card>
         ))}
       </div>
     );
@@ -58,9 +58,9 @@ export function ProgressPanel() {
   return (
     <div className="flex flex-col gap-5">
       {nothing ? (
-        <Surface padding="lg">
+        <Card>
           <p className="text-ui text-fg">{t('progress.empty')}</p>
-        </Surface>
+        </Card>
       ) : (
         <>
           <GapSection view={view} />
@@ -93,8 +93,8 @@ function GapSection({ view }: { view: ProgressView }) {
     { key: 'production', label: t('progress.gap.production'), stat: gap.production },
   ] as const;
   return (
-    <Surface as="section" aria-labelledby="gap-title" padding="lg">
-      <h2 id="gap-title" className="font-serif text-title font-semibold">
+    <Card as="section" aria-labelledby="gap-title">
+      <h2 id="gap-title" className="text-title font-semibold">
         {t('progress.gap.title')}
       </h2>
       <dl className="mt-4 grid grid-cols-2 gap-4">
@@ -105,8 +105,8 @@ function GapSection({ view }: { view: ProgressView }) {
               <span
                 className={
                   d.stat.enough
-                    ? 'tabular mt-1 font-serif text-page font-semibold'
-                    : 'mt-1 font-serif text-title text-fg-muted'
+                    ? 'tabular mt-1 text-heading font-semibold'
+                    : 'mt-1 text-title text-fg-muted'
                 }
               >
                 {rateText(t, d.stat)}
@@ -134,7 +134,7 @@ function GapSection({ view }: { view: ProgressView }) {
         <div className="mt-4 flex flex-col items-start gap-3">
           <p className="text-meta text-fg-muted">
             {t('progress.gap.practiceHint')}{' '}
-            <span lang="en" className="text-fg">
+            <span lang="en" className="font-serif text-fg">
               {view.gapTerms.filter(Boolean).join(', ')}
               {ids.length > view.gapTerms.length ? '…' : ''}
             </span>
@@ -156,7 +156,7 @@ function GapSection({ view }: { view: ProgressView }) {
       ) : (
         <p className="mt-3 text-meta text-fg-muted">{t('progress.gap.noList')}</p>
       )}
-    </Surface>
+    </Card>
   );
 }
 
@@ -172,13 +172,13 @@ function PictureSection({ view }: { view: ProgressView }) {
     { key: 'without', label: t('imageCard.progress.without'), stat: p.withoutPicture },
   ] as const;
   return (
-    <Surface
+    <Card
       as="section"
       aria-labelledby="picture-recall-title"
-      padding="lg"
+     
       data-testid="picture-recall"
     >
-      <h2 id="picture-recall-title" className="font-serif text-title font-semibold">
+      <h2 id="picture-recall-title" className="text-title font-semibold">
         {t('imageCard.progress.title')}
       </h2>
       <dl className="mt-4 grid grid-cols-2 gap-4">
@@ -189,8 +189,8 @@ function PictureSection({ view }: { view: ProgressView }) {
               <span
                 className={
                   d.stat.enough
-                    ? 'tabular mt-1 font-serif text-page font-semibold'
-                    : 'mt-1 font-serif text-title text-fg-muted'
+                    ? 'tabular mt-1 text-heading font-semibold'
+                    : 'mt-1 text-title text-fg-muted'
                 }
               >
                 {rateText(t, d.stat)}
@@ -219,7 +219,7 @@ function PictureSection({ view }: { view: ProgressView }) {
         </p>
       )}
       <p className="mt-3 text-caption text-fg-muted">{t('imageCard.progress.hint')}</p>
-    </Surface>
+    </Card>
   );
 }
 
@@ -231,9 +231,9 @@ function GroupsSection({ view }: { view: ProgressView }) {
   const label = (g: GroupRetention) => groupLabel(t, g, view.sourceTitles);
   const dimLabel = t(`progress.groups.dimensions.${dimension}`);
   return (
-    <Surface as="section" aria-labelledby="groups-title" padding="lg">
+    <Card as="section" aria-labelledby="groups-title">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 id="groups-title" className="font-serif text-title font-semibold">
+        <h2 id="groups-title" className="text-title font-semibold">
           {t('progress.groups.title')}
         </h2>
         <p className="text-meta text-fg-muted">
@@ -319,7 +319,7 @@ function GroupsSection({ view }: { view: ProgressView }) {
           })}
         </ul>
       )}
-    </Surface>
+    </Card>
   );
 }
 
@@ -331,8 +331,8 @@ function SeriesSection({ view }: { view: ProgressView }) {
   const stages = useWordStages();
   const total = stages?.learnedTotal ?? series.at(-1)?.learnedTotal ?? 0;
   return (
-    <Surface as="section" aria-labelledby="series-title" padding="lg">
-      <h2 id="series-title" className="font-serif text-title font-semibold">
+    <Card as="section" aria-labelledby="series-title">
+      <h2 id="series-title" className="text-title font-semibold">
         {t('progress.series.title')}
       </h2>
       <div className="mt-4 grid gap-8 lg:grid-cols-2">
@@ -355,6 +355,6 @@ function SeriesSection({ view }: { view: ProgressView }) {
       <div className="mt-4">
         <SeriesTable series={series} />
       </div>
-    </Surface>
+    </Card>
   );
 }

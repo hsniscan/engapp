@@ -102,7 +102,7 @@ export function Heatmap({ weeks }: HeatmapProps) {
           >
             {Array.from({ length: 7 }, (_, d) => (
               <div role="row" key={d} className="grid gap-[3px]" style={COLS(n)}>
-                <span role="rowheader" className="self-center text-caption leading-none text-fg-muted">
+                <span role="rowheader" className="self-center text-caption text-fg-muted">
                   <span aria-hidden="true">
                     {d % 2 === 0 ? formatWeekdayShort(weeks[0]![d]!.date) : ''}
                   </span>

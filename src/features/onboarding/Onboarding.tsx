@@ -44,7 +44,7 @@ export function Onboarding({ step }: { step: OnboardingStep }) {
       <header className="flex items-center gap-2.5 px-1">
         <Logo size={34} wordmark={false} />
         <div className="flex min-w-0 flex-1 flex-col">
-          <h1 className="font-serif text-title font-semibold md:text-page">{t('onboarding.title')}</h1>
+          <h1 className="text-title font-semibold md:text-page">{t('onboarding.title')}</h1>
           {index > 0 && (
             <span className="text-meta text-fg-muted" data-testid="onboarding-step">
               {t('onboarding.stepOf', { n: index, total: ONBOARDING_STEPS.length - 1 })}
@@ -106,7 +106,7 @@ function StepCard({
       <div className="flex flex-col gap-2">
         <h2
           id={`${testId}-title`}
-          className="font-serif text-heading font-semibold"
+          className="text-heading font-semibold"
         >
           {title}
         </h2>
@@ -138,7 +138,7 @@ function Welcome({ onStart }: { onStart: () => void }) {
               <span
                 aria-hidden="true"
                 className={cn(
-                  'flex size-9 shrink-0 items-center justify-center rounded-full font-serif text-lead font-semibold',
+                  'flex size-9 shrink-0 items-center justify-center rounded-full text-lead font-semibold',
                   i === 0 ? 'bg-accent text-accent-fg' : 'border border-border text-fg-muted',
                 )}
               >
@@ -373,7 +373,7 @@ function DeckStep() {
                   className="size-5 shrink-0 accent-(--color-accent)"
                 />
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="font-serif text-lead font-semibold text-fg">
+                  <span className="text-lead font-semibold text-fg">
                     {specTitle(t, spec)}
                   </span>
                   <span className="text-meta text-fg-muted">

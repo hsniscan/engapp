@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { Icon, Page, Surface } from '@/ui';
+import { Card, Icon, Page } from '@/ui';
 
 const SOURCES = [
   { key: 'cefrj', url: 'https://github.com/openlanguageprofiles/olp-en-cefrj' },
@@ -28,8 +28,8 @@ export function SourcesPage() {
         <ul className="flex flex-col gap-3" aria-label={t('sources.title')}>
           {SOURCES.map(({ key, url }) => (
             <li key={key}>
-              <Surface className="flex flex-col gap-2">
-                <h2 className="font-serif text-lead font-semibold text-fg">
+              <Card className="flex flex-col gap-2">
+                <h2 className="text-lead font-semibold text-fg">
                   {t(`sources.${key}.name`)}
                 </h2>
                 <p className="text-ui text-fg-muted">{t(`sources.${key}.what`)}</p>
@@ -49,12 +49,12 @@ export function SourcesPage() {
                   {t('sources.link')}
                   <span aria-hidden="true">↗</span>
                 </a>
-              </Surface>
+              </Card>
             </li>
           ))}
           <li>
-            <Surface tone="flat" className="flex flex-col gap-2">
-              <h2 className="font-serif text-lead font-semibold text-fg">
+            <Card tone="sunken" className="flex flex-col gap-2">
+              <h2 className="text-lead font-semibold text-fg">
                 {t('sources.derived.name')}
               </h2>
               <p className="text-ui text-fg-muted">{t('sources.derived.what')}</p>
@@ -62,17 +62,17 @@ export function SourcesPage() {
                 <dt className="text-fg-subtle">{t('sources.license')}</dt>
                 <dd className="text-fg">{t('sources.derived.license')}</dd>
               </dl>
-            </Surface>
+            </Card>
           </li>
         </ul>
         <section aria-labelledby="sources-ai" className="flex flex-col gap-1.5 px-1 pt-2">
-          <h2 id="sources-ai" className="font-serif text-lead font-semibold text-fg">
+          <h2 id="sources-ai" className="text-lead font-semibold text-fg">
             {t('sources.aiTitle')}
           </h2>
           <p className="text-ui text-fg-muted">{t('sources.aiBody')}</p>
         </section>
         <section aria-labelledby="sources-word-bank" className="flex flex-col gap-1.5 px-1 pt-2">
-          <h2 id="sources-word-bank" className="font-serif text-lead font-semibold text-fg">
+          <h2 id="sources-word-bank" className="text-lead font-semibold text-fg">
             {t('sources.wordBankTitle')}
           </h2>
           <p className="text-ui text-fg-muted">{t('sources.wordBankBody')}</p>

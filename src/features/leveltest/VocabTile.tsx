@@ -7,7 +7,20 @@ import type { LevelOverview } from '@/data';
 import { LEVELS, levelIndex } from '@/domain/levelTest';
 import type { CefrLevel } from '@/domain/types';
 import { formatNumber } from '@/features/stats/format';
-import { Button, buttonClasses, cn, Dialog, DialogClose, Icon, Skeleton, Surface } from '@/ui';
+import {
+  Badge,
+  Button,
+  buttonClasses,
+  Card,
+  cn,
+  Dialog,
+  DialogClose,
+  Icon,
+  ListGroup,
+  ListRow,
+  ProgressBar,
+  Skeleton,
+} from '@/ui';
 import { levelDative, pct, useLevelOverview, useOfferVisible } from './levelText';
 
 const THRESHOLD = 0.8;
@@ -44,13 +57,13 @@ export function LevelLadder({
             <span
               aria-hidden="true"
               className={cn(
-                'relative w-full overflow-hidden rounded-[5px] bg-surface-sunken',
+                'relative w-full overflow-hidden rounded-sm bg-surface-sunken',
                 size === 'md' ? 'h-14' : 'h-14 sm:h-32',
               )}
             >
               <span
                 className={cn(
-                  'absolute inset-x-0 bottom-0 rounded-t-[4px] transition-[height] duration-(--duration-large) ease-standard motion-reduce:transition-none',
+                  'absolute inset-x-0 bottom-0 rounded-t-xs transition-[height] duration-(--duration-large) ease-standard motion-reduce:transition-none',
                   i <= own ? 'bg-accent' : 'bg-accent/40',
                 )}
                 style={{ height: `${r * 100}%` }}
@@ -63,7 +76,7 @@ export function LevelLadder({
             <span
               aria-hidden="true"
               className={cn(
-                'tabular text-xs leading-none',
+                'tabular text-caption',
                 i === own ? 'font-semibold text-fg' : 'text-fg-muted',
               )}
             >
@@ -110,9 +123,9 @@ export function VocabExplainDialog({
         </DialogClose>
       }
     >
-      <div className="flex flex-col gap-4 text-[0.9375rem] text-fg">
+      <div className="flex flex-col gap-4 text-ui text-fg">
         <p>{t('level.explainBody')}</p>
-        <table className="tabular w-full text-sm">
+        <table className="tabular w-full text-meta">
           <thead>
             <tr className="border-b border-border text-left text-fg-muted">
               <th scope="col" className="py-2 pr-2 font-medium">
@@ -167,7 +180,7 @@ export function VocabExplainDialog({
         {vocab.next && vocab.nextRatio !== null && (
           <p>{t('level.explainNext', { next: vocab.next, pct: pct(vocab.nextRatio) })}</p>
         )}
-        <p className="text-sm text-fg-muted">{t('level.explainRounding')}</p>
+        <p className="text-meta text-fg-muted">{t('level.explainRounding')}</p>
       </div>
     </Dialog>
   );
@@ -177,24 +190,23 @@ export function VocabExplainDialog({
 function VocabCta({ className }: { className?: string }) {
   const { t } = useTranslation();
   return (
-    <Surface
+    <Card
       as="section"
       aria-labelledby="vocab-cta-title"
-      padding="none"
-      className={cn('flex flex-col gap-4 p-5 sm:p-6', className)}
+      className={cn('flex flex-col gap-4', className)}
       data-testid="vocab-cta"
     >
       <div className="flex flex-col gap-1">
-        <h2 id="vocab-cta-title" className="font-serif text-xl font-semibold text-fg">
+        <h2 id="vocab-cta-title" className="text-title font-semibold text-fg">
           {t('level.ctaTitle')}
         </h2>
-        <p className="text-[0.9375rem] text-fg-muted">{t('level.ctaBody')}</p>
+        <p className="text-ui text-fg-muted">{t('level.ctaBody')}</p>
       </div>
       <Link to="/level-test" className={buttonClasses({ variant: 'secondary', fullWidth: true })}>
         {t('level.ctaAction')}
         <Icon name="chevron-right" size={18} />
       </Link>
-    </Surface>
+    </Card>
   );
 }
 
@@ -202,19 +214,47 @@ function VocabCta({ className }: { className?: string }) {
  * The counter tile. "Nasıl hesaplanıyor?" opens the explanation. `wide` (Statistics): the
  * figures on the left, a taller ladder on the right from 640 px.
  */
-export function VocabTile({ className, wide }: { className?: string; wide?: boolean }) {
+export function VocabTile({
+  className,
+  wide,
+  measureRow,
+}: {
+  className?: string;
+  wide?: boolean;
+  /**
+   * While the home screen offers the test, show a quiet "Seviyeni ölç" row instead of nothing
+   * (İlerleme, review d7: the home offer is not on that page).
+   */
+  measureRow?: boolean;
+}) {
+  const { t } = useTranslation();
   const overview = useLevelOverview();
   const offered = useOfferVisible();
   if (!overview) {
     return (
-      <Surface padding="none" className={cn('p-5 sm:p-6', className)} aria-busy="true">
+      <Card className={className} aria-busy="true">
         <Skeleton className="h-12 w-40" />
         <Skeleton className="mt-5 h-14 w-full" />
-      </Surface>
+      </Card>
     );
   }
   // While the home screen offers the test, a second invitation would only repeat it.
-  if (!overview.hasBasis) return offered ? null : <VocabCta className={className} />;
+  if (!overview.hasBasis) {
+    if (!offered) return <VocabCta className={className} />;
+    if (!measureRow) return null;
+    return (
+      <div className={className} data-testid="vocab-measure">
+        <ListGroup>
+          <ListRow
+            to="/level-test"
+            leadingIcon="chart"
+            title={t('level.measureRow')}
+            description={t('level.measureRowHint')}
+          />
+        </ListGroup>
+      </div>
+    );
+  }
   return <VocabCounter overview={overview} className={className} wide={wide} />;
 }
 
@@ -240,12 +280,11 @@ function VocabCounter({
     />
   );
   return (
-    <Surface
+    <Card
       as="section"
       aria-labelledby="vocab-title"
-      padding="none"
       className={cn(
-        'relative p-5 sm:p-6',
+        'relative',
         wide && 'sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] sm:items-center sm:gap-x-10',
         className,
       )}
@@ -253,50 +292,44 @@ function VocabCounter({
     >
       <div className="flex flex-col">
         <div className="flex items-baseline justify-between gap-3">
-          <h2 id="vocab-title" className="font-serif text-lg font-semibold text-fg">
+          <h2 id="vocab-title" className="text-title font-semibold text-fg">
             {t('level.vocabTitle')}
           </h2>
-          <span className="shrink-0 rounded-full bg-accent-soft px-2.5 py-0.5 text-sm font-semibold whitespace-nowrap text-accent-text">
-            {t('level.vocabLevel', { level: o.level })}
-          </span>
+          <Badge tone="accent">{t('level.vocabLevel', { level: o.level })}</Badge>
         </div>
         <p className="mt-3 flex items-baseline gap-2">
           <span
-            className="tabular font-serif text-5xl leading-none font-semibold tracking-[-0.02em] text-fg"
+            className="tabular text-numeral font-semibold text-fg"
             data-testid="vocab-estimate"
           >
             ~{formatNumber(o.vocab.estimate)}
           </span>
-          <span className="font-serif text-xl text-fg-muted">{t('level.vocabUnit')}</span>
+          <span className="text-lead text-fg-muted">{t('level.vocabUnit')}</span>
         </p>
-        <p className="mt-1 text-xs text-fg-muted">{t('level.vocabDisclaimer')}</p>
+        <p className="mt-1 text-caption text-fg-muted">{t('level.vocabDisclaimer')}</p>
 
         {!wide && ladder}
 
         <div className="mt-5 flex flex-col gap-2 border-t border-border pt-4">
           <div className="flex items-baseline justify-between gap-3">
-            <span className="text-[0.9375rem] font-medium text-fg" data-testid="vocab-next">
+            <span className="text-ui font-medium text-fg" data-testid="vocab-next">
               {nextLine}
             </span>
             {o.vocab.next && (
-              <span className="tabular text-sm text-fg-muted">%{pct(nextRatio)} / %80</span>
+              <span className="tabular text-meta text-fg-muted">%{pct(nextRatio)} / %80</span>
             )}
           </div>
           {o.vocab.next && (
-            <div
-              aria-hidden="true"
-              className="relative h-1.5 overflow-hidden rounded-full bg-surface-sunken"
-            >
-              <div
-                className="h-full rounded-full bg-accent transition-[width] duration-(--duration-medium) ease-standard motion-reduce:transition-none"
-                style={{ width: `${Math.min(1, nextRatio / THRESHOLD) * 100}%` }}
-              />
-            </div>
+            <ProgressBar value={Math.min(1, nextRatio / THRESHOLD) * 100} label={nextLine} />
           )}
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="-mx-2 mt-1 inline-flex min-h-11 items-center gap-1.5 self-start rounded-control px-2 text-sm font-medium text-accent-text hover:bg-hover"
+            className={buttonClasses({
+              variant: 'ghost',
+              size: 'sm',
+              className: '-mx-2 mt-1 self-start text-accent-text',
+            })}
           >
             <Icon name="info" size={16} />
             {t('level.vocabMore')}
@@ -305,6 +338,6 @@ function VocabCounter({
       </div>
       {wide && ladder}
       <VocabExplainDialog overview={o} open={open} onOpenChange={setOpen} />
-    </Surface>
+    </Card>
   );
 }

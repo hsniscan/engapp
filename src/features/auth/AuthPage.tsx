@@ -59,7 +59,7 @@ export function AuthPage() {
   return (
     <div className="mx-auto flex w-full max-w-md flex-col items-center px-4 pt-10 pb-12 text-center sm:px-6 md:pt-16">
       <Logo size={52} wordmark={false} />
-      <h1 className="mt-6 font-serif text-page font-semibold tracking-[-0.01em] text-fg md:text-numeral">
+      <h1 className="mt-6 text-page font-semibold text-fg md:text-numeral">
         {auth.status === 'signed_in' && !finishing ? t('auth.signedInTitle') : t('auth.heading')}
       </h1>
 

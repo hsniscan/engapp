@@ -52,7 +52,7 @@ function Note({
           className={cn('mt-1 shrink-0', tone === 'warn' ? 'text-warn-text' : 'text-accent-text')}
         />
         <div className="flex min-w-0 flex-col gap-1">
-          <h2 id={id} className="font-serif text-lead font-semibold text-fg">
+          <h2 id={id} className="text-lead font-semibold text-fg">
             {title}
           </h2>
           <div className="flex flex-col gap-1 text-ui text-fg-muted">{children}</div>

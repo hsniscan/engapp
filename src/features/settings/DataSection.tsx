@@ -382,7 +382,7 @@ export function DataSection() {
         {pending && (
           <div className="flex flex-col gap-4">
             <p
-              className="rounded-control bg-surface-sunken px-4 py-3 font-serif text-lead text-fg"
+              className="rounded-control bg-surface-sunken px-4 py-3 text-lead text-fg"
               data-testid="restore-summary"
             >
               {t('restore.summary', {

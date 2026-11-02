@@ -31,10 +31,10 @@ export function LevelTestOffer({ className }: { className?: string }) {
       data-testid="level-offer"
     >
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <h2 id="level-offer-title" className="font-serif text-xl font-semibold text-fg">
+        <h2 id="level-offer-title" className="text-title font-semibold text-fg">
           {t('level.offerTitle')}
         </h2>
-        <p className="text-[0.9375rem] text-fg-muted">{t('level.offerBody')}</p>
+        <p className="text-ui text-fg-muted">{t('level.offerBody')}</p>
       </div>
       <div className="flex shrink-0 flex-col gap-2 sm:w-44">
         <Link to="/level-test" className={buttonClasses({ fullWidth: true })}>
@@ -88,7 +88,7 @@ export function LevelChangeDialog({
         </>
       }
     >
-      <div className="flex flex-col gap-3 text-[0.9375rem] text-fg">
+      <div className="flex flex-col gap-3 text-ui text-fg">
         <p>
           {t(up ? 'level.changeUp' : 'level.changeDown', {
             band: change.band,
@@ -103,7 +103,7 @@ export function LevelChangeDialog({
             unknown: change.unknown,
           })}
         </p>
-        <p className="text-sm text-fg-muted">{t('level.changeRule')}</p>
+        <p className="text-meta text-fg-muted">{t('level.changeRule')}</p>
       </div>
     </Dialog>
   );
@@ -126,7 +126,7 @@ export function LevelChangeLine({ className }: { className?: string }) {
       data-testid="level-change"
     >
       <span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-accent" />
-      <p className="min-w-0 flex-1 text-[0.9375rem] text-fg">
+      <p className="min-w-0 flex-1 text-ui text-fg">
         {t('level.change', { from: change.from, to: change.to })}{' '}
         <button
           type="button"

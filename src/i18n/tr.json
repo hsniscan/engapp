@@ -790,8 +790,6 @@
     "title": "Kelimelerim"
   },
   "stats": {
-    "title": "İstatistik",
-    "description": "Süreklilik ve ilerleme",
     "heatmapTitle": "Son 26 hafta",
     "heatmapLabel": "Günlük tekrar takvimi, son 26 hafta",
     "summaryLine": "{{active}} aktif gün · {{completed}} tamamlanmış",
@@ -830,7 +828,6 @@
     "learned": "Öğrendiğin kelime",
     "learnedDetail": "En az 3 ayrı günde doğru bildiğin kelimeler",
     "tabsLabel": "İstatistik bölümleri",
-    "tabContinuity": "Süreklilik",
     "tabProgress": "Gelişim",
     "retentionHint": "Gelişim sekmesindeki tutma oranı başka bir ölçüdür: orada her kartın günün ilk cevabı, son 90 gün sayılır.",
     "tabReport": "Haftalık rapor",
@@ -869,7 +866,8 @@
       "recallTitle": "Hatırlama",
       "recallDetail": "Son 30 gün, tekrarlarda",
       "reportLink": "Haftalık raporun",
-      "reportHint": "Bu haftanın özeti: öğrendiklerin, zorlandıkların, sürelerin"
+      "reportHint": "Bu haftanın özeti: öğrendiklerin, zorlandıkların, sürelerin",
+      "practiceLabel": "Pratik ve hatırlama"
     },
     "unlock": {
       "title": "İlk çalışmanı yap",
@@ -2162,7 +2160,8 @@
     "forecastNote": "Tahmin, her kartı hatırlama olasılığına ve günlük yeni kart limitine göre hesaplanır.",
     "forecastToday": "Bugün",
     "forecastChartLabel": "Önümüzdeki 30 günün beklenen tekrar sayısı, kapasite çizgisiyle",
-    "vacationStartPast": "Tatil bugünden önce başlayamaz. Başlangıcı bugün ya da sonraki bir gün seç."
+    "vacationStartPast": "Tatil bugünden önce başlayamaz. Başlangıcı bugün ya da sonraki bir gün seç.",
+    "forecastCapacityShort": "Kapasite {{cards}}"
   },
   "practice": {
     "title": "Pratik",
@@ -2340,7 +2339,9 @@
     "rowTotal": "Toplam",
     "ctaTitle": "Kaç kelime biliyorsun?",
     "ctaBody": "5 dakikalık seviye testiyle seviyeni ve tahmini kelime sayını öğren.",
-    "ctaAction": "Seviye testini çöz"
+    "ctaAction": "Seviye testini çöz",
+    "measureRow": "Seviyeni ölç",
+    "measureRowHint": "5 dakikalık test (en çok 70 soru) kelime hazineni tahmin eder."
   },
   "knownWords": {
     "title": "Bildiğim kelimeler",

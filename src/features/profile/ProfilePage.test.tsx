@@ -28,7 +28,10 @@ describe('profile page', { timeout: 20_000 }, () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Hasan' })).toBeInTheDocument();
     expect(screen.getByText('Google hesabıyla giriş yapıldı')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Ayarlar' })).toHaveAttribute('href', '/settings');
+    // One way into Ayarlar: the row in the list (no settings icon in the header).
+    const settings = screen.getAllByRole('link', { name: /^Ayarlar/ });
+    expect(settings).toHaveLength(1);
+    expect(settings[0]).toHaveAttribute('href', '/settings');
     expect(await screen.findByTestId('profile-level')).toHaveTextContent('B1');
     expect(screen.getByText('Tahmini kelime hazinen')).toBeInTheDocument();
     const chips = screen.getByRole('list', { name: 'Seçili ilgi alanları' });
@@ -49,11 +52,11 @@ describe('profile page', { timeout: 20_000 }, () => {
     renderRoute(<ProfilePage />, { path: '/profile' });
     const all = await screen.findByRole('link', { name: /Tüm kelimelerim/ });
     expect(all).toHaveAttribute('href', '/library');
-    await waitFor(() => expect(all).toHaveTextContent('Tüm kelimelerim · 1'), { timeout: 8000 });
+    await waitFor(() => expect(all).toHaveTextContent(/^Tüm kelimelerim1$/), { timeout: 8000 });
     const nav = screen.getByRole('navigation', { name: 'Kısayollar' });
     const known = within(nav).getByRole('link', { name: /Bildiğim kelimeler/ });
     expect(known).toHaveAttribute('href', '/settings/bilinen-kelimeler');
-    expect(known).toHaveTextContent('Bildiğim kelimeler · 1');
+    expect(known).toHaveTextContent(/^Bildiğim kelimeler1$/);
     expect(screen.getByRole('heading', { level: 1, name: 'Misafir' })).toBeInTheDocument();
   });
 

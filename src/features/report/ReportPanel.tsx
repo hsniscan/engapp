@@ -22,7 +22,7 @@ import { useAuth } from '@/features/auth/session';
 import { practiceHref } from '@/features/extra/links';
 import { formatDayMonth, formatNumber, formatPercent } from '@/features/stats/format';
 import { groupLabel } from '@/features/stats/groupLabel';
-import { Button, buttonClasses, Skeleton, Surface, toast } from '@/ui';
+import { Button, buttonClasses, Card, Skeleton, toast } from '@/ui';
 import { kickReports } from './queue';
 
 /**
@@ -49,17 +49,17 @@ export function ReportPanel({ onOpen = kickReports }: { onOpen?: () => void }) {
     return (
       <div aria-busy="true" className="flex flex-col gap-5">
         <span className="sr-only">{t('report.loading')}</span>
-        <Surface padding="lg">
+        <Card>
           <Skeleton lines={5} />
-        </Surface>
+        </Card>
       </div>
     );
   }
   if (!latest) {
     return (
-      <Surface padding="lg">
+      <Card>
         <p className="text-ui text-fg">{t('report.empty')}</p>
-      </Surface>
+      </Card>
     );
   }
   return (
@@ -119,9 +119,9 @@ function ReportCard({
     },
   ];
   return (
-    <Surface as="section" aria-labelledby="report-title" padding="lg" data-testid="weekly-report">
+    <Card as="section" aria-labelledby="report-title" data-testid="weekly-report">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 id="report-title" className="font-serif text-title font-semibold">
+        <h2 id="report-title" className="text-title font-semibold">
           {t('report.title')}
         </h2>
         <p className="text-meta text-fg-muted">{weekRange(s, t)}</p>
@@ -137,8 +137,8 @@ function ReportCard({
             <dd
               className={
                 n.muted
-                  ? 'mt-1 font-serif text-title text-fg-muted'
-                  : 'tabular mt-1 font-serif text-page font-semibold'
+                  ? 'mt-1 text-title text-fg-muted'
+                  : 'tabular mt-1 text-heading font-semibold'
               }
             >
               {n.value}
@@ -208,7 +208,7 @@ function ReportCard({
       </div>
 
       <FocusBlock summary={s} />
-    </Surface>
+    </Card>
   );
 }
 
@@ -313,8 +313,8 @@ function FocusBlock({ summary: s }: { summary: WeeklyReportSummary }) {
 function PastReports({ reports }: { reports: ReportListItem[] }) {
   const { t } = useTranslation();
   return (
-    <Surface as="section" aria-labelledby="past-reports-title" padding="lg">
-      <h2 id="past-reports-title" className="font-serif text-title font-semibold">
+    <Card as="section" aria-labelledby="past-reports-title">
+      <h2 id="past-reports-title" className="text-title font-semibold">
         {t('report.pastTitle')}
       </h2>
       {reports.length === 0 ? (
@@ -343,6 +343,6 @@ function PastReports({ reports }: { reports: ReportListItem[] }) {
           ))}
         </ul>
       )}
-    </Surface>
+    </Card>
   );
 }

@@ -790,8 +790,6 @@
     "title": "My words"
   },
   "stats": {
-    "title": "Stats",
-    "description": "Consistency and progress",
     "heatmapTitle": "Last 26 weeks",
     "heatmapLabel": "Daily review calendar, last 26 weeks",
     "summaryLine": "{{active}} active days · {{completed}} completed",
@@ -830,7 +828,6 @@
     "learned": "Words learned",
     "learnedDetail": "Words you got right on at least 3 separate days",
     "tabsLabel": "Statistics sections",
-    "tabContinuity": "Consistency",
     "tabProgress": "Progress",
     "retentionHint": "Retention on the Progress tab is a different measure: there only the first answer of the day to each card counts, over 90 days.",
     "tabReport": "Weekly report",
@@ -869,7 +866,8 @@
       "recallTitle": "Recall",
       "recallDetail": "Last 30 days, in reviews",
       "reportLink": "Your weekly report",
-      "reportHint": "This week in short: words learned, struggles, time spent"
+      "reportHint": "This week in short: words learned, struggles, time spent",
+      "practiceLabel": "Practice and recall"
     },
     "unlock": {
       "title": "Do your first study session",
@@ -2162,7 +2160,8 @@
     "forecastNote": "The forecast uses how likely you are to remember each card and your daily new-card limit.",
     "forecastToday": "Today",
     "forecastChartLabel": "Expected reviews for the next 30 days, with the capacity line",
-    "vacationStartPast": "A holiday cannot start before today. Pick today or a later day."
+    "vacationStartPast": "A holiday cannot start before today. Pick today or a later day.",
+    "forecastCapacityShort": "Capacity {{cards}}"
   },
   "practice": {
     "title": "Practice",
@@ -2340,7 +2339,9 @@
     "rowTotal": "Total",
     "ctaTitle": "How many words do you know?",
     "ctaBody": "Find out your level and estimated vocabulary with a 5-minute test.",
-    "ctaAction": "Take the level test"
+    "ctaAction": "Take the level test",
+    "measureRow": "Measure your level",
+    "measureRowHint": "A 5-minute test (at most 70 questions) estimates your vocabulary."
   },
   "knownWords": {
     "title": "Words I know",

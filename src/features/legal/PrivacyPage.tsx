@@ -37,7 +37,7 @@ export function PrivacyPage({ lang }: { lang: 'tr' | 'en' }) {
     <PublicLayout t={t} lang={lang}>
       <article className="flex flex-col gap-8">
         <header className="flex flex-col gap-3">
-          <h1 className="font-serif text-page font-semibold tracking-[-0.01em] text-fg md:text-numeral">
+          <h1 className="text-page font-semibold text-fg md:text-numeral">
             {doc.title}
           </h1>
           <p className="text-meta text-fg-muted">
@@ -67,7 +67,7 @@ export function PrivacyPage({ lang }: { lang: 'tr' | 'en' }) {
           <section key={s.id} id={s.id} aria-labelledby={`${s.id}-h`} className="scroll-mt-6">
             <h2
               id={`${s.id}-h`}
-              className="mb-3 font-serif text-heading font-semibold text-fg"
+              className="mb-3 text-heading font-semibold text-fg"
             >
               {i + 1}. {s.heading}
             </h2>

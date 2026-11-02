@@ -1,221 +1,136 @@
-// "Önümüzdeki 30 gün": expected reviews per day as bars, the daily capacity as a dashed line.
-// Hand-rolled SVG in the stats screen's style; the text summary and the day list carry the
-// same information for screen readers (docs/decisions/0021).
-import { useState } from 'react';
+// "Önümüzdeki 30 gün": expected reviews per day as bars (v0.5.2 design 4.15). The shared
+// BarChart scales to the busiest day (floor: max(5, a quarter of the capacity)), so bars stay
+// visible even when the capacity is far above them (review O-6); the capacity line is drawn
+// only when it fits. The summary sentence, the capacity line text and the day list carry the
+// same information in words (docs/decisions/0021).
+import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { WorkloadView } from '@/data';
-import { formatDayLong, formatDayMonth } from '@/features/stats/format';
-import { cn, Skeleton, Surface } from '@/ui';
+import { formatDayLong } from '@/features/stats/format';
+import { BarChart, Button, Card, cn, SectionHeader, Skeleton } from '@/ui';
 import { useWorkload } from './useWorkload';
-
-const W = 600;
-const H = 180;
-const PAD_L = 4;
-// Axis labels are HTML below / beside the SVG, so they stay ≥ 12 px at phone width (v0.5.1;
-// SVG text scaled with the chart and shrank to ~6 px at 390 px).
-const PAD_B = 4;
-const PAD_T = 8;
 
 export function WorkloadSection() {
   const { t } = useTranslation();
   const view = useWorkload();
   return (
-    <Surface as="section" aria-labelledby="workload-title" padding="lg">
-      <div className="mb-4 flex flex-col gap-1">
-        <h2 id="workload-title" className="font-serif text-title font-semibold">
-          {t('load.forecastTitle')}
-        </h2>
-        <p className="text-meta text-fg-muted">{t('load.forecastSubtitle')}</p>
-      </div>
-      {view ? (
-        <WorkloadChart view={view} />
-      ) : (
-        <div aria-busy="true">
-          <span className="sr-only">{t('load.forecastLoading')}</span>
-          <Skeleton className="h-44 w-full" />
-        </div>
-      )}
-    </Surface>
+    <section aria-labelledby="workload-title">
+      <SectionHeader
+        id="workload-title"
+        title={t('load.forecastTitle')}
+        description={t('load.forecastSubtitle')}
+      />
+      <Card>
+        {view ? (
+          <WorkloadChart view={view} />
+        ) : (
+          <div aria-busy="true">
+            <span className="sr-only">{t('load.forecastLoading')}</span>
+            <Skeleton className="h-44 w-full" />
+          </div>
+        )}
+      </Card>
+    </section>
   );
 }
 
+/** Day of month for the axis ("3"), from a day key "2026-11-03". */
+const dayOfMonth = (key: string) => String(Number(key.slice(8, 10)));
+
 export function WorkloadChart({ view }: { view: WorkloadView }) {
   const { t } = useTranslation();
-  const [hover, setHover] = useState<number | null>(null);
+  const [listOpen, setListOpen] = useState(false);
+  const listId = useId();
   const counts = view.totals.map((x) => Math.round(x));
   const n = counts.length;
-  const max = Math.max(view.capacity * 1.15, ...counts, 1);
-  const plotW = W - PAD_L;
-  const plotH = H - PAD_B - PAD_T;
-  const slot = plotW / n;
-  const barW = Math.max(2, slot - 3);
-  const y = (v: number) => PAD_T + plotH - (v / max) * plotH;
-  const capY = y(view.capacity);
   const over = counts.filter((c) => c > view.capacity).length;
   const avg = Math.round(counts.reduce((a, b) => a + b, 0) / Math.max(1, n));
   let peak = 0;
   counts.forEach((c, i) => {
     if (c > counts[peak]!) peak = i;
   });
-  const dayLabel = (i: number) =>
-    i === 0 ? t('load.forecastToday') : formatDayMonth(view.days[i]!);
-  const shown = hover ?? peak;
-  const ticks = [0, 7, 14, 21, 28].filter((i) => i < n);
+  const longDay = (i: number) =>
+    i === 0 ? t('load.forecastToday') : formatDayLong(view.days[i]!);
 
   return (
-    <div className="flex flex-col gap-3">
-      <p className="text-meta text-fg">
+    <div className="flex flex-col gap-4">
+      <p className="text-ui text-fg">
         {t('load.forecastSummary', {
           avg,
-          peakDay: peak === 0 ? t('load.forecastToday') : formatDayLong(view.days[peak]!),
+          peakDay: longDay(peak),
           peak: counts[peak],
         })}{' '}
         {over ? t('load.forecastOverDays', { count: over }) : t('load.forecastUnder')}
       </p>
-      <div className="relative pl-7">
-        <svg
-          viewBox={`0 0 ${W} ${H}`}
-          className="h-auto w-full"
-          role="img"
-          aria-label={t('load.forecastChartLabel')}
-          onPointerLeave={() => setHover(null)}
+      <BarChart
+        label={t('load.forecastChartLabel')}
+        height={140}
+        minScale={Math.max(5, Math.round(view.capacity * 0.25))}
+        reference={{
+          value: view.capacity,
+          label: t('load.forecastCapacityShort', { cards: view.capacity }),
+        }}
+        labelEvery={5}
+        data={counts.map((c, i) => ({
+          label: dayOfMonth(view.days[i]!),
+          longLabel: longDay(i),
+          value: c,
+          highlight: i === 0,
+        }))}
+      />
+      <p className="flex items-center gap-2 text-meta text-fg-muted">
+        <span aria-hidden="true" className="w-4 border-t-2 border-dashed border-border-strong" />
+        {t('load.forecastCapacity', { cards: view.capacity, min: view.capacityMin })}
+      </p>
+      <div className="flex flex-col gap-2 border-t border-border pt-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="-mx-2 self-start text-accent-text"
+          trailingIcon={listOpen ? 'chevron-up' : 'chevron-down'}
+          aria-expanded={listOpen}
+          aria-controls={listId}
+          onClick={() => setListOpen((o) => !o)}
         >
-          <line
-            x1={PAD_L}
-            x2={W}
-            y1={PAD_T + plotH}
-            y2={PAD_T + plotH}
-            className="stroke-border"
-            strokeWidth={1}
-          />
-          {counts.map((c, i) => {
-            const x = PAD_L + i * slot + (slot - barW) / 2;
-            const top = y(c);
-            const h = Math.max(c > 0 ? 2 : 0, PAD_T + plotH - top);
-            return (
-              <g key={view.days[i]} onPointerEnter={() => setHover(i)}>
-                {/* Hit target: the whole column. */}
-                <rect
-                  x={PAD_L + i * slot}
-                  y={PAD_T}
-                  width={slot}
-                  height={plotH}
-                  className="fill-transparent"
-                />
-                <rect
-                  x={x}
-                  y={PAD_T + plotH - h}
-                  width={barW}
-                  height={h}
-                  rx={Math.min(3, barW / 2)}
-                  className={cn(
-                    c > view.capacity ? 'fill-warn' : i === 0 ? 'fill-accent' : 'fill-accent/55',
-                    hover === i && 'opacity-80',
-                  )}
-                />
-              </g>
-            );
-          })}
-          <line
-            x1={PAD_L}
-            x2={W}
-            y1={capY}
-            y2={capY}
-            className="stroke-fg"
-            strokeWidth={1.5}
-            strokeDasharray="5 4"
-            pointerEvents="none"
-          />
-        </svg>
-        <span
-          aria-hidden="true"
-          className="tabular absolute left-0 -translate-y-1/2 text-caption text-fg-muted"
-          style={{ top: `${(capY / H) * 100}%` }}
-        >
-          {view.capacity}
-        </span>
-        <span
-          aria-hidden="true"
-          className="tabular absolute left-0 -translate-y-1/2 text-caption text-fg-muted"
-          style={{ top: `${((PAD_T + plotH) / H) * 100}%` }}
-        >
-          0
-        </span>
-      </div>
-      <div aria-hidden="true" className="relative ml-7 h-4 text-caption text-fg-muted">
-        {ticks.map((i) => (
-          <span
-            key={i}
-            className={cn('absolute top-0 whitespace-nowrap', i > 0 && '-translate-x-1/2')}
-            style={{ left: `${((PAD_L + i * slot + (i === 0 ? 0 : slot / 2)) / W) * 100}%` }}
-          >
-            {dayLabel(i)}
-          </span>
-        ))}
-      </div>
-      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 text-meta">
-        <p className="tabular min-h-5 text-fg" aria-hidden="true">
-          <span className="font-medium">
-            {shown === 0 ? t('load.forecastToday') : formatDayLong(view.days[shown]!)}
-          </span>
-          <span className="text-fg-muted">
-            {' '}
-            · {t('stats.reviewsCount', { count: counts[shown] })}
-          </span>
-        </p>
-        <ul
-          className="flex flex-wrap items-center gap-4 text-fg-muted"
-          aria-label={t('stats.legend')}
-        >
-          <li className="flex items-center gap-1.5">
-            <span aria-hidden="true" className="size-3 rounded-xs bg-accent/55" />
-            {t('load.forecastBars')}
-          </li>
-          <li className="flex items-center gap-1.5">
-            <span aria-hidden="true" className="size-3 rounded-xs bg-warn" />
-            {t('load.forecastOver')}
-          </li>
-          <li className="flex items-center gap-1.5">
-            <span aria-hidden="true" className="w-4 border-t-2 border-dashed border-fg" />
-            {t('load.forecastCapacity', { cards: view.capacity, min: view.capacityMin })}
-          </li>
-        </ul>
-      </div>
-      <details className="text-meta">
-        <summary className="cursor-pointer text-accent-text underline-offset-4 hover:underline">
           {t('load.forecastTable')}
-        </summary>
-        <table className="mt-2 w-full max-w-sm text-left">
-          <thead>
-            <tr className="text-fg-muted">
-              <th scope="col" className="py-1 font-normal">
-                {t('load.forecastDay')}
-              </th>
-              <th scope="col" className="py-1 text-right font-normal">
-                {t('load.forecastCount')}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="tabular">
-            {counts.map((c, i) => (
-              <tr key={view.days[i]} className="border-t border-border">
-                <th scope="row" className="py-1 font-normal">
-                  {i === 0 ? t('load.forecastToday') : formatDayLong(view.days[i]!)}
+        </Button>
+        {listOpen && (
+          <table id={listId} className="w-full text-left text-meta">
+            <caption className="sr-only">{t('load.forecastTable')}</caption>
+            <thead>
+              <tr className="text-fg-muted">
+                <th scope="col" className="py-2 font-normal">
+                  {t('load.forecastDay')}
                 </th>
-                <td
-                  className={cn(
-                    'py-1 text-right',
-                    c > view.capacity && 'font-semibold text-warn-text',
-                  )}
-                >
-                  {c}
-                </td>
+                <th scope="col" className="py-2 text-right font-normal">
+                  {t('load.forecastCount')}
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </details>
-      <p className="text-caption text-fg-muted">{t('load.forecastNote')}</p>
+            </thead>
+            <tbody className="tabular">
+              {counts.map((c, i) => (
+                <tr key={view.days[i]} className="border-t border-border">
+                  <th scope="row" className="py-2.5 font-normal text-fg">
+                    {longDay(i)}
+                  </th>
+                  <td
+                    className={cn(
+                      'py-2.5 text-right text-fg',
+                      c > view.capacity && 'font-semibold text-warn-text',
+                    )}
+                  >
+                    {c}
+                    {c > view.capacity && (
+                      <span className="sr-only"> · {t('load.forecastOver')}</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+      <p className="text-caption font-normal text-fg-muted">{t('load.forecastNote')}</p>
     </div>
   );
 }
