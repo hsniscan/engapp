@@ -11,7 +11,7 @@ import { LEECH_LAPSES } from '@/domain/leech';
 import type { Id } from '@/domain/types';
 import { cardTypeLabel } from '@/features/cards/labels';
 import { MAX_LIST_NOTES, practiceHref } from '@/features/extra/links';
-import { Badge, buttonClasses, Dialog, Surface } from '@/ui';
+import { Badge, buttonClasses, Card, Dialog } from '@/ui';
 import { ContrastEditor } from './ContrastEditor';
 import { useFamilyOf } from './hooks';
 import { LeechSheet, PairList } from './LeechSheet';
@@ -34,12 +34,12 @@ export function LeechStatsSection() {
 
   const notes = [...new Set(items.map((i) => i.note_id))].slice(0, MAX_LIST_NOTES);
   return (
-    <Surface as="section" aria-labelledby="leech-title" padding="lg" data-testid="leech-stats">
+    <Card as="section" aria-labelledby="leech-title" padding="lg" data-testid="leech-stats">
       <div className="mb-4 flex flex-col gap-1">
-        <h2 id="leech-title" className="font-serif text-xl font-semibold">
+        <h2 id="leech-title" className="text-title font-semibold">
           {t('leech.stats.title')}
         </h2>
-        <p className="text-sm text-fg-muted">
+        <p className="text-meta text-fg-muted">
           {items.length
             ? t('leech.stats.lead', { count: LEECH_LAPSES })
             : t('leech.stats.empty', { count: LEECH_LAPSES })}
@@ -55,10 +55,10 @@ export function LeechStatsSection() {
                 className="flex min-h-12 w-full flex-wrap items-center gap-x-3 gap-y-1 rounded-control px-2 py-2 text-left hover:bg-surface-sunken"
               >
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span lang="en" className="truncate font-serif text-lg font-semibold text-fg">
+                  <span lang="en" className="truncate font-serif text-lead font-semibold text-fg">
                     {i.term}
                   </span>
-                  <span className="truncate text-sm text-fg-muted">
+                  <span className="truncate text-meta text-fg-muted">
                     {[i.meaning, cardTypeLabel(t, i.card_type)].filter(Boolean).join(' · ')}
                   </span>
                 </span>
@@ -67,7 +67,7 @@ export function LeechStatsSection() {
             </li>
           ))}
           {items.length > SHOWN && (
-            <li className="px-2 pt-1 text-sm text-fg-muted">
+            <li className="px-2 pt-1 text-meta text-fg-muted">
               {t('leech.stats.more', { count: items.length - SHOWN })}
             </li>
           )}
@@ -94,15 +94,15 @@ export function LeechStatsSection() {
 
       {pairs && pairs.length > 0 && (
         <div className="mt-6 flex flex-col gap-1 border-t border-border pt-5">
-          <h3 className="font-serif text-lg font-semibold">{t('leech.stats.pairsTitle')}</h3>
-          <p className="text-sm text-fg-muted">{t('leech.stats.pairsLead')}</p>
+          <h3 className="text-ui font-semibold">{t('leech.stats.pairsTitle')}</h3>
+          <p className="text-meta text-fg-muted">{t('leech.stats.pairsLead')}</p>
           <PairList pairs={pairs} onContrast={setContrast} />
         </div>
       )}
 
       <LeechSheet cardId={sheet} onOpenChange={(o) => !o && setSheet(null)} />
       <ContrastDialog pair={contrast} onOpenChange={(o) => !o && setContrast(null)} />
-    </Surface>
+    </Card>
   );
 }
 

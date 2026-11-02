@@ -36,7 +36,7 @@ export function AfterAgainBar({
       role="status"
       data-testid={notice.crossed ? 'leech-flag' : 'confusion-prompt'}
       className={cn(
-        'mb-3 flex items-start gap-2 rounded-control py-1.5 pr-1 pl-3 text-sm',
+        'mb-3 flex items-start gap-2 rounded-control py-1.5 pr-1 pl-3 text-meta',
         notice.crossed ? 'bg-warn-soft text-warn-text' : 'bg-surface-sunken text-fg-muted',
       )}
     >

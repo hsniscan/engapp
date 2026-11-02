@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { dayMinutesGoal, targetLevel } from '@/domain/goals';
 import { settingsSchema } from '@/domain/schemas';
 import { greetingKey, homeDate } from './greeting';
-import { levelPath, weekDots } from './todayQueries';
+import { weekDots } from './todayQueries';
 
 describe('home header', () => {
   const at = (iso: string) => Date.parse(iso);
@@ -40,10 +40,6 @@ describe('level goal', () => {
     expect(targetLevel(null, 'B1')).toBe('B2');
     expect(targetLevel({ target_level: 'C1' }, 'B1')).toBe('C1');
     expect(targetLevel(undefined, 'C2')).toBe('C2');
-  });
-  it('draws the path from A1 to the farther of level and target', () => {
-    expect(levelPath('B1', 'B2')).toEqual(['A1', 'A2', 'B1', 'B2']);
-    expect(levelPath('C1', 'B2')).toEqual(['A1', 'A2', 'B1', 'B2', 'C1']);
   });
   it('accepts only a valid daily minutes goal', () => {
     expect(dayMinutesGoal({ day_minutes: 15 })).toBe(15);

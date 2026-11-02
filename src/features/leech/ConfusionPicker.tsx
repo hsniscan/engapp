@@ -46,7 +46,7 @@ export function ConfusionPicker({ noteId, senseId, onReported }: ConfusionPicker
         onChange={(e) => setQuery(e.target.value)}
       />
       {list && list.length === 0 && (
-        <p className="py-2 text-sm text-fg-muted">{query.trim() ? t('leech.picker.empty') : t('leech.picker.noWords')}</p>
+        <p className="py-2 text-meta text-fg-muted">{query.trim() ? t('leech.picker.empty') : t('leech.picker.noWords')}</p>
       )}
       <ul className="-mx-2 flex max-h-[45dvh] flex-col overflow-y-auto" aria-label={t('leech.picker.title')}>
         {list?.map((e) => (
@@ -58,10 +58,10 @@ export function ConfusionPicker({ noteId, senseId, onReported }: ConfusionPicker
               className="flex min-h-12 w-full items-center gap-3 rounded-control px-2 py-2 text-left hover:bg-surface-sunken focus-visible:bg-surface-sunken disabled:opacity-60"
             >
               <span className="flex min-w-0 flex-1 flex-col">
-                <span lang="en" className="truncate font-serif text-lg font-semibold text-fg">
+                <span lang="en" className="truncate font-serif text-lead font-semibold text-fg">
                   {e.term}
                 </span>
-                {e.meaning && <span className="truncate text-sm text-fg-muted">{e.meaning}</span>}
+                {e.meaning && <span className="truncate text-meta text-fg-muted">{e.meaning}</span>}
               </span>
               {e.near && <Badge tone={e.near === 'reported' ? 'warn' : 'accent'}>{t(`leech.picker.near.${e.near}`)}</Badge>}
             </button>
@@ -85,7 +85,7 @@ export function ReportedNote({
   const { t } = useTranslation();
   return (
     <div className="flex flex-col gap-3" role="status">
-      <p className="flex items-start gap-2 text-[0.9375rem] text-fg">
+      <p className="flex items-start gap-2 text-ui text-fg">
         <Icon name="check" className="mt-0.5 size-5 shrink-0 text-success-text" />
         <span>
           {t('leech.picker.reported', { a: pair.a.term, b: pair.b.term })} {t('leech.picker.reportedBody')}

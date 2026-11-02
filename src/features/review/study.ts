@@ -137,6 +137,41 @@ export function sessionFacts(answers: readonly SessionAnswer[]): {
   return { words: words.size, consolidated: up.size, reviews, recalled };
 }
 
+const STAGE_RANK: Record<WordStage, number> = {
+  new: 0,
+  learning: 1,
+  consolidating: 2,
+  learned: 3,
+  mastered: 4,
+};
+
+export interface StageChange {
+  noteId: Id;
+  term: string;
+  /** The word's stage before its first answer in this session. */
+  from: WordStage;
+  /** The stage after its last answer in this session. */
+  to: WordStage;
+}
+
+/**
+ * Words whose stage went up in this session ("Aşama değişenler" on the summary). The word's
+ * stage is its recognition card's (ADR 0041), so only those answers count; a word that went up
+ * and came back down is left out. Order: first answered first.
+ */
+export function stageChanges(answers: readonly SessionAnswer[]): StageChange[] {
+  const byNote = new Map<Id, StageChange>();
+  for (const a of answers) {
+    if (a.view.card.card_type !== 'recognition') continue;
+    const before = cardStage(a.view.card);
+    const after = stageAfterOf(a.view.previews[a.rating]) ?? before;
+    const seen = byNote.get(a.view.note.id);
+    if (!seen) byNote.set(a.view.note.id, { noteId: a.view.note.id, term: a.view.note.term, from: before, to: after });
+    else seen.to = after;
+  }
+  return [...byNote.values()].filter((c) => STAGE_RANK[c.to] > STAGE_RANK[c.from]);
+}
+
 // ------------------------------------------------------------------ cloze choices
 
 let candidates: Promise<ChoiceCandidate[]> | null = null;

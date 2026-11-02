@@ -1,11 +1,11 @@
-// The top of Bugün (v0.5.1, ADR 0055): the whole day in one card. A chip per study mode
-// ("Kelime ✓ · Üretim 29 · Boşluk 28"), one remaining count and time estimate over all of them
-// (the same numbers as the Çalış picker), and one button to the next mode that still has cards
-// ("Üretime geç (29)"). When every mode is done: "Bugünlük tamam" and when the next cards come.
+// The Today card of Bugün (v0.5.2 "Çam", docs/design.md §4.1, ADR 0066): the whole day in one
+// card — a ring with what is left, "Bugünün çalışması" with the split and the time estimate, a
+// chip per study mode, the one primary button, and the week strip with the streak. Three states
+// (ADR 0062): ready (cards now), waiting (learning steps later today) and done.
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { getStreakFreezeView } from '@/data';
 import type { StreakSummary } from '@/domain/streak';
 import type { StudyMode } from '@/domain/studyMode';
@@ -13,11 +13,19 @@ import { modeLeft, modeLeftToday, type TodayStudy } from '@/features/review/stud
 import { durationText } from '@/features/review/intervalText';
 import { useNow } from '@/features/settings/useNow';
 import { formatClock, formatDayLong } from '@/features/stats/format';
-import { cn, Dialog } from '@/ui';
-import { HomeIcon } from './homeIcons';
+import {
+  buttonClasses,
+  Card,
+  Chip,
+  ChipRow,
+  Dialog,
+  HeatStrip,
+  Icon,
+  ProgressRing,
+  type HeatLevel,
+} from '@/ui';
 import { nextDueText } from './nextDueText';
 import type { NextDue } from './queries';
-import { Ring } from './Ring';
 import type { TodayActivity, WeekDot } from './todayQueries';
 
 export const WORD_STUDY_HREF = '/study?mode=word';
@@ -33,11 +41,17 @@ export interface HeroData {
   timezone: string;
 }
 
-export function TodayHero({ data }: { data: HeroData }) {
+export interface TodayHeroProps {
+  data: HeroData;
+  /** Done state: the "Biraz daha çalış" section follows right under the card (no button then). */
+  moreBelow?: boolean;
+}
+
+export function TodayHero({ data, moreBelow = false }: TodayHeroProps) {
   // v0.5.2 (ADR 0062): learning steps due later today keep the day open ("5 kart 10 dk sonra").
-  if (data.study.ready > 0) return <PendingHero data={data} />;
-  if (data.study.later > 0) return <WaitingHero data={data} />;
-  return <DoneHero data={data} />;
+  if (data.study.ready > 0) return <ReadyCard data={data} />;
+  if (data.study.later > 0) return <WaitingCard data={data} />;
+  return <DoneCard data={data} moreBelow={moreBelow} />;
 }
 
 /** Answers given today over the modes shown. */
@@ -45,81 +59,105 @@ function answeredToday(data: HeroData): number {
   return data.study.modes.reduce((n, m) => n + data.activity.answers[m], 0);
 }
 
-function WeekDots({ week, tone }: { week: WeekDot[]; tone: 'hero' | 'surface' }) {
+/** The card itself: one layout for every state, so nothing jumps when the day moves on. */
+function TodayFrame({
+  testId,
+  ring,
+  title,
+  meta,
+  children,
+}: {
+  testId: string;
+  ring: ReactNode;
+  title: string;
+  meta: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <Card
+      as="section"
+      padding="lg"
+      aria-labelledby="today-hero-title"
+      data-testid={testId}
+      className="flex flex-col gap-5"
+    >
+      <div className="flex items-center gap-4">
+        {ring}
+        <div className="flex min-w-0 flex-col gap-1">
+          <h2 id="today-hero-title" className="text-title font-semibold text-fg">
+            {title}
+          </h2>
+          {meta}
+        </div>
+      </div>
+      {children}
+    </Card>
+  );
+}
+
+function RingCentre({ children, caption }: { children: ReactNode; caption?: string }) {
+  return (
+    <span aria-hidden="true" className="flex flex-col items-center leading-none">
+      <span className="tabular text-title font-semibold text-fg">{children}</span>
+      {caption && <span className="mt-0.5 text-caption text-fg-muted">{caption}</span>}
+    </span>
+  );
+}
+
+function WeekStrip({ week }: { week: WeekDot[] }) {
   const { t } = useTranslation();
   const active = week.filter((d) => d.active).length;
+  const days = week.map((d) => ({
+    level: (d.active ? 'completed' : 'empty') satisfies HeatLevel as HeatLevel,
+    label: `${formatDayLong(d.date)}: ${d.active ? t('today.dayActive') : t('today.dayIdle')}`,
+  }));
   return (
-    <ol aria-label={t('today.weekDots', { count: active })} className="flex shrink-0 gap-[5px]">
-      {week.map((d) => (
-        <li
-          key={d.date}
-          aria-label={`${formatDayLong(d.date)}: ${d.active ? t('today.dayActive') : t('today.dayIdle')}`}
-          className={cn(
-            'size-[9px] rounded-full border-[1.5px]',
-            tone === 'hero' ? 'border-hero-ring' : 'border-accent',
-            d.active && (tone === 'hero' ? 'bg-hero-ring' : 'bg-accent'),
-            d.future && 'opacity-45',
-          )}
-        />
-      ))}
-    </ol>
+    <HeatStrip
+      days={days}
+      label={t('today.weekDots', { count: active })}
+      className="w-32 shrink-0 sm:w-36"
+    />
   );
 }
 
 function StreakText({ streak, done }: { streak: StreakSummary; done: boolean }) {
   const { t } = useTranslation();
-  if (streak.currentStreak === 0) return <span className="text-sm">{t('today.streakStart')}</span>;
+  if (streak.currentStreak === 0) return <span>{t('today.streakStart')}</span>;
+  const extra = done
+    ? t('today.streakGoesOn')
+    : streak.longestStreak > streak.currentStreak
+      ? t('today.streakLongest', { count: streak.longestStreak })
+      : null;
   return (
-    <span className="text-sm">
-      <strong className="font-semibold">
+    <span>
+      <span className="font-semibold text-fg">
         {t('today.streakDays', { count: streak.currentStreak })}
-      </strong>{' '}
-      <span className="whitespace-nowrap">
-        {done
-          ? t('today.streakGoesOn')
-          : streak.longestStreak > streak.currentStreak
-            ? t('today.streakLongest', { count: streak.longestStreak })
-            : null}
       </span>
+      {extra && <span className="font-normal text-fg-muted"> {extra}</span>}
     </span>
   );
 }
 
-/** The streak line opens a short sheet: what counts, and this month's protections. */
-function StreakRow({
-  streak,
-  done,
-  tone,
-}: {
-  streak: StreakSummary;
-  done: boolean;
-  tone: 'hero' | 'surface';
-}) {
+/** Hairline, the week strip and the streak; the streak opens a short sheet. */
+function StreakFooter({ data, done }: { data: HeroData; done: boolean }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   return (
-    <>
+    <div className="flex items-center gap-4 border-t border-border pt-4">
+      <WeekStrip week={data.activity.week} />
       <button
         type="button"
         data-testid="today-streak"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
-        className={cn(
-          '-mx-1.5 flex min-h-11 min-w-0 items-center gap-2 rounded-xl px-1.5 text-left',
-          tone === 'hero' ? 'hover:bg-accent-fg/10' : 'hover:bg-hover',
-        )}
+        className="-my-2 -mr-2 ml-auto flex min-h-11 min-w-0 items-center gap-1.5 rounded-control px-2 text-left text-meta text-fg hover:bg-hover"
       >
-        <HomeIcon
-          name="flame"
-          size={18}
-          strokeWidth={1.8}
-          className={tone === 'hero' ? 'text-streak-flame' : 'text-warn-text'}
-        />
-        <StreakText streak={streak} done={done} />
+        <Icon name="flame" size={16} className="shrink-0 text-warn" />
+        <StreakText streak={data.streak} done={done} />
         <span className="sr-only">{t('today.streakMore')}</span>
       </button>
-      <StreakSheet open={open} onOpenChange={setOpen} streak={streak} />
-    </>
+      <StreakSheet open={open} onOpenChange={setOpen} streak={data.streak} />
+    </div>
   );
 }
 
@@ -141,7 +179,7 @@ function StreakSheet({
       title={t('today.streakSheet.title')}
       description={t('today.streakDays', { count: streak.currentStreak })}
     >
-      <div className="flex flex-col gap-3 pb-1 text-[0.9375rem]" data-testid="streak-sheet">
+      <div className="flex flex-col gap-4 pb-1 text-body" data-testid="streak-sheet">
         <p>{t('today.streakSheet.rule')}</p>
         <p className="text-fg-muted">
           {t('today.streakSheet.longest', {
@@ -149,30 +187,31 @@ function StreakSheet({
           })}
         </p>
         {view && (
-          <div className="rounded-[14px] bg-surface-sunken px-3.5 py-3">
-            <p className="font-semibold">{t('today.streakSheet.protectTitle')}</p>
-            <p className="mt-0.5 text-fg-muted" data-testid="streak-protection">
+          <Card tone="sunken" padding="md" inset className="flex flex-col gap-1">
+            <p className="text-ui font-semibold">{t('today.streakSheet.protectTitle')}</p>
+            <p className="text-ui text-fg-muted" data-testid="streak-protection">
               {t('today.streakSheet.protectLeft', { left: view.left, perMonth: view.perMonth })}
             </p>
-            <p className="mt-1 text-sm text-fg-subtle">
+            <p className="text-meta text-fg-muted">
               {t('today.streakSheet.protectRule', { perMonth: view.perMonth })}
             </p>
-          </div>
+          </Card>
         )}
-        <p className="text-sm text-fg-muted">{t('today.streakSheet.practice')}</p>
+        <p className="text-meta text-fg-muted">{t('today.streakSheet.practice')}</p>
       </div>
     </Dialog>
   );
 }
 
-/** "Kelime ✓ · Üretim 29 · Boşluk 28": one link per mode, the finished ones ticked. */
-function ModeChips({ data, tone }: { data: HeroData; tone: 'hero' | 'surface' }) {
+/** "Kelime 12 · Üretim ✓ · Boşluk doldurma 3": a chip per mode; each starts that mode. */
+function ModeChips({ data }: { data: HeroData }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { study, activity } = data;
   const lockedHint = study.locked.some((m) => m === 'production' || m === 'cloze');
   return (
-    <div className="flex flex-col gap-1.5">
-      <ul className="flex flex-wrap gap-1.5" aria-label={t('today.typesTitle')}>
+    <div className="flex flex-col gap-2">
+      <ChipRow label={t('today.typesTitle')} bleed={false} className="flex-wrap overflow-visible">
         {study.modes.map((m) => {
           const c = study.counts[m];
           const n = modeLeftToday(c);
@@ -180,60 +219,47 @@ function ModeChips({ data, tone }: { data: HeroData; tone: 'hero' | 'surface' })
           // Catch-up moved this mode's reviews to later days: not "done", "ertelendi".
           const deferred = done && c.deferred > 0;
           const studied = activity.answers[m] > 0;
+          const spoken = deferred
+            ? t('today.typeDeferredLong', { count: c.deferred })
+            : done
+              ? studied
+                ? t('today.typeDone')
+                : study.locked.includes(m)
+                  ? t('today.typeLocked')
+                  : t('today.typeNone')
+              : t('today.chipCount', { count: n });
           return (
-            <li key={m} className="flex">
-              <Link
-                to={studyHref(m)}
-                data-testid={`study-type-${m}`}
-                data-done={done || undefined}
-                className={cn(
-                  'inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-sm font-medium transition-colors duration-(--duration-micro)',
-                  tone === 'hero'
-                    ? done
-                      ? 'bg-[rgb(0_0_0/0.1)] text-hero-muted hover:bg-[rgb(0_0_0/0.16)]'
-                      : 'bg-[rgb(0_0_0/0.2)] text-accent-fg hover:bg-[rgb(0_0_0/0.28)]'
-                    : done
-                      ? 'bg-surface-sunken text-fg-muted hover:bg-hover'
-                      : 'bg-accent-soft text-accent-text hover:bg-hover',
-                )}
-              >
-                {/* The name is "Kelime 2 kart" / "Üretim Bugün yok"; the eye sees "Kelime 2". */}
-                <span>{t(`today.mode.${m}`)}</span>
-                <span className="sr-only">
-                  {' '}
-                  {deferred
-                    ? t('today.typeDeferredLong', { count: c.deferred })
-                    : done
-                      ? studied
-                        ? t('today.typeDone')
-                        : study.locked.includes(m)
-                          ? t('today.typeLocked')
-                          : t('today.typeNone')
-                      : t('today.chipCount', { count: n })}
+            <Chip
+              key={m}
+              data-testid={`study-type-${m}`}
+              data-done={done || undefined}
+              onClick={() => void navigate(studyHref(m))}
+              className={done ? 'text-fg-muted' : undefined}
+            >
+              {/* The name is "Kelime 2 kart" / "Üretim Bugün yok"; the eye sees "Kelime 2". */}
+              <span>{t(`today.mode.${m}`)}</span>
+              <span className="sr-only"> {spoken}</span>
+              {deferred ? (
+                <span aria-hidden="true" className="font-medium">
+                  {t('today.typeDeferred')}
                 </span>
-                {deferred ? (
-                  <span aria-hidden="true">{t('today.typeDeferred')}</span>
-                ) : done ? (
-                  studied ? (
-                    <HomeIcon name="check" size={15} strokeWidth={2.2} />
-                  ) : (
-                    <span aria-hidden="true">–</span>
-                  )
+              ) : done ? (
+                studied ? (
+                  <Icon name="check" size={16} strokeWidth={2} className="text-accent-text" />
                 ) : (
-                  <span aria-hidden="true" className="tabular font-semibold">
-                    {n}
-                  </span>
-                )}
-              </Link>
-            </li>
+                  <span aria-hidden="true">–</span>
+                )
+              ) : (
+                <span aria-hidden="true" className="tabular text-fg-muted">
+                  {n}
+                </span>
+              )}
+            </Chip>
           );
         })}
-      </ul>
+      </ChipRow>
       {lockedHint && (
-        <p
-          data-testid="today-locked-hint"
-          className={cn('text-[0.8125rem]', tone === 'hero' ? 'text-hero-muted' : 'text-fg-muted')}
-        >
+        <p data-testid="today-locked-hint" className="text-meta text-fg-muted">
           {t('today.lockedHint')}
         </p>
       )}
@@ -241,9 +267,9 @@ function ModeChips({ data, tone }: { data: HeroData; tone: 'hero' | 'surface' })
   );
 }
 
-function PendingHero({ data }: { data: HeroData }) {
+function ReadyCard({ data }: { data: HeroData }) {
   const { t } = useTranslation();
-  const { study, activity } = data;
+  const { study } = data;
   // The ring counts cards (v0.5.2, review B3): cards done for today over cards done + left.
   const done = study.doneCards;
   const planned = done + study.left;
@@ -253,71 +279,50 @@ function PendingHero({ data }: { data: HeroData }) {
   const fresh = study.modes.reduce((n, m) => n + study.counts[m].newCount, 0);
   const next = study.nextReady ?? study.next ?? 'word';
   const nextLeft = modeLeft(study.counts[next]);
-  // The first mode keeps "Başla" / "Devam et"; after it, the button names the next one.
+  // The first mode keeps "Çalışmaya başla" / "Devam et"; after it, the button names the next one.
   const cta =
     next === study.modes[0]
       ? answered > 0
         ? t('today.continue')
         : t('today.start')
       : t(`today.goTo.${next}`, { count: nextLeft });
+  const ringText = t('today.ringLabel', { done, total: planned });
   return (
-    <section
-      aria-labelledby="today-hero-title"
-      className="flex flex-col gap-4 rounded-[20px] bg-accent px-5 pt-5.5 pb-4.5 text-accent-fg"
-      data-testid="today-hero"
-    >
-      <div className="flex items-center gap-4.5">
-        <div
-          className="relative flex size-23 shrink-0 flex-col items-center justify-center"
-          role="img"
-          aria-label={t('today.ringLabel', { done, total: planned })}
+    <TodayFrame
+      testId="today-hero"
+      ring={
+        <ProgressRing
+          value={done}
+          max={Math.max(1, planned)}
+          size={76}
+          label={t('today.heroCaption')}
+          valueText={ringText}
         >
-          <Ring
-            ratio={planned ? done / planned : 0}
-            size={92}
-            stroke={7}
-            trackClass="stroke-accent-fg/22"
-            fillClass="stroke-hero-ring"
-            className="absolute inset-0"
-          />
-          <span
-            aria-hidden="true"
-            className="tabular font-serif text-[1.625rem] leading-none font-semibold"
-          >
-            {done}
-          </span>
-          <span aria-hidden="true" className="tabular text-xs text-hero-muted">
-            / {planned}
-          </span>
-        </div>
-        <div className="flex min-w-0 flex-col gap-1">
-          <span className="text-[0.8125rem] tracking-[0.04em] text-hero-muted uppercase">
-            {t('today.heroCaption')}
-          </span>
-          <h2 id="today-hero-title" className="font-serif text-2xl leading-tight font-normal">
-            {t('today.cardsLeft', { count: study.left })}
-          </h2>
-          <span data-testid="today-split" className="text-sm text-hero-muted">
-            {t('today.split', { due: review, fresh })}
-            {steps > 0 && ` · ${t('today.splitSteps', { count: steps })}`}
-            {study.minutes > 0 && ` · ${t('today.aboutMinutes', { count: study.minutes })}`}
-          </span>
-        </div>
-      </div>
-      <ModeChips data={data} tone="hero" />
+          <RingCentre caption={t('today.ringLeft')}>{study.left}</RingCentre>
+        </ProgressRing>
+      }
+      title={t('today.heroCaption')}
+      meta={
+        <p data-testid="today-split" className="text-ui text-fg-muted">
+          {t('today.cardsLeft', { count: study.left })}
+          {' · '}
+          {t('today.split', { due: review, fresh })}
+          {steps > 0 && ` · ${t('today.splitSteps', { count: steps })}`}
+          {study.minutes > 0 && ` · ${t('today.aboutMinutes', { count: study.minutes })}`}
+        </p>
+      }
+    >
+      <ModeChips data={data} />
       <Link
         to={studyHref(next)}
         data-testid="start-study"
-        className="flex h-13 items-center justify-center gap-2 rounded-[14px] bg-hero-action text-[1.0625rem] font-semibold text-hero-action-fg transition-opacity duration-(--duration-micro) hover:opacity-92 focus-visible:outline-hero-action"
+        className={buttonClasses({ size: 'lg', fullWidth: true })}
       >
         {cta}
-        <HomeIcon name="arrow" size={20} strokeWidth={1.8} />
+        <Icon name="arrow-right" size={20} />
       </Link>
-      <div className="flex items-center justify-between gap-3">
-        <StreakRow streak={data.streak} done={false} tone="hero" />
-        <WeekDots week={activity.week} tone="hero" />
-      </div>
-    </section>
+      <StreakFooter data={data} done={false} />
+    </TodayFrame>
   );
 }
 
@@ -326,102 +331,95 @@ function PendingHero({ data }: { data: HeroData }) {
  * "5 kart 10 dk sonra". Not "Bugünlük tamam", and no "Biraz daha çalış" yet. The numbers
  * refresh by themselves when the steps fall due (studyClock.ts).
  */
-function WaitingHero({ data }: { data: HeroData }) {
+function WaitingCard({ data }: { data: HeroData }) {
   const { t } = useTranslation();
   const now = useNow();
-  const { study, activity } = data;
+  const { study } = data;
   const at = study.nextLearningDue;
   const time = at === null ? '' : durationText(t, Math.max(60_000, at - now));
+  const done = study.doneCards;
   return (
-    <section
-      aria-labelledby="today-hero-title"
-      className="flex flex-col gap-4 rounded-[20px] border border-border bg-surface px-5 pt-5.5 pb-4.5"
-      data-testid="today-hero-waiting"
-    >
-      <div className="flex items-center gap-4.5">
-        <div
-          aria-hidden="true"
-          className="flex size-23 shrink-0 flex-col items-center justify-center rounded-full border-7 border-accent-soft"
+    <TodayFrame
+      testId="today-hero-waiting"
+      ring={
+        <ProgressRing
+          value={done}
+          max={Math.max(1, done + study.later)}
+          size={76}
+          label={t('today.heroCaption')}
+          valueText={t('today.ringLabel', { done, total: done + study.later })}
         >
-          <HomeIcon name="calendar" size={22} strokeWidth={2} className="text-accent-text" />
-        </div>
-        <div className="flex min-w-0 flex-col gap-1">
-          <span className="text-[0.8125rem] font-semibold tracking-[0.04em] text-fg-muted uppercase">
-            {t('today.heroCaption')}
-          </span>
-          <h2 id="today-hero-title" className="font-serif text-[1.625rem] leading-tight font-semibold">
-            {t('today.waitingTitle', { count: study.later, time })}
-          </h2>
-          <span className="text-sm text-fg-muted" role="status">
-            {at === null
-              ? t('today.waitingBodyNoClock')
-              : t('today.waitingBody', { clock: formatClock(at, data.timezone) })}
-          </span>
-        </div>
-      </div>
-      <ModeChips data={data} tone="surface" />
-      <div className="flex items-center justify-between gap-3 rounded-[14px] bg-surface-sunken px-3.5 py-2">
-        <StreakRow streak={data.streak} done={data.streak.todayActive} tone="surface" />
-        <WeekDots week={activity.week} tone="surface" />
-      </div>
-    </section>
+          <Icon name="clock" size={24} className="text-accent-text" />
+        </ProgressRing>
+      }
+      title={t('today.waitingTitle', { count: study.later, time })}
+      meta={
+        <p className="text-ui text-fg-muted" role="status">
+          {at === null
+            ? t('today.waitingBodyNoClock')
+            : t('today.waitingBody', { clock: formatClock(at, data.timezone) })}
+        </p>
+      }
+    >
+      <ModeChips data={data} />
+      <StreakFooter data={data} done={data.streak.todayActive} />
+    </TodayFrame>
   );
 }
 
-function DoneHero({ data }: { data: HeroData }) {
+function DoneCard({ data, moreBelow }: { data: HeroData; moreBelow: boolean }) {
   const { t } = useTranslation();
   const { activity } = data;
   const done = data.study.doneCards;
   const studied = answeredToday(data) > 0;
   return (
-    <section
-      aria-labelledby="today-hero-title"
-      className="flex flex-col gap-4 rounded-[20px] border border-border bg-surface px-5 pt-5.5 pb-4.5"
-      data-testid="today-hero-done"
-    >
-      <div className="flex items-center gap-4.5">
-        <div
-          aria-hidden="true"
-          className="flex size-23 shrink-0 flex-col items-center justify-center rounded-full border-7 border-accent"
+    <TodayFrame
+      testId="today-hero-done"
+      ring={
+        <ProgressRing
+          value={1}
+          max={1}
+          size={76}
+          label={t('today.heroCaption')}
+          valueText={studied ? t('today.ringLabel', { done, total: done }) : undefined}
         >
-          <HomeIcon name="check" size={22} strokeWidth={2} className="text-accent-text" />
+          <Icon name="check" size={26} strokeWidth={2} className="text-accent-text" />
+        </ProgressRing>
+      }
+      title={studied ? t('today.doneTitle') : t('today.nothingTitle')}
+      meta={
+        <p className="text-ui text-fg-muted">
+          {studied
+            ? t('today.doneSplit', {
+                reviewed: activity.all.reviewed,
+                fresh: activity.all.fresh,
+              })
+            : t('today.nothingBody')}
           {studied && (
-            <span className="tabular mt-0.5 text-xs text-fg-muted">
+            <span className="tabular">
+              {' · '}
               {done} / {done}
             </span>
           )}
-        </div>
-        <div className="flex min-w-0 flex-col gap-1">
-          <span className="text-[0.8125rem] font-semibold tracking-[0.04em] text-success-text uppercase">
-            {t('today.heroCaption')}
-          </span>
-          <h2
-            id="today-hero-title"
-            className="font-serif text-[1.625rem] leading-tight font-semibold"
-          >
-            {studied ? t('today.doneTitle') : t('today.nothingTitle')}
-          </h2>
-          <span className="text-sm text-fg-muted">
-            {studied
-              ? t('today.doneSplit', {
-                  reviewed: activity.all.reviewed,
-                  fresh: activity.all.fresh,
-                })
-              : t('today.nothingBody')}
-          </span>
-        </div>
-      </div>
-      {studied && <ModeChips data={data} tone="surface" />}
-      <div className="flex items-center justify-between gap-3 rounded-[14px] bg-surface-sunken px-3.5 py-2">
-        <StreakRow streak={data.streak} done={data.streak.todayActive} tone="surface" />
-        <WeekDots week={activity.week} tone="surface" />
-      </div>
+        </p>
+      }
+    >
+      {studied && <ModeChips data={data} />}
       {data.next && (
-        <p className="flex items-center gap-2 text-sm text-fg-muted" role="status">
-          <HomeIcon name="calendar" size={18} className="text-fg-subtle" />
+        <p className="flex items-center gap-2 text-meta text-fg-muted" role="status">
+          <Icon name="calendar" size={16} className="shrink-0" />
           <span>{nextDueText(t, data.next, data.now, data.timezone)}</span>
         </p>
       )}
-    </section>
+      {!moreBelow && studied && (
+        <Link
+          to="/study/more"
+          className={buttonClasses({ variant: 'secondary', size: 'lg', fullWidth: true })}
+        >
+          {t('home.moreStudy')}
+        </Link>
+      )}
+      <StreakFooter data={data} done={data.streak.todayActive} />
+    </TodayFrame>
   );
 }
