@@ -16,6 +16,7 @@ import {
   undoLeechAction,
 } from './leech';
 import { recomputeAllCards, runIntegrityCheck } from './maintenance';
+import { updateSettings } from './settings';
 import { getCardView, getStudyQueue } from './queries';
 
 const DAY = 86_400_000;
@@ -65,10 +66,10 @@ describe('leech detection', () => {
   it('flags the 6th lapse in the session, from the logs, and suspends nothing', async () => {
     const { recognition } = await bank();
     const five = await forget(recognition.id, LEECH_LAPSES - 1);
-    expect(await leechAfterAnswer(recognition.id, five.last)).toEqual({ crossed: false, lapses: 5 });
+    expect(await leechAfterAnswer(recognition.id, five.last)).toEqual({ crossed: false, lapses: 5, suspended: false });
     await answerCard({ card_id: recognition.id, rating: Rating.Easy, duration_ms: 1000 }, five.t + DAY);
     const sixth = await answerCard({ card_id: recognition.id, rating: Rating.Again, duration_ms: 1000 }, five.t + 5 * DAY);
-    expect(await leechAfterAnswer(recognition.id, sixth.log.id)).toEqual({ crossed: true, lapses: 6 });
+    expect(await leechAfterAnswer(recognition.id, sixth.log.id)).toEqual({ crossed: true, lapses: 6, suspended: false });
     expect(await getCardLapses(recognition.id)).toBe(sixth.card.lapses);
     expect((await db.cards.toArray()).every((c) => !c.suspended && c.deleted_at === null)).toBe(true);
 
@@ -81,6 +82,16 @@ describe('leech detection', () => {
     await undoAnswer(sixth.log.id, five.t + 5 * DAY + 1000);
     expect(await getCardLapses(recognition.id)).toBe(5);
     expect(await listLeechCards()).toEqual([]);
+  });
+
+  it('suspends the card on the 6th lapse with "Zorlanılan kartı askıya al" on (v0.5.2)', async () => {
+    const { recognition } = await bank();
+    await updateSettings({ study_options: { leech_auto_suspend: true } });
+    const five = await forget(recognition.id, LEECH_LAPSES - 1);
+    await answerCard({ card_id: recognition.id, rating: Rating.Easy, duration_ms: 1000 }, five.t + DAY);
+    const sixth = await answerCard({ card_id: recognition.id, rating: Rating.Again, duration_ms: 1000 }, five.t + 5 * DAY);
+    expect(await leechAfterAnswer(recognition.id, sixth.log.id)).toEqual({ crossed: true, lapses: 6, suspended: true });
+    expect((await db.cards.get(recognition.id))!.suspended).toBe(true);
   });
 });
 

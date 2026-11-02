@@ -14,6 +14,8 @@ export interface LeechNotice {
   crossed: boolean;
   /** The word can be mixed up with another (not a root/affix or contrast card). */
   confusable: boolean;
+  /** v0.5.2: "Zorlanılan kartı askıya al" suspended the card. */
+  suspended?: boolean;
 }
 
 export function AfterAgainBar({
@@ -44,6 +46,7 @@ export function AfterAgainBar({
           {notice.crossed
             ? t('leech.afterAgain.crossed', { term: notice.term, count: notice.lapses })
             : t('leech.afterAgain.confused', { term: notice.term })}
+          {notice.crossed && notice.suspended && ` ${t('leech.afterAgain.suspended')}`}
         </p>
         <Button
           size="sm"

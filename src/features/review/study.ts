@@ -54,13 +54,17 @@ export function ratingLines(
   };
 }
 
-/** "Yeni kelime", "Öğreniyor", "Yeniden öğreniyor", "Pekişiyor · 1/3", "Öğrenildi", "Kalıcı". */
+/**
+ * "Yeni kelime", "Öğreniyor", "Yeniden öğreniyor", "Pekişiyor · 1/3", "Öğrenildi", "Kalıcı".
+ * A first-time Üretim / Boşluk / Dikte / picture card says "Yeni kart": its word is not new
+ * (it opened at Pekişiyor; v0.5.2, review copy 1).
+ */
 export function stageChipLabel(
   card: Card,
-  t: (k: 'study.stage.newWord' | 'study.stage.relearning') => string,
+  t: (k: 'study.stage.newWord' | 'study.stage.newCard' | 'study.stage.relearning') => string,
 ): string {
   const stage = cardStage(card);
-  if (stage === 'new') return t('study.stage.newWord');
+  if (stage === 'new') return t(card.card_type === 'recognition' ? 'study.stage.newWord' : 'study.stage.newCard');
   if (stage === 'learning' && isRelearning(card)) return t('study.stage.relearning');
   if (stage === 'consolidating') {
     const p = stageProgress(card);

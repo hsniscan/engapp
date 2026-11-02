@@ -390,7 +390,8 @@
     "stage": {
       "newWord": "Yeni kelime",
       "relearning": "Yeniden öğreniyor",
-      "explain": "Bir kelime üç ayrı günde, aralar açılarak doğru bilinince öğrenilmiş sayılır."
+      "explain": "Bir kelime üç ayrı günde, aralar açılarak doğru bilinince öğrenilmiş sayılır.",
+      "newCard": "Yeni kart"
     },
     "firstLetter": "İlk harfi göster",
     "dontKnow": "Bilmiyorum, göster",
@@ -404,7 +405,8 @@
       "wrong": "Bu sefer olmadı",
       "skipped": "Doğrusu bu",
       "yours": "Senin cevabın",
-      "right": "Doğrusu"
+      "right": "Doğrusu",
+      "otherWord": "Başka bir kelime: “{{word}}”"
     },
     "cloze": {
       "showTr": "Türkçesini göster",
@@ -592,7 +594,8 @@
       "crossed": "“{{term}}” kartını {{count}}. kez unuttun.",
       "crossedAction": "Başka yoldan bakalım",
       "confused": "“{{term}}” başka bir kelimeyle mi karıştı?",
-      "confusedAction": "Kelimeyi seç"
+      "confusedAction": "Kelimeyi seç",
+      "suspended": "Ayarın gereği askıya alındı."
     },
     "picker": {
       "title": "Hangi kelimeyle karıştırdın?",
@@ -992,7 +995,7 @@
       "dailyNew": "Günlük yeni kart",
       "cardsPerDay": "{{count}} kart",
       "noNew": "Yeni kart yok",
-      "dailyNewHint": "Her yeni kart, sonraki günlerde birkaç tekrar daha getirir. Günde 10 kart, çoğu kişi için sürdürülebilir.",
+      "dailyNewHint": "Bütün çalışma türleri (Kelime, Üretim, Boşluk doldurma, Dikte) bu sayıyı paylaşır. Her yeni kart sonraki günlerde birkaç tekrar getirir; günde 10 kart çoğu kişi için sürdürülebilir.",
       "retention": "Hedef hatırlama oranı",
       "retentionExplain": "Bir kartın sırası geldiğinde onu hatırlama olasılığın yaklaşık %{{pct}} olur.",
       "retentionLow": "Daha az çalışırsın ama daha çok unutursun.",
@@ -1009,7 +1012,15 @@
       "newOrderAddedHint": "Yeni kartlar eklediğin sırayla gelir.",
       "groupNew": "Yeni kartlar",
       "groupRecall": "Hatırlama",
-      "groupDay": "Gün ve gösterim"
+      "groupDay": "Gün ve gösterim",
+      "modeLimitsHint": "İstersen Üretim, Boşluk doldurma ve Dikte için ayrıca bir üst sınır koy. Toplam yine yukarıdaki sayıyı geçmez.",
+      "modeLimit": "{{mode}}: günlük yeni kart",
+      "modeLimitShared": "Ortak sınır",
+      "sessionLength": "Oturum uzunluğu",
+      "sessionLengthHint": "Bir oturumda en çok bu kadar kart. Bitince devam etmek sende.",
+      "sessionAll": "Hepsi",
+      "leechSuspend": "Zorlanılan kartı askıya al",
+      "leechSuspendHint": "Bir kart 6. kez unutulunca otomatik askıya alınır; Kelimelerim'den geri açabilirsin."
     },
     "levels": {
       "A1": "Başlangıç",
@@ -1921,7 +1932,7 @@
     "sourceLegend": "Hangi kartlar?",
     "sourceHard": "Zorlandıklarım",
     "sourceHardHint": "Sık unuttukların ve son iki haftada bilemediklerin",
-    "sourceRecent": "Son 7 günde öğrendiklerim",
+    "sourceRecent": "Bu hafta yeni başladıkların",
     "sourceRecentHint": "Bu hafta ilk kez çalıştığın kelimeler",
     "sourceTag": "Etiket",
     "sourceTagHint": "Seçtiğin etiketteki kelimeler",

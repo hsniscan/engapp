@@ -1,6 +1,6 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { addNoteWithSenses, db, ensureSettings } from '@/data';
+import { addNoteWithSenses, db, ensureSettings, updateSettings } from '@/data';
 import { resetDb } from '@/test/db';
 import { renderRoute } from '@/test/ui';
 import { ReviewScreen } from './ReviewScreen';
@@ -115,6 +115,14 @@ describe('review session', () => {
       expect(screen.getByTestId('study-progress')).toHaveTextContent('2 / 2+1 tekrar'),
     );
   }, 20_000);
+
+  it('"Oturum uzunluğu" caps the session at that many cards (v0.5.2)', async () => {
+    for (const w of ['apple', 'river', 'stone', 'cloud', 'grass']) await addNoteWithSenses({ term: w, senses: [{ meaning_tr: w }] });
+    await updateSettings({ study_options: { session_cards: 5 } });
+    renderRoute(<ReviewScreen studyMode="word" />, { path: '/study' });
+    await term('bank');
+    expect(screen.getByTestId('study-progress')).toHaveTextContent('0 / 5');
+  });
 
   it('shows a calm empty state when nothing is due', async () => {
     await db.cards.toCollection().modify({ suspended: true });

@@ -66,6 +66,7 @@ export const BACKUP_FORMAT = 'engapp-backup';
 //    counter), and the optional settings reading_difficulty / reading_offset /
 //    reader_highlight. Older files have none (restored as none; overwrite keeps the local ones).
 //    v0.5.1 adds the optional settings.reader_always_guess the same way (absent = off).
+//    v0.5.2 adds the optional settings.study_options the same way (absent = defaults).
 export const BACKUP_SCHEMA_VERSION = 11;
 
 export interface BackupTables {

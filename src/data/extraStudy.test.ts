@@ -17,7 +17,7 @@ import {
   loadPracticeCandidates,
   recordPractice,
 } from './practice';
-import { getStreakSummary, getStudyQueue } from './queries';
+import { getStreakSummary, getStudyQueue, getStudyQueues } from './queries';
 import { dayConfig, getSettings, schedulerFor, updateSettings } from './settings';
 
 // 2026-10-21 12:00 Istanbul (UTC+3).
@@ -360,4 +360,22 @@ describe('overview', () => {
     // Loose: the machine is shared; this guards against an order-of-magnitude regression.
     expect(performance.now() - t0).toBeLessThan(5000);
   }, 60_000);
+});
+
+describe('one new-card budget over the modes (v0.5.2, ADR 0062)', () => {
+  it('shares the daily limit fairly, honours per-mode limits, and "+5" goes to the mode', async () => {
+    await addWords(10);
+    await db.cards.where('card_type').anyOf(['production', 'cloze']).modify({ unlocked: true });
+    const q = await getStudyQueues({ learnAheadMs: 0 }, T);
+    // Limit 3: Kelime weighted 2, then the others in turn (never 3 per mode).
+    expect(q.word.counts.new + q.production.counts.new + q.cloze.counts.new).toBe(3);
+    expect(q.word.counts.new).toBe(2);
+    await updateSettings({ study_options: { mode_new_limits: { production: 0, cloze: 0 } } }, T);
+    const capped = await getStudyQueues({ learnAheadMs: 0 }, T);
+    expect([capped.word.counts.new, capped.production.counts.new, capped.cloze.counts.new]).toEqual([3, 0, 0]);
+    // Words without a sentence have no cloze card; the extra goes past Üretim's own limit.
+    await addExtraNew(5, 'production', T);
+    expect((await getStudyQueues({ learnAheadMs: 0 }, T)).production.counts.new).toBe(5);
+    expect((await getMoreStudyOverview(T)).extraNewToday).toBe(5);
+  });
 });

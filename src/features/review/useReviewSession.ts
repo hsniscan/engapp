@@ -8,6 +8,7 @@ import {
   answerCard,
   getCardView,
   getMixedStudyQueue,
+  getSettings,
   getStreakSummary,
   getStudyQueue,
   leechAfterAnswer,
@@ -19,6 +20,7 @@ import {
 } from '@/data';
 import type { QueueItem, QueueKind, QueueMode } from '@/domain/queue';
 import type { StudyMode } from '@/domain/studyMode';
+import { sessionCards } from '@/domain/studyOptions';
 import { Rating, type Id, type RatingValue } from '@/domain/types';
 import type { LeechNotice } from '@/features/leech';
 import { canShowPicture, preloadPicture } from '@/features/images/picture';
@@ -135,6 +137,25 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
   const alive = useRef(true);
   /** Every card the session has held (for the fixed progress denominator). */
   const seen = useRef(new Set<Id>());
+  /**
+   * v0.5.2 "Oturum uzunluğu" (settings.study_options.session_cards): the session takes at most
+   * this many cards (their learning steps included); null = the whole queue.
+   */
+  const sessionCap = useRef<number | null>(null);
+  const chosen = useRef(new Set<Id>());
+  const capItems = useCallback(<T extends { card_id: Id }>(items: T[]): T[] => {
+    const limit = sessionCap.current;
+    if (limit === null) return items;
+    const out: T[] = [];
+    for (const i of items) {
+      if (chosen.current.has(i.card_id)) out.push(i);
+      else if (chosen.current.size < limit) {
+        chosen.current.add(i.card_id);
+        out.push(i);
+      }
+    }
+    return out;
+  }, []);
 
   const patch = useCallback((p: Partial<SessionState>) => {
     if (!alive.current) return;
@@ -231,7 +252,7 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
       carryPostponed(q.postponed);
       if (mySeq !== seq.current || !alive.current) return;
       const currentId = stateRef.current.current?.view.card.id;
-      upcoming.current = q.items
+      upcoming.current = capItems(q.items)
         .filter((i) => i.card_id !== currentId && !skipped.current.has(i.card_id))
         .map(({ card_id, note_id, kind }) => ({ card_id, note_id, kind }));
       const s = stateRef.current;
@@ -242,7 +263,7 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
         prefetch();
       }
     },
-    [advance, finish, patch, prefetch, mode, studyMode, deckId],
+    [advance, finish, patch, prefetch, capItems, mode, studyMode, deckId],
   );
 
   const enqueue = useCallback((job: () => Promise<void>) => {
@@ -257,20 +278,26 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
     alive.current = true;
     let cancelled = false;
     void (async () => {
-      const [q, streak] = await Promise.all([loadQueue(mode, studyMode, deckId), getStreakSummary()]);
+      const [q, streak, settings] = await Promise.all([
+        loadQueue(mode, studyMode, deckId),
+        getStreakSummary(),
+        getSettings(),
+      ]);
       carryPostponed(q.postponed);
       if (cancelled) return;
       setStart({ todayActive: streak.todayActive, streak: streak.currentStreak });
       skipped.current.clear();
       seen.current.clear();
-      upcoming.current = q.items.map(({ card_id, note_id, kind }) => ({ card_id, note_id, kind }));
+      chosen.current.clear();
+      sessionCap.current = sessionCards(settings);
+      upcoming.current = capItems(q.items).map(({ card_id, note_id, kind }) => ({ card_id, note_id, kind }));
       if (!(await advance()) && !cancelled) finish();
     })();
     return () => {
       cancelled = true;
       alive.current = false;
     };
-  }, [advance, finish, mode, studyMode, deckId]);
+  }, [advance, finish, capItems, mode, studyMode, deckId]);
 
   const flip = useCallback(() => {
     const s = stateRef.current;
@@ -319,6 +346,7 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
                   lapses: leech.lapses,
                   crossed: leech.crossed,
                   confusable: type !== 'affix' && type !== 'contrast',
+                  suspended: leech.suspended,
                 },
               });
             }

@@ -5,6 +5,13 @@ import { Button, SegmentedControl, Select, Skeleton, Slider, Switch } from '@/ui
 import { FsrsOptimizerRow, RetentionHelper } from '@/features/fsrs/FsrsSettings';
 import { ImageSettingsRows } from '@/features/images/ImageSettings';
 import { SettingsRow, SettingsSection } from './SettingsLayout';
+import {
+  leechAutoSuspend,
+  modeNewLimit,
+  SESSION_CARD_CHOICES,
+  sessionCards,
+  studyOptionsOf,
+} from '@/domain/studyOptions';
 import { setTheme } from './themeSync';
 import { useAppSettings } from './useAppSettings';
 import type { SettingsPatch } from '@/data';
@@ -78,10 +85,12 @@ export function StudySection() {
           />
           <p className="-mt-1 text-sm text-fg-muted">{t('settings.study.dailyNewHint')}</p>
         </SettingsRow>
+        <ModeLimitRows settings={settings} update={update} />
         <NewOrderRow
           value={settings.new_card_order ?? 'smart'}
           onChange={(v) => update({ new_card_order: v })}
         />
+        <SessionLengthRow settings={settings} update={update} />
       </SettingsSection>
       <SettingsSection id="hatirlama" title={t('settings.study.groupRecall')}>
         <SettingsRow stack>
@@ -101,6 +110,17 @@ export function StudySection() {
         </SettingsRow>
         <RetentionHelper settings={settings} />
         <FsrsOptimizerRow />
+        <SettingsRow className="py-2">
+          <Switch
+            className="w-full"
+            label={t('settings.study.leechSuspend')}
+            description={t('settings.study.leechSuspendHint')}
+            checked={leechAutoSuspend(settings)}
+            onCheckedChange={(v) =>
+              void update({ study_options: { ...studyOptionsOf(settings), leech_auto_suspend: v } })
+            }
+          />
+        </SettingsRow>
       </SettingsSection>
       <SettingsSection id="gun" title={t('settings.study.groupDay')}>
         <SettingsRow
@@ -130,6 +150,79 @@ export function StudySection() {
         </SettingsRow>
       </SettingsSection>
     </>
+  );
+}
+
+const MODE_LIMIT_CHOICES = [0, 3, 5, 10, 15, 20] as const;
+type LimitedMode = 'production' | 'cloze' | 'dictation';
+
+/**
+ * v0.5.2 (ADR 0062): each of Üretim, Boşluk doldurma and Dikte may have its own daily limit of
+ * first-time cards inside the shared "Günlük yeni kart" budget ("Ortak" = no own limit).
+ */
+function ModeLimitRows({ settings, update }: { settings: Settings; update: (p: SettingsPatch) => Promise<void> }) {
+  const { t } = useTranslation();
+  const options = [
+    { value: 'shared', label: t('settings.study.modeLimitShared') },
+    ...MODE_LIMIT_CHOICES.map((n) => ({
+      value: String(n),
+      label: n === 0 ? t('settings.study.noNew') : t('settings.study.cardsPerDay', { count: n }),
+    })),
+  ];
+  const set = (mode: LimitedMode, v: string) => {
+    const opts = studyOptionsOf(settings);
+    const limits = { ...opts.mode_new_limits, [mode]: v === 'shared' ? null : Number(v) };
+    void update({ study_options: { ...opts, mode_new_limits: limits } });
+  };
+  return (
+    <SettingsRow stack>
+      <p className="text-sm text-fg-muted">{t('settings.study.modeLimitsHint')}</p>
+      {(['production', 'cloze', 'dictation'] as const).map((m) => {
+        const v = modeNewLimit(settings, m);
+        return (
+          <Select
+            key={m}
+            label={t('settings.study.modeLimit', { mode: t(`today.mode.${m}`) })}
+            className="sm:w-56"
+            value={v === null ? 'shared' : String(v)}
+            onValueChange={(x) => set(m, x)}
+            options={
+              v === null || (MODE_LIMIT_CHOICES as readonly number[]).includes(v)
+                ? options
+                : [...options, { value: String(v), label: t('settings.study.cardsPerDay', { count: v }) }]
+            }
+          />
+        );
+      })}
+    </SettingsRow>
+  );
+}
+
+/** "Oturum uzunluğu" (v0.5.2): a session of 10/20/30 cards, or the whole mode. */
+function SessionLengthRow({ settings, update }: { settings: Settings; update: (p: SettingsPatch) => Promise<void> }) {
+  const { t } = useTranslation();
+  const v = sessionCards(settings);
+  return (
+    <SettingsRow label={t('settings.study.sessionLength')} description={t('settings.study.sessionLengthHint')}>
+      <Select
+        label={t('settings.study.sessionLength')}
+        hideLabel
+        className="sm:w-40"
+        value={v === null ? 'all' : String(v)}
+        onValueChange={(x) =>
+          void update({
+            study_options: { ...studyOptionsOf(settings), session_cards: x === 'all' ? null : Number(x) },
+          })
+        }
+        options={[
+          { value: 'all', label: t('settings.study.sessionAll') },
+          ...SESSION_CARD_CHOICES.map((n) => ({ value: String(n), label: t('settings.study.cardsPerDay', { count: n }) })),
+          ...(v !== null && !(SESSION_CARD_CHOICES as readonly number[]).includes(v)
+            ? [{ value: String(v), label: t('settings.study.cardsPerDay', { count: v }) }]
+            : []),
+        ]}
+      />
+    </SettingsRow>
   );
 }
 

@@ -226,11 +226,16 @@ const verdictLook = {
   skipped: { box: 'border-border bg-canvas', text: 'text-fg', icon: 'info' },
 } as const;
 
-export function VerdictLine({ check }: { check: Pick<AnswerCheck, 'verdict' | 'distance'> }) {
+export function VerdictLine({
+  check,
+}: {
+  check: Pick<AnswerCheck, 'verdict' | 'distance'> & Partial<Pick<AnswerCheck, 'otherWord'>>;
+}) {
   const { t } = useTranslation();
   const look = verdictLook[check.verdict];
-  const text =
-    check.verdict === 'close'
+  const text = check.otherWord
+    ? t('study.result.otherWord', { word: check.otherWord })
+    : check.verdict === 'close'
       ? t('study.result.close', { count: check.distance })
       : check.verdict === 'synonym'
         ? t('modes.typed.synonym')

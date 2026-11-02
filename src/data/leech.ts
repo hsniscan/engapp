@@ -17,6 +17,9 @@ import {
 import { deriveUnlocked } from '../domain/recompute';
 import type { Card, Id, Millis, Note, Sense } from '../domain/types';
 import { syncFromPrimary } from './actions';
+import { leechAutoSuspend } from '../domain/studyOptions';
+import { setSuspended } from './actions';
+import { getSettings } from './settings';
 import { db } from './db';
 import { ActionError } from './errors';
 import { logsByCard } from './history';
@@ -28,10 +31,22 @@ export async function getCardLapses(cardId: Id): Promise<number> {
   return lapsesFromLogs(await db.review_logs.where('card_id').equals(cardId).toArray());
 }
 
-/** Did this answer make the card a leech? (Asked right after answerCard, in the session.) */
-export async function leechAfterAnswer(cardId: Id, logId: Id): Promise<{ crossed: boolean; lapses: number }> {
+/**
+ * Did this answer make the card a leech? (Asked right after answerCard, in the session.) With
+ * "Zorlanılan kartı askıya al" on (settings.study_options, v0.5.2) the card is suspended then.
+ */
+export async function leechAfterAnswer(
+  cardId: Id,
+  logId: Id,
+): Promise<{ crossed: boolean; lapses: number; suspended: boolean }> {
   const logs = await db.review_logs.where('card_id').equals(cardId).toArray();
-  return { crossed: becameLeech(logs, logId), lapses: lapsesFromLogs(logs) };
+  const crossed = becameLeech(logs, logId);
+  let suspended = false;
+  if (crossed && leechAutoSuspend(await getSettings())) {
+    await setSuspended({ card_ids: [cardId] }, true);
+    suspended = true;
+  }
+  return { crossed, lapses: lapsesFromLogs(logs), suspended };
 }
 
 export interface LeechSheetData {

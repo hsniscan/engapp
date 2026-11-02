@@ -390,7 +390,8 @@
     "stage": {
       "newWord": "New word",
       "relearning": "Relearning",
-      "explain": "A word counts as learned once you know it on three separate days, with growing gaps."
+      "explain": "A word counts as learned once you know it on three separate days, with growing gaps.",
+      "newCard": "New card"
     },
     "firstLetter": "Show the first letter",
     "dontKnow": "I don't know, show me",
@@ -404,7 +405,8 @@
       "wrong": "Not this time",
       "skipped": "Here is the answer",
       "yours": "Your answer",
-      "right": "Correct answer"
+      "right": "Correct answer",
+      "otherWord": "A different word: “{{word}}”"
     },
     "cloze": {
       "showTr": "Show the Turkish",
@@ -592,7 +594,8 @@
       "crossed": "You have now forgotten “{{term}}” {{count}} times.",
       "crossedAction": "Try another way",
       "confused": "Did you mix up “{{term}}” with another word?",
-      "confusedAction": "Pick the word"
+      "confusedAction": "Pick the word",
+      "suspended": "Suspended, as your setting says."
     },
     "picker": {
       "title": "Which word did you mix it up with?",
@@ -992,7 +995,7 @@
       "dailyNew": "New cards per day",
       "cardsPerDay": "{{count}} cards",
       "noNew": "No new cards",
-      "dailyNewHint": "Every new card brings a few more reviews over the next days. 10 a day is sustainable for most people.",
+      "dailyNewHint": "All study types (Words, Production, Fill in the blank, Dictation) share this number. Every new card brings a few reviews over the next days; 10 a day is sustainable for most people.",
       "retention": "Target retention",
       "retentionExplain": "When a card comes up, you will remember it about {{pct}}% of the time.",
       "retentionLow": "Fewer reviews, but you forget more.",
@@ -1009,7 +1012,15 @@
       "newOrderAddedHint": "New cards come in the order you added them.",
       "groupNew": "New cards",
       "groupRecall": "Recall",
-      "groupDay": "Day and display"
+      "groupDay": "Day and display",
+      "modeLimitsHint": "You can also cap Production, Fill in the blank and Dictation on their own. The total still stays within the number above.",
+      "modeLimit": "{{mode}}: new cards per day",
+      "modeLimitShared": "Shared limit",
+      "sessionLength": "Session length",
+      "sessionLengthHint": "At most this many cards in one session. You decide whether to go on.",
+      "sessionAll": "All",
+      "leechSuspend": "Suspend hard-to-learn cards",
+      "leechSuspendHint": "A card forgotten for the 6th time is suspended; you can bring it back from My words."
     },
     "levels": {
       "A1": "Beginner",
@@ -1921,7 +1932,7 @@
     "sourceLegend": "Which cards?",
     "sourceHard": "Cards I struggle with",
     "sourceHardHint": "Often forgotten, or missed in the last two weeks",
-    "sourceRecent": "Learned in the last 7 days",
+    "sourceRecent": "Started this week",
     "sourceRecentHint": "Words you studied for the first time this week",
     "sourceTag": "A tag",
     "sourceTagHint": "Words with the tag you choose",
