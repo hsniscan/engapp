@@ -24,6 +24,8 @@ import {
 } from '@/ui';
 import { sessionFacts } from './study';
 import { modeLeft, useTodayStudy } from './studyModes';
+import { durationText } from './intervalText';
+import { useNow } from '@/features/settings/useNow';
 import type { SessionAnswer, SessionStart } from './useReviewSession';
 
 const ratingValue: Record<RatingName, number> = {
@@ -98,10 +100,13 @@ export function SessionSummary({
   const timeMs = answers.reduce((a, x) => a + x.durationMs, 0);
   const facts = sessionFacts(answers);
   const today = useTodayStudy();
-  // The next mode with cards today ("Üretime geç (29)"); the session's own mode only if it
-  // still has cards (a learning step due later does not count: learnAheadMs 0 counts due now).
-  const next = today?.waiting[0] ?? null;
+  // The next mode with cards studiable now ("Üretime geç (29)"); the session's own mode only if
+  // it still has cards. Learning steps due later keep the day open (v0.5.2, review B1): the
+  // summary says when they come back, and offers "Devam et" by itself once they are due.
+  const next = today?.nextReady ?? null;
   const allDone = !!today && today.left === 0;
+  const waiting = !!today && !next && today.later > 0;
+  const now = useNow();
   const byRating = Object.fromEntries(
     ratings.map((r) => [r, answers.filter((a) => a.rating === ratingValue[r]).length]),
   ) as Record<RatingName, number>;
@@ -145,6 +150,14 @@ export function SessionSummary({
           {facts.consolidated > 0 &&
             ` · ${t('review.summary.consolidated', { count: facts.consolidated })}`}
         </p>
+        {waiting && today && (
+          <p className="mt-1 text-[0.9375rem] text-fg-muted" data-testid="summary-waiting" aria-live="polite">
+            {t('review.summary.waiting', {
+              count: today.later,
+              time: durationText(t, Math.max(60_000, (today.nextLearningDue ?? now) - now)),
+            })}
+          </p>
+        )}
         {allDone && (
           <p className="mt-1 text-[0.9375rem] text-fg-muted" aria-live="polite">
             {after ? nextDueText(t, after.next, after.now, after.timezone) : ' '}

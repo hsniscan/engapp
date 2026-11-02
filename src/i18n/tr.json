@@ -111,7 +111,7 @@
       "dictation": "Dikteye geç ({{count}})"
     },
     "doneTitle": "Bugünlük tamam",
-    "doneSplit": "{{reviewed}} tekrar · {{fresh}} yeni kelime",
+    "doneSplit": "{{reviewed}} tekrar · {{fresh}} yeni kart",
     "nothingTitle": "Bugün kart yok",
     "nothingBody": "Bugün sırası gelen kart kalmadı.",
     "weekDots_one": "Bu hafta: {{count}} gün çalışıldı",
@@ -202,7 +202,18 @@
     "deckBadgeFreq": "En sık",
     "deckBadgeLevel": "Seviyene göre",
     "deckHave": "{{have}} / {{size}} sende",
-    "deckReady": "Hazır deste"
+    "deckReady": "Hazır deste",
+    "typeDeferred": "ertelendi",
+    "typeDeferredLong_one": "telafi: {{count}} tekrar sonraki günlere kaldı",
+    "typeDeferredLong_other": "telafi: {{count}} tekrar sonraki günlere kaldı",
+    "typeLocked": "henüz açılmadı",
+    "lockedHint": "Üretim ve Boşluk doldurma, kelimelerin Pekişiyor'a gelince açılır.",
+    "splitSteps_one": "{{count}} öğrenme adımı",
+    "splitSteps_other": "{{count}} öğrenme adımı",
+    "waitingTitle_one": "{{count}} kart {{time}} sonra",
+    "waitingTitle_other": "{{count}} kart {{time}} sonra",
+    "waitingBody": "Öğrenme adımları, hazır olma saati {{clock}}. Bugün o zaman kendiliğinden güncellenir.",
+    "waitingBodyNoClock": "Öğrenme adımları birazdan hazır olur."
   },
   "addSheet": {
     "title": "Ne eklemek istersin?",
@@ -313,7 +324,9 @@
       "retention": "Hatırlama",
       "ratings": "Cevapların dağılımı",
       "streakExtended": "Bugün serine eklendi.",
-      "streakKept": "Bugünkü çalışman kaydedildi."
+      "streakKept": "Bugünkü çalışman kaydedildi.",
+      "waiting_one": "{{count}} kart {{time}} sonra yeniden gelecek (öğrenme adımı).",
+      "waiting_other": "{{count}} kart {{time}} sonra yeniden gelecek (öğrenme adımı)."
     },
     "moreStudy": "Biraz daha çalış",
     "aheadBadge": "Yarının kartları",
@@ -411,7 +424,10 @@
       "others": "Başka türlerde bekleyen kartlar var",
       "otherCount": "{{mode}}: {{count}} kart",
       "pickMode": "Çalışma türleri",
-      "deck": "“{{name}}” destesinde bugünlük kart kalmadı"
+      "deck": "“{{name}}” destesinde bugünlük kart kalmadı",
+      "waitingHint": "Bu ekran açık kalırsa kartlar hazır olunca devam edebilirsin.",
+      "resume_one": "Devam et ({{count}} kart hazır)",
+      "resume_other": "Devam et ({{count}} kart hazır)"
     },
     "learnedToday_one": "Bugün {{count}} kelime Öğrenildi'ye geçti.",
     "learnedToday_other": "Bugün {{count}} kelime Öğrenildi'ye geçti."
@@ -1895,8 +1911,6 @@
     "descPending_other": "Bugün {{count}} kart daha var · yaklaşık {{min}} dk.",
     "newTitle": "Yeni kartlar",
     "newBody": "Günlük sınırının üstüne, yalnızca bugün için.",
-    "newWaiting_one": "Bekleyen yeni kart: {{count}}",
-    "newWaiting_other": "Bekleyen yeni kart: {{count}}",
     "newExtraToday_one": "Bugün {{count}} ek kart açtın.",
     "newExtraToday_other": "Bugün {{count}} ek kart açtın.",
     "newAdd": "+{{count}} yeni kart",
@@ -1924,13 +1938,16 @@
     "aheadBody_other": "Yarın sırası gelecek {{count}} kartı şimdi çalışabilirsin.",
     "aheadNote": "Normal bir tekrar sayılır ve takvime işlenir. Yarınki yükün azalır; erken bildiğin kartın sonraki aralığı biraz kısa olur.",
     "aheadStart": "Şimdi çalış",
-    "aheadNone": "Yarın için bekleyen kart yok.",
+    "aheadNone": "Şu an öne alınacak kart yok. Bugün öğrendiğin kelimeler, ertesi gün sınavı için kendi günlerini bekler.",
     "addFailed": "Yeni kartlar açılamadı; tekrar dene.",
     "sourceDeck": "Deste",
     "sourceDeckHint": "Kaydettiğin bir destedeki kelimeler",
     "sourceInterests": "İlgi alanlarımdan",
     "sourceInterestsHint": "En çok ilgilendiğin konulardaki metinlerden kelimeler",
-    "deckLabel": "Deste"
+    "deckLabel": "Deste",
+    "newWaitingMode_one": "Bekleyen yeni kart: {{count}} ({{mode}})",
+    "newWaitingMode_other": "Bekleyen yeni kart: {{count}} ({{mode}})",
+    "newPaused": "Telafi ya da tatil dönüşü: yeni kartlara bugün ara verildi."
   },
   "load": {
     "settingsDescription": "Günde ne kadar zaman ayırabileceğini söyle; çalışma yükü buna göre ayarlanır.",
@@ -3717,5 +3734,23 @@
       "hidden": "Cümle gizli: önce dinle",
       "showSentence": "Cümleyi göster"
     }
+  },
+  "interval": {
+    "locale": "tr-TR",
+    "minute_one": "{{n}} dk",
+    "minute_other": "{{n}} dk",
+    "hour_one": "{{n}} sa",
+    "hour_other": "{{n}} sa",
+    "tomorrow": "yarın",
+    "day_one": "{{n}} gün",
+    "day_other": "{{n}} gün",
+    "dayShort_one": "{{n}} g",
+    "dayShort_other": "{{n}} g",
+    "week_one": "{{n}} hafta",
+    "week_other": "{{n}} hafta",
+    "month_one": "{{n}} ay",
+    "month_other": "{{n}} ay",
+    "year_one": "{{n}} yıl",
+    "year_other": "{{n}} yıl"
   }
 }

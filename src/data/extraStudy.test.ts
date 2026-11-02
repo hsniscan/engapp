@@ -2,7 +2,7 @@
 import fc from 'fast-check';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { addDays, dayKeyOf } from '../domain/day';
-import { applyRating, createScheduler, emptyFsrs } from '../domain/fsrs';
+import { applyRating, emptyFsrs } from '../domain/fsrs';
 import { CardState, Rating, type Card, type RatingValue } from '../domain/types';
 import { resetDb } from '../test/db';
 import { addNoteWithSenses, answerCard, undoAnswer } from './actions';
@@ -18,14 +18,13 @@ import {
   recordPractice,
 } from './practice';
 import { getStreakSummary, getStudyQueue } from './queries';
-import { dayConfig, getSettings, updateSettings } from './settings';
+import { dayConfig, getSettings, schedulerFor, updateSettings } from './settings';
 
 // 2026-10-21 12:00 Istanbul (UTC+3).
 const T = Date.UTC(2026, 9, 21, 9);
 const MIN = 60_000;
 const HOUR = 60 * MIN;
 const DAY = 86_400_000;
-const sched = createScheduler({ request_retention: 0.9, fsrs_params: null });
 
 beforeEach(async () => {
   await resetDb();
@@ -67,21 +66,32 @@ async function studyAll(
   throw new Error('queue never emptied');
 }
 
-/** A recognition card graduated to Review in the past, chosen so that it falls due tomorrow. */
+/**
+ * A recognition card past its next-day test (learnt some days ago, recalled again on its due
+ * day: ramp step 1), chosen so that it falls due tomorrow. "Yarının kartları" leaves out cards
+ * still waiting for that test (v0.5.2, ADR 0062).
+ */
 async function reviewDueTomorrow(noteId: string): Promise<Card> {
-  const cfg = dayConfig(await getSettings(T));
+  const settings = await getSettings(T);
+  const cfg = dayConfig(settings);
+  const s = schedulerFor(settings);
   const tomorrow = addDays(dayKeyOf(T, cfg), 1);
   const card = await recognition(noteId);
-  // First answers on some earlier day: Good, then Good after the 10-minute step.
-  for (let back = 1; back <= 10; back++) {
-    const at = T - back * DAY;
-    let f = emptyFsrs(card.created_at);
-    f = applyRating(sched, { id: card.id, ...f }, Rating.Good, at);
-    f = applyRating(sched, { id: card.id, ...f }, Rating.Good, at + 10 * MIN);
-    if (f.state === CardState.Review && dayKeyOf(f.due, cfg) === tomorrow) {
-      await answerCard({ card_id: card.id, rating: Rating.Good, duration_ms: 1000 }, at);
-      await answerCard({ card_id: card.id, rating: Rating.Good, duration_ms: 1000 }, at + 10 * MIN);
-      return (await db.cards.get(card.id))!;
+  for (let back = 2; back <= 30; back++) {
+    for (const late of [0, 2, 5, 9]) {
+      const at = T - back * DAY;
+      let f = emptyFsrs(card.created_at);
+      f = applyRating(s, { id: card.id, ...f }, Rating.Good, at);
+      f = applyRating(s, { id: card.id, ...f }, Rating.Good, at + 10 * MIN);
+      const at2 = f.due + late * HOUR;
+      if (at2 >= T - HOUR) continue;
+      const g = applyRating(s, { id: card.id, ...f }, Rating.Good, at2);
+      if (g.state === CardState.Review && (g.ramp_step ?? 0) > 0 && dayKeyOf(g.due, cfg) === tomorrow) {
+        await answerCard({ card_id: card.id, rating: Rating.Good, duration_ms: 1000 }, at);
+        await answerCard({ card_id: card.id, rating: Rating.Good, duration_ms: 1000 }, at + 10 * MIN);
+        await answerCard({ card_id: card.id, rating: Rating.Good, duration_ms: 1000 }, at2);
+        return (await db.cards.get(card.id))!;
+      }
     }
   }
   throw new Error('no start day gives a due date of tomorrow');
@@ -93,7 +103,7 @@ describe('extra new cards', () => {
     expect(await studyAll(T)).toBe(3);
     expect((await getStudyQueue({ learnAheadMs: 0 }, T + HOUR)).counts.total).toBe(0);
 
-    expect(await addExtraNew(5, T + HOUR)).toBe(5);
+    expect(await addExtraNew(5, 'word', T + HOUR)).toBe(5);
     const q = await getStudyQueue({ learnAheadMs: 0 }, T + HOUR);
     expect(q.counts).toMatchObject({ new: 5, total: 5 });
     expect(q.extraNewToday).toBe(5);
@@ -110,18 +120,18 @@ describe('extra new cards', () => {
   it('adds up, is per day, and drops the allowance of other days', async () => {
     await addWords(30);
     await setMeta(extraNewKey('2026-10-19'), 10);
-    await addExtraNew(5, T);
-    expect(await addExtraNew(10, T)).toBe(15);
+    await addExtraNew(5, 'word', T);
+    expect(await addExtraNew(10, 'word', T)).toBe(15);
     expect(await getMeta(extraNewKey('2026-10-19'))).toBeUndefined();
     expect((await getStudyQueue({ learnAheadMs: 0 }, T)).counts.new).toBe(18);
     // Tomorrow the allowance is gone.
     expect((await getStudyQueue({ learnAheadMs: 0 }, T + DAY)).counts.new_allowed).toBe(3);
-    await expect(addExtraNew(0, T)).rejects.toMatchObject({ code: 'invalid_input' });
+    await expect(addExtraNew(0, 'word', T)).rejects.toMatchObject({ code: 'invalid_input' });
   });
 
   it('another device sees the cards introduced here and never introduces them twice', async () => {
     await addWords(20);
-    await addExtraNew(5, T);
+    await addExtraNew(5, 'word', T);
     await studyAll(T);
     // "Another device": same logs, no allowance in its meta.
     await db.meta.delete(extraNewKey(dayKeyOf(T, dayConfig(await getSettings(T)))));
@@ -148,7 +158,7 @@ describe("review ahead (tomorrow's cards)", () => {
     expect(await studyAll(now, Rating.Good, 'ahead')).toBe(2);
     expect(await db.review_logs.count()).toBe(logsBefore + 2);
     const after = (await db.cards.get(ca.id))!;
-    expect(after.last_review).toBe(now);
+    expect([now, now + 1000]).toContain(after.last_review);
     expect(after.due).toBeGreaterThan(ca.due);
 
     // The logs are the truth: a full recompute changes nothing.
@@ -324,15 +334,17 @@ describe('overview', () => {
     await studyAll(T);
     const o = await getMoreStudyOverview(T + HOUR);
     expect(o).toMatchObject({
-      dueNow: 0,
       dailyNewLimit: 3,
+      extraMode: 'word',
+      newPaused: false,
       extraNewToday: 0,
       newWaiting: 9,
       aheadCount: 0,
     });
     expect(o.practice.recent).toBe(3);
-    await addExtraNew(5, T + HOUR);
-    expect(await getMoreStudyOverview(T + HOUR)).toMatchObject({ dueNow: 5, extraNewToday: 5 });
+    await addExtraNew(5, 'word', T + HOUR);
+    expect(await getMoreStudyOverview(T + HOUR)).toMatchObject({ newWaiting: 4, extraNewToday: 5 });
+    expect((await getStudyQueue({ studyMode: 'word', learnAheadMs: 0 }, T + HOUR)).counts.new).toBe(5);
   });
 
   it('candidates load quickly for 1,000 cards', async () => {

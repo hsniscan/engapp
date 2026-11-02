@@ -112,7 +112,7 @@ export const RatingBar = forwardRef<HTMLDivElement, RatingBarProps>(function Rat
       <div role="group" aria-labelledby={qid} className="grid grid-cols-4 gap-2">
         {ratings.map((r, i) => {
           const value = ratingValue[r];
-          const { interval, change } = ratingLines(view, value);
+          const { interval, change } = ratingLines(view, value, t);
           const isSuggested = value === suggested;
           const isArmed = armed === value;
           return (

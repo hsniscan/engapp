@@ -111,7 +111,7 @@
       "dictation": "Go to Dictation ({{count}})"
     },
     "doneTitle": "Done for today",
-    "doneSplit": "{{reviewed}} reviews · {{fresh}} new words",
+    "doneSplit": "{{reviewed}} reviews · {{fresh}} new cards",
     "nothingTitle": "No cards today",
     "nothingBody": "No cards are left for today.",
     "weekDots_one": "This week: {{count}} day studied",
@@ -202,7 +202,18 @@
     "deckBadgeFreq": "Most common",
     "deckBadgeLevel": "For your level",
     "deckHave": "{{have}} / {{size}} yours",
-    "deckReady": "Ready-made deck"
+    "deckReady": "Ready-made deck",
+    "typeDeferred": "postponed",
+    "typeDeferredLong_one": "catch-up: {{count}} review moved to the next days",
+    "typeDeferredLong_other": "catch-up: {{count}} reviews moved to the next days",
+    "typeLocked": "not open yet",
+    "lockedHint": "Production and Fill in the blank open once your words reach Strengthening.",
+    "splitSteps_one": "{{count}} learning step",
+    "splitSteps_other": "{{count}} learning steps",
+    "waitingTitle_one": "{{count}} card in {{time}}",
+    "waitingTitle_other": "{{count}} cards in {{time}}",
+    "waitingBody": "Learning steps, ready at {{clock}}. Today updates by itself then.",
+    "waitingBodyNoClock": "The learning steps are ready soon."
   },
   "addSheet": {
     "title": "What would you like to add?",
@@ -313,7 +324,9 @@
       "retention": "Recall",
       "ratings": "Answer breakdown",
       "streakExtended": "Today was added to your streak.",
-      "streakKept": "Today's reviews are saved."
+      "streakKept": "Today's reviews are saved.",
+      "waiting_one": "{{count}} card comes back in {{time}} (learning step).",
+      "waiting_other": "{{count}} cards come back in {{time}} (learning steps)."
     },
     "moreStudy": "Study a bit more",
     "aheadBadge": "Tomorrow's cards",
@@ -411,7 +424,10 @@
       "others": "Other study types have cards waiting",
       "otherCount": "{{mode}}: {{count}} cards",
       "pickMode": "Study types",
-      "deck": "Nothing left today in “{{name}}”"
+      "deck": "Nothing left today in “{{name}}”",
+      "waitingHint": "Keep this screen open and you can go on when the cards are ready.",
+      "resume_one": "Go on ({{count}} card ready)",
+      "resume_other": "Go on ({{count}} cards ready)"
     },
     "learnedToday_one": "{{count}} word reached Learned today.",
     "learnedToday_other": "{{count}} words reached Learned today."
@@ -1895,8 +1911,6 @@
     "descPending_other": "{{count}} more cards today · about {{min}} min.",
     "newTitle": "New cards",
     "newBody": "On top of your daily limit, for today only.",
-    "newWaiting_one": "New cards waiting: {{count}}",
-    "newWaiting_other": "New cards waiting: {{count}}",
     "newExtraToday_one": "You opened {{count}} extra card today.",
     "newExtraToday_other": "You opened {{count}} extra cards today.",
     "newAdd": "+{{count}} new cards",
@@ -1924,13 +1938,16 @@
     "aheadBody_other": "You can review the {{count}} cards due tomorrow now.",
     "aheadNote": "This is a normal review and updates the schedule. Tomorrow gets lighter; a card you know early gets a slightly shorter next interval.",
     "aheadStart": "Review now",
-    "aheadNone": "No cards are due tomorrow.",
+    "aheadNone": "Nothing to bring forward right now. Words you learnt today wait for their next-day check on their own day.",
     "addFailed": "Could not open new cards; try again.",
     "sourceDeck": "Deck",
     "sourceDeckHint": "Words in one of your saved decks",
     "sourceInterests": "From my interests",
     "sourceInterestsHint": "Words from texts about the topics you care about most",
-    "deckLabel": "Deck"
+    "deckLabel": "Deck",
+    "newWaitingMode_one": "New cards waiting: {{count}} ({{mode}})",
+    "newWaitingMode_other": "New cards waiting: {{count}} ({{mode}})",
+    "newPaused": "Catch-up or back from a break: new cards are paused today."
   },
   "load": {
     "settingsDescription": "Tell the app how much time you have a day; your review load follows it.",
@@ -3717,5 +3734,23 @@
       "hidden": "The sentence is hidden: listen first",
       "showSentence": "Show the sentence"
     }
+  },
+  "interval": {
+    "locale": "en-US",
+    "minute_one": "{{n}} min",
+    "minute_other": "{{n}} min",
+    "hour_one": "{{n}} h",
+    "hour_other": "{{n}} h",
+    "tomorrow": "tomorrow",
+    "day_one": "{{n}} day",
+    "day_other": "{{n}} days",
+    "dayShort_one": "{{n}} d",
+    "dayShort_other": "{{n}} d",
+    "week_one": "{{n}} week",
+    "week_other": "{{n}} weeks",
+    "month_one": "{{n}} month",
+    "month_other": "{{n}} months",
+    "year_one": "{{n}} year",
+    "year_other": "{{n}} years"
   }
 }

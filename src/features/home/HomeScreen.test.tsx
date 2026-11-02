@@ -63,9 +63,11 @@ describe('Bugün', () => {
     // One chip per mode in the hero: the whole day at a glance (ADR 0055).
     expect(within(hero).getByTestId('study-type-word')).toHaveAttribute('href', '/study?mode=word');
     expect(within(hero).getByTestId('study-type-word')).toHaveAccessibleName(/^Kelime\s*2 kart$/);
+    // A new user's Üretim has no card open yet: the hero says when it opens (v0.5.2).
     expect(within(hero).getByTestId('study-type-production')).toHaveAccessibleName(
-      /^Üretim\s*Bugün yok$/,
+      /^Üretim\s*henüz açılmadı$/,
     );
+    expect(within(hero).getByTestId('today-locked-hint')).toHaveTextContent('Pekişiyor');
     expect(await screen.findByTestId('home-words')).toHaveTextContent('/ 2 kelimenden');
 
     // Answer every word card (Easy graduates them): the calm "done" state takes over.
@@ -73,7 +75,8 @@ describe('Bugün', () => {
       await answerCard({ card_id: item.card_id, rating: 4, duration_ms: 5000 });
     const done = await screen.findByTestId('today-hero-done');
     expect(within(done).getByRole('heading', { name: 'Bugünlük tamam' })).toBeInTheDocument();
-    expect(within(done).getByText('0 tekrar · 2 yeni kelime')).toBeInTheDocument();
+    expect(within(done).getByText('0 tekrar · 2 yeni kart')).toBeInTheDocument();
+    expect(within(done).getByText('2 / 2')).toBeInTheDocument();
     expect(within(done).getByRole('status')).toHaveTextContent(/Sıradaki çalışma|Yarın/);
     expect(screen.queryByRole('link', { name: /Devam et|Başla/ })).toBeNull();
     expect(await db.daily_activity.count()).toBe(1);

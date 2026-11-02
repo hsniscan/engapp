@@ -9,8 +9,10 @@ import { Link } from 'react-router';
 import { getStreakFreezeView } from '@/data';
 import type { StreakSummary } from '@/domain/streak';
 import type { StudyMode } from '@/domain/studyMode';
-import { formatDayLong } from '@/features/stats/format';
-import { modeLeft, type TodayStudy } from '@/features/review/studyModes';
+import { modeLeft, modeLeftToday, type TodayStudy } from '@/features/review/studyModes';
+import { durationText } from '@/features/review/intervalText';
+import { useNow } from '@/features/settings/useNow';
+import { formatClock, formatDayLong } from '@/features/stats/format';
 import { cn, Dialog } from '@/ui';
 import { HomeIcon } from './homeIcons';
 import { nextDueText } from './nextDueText';
@@ -32,7 +34,10 @@ export interface HeroData {
 }
 
 export function TodayHero({ data }: { data: HeroData }) {
-  return data.study.left > 0 ? <PendingHero data={data} /> : <DoneHero data={data} />;
+  // v0.5.2 (ADR 0062): learning steps due later today keep the day open ("5 kart 10 dk sonra").
+  if (data.study.ready > 0) return <PendingHero data={data} />;
+  if (data.study.later > 0) return <WaitingHero data={data} />;
+  return <DoneHero data={data} />;
 }
 
 /** Answers given today over the modes shown. */
@@ -72,9 +77,9 @@ function StreakText({ streak, done }: { streak: StreakSummary; done: boolean }) 
       <span className="whitespace-nowrap">
         {done
           ? t('today.streakGoesOn')
-          : t('today.streakLongest', {
-              count: Math.max(streak.longestStreak, streak.currentStreak),
-            })}
+          : streak.longestStreak > streak.currentStreak
+            ? t('today.streakLongest', { count: streak.longestStreak })
+            : null}
       </span>
     </span>
   );
@@ -164,71 +169,94 @@ function StreakSheet({
 function ModeChips({ data, tone }: { data: HeroData; tone: 'hero' | 'surface' }) {
   const { t } = useTranslation();
   const { study, activity } = data;
+  const lockedHint = study.locked.some((m) => m === 'production' || m === 'cloze');
   return (
-    <ul className="flex flex-wrap gap-1.5" aria-label={t('today.typesTitle')}>
-      {study.modes.map((m) => {
-        const n = modeLeft(study.counts[m]);
-        const done = n === 0;
-        const studied = activity.answers[m] > 0;
-        return (
-          <li key={m} className="flex">
-            <Link
-              to={studyHref(m)}
-              data-testid={`study-type-${m}`}
-              data-done={done || undefined}
-              className={cn(
-                'inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-sm font-medium transition-colors duration-(--duration-micro)',
-                tone === 'hero'
-                  ? done
-                    ? 'bg-[rgb(0_0_0/0.1)] text-hero-muted hover:bg-[rgb(0_0_0/0.16)]'
-                    : 'bg-[rgb(0_0_0/0.2)] text-accent-fg hover:bg-[rgb(0_0_0/0.28)]'
-                  : done
-                    ? 'bg-surface-sunken text-fg-muted hover:bg-hover'
-                    : 'bg-accent-soft text-accent-text hover:bg-hover',
-              )}
-            >
-              {/* The name is "Kelime 2 kart" / "Üretim Bugün yok"; the eye sees "Kelime 2". */}
-              <span>{t(`today.mode.${m}`)}</span>
-              <span className="sr-only">
-                {' '}
-                {done
-                  ? studied
-                    ? t('today.typeDone')
-                    : t('today.typeNone')
-                  : t('today.chipCount', { count: n })}
-              </span>
-              {done ? (
-                studied ? (
-                  <HomeIcon name="check" size={15} strokeWidth={2.2} />
-                ) : (
-                  <span aria-hidden="true">–</span>
-                )
-              ) : (
-                <span aria-hidden="true" className="tabular font-semibold">
-                  {n}
+    <div className="flex flex-col gap-1.5">
+      <ul className="flex flex-wrap gap-1.5" aria-label={t('today.typesTitle')}>
+        {study.modes.map((m) => {
+          const c = study.counts[m];
+          const n = modeLeftToday(c);
+          const done = n === 0;
+          // Catch-up moved this mode's reviews to later days: not "done", "ertelendi".
+          const deferred = done && c.deferred > 0;
+          const studied = activity.answers[m] > 0;
+          return (
+            <li key={m} className="flex">
+              <Link
+                to={studyHref(m)}
+                data-testid={`study-type-${m}`}
+                data-done={done || undefined}
+                className={cn(
+                  'inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-sm font-medium transition-colors duration-(--duration-micro)',
+                  tone === 'hero'
+                    ? done
+                      ? 'bg-[rgb(0_0_0/0.1)] text-hero-muted hover:bg-[rgb(0_0_0/0.16)]'
+                      : 'bg-[rgb(0_0_0/0.2)] text-accent-fg hover:bg-[rgb(0_0_0/0.28)]'
+                    : done
+                      ? 'bg-surface-sunken text-fg-muted hover:bg-hover'
+                      : 'bg-accent-soft text-accent-text hover:bg-hover',
+                )}
+              >
+                {/* The name is "Kelime 2 kart" / "Üretim Bugün yok"; the eye sees "Kelime 2". */}
+                <span>{t(`today.mode.${m}`)}</span>
+                <span className="sr-only">
+                  {' '}
+                  {deferred
+                    ? t('today.typeDeferredLong', { count: c.deferred })
+                    : done
+                      ? studied
+                        ? t('today.typeDone')
+                        : study.locked.includes(m)
+                          ? t('today.typeLocked')
+                          : t('today.typeNone')
+                      : t('today.chipCount', { count: n })}
                 </span>
-              )}
-            </Link>
-          </li>
-        );
-      })}
-    </ul>
+                {deferred ? (
+                  <span aria-hidden="true">{t('today.typeDeferred')}</span>
+                ) : done ? (
+                  studied ? (
+                    <HomeIcon name="check" size={15} strokeWidth={2.2} />
+                  ) : (
+                    <span aria-hidden="true">–</span>
+                  )
+                ) : (
+                  <span aria-hidden="true" className="tabular font-semibold">
+                    {n}
+                  </span>
+                )}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+      {lockedHint && (
+        <p
+          data-testid="today-locked-hint"
+          className={cn('text-[0.8125rem]', tone === 'hero' ? 'text-hero-muted' : 'text-fg-muted')}
+        >
+          {t('today.lockedHint')}
+        </p>
+      )}
+    </div>
   );
 }
 
 function PendingHero({ data }: { data: HeroData }) {
   const { t } = useTranslation();
   const { study, activity } = data;
-  const done = answeredToday(data);
+  // The ring counts cards (v0.5.2, review B3): cards done for today over cards done + left.
+  const done = study.doneCards;
   const planned = done + study.left;
-  const due = study.modes.reduce((n, m) => n + study.counts[m].due, 0);
+  const answered = answeredToday(data);
+  const review = study.modes.reduce((n, m) => n + study.counts[m].left.review, 0);
+  const steps = study.modes.reduce((n, m) => n + study.counts[m].left.learning, 0);
   const fresh = study.modes.reduce((n, m) => n + study.counts[m].newCount, 0);
-  const next = study.next ?? 'word';
+  const next = study.nextReady ?? study.next ?? 'word';
   const nextLeft = modeLeft(study.counts[next]);
   // The first mode keeps "Başla" / "Devam et"; after it, the button names the next one.
   const cta =
     next === study.modes[0]
-      ? done > 0
+      ? answered > 0
         ? t('today.continue')
         : t('today.start')
       : t(`today.goTo.${next}`, { count: nextLeft });
@@ -270,7 +298,8 @@ function PendingHero({ data }: { data: HeroData }) {
             {t('today.cardsLeft', { count: study.left })}
           </h2>
           <span data-testid="today-split" className="text-sm text-hero-muted">
-            {t('today.split', { due, fresh })}
+            {t('today.split', { due: review, fresh })}
+            {steps > 0 && ` · ${t('today.splitSteps', { count: steps })}`}
             {study.minutes > 0 && ` · ${t('today.aboutMinutes', { count: study.minutes })}`}
           </span>
         </div>
@@ -292,11 +321,58 @@ function PendingHero({ data }: { data: HeroData }) {
   );
 }
 
+/**
+ * Nothing to study right now, but learning steps come back later today (v0.5.2, review B1):
+ * "5 kart 10 dk sonra". Not "Bugünlük tamam", and no "Biraz daha çalış" yet. The numbers
+ * refresh by themselves when the steps fall due (studyClock.ts).
+ */
+function WaitingHero({ data }: { data: HeroData }) {
+  const { t } = useTranslation();
+  const now = useNow();
+  const { study, activity } = data;
+  const at = study.nextLearningDue;
+  const time = at === null ? '' : durationText(t, Math.max(60_000, at - now));
+  return (
+    <section
+      aria-labelledby="today-hero-title"
+      className="flex flex-col gap-4 rounded-[20px] border border-border bg-surface px-5 pt-5.5 pb-4.5"
+      data-testid="today-hero-waiting"
+    >
+      <div className="flex items-center gap-4.5">
+        <div
+          aria-hidden="true"
+          className="flex size-23 shrink-0 flex-col items-center justify-center rounded-full border-7 border-accent-soft"
+        >
+          <HomeIcon name="calendar" size={22} strokeWidth={2} className="text-accent-text" />
+        </div>
+        <div className="flex min-w-0 flex-col gap-1">
+          <span className="text-[0.8125rem] font-semibold tracking-[0.04em] text-fg-muted uppercase">
+            {t('today.heroCaption')}
+          </span>
+          <h2 id="today-hero-title" className="font-serif text-[1.625rem] leading-tight font-semibold">
+            {t('today.waitingTitle', { count: study.later, time })}
+          </h2>
+          <span className="text-sm text-fg-muted" role="status">
+            {at === null
+              ? t('today.waitingBodyNoClock')
+              : t('today.waitingBody', { clock: formatClock(at, data.timezone) })}
+          </span>
+        </div>
+      </div>
+      <ModeChips data={data} tone="surface" />
+      <div className="flex items-center justify-between gap-3 rounded-[14px] bg-surface-sunken px-3.5 py-2">
+        <StreakRow streak={data.streak} done={data.streak.todayActive} tone="surface" />
+        <WeekDots week={activity.week} tone="surface" />
+      </div>
+    </section>
+  );
+}
+
 function DoneHero({ data }: { data: HeroData }) {
   const { t } = useTranslation();
   const { activity } = data;
-  const done = answeredToday(data);
-  const studied = done > 0;
+  const done = data.study.doneCards;
+  const studied = answeredToday(data) > 0;
   return (
     <section
       aria-labelledby="today-hero-title"
@@ -328,8 +404,8 @@ function DoneHero({ data }: { data: HeroData }) {
           <span className="text-sm text-fg-muted">
             {studied
               ? t('today.doneSplit', {
-                  reviewed: activity.word.reviewed,
-                  fresh: activity.word.fresh,
+                  reviewed: activity.all.reviewed,
+                  fresh: activity.all.fresh,
                 })
               : t('today.nothingBody')}
           </span>

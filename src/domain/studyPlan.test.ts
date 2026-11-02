@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { distinctIntervalLabels } from './fsrs';
-import { ANSWERS_PER_NEW, answersLeft, minutesFor, planToday, shareReviewCap } from './studyPlan';
+import { distinctIntervalParts } from './fsrs';
+import { trInterval } from '../test/intervalTr';
+
+const distinctIntervalLabels = (ms: number[]) => distinctIntervalParts(ms).map(trInterval);
+import { ANSWERS_PER_NEW, answersLeft, fairShares, minutesFor, planToday, shareNewBudget, shareReviewBudget } from './studyPlan';
 
 const DAY = 86_400_000;
 
@@ -33,13 +36,53 @@ describe('planToday (ADR 0055)', () => {
   });
 });
 
-describe('shareReviewCap', () => {
-  it('gives the catch-up budget to the modes in order', () => {
-    const due = { word: 80, production: 50, cloze: 30 };
-    expect(shareReviewCap(100, due, 'word')).toBe(100);
-    expect(shareReviewCap(100, due, 'production')).toBe(20);
-    expect(shareReviewCap(100, due, 'cloze')).toBe(0);
-    expect(shareReviewCap(null, due, 'cloze')).toBeNull();
+describe('fairShares', () => {
+  it('splits evenly and hands unused shares on', () => {
+    expect(fairShares(10, { word: 100, production: 100, cloze: 100, dictation: 100 })).toEqual({ word: 3, production: 3, cloze: 2, dictation: 2 });
+    expect(fairShares(10, { word: 100, production: 1 })).toEqual({ word: 9, production: 1, cloze: 0, dictation: 0 });
+    expect(fairShares(10, { word: 3 })).toEqual({ word: 3, production: 0, cloze: 0, dictation: 0 });
+    expect(fairShares(10, { word: 100, production: 100 }, { word: 2 })).toEqual({ word: 7, production: 3, cloze: 0, dictation: 0 });
+  });
+});
+
+describe('shareNewBudget (ADR 0062)', () => {
+  const plenty = { word: 50, production: 50, cloze: 50, dictation: 50 };
+  it('never gives more than the total over all modes', () => {
+    const a = shareNewBudget({ total: 10, introduced: {}, available: plenty });
+    expect(Object.values(a).reduce((x, y) => x + y, 0)).toBe(10);
+    expect(a.word).toBe(4);
+  });
+  it('gives a new user the whole budget in Kelime', () => {
+    expect(shareNewBudget({ total: 10, introduced: {}, available: { word: 30 } }).word).toBe(10);
+  });
+  it('keeps the split over the day: a mode studied first does not take the others share', () => {
+    const later = shareNewBudget({ total: 10, introduced: { word: 4 }, available: { word: 46, production: 50, cloze: 50, dictation: 50 } });
+    expect(later.word).toBe(0);
+    expect(later.production + later.cloze + later.dictation).toBe(6);
+  });
+  it('honours the per-mode limits and the extra allowance', () => {
+    const a = shareNewBudget({ total: 10, introduced: {}, available: plenty, caps: { production: 0, cloze: 1, dictation: 0 } });
+    expect(a).toEqual({ word: 9, production: 0, cloze: 1, dictation: 0 });
+    const b = shareNewBudget({ total: 0, introduced: {}, available: { cloze: 7 }, extra: { cloze: 5 } });
+    expect(b.cloze).toBe(5);
+  });
+  it('stops at the total even when modes went over their share earlier', () => {
+    const a = shareNewBudget({ total: 10, introduced: { word: 9 }, available: plenty });
+    expect(Object.values(a).reduce((x, y) => x + y, 0)).toBe(1);
+  });
+});
+
+describe('shareReviewBudget (ADR 0062)', () => {
+  it('gives every mode a fair part of the catch-up budget', () => {
+    const due = { word: 300, production: 60, cloze: 40 };
+    const s = shareReviewBudget(90, {}, due)!;
+    expect(s).toEqual({ word: 30, production: 30, cloze: 30, dictation: 0 });
+  });
+  it('passes unused shares on and counts what was done today', () => {
+    expect(shareReviewBudget(80, {}, { word: 300, production: 5 })).toEqual({ word: 75, production: 5, cloze: 0, dictation: 0 });
+    // Kelime did 30 of 90 already: its share is 45, the rest goes to Üretim.
+    expect(shareReviewBudget(60, { word: 30 }, { word: 300, production: 100 })).toEqual({ word: 15, production: 45, cloze: 0, dictation: 0 });
+    expect(shareReviewBudget(null, {}, { word: 1 })).toBeNull();
   });
 });
 

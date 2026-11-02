@@ -431,6 +431,24 @@ export interface Settings extends SyncedRow {
    * domain/streakFreeze.ts). Absent/null = none. Never carried to another account.
    */
   streak_freezes?: string[] | null;
+  /**
+   * v0.5.2 (ADR 0062): study options. Absent/null = the defaults (no per-mode new-card limit,
+   * whole-mode sessions, leeches only flagged).
+   */
+  study_options?: StudyOptions | null;
+}
+
+/** settings.study_options (v0.5.2, ADR 0062). Every field optional; absent/null = default. */
+export interface StudyOptions {
+  /**
+   * Per-mode daily limit of first-time cards for Üretim, Boşluk doldurma and Dikte, inside
+   * the shared "Günlük yeni kart" budget. Absent/null = no own limit (the mode shares the budget).
+   */
+  mode_new_limits?: { production?: number | null; cloze?: number | null; dictation?: number | null } | null;
+  /** Most cards in one study session ("Oturum uzunluğu"); absent/null = the whole mode. */
+  session_cards?: number | null;
+  /** Suspend a card automatically when it becomes a leech (absent/null/false = only flag it). */
+  leech_auto_suspend?: boolean | null;
 }
 
 /** "Yeni kelime sırası": smart (level, frequency, own signals, interference) or as added. */

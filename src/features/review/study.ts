@@ -3,7 +3,9 @@
 import { useTranslation } from 'react-i18next';
 import { type CardView, getChoiceCandidates, logError } from '@/data';
 import type { ChoiceCandidate } from '@/domain/clozeChoices';
-import { distinctIntervalLabels, type IntervalPreview } from '@/domain/fsrs';
+import type { TFunction } from 'i18next';
+import { distinctIntervalParts, type IntervalPreview } from '@/domain/fsrs';
+import { intervalText } from './intervalText';
 import { findSpan, isValidSpan } from '@/domain/recognition';
 import {
   cardStage,
@@ -39,13 +41,15 @@ export function stageAfterOf(p: IntervalPreview): WordStage | null {
 export function ratingLines(
   view: CardView,
   rating: RatingValue,
+  t: TFunction,
 ): { interval: string; change: string | null } {
   const p = view.previews[rating];
   const after = stageAfterOf(p);
   const order = [R.Again, R.Hard, R.Good, R.Easy] as const;
-  const labels = distinctIntervalLabels(order.map((r) => view.previews[r].interval_ms));
+  const labels = distinctIntervalParts(order.map((r) => view.previews[r].interval_ms));
+  const label = labels[order.indexOf(rating as (typeof order)[number])];
   return {
-    interval: labels[order.indexOf(rating as (typeof order)[number])] ?? '',
+    interval: label ? intervalText(t, label) : '',
     change: after ? stageChangeLabel(cardStage(view.card), after) : null,
   };
 }

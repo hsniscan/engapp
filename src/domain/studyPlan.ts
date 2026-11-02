@@ -68,22 +68,122 @@ export function planToday(
   return { left, minutes: minutesFor(answers, secPerAnswer), next: waiting[0] ?? null, waiting };
 }
 
+export type ModeNumbers = Partial<Record<StudyMode, number>>;
+
+const zeros = (): Record<StudyMode, number> => ({ word: 0, production: 0, cloze: 0, dictation: 0 });
+const nonNeg = (n: number | undefined | null): number => (typeof n === 'number' && n > 0 ? Math.floor(n) : 0);
+
 /**
- * Catch-up shared over the modes: the review cap is one budget for the day, not one per mode.
- * Earlier modes (STUDY_MODES order) take their due reviews first; `mode` gets what is left.
- * `dueReviews` = Review-state cards due today per mode. null cap = no cap.
+ * Fair split of `budget` units over the modes (water-filling): every mode with demand left gets
+ * the next unit in turn, by weight, until the budget or the demand runs out, so a mode that
+ * needs little leaves its share to the others. Ties go to the earlier mode (STUDY_MODES order).
+ * Deterministic and integer.
  */
-export function shareReviewCap(
-  cap: number | null,
-  dueReviews: Partial<Record<StudyMode, number>>,
-  mode: StudyMode,
+export function fairShares(
+  budget: number,
+  demand: ModeNumbers,
+  weights: ModeNumbers = {},
   order: readonly StudyMode[] = STUDY_MODES,
-): number | null {
-  if (cap === null) return null;
-  let budget = Math.max(0, cap);
-  for (const m of order) {
-    if (m === mode) return budget;
-    budget -= Math.min(budget, Math.max(0, dueReviews[m] ?? 0));
+): Record<StudyMode, number> {
+  const out = zeros();
+  const need = Object.fromEntries(order.map((m) => [m, nonNeg(demand[m])])) as Record<StudyMode, number>;
+  let left = Math.min(nonNeg(budget), order.reduce((n, m) => n + need[m], 0));
+  while (left > 0) {
+    let pick: StudyMode | null = null;
+    let best = Infinity;
+    for (const m of order) {
+      if (out[m] >= need[m]) continue;
+      const w = weights[m] && weights[m]! > 0 ? weights[m]! : 1;
+      const level = out[m] / w;
+      if (level < best) {
+        best = level;
+        pick = m;
+      }
+    }
+    if (!pick) break;
+    out[pick]++;
+    left--;
   }
-  return budget;
+  return out;
+}
+
+/** Lower the later modes' numbers until their sum fits `total` (earlier modes keep theirs). */
+function fitTotal(shares: Record<StudyMode, number>, total: number, order: readonly StudyMode[]): Record<StudyMode, number> {
+  let over = order.reduce((n, m) => n + shares[m], 0) - Math.max(0, total);
+  for (const m of [...order].reverse()) {
+    if (over <= 0) break;
+    const cut = Math.min(over, shares[m]);
+    shares[m] -= cut;
+    over -= cut;
+  }
+  return shares;
+}
+
+/**
+ * Kelime çalışma introduces words; the other modes' first-time cards come from words already
+ * at Pekişiyor. Kelime's weight in the shared new-card budget (v0.5.2, ADR 0062).
+ */
+export const NEW_BUDGET_WEIGHTS: ModeNumbers = { word: 2, production: 1, cloze: 1, dictation: 1 };
+
+export interface NewBudgetInput {
+  /** "Günlük yeni kart": first-time cards a day over every mode together (after the ramp). */
+  total: number;
+  /** First-time cards each mode introduced today. */
+  introduced: ModeNumbers;
+  /** First-time cards each mode could still introduce today (studiable, not buried). */
+  available: ModeNumbers;
+  /** Optional per-mode limits ("Üretim/Boşluk/Dikte günlük yeni kart"); absent/null = none. */
+  caps?: Partial<Record<StudyMode, number | null>>;
+  /** Today's extra allowance per mode ("+5 yeni kart"), on top of the total and the caps. */
+  extra?: ModeNumbers;
+}
+
+/**
+ * New cards each mode may still introduce today (v0.5.2, ADR 0062). One budget for the day,
+ * `total`, shared fairly by the modes that have first-time cards (fairShares, Kelime weighted
+ * 2), each at most its own limit. The split is made over the whole day (introduced + still
+ * available), so a mode studied first cannot take the others' share; the modes together never
+ * pass `total`. Today's extra allowance of a mode comes on top.
+ */
+export function shareNewBudget(input: NewBudgetInput, order: readonly StudyMode[] = STUDY_MODES): Record<StudyMode, number> {
+  const capOf = (m: StudyMode) => {
+    const c = input.caps?.[m];
+    return typeof c === 'number' && c >= 0 ? Math.floor(c) : Infinity;
+  };
+  const demand: ModeNumbers = {};
+  for (const m of order) demand[m] = Math.min(capOf(m), nonNeg(input.introduced[m]) + nonNeg(input.available[m]));
+  const quota = fairShares(input.total, demand, NEW_BUDGET_WEIGHTS, order);
+  const introducedAll = order.reduce((n, m) => n + nonNeg(input.introduced[m]), 0);
+  const allowed = zeros();
+  for (const m of order) allowed[m] = Math.min(nonNeg(input.available[m]), Math.max(0, quota[m] - nonNeg(input.introduced[m])));
+  fitTotal(allowed, Math.max(0, nonNeg(input.total) - introducedAll), order);
+  for (const m of order) {
+    const extra = nonNeg(input.extra?.[m]);
+    if (extra) allowed[m] = Math.min(nonNeg(input.available[m]), allowed[m] + extra);
+  }
+  return allowed;
+}
+
+/**
+ * Catch-up shared over the modes (v0.5.2, ADR 0062): the day's review cap is one budget, split
+ * fairly over the modes with due reviews (fairShares over reviews done today + still due), so
+ * Üretim and Boşluk get their share instead of waiting days for Kelime's backlog to end.
+ * `remaining` = what is left of the cap today; `done` = reviews each mode answered today;
+ * `due` = Review-state cards still due today per mode. null cap = no cap (every mode null).
+ */
+export function shareReviewBudget(
+  remaining: number | null,
+  done: ModeNumbers,
+  due: ModeNumbers,
+  order: readonly StudyMode[] = STUDY_MODES,
+): Record<StudyMode, number> | null {
+  if (remaining === null) return null;
+  const doneAll = order.reduce((n, m) => n + nonNeg(done[m]), 0);
+  const demand: ModeNumbers = {};
+  for (const m of order) demand[m] = nonNeg(done[m]) + nonNeg(due[m]);
+  const quota = fairShares(nonNeg(remaining) + doneAll, demand, {}, order);
+  const out = zeros();
+  for (const m of order) out[m] = Math.min(nonNeg(due[m]), Math.max(0, quota[m] - nonNeg(done[m])));
+  // A mode that answered more than its share earlier today still leaves the others theirs.
+  return fitTotal(out, nonNeg(remaining), order);
 }

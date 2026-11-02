@@ -47,13 +47,13 @@ export function MoreStudyPage() {
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {today.next && (
+          {today.nextReady && (
             <Link
-              to={`/study?mode=${today.next}`}
+              to={`/study?mode=${today.nextReady}`}
               data-testid="more-start"
               className={buttonClasses({ size: 'lg', fullWidth: true })}
             >
-              {startLabel(t, today.next)}
+              {startLabel(t, today.nextReady)}
               <Icon name="chevron-right" size={20} />
             </Link>
           )}
@@ -93,13 +93,16 @@ function NewCardsSection({ data }: { data: MoreStudyOverview }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [busy, setBusy] = useState<number | null>(null);
-  const steps = extraNewSteps(data.newWaiting);
+  // The mode with first-time cards waiting (v0.5.2, review B6); none while new cards are paused.
+  const mode = data.newPaused ? null : data.extraMode;
+  const steps = mode ? extraNewSteps(data.newWaitingByMode[mode]) : [];
 
   const add = async (n: number) => {
     setBusy(n);
     try {
-      await addExtraNew(n);
-      await navigate('/study?mode=word');
+      if (!mode) return;
+      await addExtraNew(n, mode);
+      await navigate(`/study?mode=${mode}`);
     } catch (e) {
       void logError(e, 'more:addExtraNew');
       toast({ title: t('more.addFailed'), tone: 'danger' });
@@ -115,9 +118,14 @@ function NewCardsSection({ data }: { data: MoreStudyOverview }) {
         <>
           <p>{t('more.newBody')}</p>
           <p className="mt-2 text-fg">
-            {data.newWaiting > 0
-              ? t('more.newWaiting', { count: data.newWaiting })
-              : t('more.newNone')}
+            {data.newPaused
+              ? t('more.newPaused')
+              : mode
+                ? t('more.newWaitingMode', {
+                    count: data.newWaitingByMode[mode],
+                    mode: t(`today.mode.${mode}`),
+                  })
+                : t('more.newNone')}
             {data.extraNewToday > 0 && (
               <span className="text-fg-muted">
                 {' · '}

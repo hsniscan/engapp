@@ -92,14 +92,12 @@ function ModeCard({
 }) {
   const { t } = useTranslation();
   const n = left(count);
-  const note =
-    mode === 'word'
-      ? t('study.split', { due: count.due, new: count.newCount })
-      : mode === 'production' || mode === 'dictation'
-        ? n > 0
-          ? t('study.split', { due: count.due, new: count.newCount })
-          : modeText(t, mode, 'note')
-        : modeText(t, mode, 'note');
+  // Every mode with cards shows the same split (v0.5.2: Boşluk showed its blurb instead), and
+  // learning steps are not called "tekrar" (ADR 0055).
+  const split =
+    t('study.split', { due: count.left.review, new: count.newCount }) +
+    (count.left.learning > 0 ? ` · ${t('today.splitSteps', { count: count.left.learning })}` : '');
+  const note = n > 0 ? split : modeText(t, mode, 'note');
   return (
     <Link
       to={`/study?mode=${mode}`}
@@ -166,7 +164,7 @@ export function StudyModesPage() {
   const counts = study?.counts;
   const total = study?.left ?? 0;
   const minutes = study?.minutes ?? 0;
-  const main: StudyMode = study?.next ?? 'word';
+  const main: StudyMode = study?.nextReady ?? study?.next ?? 'word';
   const startTo = mixed ? '/study?mode=mixed' : `/study?mode=${main}`;
   const done = !!study && total === 0;
 

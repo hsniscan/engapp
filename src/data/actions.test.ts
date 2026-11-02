@@ -177,7 +177,7 @@ describe('answerCard and undo', () => {
     const rec = (await cardsOf(a.note.id)).find((c) => c.card_type === 'recognition')!;
     const v1 = (await getCardView(rec.id, T))!;
     expect(v1.sense?.meaning_tr).toBe('banka');
-    expect(v1.previews[Rating.Good].label).toBe('10 dk');
+    expect(v1.previews[Rating.Good].label).toEqual({ unit: 'minute', value: 10 });
     await answerCard({ card_id: rec.id, rating: Rating.Good, duration_ms: 1, shown_sense_id: v1.sense!.id }, T);
     const v2 = (await getCardView(rec.id, T + MIN))!;
     expect(v2.sense?.meaning_tr).toBe('kıyı');

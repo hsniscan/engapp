@@ -5,8 +5,11 @@
 //
 // Modes ("Biraz daha çalış", docs/decisions/0010-extra-study.md):
 //   normal  today's work; the new-card limit is the daily limit plus today's extra allowance.
-//   ahead   "Yarının kartlarını şimdi tekrar et": reviews due before the end of tomorrow,
-//           no new cards. Answers are ordinary FSRS reviews (ts-fsrs uses the real elapsed
+//   ahead   "Yarının kartlarını şimdi tekrar et": reviews due tomorrow (before `aheadEnd`),
+//           no new cards. Today's own reviews stay in the normal queue, under the catch-up cap
+//           (v0.5.2: 'ahead' brought the whole capped backlog). Cards answered today and cards
+//           still waiting for the ramp's next-day test (ramp step 0) are left out: an early
+//           answer there would skip the "ertesi gün" proof (ADR 0041, 0062). Answers are ordinary FSRS reviews (ts-fsrs uses the real elapsed
 //           time, so an early answer gets a shorter interval than an on-time one).
 // Practice rounds never use this queue (domain/practice.ts).
 //
@@ -37,7 +40,7 @@ export type QueueCard = Pick<
   Card,
   'id' | 'note_id' | 'card_type' | 'state' | 'due' | 'suspended' | 'deleted_at' | 'unlocked' | 'created_at'
 > &
-  Partial<Pick<Card, 'scheduled_days'>>;
+  Partial<Pick<Card, 'scheduled_days' | 'ramp_step' | 'last_review'>>;
 
 export const NEW_EVERY_N_REVIEWS = 5;
 /**
@@ -108,6 +111,8 @@ export interface QueueResult {
   counts: QueueCounts;
   /** Earliest later-today learning step not in the queue (for "1 kart 25 dk sonra"). */
   nextLearningDue: Millis | null;
+  /** Learning steps due later today (after the learn-ahead window): today's work, not yet. */
+  learningLater: Id[];
   /** Smart order only: why each new card in the queue came today. */
   newReasons?: Map<Id, NewReason>;
   /** With `newOrder`: new cards the interference guard held back today (to carry). */
@@ -151,6 +156,7 @@ export function buildQueue(cards: Iterable<QueueCard>, ctx: QueueContext): Queue
   const learnAhead = ctx.learnAheadMs ?? DEFAULT_LEARN_AHEAD_MS;
   const ahead = ctx.mode === 'ahead';
   const reviewEnd = ahead ? Math.max(ctx.dayEnd, ctx.aheadEnd ?? ctx.dayEnd) : ctx.dayEnd;
+  const learningLater: Id[] = [];
   const learningDue: QueueCard[] = [];
   const learningSoon: QueueCard[] = [];
   const reviews: QueueCard[] = [];
@@ -165,9 +171,14 @@ export function buildQueue(cards: Iterable<QueueCard>, ctx: QueueContext): Queue
     if (isLearning(c)) {
       if (c.due <= ctx.now) learningDue.push(c);
       else if (c.due <= ctx.now + learnAhead) learningSoon.push(c);
-      else if (c.due < ctx.dayEnd && (nextLearningDue === null || c.due < nextLearningDue)) nextLearningDue = c.due;
+      else if (c.due < ctx.dayEnd) {
+        learningLater.push(c.id);
+        if (nextLearningDue === null || c.due < nextLearningDue) nextLearningDue = c.due;
+      }
     } else if (c.state === CardState.Review) {
-      if (c.due < reviewEnd) reviews.push(c);
+      if (ahead) {
+        if (c.due >= ctx.dayEnd && c.due < reviewEnd && aheadAllowed(c, ctx)) reviews.push(c);
+      } else if (c.due < reviewEnd) reviews.push(c);
     } else if (c.state === CardState.New) {
       fresh.push(c);
     }
@@ -235,9 +246,24 @@ export function buildQueue(cards: Iterable<QueueCard>, ctx: QueueContext): Queue
       new_allowed: newAllowed,
     },
     nextLearningDue,
+    learningLater,
     ...(newReasons ? { newReasons } : {}),
     ...(postponed ? { postponed } : {}),
   };
+}
+
+/** A card at ramp step 0 answered this recently is still waiting for its next-day test. */
+const NEXT_DAY_TEST_MS = 2 * 86_400_000;
+
+/**
+ * "Yarının kartları" may take this card now: not answered today, and not waiting for the
+ * ramp's next-day test (ramp step 0, last answered within two days: learnt minutes ago or
+ * yesterday). An early answer would skip the "ertesi gün" proof (ADR 0041, 0062).
+ */
+export function aheadAllowed(c: QueueCard, ctx: Pick<QueueContext, 'reviewedTodayCardIds' | 'now'>): boolean {
+  if (ctx.reviewedTodayCardIds.has(c.id)) return false;
+  const fresh = (c.ramp_step ?? 0) === 0 && c.last_review != null && ctx.now - c.last_review < NEXT_DAY_TEST_MS;
+  return !fresh;
 }
 
 /** New cards today's limit still allows: daily limit + today's extra allowance − introduced today. */
