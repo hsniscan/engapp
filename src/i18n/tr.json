@@ -301,11 +301,15 @@
       "continueMode": "Devam et",
       "time": "Süre",
       "retention": "Hatırlama",
-      "ratings": "Cevapların dağılımı",
+      "ratings": "Cevapların",
       "streakExtended": "Bugün serine eklendi.",
       "streakKept": "Bugünkü çalışman kaydedildi.",
       "waiting_one": "{{count}} kart {{time}} sonra yeniden gelecek (öğrenme adımı).",
-      "waiting_other": "{{count}} kart {{time}} sonra yeniden gelecek (öğrenme adımı)."
+      "waiting_other": "{{count}} kart {{time}} sonra yeniden gelecek (öğrenme adımı).",
+      "finish": "Bitir",
+      "stages": "Aşama değişenler",
+      "stagesMore_one": "+{{count}} kelime daha",
+      "stagesMore_other": "+{{count}} kelime daha"
     },
     "moreStudy": "Biraz daha çalış",
     "aheadBadge": "Yarının kartları",
@@ -411,7 +415,9 @@
       "resume_other": "Devam et ({{count}} kart hazır)"
     },
     "learnedToday_one": "Bugün {{count}} kelime Öğrenildi'ye geçti.",
-    "learnedToday_other": "Bugün {{count}} kelime Öğrenildi'ye geçti."
+    "learnedToday_other": "Bugün {{count}} kelime Öğrenildi'ye geçti.",
+    "example": "Örnek",
+    "meaning": "Anlamı"
   },
   "examples": {
     "title": "Örnek cümleler",

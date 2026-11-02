@@ -8,7 +8,7 @@ import type { MoreStudyOverview } from '@/data';
 import { HANDS_FREE_SIZES, handsFreeHref } from '@/domain/handsFree';
 import type { PracticeSource } from '@/domain/practice';
 import { modeLeft, useTodayStudy } from '@/features/review/studyModes';
-import { buttonClasses, Icon, SegmentedControl, Surface } from '@/ui';
+import { buttonClasses, Card, Icon, SegmentedControl } from '@/ui';
 
 export function ListenSection({ data }: { data: MoreStudyOverview }) {
   const { t } = useTranslation();
@@ -19,11 +19,11 @@ export function ListenSection({ data }: { data: MoreStudyOverview }) {
   const source: PracticeSource | null =
     data.practice.hard > 0 ? 'hard' : data.practice.recent > 0 ? 'recent' : null;
   return (
-    <Surface as="section" aria-labelledby="more-listen" padding="none" className="p-5 sm:p-6">
-      <h2 id="more-listen" className="font-serif text-xl font-semibold text-fg">
+    <Card as="section" aria-labelledby="more-listen" padding="lg">
+      <h2 id="more-listen" className="text-title font-semibold text-fg">
         {t('modes.handsFree.moreTitle')}
       </h2>
-      <p className="mt-1 text-[0.9375rem] text-fg-muted">{t('modes.handsFree.moreBody')}</p>
+      <p className="mt-1 text-ui text-fg-muted">{t('modes.handsFree.moreBody')}</p>
       <div className="mt-5 flex flex-col gap-4">
         {dictation > 0 && (
           <Link
@@ -52,9 +52,9 @@ export function ListenSection({ data }: { data: MoreStudyOverview }) {
             </Link>
           </>
         ) : (
-          <p className="text-[0.9375rem] text-fg">{t('more.practiceNone')}</p>
+          <p className="text-ui text-fg">{t('more.practiceNone')}</p>
         )}
       </div>
-    </Surface>
+    </Card>
   );
 }

@@ -88,9 +88,9 @@ describe('review session', () => {
     // Words, not answers; recall counts reviews only, and new words' first answers are not
     // recall (ADR 0055).
     expect(screen.getByTestId('summary-words')).toHaveTextContent('2 kelime çalıştın');
-    const words = screen.getByText('Kelime').nextElementSibling;
+    const words = screen.getByText('Kelime').previousElementSibling;
     expect(words).toHaveTextContent('2');
-    expect(screen.getByText('Hatırlama').nextElementSibling).toHaveTextContent('—');
+    expect(screen.getByText('Hatırlama').previousElementSibling).toHaveTextContent('—');
     expect(await screen.findByText('Günlük seri')).toBeInTheDocument();
     expect(screen.getByText('Bugün serine eklendi.')).toBeInTheDocument();
   }, 20_000);

@@ -1,18 +1,19 @@
-// The stage chip in the corner of a card (spec 5.2): a label and a thin 4-part bar. Tapping it
+// The stage pill in the corner of a study card (spec 5.2; v0.5.2 "Çam": the one stage scale,
+// docs/design.md). The label carries the meaning ("Pekişiyor · 1/3", "Yeni kart"); tapping it
 // explains when a word counts as learned.
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { cardStage, stageLevel } from '@/domain/stages';
+import { cardStage } from '@/domain/stages';
 import { stageChipLabel } from './study';
 import type { Card } from '@/domain/types';
-import { cn } from '@/ui';
+import { cn, stageBg } from '@/ui';
 
 export function StageChip({ card }: { card: Card }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const id = useId();
   const ref = useRef<HTMLSpanElement>(null);
-  const level = stageLevel(cardStage(card));
+  const stage = cardStage(card);
   const label = stageChipLabel(card, t);
 
   useEffect(() => {
@@ -42,28 +43,23 @@ export function StageChip({ card }: { card: Card }) {
           e.stopPropagation();
           setOpen((o) => !o);
         }}
-        className="inline-flex h-7 items-center gap-1.5 rounded-full bg-accent-soft px-2.5 text-[0.8125rem] font-semibold text-accent-text"
+        className="hit-44 relative inline-flex h-7 items-center gap-1.5 rounded-full bg-surface-sunken pr-3 pl-2.5 text-caption font-semibold whitespace-nowrap text-fg-muted transition-colors duration-(--duration-micro) hover:text-fg"
       >
-        <span aria-hidden="true" className="flex gap-0.5">
-          {[0, 1, 2, 3].map((i) => (
-            <span
-              key={i}
-              className={cn(
-                'h-2.5 w-[5px] rounded-[2px]',
-                i < level
-                  ? 'bg-accent-text'
-                  : 'bg-[color-mix(in_oklab,var(--accent-text)_35%,transparent)]',
-              )}
-            />
-          ))}
-        </span>
+        <span
+          aria-hidden="true"
+          className={cn(
+            'size-2 rounded-full',
+            stageBg[stage],
+            stage === 'new' && 'ring-1 ring-border-strong ring-inset',
+          )}
+        />
         {label}
       </button>
       {open && (
         <span
           id={id}
           role="note"
-          className="absolute top-full right-0 z-10 mt-1.5 w-64 rounded-[12px] border border-border bg-surface-raised p-3 text-left text-sm font-normal text-fg shadow-overlay"
+          className="absolute top-full left-0 z-10 mt-2 w-64 rounded-control border border-border bg-surface-raised p-3 text-left text-meta font-normal text-fg shadow-overlay"
         >
           {t('study.stage.explain')}
         </span>

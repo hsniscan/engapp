@@ -301,11 +301,15 @@
       "continueMode": "Continue",
       "time": "Time",
       "retention": "Recall",
-      "ratings": "Answer breakdown",
+      "ratings": "Your answers",
       "streakExtended": "Today was added to your streak.",
       "streakKept": "Today's reviews are saved.",
       "waiting_one": "{{count}} card comes back in {{time}} (learning step).",
-      "waiting_other": "{{count}} cards come back in {{time}} (learning steps)."
+      "waiting_other": "{{count}} cards come back in {{time}} (learning steps).",
+      "finish": "Finish",
+      "stages": "Stage changes",
+      "stagesMore_one": "+{{count}} more word",
+      "stagesMore_other": "+{{count}} more words"
     },
     "moreStudy": "Study a bit more",
     "aheadBadge": "Tomorrow's cards",
@@ -411,7 +415,9 @@
       "resume_other": "Go on ({{count}} cards ready)"
     },
     "learnedToday_one": "{{count}} word reached Learned today.",
-    "learnedToday_other": "{{count}} words reached Learned today."
+    "learnedToday_other": "{{count}} words reached Learned today.",
+    "example": "Example",
+    "meaning": "Meaning"
   },
   "examples": {
     "title": "Example sentences",

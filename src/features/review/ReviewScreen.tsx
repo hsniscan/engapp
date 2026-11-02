@@ -18,6 +18,7 @@ import {
   Badge,
   Button,
   buttonClasses,
+  Card,
   DropdownMenu,
   EmptyState,
   Icon,
@@ -257,7 +258,7 @@ export function ReviewScreen({ studyMode, ahead = false, deckId }: ReviewScreenP
       <>
         <CloseRow />
         {afterAgain && (
-          <div className="mx-auto w-full max-w-xl px-4 pt-3 sm:px-6">{afterAgain}</div>
+          <div className="mx-auto w-full max-w-(--page-reading) px-4 pt-3 sm:px-6">{afterAgain}</div>
         )}
         <SessionSummary
           answers={answers}
@@ -282,7 +283,7 @@ export function ReviewScreen({ studyMode, ahead = false, deckId }: ReviewScreenP
   };
 
   const top = (
-    <div className="safe-top flex flex-col gap-1 pt-2 pb-2">
+    <div className="safe-top flex flex-col gap-1 pb-2">
       <h1 className="sr-only">
         {studyMode ? modeText(t, studyMode, 'name') : sessionTitle(t, ahead)}
       </h1>
@@ -298,7 +299,7 @@ export function ReviewScreen({ studyMode, ahead = false, deckId }: ReviewScreenP
           </Badge>
         </div>
       )}
-      <div className="flex items-center gap-2">
+      <div className="flex h-14 items-center gap-2">
         <StudyClose />
         <ProgressBar
           value={state.cardsDone}
@@ -312,12 +313,12 @@ export function ReviewScreen({ studyMode, ahead = false, deckId }: ReviewScreenP
         />
         <span
           aria-hidden="true"
-          className="tabular shrink-0 pl-1 text-sm text-fg-muted"
+          className="tabular shrink-0 pl-1 text-meta font-semibold text-fg-muted"
           data-testid="study-progress"
         >
           {state.cardsDone} / {total}
           {state.repeatsLeft > 0 && (
-            <span className="ml-1.5 text-xs text-fg-subtle">
+            <span className="ml-1.5 text-caption font-normal">
               {t('review.repeatsLeft', { count: state.repeatsLeft })}
             </span>
           )}
@@ -430,7 +431,7 @@ function CardPlaceholder() {
   return (
     <div
       aria-busy="true"
-      className="flex min-h-[min(52dvh,26rem)] flex-1 flex-col items-center justify-center gap-4 rounded-[20px] border border-border bg-surface"
+      className="flex min-h-[min(52dvh,26rem)] flex-1 flex-col items-center justify-center gap-4 rounded-card border border-border bg-surface-raised shadow-raised"
     >
       <Skeleton className="h-9 w-40" />
       <Skeleton className="w-56" />
@@ -450,7 +451,7 @@ function StudyClose() {
         to="/"
         aria-label={t('review.endSession')}
         data-testid="study-close"
-        className="-ml-2 inline-flex size-11 shrink-0 items-center justify-center rounded-control text-fg-muted hover:bg-hover hover:text-fg"
+        className="-ml-2 inline-flex size-11 shrink-0 items-center justify-center rounded-full text-fg-muted transition-colors duration-(--duration-micro) hover:bg-hover hover:text-fg"
       >
         <Icon name="x" size={22} />
       </Link>
@@ -461,7 +462,7 @@ function StudyClose() {
 /** The top row outside a running session (loading, nothing to study, the summary). */
 function CloseRow() {
   return (
-    <div className="safe-top mx-auto flex h-14 w-full max-w-xl items-center px-4 sm:px-6">
+    <div className="safe-top mx-auto flex h-14 w-full max-w-(--page-reading) items-center px-4 sm:px-6">
       <StudyClose />
     </div>
   );
@@ -470,7 +471,7 @@ function CloseRow() {
 function StudySkeleton() {
   const { t } = useTranslation();
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col px-4 pt-3 sm:px-6 sm:pt-5">
+    <div className="mx-auto flex w-full max-w-(--page-reading) flex-col px-4 pt-3 sm:px-6 sm:pt-5">
       <h1 className="sr-only">{t('study.title')}</h1>
       <p className="sr-only" role="status">
         {t('common.loading')}
@@ -494,8 +495,8 @@ export function OtherModes({ current }: { current?: StudyMode }) {
   const others = study.modes.filter((m) => m !== current && modeLeft(counts[m]) > 0);
   if (!others.length) return null;
   return (
-    <div className="flex flex-col gap-2 rounded-[18px] border border-border bg-surface p-4 text-left">
-      <h2 className="text-sm text-fg-muted">{t('study.empty.others')}</h2>
+    <Card className="flex w-full flex-col gap-2 text-left">
+      <h2 className="text-meta font-semibold text-fg-muted">{t('study.empty.others')}</h2>
       {others.map((m) => (
         <Link
           key={m}
@@ -506,7 +507,7 @@ export function OtherModes({ current }: { current?: StudyMode }) {
           {t('study.empty.otherCount', { mode: modeText(t, m, 'name'), count: left(counts[m]) })}
         </Link>
       ))}
-    </div>
+    </Card>
   );
 }
 
@@ -558,11 +559,12 @@ function StudyEmpty({
       ? t('study.empty.productionBody')
       : nextDueText(t, info.next, info.now, info.tz);
   return (
-    <div className="mx-auto w-full max-w-xl px-4 pt-10 sm:px-6 md:pt-16">
+    <div className="mx-auto w-full max-w-(--page-reading) px-4 pt-6 sm:px-6 md:pt-12">
       <h1 className="sr-only">
         {studyMode ? modeText(t, studyMode, 'name') : sessionTitle(t, ahead)}
       </h1>
       <EmptyState
+        tone="card"
         icon={info.hasCards ? 'check' : 'cards'}
         title={title}
         description={description}
@@ -581,7 +583,7 @@ function StudyEmpty({
                 ) : (
                   info.next.kind === 'later' &&
                   !ahead && (
-                    <p className="text-sm text-fg-muted" data-testid="study-waiting">
+                    <p className="text-meta text-fg-muted" data-testid="study-waiting">
                       {t('study.empty.waitingHint')}
                     </p>
                   )
@@ -589,7 +591,11 @@ function StudyEmpty({
                 {studyMode && !ahead && <OtherModes current={studyMode} />}
                 <Link
                   to="/study/more"
-                  className={buttonClasses({ size: 'lg', className: 'min-w-60' })}
+                  className={buttonClasses({
+                    variant: resumeCount > 0 ? 'secondary' : 'primary',
+                    size: 'lg',
+                    className: 'min-w-60',
+                  })}
                 >
                   {t('review.moreStudy')}
                 </Link>
