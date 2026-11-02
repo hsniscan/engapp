@@ -109,9 +109,9 @@ for (const width of [360, 1280]) {
       await check(page, 'decks', tag);
       // Keşfet › Desteler before the word bank is downloaded.
       await page.goto('/kesfet?f=desteler');
-      await expect(page.getByRole('link', { name: 'Desteler', exact: true })).toHaveAttribute(
-        'aria-current',
-        'page',
+      await expect(page.getByRole('button', { name: 'Desteler', exact: true })).toHaveAttribute(
+        'aria-pressed',
+        'true',
       );
       await check(page, 'decks-discover', tag);
 

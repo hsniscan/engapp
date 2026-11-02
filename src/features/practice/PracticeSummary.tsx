@@ -1,3 +1,4 @@
+// End of a practice round (v0.5.2 "Çam", ADR 0066): the summary frame of the study session.
 import { motion, useReducedMotion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
@@ -6,7 +7,20 @@ import { type PracticeRound, summarizeRound } from '@/domain/practice';
 import type { Id } from '@/domain/types';
 import { type PracticeParams, practiceHref } from '@/features/extra/links';
 import { formatDuration } from '@/features/stats/format';
-import { Button, buttonClasses, duration, ease, Icon } from '@/ui';
+import {
+  Button,
+  buttonClasses,
+  Card,
+  duration,
+  ease,
+  Icon,
+  ListGroup,
+  ListRow,
+  ProgressRing,
+  SectionHeader,
+  StatRow,
+  StatTile,
+} from '@/ui';
 
 export interface PracticeSummaryProps {
   round: PracticeRound;
@@ -34,68 +48,52 @@ export function PracticeSummary({ round, views, timeMs, params }: PracticeSummar
     reduce
       ? { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.15 } }
       : {
-          initial: { opacity: 0, y: 12 },
+          initial: { opacity: 0, y: 6 },
           animate: { opacity: 1, y: 0 },
-          transition: { duration: duration.large, ease: ease.standard, delay: 0.06 * i },
+          transition: { duration: duration.medium, ease: ease.standard, delay: 0.05 * i },
         };
-
-  const stats = [
-    { label: t('practice.summary.cards'), value: String(s.cards) },
-    { label: t('practice.summary.known'), value: `${s.knownFirstTry}/${s.cards}` },
-    { label: t('practice.summary.time'), value: formatDuration(timeMs) },
-  ];
 
   return (
     <section
       aria-labelledby="practice-summary-title"
-      className="mx-auto flex w-full max-w-xl flex-col px-4 pt-8 pb-10 sm:px-6 md:pt-14"
+      className="mx-auto flex w-full max-w-(--page-reading) flex-col gap-8 px-4 pt-4 pb-10 sm:px-6 md:pt-10"
     >
-      <motion.div {...item(0)} className="flex flex-col items-center text-center">
-        <span className="mb-5 flex size-14 items-center justify-center rounded-full bg-accent-soft text-accent-text">
-          <Icon name="check" size={26} strokeWidth={2} />
-        </span>
-        <h1
-          id="practice-summary-title"
-          className="font-serif text-3xl font-semibold tracking-[-0.01em] md:text-4xl"
-        >
-          {t('practice.summary.title')}
-        </h1>
-        <p className="mt-2 text-[0.9375rem] text-fg-muted">{t('practice.summary.scheduleSame')}</p>
+      <motion.div {...item(0)} className="flex flex-col items-center gap-4 text-center">
+        <ProgressRing value={1} max={1} size={96} label={t('practice.summary.title')}>
+          <Icon name="check" size={36} strokeWidth={2} className="text-accent-text" />
+        </ProgressRing>
+        <div className="flex flex-col gap-1.5">
+          <h1 id="practice-summary-title" className="text-page font-semibold text-fg md:text-page-lg">
+            {t('practice.summary.title')}
+          </h1>
+          <p className="text-ui text-fg-muted">{t('practice.summary.scheduleSame')}</p>
+        </div>
       </motion.div>
 
-      <motion.dl
-        {...item(1)}
-        className="mt-8 grid grid-cols-3 divide-x divide-border rounded-card border border-border bg-surface"
-      >
-        {stats.map((x) => (
-          <div key={x.label} className="flex flex-col items-center gap-1 px-2 py-5">
-            <dt className="text-sm text-fg-muted">{x.label}</dt>
-            <dd className="tabular font-serif text-3xl leading-none font-semibold">{x.value}</dd>
-          </div>
-        ))}
-      </motion.dl>
+      <motion.div {...item(1)}>
+        <StatRow>
+          <StatTile bare label={t('practice.summary.cards')} value={String(s.cards)} />
+          <StatTile bare label={t('practice.summary.known')} value={`${s.knownFirstTry}/${s.cards}`} />
+          <StatTile bare label={t('practice.summary.time')} value={formatDuration(timeMs)} />
+        </StatRow>
+      </motion.div>
 
-      <motion.div {...item(2)} className="mt-4 rounded-card border border-border bg-surface p-5">
-        <h2 className="text-sm text-fg-muted">{t('practice.summary.hardest')}</h2>
+      <motion.section {...item(2)} aria-labelledby="practice-hardest">
+        <SectionHeader id="practice-hardest" title={t('practice.summary.hardest')} />
         {hardest.length === 0 ? (
-          <p className="mt-2 text-[0.9375rem] text-fg">{t('practice.summary.allKnown')}</p>
+          <Card>
+            <p className="text-ui text-fg">{t('practice.summary.allKnown')}</p>
+          </Card>
         ) : (
-          <ol className="mt-2 flex flex-col divide-y divide-border">
+          <ListGroup>
             {hardest.map((v) => (
-              <li key={v.card.id} className="flex items-baseline gap-3 py-2.5">
-                <span lang="en" className="shrink-0 font-serif text-lg font-semibold text-fg">
-                  {v.note.term}
-                </span>
-                <span className="min-w-0 truncate text-[0.9375rem] text-fg-muted">
-                  {meaningOf(v)}
-                </span>
-              </li>
+              <ListRow key={v.card.id} term title={v.note.term} description={meaningOf(v)} />
             ))}
-          </ol>
+          </ListGroup>
         )}
-      </motion.div>
+      </motion.section>
 
-      <motion.div {...item(3)} className="mt-8 flex flex-col gap-2">
+      <motion.div {...item(3)} className="flex flex-col gap-2">
         <Button size="lg" fullWidth onClick={() => void navigate(practiceHref(params))}>
           {t('practice.summary.again')}
         </Button>
@@ -103,7 +101,7 @@ export function PracticeSummary({ round, views, timeMs, params }: PracticeSummar
           {t('practice.backToMore')}
         </Link>
         <Link to="/" className={buttonClasses({ variant: 'ghost', fullWidth: true })}>
-          {t('review.backHome')}
+          {t('review.summary.finish')}
         </Link>
       </motion.div>
     </section>

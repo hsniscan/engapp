@@ -27,7 +27,7 @@ function BesidePicture({ view, children, className }: { view: CardView; children
   if (!image) return <>{children}</>;
   return (
     <div className={cn('flex w-full max-w-md items-center justify-center gap-4 sm:gap-5', className)} data-testid="meaning-with-picture">
-      <CardPicture image={image} className="size-[5.5rem] sm:size-28" />
+      <CardPicture image={image} className="size-22 sm:size-28" />
       <div className="flex min-w-0 flex-1 flex-col items-start text-left">{children}</div>
     </div>
   );
@@ -54,11 +54,11 @@ export function Sentence({
 }) {
   const at = span && isValidSpan(sentence, span) ? span : findSpan(sentence, term);
   return (
-    <p lang="en" className={cn('font-serif text-lg leading-relaxed text-fg italic', className)}>
+    <p lang="en" className={cn('font-serif text-lead text-fg italic', className)}>
       {at ? (
         <>
           {sentence.slice(0, at[0])}
-          <mark className="rounded-[3px] bg-accent-soft px-0.5 font-semibold text-fg not-italic [box-decoration-break:clone]">
+          <mark className="rounded-xs bg-accent-soft px-0.5 font-semibold text-fg not-italic [box-decoration-break:clone]">
             {sentence.slice(at[0], at[1])}
           </mark>
           {sentence.slice(at[1])}
@@ -83,12 +83,19 @@ export function SpeakButton({
   onSpeak,
   label,
   className,
-}: Pick<SpeakProps, 'available' | 'onSpeak'> & { label?: string; className?: string }) {
+  variant = 'ghost',
+}: Pick<SpeakProps, 'available' | 'onSpeak'> & {
+  label?: string;
+  className?: string;
+  /** ghost (in text) or tonal (the card's speaker). */
+  variant?: 'ghost' | 'tonal';
+}) {
   const { t } = useTranslation();
   const { busy, run } = usePronunciationBusy();
   return (
     <IconButton
       icon="speaker"
+      variant={variant}
       label={available ? (label ?? t('common.listen')) : t('review.noVoice')}
       aria-disabled={!available || undefined}
       aria-busy={busy || undefined}
@@ -143,7 +150,7 @@ export function BackSentence({
         )}
       </div>
       {sentence.origin === 'text' && (
-        <p data-testid="sentence-from-text" className="text-xs text-fg-subtle">
+        <p data-testid="sentence-from-text" className="text-caption text-fg-muted">
           {t('smart.rotation.fromText')}
         </p>
       )}
@@ -155,12 +162,12 @@ export function BackSentence({
               e.stopPropagation();
               setTrShown(true);
             }}
-            className="min-h-9 text-sm font-medium text-accent-text underline-offset-2 hover:underline"
+            className="min-h-11 text-meta font-semibold text-accent-text underline-offset-2 hover:underline"
           >
             {t('examples.showTr')}
           </button>
         ) : (
-          <p lang="tr" className="text-[0.9375rem] leading-relaxed text-fg-muted">
+          <p lang="tr" className="text-ui text-fg-muted">
             {sentence.tr}
           </p>
         ))}
@@ -186,7 +193,7 @@ function Face({
   return (
     <div className="flex flex-1 flex-col px-5 pt-4 pb-8 sm:px-8">
       <div className="flex min-h-6 items-center justify-between gap-3">
-        <span className="text-sm text-fg-muted">{prompt}</span>
+        <span className="text-meta text-fg-muted">{prompt}</span>
         <span className="flex items-center gap-2">
           {isNew && <Badge tone="accent">{t('review.newCard')}</Badge>}
           {aside}
@@ -210,7 +217,7 @@ function Term({ term, size = 'lg' }: { term: string; size?: 'lg' | 'md' }) {
       lang="en"
       className={cn(
         'font-serif leading-tight font-semibold tracking-[-0.01em] text-balance text-fg',
-        size === 'lg' ? 'text-4xl sm:text-display' : 'text-3xl',
+        size === 'lg' ? 'text-display' : 'text-page',
       )}
     >
       {term}
@@ -221,7 +228,7 @@ function Term({ term, size = 'lg' }: { term: string; size?: 'lg' | 'md' }) {
 export function Ipa({ ipa }: { ipa: string | null }) {
   if (!ipa) return null;
   return (
-    <p lang="en" className="font-serif text-lg text-fg-muted">
+    <p lang="en" className="font-serif text-lead text-fg-muted">
       {ipa}
     </p>
   );
@@ -262,7 +269,7 @@ export const CardFront = memo(function CardFront({ view, isNew, speech }: FacePr
       <Face prompt={prompt} isNew={isNew} aside={marker} className="gap-4">
         <CardPicture image={view.image} showNew={false} className="size-44 sm:size-56" />
         {sense.pos && (
-          <p className="text-[0.9375rem] text-fg-muted">
+          <p className="text-ui text-fg-muted">
             <span className="sr-only">{t('imageCard.pos', { pos: posLabel(t, sense.pos) })}</span>
             <span aria-hidden="true" className="font-serif italic">
               {posLabel(t, sense.pos)}
@@ -279,16 +286,16 @@ export const CardFront = memo(function CardFront({ view, isNew, speech }: FacePr
   if ((card.card_type === 'production' || card.card_type === 'image') && sense) {
     return (
       <Face prompt={prompt} isNew={isNew} aside={marker}>
-        <p className="font-serif text-3xl leading-snug font-semibold text-fg sm:text-4xl">
+        <p className="text-page font-semibold text-fg">
           {meaningOf(sense)}
         </p>
         {sense.gloss_en && (
-          <p lang="en" className="max-w-sm text-[0.9375rem] text-fg-muted">
+          <p lang="en" className="max-w-sm font-serif text-ui text-fg-muted">
             {sense.gloss_en}
           </p>
         )}
         {hint && (
-          <p className="mt-4 font-serif text-2xl tracking-[0.18em] text-fg-muted">
+          <p className="mt-4 font-serif text-heading tracking-[0.18em] text-fg-muted">
             <span className="sr-only">{t('review.firstLetter')} </span>
             <span lang="en">{hint}</span>
           </p>
@@ -305,7 +312,7 @@ export const CardFront = memo(function CardFront({ view, isNew, speech }: FacePr
       <Face prompt={prompt} isNew={isNew} aside={marker} className="gap-6">
         <p
           lang="en"
-          className="max-w-md font-serif text-xl leading-relaxed text-fg italic sm:text-2xl"
+          className="max-w-md font-serif text-title font-normal text-fg italic"
         >
           {cloze.before}
           <span
@@ -317,10 +324,10 @@ export const CardFront = memo(function CardFront({ view, isNew, speech }: FacePr
           {cloze.after}
         </p>
         <div className="flex flex-col items-center gap-1">
-          <span className="text-xs font-medium tracking-wide text-fg-muted">
+          <span className="text-caption font-semibold tracking-[0.08em] text-fg-muted uppercase">
             {t('review.hint')}
           </span>
-          <p className="font-serif text-xl text-fg-muted">{meaningOf(sense)}</p>
+          <p className="text-title font-medium text-fg-muted">{meaningOf(sense)}</p>
         </div>
         <FrontPicture view={view} />
         <LeechHint view={view} />
@@ -357,9 +364,9 @@ export function SenseList({ view, align = 'center' }: { view: CardView; align?: 
     if (!only) return null;
     return (
       <div className={cn('flex flex-col gap-1.5', align === 'start' ? 'items-start' : 'items-center')}>
-        <p className="font-serif text-3xl leading-snug font-semibold break-words text-fg">{meaningOf(only)}</p>
+        <p className="text-heading font-semibold break-words text-fg">{meaningOf(only)}</p>
         {only.gloss_en && (
-          <p className="text-[0.9375rem] text-fg-muted">
+          <p className="text-ui text-fg-muted">
             {only.pos && <span className="italic">{posLabel(t, only.pos)} · </span>}
             <span lang="en">{only.gloss_en}</span>
           </p>
@@ -379,20 +386,20 @@ export function SenseList({ view, align = 'center' }: { view: CardView; align?: 
               shown ? 'bg-accent-soft' : 'opacity-90',
             )}
           >
-            <span className="tabular w-4 shrink-0 pt-1 font-serif text-lg text-fg-muted">
+            <span className="tabular w-4 shrink-0 pt-0.5 text-ui text-fg-muted">
               {i + 1}.
             </span>
             <div className="flex min-w-0 flex-col gap-0.5">
               <p
                 className={cn(
-                  'font-serif leading-snug text-fg',
-                  shown ? 'text-2xl font-semibold' : 'text-xl',
+                  'text-fg',
+                  shown ? 'text-title font-semibold' : 'text-lead',
                 )}
               >
                 {meaningOf(s)}
               </p>
               {(s.gloss_en || shown) && (
-                <p className="text-sm text-fg-muted">
+                <p className="text-meta text-fg-muted">
                   {s.gloss_en && (
                     <span>
                       {s.pos && <span className="italic">{posLabel(t, s.pos)} · </span>}
@@ -428,7 +435,7 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
       sentence={view.sentence}
       term={note.term}
       speech={speech}
-      className="text-[1.0625rem] text-fg-muted"
+      className="text-fg-muted"
     />
   ) : null;
   if (note.term_type === 'contrast') {
@@ -454,7 +461,7 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
       <Face prompt={prompt} isNew={isNew} aside={aside} className="gap-5">
         <div className="flex flex-col items-center gap-0.5">
           <div className="flex items-center gap-1">
-            <p lang="en" className="font-serif text-2xl font-semibold text-fg">
+            <p lang="en" className="font-serif text-heading font-semibold text-fg">
               {note.term}
             </p>
             {note.term_type !== 'affix' && <SpeakButton {...speech} />}
@@ -487,7 +494,7 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
           sentence={view.sentence}
           term={note.term}
           speech={speech}
-          className="text-xl sm:text-2xl"
+          className="text-title"
         />
       ) : (
         <Term term={note.term} />
@@ -495,7 +502,7 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
       <div className="flex flex-col items-center">
         <div className="flex items-center gap-1">
           {card.card_type === 'cloze' && (
-            <p lang="en" className="font-serif text-xl font-semibold text-fg">
+            <p lang="en" className="font-serif text-title font-semibold text-fg">
               {note.term}
             </p>
           )}
@@ -505,9 +512,9 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
       </div>
       <div className="flex w-full max-w-md flex-col items-center gap-1 border-t border-border pt-4">
         <BesidePicture view={view}>
-          <p className="font-serif text-xl break-words text-fg">{meaningOf(sense)}</p>
+          <p className="text-title font-semibold break-words text-fg">{meaningOf(sense)}</p>
           {sense.gloss_en && (
-            <p lang="en" className="text-sm text-fg-muted">
+            <p lang="en" className="font-serif text-meta text-fg-muted">
               {sense.gloss_en}
             </p>
           )}

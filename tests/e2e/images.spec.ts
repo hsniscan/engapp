@@ -73,7 +73,9 @@ test.describe('picture on the card', () => {
     backend.offline = true;
     await context.setOffline(true);
     await page.goto('/');
-    await expect(page.getByRole('status', { name: /Eşitleme durumu: Çevrimdışı/ })).toBeVisible();
+    // Loaded from the service worker (Bugün has no sync pill since v0.5.2; it lives in the rail and on Profil).
+    await expect(page.getByRole('heading', { name: 'Bugünün çalışması' })).toBeVisible();
+    expect(await page.evaluate(() => navigator.onLine)).toBe(false);
     await page.getByTestId('start-study').click();
 
     const seen = new Map<string, boolean>();

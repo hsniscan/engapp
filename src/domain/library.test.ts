@@ -4,7 +4,9 @@ import { describe, expect, it } from 'vitest';
 import {
   compareSuggestions,
   filterLibrary,
+  foldSearch,
   gradedReaderBody,
+  matchesLibraryQuery,
   readingMinutes,
   scoreGradedText,
   profileCounts,
@@ -157,5 +159,36 @@ describe('gradedReaderBody (decision 0054)', () => {
 
   it('an empty text is an empty body', () => {
     expect(gradedReaderBody([])).toEqual({ body: '', spans: [] });
+  });
+});
+
+describe('library search (v0.5.2)', () => {
+  const list = [
+    score(entry('a', { title: 'A Day at the Bakery', topic: 'food' })),
+    score(entry('b', { title: 'The Island Train', topic: 'travel' })),
+    score(entry('c', { title: 'Inside a Hospital', topic: 'health' })),
+  ];
+  const label = (k: string) =>
+    ({ food: 'Yemek', travel: 'Seyahat', health: 'Sağlık' })[k] ?? k;
+  const titles = (q: string) =>
+    filterLibrary(list, { level: null, topic: null, query: q, topicLabel: label }).map(
+      (x) => x.entry.title,
+    );
+
+  it('folds case, accents and the Turkish i', () => {
+    expect(foldSearch('  İstanbul   ŞEHİR ')).toBe('istanbul sehir');
+    expect(foldSearch('ISLAND')).toBe('island');
+  });
+
+  it('finds titles and topic names; every word must match', () => {
+    expect(titles('bakery')).toEqual(['A Day at the Bakery']);
+    expect(titles('saglik')).toEqual(['Inside a Hospital']);
+    expect(titles('seyahat train')).toEqual(['The Island Train']);
+    expect(titles('seyahat bakery')).toEqual([]);
+    expect(titles('   ')).toHaveLength(3);
+  });
+
+  it('works without a topic label', () => {
+    expect(matchesLibraryQuery({ title: 'X', topic: 'travel' }, 'trav')).toBe(true);
   });
 });

@@ -161,6 +161,33 @@ export function stretchTexts(
 export interface LibraryFilter {
   level: string | null;
   topic: string | null;
+  /** Free-text search over the title and the topic's name (v0.5.2); empty = everything. */
+  query?: string;
+  /** The topic's name as the user sees it ("Günlük yaşam"), so a search finds it. */
+  topicLabel?: (topic: string) => string;
+}
+
+/** Lower case without accents, Turkish dotted/dotless i folded, for a forgiving search. */
+export function foldSearch(s: string): string {
+  return s
+    .replace(/[İIı]/g, 'i')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** Whether every word of the query appears in the text's title or its topic's name. */
+export function matchesLibraryQuery(
+  entry: Pick<GradedCatalogEntry, 'title' | 'topic'>,
+  query: string,
+  topicLabel: (topic: string) => string = (k) => k,
+): boolean {
+  const words = foldSearch(query).split(' ').filter(Boolean);
+  if (words.length === 0) return true;
+  const hay = foldSearch(`${entry.title} ${topicLabel(entry.topic)} ${entry.topic}`);
+  return words.every((w) => hay.includes(w));
 }
 
 const LEVEL_ORDER = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
@@ -168,7 +195,12 @@ const LEVEL_ORDER = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 /** The list under the suggestions: filtered, by level, then easiest for this user first. */
 export function filterLibrary(scored: readonly ScoredGradedText[], f: LibraryFilter): ScoredGradedText[] {
   return scored
-    .filter((s) => (f.level === null || s.entry.level === f.level) && (f.topic === null || s.entry.topic === f.topic))
+    .filter(
+      (s) =>
+        (f.level === null || s.entry.level === f.level) &&
+        (f.topic === null || s.entry.topic === f.topic) &&
+        (!f.query || matchesLibraryQuery(s.entry, f.query, f.topicLabel)),
+    )
     .sort(
       (a, b) =>
         LEVEL_ORDER.indexOf(a.entry.level) - LEVEL_ORDER.indexOf(b.entry.level) ||

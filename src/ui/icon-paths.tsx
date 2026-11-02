@@ -161,6 +161,13 @@ export const paths = {
       <path d="M10 9.25v5.5M14 9.25v5.5" />
     </>
   ),
+  // Reader "Dinleyerek oku" (v0.5.2, W4): the pair of `pause`.
+  play: (
+    <>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M10.5 9.1v5.8l4.6-2.9-4.6-2.9z" />
+    </>
+  ),
   info: (
     <>
       <circle cx="12" cy="12" r="8" />
@@ -304,6 +311,34 @@ export const paths = {
       <path d="M4.25 12h15.5M12 4.25c2.1 2.2 3.1 4.8 3.1 7.75S14.1 17.55 12 19.75C9.9 17.55 8.9 14.95 8.9 12S9.9 6.45 12 4.25z" />
     </>
   ),
+  // v0.5.2 wave 2 (study, ADR 0066): hints, typed-answer verdicts, dictation, hands-free.
+  bulb: (
+    <>
+      <path d="M9.5 18h5M10.5 20.75h3" />
+      <path d="M12 3.75a5.75 5.75 0 0 0-3.4 10.4c.6.45.9 1.1.9 1.85h5c0-.75.3-1.4.9-1.85A5.75 5.75 0 0 0 12 3.75z" />
+    </>
+  ),
+  'minus-circle': (
+    <>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M8.75 12h6.5" />
+    </>
+  ),
+  slow: (
+    <>
+      <path d="M4.5 15.25c0-3.45 2.9-6.25 6.5-6.25s6.5 2.8 6.5 6.25" />
+      <path d="M3.5 15.25h15.75a1.5 1.5 0 0 0 0-3H17.6" />
+      <path d="M7.75 15.25v2.5M14.25 15.25v2.5" />
+    </>
+  ),
+  play: <path d="M8 5.75v12.5a.75.75 0 0 0 1.14.64l10-6.25a.75.75 0 0 0 0-1.28l-10-6.25A.75.75 0 0 0 8 5.75z" />,
+  'skip-next': (
+    <>
+      <path d="M5.5 6.25v11.5a.6.6 0 0 0 .92.5l8.6-5.75a.6.6 0 0 0 0-1l-8.6-5.75a.6.6 0 0 0-.92.5z" />
+      <path d="M18.5 5.75v12.5" />
+    </>
+  ),
+  stop: <rect x="6.25" y="6.25" width="11.5" height="11.5" rx="2" />,
 } satisfies Record<string, ReactNode>;
 
 export type IconName = keyof typeof paths | 'google';

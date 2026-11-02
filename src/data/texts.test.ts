@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { afterEach, describe, expect, it } from 'vitest';
 import { db } from './db';
-import { getText, saveText } from './texts';
+import { deleteText, getText, restoreText, saveText } from './texts';
 import { MAX_TEXT_CHARS, readerPath } from '../domain/texts';
 
 afterEach(async () => {
@@ -30,5 +30,22 @@ describe('saveText', () => {
   it('cuts a text longer than the reader accepts', async () => {
     const id = await saveText({ kind: 'article', title: 't', body: 'a'.repeat(MAX_TEXT_CHARS + 10), source_url: 'https://example.com/a' });
     expect((await getText(id))?.body.length).toBe(MAX_TEXT_CHARS);
+  });
+});
+
+describe('deleteText / restoreText (v0.5.2 "Geri al")', () => {
+  it('brings back the text the delete removed', async () => {
+    const id = await saveText({ kind: 'paste', title: 't', body: 'b' }, 1_000);
+    const gone = await deleteText(id, 2_000);
+    expect(gone.deleted_at).toBe(2_000);
+    expect(await restoreText(id, 2_000, 3_000)).toBe(true);
+    expect((await db.texts.get(id))?.deleted_at).toBeNull();
+  });
+
+  it('leaves a later deletion alone', async () => {
+    const id = await saveText({ kind: 'paste', title: 't', body: 'b' }, 1_000);
+    await deleteText(id, 2_000);
+    expect(await restoreText(id, 1_500, 3_000)).toBe(false);
+    expect((await db.texts.get(id))?.deleted_at).toBe(2_000);
   });
 });

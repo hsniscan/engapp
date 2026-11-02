@@ -9,7 +9,7 @@ import { addNoteWithSenses, logError, lookupReaderWord, type ReaderMeaning, type
 import { useAuth } from '@/features/auth/session';
 import { locateTerm } from '@/features/cards/locateTerm';
 import { lookupLexicon } from '@/features/import/lexicon';
-import { Button, Checkbox, Dialog, Skeleton, toast } from '@/ui';
+import { Button, Checkbox, Sheet, Skeleton, toast } from '@/ui';
 
 export interface NewWordItem {
   lemma: string;
@@ -43,15 +43,14 @@ export function NewWordsSheet({
 }) {
   const { t } = useTranslation();
   return (
-    <Dialog
+    <Sheet
       open={open}
       onOpenChange={onOpenChange}
-      variant="sheet"
       title={t('reader.newWords.title')}
       description={t('reader.newWords.description')}
     >
       {open && <SheetBody words={words} glosses={glosses} onDone={() => onOpenChange(false)} />}
-    </Dialog>
+    </Sheet>
   );
 }
 
@@ -172,17 +171,17 @@ function SheetBody({
       </div>
     );
   if (rows.length === 0)
-    return <p className="pb-1 text-[0.9375rem] text-fg-muted">{t('reader.newWords.none')}</p>;
+    return <p className="pb-1 text-ui text-fg-muted">{t('reader.newWords.none')}</p>;
 
   const count = rows.filter((r) => r.meaning && picked.has(r.item.lemma)).length;
   return (
     <div className="flex flex-col gap-4 pb-1">
       <ul
-        className="-mx-1 flex max-h-[50dvh] flex-col overflow-y-auto px-1"
+        className="flex max-h-[50dvh] flex-col divide-y divide-border overflow-y-auto rounded-card border border-border bg-surface px-4"
         data-testid="reader-new-words"
       >
         {rows.map((r) => (
-          <li key={r.item.lemma} className="border-b border-border last:border-b-0">
+          <li key={r.item.lemma}>
             <Checkbox
               checked={!!r.meaning && picked.has(r.item.lemma)}
               disabled={!r.meaning || busy !== null}
@@ -196,15 +195,15 @@ function SheetBody({
               }
               label={
                 <span className="flex flex-wrap items-baseline gap-x-2">
-                  <span lang="en" className="font-serif text-[1.0625rem] font-semibold text-fg">
+                  <span lang="en" className="font-serif text-lead font-medium text-fg">
                     {r.term}
                   </span>{' '}
-                  <span className={r.meaning ? 'text-fg' : 'text-fg-muted'}>
+                  <span className={r.meaning ? 'text-ui text-fg' : 'text-ui text-fg-muted'}>
                     {r.meaning ? r.meaning.meaning_tr : t('reader.newWords.noMeaning')}
                   </span>
                 </span>
               }
-              className="py-0.5"
+              className="min-h-12 py-1"
             />
           </li>
         ))}
@@ -221,6 +220,7 @@ function SheetBody({
       )}
       <Button
         size="lg"
+        fullWidth
         leadingIcon="plus"
         loading={busy === 'adding'}
         disabled={count === 0 || busy === 'looking'}

@@ -4,6 +4,7 @@ import {
   type PracticeSize,
   type PracticeSource,
 } from '@/domain/practice';
+import type { MoreStudyOverview } from '@/data';
 
 export interface PracticeParams {
   source: PracticeSource;
@@ -53,4 +54,23 @@ export function extraNewSteps(waiting: number): number[] {
   if (waiting >= 10) return [5, 10];
   if (waiting > 5) return [5, waiting];
   return waiting > 0 ? [waiting] : [];
+}
+
+/** The practice round Bugün offers: the hard words first, then the recent ones. */
+export function quickPracticeSource(more: MoreStudyOverview): 'hard' | 'recent' | null {
+  if (more.practice.hard > 0) return 'hard';
+  if (more.practice.recent > 0) return 'recent';
+  return null;
+}
+
+/** The mode "+5 yeni kart" goes to (none while catch-up, a vacation or the ramp pauses new cards). */
+export function extraNewMode(more: MoreStudyOverview) {
+  return more.newPaused ? null : more.extraMode;
+}
+
+/** Whether Bugün's "Biraz daha çalış" list has anything to offer. */
+export function hasMoreStudy(more: MoreStudyOverview): boolean {
+  const mode = extraNewMode(more);
+  const steps = mode ? extraNewSteps(more.newWaitingByMode[mode]) : [];
+  return steps.length > 0 || quickPracticeSource(more) !== null || more.aheadCount > 0;
 }

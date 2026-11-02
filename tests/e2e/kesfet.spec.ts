@@ -152,9 +152,9 @@ test('Keşfet: the feed, each filter, and İlerleme at the top of Profil', async
   await tabBar(page).getByRole('link', { name: 'Keşfet', exact: true }).click();
   await expect(page).toHaveURL(/\/kesfet$/);
   await expect(page.getByRole('heading', { level: 1, name: 'Keşfet' })).toBeVisible();
-  const chips = page.getByRole('navigation', { name: 'Keşfet süzgeci' });
-  await expect(chips.getByRole('link')).toHaveText(['Hepsi', 'Okuma', 'Desteler', 'Kelimeler']);
-  await expect(chips.getByRole('link', { name: 'Hepsi' })).toHaveAttribute('aria-current', 'page');
+  const chips = page.getByRole('group', { name: 'Keşfet süzgeci' });
+  await expect(chips.getByRole('button')).toHaveText(['Hepsi', 'Okuma', 'Desteler', 'Kelimeler']);
+  await expect(chips.getByRole('button', { name: 'Hepsi' })).toHaveAttribute('aria-pressed', 'true');
 
   // Hepsi: library texts, decks, the word of the day, the invitation to write a text.
   await expect(page.getByRole('region', { name: /Sana uygun metinler/ })).toBeVisible();
@@ -172,14 +172,14 @@ test('Keşfet: the feed, each filter, and İlerleme at the top of Profil', async
   await expect(word.getByText('Kartlarına eklendi')).toBeVisible();
 
   // Kelimeler: only word cards.
-  await chips.getByRole('link', { name: 'Kelimeler' }).click();
+  await chips.getByRole('button', { name: 'Kelimeler' }).click();
   await expect(page).toHaveURL(/\/kesfet\?f=kelimeler$/);
   await expect(page.getByTestId('kesfet-word')).toBeVisible();
   await expect(page.getByRole('list', { name: 'Yeni kelimeler' })).toBeVisible();
   await expect(page.getByRole('region', { name: /Sana uygun metinler/ })).toHaveCount(0);
 
   // Desteler: every suggested deck.
-  await chips.getByRole('link', { name: 'Desteler' }).click();
+  await chips.getByRole('button', { name: 'Desteler' }).click();
   await expect(page).toHaveURL(/\/kesfet\?f=desteler$/);
   await expect(page.getByRole('link', { name: /^B1 kelimeleri/ })).toBeVisible();
   await expect(page.getByRole('link', { name: /En çok kullanılan 100 kelime/ })).toBeVisible();
@@ -187,7 +187,7 @@ test('Keşfet: the feed, each filter, and İlerleme at the top of Profil', async
 
   // Okuma: the library (with its filters) and Metinlerim; a text opens in the reader, and the
   // reader's ✕ comes back here.
-  await chips.getByRole('link', { name: 'Okuma' }).click();
+  await chips.getByRole('button', { name: 'Okuma' }).click();
   await expect(page).toHaveURL(/\/kesfet\?f=okuma$/);
   const library = page.getByRole('list', { name: 'Metinler', exact: true });
   await expect(library.getByRole('listitem')).toHaveCount(3);

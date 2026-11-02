@@ -1,4 +1,4 @@
-// The study session's frame (redesign): a top row, the card content that scrolls on its own,
+// The study session's frame (v0.5.2 "Çam", ADR 0066): a top row, the card content that scrolls on its own,
 // and a bar fixed to the bottom (show answer / typed answer / the four rating buttons). The
 // frame follows the visual viewport, so on a phone the typed-answer field and its button stay
 // right above the on-screen keyboard.
@@ -62,7 +62,7 @@ export function StudyFrame({ top, children, footer, scrollLabel }: StudyFramePro
         className="flex h-dvh flex-col overflow-hidden bg-canvas"
         style={height === null ? undefined : { height }}
       >
-        <div className="mx-auto w-full max-w-xl shrink-0 px-4 sm:px-6">{top}</div>
+        <div className="mx-auto w-full max-w-(--page-reading) shrink-0 px-4 sm:px-6">{top}</div>
         <div
           className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
           // A scrollable region must be reachable by keyboard (axe: scrollable-region-focusable).
@@ -70,15 +70,15 @@ export function StudyFrame({ top, children, footer, scrollLabel }: StudyFramePro
           role={scrollLabel ? 'region' : undefined}
           aria-label={scrollLabel}
         >
-          <div className="mx-auto flex min-h-full w-full max-w-xl flex-col px-4 pt-1 pb-6 sm:px-6">
+          <div className="mx-auto flex min-h-full w-full max-w-(--page-reading) flex-col px-4 pt-1 pb-4 sm:px-6">
             {children}
           </div>
         </div>
         {footer && (
-          <div className="shrink-0 border-t border-border bg-canvas">
+          <div className="shrink-0 bg-canvas">
             <div
               className={cn(
-                'mx-auto w-full max-w-xl px-3 pt-2.5 sm:px-6',
+                'mx-auto w-full max-w-(--page-reading) px-4 pt-1 sm:px-6',
                 'pb-[max(0.75rem,env(safe-area-inset-bottom))]',
               )}
             >

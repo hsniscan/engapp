@@ -1,91 +1,80 @@
-// "Kısa yollar" (board Main): the hard words (a practice round that never moves the plan) and
-// last week's report until it is opened (İlerleme marks it seen). Hidden when there is nothing to offer.
+// "Kısayollar" on Bugün (v0.5.2 "Çam", docs/design.md §4.1): the hard words (a practice round
+// that never moves the plan), last week's report until it is opened, the word bank and the
+// goals (minutes today against the daily goal). Goals themselves are set on İlerleme / Ayarlar.
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
 import { practiceHref } from '@/features/extra/links';
 import { REPORT_TAB_PARAM } from '@/features/report/links';
-import { cn } from '@/ui';
-import { HomeIcon, type HomeIconName } from './homeIcons';
-import type { Shortcuts as ShortcutsData } from './todayQueries';
+import { ListGroup, ListRow, SectionHeader } from '@/ui';
+import type { HomeGoals, Shortcuts as ShortcutsData } from './todayQueries';
 
-function Row({
-  to,
-  icon,
-  tone,
-  title,
-  body,
-  first,
-  testId,
+export const GOALS_EDIT_HREF = '/progress?edit=goals';
+export const WORD_BANK_HREF = '/decks?tab=bank';
+
+export function Shortcuts({
+  data,
+  showHard,
+  goals,
+  todayMinutes,
 }: {
-  to: string;
-  icon: HomeIconName;
-  tone: string;
-  title: string;
-  body: string;
-  first: boolean;
-  testId: string;
+  data: ShortcutsData;
+  showHard: boolean;
+  goals: HomeGoals | undefined;
+  todayMinutes: number;
 }) {
-  return (
-    <li className={cn(!first && 'border-t border-surface-sunken')}>
-      <Link
-        to={to}
-        data-testid={testId}
-        className="flex min-h-16 items-center gap-3.5 px-4 py-3.5 text-fg transition-colors duration-(--duration-micro) hover:bg-hover"
-      >
-        <span
-          aria-hidden="true"
-          className={cn('flex size-10 shrink-0 items-center justify-center rounded-xl', tone)}
-        >
-          <HomeIcon name={icon} size={20} />
-        </span>
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="text-[0.9375rem] font-semibold">{title}</span>
-          <span className="text-[0.8125rem] text-fg-muted">{body}</span>
-        </span>
-        <HomeIcon name="chevron" size={18} strokeWidth={1.8} className="text-fg-subtle" />
-      </Link>
-    </li>
-  );
-}
-
-export function Shortcuts({ data, showHard }: { data: ShortcutsData; showHard: boolean }) {
   const { t } = useTranslation();
   const hard = showHard ? (data.more?.practice.hard ?? 0) : 0;
   const report = data.report;
-  if (hard === 0 && !report) return null;
+  const day = goals?.dayTarget ?? null;
   return (
-    <section aria-label={t('today.shortcuts')}>
-      <ul className="flex flex-col overflow-hidden rounded-[20px] border border-border bg-surface">
+    <section aria-labelledby="shortcuts-title" data-testid="home-shortcuts">
+      <SectionHeader id="shortcuts-title" title={t('today.shortcuts')} />
+      <ListGroup>
         {hard > 0 && (
-          <Row
+          <ListRow
             to={practiceHref({ source: 'hard', size: 10, tag: null })}
-            icon="loop"
-            tone="bg-warn-soft text-warn-text"
-            title={t('today.hardTitle', { count: hard })}
-            body={t('today.hardBody')}
-            first
-            testId="shortcut-hard"
+            leadingIcon="alert"
+            leadingTone="warn"
+            title={t('today.hardTitle')}
+            description={t('today.hardBody')}
+            meta={hard}
           />
         )}
         {report && (
-          <Row
+          <ListRow
             to={`/progress?tab=${REPORT_TAB_PARAM}`}
-            icon="report"
-            tone="bg-accent-soft text-accent-text"
+            leadingIcon="chart"
+            leadingTone="accent"
             title={t('today.reportTitle')}
-            body={
+            description={
               report.activeDays > 0
-                ? t('today.reportBody', {
-                    count: report.activeDays,
-                    fresh: report.newCards,
-                  })
+                ? t('today.reportBody', { count: report.activeDays, fresh: report.newCards })
                 : t('today.reportBodyEmpty')
             }
-            first={hard === 0}
-            testId="report-note"
           />
         )}
-      </ul>
+        <ListRow
+          to={WORD_BANK_HREF}
+          leadingIcon="layers"
+          leadingTone="accent"
+          title={t('today.bankTitle')}
+          description={t('today.bankBody')}
+        />
+        {day !== null && (
+          <ListRow
+            to={GOALS_EDIT_HREF}
+            leadingIcon="target"
+            title={t('today.goalsTitle')}
+            description={
+              todayMinutes >= day ? t('today.goalTodayDone') : t('today.goalsBody')
+            }
+            meta={
+              <span data-testid="goal-day">
+                {t('today.goalProgress', { value: todayMinutes, target: day })}
+              </span>
+            }
+          />
+        )}
+      </ListGroup>
     </section>
   );
 }

@@ -102,7 +102,7 @@
     "aboutMinutes_one": "yaklaşık {{count}} dk",
     "aboutMinutes_other": "yaklaşık {{count}} dk",
     "continue": "Devam et",
-    "start": "Başla",
+    "start": "Çalışmaya başla",
     "goTo": {
       "word": "Kelime çalışmaya geç ({{count}})",
       "production": "Üretime geç ({{count}})",
@@ -143,26 +143,11 @@
     "moreAheadBody_one": "{{count}} kart · yarın daha hafif başlarsın",
     "moreAheadBody_other": "{{count}} kart · yarın daha hafif başlarsın",
     "goalsTitle": "Hedeflerin",
-    "goalsEditLabel": "Hedefleri düzenle",
-    "edit": "Düzenle",
-    "minUnit": "dk",
-    "goalToday": "Bugün",
     "goalTodayDone": "Bugün tamam",
-    "goalWeek": "Bu hafta",
-    "goalMonth": "Yeni · bu ay",
-    "goalNotSet": "hedef koyulmadı",
     "goalSetDay": "Günlük hedef koy",
     "goalPreset_one": "{{count}} dk",
     "goalPreset_other": "{{count}} dk",
     "goalSetFailed": "Hedef kaydedilemedi; tekrar dene.",
-    "levelEstimate": "Seviye tahmini: {{level}}",
-    "levelUnmeasured": "Seviye henüz ölçülmedi",
-    "levelTarget": "Hedef",
-    "levelPathLabel": "Seviye yolu: şimdi {{level}}, sıradaki hedef {{target}}",
-    "levelPathReached": "Seviye yolu: şimdi {{level}}",
-    "levelNow": "{{level}} · şimdi",
-    "levelGoal": "{{level}} · hedef",
-    "levelTest": "Seviyeni ölç · 5 dakikalık test",
     "wordsTitle": "Kelimelerin",
     "details": "Ayrıntı",
     "learnedLabel": "Öğrendiğin kelime",
@@ -172,22 +157,12 @@
     "learnedWeek_other": "Bu hafta +{{count}}",
     "learnedActive_one": "Aktif {{count}}",
     "learnedActive_other": "Aktif {{count}}",
-    "stage": {
-      "learning": "Öğreniyor",
-      "consolidating": "Pekişiyor",
-      "learned": "Öğrenildi",
-      "mastered": "Kalıcı"
-    },
-    "stageCount": "{{stage}} {{count}}",
-    "stagesLabel": "Aşamalar: {{list}}",
     "learnedRule": "Bir kelime, farklı günlerde en az 3 kez doğru hatırlanıp en az 2 hafta akılda kalacak hale gelince öğrenildi sayılır.",
     "recallLabel": "Hatırlama · son 30 gün",
     "recallGoal": "hedefin {{goal}}",
     "ruleTitle": "Öğrenilmiş sayma kuralı değişti",
     "ruleBody": "Artık bir kelime üç ayrı günde doğru bilinince öğrenildi sayılıyor. Kelimelerin silinmedi; Pekişiyor'dakiler tekrarlarla birkaç hafta içinde yerine gelecek.",
     "shortcuts": "Kısa yollar",
-    "hardTitle_one": "Zorlandıkların · {{count}} kelime",
-    "hardTitle_other": "Zorlandıkların · {{count}} kelime",
     "hardBody": "Hızlı pratik, takvimi değiştirmez",
     "reportTitle": "Geçen haftanın raporu hazır",
     "reportBody_one": "{{count}} gün çalıştın, {{fresh}} yeni kelime",
@@ -198,8 +173,6 @@
     "deckFreq_one": "En çok kullanılan {{count}} kelime",
     "deckFreq_other": "En çok kullanılan {{count}} kelime",
     "deckLevelVerbs": "{{level}} fiiller",
-    "deckBadgeFreq": "En sık",
-    "deckBadgeLevel": "Seviyene göre",
     "deckHave": "{{have}} / {{size}} sende",
     "deckReady": "Hazır deste",
     "typeDeferred": "ertelendi",
@@ -212,7 +185,15 @@
     "waitingTitle_one": "{{count}} kart {{time}} sonra",
     "waitingTitle_other": "{{count}} kart {{time}} sonra",
     "waitingBody": "Öğrenme adımları, hazır olma saati {{clock}}. Bugün o zaman kendiliğinden güncellenir.",
-    "waitingBodyNoClock": "Öğrenme adımları birazdan hazır olur."
+    "waitingBodyNoClock": "Öğrenme adımları birazdan hazır olur.",
+    "ringLeft": "kalan",
+    "moreAll": "Tümü",
+    "bankTitle": "Kelime Bankası",
+    "bankBody": "Seviyene göre hazır kelimeler",
+    "goalsBody": "Günlük hedefin",
+    "goalProgress": "{{value}}/{{target}} dk",
+    "goalSetBody": "Her gün birkaç dakika yeter. İstediğin zaman değiştirebilirsin.",
+    "hardTitle": "Zorlandıkların"
   },
   "addSheet": {
     "title": "Ne eklemek istersin?",
@@ -320,11 +301,15 @@
       "continueMode": "Devam et",
       "time": "Süre",
       "retention": "Hatırlama",
-      "ratings": "Cevapların dağılımı",
+      "ratings": "Cevapların",
       "streakExtended": "Bugün serine eklendi.",
       "streakKept": "Bugünkü çalışman kaydedildi.",
       "waiting_one": "{{count}} kart {{time}} sonra yeniden gelecek (öğrenme adımı).",
-      "waiting_other": "{{count}} kart {{time}} sonra yeniden gelecek (öğrenme adımı)."
+      "waiting_other": "{{count}} kart {{time}} sonra yeniden gelecek (öğrenme adımı).",
+      "finish": "Bitir",
+      "stages": "Aşama değişenler",
+      "stagesMore_one": "+{{count}} kelime daha",
+      "stagesMore_other": "+{{count}} kelime daha"
     },
     "moreStudy": "Biraz daha çalış",
     "aheadBadge": "Yarının kartları",
@@ -430,7 +415,9 @@
       "resume_other": "Devam et ({{count}} kart hazır)"
     },
     "learnedToday_one": "Bugün {{count}} kelime Öğrenildi'ye geçti.",
-    "learnedToday_other": "Bugün {{count}} kelime Öğrenildi'ye geçti."
+    "learnedToday_other": "Bugün {{count}} kelime Öğrenildi'ye geçti.",
+    "example": "Örnek",
+    "meaning": "Anlamı"
   },
   "examples": {
     "title": "Örnek cümleler",
@@ -3024,12 +3011,8 @@
     "loading": "Keşfet hazırlanıyor",
     "continue": {
       "eyebrow": "Devam et",
-      "pct": "%{{pct}} okudun",
       "start": "Açtın, henüz okumaya başlamadın",
       "action": "Kaldığın yerden oku"
-    },
-    "story": {
-      "eyebrow": "Bugünün hikâyesi"
     },
     "suggestions": {
       "eyebrow": "Sana uygun metinler",
@@ -3087,7 +3070,11 @@
       "body": "Metinler ve desteler bir kez indikten sonra internetsiz de görünür.",
       "retry": "Tekrar dene"
     },
-    "empty": "Şimdilik gösterecek bir şey yok. Bir kelime ya da metin ekleyince burası dolmaya başlar."
+    "empty": "Şimdilik gösterecek bir şey yok. Bir kelime ya da metin ekleyince burası dolmaya başlar.",
+    "emptyTitle": "Burası yakında dolacak",
+    "decks": {
+      "known": "%{{pct}} biliyorsun"
+    }
   },
   "progressGlance": {
     "title": "İlerleme",
@@ -3385,8 +3372,8 @@
       "hard": "Zor"
     },
     "meta": "{{level}} · {{topic}} · {{minutes}} dk",
-    "finished": "Okundu",
-    "started": "Yarım kaldı",
+    "finished": "Bitti",
+    "started": "Başladın",
     "offlineReady": "İnternetsiz okunur",
     "openFailed": "Metin açılamadı. Bağlantını kontrol edip yeniden dene.",
     "noMatch": "Bu süzgeçlere uyan metin yok.",
@@ -3395,7 +3382,7 @@
     "loading": "Kitaplık indiriliyor…",
     "emptyTitle": "Kitaplık henüz boş",
     "emptyOffline": "Kitaplığı indirmek için bir kez internete bağlan. Sonra internetsiz de okursun.",
-    "emptyNoBackend": "Kitaplık şu an yüklenemiyor. İnternet gelince yüklenecek.",
+    "emptyNoBackend": "Kitaplık bu uygulamada şu an kapalı. Kendi metinlerini yapıştırıp okuyabilirsin.",
     "emptySoon": "Yeni metinler hazırlanıyor; kısa süre sonra burada olacak.",
     "emptyFailed": "Kitaplık indirilemedi.",
     "retry": "Yeniden dene",
@@ -3419,7 +3406,13 @@
       "games": "Oyun",
       "politics": "Toplum ve yönetim",
       "law": "Hukuk"
-    }
+    },
+    "title": "Kitaplık",
+    "search": "Kitaplıkta ara",
+    "searchPlaceholder": "Başlık ya da konu ara",
+    "allLevels": "Tüm seviyeler",
+    "allTopics": "Tüm konular",
+    "noMatchQuery": "“{{query}}” ile eşleşen metin yok. Başka bir kelime dene."
   },
   "article": {
     "pageTitle": "Bağlantıdan makale",
@@ -3567,7 +3560,7 @@
       "known": "Biliyorsun ya da öğrendin: işaret yok",
       "title": "Renklerin anlamı",
       "close": "Renk açıklamasını kapat",
-      "later": "Bunu istediğin zaman ⚙ Okuma ayarlarında da görebilirsin."
+      "later": "Bunu istediğin zaman Okuma ayarlarında da görebilirsin."
     },
     "finished": {
       "cta": "Bitirdim",
@@ -3577,9 +3570,11 @@
     "summary": {
       "line_one": "Bu metinde {{count}} yeni kelime gördün · {{added}}'{{suffix}} ekledin",
       "line_other": "Bu metinde {{count}} yeni kelime gördün · {{added}}'{{suffix}} ekledin",
-      "cta": "Bu metindeki yeni kelimeler",
+      "cta": "Yeni kelimeleri ekle",
       "lineNone_one": "Bu metinde {{count}} yeni kelime gördün · henüz eklemedin",
-      "lineNone_other": "Bu metinde {{count}} yeni kelime gördün · henüz eklemedin"
+      "lineNone_other": "Bu metinde {{count}} yeni kelime gördün · henüz eklemedin",
+      "eyebrow": "Metnin sonu",
+      "study": "Bunları çalış"
     },
     "newWords": {
       "title": "Bu metindeki yeni kelimeler",
@@ -3605,26 +3600,27 @@
       "listen": "Dinle",
       "extendBefore": "← Öncekiyle",
       "extendAfter": "Sonrakiyle →",
-      "guessHint": "Önce cümleye bak ve anlamını tahmin et. Tahmin etmeye çalışmak, doğrudan bakmaktan daha iyi akılda kalır.",
+      "guessHint": "Önce cümleye bak ve anlamını tahmin et. Tahmin etmek, doğrudan bakmaktan daha iyi akılda kalır.",
       "showTranslation": "Cümlenin Türkçesini göster",
       "reveal": "Anlamı göster",
       "loading": "Anlam aranıyor…",
       "meanings": "Anlamlar",
       "fromOnline": "Anlam ortak sözlükten geldi.",
       "inCards": "Bu kelime kartlarında var.",
-      "addCard": "Karta ekle",
+      "addCard": "Kelimelerime ekle",
       "added": "“{{term}}” kartlarına eklendi",
       "addFailed": "Kart eklenemedi. Tekrar dene.",
-      "addYourself": "Kartı kendin ekle",
       "none": {
         "offline": "İnternet yok ve bu kelime cihazdaki sözlükte bulunamadı.",
         "signIn": "Bu kelime cihazdaki sözlükte yok. Ortak sözlüğe bakmak için Google ile giriş yap.",
         "notFound": "Bu kelimenin anlamı bulunamadı."
       },
-      "markKnown": "Biliyorum, işaretleme",
+      "markKnown": "Biliyorum",
       "knownMarked": "“{{term}}” bildiğin kelimelere eklendi",
       "knownFailed": "Kaydedilemedi. Tekrar dene.",
-      "listenHere": "Buradan dinle"
+      "listenHere": "Buradan dinle",
+      "ownMeaning": "Türkçe anlamı",
+      "ownMeaningHint": "Anlamını sen yaz; kelime bu cümleyle birlikte eklenir."
     },
     "stage": {
       "new": "Yeni kart",
@@ -3689,18 +3685,16 @@
     "list": {
       "title": "Metinlerim",
       "add": "Metin ekle",
-      "empty": "Henüz metin yok. “Metin ekle”den bir metin yapıştır ya da PDF yükle; okuyucuda açılır.",
+      "empty": "Bir metin yapıştır ya da PDF yükle; okuyucuda kelimeler bildiğine göre işaretlenir.",
       "unread": "Okunmadı",
       "progress": "%{{pct}} okundu",
-      "reading": "Okunuyor %{{pct}}",
       "continue": "Devam et",
       "finished": "Bitti",
       "delete": "“{{title}}” metnini sil",
-      "confirmTitle": "Metin silinsin mi?",
-      "confirmBody": "“{{title}}” bu cihazdan ve hesabından silinir. Bu metinden eklediğin kartlar kalır.",
-      "confirm": "Sil",
-      "deleted": "Metin silindi",
-      "deleteFailed": "Metin silinemedi. Tekrar dene."
+      "deleted": "“{{title}}” silindi",
+      "deleteFailed": "Metin silinemedi. Tekrar dene.",
+      "started": "Başladın",
+      "emptyTitle": "Henüz metnin yok"
     },
     "today": {
       "title": "Bugünün okuması",
@@ -3725,6 +3719,14 @@
       "s": "Küçük",
       "m": "Orta",
       "l": "Büyük"
+    },
+    "loading": "Metin açılıyor",
+    "coverageStory": "Hedef kelimeler dışında hikâyenin %{{pct}}'{{suffix}} biliyorsun",
+    "mark": {
+      "new": "yeni kelime",
+      "learning": "öğrendiğin kelime",
+      "consolidating": "pekişen kelime",
+      "target": "hikâyedeki tekrar kelimen"
     }
   },
   "story": {
@@ -3752,7 +3754,8 @@
       "budget": "Bu ayın hikâye hakkı doldu. Ay başında yeniden açılır; tekrarların her zamanki gibi sürer.",
       "notEnough": "Hikâye için bugün en az 5 tekrar kelimesi gerekir.",
       "generic": "Hikâye şu an hazırlanamadı. Biraz sonra yeniden dene."
-    }
+    },
+    "about": "Tekrar kelimelerinle yazıldı, sonunda 3 soru var"
   },
   "compose": {
     "title": "Kelimelerimle metin oluştur",

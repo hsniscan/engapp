@@ -32,12 +32,12 @@ const errorKey = {
 function Side({ side }: { side: ContrastDraftSide }) {
   return (
     <div className="flex min-w-0 flex-col gap-1 rounded-control bg-surface-sunken px-3 py-2.5">
-      <p lang="en" className="font-serif text-xl font-semibold break-words text-fg">
+      <p lang="en" className="font-serif text-title font-semibold break-words text-fg">
         {side.term}
       </p>
-      <p className="text-[0.9375rem] text-fg">{side.meaning}</p>
+      <p className="text-ui text-fg">{side.meaning}</p>
       {side.sentence && (
-        <p lang="en" className="font-serif text-[0.9375rem] leading-snug text-fg-muted italic">
+        <p lang="en" className="font-serif text-ui text-fg-muted italic">
           {side.sentence}
         </p>
       )}
@@ -68,7 +68,7 @@ export function ContrastEditor({ pair, onAdded, requestDeps = defaultContrastDep
       </div>
     );
   }
-  if (draft === null) return <p className="text-sm text-fg-muted">{t('leech.gone')}</p>;
+  if (draft === null) return <p className="text-meta text-fg-muted">{t('leech.gone')}</p>;
 
   const ask = async () => {
     setAsking(true);
@@ -112,7 +112,7 @@ export function ContrastEditor({ pair, onAdded, requestDeps = defaultContrastDep
         <Side side={draft.b} />
       </div>
       {draft.existing_note_id ? (
-        <p role="status" className="text-[0.9375rem] text-fg-muted">
+        <p role="status" className="text-ui text-fg-muted">
           {t('leech.contrast.existing')}
         </p>
       ) : (
@@ -139,10 +139,10 @@ export function ContrastEditor({ pair, onAdded, requestDeps = defaultContrastDep
                   {asking ? t('leech.contrast.asking') : t('leech.contrast.ask')}
                 </Button>
               )}
-              {!draft.can_ask && <p className="text-sm text-fg-muted">{t('leech.contrast.noLexicon')}</p>}
+              {!draft.can_ask && <p className="text-meta text-fg-muted">{t('leech.contrast.noLexicon')}</p>}
             </div>
           )}
-          <p role="status" aria-live="polite" className="min-h-0 text-sm text-fg-muted empty:hidden">
+          <p role="status" aria-live="polite" className="min-h-0 text-meta text-fg-muted empty:hidden">
             {status}
           </p>
           <Button fullWidth loading={saving} onClick={() => void add()}>

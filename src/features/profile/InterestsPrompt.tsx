@@ -6,7 +6,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getSettings } from '@/data';
 import type { TopicKey } from '@/domain/topics';
-import { Button, cn, Surface, toast } from '@/ui';
+import { HomeNote } from '@/features/home/HomeNote';
+import { Button, toast } from '@/ui';
 import { saveFirstInterests, skipInterests } from './actions';
 import { TopicChips } from './TopicChips';
 
@@ -31,16 +32,30 @@ function PromptCard({ className }: { className?: string }) {
   };
 
   return (
-    <Surface
-      as="section"
-      aria-labelledby="interests-prompt-title"
-      padding="none"
-      className={cn('p-5 sm:p-6', className)}
+    <HomeNote
+      titleId="interests-prompt-title"
+      icon="heart"
+      title={t('profile.promptTitle')}
+      className={className}
+      actions={
+        <>
+          <Button variant="ghost" onClick={() => void skipInterests()} disabled={busy}>
+            {t('profile.promptLater')}
+          </Button>
+          <Button
+            variant="tonal"
+            onClick={() => void save()}
+            disabled={picked.size === 0}
+            loading={busy}
+          >
+            {picked.size > 0
+              ? t('profile.promptSaveCount', { count: picked.size })
+              : t('profile.promptSave')}
+          </Button>
+        </>
+      }
     >
-      <h2 id="interests-prompt-title" className="font-serif text-lg font-semibold text-fg">
-        {t('profile.promptTitle')}
-      </h2>
-      <p className="mt-1 mb-4 text-[0.9375rem] text-fg-muted">{t('profile.promptBody')}</p>
+      <p className="mb-3">{t('profile.promptBody')}</p>
       <TopicChips
         labelledBy="interests-prompt-title"
         compact
@@ -54,16 +69,6 @@ function PromptCard({ className }: { className?: string }) {
           })
         }
       />
-      <div className="mt-5 flex flex-wrap justify-end gap-2">
-        <Button variant="ghost" onClick={() => void skipInterests()} disabled={busy}>
-          {t('profile.promptLater')}
-        </Button>
-        <Button onClick={() => void save()} disabled={picked.size === 0} loading={busy}>
-          {picked.size > 0
-            ? t('profile.promptSaveCount', { count: picked.size })
-            : t('profile.promptSave')}
-        </Button>
-      </div>
-    </Surface>
+    </HomeNote>
   );
 }

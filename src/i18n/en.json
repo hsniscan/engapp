@@ -102,7 +102,7 @@
     "aboutMinutes_one": "about {{count}} min",
     "aboutMinutes_other": "about {{count}} min",
     "continue": "Continue",
-    "start": "Start",
+    "start": "Start studying",
     "goTo": {
       "word": "Go to Word study ({{count}})",
       "production": "Go to Production ({{count}})",
@@ -143,26 +143,11 @@
     "moreAheadBody_one": "{{count}} card · a lighter start tomorrow",
     "moreAheadBody_other": "{{count}} cards · a lighter start tomorrow",
     "goalsTitle": "Your goals",
-    "goalsEditLabel": "Edit goals",
-    "edit": "Edit",
-    "minUnit": "min",
-    "goalToday": "Today",
     "goalTodayDone": "Today done",
-    "goalWeek": "This week",
-    "goalMonth": "New · this month",
-    "goalNotSet": "no goal set",
     "goalSetDay": "Set a daily goal",
     "goalPreset_one": "{{count}} min",
     "goalPreset_other": "{{count}} min",
     "goalSetFailed": "The goal was not saved; try again.",
-    "levelEstimate": "Level estimate: {{level}}",
-    "levelUnmeasured": "Level not measured yet",
-    "levelTarget": "Goal",
-    "levelPathLabel": "Level path: now {{level}}, next goal {{target}}",
-    "levelPathReached": "Level path: now {{level}}",
-    "levelNow": "{{level}} · now",
-    "levelGoal": "{{level}} · goal",
-    "levelTest": "Measure your level · 5-minute test",
     "wordsTitle": "Your words",
     "details": "Details",
     "learnedLabel": "Words you learned",
@@ -172,22 +157,12 @@
     "learnedWeek_other": "This week +{{count}}",
     "learnedActive_one": "Active {{count}}",
     "learnedActive_other": "Active {{count}}",
-    "stage": {
-      "learning": "Learning",
-      "consolidating": "Consolidating",
-      "learned": "Learned",
-      "mastered": "Lasting"
-    },
-    "stageCount": "{{stage}} {{count}}",
-    "stagesLabel": "Stages: {{list}}",
     "learnedRule": "A word counts as learned once you recall it correctly on at least 3 different days and it will stay for at least 2 weeks.",
     "recallLabel": "Recall · last 30 days",
     "recallGoal": "your goal {{goal}}",
     "ruleTitle": "The learned-word rule changed",
     "ruleBody": "A word now counts as learned once you know it on three separate days. None of your words were deleted; the ones in Consolidating will get there with reviews over a few weeks.",
     "shortcuts": "Shortcuts",
-    "hardTitle_one": "Hard words · {{count}} word",
-    "hardTitle_other": "Hard words · {{count}} words",
     "hardBody": "Quick practice, doesn't change the schedule",
     "reportTitle": "Last week's report is ready",
     "reportBody_one": "You studied {{count}} day, {{fresh}} new words",
@@ -198,8 +173,6 @@
     "deckFreq_one": "The {{count}} most common word",
     "deckFreq_other": "The {{count}} most common words",
     "deckLevelVerbs": "{{level}} verbs",
-    "deckBadgeFreq": "Most common",
-    "deckBadgeLevel": "For your level",
     "deckHave": "{{have}} / {{size}} yours",
     "deckReady": "Ready-made deck",
     "typeDeferred": "postponed",
@@ -212,7 +185,15 @@
     "waitingTitle_one": "{{count}} card in {{time}}",
     "waitingTitle_other": "{{count}} cards in {{time}}",
     "waitingBody": "Learning steps, ready at {{clock}}. Today updates by itself then.",
-    "waitingBodyNoClock": "The learning steps are ready soon."
+    "waitingBodyNoClock": "The learning steps are ready soon.",
+    "ringLeft": "left",
+    "moreAll": "All",
+    "bankTitle": "Word bank",
+    "bankBody": "Ready-made words for your level",
+    "goalsBody": "Your daily goal",
+    "goalProgress": "{{value}}/{{target}} min",
+    "goalSetBody": "A few minutes a day is enough. You can change it any time.",
+    "hardTitle": "Hard words"
   },
   "addSheet": {
     "title": "What would you like to add?",
@@ -320,11 +301,15 @@
       "continueMode": "Continue",
       "time": "Time",
       "retention": "Recall",
-      "ratings": "Answer breakdown",
+      "ratings": "Your answers",
       "streakExtended": "Today was added to your streak.",
       "streakKept": "Today's reviews are saved.",
       "waiting_one": "{{count}} card comes back in {{time}} (learning step).",
-      "waiting_other": "{{count}} cards come back in {{time}} (learning steps)."
+      "waiting_other": "{{count}} cards come back in {{time}} (learning steps).",
+      "finish": "Finish",
+      "stages": "Stage changes",
+      "stagesMore_one": "+{{count}} more word",
+      "stagesMore_other": "+{{count}} more words"
     },
     "moreStudy": "Study a bit more",
     "aheadBadge": "Tomorrow's cards",
@@ -430,7 +415,9 @@
       "resume_other": "Go on ({{count}} cards ready)"
     },
     "learnedToday_one": "{{count}} word reached Learned today.",
-    "learnedToday_other": "{{count}} words reached Learned today."
+    "learnedToday_other": "{{count}} words reached Learned today.",
+    "example": "Example",
+    "meaning": "Meaning"
   },
   "examples": {
     "title": "Example sentences",
@@ -3024,12 +3011,8 @@
     "loading": "Preparing Discover",
     "continue": {
       "eyebrow": "Continue",
-      "pct": "{{pct}}% read",
       "start": "Opened, not started yet",
       "action": "Continue reading"
-    },
-    "story": {
-      "eyebrow": "Today's story"
     },
     "suggestions": {
       "eyebrow": "Texts for you",
@@ -3087,7 +3070,11 @@
       "body": "Once downloaded, texts and decks show offline too.",
       "retry": "Try again"
     },
-    "empty": "Nothing to show yet. Add a word or a text and this page starts to fill."
+    "empty": "Nothing to show yet. Add a word or a text and this page starts to fill.",
+    "emptyTitle": "This fills up soon",
+    "decks": {
+      "known": "{{pct}}% known"
+    }
   },
   "progressGlance": {
     "title": "Progress",
@@ -3385,8 +3372,8 @@
       "hard": "Hard"
     },
     "meta": "{{level}} · {{topic}} · {{minutes}} min",
-    "finished": "Read",
-    "started": "In progress",
+    "finished": "Finished",
+    "started": "Started",
     "offlineReady": "Reads offline",
     "openFailed": "The text could not be opened. Check your connection and try again.",
     "noMatch": "No text matches these filters.",
@@ -3395,7 +3382,7 @@
     "loading": "Downloading the library…",
     "emptyTitle": "The library is empty for now",
     "emptyOffline": "Connect to the internet once to download the library. After that it reads offline.",
-    "emptyNoBackend": "The library cannot load right now. It will load when you are online.",
+    "emptyNoBackend": "The library is turned off in this app for now. You can still paste your own texts and read them.",
     "emptySoon": "New texts are being prepared; they will be here soon.",
     "emptyFailed": "The library could not be downloaded.",
     "retry": "Try again",
@@ -3419,7 +3406,13 @@
       "games": "Games",
       "politics": "Society and government",
       "law": "Law"
-    }
+    },
+    "title": "Library",
+    "search": "Search the library",
+    "searchPlaceholder": "Search a title or topic",
+    "allLevels": "All levels",
+    "allTopics": "All topics",
+    "noMatchQuery": "No text matches \"{{query}}\". Try another word."
   },
   "article": {
     "pageTitle": "Article from a link",
@@ -3567,7 +3560,7 @@
       "known": "Known or learned: no mark",
       "title": "What the colours mean",
       "close": "Close the colour key",
-      "later": "You can find this in ⚙ Reading settings at any time."
+      "later": "You can find this in Reading settings at any time."
     },
     "finished": {
       "cta": "I finished",
@@ -3577,9 +3570,11 @@
     "summary": {
       "line_one": "You met {{count}} new word in this text · you added {{added}}",
       "line_other": "You met {{count}} new words in this text · you added {{added}}",
-      "cta": "New words in this text",
+      "cta": "Add the new words",
       "lineNone_one": "You met {{count}} new word in this text · none added yet",
-      "lineNone_other": "You met {{count}} new words in this text · none added yet"
+      "lineNone_other": "You met {{count}} new words in this text · none added yet",
+      "eyebrow": "End of the text",
+      "study": "Study them"
     },
     "newWords": {
       "title": "New words in this text",
@@ -3605,26 +3600,27 @@
       "listen": "Listen",
       "extendBefore": "← With previous",
       "extendAfter": "With next →",
-      "guessHint": "Look at the sentence and guess the meaning first. Trying to guess sticks better than looking it up.",
+      "guessHint": "Look at the sentence and guess the meaning first. Guessing sticks better than looking it up.",
       "showTranslation": "Show the sentence in Turkish",
       "reveal": "Show the meaning",
       "loading": "Looking up the meaning…",
       "meanings": "Meanings",
       "fromOnline": "The meaning came from the shared dictionary.",
       "inCards": "This word is in your cards.",
-      "addCard": "Add a card",
+      "addCard": "Add to my words",
       "added": "\"{{term}}\" added to your cards",
       "addFailed": "The card could not be added. Try again.",
-      "addYourself": "Add the card yourself",
       "none": {
         "offline": "You are offline and this word is not in the dictionary on this device.",
         "signIn": "This word is not in the dictionary on this device. Sign in with Google to look it up in the shared dictionary.",
         "notFound": "No meaning was found for this word."
       },
-      "markKnown": "I know it, don't mark it",
+      "markKnown": "I know it",
       "knownMarked": "\"{{term}}\" added to the words you know",
       "knownFailed": "Could not be saved. Try again.",
-      "listenHere": "Listen from here"
+      "listenHere": "Listen from here",
+      "ownMeaning": "Turkish meaning",
+      "ownMeaningHint": "Write the meaning yourself; the word is added with this sentence."
     },
     "stage": {
       "new": "New card",
@@ -3689,18 +3685,16 @@
     "list": {
       "title": "My texts",
       "add": "Add a text",
-      "empty": "No texts yet. Paste a text or upload a PDF and choose \"Open in reader\".",
+      "empty": "Paste a text or upload a PDF; the reader marks its words by what you know.",
       "unread": "Not read",
       "progress": "{{pct}}% read",
-      "reading": "Reading {{pct}}%",
       "continue": "Continue",
       "finished": "Finished",
       "delete": "Delete \"{{title}}\"",
-      "confirmTitle": "Delete this text?",
-      "confirmBody": "\"{{title}}\" is deleted from this device and your account. Cards you added from it stay.",
-      "confirm": "Delete",
-      "deleted": "Text deleted",
-      "deleteFailed": "The text could not be deleted. Try again."
+      "deleted": "\"{{title}}\" deleted",
+      "deleteFailed": "The text could not be deleted. Try again.",
+      "started": "Started",
+      "emptyTitle": "No texts yet"
     },
     "today": {
       "title": "Today's reading",
@@ -3725,6 +3719,14 @@
       "s": "Small",
       "m": "Medium",
       "l": "Large"
+    },
+    "loading": "Opening the text",
+    "coverageStory": "Apart from the target words, you know {{pct}}% of this story",
+    "mark": {
+      "new": "new word",
+      "learning": "word you are learning",
+      "consolidating": "word settling in",
+      "target": "one of your review words in the story"
     }
   },
   "story": {
@@ -3752,7 +3754,8 @@
       "budget": "This month's stories are used up. They return at the start of next month; your reviews go on as usual.",
       "notEnough": "A story needs at least 5 review words today.",
       "generic": "The story could not be written right now. Try again a little later."
-    }
+    },
+    "about": "Written with your review words, with 3 questions at the end"
   },
   "compose": {
     "title": "Make a text with my words",

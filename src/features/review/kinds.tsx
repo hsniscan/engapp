@@ -49,10 +49,16 @@ export function RecognitionStudy({
   return frame(
     <RecognitionFront view={view} speech={speech} onFlip={() => onReveal(false)} />,
     <div className="flex flex-col items-center gap-2">
-      <Button ref={showRef} size="lg" fullWidth onClick={(e) => onReveal(e.detail === 0)}>
+      <Button
+        ref={showRef}
+        variant="secondary"
+        size="lg"
+        fullWidth
+        onClick={(e) => onReveal(e.detail === 0)}
+      >
         {t('review.showAnswer')}
       </Button>
-      <p className="text-[0.8125rem] text-fg-muted">
+      <p className="text-meta text-fg-muted">
         <span className="pointer-fine:hidden">{t('study.tapCard')}</span>
         <span className="hidden pointer-fine:inline">{t('study.spaceKey')}</span>
       </p>
