@@ -55,12 +55,4 @@ const LEVEL_STAGE: Record<CefrLevel, UiStage> = {
 /** Swatch colour of a CEFR level (a non-text mark; the level name is always written next to it). */
 export const levelColor = (level: CefrLevel) => stageColor[LEVEL_STAGE[level]];
 
-/** Bar colours (tokens): learned part, part in progress, the empty track. */
-export const BAR = {
-  learned: stageColor.learned,
-  studying: stageColor.learning,
-  faint: stageColor.new,
-  track: 'var(--surface-sunken)',
-  trackOnSoft: 'var(--surface)',
-} as const;
 

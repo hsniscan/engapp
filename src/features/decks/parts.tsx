@@ -2,15 +2,14 @@
 // v0.5.2 "Çam": every colour comes from the design tokens; the stage scale also draws the CEFR
 // ramp (darker = easier level) so one sequential palette serves both (docs/design.md).
 import type { ReactNode } from 'react';
-import { Badge, Chip, cn } from '@/ui';
-import { BAR } from './deckUi';
+import { cn } from '@/ui';
 
 /** A thin horizontal bar of segments (widths in %), on a track. */
 export function SegBar({
   parts,
   label,
   height = 8,
-  track = BAR.track,
+  track = 'var(--surface-sunken)',
   gap = 2,
   className,
 }: {
@@ -38,72 +37,6 @@ export function SegBar({
         ) : null,
       )}
     </div>
-  );
-}
-
-/** Progress of a deck against its full size: learned, then in progress, on a track. */
-export function ProgressBar2({
-  total,
-  first,
-  second,
-  label,
-  height = 8,
-  firstColor = BAR.learned,
-  secondColor = BAR.studying,
-  track,
-}: {
-  total: number;
-  first: number;
-  second: number;
-  label: string;
-  height?: number;
-  firstColor?: string;
-  secondColor?: string;
-  track?: string;
-}) {
-  const w = (n: number) => `${total ? (n / total) * 100 : 0}%`;
-  return (
-    <div
-      role="img"
-      aria-label={label}
-      className="flex gap-0.5 overflow-hidden rounded-full"
-      style={{ height, background: track ?? BAR.track }}
-    >
-      {first > 0 && <span style={{ width: w(first), background: firstColor }} />}
-      {second > 0 && <span style={{ width: w(second), background: secondColor }} />}
-    </div>
-  );
-}
-
-/** A CEFR level as a neutral badge ("B1"). */
-export function LevelPill({ level, className }: { level: string; className?: string }) {
-  return (
-    <Badge tone="neutral" className={cn('tabular shrink-0', className)}>
-      {level}
-    </Badge>
-  );
-}
-
-/**
- * @deprecated use `Chip` from '@/ui' (selected). Kept as a thin adapter for screens not yet
- * rebuilt (the graded library list).
- */
-export function FilterChip({
-  pressed,
-  onClick,
-  children,
-  className,
-}: {
-  pressed: boolean;
-  onClick: () => void;
-  children: ReactNode;
-  tone?: 'ink' | 'accent';
-  className?: string;
-}) {
-  return (
-    <Chip selected={pressed} onClick={onClick} className={className}>
-      {children}
-    </Chip>
   );
 }
 
