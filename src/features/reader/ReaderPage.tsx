@@ -327,10 +327,16 @@ function GradedReader({ text }: { text: ReaderText }) {
 function visibleOffset(tokens: TokenizedText): number | null {
   const els = document.querySelectorAll<HTMLElement>('[data-s]');
   if (els.length === 0) return null;
-  for (const el of els) {
-    const r = el.getBoundingClientRect();
-    if (r.bottom > TOP_BAR) return tokens.sentences[Number(el.dataset.s)]?.start ?? 0;
+  // Sentences are in reading order, so their bottoms only grow: a binary search measures ~15
+  // of them instead of every one above the screen (long texts on slow phones, B19).
+  let lo = 0;
+  let hi = els.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (els[mid]!.getBoundingClientRect().bottom > TOP_BAR) hi = mid;
+    else lo = mid + 1;
   }
+  if (lo < els.length) return tokens.sentences[Number(els[lo]!.dataset.s)]?.start ?? 0;
   return tokens.sentences.at(-1)?.start ?? 0;
 }
 

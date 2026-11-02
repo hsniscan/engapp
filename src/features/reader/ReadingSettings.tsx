@@ -34,7 +34,7 @@ export function DifficultyPicker() {
           label: t(`reader.difficulty.${d}`),
         }))}
       />
-      <p className="text-sm text-fg-muted" aria-live="polite">
+      <p className="text-meta text-fg-muted" aria-live="polite">
         {t('reader.difficulty.hint', { min: pct(band.min), max: pct(band.max) })}
       </p>
     </div>
