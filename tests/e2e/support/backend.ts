@@ -17,7 +17,8 @@
  *  - Example sentences (shipped content since v0.5.2, ADR 0061): `shipExamples()` puts the
  *    sentences of EXAMPLE_SENTENCES into an in-memory lexicon_examples for the lexicon senses
  *    the store knows; rpc lexicon_examples_pull pages that store for the senses the user has
- *    synced. With `autoShipExamples` > 0 every pull ships first, as if the bulk job had
+ *    synced, and rpc lexicon_examples_find answers by sense id (senses added below the cursor).
+ *    With `autoShipExamples` > 0 every pull ships first, as if the bulk job had
  *    already written sentences for every word.
  *
  *  - Mnemonics: /functions/v1/ai-mnemonic runs the real `runMnemonic` (shared table first,
@@ -694,6 +695,11 @@ export class FakeBackend {
         if (this.autoShipExamples > 0) this.shipExamples({ perContext: this.autoShipExamples });
         const page = this.examples.pull(Number(args.p_since ?? 0), Number(args.p_limit ?? 500));
         return this.json(route, 200, { ...page, rows: page.rows.filter((r) => mine.has(r.sense_id)) });
+      }
+      case 'lexicon_examples_find': {
+        if (this.autoShipExamples > 0) this.shipExamples({ perContext: this.autoShipExamples });
+        const ids = Array.isArray(args.p_sense_ids) ? (args.p_sense_ids as string[]) : [];
+        return this.json(route, 200, this.examples.find(ids));
       }
       case 'is_app_admin':
         return this.json(route, 200, this.imageAdmin);

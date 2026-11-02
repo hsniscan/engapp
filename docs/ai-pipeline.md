@@ -31,14 +31,17 @@ and `ai-image` ("Görsel üret" / "Yeniden üret", 10 a day) were removed at the
   the cached copies.
 - **Sentences** live in `public.lexicon_examples`, written by a service-role bulk job (none
   exists yet; the word bank and the pre-generated audio already read the table). Clients pull
-  the sentences of their own senses with `lexicon_examples_pull` into the Dexie cache;
+  the sentences of their own senses with `lexicon_examples_pull` into the Dexie cache, and
+  ask `lexicon_examples_find` once for a sense added after its sentences were shipped (those
+  rows sit below the pull cursor);
   translations, TTS, card-front rotation and like / skip / edit / reject work on that cache.
   A user can still type an own example sentence in the card's edit form.
 - **Server leftovers on purpose:** the tables and functions `lexicon_examples_insert`,
-  `lexicon_examples_find`, `image_consume`, `image_user_has_sense`, `image_usage` and
+  `image_consume`, `image_user_has_sense`, `image_usage` and
   `image_request_users` are kept (no migration in v0.5.2): a future bulk sentence job can write
   through `lexicon_examples_insert`, and account deletion and the 90-day purge still clean the
-  per-user rows. Nothing calls the other functions any more.
+  per-user rows. `lexicon_examples_find` is now called by the sync engine (see above); nothing
+  calls the image functions any more.
 - Shared sentence helpers (cleaning, duplicate keys, locating a term) moved to
   `_shared/sentences.ts`; the mnemonic, contrast, report and story pipelines use them. The
   context catalogue and level bands stay in `_shared/examples-contracts.ts`.

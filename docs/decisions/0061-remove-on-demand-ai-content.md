@@ -53,7 +53,14 @@ Before this change:
    job can write through `lexicon_examples_insert`; account deletion and the 90-day purge still
    clean the per-user rows (`purge_usage_counters` reads `image_usage`); and this package could
    not run the pgTAP suite locally, so dropping objects other SQL refers to was not judged safe.
-   Once the functions are deleted nothing calls the rest; a later migration may drop them.
+   Once the functions are deleted nothing calls the image functions; a later migration may
+   drop them.
+7. **Senses added later still get their sentences.** `lexicon_examples_pull` moves a cursor by
+   `server_seq`, so sentences shipped before the user added a word sat below it; the removed
+   device queue used to fill that gap by generating. The sync engine now asks
+   `lexicon_examples_find` (it already existed, granted to signed-in users) once for each
+   sense with no cached sentence and remembers the senses that had none in meta
+   `lexicon_examples_checked` (`src/sync/engine.ts`, test in `src/sync/examples.test.ts`).
 6. **Dead code:** every export the review listed was checked by a reference scan over `src/`,
    `tests/`, `scripts/`, `supabase/` and removed when it had no reference (ImportGate,
    useStudyModeCounts, listNotes, …, see the commit); also the unused barrels

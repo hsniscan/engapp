@@ -374,3 +374,30 @@ export async function pullLexiconExamples(
   }
   return { rows, invalid, next_seq: env.next_seq, has_more: env.has_more };
 }
+
+/**
+ * Active example sentences of the given lexicon senses (lexicon_examples_find, ≤ 200 ids).
+ * Fills senses the user added after their sentences were shipped: those rows sit below the
+ * device's lexicon_examples_cursor, so lexicon_examples_pull never returns them (decision
+ * 0061). null when the backend does not have the function.
+ */
+export async function findLexiconExamples(
+  senseIds: string[],
+  c?: SupabaseClient | null,
+): Promise<LexiconExample[] | null> {
+  if (senseIds.length === 0) return [];
+  if (senseIds.length > 200) throw new RangeError('at most 200 ids');
+  let raw: unknown[];
+  try {
+    raw = await rpc(await client(c), 'lexicon_examples_find', { p_sense_ids: senseIds, p_band: null }, z.array(z.unknown()));
+  } catch (e) {
+    if (isMissingFunction(e)) return null;
+    throw e;
+  }
+  const rows: LexiconExample[] = [];
+  for (const r of raw) {
+    const p = lexiconExampleSchema.safeParse(r);
+    if (p.success) rows.push(p.data);
+  }
+  return rows;
+}

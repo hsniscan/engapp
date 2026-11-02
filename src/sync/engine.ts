@@ -8,7 +8,8 @@
 //   lexicon: lexicon_pull from meta.lexicon_cursor, then lexicon_get for referenced senses
 //         missing from lexicon_cache.
 //   examples: lexicon_examples_pull from meta.lexicon_examples_cursor (shared example
-//         sentences of the user's lexicon senses). content_feedback / user_content wait in
+//         sentences of the user's lexicon senses), then lexicon_examples_find for senses
+//         with no cached sentence (added after their sentences were shipped). content_feedback / user_content wait in
 //         the outbox until that function has answered once (the server has the tables).
 //   practice_logs wait in the outbox until a pull has been answered by sync_pull_v3 (the
 //         server has the table): a client deployed before the migration does not burn the
@@ -55,6 +56,7 @@ import {
   pullChanges,
   pullLexicon,
   pullLexiconExamples,
+  findLexiconExamples,
   pushBatch,
   SyncApiError,
   type PulledRow,
@@ -64,7 +66,7 @@ import {
   type LexiconPullResult,
   type LexiconExamplesPullResult,
 } from './api';
-import type { LexiconSense } from '@/domain/types';
+import type { LexiconExample, LexiconSense } from '@/domain/types';
 
 export const SYNC_INTERVAL_MS = 60_000;
 /** Debounce between a local change and the push it triggers. */
@@ -84,6 +86,8 @@ export interface SyncTransport {
   /** Shared example sentences (İP5). null: the backend does not have them yet. Optional so
    *  transports without examples (older tests) keep working: they count as "not yet". */
   pullLexiconExamples?(since: number, limit?: number): Promise<LexiconExamplesPullResult | null>;
+  /** Active example sentences of these senses (≤ 200); null: the backend has no such call. */
+  findLexiconExamples?(senseIds: Id[]): Promise<LexiconExample[] | null>;
   /**
    * Names in the server's sync table registry (null: the backend has no registry yet).
    * Absent on transports that predate it: they are assumed to store every table.
@@ -116,6 +120,7 @@ export const supabaseTransport: SyncTransport = {
   pullLexicon: (since, limit) => pullLexicon(since, limit),
   getLexiconSenses: (ids) => getLexiconSenses(ids),
   pullLexiconExamples: (since, limit) => pullLexiconExamples(since, limit),
+  findLexiconExamples: (ids) => findLexiconExamples(ids),
   listSyncTables: () => listSyncTables(),
 };
 
@@ -400,6 +405,38 @@ async function pullExamplesCache(t: SyncTransport): Promise<void> {
   }
 }
 
+/** Senses already asked by fillNewSenseExamples that had no sentences (meta, device-local). */
+export const EXAMPLES_CHECKED_KEY = 'lexicon_examples_checked';
+const FIND_CHUNK = 200;
+
+/**
+ * Sentences of senses the user added after those sentences were shipped. Their rows sit
+ * below lexicon_examples_cursor, so the pull above never returns them (decision 0061: there
+ * is no on-demand generation to fill the gap any more). Asks lexicon_examples_find once per
+ * sense that has no cached sentence; a sense that had none is remembered, since sentences
+ * shipped for it later arrive through the cursor. The cursor is not moved.
+ */
+async function fillNewSenseExamples(t: SyncTransport): Promise<void> {
+  if (!t.findLexiconExamples || !(await getMeta<boolean>(META.serverExamples))) return;
+  const live = await db.senses.filter((s) => !s.deleted_at && !!s.lexicon_sense_id).toArray();
+  const checked = new Set((await getMeta<string[]>(EXAMPLES_CHECKED_KEY)) ?? []);
+  const wanted = [...new Set(live.map((s) => s.lexicon_sense_id as Id))].filter((id) => !checked.has(id));
+  if (wanted.length === 0) return;
+  const cached = new Set(
+    (await db.lexicon_examples.where('sense_id').anyOf(wanted).toArray()).map((e) => e.sense_id),
+  );
+  const missing = wanted.filter((id) => !cached.has(id));
+  for (let i = 0; i < missing.length; i += FIND_CHUNK) {
+    const ids = missing.slice(i, i + FIND_CHUNK);
+    const rows = await t.findLexiconExamples(ids);
+    if (rows === null) return;
+    await applyLexiconExamples(rows);
+    const found = new Set(rows.map((r) => r.sense_id));
+    for (const id of ids) if (!found.has(id)) checked.add(id);
+    await db.transaction('rw', db.meta, () => setMeta(EXAMPLES_CHECKED_KEY, [...checked]));
+  }
+}
+
 /**
  * One complete sync round for the linked account. Exported for tests and for the account
  * linking flow; the app uses the SyncEngine below (locking, triggers, status).
@@ -415,6 +452,7 @@ export async function runSync(t: SyncTransport, opts: RunOptions = {}): Promise<
   }
   try {
     await pullExamplesCache(t);
+    await fillNewSenseExamples(t);
   } catch (e) {
     // Example sentences are extras; user data is already in sync.
     void logError(e, 'sync.examples');
@@ -535,6 +573,9 @@ export class SyncEngine {
       getLexiconSenses: async (ids) => (await check(), t.getLexiconSenses(ids)),
       ...(t.pullLexiconExamples
         ? { pullLexiconExamples: async (since: number, limit?: number) => (await check(), t.pullLexiconExamples!(since, limit)) }
+        : {}),
+      ...(t.findLexiconExamples
+        ? { findLexiconExamples: async (ids: Id[]) => (await check(), t.findLexiconExamples!(ids)) }
         : {}),
       ...(t.listSyncTables
         ? { listSyncTables: async () => (await check(), t.listSyncTables!()) }

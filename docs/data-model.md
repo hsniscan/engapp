@@ -255,7 +255,8 @@ with its meta keys `examples_since`, `examples_backfill` and `example_calls:<day
 Settings: `example_tr_visible` (null/false: the translation of an example sentence shows on
 tap) and `example_contexts` (2–4 context keys; null: `daily`, `conversation`, `work`,
 `formal`; the contexts a card's front rotates through). Meta: `lexicon_examples_cursor`,
-`server_examples` (the server has the content tables).
+`server_examples` (the server has the content tables), `lexicon_examples_checked` (lexicon
+senses `lexicon_examples_find` had no sentence for; not asked again).
 
 `getCardView` adds `sentence`: the source sentence and the non-skipped example sentences of
 the selected contexts take turns (index `card.reps`), so the front of a recognition card

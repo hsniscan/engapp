@@ -2011,7 +2011,8 @@
     "overrideAuto": "Automatic ({{level}})",
     "overrideAutoUnknown": "Automatic",
     "overrideHint": "A level you choose is visible only to you and syncs between your devices.",
-    "overrideFailed": "The level could not be saved. Try again."
+    "overrideFailed": "The level could not be saved. Try again.",
+    "correction_reason": "{{list}}: {{from}} → {{to}} for Turkish learners (AI: {{reason}})"
   },
   "sources": {
     "title": "Sources",

@@ -48,4 +48,10 @@ export class MemoryExampleStore {
       has_more: all.length > limit,
     };
   }
+
+  /** Active rows of these senses, whatever the cursor (lexicon_examples_find). */
+  find(senseIds: string[]): LexiconExampleRow[] {
+    const ids = new Set(senseIds.slice(0, 200));
+    return this.rows.filter((r) => ids.has(r.sense_id) && r.status === 'active').map(({ seq: _s, ...r }) => structuredClone(r));
+  }
 }
