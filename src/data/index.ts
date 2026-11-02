@@ -194,7 +194,7 @@ export {
   type AnkiImportProgress,
   type AnkiImportResult,
 } from './anki';
-export { getKnownTermKeys, listKnownTerms, markKnown, unmarkKnown } from './knownTerms';
+export { getKnownTermKeys, listKnownTerms, markKnown, markManyKnown, unmarkKnown, unmarkKnownKeys } from './knownTerms';
 export {
   addFromWordBank,
   applyWordBankPage,

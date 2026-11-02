@@ -2054,7 +2054,7 @@
       "octanove": "Kelime, ileri seviye Octanove C1/C2 listesinde bu seviyede.",
       "ai": "Listelerde yok. Seviyeyi yapay zekâ tahmin etti; kelimenin ne kadar sık kullanıldığına göre sınırlandı.",
       "freq": "Listelerde yok. Seviye, kelimenin İngilizcede ne kadar sık geçtiğinden hesaplandı.",
-      "words": "Listelerde yok. İfadedeki en zor kelimenin seviyesi.",
+      "words": "Listelerde yok. Deyim ve öbek fiiller, içindeki en zor kelimenin bir üst seviyesinde (en az B1) sayılır.",
       "user": "Bu seviyeyi sen seçtin; yalnızca sende geçerli."
     },
     "correction": "{{list}}: {{from}} → Türk öğrenci için {{to}}",
@@ -2870,7 +2870,10 @@
     "retry": "Tekrar dene",
     "credit": "Kelime listeleri: CEFR-J Wordlist 1.5 (© Tono Laboratuvarı, TUFS) ve Octanove Vocabulary Profile C1/C2 (Octanove Labs, CC BY-SA 4.0). Anlamlar ve örnek cümleler yapay zekâyla bir kez üretildi.",
     "creditLink": "Kaynaklar",
-    "entryLink": "Kelime Bankası'nı aç"
+    "entryLink": "Kelime Bankası'nı aç",
+    "markKnown": "Biliyorum",
+    "markKnownLabel": "“{{term}}” kelimesini biliyorum",
+    "knownMarked": "{{count}} kelime Bildiğim kelimeler'e eklendi"
   },
   "discover": {
     "title": "Keşfet",
@@ -3218,7 +3221,9 @@
       "select": "{{term}} seç",
       "selectedBody": "Tüm kelimelerim'e eklenecek",
       "showing": "{{shown}} / {{total}} gösteriliyor",
-      "quick": "Seviyenden karışık {{count}} kelime"
+      "quick": "Seviyenden karışık {{count}} kelime",
+      "downloading": "Kelime Bankası iniyor… şimdiye kadar {{count}} kelime",
+      "partial": "Kelime Bankası yarım kaldı ({{count}} kelime). Bağlantı gelince tamamlayabilirsin."
     },
     "start": "Başla"
   },

@@ -2054,7 +2054,7 @@
       "octanove": "The word has this level in the advanced Octanove C1/C2 list.",
       "ai": "Not in the lists. The AI estimated the level, bounded by how common the word is.",
       "freq": "Not in the lists. The level comes from how common the word is in English.",
-      "words": "Not in the lists. The level of the hardest word in the expression.",
+      "words": "Not in the lists. Idioms and phrasal verbs count one level above their hardest word (at least B1).",
       "user": "You chose this level; it applies only to you."
     },
     "correction": "{{list}}: {{from}} → {{to}} for Turkish learners",
@@ -2870,7 +2870,10 @@
     "retry": "Try again",
     "credit": "Word lists: CEFR-J Wordlist 1.5 (© Tono Laboratory, TUFS) and Octanove Vocabulary Profile C1/C2 (Octanove Labs, CC BY-SA 4.0). Meanings and example sentences were generated once with AI.",
     "creditLink": "Sources",
-    "entryLink": "Open the word bank"
+    "entryLink": "Open the word bank",
+    "markKnown": "I know it",
+    "markKnownLabel": "I know “{{term}}”",
+    "knownMarked": "{{count}} words added to Known words"
   },
   "discover": {
     "title": "Discover",
@@ -3218,7 +3221,9 @@
       "select": "Pick {{term}}",
       "selectedBody": "Will be added to All my words",
       "showing": "Showing {{shown}} / {{total}}",
-      "quick": "A mix of {{count}} words from your level"
+      "quick": "A mix of {{count}} words from your level",
+      "downloading": "Downloading the Word bank… {{count}} words so far",
+      "partial": "The Word bank download stopped part-way ({{count}} words). Finish it when you are online."
     },
     "start": "Start"
   },

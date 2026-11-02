@@ -11,27 +11,28 @@ wordfreq) with the model's `cefr_guess`; "known" words are simulated notes from
 
 | Text | Level | Candidates | Pre-selected | At level | +1 | Lower | Above +1 | Known selected | Senin için / Kolay / Biliyorsun / Üstünde |
 | --- | --- | --: | --: | --: | --: | --: | --: | --: | --- |
-| 1-city-heat | B1 | 14 | 7 | 57 % | 0 % | 43 % | 0 | 0 | 12 / 0 / 1 / 1 |
+| 1-city-heat | B1 | 14 | 5 | 60 % | 0 % | 40 % | 0 | 0 | 10 / 1 / 1 / 2 |
 | 1-city-heat | B2 | 12 | 11 | 64 % | 9 % | 27 % | 0 | 0 | 11 / 0 / 1 / 0 |
-| 2-hybrid-work | B1 | 12 | 8 | 100 % | 0 % | 0 % | 0 | 0 | 9 / 0 / 1 / 2 |
-| 2-hybrid-work | B2 | 21 | 18 | 56 % | 6 % | 39 % | 0 | 0 | 20 / 0 / 1 / 0 |
-| 3-sleep-science | B1 | 19 | 6 | 100 % | 0 % | 0 % | 0 | 0 | 18 / 0 / 1 / 0 |
-| 3-sleep-science | B2 | 26 | 25 | 64 % | 4 % | 32 % | 0 | 0 | 25 / 0 / 1 / 0 |
-| 4-lighthouse-story | B1 | 11 | 6 | 100 % | 0 % | 0 % | 0 | 0 | 11 / 0 / 0 / 0 |
-| 4-lighthouse-story | B2 | 11 | 9 | 56 % | 0 % | 44 % | 0 | 0 | 10 / 1 / 0 / 0 |
-| 5-word-list | B1 | 30 | 12 | 58 % | 8 % | 33 % | 0 | 0 | 19 / 5 / 3 / 3 |
-| 5-word-list | B2 | 30 | 14 | 57 % | 7 % | 36 % | 0 | 0 | 14 / 11 / 3 / 2 |
-| **all** | **B1** | | **39** | **79 %** | **3 %** | **18 %** | **0** | **0** | |
-| **all** | **B2** | | **77** | **60 %** | **5 %** | **35 %** | **0** | **0** | |
+| 2-hybrid-work | B1 | 12 | 8 | 100 % | 0 % | 0 % | 0 | 0 | 8 / 0 / 1 / 3 |
+| 2-hybrid-work | B2 | 21 | 16 | 56 % | 6 % | 38 % | 0 | 0 | 19 / 1 / 1 / 0 |
+| 3-sleep-science | B1 | 19 | 6 | 100 % | 0 % | 0 % | 0 | 0 | 17 / 0 / 1 / 1 |
+| 3-sleep-science | B2 | 26 | 25 | 64 % | 8 % | 28 % | 0 | 0 | 25 / 0 / 1 / 0 |
+| 4-lighthouse-story | B1 | 11 | 6 | 100 % | 0 % | 0 % | 0 | 0 | 9 / 0 / 0 / 2 |
+| 4-lighthouse-story | B2 | 11 | 7 | 57 % | 0 % | 43 % | 0 | 0 | 9 / 2 / 0 / 0 |
+| 5-word-list | B1 | 30 | 12 | 58 % | 8 % | 33 % | 0 | 0 | 19 / 4 / 3 / 4 |
+| 5-word-list | B2 | 30 | 14 | 57 % | 7 % | 36 % | 0 | 0 | 15 / 10 / 3 / 2 |
+| **all** | **B1** | | **37** | **81 %** | **3 %** | **16 %** | **0** | **0** | |
+| **all** | **B2** | | **73** | **60 %** | **7 %** | **33 %** | **0** | **0** | |
 
 ## Candidates
 
 ### 1-city-heat · B1
 
-- Pre-selected: lack (A2), ancient (A2), convince (B1), encouraging (B1), absorb (B1), playground (A2), rely on (B1*)
-- Senin için, not selected: investment (B2), concrete (B2), considerably (B2), optimism (B2), compensate for (B2*)
+- Pre-selected: lack (A2), ancient (A2), convince (B1), encouraging (B1), absorb (B1)
+- Senin için, not selected: investment (B2), concrete (B2), considerably (B2), optimism (B2), rely on (B2)
+- Kolay: playground (A2)
 - Biliyorsun: adapt (B1)
-- Above the next level: heatwave (C1*)
+- Above the next level: heatwave (C1*), compensate for (C1)
 
 ### 1-city-heat · B2
 
@@ -41,50 +42,53 @@ wordfreq) with the model's `cefr_guess`; "known" words are simulated notes from
 ### 2-hybrid-work · B1
 
 - Pre-selected: productive (B1), allowance (B1), hesitate (B1), emphasise (B1*), fill in (B1*), take part (B1*), come up (B1*), get in touch (B1*)
-- Senin için, not selected: hybrid working (B2)
 - Biliyorsun: commute (B2)
-- Above the next level: isolated (C1), refurbish (C1)
+- Above the next level: hybrid working (C1), isolated (C1), refurbish (C1)
 
 ### 2-hybrid-work · B2
 
-- Pre-selected: review (B2), suit (A2), hybrid working (B2*), cover (A2), appreciate (A2), committed (B2*), circumstances (B2*), delay (B1), isolated (C1), productive (B1), adjustment (B2), allowance (B1), emphasise (B2*), fill in (B2*), take part (B1*), give a clear picture (B2*), come up (B2*), do not hesitate (B2*)
-- Senin için, not selected: refurbish (C1), confidentially (C1*)
+- Pre-selected: review (B2), suit (A2), hybrid working (C1), cover (A2), committed (B2*), circumstances (B2*), delay (B1), productive (B1), adjustment (B2), allowance (B1), emphasise (B2*), fill in (B2*), take part (B1*), give a clear picture (B2*), come up (B2*), do not hesitate (B2*)
+- Senin için, not selected: isolated (C1), refurbish (C1), confidentially (C1*)
+- Kolay: appreciate (A2)
 - Biliyorsun: commute (B2)
 
 ### 3-sleep-science · B1
 
 - Pre-selected: link (B1), essential (B1), recommend (B1), expand (B1), remarkable (B1), vary (B1)
-- Senin için, not selected: store (B2), significantly (B2), crucial (B2), fluid (B2), prey (B2*), evolutionary (B2*), predator (B2*), waste product (B2*), build up (B2*), flush away (B2*), lose one's temper (B2*), immune system (B2*)
+- Senin için, not selected: store (B2), significantly (B2), crucial (B2), fluid (B2), prey (B2*), evolutionary (B2*), predator (B2*), waste product (B2*), build up (B2*), lose one's temper (B2*), immune system (B2*)
 - Biliyorsun: concentrate (A2)
+- Above the next level: flush away (C1)
 
 ### 3-sleep-science · B2
 
-- Pre-selected: store (B2), schedule (A2), essential (B1), recommend (B1), significantly (B2), expand (B1), remarkable (B1), crucial (B2), volunteer (B2), vary (B1), fluid (B2), rhythm (A2), prey (B2*), evolutionary (B2*), predator (B2*), waste product (B2*), build up (B2*), nerve cell (B2*), flush away (C1*), short-term (B2), lose one's temper (B2*), link to (B2*), weight gain (B2*), immune system (B2*), tend to (B1*)
+- Pre-selected: store (B2), schedule (A2), essential (B1), recommend (B1), significantly (B2), expand (B1), remarkable (B1), crucial (B2), volunteer (B2), vary (B1), fluid (B2), rhythm (A2), prey (B2*), evolutionary (B2*), predator (B2*), waste product (B2*), build up (B2*), nerve cell (C1), flush away (C1*), short-term (B2), lose one's temper (B2*), link to (B2*), weight gain (B2*), immune system (B2*), tend to (B2)
 - Biliyorsun: concentrate (A2)
 
 ### 4-lighthouse-story · B1
 
 - Pre-selected: guide (B1), exhausted (B1), reef (B1), drift (B1*), faint (B1), tremble (B1)
-- Senin için, not selected: crack (B2), hammer (B2), sweep across (B2*), break up (B2*), soaked to the skin (B2*)
+- Senin için, not selected: crack (B2), hammer (B2), break up (B2*)
+- Above the next level: sweep across (C1), soaked to the skin (C1)
 
 ### 4-lighthouse-story · B2
 
-- Pre-selected: hammer (B2), exhausted (B1), keeper (B2), stare (B1), reef (B1), drift (B2*), faint (B1), break up (B2*), soaked to the skin (B2*)
-- Senin için, not selected: sweep across (C1*)
-- Kolay: tremble (B1)
+- Pre-selected: hammer (B2), exhausted (B1), keeper (B2), stare (B1), reef (B1), drift (B2*), break up (B2*)
+- Senin için, not selected: sweep across (C1*), soaked to the skin (C1)
+- Kolay: faint (B1), tremble (B1)
 
 ### 5-word-list · B1
 
-- Pre-selected: rely on (B1*), opportunity (A2), though (A2), rarely (B1), suggest (A2), essential (B1), outcome (B2), put off (B1*), eventually (B1), widespread (B1), comfortable (A2), deadline (B1)
-- Senin için, not selected: reluctant (B2), cope with (B2*), tackle (B2), wealthy (B2), scarce (B2*), thrive (B2*), subtle (B2)
-- Kolay: house (A1), often (A1), achieve (A2), give up (A2*), window (A1)
+- Pre-selected: opportunity (A2), though (A2), rarely (B1), suggest (A2), essential (B1), give up (B1), outcome (B2), put off (B1*), eventually (B1), widespread (B1), comfortable (A2), deadline (B1)
+- Senin için, not selected: rely on (B2), reluctant (B2), tackle (B2), wealthy (B2), scarce (B2*), thrive (B2*), subtle (B2)
+- Kolay: house (A1), often (A1), achieve (A2), window (A1)
 - Biliyorsun: borrow (A1), decision (B1), improve (A2)
-- Above the next level: hinder (C2), ubiquitous (C1*), meticulous (C2)
+- Above the next level: cope with (C1), hinder (C2), ubiquitous (C1*), meticulous (C2)
 
 ### 5-word-list · B2
 
-- Pre-selected: reluctant (B2), cope with (B2*), rarely (B1), essential (B1), tackle (B2), wealthy (B2), scarce (B2*), outcome (B2), thrive (B2*), subtle (B2), ubiquitous (C1*), eventually (B1), widespread (B1), deadline (B1)
-- Kolay: house (A1), often (A1), rely on (B1*), achieve (A2), opportunity (A2), though (A2), suggest (A2), give up (A2*), put off (B1*), window (A1), comfortable (A2)
+- Pre-selected: rely on (B2), reluctant (B2), rarely (B1), essential (B1), tackle (B2), wealthy (B2), scarce (B2*), outcome (B2), thrive (B2*), subtle (B2), ubiquitous (C1*), eventually (B1), widespread (B1), deadline (B1)
+- Senin için, not selected: cope with (C1)
+- Kolay: house (A1), often (A1), achieve (A2), opportunity (A2), though (A2), suggest (A2), give up (B1), put off (B1*), window (A1), comfortable (A2)
 - Biliyorsun: borrow (A1), decision (B1), improve (A2)
 - Above the next level: hinder (C2), meticulous (C2)
 
