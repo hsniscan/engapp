@@ -40,10 +40,13 @@ export interface WordStageMix {
   studying: number;
   /** Not answered yet. */
   fresh: number;
+  /** Words per stage (a word without a card counts as new). */
+  byStage: Record<WordStage, number>;
 }
 
 function addStage(mix: WordStageMix, stage: WordStage | null) {
   mix.total++;
+  mix.byStage[stage ?? 'new']++;
   if (stage === 'learned' || stage === 'mastered') mix.learned++;
   else if (stage === 'learning' || stage === 'consolidating') mix.studying++;
   else mix.fresh++;
@@ -52,7 +55,13 @@ function addStage(mix: WordStageMix, stage: WordStage | null) {
 /** loadDeckFacts keeps the whole card rows (typed narrower for the filter evaluator). */
 const fullCards = (f: DeckNoteFacts): readonly Card[] => f.cards as readonly Card[];
 
-const emptyMix = (): WordStageMix => ({ total: 0, learned: 0, studying: 0, fresh: 0 });
+const emptyMix = (): WordStageMix => ({
+  total: 0,
+  learned: 0,
+  studying: 0,
+  fresh: 0,
+  byStage: { new: 0, learning: 0, consolidating: 0, learned: 0, mastered: 0 },
+});
 
 /** Live notes by normalised term with the stage of their main card; known words. */
 export async function getOwnedIndex(now: Millis = Date.now()): Promise<OwnedIndex> {

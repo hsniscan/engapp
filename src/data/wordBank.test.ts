@@ -112,8 +112,8 @@ describe('adding from the bank', () => {
 
   it('creates a guest note with its cards like the manual form; the first sign-in adopts it', async () => {
     const res = await addFromWordBank([{ entry: entryFromRow(row()) }], T);
-    expect(res).toEqual({ added: ['invitation'], unchanged: [], cards: 3 });
     const note = (await db.notes.toArray())[0]!;
+    expect(res).toEqual({ added: ['invitation'], unchanged: [], cards: 3, created: [note.id] });
     expect(note).toMatchObject({
       term: 'invitation',
       term_norm: 'invitation',
@@ -142,10 +142,11 @@ describe('adding from the bank', () => {
     const entry = entryFromRow(row());
     await addFromWordBank([{ entry }], T);
     const again = await addFromWordBank([{ entry }], T + 1);
-    expect(again).toEqual({ added: [], unchanged: ['invitation'], cards: 0 });
+    expect(again).toEqual({ added: [], unchanged: ['invitation'], cards: 0, created: [] });
     // A second meaning of the same word joins the existing note.
     const more = await addFromWordBank([{ entry, senses: [1] }], T + 2);
     expect(more.added).toEqual(['invitation']);
+    expect(more.created).toEqual([]); // a new meaning is not a new word: no undo by delete
     expect(await db.notes.count()).toBe(1);
 
     await markKnown('Monday', 'manual', T);
