@@ -14,7 +14,8 @@
 #                          a private bucket only for backups (recommended); when they are not
 #                          set, R2_BUCKET / R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY (the audio
 #                          bucket) are used under backups/ - safe only because of the encryption.
-#   KEEP_DAILY (14), KEEP_WEEKLY (8), KEEP_PRE_MIGRATION (10)
+#   KEEP_DAILY (14), KEEP_WEEKLY (8), KEEP_PRE_MIGRATION (10): copies kept per kind; on top
+#   of that no copy older than MAX_AGE_DAYS (56) is kept (the privacy policy promises it).
 # Tools: supabase CLI (uses Docker), docker, gpg, aws CLI (preinstalled on GitHub runners).
 # Nothing secret is printed: the URL, keys and passphrase only travel in env and private files.
 set -euo pipefail
@@ -80,16 +81,18 @@ s3() { aws --endpoint-url "$endpoint" "$@"; }
 
 put() { s3 s3 cp --only-show-errors "$work/backup.tar.gz.gpg" "s3://$bucket/backups/$1/$stamp.tar.gz.gpg"; }
 prune() { # prefix keep
-  local keys
+  local keys n oldest k
   keys=$(s3 s3api list-objects-v2 --bucket "$bucket" --prefix "backups/$1/" --query 'Contents[].Key' --output text | tr '\t' '\n' | grep '\.tar\.gz\.gpg$' | sort || true)
-  local n
   n=$(printf '%s\n' "$keys" | grep -c . || true)
-  if [ "$n" -gt "$2" ]; then
-    printf '%s\n' "$keys" | head -n "$((n - $2))" | while read -r k; do
-      s3 s3 rm --only-show-errors "s3://$bucket/$k"
-      echo "deleted old backup $k"
-    done
-  fi
+  # Keys are backups/<kind>/<YYYY-MM-DDTHHMMSSZ>.tar.gz.gpg, so they sort by age.
+  oldest="backups/$1/$(date -u -d "-${MAX_AGE_DAYS:-56} days" +%Y-%m-%dT%H%M%SZ)"
+  { if [ "$n" -gt "$2" ]; then printf '%s\n' "$keys" | head -n "$((n - $2))"; fi
+    printf '%s\n' "$keys" | awk -v o="$oldest" 'NF && $0 < o'
+  } | sort -u | while read -r k; do
+    [ -n "$k" ] || continue
+    s3 s3 rm --only-show-errors "s3://$bucket/$k"
+    echo "deleted old backup $k"
+  done
 }
 
 if [ "$kind" = daily ]; then

@@ -3,7 +3,9 @@
 // surrounding page chrome uses the i18n files (`legal.*`).
 //
 // Inline markup inside a string: [label](/path or https://… or mailto:…) is a link and
-// {{email}} is the contact address (VITE_CONTACT_EMAIL), rendered by LegalText.
+// {{email}} is the contact address (VITE_CONTACT_EMAIL), rendered by LegalText. A block or
+// list item that starts with `[[email]] ` is shown only when that address is set, one that
+// starts with `[[noemail]] ` only when it is not (src/legal/contact.ts contactVariant).
 
 export type LegalBlock = { p: string } | { ul: string[] };
 
@@ -26,4 +28,4 @@ export interface LegalDocument {
 export const CONTROLLER_NAME = 'Hasan Basri İşcan';
 
 /** Version date of the privacy policy texts; bump it with every change to them. */
-export const PRIVACY_UPDATED = '2026-10-26';
+export const PRIVACY_UPDATED = '2026-11-03';

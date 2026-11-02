@@ -86,11 +86,15 @@ export function DeleteAccountPage() {
         <Surface padding="lg" className="flex flex-col gap-4 border border-border">
           {auth.status === 'unavailable' ? (
             <p className="text-fg">
-              <LegalText
-                text={t('legal.deletePage.unavailable', { email: '{{email}}' })}
-                email={email}
-                missingEmail={missing}
-              />
+              {email ? (
+                <LegalText
+                  text={t('legal.deletePage.unavailable', { email: '{{email}}' })}
+                  email={email}
+                  missingEmail={missing}
+                />
+              ) : (
+                t('legal.deletePage.unavailableNoEmail')
+              )}
             </p>
           ) : auth.status === 'loading' ? (
             <div className="flex items-center gap-3 text-fg-muted" role="status">
@@ -143,7 +147,7 @@ export function DeleteAccountPage() {
               )}
             </>
           )}
-          {auth.status !== 'unavailable' && (
+          {auth.status !== 'unavailable' && email && (
             <p className="text-sm text-fg-muted">
               <LegalText
                 text={t('legal.deletePage.emailAlt', { email: '{{email}}' })}
