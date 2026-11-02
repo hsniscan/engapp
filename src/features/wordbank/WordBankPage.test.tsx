@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { addNoteWithSenses, applyWordBankPage, db, markKnown, updateSettings } from '@/data';
 import { resetDb } from '@/test/db';
+import { getToasts } from '@/ui/toast-store';
 import { renderRoute } from '@/test/ui';
 import type { WordBankRow } from '../../../supabase/functions/_shared/wordbank-contract';
 import { WordBankPage, WordBankPanel } from './WordBankPage';
@@ -43,6 +44,11 @@ const rowTerms = () =>
     .map((li) => li.querySelector('[lang="en"]')?.textContent);
 
 const noteTerms = async () => (await db.notes.toArray()).map((n) => n.term).sort();
+const liveTerms = async () =>
+  (await db.notes.toArray())
+    .filter((n) => n.deleted_at === null)
+    .map((n) => n.term)
+    .sort();
 
 const renderBank = () => renderRoute(<WordBankPanel />, { path: '/decks', url: '/decks?tab=bank' });
 
@@ -83,7 +89,7 @@ describe('word bank (Desteler › Kelime Bankası)', () => {
     await user.click(screen.getByRole('switch', { name: 'Bildiklerimi gizle' }));
     await waitFor(() => expect(rowTerms()).toEqual(['garden', 'ticket', 'kitchen', 'village']));
     expect(screen.getByText('Biliyorum')).toBeInTheDocument();
-    expect(screen.getByText('Eklendi')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'village kelimelerinde' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'B1', pressed: false }));
     await waitFor(() => expect(rowTerms()).toEqual(['opinion']));
@@ -110,7 +116,8 @@ describe('word bank (Desteler › Kelime Bankası)', () => {
       'href',
       '/decks/suggested/a2-verb',
     );
-    await user.click(screen.getByRole('button', { name: 'Alfabetik' }));
+    await user.click(screen.getByRole('button', { name: 'Sıralama: Sıklık' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Alfabetik' }));
     await waitFor(() => expect(rowTerms()).toEqual(['avoid', 'suggest']));
   });
 
@@ -126,7 +133,7 @@ describe('word bank (Desteler › Kelime Bankası)', () => {
     await waitFor(() => expect(rowTerms()).toEqual(['garden']));
   });
 
-  it('adds one word from its details and several with the selection bar', async () => {
+  it('adds a word from its row, with Geri al', async () => {
     await applyWordBankPage([
       row('garden', 'A2', 'bahçe', 5),
       row('kitchen', 'A2', 'mutfak', 4.5),
@@ -145,20 +152,13 @@ describe('word bank (Desteler › Kelime Bankası)', () => {
     expect(senses.map((s) => s.source_sentence)).toEqual(['I like the garden here.']);
     await waitFor(() => expect(rowTerms()).toEqual(['kitchen', 'village']));
 
-    await user.click(screen.getByRole('button', { name: 'kitchen seç' }));
-    await user.click(screen.getByRole('button', { name: 'village seç' }));
-    expect(screen.getByRole('button', { name: 'village seç' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    const bar = screen.getByRole('region', { name: 'Seçilen kelimeler' });
-    expect(within(bar).getByText('2 kelime seçildi')).toBeInTheDocument();
-    expect(within(bar).getByText("Tüm kelimelerim'e eklenecek")).toBeInTheDocument();
-    await user.click(within(bar).getByRole('button', { name: 'Seçilenleri ekle' }));
-    await waitFor(async () => expect(await noteTerms()).toEqual(['garden', 'kitchen', 'village']));
-    await waitFor(() =>
-      expect(screen.queryByRole('region', { name: 'Seçilen kelimeler' })).toBeNull(),
-    );
+    // The round plus adds at once; "Geri al" in the toast takes the new word back.
+    await user.click(screen.getByRole('button', { name: 'kitchen ekle' }));
+    await waitFor(async () => expect(await noteTerms()).toEqual(['garden', 'kitchen']));
+    const last = getToasts().at(-1)!;
+    expect(last.title).toBe('kitchen eklendi');
+    last.action!.onClick();
+    await waitFor(async () => expect(await liveTerms()).toEqual(['garden']));
   });
 
   it('quick-adds ten words in the level mix, never above the next level', async () => {

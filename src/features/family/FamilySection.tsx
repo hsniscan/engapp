@@ -90,7 +90,7 @@ function WordFamily({
       {(headingId) => (
         <>
           <div className="flex flex-col gap-0.5">
-            <h3 id={headingId} className="font-serif text-lg font-semibold text-fg">
+            <h3 id={headingId} className="text-ui font-semibold text-fg">
               {t('family.title')}
             </h3>
             {family && <p className="text-sm text-fg-muted">{t('family.hint')}</p>}
@@ -125,7 +125,7 @@ function MorphemeWords({ index, note, words }: { index: MorphologyIndex; note: N
       {(headingId) => (
         <>
           <div className="flex flex-col gap-0.5">
-            <h3 id={headingId} className="font-serif text-lg font-semibold text-fg">
+            <h3 id={headingId} className="text-ui font-semibold text-fg">
               {t('family.yourWords')}
             </h3>
             {explanation && <p className="text-sm text-fg-muted">{explanation}</p>}

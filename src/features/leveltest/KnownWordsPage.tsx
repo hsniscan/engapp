@@ -2,10 +2,11 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { type FormEvent, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { listKnownTerms, logError, markKnown, unmarkKnown } from '@/data';
 import { normalizeTerm } from '@/domain/normalize';
 import type { KnownTerm } from '@/domain/types';
-import { Badge, Button, Card, EmptyState, PageFrame, Skeleton, TextField, toast } from '@/ui';
+import { Button, EmptyState, ListGroup, ListRow, PageFrame, Skeleton, TextField, toast } from '@/ui';
 
 export function KnownWordsPage() {
   const { t } = useTranslation();
@@ -37,15 +38,13 @@ export function KnownWordsPage() {
   const remove = (k: KnownTerm) => {
     unmarkKnown(k.term_norm)
       .then(() =>
-        toast({
+        toast.undo({
           title: t('knownWords.removed', { term: k.term_norm }),
-          action: {
-            label: t('knownWords.undo'),
-            onClick: () =>
-              void markKnown(k.term_norm, k.source === 'auto' ? 'manual' : k.source).catch(
-                (err: unknown) => void logError(err, 'knownWords.undo'),
-              ),
-          },
+          undoLabel: t('ui.undo'),
+          onUndo: () =>
+            void markKnown(k.term_norm, k.source === 'auto' ? 'manual' : k.source).catch(
+              (err: unknown) => void logError(err, 'knownWords.undo'),
+            ),
         }),
       )
       .catch((err: unknown) => {
@@ -54,15 +53,15 @@ export function KnownWordsPage() {
       });
   };
 
+
   return (
     <PageFrame
       width="reading"
+      back={{ to: '/settings/seviye', label: t('knownWords.back') }}
       title={t('knownWords.title')}
       description={t('knownWords.description')}
-      back={{ to: '/settings/seviye', label: t('knownWords.back') }}
     >
       <div className="flex flex-col gap-6">
-
         <form onSubmit={add} className="flex items-end gap-2">
           <TextField
             label={t('knownWords.addLabel')}
@@ -81,60 +80,58 @@ export function KnownWordsPage() {
         </form>
 
         {!words ? (
-          <Card>
+          <div aria-busy="true">
             <Skeleton lines={4} />
-          </Card>
+          </div>
         ) : words.length === 0 ? (
-          <EmptyState icon="check" title={t('knownWords.empty')} />
+          <EmptyState tone="placeholder" compact icon="check" title={t('knownWords.empty')} />
         ) : (
-          <>
-            <div className="flex items-end justify-between gap-3">
-              <TextField
-                label={t('knownWords.search')}
-                hideLabel
-                placeholder={t('knownWords.search')}
-                leadingIcon="search"
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                fieldClassName="flex-1"
-              />
-              <span className="tabular shrink-0 pb-3 text-meta text-fg-muted">
-                {t('knownWords.count', { count: words.length })}
-              </span>
-            </div>
+          <section aria-label={t('knownWords.title')} className="flex flex-col gap-3">
+            <TextField
+              label={t('knownWords.search')}
+              hideLabel
+              placeholder={t('knownWords.search')}
+              leadingIcon="search"
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
             {shown.length === 0 ? (
-              <p className="text-ui text-fg-muted">{t('knownWords.noMatch')}</p>
+              <EmptyState
+                tone="placeholder"
+                compact
+                icon="search"
+                title={t('knownWords.noMatch')}
+              />
             ) : (
-              <ul
-                className="divide-y divide-border rounded-card border border-border bg-surface"
+              <ListGroup
+                label={t('knownWords.count', { count: words.length })}
                 data-testid="known-words"
               >
                 {shown.map((k) => (
-                  <li key={k.id} className="flex min-h-13 items-center gap-3 py-1 pr-2 pl-4">
-                    <span
-                      lang="en"
-                      className="min-w-0 flex-1 truncate font-serif text-lead font-semibold text-fg"
-                    >
-                      {k.term_norm}
-                    </span>
-                    {k.cefr_at_mark && (
-                      <span className="tabular text-meta text-fg-muted">{k.cefr_at_mark}</span>
-                    )}
-                    <Badge>{t(`knownWords.source.${k.source}`)}</Badge>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      aria-label={t('knownWords.removeLabel', { term: k.term_norm })}
-                      onClick={() => remove(k)}
-                    >
-                      {t('knownWords.remove')}
-                    </Button>
-                  </li>
+                  <ListRow
+                    key={k.id}
+                    term
+                    title={k.term_norm}
+                    description={[k.cefr_at_mark, t(`knownWords.source.${k.source}`)]
+                      .filter(Boolean)
+                      .join(' · ')}
+                    trailing={
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label={t('knownWords.removeLabel', { term: k.term_norm })}
+                        onClick={() => remove(k)}
+                        className="-mr-2"
+                      >
+                        {t('knownWords.remove')}
+                      </Button>
+                    }
+                  />
                 ))}
-              </ul>
+              </ListGroup>
             )}
-          </>
+          </section>
         )}
       </div>
     </PageFrame>

@@ -40,10 +40,13 @@ export interface WordStageMix {
   studying: number;
   /** Not answered yet. */
   fresh: number;
+  /** Words per stage (a word without a card counts as new). */
+  byStage: Record<WordStage, number>;
 }
 
 function addStage(mix: WordStageMix, stage: WordStage | null) {
   mix.total++;
+  mix.byStage[stage ?? 'new']++;
   if (stage === 'learned' || stage === 'mastered') mix.learned++;
   else if (stage === 'learning' || stage === 'consolidating') mix.studying++;
   else mix.fresh++;
@@ -52,7 +55,13 @@ function addStage(mix: WordStageMix, stage: WordStage | null) {
 /** loadDeckFacts keeps the whole card rows (typed narrower for the filter evaluator). */
 const fullCards = (f: DeckNoteFacts): readonly Card[] => f.cards as readonly Card[];
 
-const emptyMix = (): WordStageMix => ({ total: 0, learned: 0, studying: 0, fresh: 0 });
+const emptyMix = (): WordStageMix => ({
+  total: 0,
+  learned: 0,
+  studying: 0,
+  fresh: 0,
+  byStage: { new: 0, learning: 0, consolidating: 0, learned: 0, mastered: 0 },
+});
 
 /** Live notes by normalised term with the stage of their main card; known words. */
 export async function getOwnedIndex(now: Millis = Date.now()): Promise<OwnedIndex> {
@@ -153,6 +162,8 @@ export interface DeckWordRow {
   meaning: string | null;
   pos: string | null;
   stage: WordStage | null;
+  /** Cards of this word waiting today (reviews and learning steps, not new cards). */
+  dueToday: number;
 }
 
 /** One deck's words for its detail page, newest first. Null: missing, deleted or not evaluable. */
@@ -162,10 +173,15 @@ export async function getDeckWords(
 ): Promise<{ deck: Deck; filter: DeckFilter | null; words: DeckWordRow[] } | null> {
   const deck = await db.decks.get(deckId);
   if (!deck || deck.deleted_at !== null) return null;
-  const [facts, ctx] = await Promise.all([loadDeckFacts(now), deckContext(now)]);
+  const [facts, ctx, settings] = await Promise.all([
+    loadDeckFacts(now),
+    deckContext(now),
+    getSettings(now),
+  ]);
   const parsed = parseDeckFilter(deck.filter);
   const ids = deckNoteIds(deck.filter, facts, ctx);
   if (!ids) return { deck, filter: null, words: [] };
+  const { end } = dayBounds(now, dayConfig(settings));
   const at = new Date(now);
   const chosen = facts.filter((f) => ids.has(f.note.id));
   const senses = await db.senses.where('note_id').anyOf([...ids]).toArray();
@@ -175,12 +191,16 @@ export async function getDeckWords(
   const words = chosen
     .map((f): DeckWordRow => {
       const s = first.get(f.note.id);
-      const c = stageCard(fullCards(f));
+      const cards = fullCards(f);
+      const c = stageCard(cards);
       return {
         note: f.note as Note,
         meaning: s ? (s.meaning_tr_override ?? s.meaning_tr) : null,
         pos: s?.pos ?? null,
         stage: c ? cardStage(c, at) : null,
+        dueToday: cards.filter(
+          (x) => !x.suspended && x.unlocked && x.state !== CardState.New && x.due < end,
+        ).length,
       };
     })
     .sort((a, b) => b.note.created_at - a.note.created_at);

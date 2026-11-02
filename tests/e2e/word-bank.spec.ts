@@ -68,10 +68,7 @@ test('Kelime Bankası: guest download, level list, add one, quick-add ten, offli
   // longer links it; the bank lives in Desteler / Kelimelerim).
   await page.goto('/kelime-bankasi');
   await expect(page).toHaveURL(/\/decks\?tab=bank$/);
-  await expect(page.getByRole('link', { name: 'Kelime Bankası' })).toHaveAttribute(
-    'aria-current',
-    'page',
-  );
+  await expect(page.getByRole('radio', { name: 'Kelime Bankası' })).toBeChecked();
 
   const list = page.getByRole('list', { name: 'Kelimeler' });
   await expect(list.getByTestId('word-bank-row').first()).toBeVisible();
@@ -138,7 +135,7 @@ test('Keşfet: a suggested deck adds only new words, once, and shows up in Deste
   await expect(page.getByRole('button', { name: 'Biliyorsun 1' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Çalışıyorsun 1' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Destelerime ekle' }).click();
+  await page.getByRole('button', { name: 'Kelimelerime ekle' }).click();
   await expect(page.getByText('“B1 kelimeleri” destelerine eklendi', { exact: true })).toBeVisible();
   const { notes, decks } = await dumpTables(page, ['notes', 'decks']);
   const terms = (notes as { term: string; tags: string[] }[]).map((n) => n.term);
@@ -151,7 +148,7 @@ test('Keşfet: a suggested deck adds only new words, once, and shows up in Deste
   expect(decks).toEqual([
     expect.objectContaining({ name: 'B1 kelimeleri', filter: { v: 1, tags: ['B1 kelimeleri'] } }),
   ]);
-  await expect(page.getByRole('button', { name: 'Destelerime ekle' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Kelimelerime ekle' })).toHaveCount(0);
 
   await page.getByRole('link', { name: /Destelerimde aç/ }).click();
   await expect(page).toHaveURL(/\/decks\/[^/?]+$/);
@@ -165,7 +162,7 @@ for (const [width, scheme] of [
   [360, 'light'],
   [1280, 'dark'],
 ] as const) {
-  test(`Kelime Bankası: axe at ${width}px ${scheme}, details open and words selected`, async ({
+  test(`Kelime Bankası: axe at ${width}px ${scheme}, details open and a word added`, async ({
     page,
   }) => {
     await serveBank(page, { requests: [], down: false });
@@ -175,9 +172,9 @@ for (const [width, scheme] of [
     const list = page.getByRole('list', { name: 'Kelimeler' });
     await expect(list.getByTestId('word-bank-row').first()).toBeVisible();
     await list.getByRole('button', { name: /^opinion/, expanded: false }).click();
-    await page.getByRole('button', { name: 'journey seç' }).click();
-    await page.getByRole('button', { name: 'festival seç' }).click();
-    await expect(page.getByRole('region', { name: 'Seçilen kelimeler' })).toBeVisible();
+    // The round plus adds at once; the toast offers "Geri al".
+    await page.getByRole('button', { name: 'journey ekle' }).click();
+    await expect(page.getByText('journey eklendi', { exact: true })).toBeVisible();
     await page.waitForTimeout(400);
     const { violations } = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])

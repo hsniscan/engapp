@@ -40,10 +40,10 @@ export function ImageSection({ senses, initialSenseId, headingId, bare }: ImageS
     >
       {!bare && (
         <>
-          <h3 id={hId} className="font-serif text-lg font-semibold text-fg">
+          <h3 id={hId} className="text-ui font-semibold text-fg">
             {t('images.section.title')}
           </h3>
-          <p className="-mt-1 text-sm text-fg-muted">{t('images.section.intro')}</p>
+          <p className="-mt-1 text-meta text-fg-muted">{t('images.section.intro')}</p>
         </>
       )}
       {senses.length > 1 && (

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { logError, setLevelOverride, type NoteDetail } from '@/data';
 import { CEFR } from '@/domain/level';
 import type { CefrLevel } from '@/domain/types';
-import { Select, Surface, toast } from '@/ui';
+import { Card, Select, toast } from '@/ui';
 import { LevelBadge } from './LevelBadge';
 import { LevelExplanation } from './LevelDetails';
 import { useNoteLevel } from './useWordLevel';
@@ -22,11 +22,11 @@ export function LevelSection({ detail }: { detail: NoteDetail }) {
   const auto = level?.auto ?? null;
   return (
     <section aria-labelledby={`${id}-level`} className="flex flex-col gap-3" data-testid="level-section">
-      <h3 id={`${id}-level`} className="flex items-center gap-2 font-serif text-lead font-semibold text-fg">
+      <h3 id={`${id}-level`} className="flex items-center gap-2 text-ui font-semibold text-fg">
         {t('wordLevel.section')}
         {level && <LevelBadge level={level} />}
       </h3>
-      <Surface tone="flat" padding="sm" className="flex flex-col gap-4 px-4">
+      <Card tone="sunken" padding="sm" className="flex flex-col gap-4 px-4">
         {level ? (
           <LevelExplanation level={level} />
         ) : (
@@ -53,7 +53,7 @@ export function LevelSection({ detail }: { detail: NoteDetail }) {
             ...CEFR.map((l) => ({ value: l, label: `${l} · ${t(`settings.levels.${l}`)}` })),
           ]}
         />
-      </Surface>
+      </Card>
     </section>
   );
 }

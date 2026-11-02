@@ -1,47 +1,12 @@
-// Constants and helpers shared by the Desteler screens (no components here, for fast refresh).
+// Constants and helpers shared by the Kelimelerim screens (no components here, for fast refresh).
+// Colours come only from the design tokens (stage scale, docs/design.md); none are defined here.
 import type { DeckFilter } from '@/domain/deckFilter';
 import { openAddSheet } from '@/features/add/addSheetStore';
 import type { CefrLevel } from '@/domain/types';
-
-/**
- * Graphic colours (bars, ring, level ramp) for both themes. Non-text marks, so they live here
- * rather than in the contrast-checked text tokens; each mark also has a text equivalent.
- */
-export const MARK = {
-  /** Öğrenildi / known part. */
-  learned: 'light-dark(#2a5a8c, #9dbde3)',
-  /** Öğreniyor / in the cards. */
-  studying: 'light-dark(#9dbde3, #4a77a8)',
-  /** Empty track. */
-  track: 'light-dark(#ede9e1, #34312d)',
-  /** Track on an accent-soft or warn-soft card. */
-  trackOnSoft: 'light-dark(#fdfcf9, #1a1917)',
-  /** Fill of a part the user has not started. */
-  faint: 'light-dark(#d7d1c6, #4a463f)',
-} as const;
-
-/** A1 → C2, dark to light (light theme) and light to dark (dark theme). */
-export const LEVEL_MARK: Record<CefrLevel, string> = {
-  A1: 'light-dark(#1f3f63, #dbe6f3)',
-  A2: 'light-dark(#2a5a8c, #9dbde3)',
-  B1: 'light-dark(#5b87b8, #6f9acb)',
-  B2: 'light-dark(#9dbde3, #4a77a8)',
-  C1: 'light-dark(#c9d9ec, #36597f)',
-  C2: 'light-dark(#d7d1c6, #5a554d)',
-};
+import { stageColor, type UiStage } from '@/ui';
 
 export const nf = new Intl.NumberFormat('tr-TR');
 export const pct = (part: number, total: number) => (total ? Math.round((part / total) * 100) : 0);
-
-/** Word frequency as 1–5 dots (Zipf: 5 ≈ the 1,000 most common words). */
-export function freqDots(zipf: number | null): number {
-  if (zipf === null) return 1;
-  if (zipf >= 5) return 5;
-  if (zipf >= 4.5) return 4;
-  if (zipf >= 4) return 3;
-  if (zipf >= 3.5) return 2;
-  return 1;
-}
 
 /**
  * "Çalış" of a deck: today's word study of its words only (due and new cards, under the daily
@@ -75,3 +40,19 @@ export const DISCOVER_DECKS_HREF = '/kesfet?f=desteler';
  * argument (v0.5.1 Add rework); a sheet without groups ignores it and opens as usual.
  */
 export const openImportSheet = () => openAddSheet('import');
+
+
+/** CEFR levels on the stage ramp: A1 the deepest swatch, C1/C2 the lightest. */
+const LEVEL_STAGE: Record<CefrLevel, UiStage> = {
+  A1: 'mastered',
+  A2: 'learned',
+  B1: 'consolidating',
+  B2: 'learning',
+  C1: 'new',
+  C2: 'new',
+};
+
+/** Swatch colour of a CEFR level (a non-text mark; the level name is always written next to it). */
+export const levelColor = (level: CefrLevel) => stageColor[LEVEL_STAGE[level]];
+
+

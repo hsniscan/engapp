@@ -76,18 +76,22 @@ describe('DecksPage', () => {
     renderRoute(<DecksPage />, { path: '/decks' });
 
     expect(screen.getByRole('heading', { level: 1, name: 'Kelimelerim' })).toBeInTheDocument();
-    const nav = screen.getByRole('navigation', { name: 'Deste görünümü' });
-    const segments = within(nav).getAllByRole('link');
-    expect(segments.map((l) => l.textContent)).toEqual(['Destelerim', 'Kelime Bankası']);
-    expect(within(nav).getByRole('link', { name: 'Destelerim' })).toHaveAttribute('aria-current', 'page');
-    expect(within(nav).getByRole('link', { name: 'Kelime Bankası' })).toHaveAttribute('href', '/decks?tab=bank');
-    // Import opens the (+) sheet; it is not a link to the add page any more.
-    expect(screen.getByRole('button', { name: 'İçe aktar: Anki, CSV ya da yedek' })).toHaveAttribute('aria-haspopup', 'dialog');
+    // Two views of one place: a segmented control (radios), kept in the URL.
+    const views = screen.getByRole('group', { name: 'Deste görünümü' });
+    const segments = within(views).getAllByRole('radio');
+    expect(segments.map((r) => r.closest('label')?.textContent)).toEqual(['Destelerim', 'Kelime Bankası']);
+    expect(within(views).getByRole('radio', { name: 'Destelerim' })).toBeChecked();
+    // Import is a tool row (it opens the (+) sheet).
+    expect(await screen.findByRole('button', { name: /İçe aktar/ })).toBeInTheDocument();
+    // Search is the header's icon: it opens Tüm kelimelerim with the field focused.
+    expect(screen.getByRole('button', { name: 'Kelimelerimde ara' })).toBeInTheDocument();
 
     const all = await screen.findByRole('link', { name: /Tüm kelimelerim/ });
     expect(all).toHaveAttribute('href', '/library');
-    await waitFor(() => expect(all).toHaveTextContent(/2 kelime · \d+ kart/));
-    const deck = await screen.findByRole('link', { name: 'İş' });
+    await waitFor(() => expect(all).toHaveTextContent(/2\s*kelime/));
+    // The five-stage bar is announced as one sentence.
+    expect(within(all).getByRole('img', { name: /Yeni 2/ })).toBeInTheDocument();
+    const deck = await screen.findByRole('link', { name: /^İş/ });
     expect(deck.getAttribute('href')).toMatch(/^\/decks\/.+/);
     expect(screen.getByText('1 deste')).toBeInTheDocument();
     // Two words are too few to group into themes: the tool is not offered yet.
@@ -114,20 +118,20 @@ describe('SuggestedDeckPage', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'A2 fiiller' })).toBeInTheDocument();
     const list = await screen.findByRole('list', { name: 'Destedeki kelimeler' });
-    await waitFor(() => expect(within(list).getAllByTestId('suggested-word')).toHaveLength(4));
+    await waitFor(() => expect(within(list).getAllByRole('listitem')).toHaveLength(4));
     expect(screen.getByRole('button', { name: 'Yeni 2' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Çalışıyorsun 1' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Biliyorsun 1' })).toBeInTheDocument();
     expect(screen.getByText('Bildiğin 1 ve kartlarında olan 1 kelime tekrar eklenmez.')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Destelerime ekle' }));
+    await user.click(screen.getByRole('button', { name: 'Kelimelerime ekle' }));
     await waitFor(async () =>
       expect((await db.notes.toArray()).map((n) => n.term).sort()).toEqual(['afford', 'avoid', 'suggest']),
     );
     await waitFor(async () => expect(await listDecks()).toHaveLength(1));
     expect((await listDecks())[0]).toMatchObject({ name: 'A2 fiiller', filter: { v: 1, tags: ['A2 fiiller'] } });
-    expect(await screen.findByRole('link', { name: /Destelerinde/ })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Destelerime ekle' })).toBeNull();
+    expect(await screen.findByRole('link', { name: 'Destelerimde aç' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Kelimelerime ekle' })).toBeNull();
   });
 
   it('quick scan marks a word known', async () => {
@@ -143,7 +147,7 @@ describe('SuggestedDeckPage', () => {
 
   it('an unknown key says so', async () => {
     renderRoute(<SuggestedDeckPage />, { path: '/decks/suggested/:key', url: '/decks/suggested/x-y-z' });
-    expect(await screen.findByText('Böyle bir deste yok')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 2, name: 'Böyle bir deste yok' })).toBeInTheDocument();
   });
 });
 
@@ -169,6 +173,6 @@ describe('DeckDetailPage', () => {
 
   it('a missing deck', async () => {
     renderRoute(<DeckDetailPage />, { path: '/decks/:id', url: '/decks/nope' });
-    expect(await screen.findByText('Deste bulunamadı')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 2, name: 'Deste bulunamadı' })).toBeInTheDocument();
   });
 });

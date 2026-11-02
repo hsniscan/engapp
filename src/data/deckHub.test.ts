@@ -121,6 +121,10 @@ describe('getMyDecks and getDeckWords', () => {
     expect(view.decks).toHaveLength(1);
     expect(view.decks[0]!.mix).toMatchObject({ total: 1, fresh: 0 });
     expect(view.decks[0]!.mix!.learned + view.decks[0]!.mix!.studying).toBe(1);
+    // Per-stage counts add up to the words (the five-stage bar on Kelimelerim).
+    const by = view.all.byStage;
+    expect(by.new).toBe(2);
+    expect(by.new + by.learning + by.consolidating + by.learned + by.mastered).toBe(3);
     expect(view.tagCount).toBe(1);
 
     const detail = await getDeckWords(view.decks[0]!.deck.id, T);
