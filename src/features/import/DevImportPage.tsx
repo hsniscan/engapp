@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Button, Page, Tabs } from '@/ui';
+import { Button, PageFrame, Tabs } from '@/ui';
 import { PdfImportPanel } from './PdfImportPanel';
 import { TextImportPanel } from './TextImportPanel';
 import { seedReadyJob } from './testing/fakeData';
@@ -13,7 +13,7 @@ export function DevImportPage() {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   return (
-    <Page
+    <PageFrame
       title="İçe aktarma (geliştirme)"
       actions={
         <Button
@@ -40,6 +40,6 @@ export function DevImportPage() {
           { value: 'pdf', label: 'PDF yükle', icon: 'upload', content: <PdfImportPanel /> },
         ]}
       />
-    </Page>
+    </PageFrame>
   );
 }
