@@ -129,7 +129,7 @@ test('signed in: Ayarlar → Hesap → "Hesabımı ve verilerimi sil" deletes th
   await page.getByRole('link', { name: 'Uygulamaya dön' }).first().click();
   await expect(page.getByRole('link', { name: /Eşitleme durumu: Misafir modu/ })).toBeVisible();
   await page.goto('/library');
-  await expect(page.getByRole('list', { name: 'Notlar' })).toHaveCount(0);
+  await expect(page.getByRole('list', { name: 'Kelimeler' })).toHaveCount(0);
 });
 
 test('signed in: a failed deletion keeps everything and says so', async ({ page, context, backend }) => {

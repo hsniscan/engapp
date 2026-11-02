@@ -48,7 +48,8 @@ test('first run: a brand-new guest is guided from welcome to the first session',
   await expect(
     welcome.getByRole('heading', { name: 'Kelimeleri kalıcı öğrenmeye başlayalım' }),
   ).toBeVisible();
-  await expect(welcome.getByRole('button')).toHaveCount(1);
+  // One primary action (plus "Giriş yap" for an existing account when sign-in is available).
+  await expect(welcome.getByRole('button', { name: 'Başlayalım' })).toHaveCount(1);
   await expect(
     page.getByRole('button', { name: 'Kelimeleri kendim eklemek istiyorum' }),
   ).toBeVisible();

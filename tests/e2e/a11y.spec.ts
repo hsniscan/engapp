@@ -119,7 +119,7 @@ for (const width of [360, 1280]) {
       await check(page, 'library', tag);
       // Note details, with the "Seviye" section.
       await page
-        .getByRole('list', { name: 'Notlar' })
+        .getByRole('list', { name: 'Kelimeler' })
         .getByRole('listitem')
         .first()
         .getByRole('button')
@@ -132,32 +132,32 @@ for (const width of [360, 1280]) {
       await expect(page.getByTestId('level-section')).toBeHidden();
       // Selected state: the bulk bar must not cover anything that can be tapped.
       await page
-        .getByRole('checkbox', { name: /notunu seç$/ })
+        .getByRole('checkbox', { name: /kelimesini seç$/ })
         .first()
         .check();
       await page
-        .getByRole('checkbox', { name: /notunu seç$/ })
+        .getByRole('checkbox', { name: /kelimesini seç$/ })
         .nth(1)
         .check();
-      await expect(page.getByRole('region', { name: 'Seçili notlar için işlemler' })).toContainText(
-        '2 not seçili',
+      await expect(page.getByRole('region', { name: 'Seçili kelimeler için işlemler' })).toContainText(
+        '2 kelime seçili',
       );
       // Keyboard focus on a row under the floating bar scrolls it into the clear.
-      const rows = page.getByRole('checkbox', { name: /notunu seç$/ });
+      const rows = page.getByRole('checkbox', { name: /kelimesini seç$/ });
       await rows.nth(4).focus();
       const [bar, box] = await Promise.all([
-        page.getByRole('region', { name: 'Seçili notlar için işlemler' }).boundingBox(),
+        page.getByRole('region', { name: 'Seçili kelimeler için işlemler' }).boundingBox(),
         rows.nth(4).boundingBox(),
       ]);
       if (width < 768) expect(box!.y + box!.height).toBeLessThanOrEqual(bar!.y);
       await page.evaluate(() => window.scrollTo(0, 0));
       await check(page, 'library-selected', tag);
       await page
-        .getByRole('checkbox', { name: /notunu seç$/ })
+        .getByRole('checkbox', { name: /kelimesini seç$/ })
         .first()
         .uncheck();
       await page
-        .getByRole('checkbox', { name: /notunu seç$/ })
+        .getByRole('checkbox', { name: /kelimesini seç$/ })
         .nth(1)
         .uncheck();
 

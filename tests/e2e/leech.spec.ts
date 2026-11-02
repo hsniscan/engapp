@@ -185,10 +185,10 @@ test('the 6th lapse is flagged in the session with at least 3 paths; only the us
   // No review log was changed.
   expect((await dumpTables(page, ['review_logs'])).review_logs).toEqual(before.review_logs);
 
-  // Stats, "Zorlandıklarım".
+  // Stats, "Sık unuttukların" (the leech list).
   await page.goto('/progress?tab=gelisim');
   const stats = page.getByTestId('leech-stats');
-  await expect(stats.getByRole('heading', { name: 'Zorlandıklarım' })).toBeVisible();
+  await expect(stats.getByRole('heading', { name: 'Sık unuttukların' })).toBeVisible();
   await expect(stats.getByRole('button', { name: /bank/ })).toContainText('6 kez unuttun');
   await expect(stats.getByRole('link', { name: 'Bunları çalış' })).toHaveAttribute('href', /source=list/);
   expect(await noHorizontalScroll(page)).toBe(true);
