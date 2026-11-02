@@ -236,12 +236,16 @@ test('Kelimelerim: two segments, "Kelime Bankası" on one line', async ({ page }
   await page.setViewportSize(PHONE);
   await page.goto('/decks');
   await expect(page.getByRole('heading', { level: 1, name: 'Kelimelerim' })).toBeVisible();
-  const seg = page.getByRole('navigation', { name: 'Deste görünümü' });
-  await expect(seg.getByRole('link')).toHaveText(['Destelerim', 'Kelime Bankası']);
-  const bank = seg.getByRole('link', { name: 'Kelime Bankası' });
+  // A segmented control (radios in a fieldset), kept in the URL.
+  const seg = page.getByRole('group', { name: 'Deste görünümü' });
+  await expect(seg.locator('label')).toHaveText(['Destelerim', 'Kelime Bankası']);
+  await expect(seg.getByRole('radio', { name: 'Destelerim' })).toBeChecked();
+  const bank = seg.locator('label').filter({ hasText: 'Kelime Bankası' });
   const fits = await bank.evaluate((el) => {
+    // Only the words (the label also holds the visually hidden radio).
+    const text = [...el.childNodes].find((n) => n.nodeType === Node.TEXT_NODE)!;
     const r = document.createRange();
-    r.selectNodeContents(el);
+    r.selectNodeContents(text);
     const lines = new Set([...r.getClientRects()].map((x) => Math.round(x.top)));
     return { lines: lines.size, overflow: el.scrollWidth > el.clientWidth };
   });

@@ -67,7 +67,7 @@ test('phone: bulk tag two words, make a deck of them, filter Cards and practise 
 
   // Destelerim lists it; "Tüm kelimelerim" filtered to the deck shows the same two words.
   await page.goto('/decks');
-  await expect(page.getByRole('link', { name: 'İş kelimeleri', exact: true })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: /^İş kelimeleri/ })).toHaveAttribute(
     'href',
     new URL(deckUrl).pathname,
   );
@@ -76,11 +76,11 @@ test('phone: bulk tag two words, make a deck of them, filter Cards and practise 
   await expect(list.getByRole('listitem')).toHaveCount(2);
   await expect(page.getByRole('link', { name: 'Desteyi aç' })).toBeVisible();
 
-  // "Çalış" on the deck's page is today's word study of the deck only: both words were studied
+  // "Bu desteyi çalış" on the deck's page is today's word study of the deck only: both words were studied
   // today, and a new word outside the deck does not come up there (it does in word study).
   await addWord(page, { term: 'harsh', meaning: 'sert' });
   await page.goto(deckUrl);
-  await page.getByRole('link', { name: 'Çalış' }).click();
+  await page.getByRole('link', { name: 'Bu desteyi çalış' }).click();
   await expect(page).toHaveURL(/\/study\?mode=word&deck=[^&]+$/);
   await expect(
     page.getByRole('heading', { name: '“İş kelimeleri” destesinde bugünlük kart kalmadı' }),

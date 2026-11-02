@@ -20,6 +20,7 @@ import {
 } from '@/data';
 import { CEFR, noteLevel } from '@/domain/level';
 import type { CardType } from '@/domain/types';
+import { LevelBadge } from '@/features/levels/LevelBadge';
 import { useLevelData } from '@/features/levels/useLevelData';
 import {
   Badge,
@@ -97,8 +98,7 @@ function useLibraryRows(): LibraryRow[] | undefined {
   }, [raw, levelData]);
 }
 
-const isSuspendedRow = (r: LibraryRow) =>
-  r.cards.length > 0 && r.suspendedCards === r.cards.length;
+const isSuspendedRow = (r: LibraryRow) => r.cards.length > 0 && r.suspendedCards === r.cards.length;
 
 export function LibraryPage() {
   const { t } = useTranslation();
@@ -188,7 +188,10 @@ export function LibraryPage() {
     () => (tagList ?? []).map((x) => x.tag).sort((a, b) => a.localeCompare(b, 'tr')),
     [tagList],
   );
-  const hasDuplicates = useMemo(() => rows?.some((r) => r.note.possible_duplicate) ?? false, [rows]);
+  const hasDuplicates = useMemo(
+    () => rows?.some((r) => r.note.possible_duplicate) ?? false,
+    [rows],
+  );
 
   // Paging: render 60 rows, add more when the sentinel scrolls into view (or the button is pressed).
   const [limit, setLimit] = useState(PAGE_SIZE);
@@ -314,7 +317,12 @@ export function LibraryPage() {
                 </Link>
                 {activeDeck.count !== null && activeDeck.count > 0 && (
                   <Link
-                    to={practiceHref({ source: 'deck', size: 10, tag: null, deck: activeDeck.deck.id })}
+                    to={practiceHref({
+                      source: 'deck',
+                      size: 10,
+                      tag: null,
+                      deck: activeDeck.deck.id,
+                    })}
                     className={buttonClasses({ variant: 'ghost', size: 'sm' })}
                   >
                     {t('library.decks.practice')}
@@ -356,7 +364,11 @@ export function LibraryPage() {
                 selected={stageChip === 'all'}
                 onClick={() => setFilters({ state: 'all', suspended: 'all' })}
               >
-                <ChipCount label={t('library.filter.allChip')} count={chipCounts.all} selected={stageChip === 'all'} />
+                <ChipCount
+                  label={t('library.filter.allChip')}
+                  count={chipCounts.all}
+                  selected={stageChip === 'all'}
+                />
               </Chip>
               {WORD_STAGES.map((k) => (
                 <Chip
@@ -378,7 +390,11 @@ export function LibraryPage() {
                       k === 'new' && 'ring-1 ring-border-strong ring-inset',
                     )}
                   />
-                  <ChipCount label={t(`ui.stage.${k}`)} count={chipCounts[k]} selected={stageChip === k} />
+                  <ChipCount
+                    label={t(`ui.stage.${k}`)}
+                    count={chipCounts[k]}
+                    selected={stageChip === k}
+                  />
                 </Chip>
               ))}
               {(chipCounts.suspended > 0 || stageChip === 'suspended') && (
@@ -393,7 +409,11 @@ export function LibraryPage() {
                     )
                   }
                 >
-                  <ChipCount label={t('cards.suspended')} count={chipCounts.suspended} selected={stageChip === 'suspended'} />
+                  <ChipCount
+                    label={t('cards.suspended')}
+                    count={chipCounts.suspended}
+                    selected={stageChip === 'suspended'}
+                  />
                 </Chip>
               )}
             </ChipRow>
@@ -471,6 +491,7 @@ export function LibraryPage() {
                     key={r.note.id}
                     row={r}
                     selected={selected.has(r.note.id)}
+                    selecting={selected.size > 0}
                     onToggle={toggle}
                     onOpen={openNote}
                   />
@@ -509,11 +530,14 @@ export function LibraryPage() {
 const NoteRow = memo(function NoteRow({
   row,
   selected,
+  selecting,
   onToggle,
   onOpen,
 }: {
   row: LibraryRow;
   selected: boolean;
+  /** Some row is selected: the bulk bar owns the actions, so the row menus step aside. */
+  selecting: boolean;
   onToggle: (id: string, on: boolean) => void;
   onOpen: (id: string, edit?: boolean) => void;
 }) {
@@ -580,7 +604,10 @@ const NoteRow = memo(function NoteRow({
             {note.term}
           </span>
           <span
-            className={cn('line-clamp-2 text-meta', senses.length ? 'text-fg-muted' : 'text-fg-subtle italic')}
+            className={cn(
+              'line-clamp-2 text-meta',
+              senses.length ? 'text-fg-muted' : 'text-fg-subtle italic',
+            )}
           >
             {senses.length ? meanings : t('library.noSenses')}
           </span>
@@ -599,28 +626,39 @@ const NoteRow = memo(function NoteRow({
             </span>
           )}
         </span>
-        {stage && <StagePill stage={stage} />}
+        <span className="flex shrink-0 items-center gap-2">
+          {row.level && <LevelBadge level={row.level} />}
+          {stage && <StagePill stage={stage} />}
+        </span>
       </button>
-      <DropdownMenu
-        label={t('library.row.actions', { term: note.term })}
-        trigger={<IconButton icon="more" label={t('library.row.actions', { term: note.term })} />}
-        items={[
-          { label: t('library.row.edit'), icon: 'pencil', onSelect: () => onOpen(note.id, true) },
-          ...(cards.length === 0
-            ? []
-            : allSuspended
-              ? [
-                  {
-                    label: t('library.bulk.unsuspend'),
-                    icon: 'refresh' as const,
-                    onSelect: () => suspend(false),
-                  },
-                ]
-              : [{ label: t('common.suspend'), icon: 'pause' as const, onSelect: () => suspend(true) }]),
-          { kind: 'separator' },
-          { label: t('common.delete'), icon: 'trash', danger: true, onSelect: remove },
-        ]}
-      />
+      {!selecting && (
+        <DropdownMenu
+          label={t('library.row.actions', { term: note.term })}
+          trigger={<IconButton icon="more" label={t('library.row.actions', { term: note.term })} />}
+          items={[
+            { label: t('library.row.edit'), icon: 'pencil', onSelect: () => onOpen(note.id, true) },
+            ...(cards.length === 0
+              ? []
+              : allSuspended
+                ? [
+                    {
+                      label: t('library.bulk.unsuspend'),
+                      icon: 'refresh' as const,
+                      onSelect: () => suspend(false),
+                    },
+                  ]
+                : [
+                    {
+                      label: t('common.suspend'),
+                      icon: 'pause' as const,
+                      onSelect: () => suspend(true),
+                    },
+                  ]),
+            { kind: 'separator' },
+            { label: t('common.delete'), icon: 'trash', danger: true, onSelect: remove },
+          ]}
+        />
+      )}
     </li>
   );
 });
@@ -793,8 +831,7 @@ function BulkBar({
           ? t('library.bulk.suspended', { count })
           : t('library.bulk.unsuspended', { count }),
         undoLabel: t('ui.undo'),
-        onUndo: () =>
-          void bulkSetSuspended(ids, !on).catch((e) => logError(e, 'Library.bulkUndo')),
+        onUndo: () => void bulkSetSuspended(ids, !on).catch((e) => logError(e, 'Library.bulkUndo')),
       });
   };
 
@@ -827,7 +864,10 @@ function BulkBar({
         className="pointer-events-auto flex w-full max-w-xl animate-pop-in items-center gap-1 rounded-card border border-border bg-surface-raised py-1.5 pr-1.5 pl-1 shadow-overlay"
       >
         <IconButton icon="x" label={t('library.bulk.clear')} onClick={onClear} disabled={busy} />
-        <p className="tabular min-w-0 flex-1 truncate text-ui font-semibold text-fg" aria-live="polite">
+        <p
+          className="tabular min-w-0 flex-1 truncate text-ui font-semibold text-fg"
+          aria-live="polite"
+        >
           {progress
             ? t('library.bulk.progress', { done: progress.done, total: progress.total })
             : t('library.bulk.count', { count: n })}

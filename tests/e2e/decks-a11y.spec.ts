@@ -94,8 +94,10 @@ for (const width of [360, 1280]) {
         page.getByRole('heading', { level: 1, name: 'İş · zorlandıklarım' }),
       ).toBeVisible();
       await check(page, 'deck-detail', tag);
+      // With a deck in the list, new decks come from the "Yeni deste" menu.
       await page.goto('/decks');
-      await page.getByRole('button', { name: /Kurallarla/ }).click();
+      await page.getByRole('button', { name: 'Yeni deste' }).click();
+      await page.getByRole('menuitem', { name: 'Kurallarla' }).click();
       await editor.getByRole('textbox', { name: 'Adı' }).fill('Bu hafta eklediklerim');
       await editor.getByText('Son 7 gün', { exact: true }).click();
       await editor.getByRole('button', { name: 'Oluştur' }).click();

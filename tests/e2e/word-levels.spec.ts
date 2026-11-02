@@ -29,23 +29,27 @@ test('Cards: level badges, filter and sort by level, and the user’s own level'
   ).toBeVisible();
   await expect(row('thrive').getByRole('img', { name: 'Seviye B2, Sıklık verisi' })).toBeVisible();
 
-  // Filter: B2 only, kept in the URL.
-  await page.getByRole('combobox', { name: 'Seviye' }).click();
-  await page.getByRole('option', { name: /^B2/ }).click();
+  // Filter: B2 only, kept in the URL. Level and sort live in the "Süz" sheet.
+  const pick = async (field: string, option: string | RegExp) => {
+    await page.getByRole('button', { name: /^Süz($| )/ }).click();
+    const sheet = page.getByRole('dialog', { name: 'Süz ve sırala' });
+    await sheet.getByRole('combobox', { name: field }).click();
+    await page.getByRole('option', { name: option }).click();
+    await sheet.getByRole('button', { name: 'Bitti' }).click();
+    await expect(sheet).toBeHidden();
+  };
+  await pick('Seviye', /^B2/);
   await expect(page).toHaveURL(/[?&]level=B2/);
   await expect(list.getByRole('listitem')).toHaveCount(2);
   await expect(row('television')).toHaveCount(0);
 
   // Back to all levels; sort hardest first, then easiest first.
-  await page.getByRole('combobox', { name: 'Seviye' }).click();
-  await page.getByRole('option', { name: 'Tüm seviyeler' }).click();
+  await pick('Seviye', 'Tüm seviyeler');
   await expect(list.getByRole('listitem')).toHaveCount(3);
-  await page.getByRole('combobox', { name: 'Sıralama' }).click();
-  await page.getByRole('option', { name: 'Seviye: zordan kolaya' }).click();
+  await pick('Sıralama', 'Seviye: zordan kolaya');
   const terms = list.locator('[lang="en"]');
   await expect(terms).toHaveText(['reluctant', 'thrive', 'television']);
-  await page.getByRole('combobox', { name: 'Sıralama' }).click();
-  await page.getByRole('option', { name: 'Seviye: kolaydan zora' }).click();
+  await pick('Sıralama', 'Seviye: kolaydan zora');
   await expect(terms).toHaveText(['television', 'reluctant', 'thrive']);
 
   // The user's own level, from the note's details: applied at once, synced column, only theirs.
