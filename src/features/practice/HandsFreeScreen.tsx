@@ -203,7 +203,7 @@ export function HandsFreeScreen({
         <Button
           size="lg"
           fullWidth
-          leadingIcon="play"
+          leadingIcon="play-solid"
           data-testid="hands-free-start"
           onClick={actions.start}
           className="h-16 text-lead"
@@ -303,7 +303,7 @@ export function HandsFreeScreen({
           onClick={playing ? actions.pause : actions.resume}
           className={cn(big, 'flex-[1.4] bg-accent text-accent-fg hover:bg-accent-hover')}
         >
-          <Icon name={playing ? 'pause' : 'play'} size={26} />
+          <Icon name={playing ? 'pause' : 'play-solid'} size={26} />
           {playing ? t('modes.handsFree.pause') : t('modes.handsFree.resume')}
         </button>
         <button
