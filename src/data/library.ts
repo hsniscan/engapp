@@ -378,5 +378,9 @@ export async function suggestedGradedTexts(difficulty: ReadingDifficulty, limit:
   // Nothing to suggest yet: skip the knowledge model (it reads every card).
   if ((await db.graded_catalog.count()) === 0) return [];
   const lib = await scoreLibrary(isDifficulty(difficulty) ? difficulty : DEFAULT_DIFFICULTY);
+  // A finished text is suggested only when nothing unfinished fits (B15).
+  const unfinished = lib.texts.filter((s) => !lib.finished.has(s.entry.id));
+  const fresh = suggestTexts(unfinished, lib.difficulty, limit, lib.finished);
+  if (fresh.length > 0) return fresh.map(summaryOf);
   return suggestTexts(lib.texts, lib.difficulty, limit, lib.finished).map(summaryOf);
 }

@@ -252,11 +252,16 @@ describe('suggestions', () => {
     expect((await suggestedGradedTexts('dengeli', 5)).map((x) => x.title)).toEqual(['Balanced B', 'Balanced A']);
   });
 
-  it('puts finished texts last', async () => {
+  it('leaves finished texts out while an unfinished one fits (B15)', async () => {
     remote.bodies.set(ID(2), body(2));
+    remote.bodies.set(ID(3), body(3));
     const id = await openGradedText({ id: ID(2), title: 'Balanced A' }, T);
     await db.texts.update(id, { finished_at: T });
-    expect((await suggestedGradedTexts('dengeli', 5)).map((x) => x.title)).toEqual(['Balanced B', 'Balanced A']);
+    expect((await suggestedGradedTexts('dengeli', 5)).map((x) => x.title)).toEqual(['Balanced B']);
+    // Every text in the band read: an unread easier text comes before a finished one.
+    const id3 = await openGradedText({ id: ID(3), title: 'Balanced B' }, T);
+    await db.texts.update(id3, { finished_at: T });
+    expect((await suggestedGradedTexts('dengeli', 5)).map((x) => x.title)).toEqual(['Easy']);
   });
 
   it('falls back to the closest easier texts when none is in the band', async () => {
