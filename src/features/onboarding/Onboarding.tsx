@@ -5,8 +5,10 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
-import { logError, setMeta } from '@/data';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { getSettings, logError, setMeta } from '@/data';
 import { STAGE_RULE_NOTICE_KEY } from '@/data/db';
+import { useAuth } from '@/features/auth/session';
 import { addSuggestedDeck } from '@/data/deckHub';
 import { nextOnboardingStep, ONBOARDING_STEPS, type OnboardingStep } from '@/domain/onboarding';
 import { deckWords, suggestedKey, type SuggestedSpec } from '@/domain/suggestedDecks';
@@ -150,9 +152,41 @@ function Welcome({ onStart }: { onStart: () => void }) {
         <Button size="lg" fullWidth onClick={onStart}>
           {t('onboarding.welcome.start')}
         </Button>
+        <HaveAccount />
       </StepCard>
       <ManualLink />
     </>
+  );
+}
+
+/**
+ * "Zaten hesabım var · Giriş yap" (v0.5.2, B3): an existing user on a new phone signs in
+ * instead of building a guest deck that would then have to be merged. The onboarding is not
+ * finished here: once the account's words and interests arrive, it is no longer needed.
+ */
+function HaveAccount() {
+  const { t } = useTranslation();
+  const auth = useAuth();
+  const [busy, setBusy] = useState(false);
+  if (!auth.available || auth.status === 'signed_in') return null;
+  const signIn = async () => {
+    setBusy(true);
+    try {
+      await auth.signIn();
+    } catch (e) {
+      void logError(e, 'onboarding.signIn');
+      toast({ title: t('onboarding.welcome.signInFailed'), tone: 'danger' });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <p className="flex flex-wrap items-center justify-center gap-x-1 text-sm text-fg-muted">
+      {t('onboarding.welcome.haveAccount')}
+      <Button variant="ghost" size="sm" loading={busy} onClick={() => void signIn()} data-testid="onboarding-signin">
+        {t('onboarding.welcome.signIn')}
+      </Button>
+    </p>
   );
 }
 
@@ -250,6 +284,8 @@ function DeckStep() {
   const navigate = useNavigate();
   const { download, retry } = useWordBankDownload();
   const data = useBankData();
+  // B10: a level that was never measured is not "your level".
+  const measured = useLiveQuery(async () => (await getSettings()).level_source !== 'default', []);
   const specs = useMemo<SuggestedSpec[]>(
     () => [
       { kind: 'top', size: 500 },
@@ -303,6 +339,10 @@ function DeckStep() {
         <Button variant="secondary" onClick={retry}>
           {t('onboarding.deck.retry')}
         </Button>
+        {/* Offline, a new user is not stuck here: the app (the library, adding by hand) works. */}
+        <Button variant="ghost" onClick={finishOnboarding} data-testid="onboarding-skip-offline">
+          {t('onboarding.deck.skipOffline')}
+        </Button>
       </div>
     );
   } else {
@@ -338,10 +378,11 @@ function DeckStep() {
                   </span>
                   <span className="text-[0.8125rem] text-fg-muted">
                     {t(
-                      `onboarding.deck.hint.${i === 0 ? 'top500' : i === 1 ? 'top100' : 'verbs'}`,
+                      `onboarding.deck.hint.${i === 0 ? 'top500' : i === 1 ? 'top100' : measured ? 'verbs' : 'verbsLevel'}`,
                       {
                         count: words.length,
                         value: formatNumber(words.length),
+                        level: spec.kind === 'levelPos' ? spec.level : '',
                       },
                     )}
                   </span>

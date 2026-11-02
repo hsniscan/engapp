@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Dialog, cn, toast } from '@/ui';
+import { Button, Checkbox, Dialog, cn, toast } from '@/ui';
 import {
   continueAsGuest,
   dismissLinkResult,
@@ -122,6 +122,9 @@ function ChooseDialog({ applying, otherAccount }: { applying: boolean; otherAcco
   const options = otherAccount ? OTHER_ACCOUNT_OPTIONS : GUEST_OPTIONS;
   const [choice, setChoice] = useState<LinkChoice>(options[0]!.value);
   const destructive = options.find((o) => o.value === choice)?.destructive ?? false;
+  // "Hesaptakini at" deletes the account's words on every device: it needs a confirm (v0.5.2).
+  const [confirmed, setConfirmed] = useState(false);
+  const needsConfirm = choice === 'discard_account' && !confirmed;
   return (
     <Dialog
       open
@@ -138,6 +141,7 @@ function ChooseDialog({ applying, otherAccount }: { applying: boolean; otherAcco
           <Button
             variant={destructive ? 'danger' : 'primary'}
             loading={applying}
+            disabled={needsConfirm}
             onClick={() => void resolveLink(choice)}
             className="sm:min-w-32"
           >
@@ -167,7 +171,10 @@ function ChooseDialog({ applying, otherAccount }: { applying: boolean; otherAcco
                 name="link-choice"
                 value={o.value}
                 checked={selected}
-                onChange={() => setChoice(o.value)}
+                onChange={() => {
+                  setChoice(o.value);
+                  setConfirmed(false);
+                }}
                 className="mt-1 size-4 shrink-0 accent-(--accent)"
               />
               <span className="flex flex-col gap-0.5">
@@ -182,6 +189,16 @@ function ChooseDialog({ applying, otherAccount }: { applying: boolean; otherAcco
         <p role="alert" className="mt-4 text-sm text-danger-text">
           {t('account.irreversible')}
         </p>
+      )}
+      {choice === 'discard_account' && (
+        <div className="mt-3" data-testid="discard-account-confirm">
+          <Checkbox
+            label={t('account.discardAccountConfirm')}
+            checked={confirmed}
+            disabled={applying}
+            onCheckedChange={(v) => setConfirmed(v === true)}
+          />
+        </div>
       )}
     </Dialog>
   );

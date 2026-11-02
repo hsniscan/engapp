@@ -18,6 +18,7 @@ import {
 import type { ReportGroupStat, WeeklyReportSummary } from '@/domain/types';
 import { shownRetention } from '@/domain/weeklyReport';
 import { newLimitAction } from '@/domain/progressView';
+import { useAuth } from '@/features/auth/session';
 import { practiceHref } from '@/features/extra/links';
 import { formatDayMonth, formatNumber, formatPercent } from '@/features/stats/format';
 import { groupLabel } from '@/features/stats/groupLabel';
@@ -88,6 +89,8 @@ function ReportCard({
   sourceTitles: Record<string, string>;
 }) {
   const { t } = useTranslation();
+  // A guest's comment never comes by itself: it needs the account, not a connection (B9).
+  const signedIn = useAuth().status === 'signed_in';
   const s = report.summary;
   const retention = shownRetention(s.retention);
   const numbers = [
@@ -197,7 +200,9 @@ function ReportCard({
           </>
         ) : (
           <p className="mt-1 text-[0.9375rem] text-fg-muted" data-testid="report-comment-missing">
-            {report.pending ? t('report.commentPending') : t('report.commentNone')}
+            {report.pending
+              ? t(signedIn ? 'report.commentPending' : 'report.commentGuest')
+              : t('report.commentNone')}
           </p>
         )}
       </div>

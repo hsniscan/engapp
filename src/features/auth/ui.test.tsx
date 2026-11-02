@@ -124,7 +124,10 @@ describe('AccountLinkDialog', () => {
     expect(screen.getByRole('radio', { name: /Bu cihazdakini at/ })).not.toBeChecked();
     await userEvent.click(screen.getByRole('radio', { name: /Hesaptakini at/ }));
     expect(screen.getByRole('alert')).toHaveTextContent('geri alınamaz');
-    expect(screen.getByRole('button', { name: 'Devam et' })).toBeInTheDocument();
+    // Deleting the account's words on every device needs a confirm first (v0.5.2).
+    expect(screen.getByRole('button', { name: 'Devam et' })).toBeDisabled();
+    await userEvent.click(screen.getByRole('checkbox', { name: /Anladım/ }));
+    expect(screen.getByRole('button', { name: 'Devam et' })).toBeEnabled();
   });
 
   it("another account's data: copy without history (preselected) or start with the account", async () => {

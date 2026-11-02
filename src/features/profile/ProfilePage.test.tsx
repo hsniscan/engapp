@@ -69,6 +69,33 @@ describe('profile page', { timeout: 20_000 }, () => {
     expect(screen.getByTestId('profile-vocab')).toHaveTextContent('Henüz tahmin yok');
   });
 
+  it('after an unreliable test the level stays unmeasured, with its own hint (B4)', async () => {
+    await db.level_tests.add({
+      id: 't1',
+      user_id: null,
+      taken_at: Date.UTC(2026, 9, 1),
+      result_level: 'C2',
+      vocab_estimate: 9000,
+      reliable: false,
+      false_alarm_rate: 0.6,
+      ratios: { A1: 1, A2: 1, B1: 1, B2: 1, C1: 1, C2: 1 },
+      items: [],
+      bank_version: 'v1',
+      applied: false,
+      duration_ms: 60_000,
+      device_id: 'd1',
+      hlc: '0',
+    } as never);
+    renderRoute(<ProfilePage />, { path: '/profile' });
+    const level = await screen.findByTestId('profile-level');
+    await waitFor(() => expect(screen.getByRole('link', { name: /Testi yeniden çöz/ })).toBeInTheDocument());
+    expect(level).toHaveTextContent('Henüz ölçülmedi');
+    expect(level).not.toHaveTextContent('B1');
+    expect(screen.getByText(/güvenilir bir sonuç vermedi/)).toBeInTheDocument();
+    // One heading, not "Seviye, Seviye" for a screen reader (B11).
+    expect(screen.getByRole('heading', { name: 'Seviye ve kelime hazinen' })).toBeInTheDocument();
+  });
+
   it('a long-time user without a test sees a floor, not "no estimate"', async () => {
     // A learned word: its recognition card reached Öğrenildi.
     const { note } = await addNoteWithSenses({ term: 'tide', senses: [{ meaning_tr: 'gelgit' }] });

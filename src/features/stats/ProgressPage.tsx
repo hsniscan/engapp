@@ -88,7 +88,8 @@ function General({ onReport }: { onReport: () => void }) {
       getStreakSummary(),
       getHardPracticeCount(Date.now()),
       db.daily_activity.toArray(),
-      db.weekly_reports.count(),
+      // A report waiting for its comment is shown on the report tab too (B7).
+      Promise.all([db.weekly_reports.count(), db.report_drafts.count()]).then(([a, b]) => a + b),
     ]);
     return { weeks, streak, hard, basics: activityBasics(activity, streak.today), reports };
   }, []);

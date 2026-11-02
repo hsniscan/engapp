@@ -629,7 +629,7 @@
       "saveFailed": "Kaydedilemedi. Tekrar dene."
     },
     "stats": {
-      "title": "Zorlandıklarım",
+      "title": "Sık unuttukların",
       "lead_one": "En az {{count}} kez unuttuğun kartlar. Onlara başka bir yoldan bakmayı dene.",
       "lead_other": "En az {{count}} kez unuttuğun kartlar. Onlara başka bir yoldan bakmayı dene.",
       "empty_one": "Henüz {{count}} kez unuttuğun bir kart yok. Olursa burada görünür.",
@@ -1289,7 +1289,11 @@
     "guestTitle": "Misafir",
     "guestHint": "Verilerin yalnızca bu cihazda. Giriş yaparsan cihazların arasında eşitlenir ve yapay zekâ ile kart çıkarabilirsin.",
     "signIn": "Giriş yap",
-    "or": "ya da"
+    "or": "ya da",
+    "signOutWipe": "Bu cihazdaki verileri de sil",
+    "signOutWipeHint": "Paylaşılan bir cihazda işe yarar: kelimelerin ve geçmişin hesabında kalır, bu cihaz boş açılır.",
+    "signOutPendingWipe_one": "{{count}} değişiklik henüz hesabına gönderilemedi. Şimdi çıkıp bu cihazı silersen bu değişiklik kaybolur.",
+    "signOutPendingWipe_other": "{{count}} değişiklik henüz hesabına gönderilemedi. Şimdi çıkıp bu cihazı silersen bu değişiklikler kaybolur."
   },
   "notFound": {
     "title": "Sayfa bulunamadı",
@@ -1678,8 +1682,8 @@
     "discardLocal": "Bu cihazdakini at",
     "discardLocalHint": "Bu cihazdaki kartlar ve geçmiş silinir, hesabındakiler indirilir.",
     "discardAccount": "Hesaptakini at",
-    "discardAccountHint": "Hesabındaki kartlar silinir, bu cihazdakiler hesabına yüklenir.",
-    "irreversible": "Bu işlem geri alınamaz. Emin değilsen önce yedek al ya da “Birleştir”i seç.",
+    "discardAccountHint": "Hesabındaki kartlar bütün cihazlarında silinir, bu cihazdakiler hesabına yüklenir.",
+    "irreversible": "Bu işlem geri alınamaz. Bu cihazda alacağın yedek hesaptaki kartları değil, bu cihazdakileri içerir. Emin değilsen “Birleştir”i seç.",
     "apply": "Devam et",
     "applying": "Uygulanıyor…",
     "errorTitle": "Hesap bağlanamadı",
@@ -1687,7 +1691,8 @@
     "continueAsGuest": "Misafir olarak devam et",
     "done": "Hesabına bağlandın",
     "doneCopied": "{{count}} kelime yeni kart olarak kopyalandı.",
-    "doneDuplicates": "{{count}} kelime “olası kopya” olarak işaretlendi; Kelimelerim'de gözden geçirebilirsin."
+    "doneDuplicates": "{{count}} kelime “olası kopya” olarak işaretlendi; Kelimelerim'de gözden geçirebilirsin.",
+    "discardAccountConfirm": "Anladım: hesabımdaki kartlar bütün cihazlarımda silinecek."
   },
   "accountDelete": {
     "rowTitle": "Hesabımı ve verilerimi sil",
@@ -2033,7 +2038,8 @@
     "forecastLoading": "Tahmin hesaplanıyor…",
     "forecastNote": "Tahmin, her kartı hatırlama olasılığına ve günlük yeni kart limitine göre hesaplanır.",
     "forecastToday": "Bugün",
-    "forecastChartLabel": "Önümüzdeki 30 günün beklenen tekrar sayısı, kapasite çizgisiyle"
+    "forecastChartLabel": "Önümüzdeki 30 günün beklenen tekrar sayısı, kapasite çizgisiyle",
+    "vacationStartPast": "Tatil bugünden önce başlayamaz. Başlangıcı bugün ya da sonraki bir gün seç."
   },
   "practice": {
     "title": "Pratik",
@@ -2344,7 +2350,7 @@
       "settings": "Ayarlar",
       "levelLabel": "Seviye",
       "unmeasured": "Henüz ölçülmedi",
-      "unmeasuredHint": "2 dakikalık testle seviyeni öğren.",
+      "unmeasuredHint": "5 dakikalık testle seviyeni öğren (en çok 70 soru).",
       "vocabLabel": "Tahmini kelime hazinen",
       "vocabNone": "Henüz tahmin yok",
       "vocabFloor_one": "en az {{value}} kelime",
@@ -2369,7 +2375,9 @@
       "knownWords": "Bildiğim kelimeler",
       "sync": "Eşitleme",
       "settingsHint": "Çalışma, hatırlatmalar, görünüm, yedek",
-      "goalLevel": "Hedef seviye {{level}}"
+      "goalLevel": "Hedef seviye {{level}}",
+      "unreliableHint": "Son testin güvenilir bir sonuç vermedi. Yeniden çözersen seviyeni ölçebiliriz.",
+      "levelSection": "Seviye ve kelime hazinen"
     }
   },
   "onboarding": {
@@ -2380,15 +2388,18 @@
     "welcome": {
       "title": "Kelimeleri kalıcı öğrenmeye başlayalım",
       "body": "Engapp sana her gün birkaç kelime sorar ve tam unutmak üzereyken yeniden getirir. Üç kısa adımda hazırız, sonra ilk çalışman başlar:",
-      "step1": "Seviyeni ölç: yaklaşık 2 dakikalık bir kelime testi (istersen atla).",
+      "step1": "Seviyeni ölç: 5 dakikalık bir kelime testi, en çok 70 soru (istersen atla).",
       "step2": "İlgi alanlarını seç: örnek cümleler bu konulardan gelsin.",
       "step3": "Hazır bir deste seç: “En çok kullanılan 500 kelime” gibi.",
       "step4": "İlk çalışmanı yap: birkaç dakika, birkaç yeni kelime.",
-      "start": "Başlayalım"
+      "start": "Başlayalım",
+      "haveAccount": "Zaten hesabın var mı?",
+      "signIn": "Giriş yap",
+      "signInFailed": "Giriş yapılamadı. Tekrar dene."
     },
     "level": {
       "title": "Seviyeni ölçelim",
-      "body": "Ekranda bir kelime görürsün, bilip bilmediğini söylersin. Yaklaşık 2 dakika sürer. Sonuca göre sana uygun kelimeler önerilir.",
+      "body": "Ekranda bir kelime görürsün, bilip bilmediğini söylersin. 5 dakika sürer, en çok 70 soru. Sonuca göre sana uygun kelimeler önerilir.",
       "start": "Teste başla",
       "skip": "Şimdi değil, atla"
     },
@@ -2410,14 +2421,17 @@
         "top100_one": "Hafif bir başlangıç · {{value}} kelime",
         "top100_other": "Hafif bir başlangıç · {{value}} kelime",
         "verbs_one": "Seviyene uygun fiiller · {{value}} kelime",
-        "verbs_other": "Seviyene uygun fiiller · {{value}} kelime"
+        "verbs_other": "Seviyene uygun fiiller · {{value}} kelime",
+        "verbsLevel_one": "Orta seviye fiiller ({{level}}) · {{value}} kelime",
+        "verbsLevel_other": "Orta seviye fiiller ({{level}}) · {{value}} kelime"
       },
       "pace": "Hepsi bir anda gelmez: her gün birkaç yeni kelime sorulur. Bildiğin kelimeler eklenmez.",
       "start": "Bu desteyle ilk çalışmaya başla",
       "adding": "Ekleniyor… {{done}} / {{total}}",
       "loading": "Hazır desteler yükleniyor",
       "offline": "Hazır desteleri getirmek için internet gerekiyor. Bağlanınca yeniden dene ya da kelimeleri kendin ekle.",
-      "retry": "Yeniden dene"
+      "retry": "Yeniden dene",
+      "skipOffline": "Şimdilik atla, uygulamaya geç"
     }
   },
   "decks": {
@@ -2696,7 +2710,8 @@
     },
     "pastTitle": "Önceki raporlar",
     "pastEmpty": "Henüz önceki rapor yok.",
-    "pastSummary": "{{days}} gün · {{reviews}} tekrar · {{learned}} yeni kelime"
+    "pastSummary": "{{days}} gün · {{reviews}} tekrar · {{learned}} yeni kelime",
+    "commentGuest": "Yorum, Google ile giriş yapınca eklenir. Sayılar şimdiden hazır."
   },
   "goals": {
     "title": "Hedeflerin",

@@ -166,6 +166,15 @@ describe('vacation', () => {
     expect((await getSettings(T)).vacation_history).toEqual([{ start: '2026-10-18', end: '2026-10-20' }]);
   });
 
+  it('cannot start in the past, so a broken streak cannot be repaired after the fact (B5)', async () => {
+    await expect(setVacation({ start: '2026-10-10', end: '2026-11-05' }, T)).rejects.toMatchObject({ code: 'invalid_input' });
+    expect((await getSettings(T)).vacation ?? null).toBeNull();
+    // The holiday under way can still be extended with its own start.
+    await setVacation({ start: '2026-10-21', end: '2026-10-25' }, T);
+    await setVacation({ start: '2026-10-21', end: '2026-10-28' }, T + 2 * DAY);
+    expect((await getSettings(T)).vacation).toEqual({ start: '2026-10-21', end: '2026-10-28' });
+  });
+
   it('survives a backup round trip', async () => {
     await updateSettings({ daily_capacity_min: 35, catchup_auto: false }, T);
     await setVacation({ start: '2026-11-01', end: '2026-11-05' }, T);

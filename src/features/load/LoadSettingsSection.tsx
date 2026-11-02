@@ -103,6 +103,7 @@ function VacationEditor({
     if (!start || !end) return setError(t('load.vacationMissing'));
     if (end < start) return setError(t('load.vacationInvalid'));
     if (end < today) return setError(t('load.vacationPast'));
+    if (start < today) return setError(t('load.vacationStartPast'));
     if (diffDays(start, end) >= MAX_VACATION_DAYS) return setError(t('load.vacationTooLong'));
     setError(null);
     setVacation({ start, end })

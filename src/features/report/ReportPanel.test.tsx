@@ -109,8 +109,9 @@ describe('weekly report tab', () => {
     await db.report_drafts.put(draft);
     await updateSettings({ daily_new_limit: 10 });
     renderRoute(<ReportPanel onOpen={noop} />);
+    // A guest's comment needs the account, not a connection (B9).
     expect(await screen.findByTestId('report-comment-missing')).toHaveTextContent(
-      'Yorum, internete bağlanınca eklenecek.',
+      'Yorum, Google ile giriş yapınca eklenir.',
     );
     await userEvent.click(await screen.findByRole('button', { name: 'Sınırı 6 yap' }));
     await waitFor(async () => expect((await db.settings.get('settings'))?.daily_new_limit).toBe(6));

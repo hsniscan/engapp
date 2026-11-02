@@ -111,11 +111,14 @@ function LevelCard() {
       </Surface>
     );
   }
-  // Never show the default "B1" as if it were measured (v0.5.1).
-  const measured = overview.source !== 'default' || overview.testCount > 0;
+  // Never show the default "B1" as if it were measured (v0.5.1). An unreliable test leaves the
+  // level unmeasured too (v0.5.2, B4): it gets its own hint instead of a big "B1".
+  const measured = overview.source !== 'default';
   const floor = stages ? vocabularyFloor(stages.learnedTotal, stages.alreadyKnown) : null;
   const source = !measured
-    ? t('profile.home.unmeasuredHint')
+    ? overview.testCount > 0
+      ? t('profile.home.unreliableHint')
+      : t('profile.home.unmeasuredHint')
     : overview.source === 'default' || !overview.updatedAt
       ? t('profile.home.source.default')
       : t(`profile.home.source.${overview.source}`, { date: formatDate(overview.updatedAt) });
@@ -125,7 +128,7 @@ function LevelCard() {
       className={cn(card, 'gap-4 px-[1.125rem] pt-5 pb-[1.125rem]')}
     >
       <h2 id="profile-level" className="sr-only">
-        {t('profile.home.levelLabel')}
+        {t('profile.home.levelSection')}
       </h2>
       <dl className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">

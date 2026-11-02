@@ -629,7 +629,7 @@
       "saveFailed": "Couldn’t save. Try again."
     },
     "stats": {
-      "title": "Tricky cards",
+      "title": "Often forgotten",
       "lead_one": "Cards you have forgotten at least {{count}} time. Try looking at them another way.",
       "lead_other": "Cards you have forgotten at least {{count}} times. Try looking at them another way.",
       "empty_one": "No card forgotten {{count}} time yet. When there is one, it shows up here.",
@@ -1289,7 +1289,11 @@
     "guestTitle": "Guest",
     "guestHint": "Your data lives only on this device. Sign in to sync across devices and pull cards out of texts with AI.",
     "signIn": "Sign in",
-    "or": "or"
+    "or": "or",
+    "signOutWipe": "Also delete the data on this device",
+    "signOutWipeHint": "Useful on a shared device: your words and history stay in your account, this device starts empty.",
+    "signOutPendingWipe_one": "{{count}} change has not reached your account yet. If you sign out and delete this device's data now, it is lost.",
+    "signOutPendingWipe_other": "{{count}} changes have not reached your account yet. If you sign out and delete this device's data now, they are lost."
   },
   "notFound": {
     "title": "Page not found",
@@ -1678,8 +1682,8 @@
     "discardLocal": "Discard this device's",
     "discardLocalHint": "Cards and history on this device are deleted and your account's are downloaded.",
     "discardAccount": "Discard the account's",
-    "discardAccountHint": "Cards in your account are deleted and this device's are uploaded to it.",
-    "irreversible": "This can't be undone. If you're not sure, make a backup first or choose “Merge”.",
+    "discardAccountHint": "Your account's cards are deleted on all your devices; the ones on this device are uploaded to it.",
+    "irreversible": "This can't be undone. A backup taken on this device holds this device's cards, not the account's. If you're not sure, choose “Merge”.",
     "apply": "Continue",
     "applying": "Applying…",
     "errorTitle": "Couldn't connect your account",
@@ -1687,7 +1691,8 @@
     "continueAsGuest": "Continue as guest",
     "done": "Connected to your account",
     "doneCopied": "{{count}} words were copied as new cards.",
-    "doneDuplicates": "{{count}} words were marked “possible duplicate”; you can review them in Kelimelerim (My words)."
+    "doneDuplicates": "{{count}} words were marked “possible duplicate”; you can review them in Kelimelerim (My words).",
+    "discardAccountConfirm": "I understand: my account's cards will be deleted on all my devices."
   },
   "accountDelete": {
     "rowTitle": "Delete my account and data",
@@ -2033,7 +2038,8 @@
     "forecastLoading": "Calculating the forecast…",
     "forecastNote": "The forecast uses how likely you are to remember each card and your daily new-card limit.",
     "forecastToday": "Today",
-    "forecastChartLabel": "Expected reviews for the next 30 days, with the capacity line"
+    "forecastChartLabel": "Expected reviews for the next 30 days, with the capacity line",
+    "vacationStartPast": "A holiday cannot start before today. Pick today or a later day."
   },
   "practice": {
     "title": "Practice",
@@ -2344,7 +2350,7 @@
       "settings": "Settings",
       "levelLabel": "Level",
       "unmeasured": "Not measured yet",
-      "unmeasuredHint": "Find your level with a 2-minute test.",
+      "unmeasuredHint": "Find your level with a 5-minute test (at most 70 questions).",
       "vocabLabel": "Estimated vocabulary",
       "vocabNone": "No estimate yet",
       "vocabFloor_one": "at least {{value}} word",
@@ -2369,7 +2375,9 @@
       "knownWords": "Words I know",
       "sync": "Sync",
       "settingsHint": "Study, reminders, appearance, backup",
-      "goalLevel": "Target level {{level}}"
+      "goalLevel": "Target level {{level}}",
+      "unreliableHint": "Your last test did not give a reliable result. Take it again to measure your level.",
+      "levelSection": "Level and vocabulary"
     }
   },
   "onboarding": {
@@ -2380,15 +2388,18 @@
     "welcome": {
       "title": "Let's start learning words for good",
       "body": "Engapp asks you a few words every day and brings each back just before you forget it. Three short steps, then your first study session:",
-      "step1": "Measure your level: a word test of about 2 minutes (skip it if you like).",
+      "step1": "Measure your level: a 5-minute word test, at most 70 questions (skip it if you like).",
       "step2": "Pick your interests: example sentences come from these topics.",
       "step3": "Pick a ready deck, such as “The 500 most used words”.",
       "step4": "Do your first session: a few minutes, a few new words.",
-      "start": "Let's begin"
+      "start": "Let's begin",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "signInFailed": "Could not sign in. Try again."
     },
     "level": {
       "title": "Let's measure your level",
-      "body": "You see a word and say whether you know it. It takes about 2 minutes. Suggestions then fit your level.",
+      "body": "You see a word and say whether you know it. It takes 5 minutes, at most 70 questions. Suggestions then fit your level.",
       "start": "Start the test",
       "skip": "Not now, skip"
     },
@@ -2410,14 +2421,17 @@
         "top100_one": "A light start · {{value}} word",
         "top100_other": "A light start · {{value}} words",
         "verbs_one": "Verbs for your level · {{value}} word",
-        "verbs_other": "Verbs for your level · {{value}} words"
+        "verbs_other": "Verbs for your level · {{value}} words",
+        "verbsLevel_one": "Intermediate verbs ({{level}}) · {{value}} word",
+        "verbsLevel_other": "Intermediate verbs ({{level}}) · {{value}} words"
       },
       "pace": "They don't all come at once: a few new words each day. Words you know are left out.",
       "start": "Start my first session with this deck",
       "adding": "Adding… {{done}} / {{total}}",
       "loading": "Loading ready decks",
       "offline": "Ready decks need the internet. Try again once you're online, or add words yourself.",
-      "retry": "Try again"
+      "retry": "Try again",
+      "skipOffline": "Skip for now and open the app"
     }
   },
   "decks": {
@@ -2696,7 +2710,8 @@
     },
     "pastTitle": "Earlier reports",
     "pastEmpty": "No earlier reports yet.",
-    "pastSummary": "{{days}} days · {{reviews}} reviews · {{learned}} new words"
+    "pastSummary": "{{days}} days · {{reviews}} reviews · {{learned}} new words",
+    "commentGuest": "The comment is added once you sign in with Google. The numbers are ready now."
   },
   "goals": {
     "title": "Your goals",
