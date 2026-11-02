@@ -20,7 +20,22 @@ import {
 } from '@/domain/anki';
 import type { AnkiImportCounts, AnkiImportRecord } from '@/domain/types';
 import { useAuth } from '@/features/auth/session';
-import { Button, Checkbox, Icon, Page, ProgressBar, Select, Spinner, Surface, buttonClasses, cn, toast } from '@/ui';
+import { SignInNeeded } from '@/features/add/SignInNeeded';
+import { AddFlowPage } from '@/features/add/ui';
+import {
+  Button,
+  Card,
+  Checkbox,
+  Eyebrow,
+  Icon,
+  ProgressBar,
+  Select,
+  Spinner,
+  Term,
+  buttonClasses,
+  cn,
+  toast,
+} from '@/ui';
 import { kickAnkiEnrich } from './enrichQueue';
 import { AnkiReadFailure, MAX_APKG_BYTES, parseApkgFile, type AnkiReadError } from './parseApkg';
 
@@ -43,7 +58,8 @@ export function AnkiImportPage() {
     try {
       const col = await parseApkgFile(file);
       const summary = summarizeAnki(col);
-      if (summary.notes === 0) return setState({ phase: 'pick', error: { name: file.name, code: 'empty' } });
+      if (summary.notes === 0)
+        return setState({ phase: 'pick', error: { name: file.name, code: 'empty' } });
       setState({ phase: 'review', name: file.name, col, summary });
     } catch (e) {
       const code = e instanceof AnkiReadFailure ? e.code : 'unreadable';
@@ -68,14 +84,16 @@ export function AnkiImportPage() {
   };
 
   return (
-    <Page title={t('anki.title')} description={t('anki.description')}>
+    <AddFlowPage title={t('anki.title')} description={t('anki.description')}>
       <div className="flex flex-col gap-6">
         {state.phase === 'pick' && <PickStep error={state.error} onFile={(f) => void read(f)} />}
         {state.phase === 'reading' && (
-          <div role="status" className="flex items-center gap-3 rounded-card border border-border bg-surface px-5 py-6">
+          <Card role="status" className="flex items-center gap-3">
             <Spinner size={20} />
-            <p className="min-w-0 flex-1 truncate font-medium text-fg">{t('anki.reading', { name: state.name })}</p>
-          </div>
+            <p className="min-w-0 flex-1 truncate text-ui font-medium text-fg">
+              {t('anki.reading', { name: state.name })}
+            </p>
+          </Card>
         )}
         {state.phase === 'review' && (
           <ReviewStep
@@ -86,10 +104,10 @@ export function AnkiImportPage() {
           />
         )}
         {state.phase === 'importing' && (
-          <div role="status" className="flex flex-col gap-3 rounded-card border border-border bg-surface px-5 py-6">
+          <Card role="status" className="flex flex-col gap-3">
             <div className="flex items-center gap-3">
               <Spinner size={20} />
-              <p className="min-w-0 flex-1 truncate font-medium text-fg">{state.name}</p>
+              <p className="min-w-0 flex-1 truncate text-ui font-medium text-fg">{state.name}</p>
             </div>
             <ProgressBar
               value={state.done}
@@ -97,19 +115,35 @@ export function AnkiImportPage() {
               label={t('a11y.progress')}
               valueText={t('anki.importing', { done: n(state.done), total: n(state.total) })}
             />
-            <p className="tabular text-sm text-fg-muted">{t('anki.importing', { done: n(state.done), total: n(state.total) })}</p>
-          </div>
+            <p className="tabular text-meta text-fg-muted">
+              {t('anki.importing', { done: n(state.done), total: n(state.total) })}
+            </p>
+          </Card>
         )}
-        {state.phase === 'done' && <DoneStep id={state.id} counts={state.counts} onAnother={() => setState({ phase: 'pick' })} />}
-        {(state.phase === 'pick' || state.phase === 'done') && <PastImports hideId={state.phase === 'done' ? state.id : null} />}
+        {state.phase === 'done' && (
+          <DoneStep
+            id={state.id}
+            counts={state.counts}
+            onAnother={() => setState({ phase: 'pick' })}
+          />
+        )}
+        {(state.phase === 'pick' || state.phase === 'done') && (
+          <PastImports hideId={state.phase === 'done' ? state.id : null} />
+        )}
       </div>
-    </Page>
+    </AddFlowPage>
   );
 }
 
 // ------------------------------------------------------------------ pick
 
-function PickStep({ error, onFile }: { error?: { name: string; code: AnkiReadError | 'empty' }; onFile: (f: File) => void }) {
+function PickStep({
+  error,
+  onFile,
+}: {
+  error?: { name: string; code: AnkiReadError | 'empty' };
+  onFile: (f: File) => void;
+}) {
   const { t } = useTranslation();
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -134,15 +168,22 @@ function PickStep({ error, onFile }: { error?: { name: string; code: AnkiReadErr
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
         className={cn(
-          'flex flex-col items-center rounded-card border-2 border-dashed px-6 py-10 text-center transition-colors duration-(--duration-micro)',
-          dragging ? 'border-accent bg-accent-soft/50' : 'border-border-strong/50 bg-surface',
+          'flex flex-col items-center rounded-card border border-dashed px-6 py-10 text-center transition-colors duration-(--duration-micro)',
+          dragging ? 'border-accent bg-accent-soft' : 'border-border-strong/60 bg-surface',
         )}
       >
-        <span className="mb-4 flex size-12 items-center justify-center rounded-full border border-border text-fg-muted">
-          <Icon name="layers" size={22} />
+        <span
+          aria-hidden="true"
+          className="mb-4 flex size-14 items-center justify-center rounded-full bg-accent-soft text-accent-text"
+        >
+          <Icon name="layers" size={24} />
         </span>
-        <p className="hidden font-serif text-lg font-semibold text-fg pointer-fine:block">{t('anki.pick.drop')}</p>
-        <p className="mt-1 mb-4 hidden text-sm text-fg-muted pointer-fine:block">{t('anki.pick.or')}</p>
+        <p className="hidden text-title font-semibold text-fg pointer-fine:block">
+          {t('anki.pick.drop')}
+        </p>
+        <p className="mt-1 mb-4 hidden text-meta text-fg-muted pointer-fine:block">
+          {t('anki.pick.or')}
+        </p>
         <input
           ref={inputRef}
           id={inputId}
@@ -154,16 +195,20 @@ function PickStep({ error, onFile }: { error?: { name: string; code: AnkiReadErr
           data-testid="anki-file"
           onChange={(e) => pick(e.target.files)}
         />
-        <Button variant="secondary" leadingIcon="file" onClick={() => inputRef.current?.click()}>
+        <Button size="lg" leadingIcon="file" onClick={() => inputRef.current?.click()}>
           {t('anki.pick.button')}
         </Button>
-        <p className="mt-4 max-w-xs text-sm text-fg-muted">{t('anki.pick.hint', { mb: MB })}</p>
+        <p className="mt-4 max-w-xs text-meta text-fg-muted">{t('anki.pick.hint', { mb: MB })}</p>
       </div>
       {error && (
-        <p role="alert" className="flex items-start gap-2 rounded-control bg-danger-soft px-3 py-2.5 text-sm text-danger-text">
+        <p
+          role="alert"
+          className="flex items-start gap-2 rounded-inner bg-danger-soft px-4 py-3 text-meta text-danger-text"
+        >
           <Icon name="alert" size={18} className="mt-px shrink-0" />
           <span className="min-w-0 break-words">
-            <span className="font-semibold">{error.name}:</span> {t(`anki.errors.${error.code}`, { mb: MB })}
+            <span className="font-semibold">{error.name}:</span>{' '}
+            {t(`anki.errors.${error.code}`, { mb: MB })}
           </span>
         </p>
       )}
@@ -186,12 +231,22 @@ function ReviewStep({
 }) {
   const { t } = useTranslation();
   const importable = summary.noteTypes.filter((nt) => nt.mapping);
-  const cloze = summary.noteTypes.filter((nt) => !nt.mapping).reduce((s, nt) => s + nt.noteCount, 0);
-  const [mappings, setMappings] = useState<AnkiMappings>(() => Object.fromEntries(importable.map((nt) => [nt.id, nt.mapping])));
+  const cloze = summary.noteTypes
+    .filter((nt) => !nt.mapping)
+    .reduce((s, nt) => s + nt.noteCount, 0);
+  const [mappings, setMappings] = useState<AnkiMappings>(() =>
+    Object.fromEntries(importable.map((nt) => [nt.id, nt.mapping])),
+  );
   const [off, setOff] = useState<Set<string>>(new Set());
   const valid = (nt: AnkiNoteTypeSummary) => {
     const m = mappings[nt.id];
-    return !!m && isValidMapping({ id: nt.id, name: nt.name, kind: nt.kind, fields: nt.fields, templates: [] }, m);
+    return (
+      !!m &&
+      isValidMapping(
+        { id: nt.id, name: nt.name, kind: nt.kind, fields: nt.fields, templates: [] },
+        m,
+      )
+    );
   };
   const chosen = importable.filter((nt) => !off.has(nt.id));
   const total = chosen.reduce((s, nt) => s + nt.noteCount, 0);
@@ -199,34 +254,46 @@ function ReviewStep({
 
   const submit = () => {
     const out: AnkiMappings = {};
-    for (const nt of summary.noteTypes) out[nt.id] = off.has(nt.id) ? null : (mappings[nt.id] ?? null);
+    for (const nt of summary.noteTypes)
+      out[nt.id] = off.has(nt.id) ? null : (mappings[nt.id] ?? null);
     onImport(out);
   };
 
   return (
     <div className="flex flex-col gap-5">
-      <Surface className="flex flex-col gap-1">
-        <p className="min-w-0 truncate text-sm text-fg-muted">{name}</p>
-        <p className="font-serif text-xl font-semibold text-fg" data-testid="anki-summary">
-          {t('anki.summary', { notes: n(summary.notes), cards: n(summary.cards), reviews: n(summary.reviews) })}
+      <Card className="flex flex-col gap-1">
+        <p className="min-w-0 truncate text-meta text-fg-muted">{name}</p>
+        <p className="text-title font-semibold text-fg" data-testid="anki-summary">
+          {t('anki.summary', {
+            notes: n(summary.notes),
+            cards: n(summary.cards),
+            reviews: n(summary.reviews),
+          })}
         </p>
-        {summary.mediaFiles > 0 && <p className="text-sm text-fg-muted">{t('anki.media', { count: summary.mediaFiles, n: n(summary.mediaFiles) })}</p>}
-      </Surface>
+        {summary.mediaFiles > 0 && (
+          <p className="text-meta text-fg-muted">
+            {t('anki.media', { count: summary.mediaFiles, n: n(summary.mediaFiles) })}
+          </p>
+        )}
+      </Card>
 
-      <div role="note" className="flex items-start gap-3 rounded-control bg-warn-soft px-4 py-3 text-warn-text">
+      <div
+        role="note"
+        className="flex items-start gap-3 rounded-inner bg-warn-soft px-4 py-3 text-warn-text"
+      >
         <Icon name="info" size={20} className="mt-0.5 shrink-0" />
         <div className="flex flex-col gap-0.5">
-          <p className="font-semibold">{t('anki.fsrs.title')}</p>
-          <p className="text-sm">{t('anki.fsrs.body')}</p>
+          <p className="text-ui font-semibold">{t('anki.fsrs.title')}</p>
+          <p className="text-meta">{t('anki.fsrs.body')}</p>
         </div>
       </div>
 
       <section aria-labelledby="anki-mapping" className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
-          <h2 id="anki-mapping" className="font-serif text-xl font-semibold text-fg">
+          <h2 id="anki-mapping" className="text-title font-semibold text-fg">
             {t('anki.mapping.title')}
           </h2>
-          <p className="text-[0.9375rem] text-fg-muted">{t('anki.mapping.intro')}</p>
+          <p className="text-ui text-fg-muted">{t('anki.mapping.intro')}</p>
         </div>
         {importable.map((nt) => (
           <NoteTypeMapping
@@ -247,14 +314,18 @@ function ReviewStep({
             onMapping={(m) => setMappings((s) => ({ ...s, [nt.id]: m }))}
           />
         ))}
-        {cloze > 0 && <p className="text-sm text-fg-muted">{t('anki.mapping.cloze', { count: cloze, n: n(cloze) })}</p>}
+        {cloze > 0 && (
+          <p className="text-meta text-fg-muted">
+            {t('anki.mapping.cloze', { count: cloze, n: n(cloze) })}
+          </p>
+        )}
       </section>
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <Button variant="ghost" onClick={onCancel}>
           {t('anki.cancel')}
         </Button>
-        <Button disabled={!ok} onClick={submit}>
+        <Button size="lg" disabled={!ok} onClick={submit}>
           {t('anki.submit', { count: total, n: n(total) })}
         </Button>
       </div>
@@ -280,15 +351,29 @@ function NoteTypeMapping({
   onMapping: (m: AnkiFieldMapping) => void;
 }) {
   const { t } = useTranslation();
-  const fieldOptions = nt.fields.map((f, i) => ({ value: String(i), label: f || t('anki.mapping.unnamed', { n: i + 1 }) }));
-  const previews = useMemo(() => (valid ? nt.samples.map((s) => previewNote(s, mapping)) : []), [nt.samples, mapping, valid]);
+  const fieldOptions = nt.fields.map((f, i) => ({
+    value: String(i),
+    label: f || t('anki.mapping.unnamed', { n: i + 1 }),
+  }));
+  const previews = useMemo(
+    () => (valid ? nt.samples.map((s) => previewNote(s, mapping)) : []),
+    [nt.samples, mapping, valid],
+  );
   return (
-    <Surface className="flex flex-col gap-4">
+    <Card className="flex flex-col gap-4">
       <div className="flex flex-col gap-0.5">
-        <h3 className="font-semibold text-fg break-words">{nt.name}</h3>
-        <p className="text-sm text-fg-muted">{t('anki.mapping.notes', { count: nt.noteCount, n: n(nt.noteCount) })}</p>
+        <h3 className="text-ui font-semibold break-words text-fg">{nt.name}</h3>
+        <p className="text-meta text-fg-muted">
+          {t('anki.mapping.notes', { count: nt.noteCount, n: n(nt.noteCount) })}
+        </p>
       </div>
-      {showToggle && <Checkbox label={t('anki.mapping.include')} checked={included} onCheckedChange={(v) => onIncluded(v === true)} />}
+      {showToggle && (
+        <Checkbox
+          label={t('anki.mapping.include')}
+          checked={included}
+          onCheckedChange={(v) => onIncluded(v === true)}
+        />
+      )}
       {included && (
         <>
           <div className="grid gap-3 sm:grid-cols-3">
@@ -309,26 +394,42 @@ function NoteTypeMapping({
               optional
               options={[{ value: 'none', label: t('anki.mapping.none') }, ...fieldOptions]}
               value={mapping.sentence === null ? 'none' : String(mapping.sentence)}
-              onValueChange={(v) => onMapping({ ...mapping, sentence: v === 'none' ? null : Number(v) })}
+              onValueChange={(v) =>
+                onMapping({ ...mapping, sentence: v === 'none' ? null : Number(v) })
+              }
             />
           </div>
           {!valid && (
-            <p role="alert" className="text-sm text-danger-text">
+            <p role="alert" className="text-meta text-danger-text">
               {t('anki.mapping.invalid')}
             </p>
           )}
           {previews.length > 0 && (
             <div className="flex flex-col gap-2">
-              <h4 className="text-sm font-medium text-fg-muted">{t('anki.mapping.preview')}</h4>
-              <ul className="flex flex-col divide-y divide-border rounded-control border border-border" data-testid="anki-preview">
+              <Eyebrow as="h4">{t('anki.mapping.preview')}</Eyebrow>
+              <ul
+                className="flex flex-col divide-y divide-border overflow-hidden rounded-inner border border-border"
+                data-testid="anki-preview"
+              >
                 {previews.map((p, i) => (
-                  <li key={i} className="flex flex-col gap-0.5 px-3 py-2.5">
+                  <li key={i} className="flex flex-col gap-0.5 px-4 py-3">
                     <p className="break-words">
-                      <span className="font-serif text-lg font-semibold text-fg">{p.term || t('anki.mapping.empty')}</span>
+                      <Term className="font-semibold text-fg">
+                        {p.term || t('anki.mapping.empty')}
+                      </Term>
                       <span className="text-fg-muted"> — </span>
-                      <span className="text-fg">{p.meaning || t('anki.mapping.empty')}</span>
+                      <span className="text-ui text-fg">
+                        {p.meaning || t('anki.mapping.empty')}
+                      </span>
                     </p>
-                    {p.sentence && <p className="text-sm break-words text-fg-muted italic">{p.sentence}</p>}
+                    {p.sentence && (
+                      <p
+                        lang="en"
+                        className="font-serif text-meta break-words text-fg-muted italic"
+                      >
+                        {p.sentence}
+                      </p>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -336,16 +437,33 @@ function NoteTypeMapping({
           )}
         </>
       )}
-    </Surface>
+    </Card>
   );
 }
 
 // ------------------------------------------------------------------ result
 
-function DoneStep({ id, counts, onAnother }: { id: string; counts: AnkiImportCounts; onAnother: () => void }) {
+function DoneStep({
+  id,
+  counts,
+  onAnother,
+}: {
+  id: string;
+  counts: AnkiImportCounts;
+  onAnother: () => void;
+}) {
   const { t } = useTranslation();
   const skipped = counts.skippedNoteType + counts.skippedEmpty;
-  type Line = 'created' | 'sensesAdded' | 'alreadyHad' | 'logs' | 'suspended' | 'sameInFile' | 'skipped' | 'ignored' | 'media';
+  type Line =
+    | 'created'
+    | 'sensesAdded'
+    | 'alreadyHad'
+    | 'logs'
+    | 'suspended'
+    | 'sameInFile'
+    | 'skipped'
+    | 'ignored'
+    | 'media';
   const lines: [Line, number][] = [
     ['created', counts.created],
     ['sensesAdded', counts.sensesAdded],
@@ -359,12 +477,12 @@ function DoneStep({ id, counts, onAnother }: { id: string; counts: AnkiImportCou
   ];
   return (
     <div className="flex flex-col gap-5">
-      <Surface className="flex flex-col gap-3" role="status">
-        <h2 className="flex items-center gap-2 font-serif text-xl font-semibold text-fg">
+      <Card className="flex flex-col gap-3" role="status">
+        <h2 className="flex items-center gap-2 text-title font-semibold text-fg">
           <Icon name="check" size={22} className="text-success-text" />
           {t('anki.done.title')}
         </h2>
-        <ul className="flex flex-col gap-1 text-[0.9375rem] text-fg" data-testid="anki-result">
+        <ul className="flex flex-col gap-1 text-ui text-fg" data-testid="anki-result">
           {lines
             .filter(([key, v]) => v > 0 || key === 'created')
             .map(([key, v]) => (
@@ -379,7 +497,7 @@ function DoneStep({ id, counts, onAnother }: { id: string; counts: AnkiImportCou
             {t('anki.done.another')}
           </Button>
         </div>
-      </Surface>
+      </Card>
       <EnrichCard id={id} />
     </div>
   );
@@ -388,7 +506,10 @@ function DoneStep({ id, counts, onAnother }: { id: string; counts: AnkiImportCou
 function EnrichCard({ id }: { id: string }) {
   const { t } = useTranslation();
   const auth = useAuth();
-  const rec = useLiveQuery(() => listAnkiImports().then((all) => all.find((r) => r.id === id) ?? null), [id]);
+  const rec = useLiveQuery(
+    () => listAnkiImports().then((all) => all.find((r) => r.id === id) ?? null),
+    [id],
+  );
   const [busy, setBusy] = useState(false);
   if (!rec || rec.note_ids.length === 0) return null;
   const start = async () => {
@@ -404,26 +525,32 @@ function EnrichCard({ id }: { id: string }) {
     }
   };
   return (
-    <Surface className="flex flex-col gap-3" aria-labelledby="anki-enrich">
-      <h2 id="anki-enrich" className="font-serif text-xl font-semibold text-fg">
+    <Card className="flex flex-col gap-3" aria-labelledby="anki-enrich">
+      <h2 id="anki-enrich" className="text-title font-semibold text-fg">
         {t('anki.enrich.title')}
       </h2>
-      <p className="text-[0.9375rem] text-fg-muted">{t('anki.enrich.body')}</p>
+      <p className="text-ui text-fg-muted">{t('anki.enrich.body')}</p>
       {rec.enrich.status === 'off' ? (
         auth.status === 'signed_in' ? (
           <>
-            <p className="text-sm text-fg-muted">{t('anki.enrich.quota')}</p>
-            <Button className="self-start" leadingIcon="refresh" loading={busy} onClick={() => void start()}>
+            <p className="text-meta text-fg-muted">{t('anki.enrich.quota')}</p>
+            <Button
+              variant="tonal"
+              className="self-start"
+              leadingIcon="refresh"
+              loading={busy}
+              onClick={() => void start()}
+            >
               {t('anki.enrich.start')}
             </Button>
           </>
         ) : (
-          <p className="text-sm text-fg-muted">{t('anki.enrich.signIn')}</p>
+          <SignInNeeded title={t('anki.enrich.signIn')} testId="anki-enrich-signin" />
         )
       ) : (
         <EnrichStatus rec={rec} />
       )}
-    </Surface>
+    </Card>
   );
 }
 
@@ -434,8 +561,12 @@ function EnrichStatus({ rec }: { rec: AnkiImportRecord }) {
   const total = done + e.pending.length;
   if (e.status === 'done')
     return (
-      <p role="status" className="text-sm text-fg">
-        {t('anki.enrich.done', { matched: n(e.matched), termOnly: n(e.term_only), unmatched: n(e.unmatched) })}
+      <p role="status" className="text-meta text-fg">
+        {t('anki.enrich.done', {
+          matched: n(e.matched),
+          termOnly: n(e.term_only),
+          unmatched: n(e.unmatched),
+        })}
       </p>
     );
   const text =
@@ -446,8 +577,13 @@ function EnrichStatus({ rec }: { rec: AnkiImportRecord }) {
       : t('anki.enrich.running', { done: n(done), total: n(total) });
   return (
     <div role="status" className="flex flex-col gap-2">
-      <ProgressBar value={done} max={Math.max(1, total)} label={t('anki.enrich.title')} valueText={text} />
-      <p className="tabular text-sm text-fg-muted">{text}</p>
+      <ProgressBar
+        value={done}
+        max={Math.max(1, total)}
+        label={t('anki.enrich.title')}
+        valueText={text}
+      />
+      <p className="tabular text-meta text-fg-muted">{text}</p>
     </div>
   );
 }
@@ -459,17 +595,19 @@ function PastImports({ hideId }: { hideId: string | null }) {
   if (rows.length === 0) return null;
   return (
     <section aria-labelledby="anki-history" className="flex flex-col gap-3">
-      <h2 id="anki-history" className="font-serif text-lg font-semibold text-fg">
+      <h2 id="anki-history" className="text-title font-semibold text-fg">
         {t('anki.history.title')}
       </h2>
       <ul className="flex flex-col gap-3">
         {rows.map((r) => (
           <li key={r.id}>
-            <Surface className="flex flex-col gap-2">
-              <p className="min-w-0 font-medium break-words text-fg">{r.file_name}</p>
-              <p className="text-sm text-fg-muted">{t('anki.history.words', { count: r.note_ids.length, n: n(r.note_ids.length) })}</p>
+            <Card className="flex flex-col gap-2">
+              <p className="min-w-0 text-ui font-medium break-words text-fg">{r.file_name}</p>
+              <p className="text-meta text-fg-muted">
+                {t('anki.history.words', { count: r.note_ids.length, n: n(r.note_ids.length) })}
+              </p>
               {r.enrich.status !== 'off' && <EnrichStatus rec={r} />}
-            </Surface>
+            </Card>
           </li>
         ))}
       </ul>

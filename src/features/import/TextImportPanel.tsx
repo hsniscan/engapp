@@ -77,7 +77,7 @@ function TextImportForm() {
               })
             : t('importer.paste.statsEmpty')
         }
-        className="min-h-56 font-serif text-[1.0625rem]"
+        className="min-h-56 font-serif text-lead"
       />
       <TextField
         label={t('importer.paste.titleLabel')}

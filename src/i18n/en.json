@@ -196,8 +196,7 @@
     "hardTitle": "Hard words"
   },
   "addSheet": {
-    "title": "What would you like to add?",
-    "quickPlaceholder": "Type a word…",
+    "title": "Add",
     "word": {
       "title": "Add a word",
       "label": "Its meaning comes from your cards, the Word Bank or the dictionary; otherwise AI finds it",
@@ -207,21 +206,19 @@
       "another": "Add another word",
       "offline": "This word is not on your phone. Once online I can find its meaning; or add it by hand.",
       "signIn": "This word is not on your phone. Sign in so AI can find its meaning, or add it by hand.",
-      "notFound": "I couldn't find this word's meaning. You can add it by hand."
+      "notFound": "I couldn't find this word's meaning. You can add it by hand.",
+      "field": "Type a word or phrase",
+      "placeholder": "Type a word"
     },
     "text": {
       "title": "Add a text",
-      "paste": "Paste",
-      "pdf": "PDF",
+      "paste": "Paste text",
+      "pdf": "PDF file",
       "link": "Link",
       "photo": "Photo",
       "subtitle": "Subtitles",
-      "body": "The text is saved and opens in the reader. You can pick out its new words too."
-    },
-    "compose": {
-      "title": "A text from my words",
-      "cta": "Create a text from my words",
-      "body": "Pick 3–8 of your words; get a story, dialogue, news item or email."
+      "body": "The text is saved and opens in the reader. You can pick out its new words too.",
+      "compose": "Write a text"
     },
     "import": {
       "title": "Import",
@@ -640,7 +637,8 @@
     "wordLead": "Type the word; its meaning comes from your cards, the Word Bank or the dictionary. Write your own and add an example if you like.",
     "textTitle": "Add a text",
     "textLead": "The text is saved and opens in the reader. You can pick out its new words too.",
-    "otherWays": "Or from somewhere else"
+    "otherWays": "Or from somewhere else",
+    "backToSheet": "Add"
   },
   "library": {
     "searchPlaceholder": "Search a word or meaning",

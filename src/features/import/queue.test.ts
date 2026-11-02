@@ -87,7 +87,9 @@ describe('import queue', () => {
     const calls = h.calls.length;
     await processImportQueue(h.deps);
     expect(h.calls.length).toBe(calls);
-    expect((await db.sources.get((await getImportJob(again.id))!.source_id))?.topics).toEqual(['technology']);
+    expect((await db.sources.get((await getImportJob(again.id))!.source_id))?.topics).toEqual([
+      'technology',
+    ]);
   });
 
   it('the same text a second time makes no AI call (acceptance criterion 8)', async () => {
@@ -200,7 +202,11 @@ describe('import queue', () => {
     await processImportQueue(h.deps);
     const { previewPartialImportJob } = await import('@/data');
     expect(await previewPartialImportJob(job.id)).toBe(true);
-    expect(await getImportJob(job.id)).toMatchObject({ status: 'ready', chunk_total: 1, chunk_done: 1 });
+    expect(await getImportJob(job.id)).toMatchObject({
+      status: 'ready',
+      chunk_total: 1,
+      chunk_done: 1,
+    });
   });
 
   it('quota_exceeded is retried with backoff before failing', async () => {

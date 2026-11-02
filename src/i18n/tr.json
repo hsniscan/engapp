@@ -196,8 +196,7 @@
     "hardTitle": "Zorlandıkların"
   },
   "addSheet": {
-    "title": "Ne eklemek istersin?",
-    "quickPlaceholder": "Bir kelime yaz…",
+    "title": "Ekle",
     "word": {
       "title": "Kelime ekle",
       "label": "Anlamı kartlarından, Kelime Bankası'ndan ya da sözlükten gelir; yoksa yapay zekâ bulur",
@@ -207,21 +206,19 @@
       "another": "Başka kelime ekle",
       "offline": "Bu kelime telefonunda yok. İnternete bağlanınca anlamını bulabilirim; istersen elle ekle.",
       "signIn": "Bu kelime telefonunda yok. Yapay zekânın anlamını bulması için giriş yap ya da elle ekle.",
-      "notFound": "Bu kelimenin anlamını bulamadım. Elle ekleyebilirsin."
+      "notFound": "Bu kelimenin anlamını bulamadım. Elle ekleyebilirsin.",
+      "field": "Kelime ya da ifade yaz",
+      "placeholder": "Bir kelime yaz"
     },
     "text": {
       "title": "Metin ekle",
-      "paste": "Yapıştır",
-      "pdf": "PDF",
+      "paste": "Metin yapıştır",
+      "pdf": "PDF dosyası",
       "link": "Bağlantı",
       "photo": "Fotoğraf",
       "subtitle": "Altyazı",
-      "body": "Metin kaydedilir ve okuyucuda açılır. İstersen içindeki yeni kelimeleri çıkarırsın."
-    },
-    "compose": {
-      "title": "Kelimelerimle metin",
-      "cta": "Kelimelerimle metin oluştur",
-      "body": "3–8 kelimeni seç; hikâye, diyalog, haber ya da e-posta olarak gelsin."
+      "body": "Metin kaydedilir ve okuyucuda açılır. İstersen içindeki yeni kelimeleri çıkarırsın.",
+      "compose": "Metin oluştur"
     },
     "import": {
       "title": "İçe aktar",
@@ -640,7 +637,8 @@
     "wordLead": "Kelimeyi yaz; anlamı kartlarından, Kelime Bankası'ndan ya da sözlükten gelir. İstersen kendin yaz, örnek cümle ekle.",
     "textTitle": "Metin ekle",
     "textLead": "Metin kaydedilir ve okuyucuda açılır. İstersen içindeki yeni kelimeleri çıkarırsın.",
-    "otherWays": "Ya da başka bir yerden"
+    "otherWays": "Ya da başka bir yerden",
+    "backToSheet": "Ekle"
   },
   "library": {
     "searchPlaceholder": "Kelime ya da anlam ara",

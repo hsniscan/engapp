@@ -9,7 +9,18 @@ import { logError } from '@/data';
 import { importWordList, type WordListResult } from '@/data/wordList';
 import { MAX_LIST_ROWS, parseWordList } from '@/domain/wordList';
 import { locateTerm } from '@/features/cards/locateTerm';
-import { Button, Icon, Page, ProgressBar, Surface, TextArea, buttonClasses, toast } from '@/ui';
+import { AddFlowPage, StickyBar } from '@/features/add/ui';
+import {
+  Button,
+  Card,
+  Eyebrow,
+  Icon,
+  ProgressBar,
+  Term,
+  TextArea,
+  buttonClasses,
+  toast,
+} from '@/ui';
 
 /** Larger files are not word lists. */
 const MAX_FILE_BYTES = 2 * 1024 * 1024;
@@ -66,18 +77,13 @@ export function CsvImportPage() {
 
   if (result)
     return (
-      <Page title={t('wordList.title')}>
-        <Surface
-          padding="md"
-          className="flex flex-col gap-3"
-          role="status"
-          data-testid="word-list-done"
-        >
-          <p className="flex items-center gap-2 font-serif text-xl font-semibold text-fg">
+      <AddFlowPage title={t('wordList.title')}>
+        <Card className="flex flex-col gap-3" role="status" data-testid="word-list-done">
+          <p className="flex items-center gap-2 text-title font-semibold text-fg">
             <Icon name="check" size={22} className="text-success-text" />
             {t('wordList.done', { count: result.created })}
           </p>
-          <ul className="flex flex-col gap-1 text-sm text-fg-muted">
+          <ul className="flex flex-col gap-1 text-meta text-fg-muted">
             {result.addedSenses > 0 && (
               <li>{t('wordList.addedSenses', { count: result.addedSenses })}</li>
             )}
@@ -94,12 +100,12 @@ export function CsvImportPage() {
               {t('wordList.again')}
             </Button>
           </div>
-        </Surface>
-      </Page>
+        </Card>
+      </AddFlowPage>
     );
 
   return (
-    <Page title={t('wordList.title')} description={t('wordList.lead')}>
+    <AddFlowPage title={t('wordList.title')} description={t('wordList.lead')}>
       <div className="flex flex-col gap-5">
         <div className="flex flex-col gap-2">
           <input
@@ -121,9 +127,9 @@ export function CsvImportPage() {
           >
             {fileName ? t('wordList.otherFile') : t('wordList.pickFile')}
           </Button>
-          {fileName && <p className="text-sm text-fg-muted">{fileName}</p>}
+          {fileName && <p className="text-meta text-fg-muted">{fileName}</p>}
           {fileError && (
-            <p role="alert" className="text-sm text-danger-text">
+            <p role="alert" className="text-meta text-danger-text">
               {fileError}
             </p>
           )}
@@ -139,25 +145,23 @@ export function CsvImportPage() {
           }}
           rows={8}
           spellCheck={false}
-          className="font-mono text-[0.9375rem]"
+          className="font-mono text-ui"
         />
 
         {rows.length > 0 && (
           <section aria-labelledby="word-list-preview" className="flex flex-col gap-2">
-            <h2 id="word-list-preview" className="text-sm font-semibold text-fg-muted">
-              {t('wordList.preview', { count: rows.length })}
-            </h2>
-            <ul className="flex flex-col divide-y divide-border rounded-card border border-border bg-surface">
+            <Eyebrow as="h2" className="px-1">
+              <span id="word-list-preview">{t('wordList.preview', { count: rows.length })}</span>
+            </Eyebrow>
+            <ul className="flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
               {rows.slice(0, SHOWN).map((r, i) => (
-                <li key={i} className="flex flex-col gap-0.5 px-4 py-2.5">
+                <li key={i} className="flex min-h-14 flex-col justify-center gap-0.5 px-4 py-3">
                   <span className="flex flex-wrap items-baseline gap-x-2">
-                    <span lang="en" className="font-serif text-[1.0625rem] font-semibold text-fg">
-                      {r.term}
-                    </span>
-                    <span className="text-fg">{r.meaning}</span>
+                    <Term className="font-semibold text-fg">{r.term}</Term>
+                    <span className="text-ui text-fg">{r.meaning}</span>
                   </span>
                   {r.sentence && (
-                    <span lang="en" className="font-serif text-sm text-fg-muted italic">
+                    <span lang="en" className="font-serif text-meta text-fg-muted italic">
                       {r.sentence}
                     </span>
                   )}
@@ -165,17 +169,17 @@ export function CsvImportPage() {
               ))}
             </ul>
             {rows.length > SHOWN && (
-              <p className="text-sm text-fg-muted">
+              <p className="px-1 text-meta text-fg-muted">
                 {t('wordList.more', { count: rows.length - SHOWN })}
               </p>
             )}
             {parsed.skipped > 0 && (
-              <p className="text-sm text-fg-muted">
+              <p className="px-1 text-meta text-fg-muted">
                 {t('wordList.skipped', { count: parsed.skipped })}
               </p>
             )}
             {parsed.truncated && (
-              <p className="text-sm text-warn-text">
+              <p className="px-1 text-meta text-warn-text">
                 {t('wordList.truncated', { max: MAX_LIST_ROWS })}
               </p>
             )}
@@ -183,24 +187,34 @@ export function CsvImportPage() {
         )}
 
         {busy !== null ? (
-          <ProgressBar
-            value={busy}
-            max={Math.max(1, rows.length)}
-            label={t('a11y.progress')}
-            valueText={t('wordList.adding', { done: busy, total: rows.length })}
-          />
+          <div role="status" className="flex flex-col gap-2">
+            <ProgressBar
+              size="md"
+              value={busy}
+              max={Math.max(1, rows.length)}
+              label={t('a11y.progress')}
+              valueText={t('wordList.adding', { done: busy, total: rows.length })}
+            />
+            <p className="tabular text-meta text-fg-muted">
+              {t('wordList.adding', { done: busy, total: rows.length })}
+            </p>
+          </div>
         ) : (
-          <Button
-            size="lg"
-            leadingIcon="plus"
-            disabled={rows.length === 0}
-            onClick={() => void run()}
-            data-testid="word-list-add"
-          >
-            {rows.length ? t('wordList.add', { count: rows.length }) : t('wordList.addEmpty')}
-          </Button>
+          <StickyBar className="mt-0">
+            <Button
+              size="lg"
+              fullWidth
+              leadingIcon="plus"
+              disabled={rows.length === 0}
+              onClick={() => void run()}
+              data-testid="word-list-add"
+              className="sm:w-auto"
+            >
+              {rows.length ? t('wordList.add', { count: rows.length }) : t('wordList.addEmpty')}
+            </Button>
+          </StickyBar>
         )}
       </div>
-    </Page>
+    </AddFlowPage>
   );
 }

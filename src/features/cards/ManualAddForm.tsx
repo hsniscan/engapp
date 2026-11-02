@@ -15,7 +15,8 @@ import {
   SegmentedControl,
   Select,
   Spinner,
-  Surface,
+  Card,
+  Eyebrow,
   TextArea,
   TextField,
   buttonClasses,
@@ -255,11 +256,11 @@ export function ManualAddForm() {
         />
 
         {existingNote && (
-          <Surface tone="sunken" padding="sm" className="flex gap-3 px-4" role="status">
+          <Card tone="sunken" inset padding="sm" className="flex gap-3 px-4" role="status">
             <Icon name="info" size={20} className="mt-0.5 shrink-0 text-accent-text" />
             <div className="flex min-w-0 flex-1 flex-col gap-1">
-              <p className="text-[0.9375rem] font-medium text-fg">{t('cards.add.exists')}</p>
-              <p className="text-sm text-fg-muted">
+              <p className="text-ui font-medium text-fg">{t('cards.add.exists')}</p>
+              <p className="text-meta text-fg-muted">
                 {t('cards.add.existsHas', { count: existingMeanings?.length ?? 0 })}{' '}
                 <span className="text-fg">
                   {existingMeanings?.map((m, i) => `${i + 1}. ${m}`).join(' · ')}
@@ -267,13 +268,13 @@ export function ManualAddForm() {
               </p>
               <Link
                 to={`/library?note=${existingNote.note.id}`}
-                className="mt-1 inline-flex min-h-11 items-center gap-1 self-start text-sm font-medium text-accent-text underline-offset-4 hover:underline"
+                className="mt-1 inline-flex min-h-11 items-center gap-1 self-start text-meta font-semibold text-accent-text underline-offset-4 hover:underline"
               >
                 {t('cards.add.openInLibrary')}
                 <Icon name="chevron-right" size={16} />
               </Link>
             </div>
-          </Surface>
+          </Card>
         )}
 
         {lookup.available && (
@@ -301,7 +302,7 @@ export function ManualAddForm() {
 
       <fieldset className="flex flex-col gap-3">
         <legend className="mb-3 flex w-full items-baseline justify-between">
-          <span className="font-serif text-xl font-semibold text-fg">
+          <span className="text-title font-semibold text-fg">
             {existingNote ? t('cards.add.newSenses') : t('cards.add.senses')}
           </span>
         </legend>
@@ -369,7 +370,7 @@ export function ManualAddForm() {
       </div>
 
       <div className="flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-fg-muted">{t('cards.add.cardsHint')}</p>
+        <p className="text-meta text-fg-muted">{t('cards.add.cardsHint')}</p>
         <Button
           type="submit"
           size="lg"
@@ -412,10 +413,10 @@ function SenseEditor({
   const detailsId = `${idBase}-details`;
   return (
     <li>
-      <Surface padding="none" className="flex flex-col gap-4 p-4 sm:p-5">
+      <Card className="flex flex-col gap-4">
         <div className="-mt-1 flex items-center justify-between gap-2">
-          <h3 className="flex items-center gap-2 text-sm font-medium text-fg-muted">
-            <span className="tabular font-serif text-base font-semibold text-fg">{index + 1}.</span>
+          <h3 className="flex items-center gap-2 text-meta font-medium text-fg-muted">
+            <span className="tabular text-ui font-semibold text-fg">{index + 1}.</span>
             {t('cards.add.senseN')}
             {draft.lexicon_sense_id && <Badge tone="accent">{t('cards.add.fromLexicon')}</Badge>}
           </h3>
@@ -471,7 +472,7 @@ function SenseEditor({
             aria-expanded={draft.showDetails}
             aria-controls={detailsId}
             onClick={() => onChange({ showDetails: !draft.showDetails })}
-            className="-ml-1 inline-flex min-h-11 items-center gap-1.5 rounded-control px-1 text-sm font-medium text-fg-muted hover:text-fg"
+            className="-ml-1 inline-flex min-h-11 items-center gap-1.5 rounded-control px-1 text-meta font-semibold text-fg-muted hover:text-fg"
           >
             <Icon
               name="chevron-down"
@@ -512,7 +513,7 @@ function SenseEditor({
             </div>
           )}
         </div>
-      </Surface>
+      </Card>
     </li>
   );
 }
@@ -542,9 +543,9 @@ function LexiconBlock({
     </li>
   );
   return (
-    <Surface padding="sm" className="flex flex-col gap-2 px-4">
+    <Card padding="sm" className="flex flex-col gap-2 px-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-fg-muted">{t('cards.ai.hint')}</p>
+        <p className="text-meta text-fg-muted">{t('cards.ai.hint')}</p>
         <Button
           variant="secondary"
           size="sm"
@@ -556,24 +557,20 @@ function LexiconBlock({
         </Button>
       </div>
       {lookup.status === 'loading' && lookup.senses.length === 0 && (
-        <p className="flex items-center gap-2 text-sm text-fg-muted">
+        <p className="flex items-center gap-2 text-meta text-fg-muted">
           <Spinner size={16} /> {t('cards.ai.loading')}
         </p>
       )}
-      {lookup.error && <p className="text-sm text-danger-text">{lookup.error}</p>}
+      {lookup.error && <p className="text-meta text-danger-text">{lookup.error}</p>}
       {lexicon.length > 0 && (
         <>
-          <p className="mt-1 text-xs font-medium tracking-wide text-fg-muted uppercase">
-            {t('cards.ai.fromLexicon')}
-          </p>
+          <Eyebrow className="mt-1">{t('cards.ai.fromLexicon')}</Eyebrow>
           <ul>{lexicon.map(row)}</ul>
         </>
       )}
       {ai.length > 0 && (
         <>
-          <p className="mt-1 text-xs font-medium tracking-wide text-fg-muted uppercase">
-            {t('cards.ai.fromAi')}
-          </p>
+          <Eyebrow className="mt-1">{t('cards.ai.fromAi')}</Eyebrow>
           <ul>{ai.map(row)}</ul>
         </>
       )}
@@ -587,6 +584,6 @@ function LexiconBlock({
           {t('cards.ai.searchMore')}
         </button>
       )}
-    </Surface>
+    </Card>
   );
 }

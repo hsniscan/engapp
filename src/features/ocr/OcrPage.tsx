@@ -19,7 +19,8 @@ import { extractCapture, saveCapture } from '@/features/add/capture';
 import { useAuth } from '@/features/auth/session';
 import { isNativeApp } from '@/native/platform';
 import type { SharedImageState } from '@/native/share';
-import { Button, EmptyState, Icon, Page, ProgressBar, Spinner, cn, toast } from '@/ui';
+import { AddFlowPage, Notice } from '@/features/add/ui';
+import { Button, Card, EmptyState, Icon, ProgressBar, Spinner, cn, toast } from '@/ui';
 import { NotAnImageError, prepareImage } from './image';
 import { OcrReview } from './OcrReview';
 import { defaultRecognizer } from './recognizer';
@@ -189,12 +190,10 @@ export function OcrPage({
 
   if (state.kind === 'working')
     return (
-      <Page title={t('ocr.title')}>
-        <div role="status" className="flex flex-col items-center gap-4 py-12 text-center">
-          <Spinner size={24} />
-          <p className="text-[0.9375rem] text-fg">
-            {native ? t('ocr.working') : t('ocr.workingWeb')}
-          </p>
+      <AddFlowPage title={t('ocr.title')}>
+        <Card role="status" className="flex flex-col items-center gap-4 py-10 text-center">
+          {state.progress === null && <Spinner size={24} />}
+          <p className="text-ui text-fg">{native ? t('ocr.working') : t('ocr.workingWeb')}</p>
           {state.progress !== null && (
             <ProgressBar
               value={Math.round(state.progress * 100)}
@@ -207,14 +206,15 @@ export function OcrPage({
           <Button variant="ghost" onClick={reset}>
             {t('common.cancel')}
           </Button>
-        </div>
-      </Page>
+        </Card>
+      </AddFlowPage>
     );
 
   if (state.kind === 'empty')
     return (
-      <Page title={t('ocr.title')} hideTitle>
+      <AddFlowPage title={t('ocr.title')}>
         <EmptyState
+          tone="card"
           icon="image"
           title={t('ocr.emptyTitle')}
           description={t('ocr.emptyBody')}
@@ -224,45 +224,41 @@ export function OcrPage({
             </Button>
           }
         />
-      </Page>
+      </AddFlowPage>
     );
 
   return (
-    <Page title={t('ocr.title')} description={t('ocr.lead')}>
+    <AddFlowPage title={t('ocr.title')} description={t('ocr.lead')}>
       {inputs}
       {state.error && (
-        <p role="alert" className="mb-4 text-sm text-danger-text" data-testid="ocr-error">
+        <Notice tone="danger" className="mb-4" testId="ocr-error">
           {t(state.error === 'notImage' ? 'ocr.notImage' : 'ocr.failed')}
-        </p>
+        </Notice>
       )}
       <div className={cn('mb-5 grid gap-3', showCamera && 'sm:grid-cols-2')}>
         {showCamera && (
-          <button
-            type="button"
+          <Button
+            size="lg"
+            fullWidth
+            leadingIcon="camera"
             onClick={() => cameraRef.current?.click()}
             data-testid="ocr-camera"
-            className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-[20px] bg-accent px-4 py-5 text-accent-fg transition-colors duration-(--duration-micro) hover:bg-accent-hover"
           >
-            <Icon name="camera" size={30} strokeWidth={1.6} />
-            <span className="text-base font-semibold">{t('ocr.camera')}</span>
-          </button>
+            {t('ocr.camera')}
+          </Button>
         )}
-        <button
-          type="button"
+        <Button
+          size="lg"
+          fullWidth
+          variant={showCamera ? 'secondary' : 'primary'}
+          leadingIcon="image"
           onClick={() => galleryRef.current?.click()}
           data-testid="ocr-gallery"
-          className={cn(
-            'flex min-h-28 flex-col items-center justify-center gap-2 rounded-[20px] px-4 py-5 transition-colors duration-(--duration-micro)',
-            showCamera
-              ? 'border border-border bg-surface-raised text-fg hover:bg-hover'
-              : 'bg-accent text-accent-fg hover:bg-accent-hover',
-          )}
         >
-          <Icon name="image" size={30} strokeWidth={1.6} />
-          <span className="text-base font-semibold">{t('ocr.gallery')}</span>
-        </button>
+          {t('ocr.gallery')}
+        </Button>
       </div>
-      <ul className="flex flex-col gap-2.5 text-sm text-fg-muted">
+      <ul className="flex flex-col gap-3 text-meta text-fg-muted">
         <li className="flex items-start gap-2">
           <Icon name="check" size={18} className="mt-px shrink-0 text-success-text" />
           <span>{native ? t('ocr.privacy') : t('ocr.privacyWeb')}</span>
@@ -278,6 +274,6 @@ export function OcrPage({
           </li>
         )}
       </ul>
-    </Page>
+    </AddFlowPage>
   );
 }

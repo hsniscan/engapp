@@ -33,11 +33,14 @@ import { openAddSheet } from '@/features/add/addSheetStore';
 import { SignInNeeded } from '@/features/add/SignInNeeded';
 import { useAuth } from '@/features/auth/session';
 import { storyError, type StoryError } from '@/features/story/storyError';
+import { AddFlowPage, StickyBar } from '@/features/add/ui';
 import {
   Button,
+  Card,
+  Chip,
   EmptyState,
+  Eyebrow,
   Icon,
-  Page,
   SegmentedControl,
   Skeleton,
   Spinner,
@@ -116,19 +119,21 @@ export function ComposePage() {
 
   if (data === undefined)
     return (
-      <Page title={t('compose.title')} description={t('compose.lead')}>
+      <AddFlowPage title={t('compose.title')} description={t('compose.lead')}>
         <div aria-busy="true" className="flex flex-col gap-3">
-          <Skeleton className="h-10 w-2/3" />
-          <Skeleton className="h-28" />
-          <Skeleton className="h-28" />
+          <Skeleton className="h-6 w-2/3" />
+          <Skeleton className="h-11 rounded-control" />
+          <Skeleton className="h-28 rounded-card" />
+          <Skeleton className="h-28 rounded-card" />
         </div>
-      </Page>
+      </AddFlowPage>
     );
 
   if (data.words.length < MIN_PICKS)
     return (
-      <Page title={t('compose.title')} description={t('compose.lead')}>
+      <AddFlowPage title={t('compose.title')} description={t('compose.lead')}>
         <EmptyState
+          tone="card"
           icon="cards"
           title={t('compose.fewTitle')}
           description={t('compose.fewBody', { count: MIN_PICKS })}
@@ -138,7 +143,7 @@ export function ComposePage() {
             </Button>
           }
         />
-      </Page>
+      </AddFlowPage>
     );
 
   const toggle = (w: PickWord) =>
@@ -151,7 +156,7 @@ export function ComposePage() {
     );
 
   return (
-    <Page title={t('compose.title')} description={t('compose.lead')}>
+    <AddFlowPage title={t('compose.title')} description={t('compose.lead')}>
       <div ref={headingRef} className="scroll-mt-20">
         <Steps step={step} />
       </div>
@@ -174,7 +179,7 @@ export function ComposePage() {
           onDone={() => writeDraft(null)}
         />
       )}
-    </Page>
+    </AddFlowPage>
   );
 }
 
@@ -182,7 +187,7 @@ function Steps({ step }: { step: 1 | 2 }) {
   const { t } = useTranslation();
   const items = [t('compose.step1'), t('compose.step2'), t('compose.step3')];
   return (
-    <ol className="mb-6 flex items-center gap-2 text-sm" aria-label={t('compose.steps')}>
+    <ol className="mb-6 flex items-center gap-2 text-meta" aria-label={t('compose.steps')}>
       {items.map((label, i) => {
         const n = i + 1;
         const current = n === step;
@@ -199,15 +204,15 @@ function Steps({ step }: { step: 1 | 2 }) {
             <span
               aria-hidden="true"
               className={cn(
-                'flex size-6 shrink-0 items-center justify-center rounded-full text-xs',
+                'tabular flex size-6 shrink-0 items-center justify-center rounded-full text-caption',
                 current
                   ? 'bg-accent text-accent-fg'
                   : done
-                    ? 'bg-success-soft text-success-text'
+                    ? 'bg-accent-soft text-accent-text'
                     : 'bg-surface-sunken text-fg-muted',
               )}
             >
-              {done ? <Icon name="check" size={13} strokeWidth={3} /> : n}
+              {done ? <Icon name="check" size={14} strokeWidth={2.4} /> : n}
             </span>
             <span className="truncate">{label}</span>
             {n < items.length && (
@@ -239,29 +244,27 @@ function WordChip({
       onClick={onToggle}
       data-testid="compose-word"
       className={cn(
-        'flex max-w-full min-h-11 items-center gap-2 rounded-[14px] border px-3 py-1.5 text-left',
-        'transition-colors duration-(--duration-micro) disabled:opacity-50',
+        'flex min-h-12 max-w-full items-center gap-2.5 rounded-control border px-3 py-1.5 text-left',
+        'transition-colors duration-(--duration-micro) disabled:opacity-45',
         on
           ? 'border-accent bg-accent-soft text-fg'
-          : 'border-border bg-surface text-fg hover:border-border-strong',
+          : 'border-border bg-surface text-fg hover:border-border-strong/60 hover:bg-surface-hover',
       )}
     >
       <span
         aria-hidden="true"
         className={cn(
-          'flex size-4.5 shrink-0 items-center justify-center rounded-full border',
+          'flex size-5 shrink-0 items-center justify-center rounded-full border',
           on ? 'border-accent bg-accent text-accent-fg' : 'border-border-strong',
         )}
       >
-        {on && <Icon name="check" size={11} strokeWidth={3} />}
+        {on && <Icon name="check" size={14} strokeWidth={2.4} />}
       </span>
-      <span className="flex min-w-0 flex-col leading-tight">
-        <span lang="en" className="truncate font-serif text-[1.0625rem] font-semibold">
+      <span className="flex min-w-0 flex-col">
+        <span lang="en" className="truncate font-serif text-lead font-semibold">
           {word.term}
         </span>
-        {word.meaning && (
-          <span className="truncate text-[0.8125rem] text-fg-muted">{word.meaning}</span>
-        )}
+        {word.meaning && <span className="truncate text-meta text-fg-muted">{word.meaning}</span>}
       </span>
     </button>
   );
@@ -284,10 +287,10 @@ function WordList({
   if (!words.length) return null;
   const full = picks.length >= MAX_PICKS;
   return (
-    <section aria-labelledby={id} className="flex flex-col gap-2.5" data-testid={testId}>
-      <h2 id={id} className="text-sm font-semibold text-fg-muted">
-        {title}
-      </h2>
+    <section aria-labelledby={id} className="flex flex-col gap-3" data-testid={testId}>
+      <Eyebrow as="h2" className="px-1">
+        <span id={id}>{title}</span>
+      </Eyebrow>
       <ul className="flex flex-wrap gap-2">
         {words.map((w) => (
           <li key={w.note_id} className="max-w-full">
@@ -315,36 +318,36 @@ function PickedTray({
 }) {
   const { t } = useTranslation();
   return (
-    <div
-      className="sticky bottom-[calc(var(--nav-height)+env(safe-area-inset-bottom))] z-10 -mx-4 mt-8 flex flex-col gap-3 border-t border-border bg-canvas px-4 pt-3 pb-3 sm:-mx-6 sm:px-6 md:bottom-0"
-      data-testid="compose-tray"
-    >
+    <StickyBar className="mt-8 flex flex-col gap-3" testId="compose-tray">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-fg-muted" aria-live="polite">
+        <p className="text-meta text-fg-muted" aria-live="polite">
           {t('compose.picked', { count: picks.length, max: MAX_PICKS })}
           {picks.length < MIN_PICKS &&
             ` · ${t('compose.pickMore', { count: MIN_PICKS - picks.length })}`}
         </p>
       </div>
       {picks.length > 0 && (
-        <ul className="flex gap-1.5 overflow-x-auto pb-0.5" aria-label={t('compose.pickedList')}>
+        <ul
+          className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 py-1 sm:mx-0 sm:px-0"
+          aria-label={t('compose.pickedList')}
+        >
           {picks.map((p) => (
             <li key={p.note_id} className="shrink-0">
               <button
                 type="button"
                 onClick={() => onToggle(p)}
                 aria-label={t('compose.remove', { term: p.term })}
-                className="flex h-8 items-center gap-1 rounded-full bg-accent-soft px-3 text-sm font-medium text-accent-text"
+                className="hit-44 relative flex h-9 items-center gap-1.5 rounded-full bg-accent-soft px-3.5 text-meta font-semibold text-accent-text hover:bg-selected"
               >
                 <span lang="en">{p.term}</span>
-                <Icon name="x" size={13} />
+                <Icon name="x" size={14} />
               </button>
             </li>
           ))}
         </ul>
       )}
       {children}
-    </div>
+    </StickyBar>
   );
 }
 
@@ -394,7 +397,7 @@ function PickStep({
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-fg-muted">{t('compose.noMatch')}</p>
+            <p className="px-1 text-ui text-fg-muted">{t('compose.noMatch')}</p>
           )
         ) : (
           <>
@@ -506,15 +509,15 @@ function OptionsStep({
 
   if (run.status === 'loading')
     return (
-      <div
+      <Card
         role="status"
-        className="flex flex-col items-center gap-4 py-12 text-center"
+        className="flex flex-col items-center gap-3 py-10 text-center"
         data-testid="compose-loading"
       >
         <Spinner size={24} />
-        <p className="font-serif text-xl font-semibold text-fg">{t('compose.writing')}</p>
-        <p className="max-w-xs text-sm text-fg-muted">{t('compose.writingHint')}</p>
-      </div>
+        <p className="text-title font-semibold text-fg">{t('compose.writing')}</p>
+        <p className="max-w-xs text-ui text-fg-muted">{t('compose.writingHint')}</p>
+      </Card>
     );
 
   const atLimit = today >= DAILY || (run.status === 'error' && run.error === 'used');
@@ -545,8 +548,8 @@ function OptionsStep({
           value={difficulty}
           onValueChange={setDifficulty}
         />
-        <fieldset className="flex flex-col gap-2.5">
-          <legend className="mb-2.5 text-sm font-medium text-fg">{t('compose.topic')}</legend>
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-2 text-meta font-medium text-fg">{t('compose.topic')}</legend>
           {data.interests.length ? (
             <>
               <ul className="flex flex-wrap gap-2">
@@ -554,34 +557,27 @@ function OptionsStep({
                   const on = topics.includes(k);
                   return (
                     <li key={k}>
-                      <button
-                        type="button"
-                        aria-pressed={on}
+                      <Chip
+                        selected={on}
+                        icon={on ? 'check' : undefined}
                         onClick={() => toggleTopic(k)}
-                        className={cn(
-                          'flex min-h-10 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium',
-                          on
-                            ? 'border-accent bg-accent-soft text-accent-text'
-                            : 'border-border bg-surface text-fg-muted',
-                        )}
                       >
-                        {on && <Icon name="check" size={14} strokeWidth={2.5} />}
                         {t(`topics.${k}`, { defaultValue: k })}
-                      </button>
+                      </Chip>
                     </li>
                   );
                 })}
               </ul>
-              <p className="text-sm text-fg-muted">
+              <p className="text-meta text-fg-muted">
                 {topics.length ? t('compose.topicHint') : t('compose.topicNone')}
               </p>
             </>
           ) : (
-            <p className="text-sm text-fg-muted">
+            <p className="text-meta text-fg-muted">
               {t('compose.noInterests')}{' '}
               <Link
                 to="/settings/ilgi-alanlari"
-                className="font-medium text-accent-text underline-offset-4 hover:underline"
+                className="font-semibold text-accent-text underline-offset-4 hover:underline"
               >
                 {t('compose.setInterests')}
               </Link>
@@ -590,9 +586,19 @@ function OptionsStep({
         </fieldset>
       </div>
 
+      {auth.status === 'guest' && (
+        <div className="mt-6">
+          <SignInNeeded
+            title={t('compose.signInTitle')}
+            body={t('compose.signInBody')}
+            testId="compose-signin"
+          />
+        </div>
+      )}
+
       <PickedTray picks={picks} onToggle={onToggle}>
         {run.status === 'error' && (
-          <p role="alert" className="text-sm text-danger-text" data-testid="compose-error">
+          <p role="alert" className="text-meta text-danger-text" data-testid="compose-error">
             {t(`compose.errors.${run.error}`, { count: DAILY })}
           </p>
         )}
@@ -610,30 +616,28 @@ function OptionsStep({
                 onClick={() => void make()}
                 data-testid="compose-make"
               >
-                {atLimit ? t('compose.limitReached') : run.status === 'error' ? t('compose.retry') : t('compose.make')}
+                {atLimit
+                  ? t('compose.limitReached')
+                  : run.status === 'error'
+                    ? t('compose.retry')
+                    : t('compose.make')}
               </Button>
             </div>
-            <p className="text-center text-xs text-fg-muted">
+            <p className="text-center text-caption font-normal text-fg-muted">
               {t('compose.limit', { count: DAILY, used: Math.min(today, DAILY) })}
             </p>
           </>
         ) : auth.status === 'guest' ? (
-          <>
-            <SignInNeeded
-              title={t('compose.signInTitle')}
-              body={t('compose.signInBody')}
-              testId="compose-signin"
-            />
-            <button
-              type="button"
-              onClick={onBack}
-              className={buttonClasses({ variant: 'ghost', className: 'self-start' })}
-            >
-              {t('compose.back')}
-            </button>
-          </>
+          <button
+            type="button"
+            onClick={onBack}
+            className={buttonClasses({ variant: 'secondary', size: 'lg', className: 'self-start' })}
+          >
+            <Icon name="arrow-left" size={20} />
+            {t('compose.back')}
+          </button>
         ) : auth.status === 'unavailable' ? (
-          <p className="text-sm text-fg-muted">{t('compose.unavailable')}</p>
+          <p className="text-meta text-fg-muted">{t('compose.unavailable')}</p>
         ) : null}
       </PickedTray>
     </>

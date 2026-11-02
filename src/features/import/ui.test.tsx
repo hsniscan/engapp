@@ -76,7 +76,11 @@ describe('import panels', () => {
       { path: '/import/:jobId', element: <p>job page</p> },
     ]);
     // The privacy note sits next to the extraction choice.
-    expect(screen.getByText('Gizli iş belgelerini gönderme; metin kelimeleri bulmak için sunucuya gider.')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Gizli iş belgelerini gönderme; metin kelimeleri bulmak için sunucuya gider.',
+      ),
+    ).toBeInTheDocument();
     const area = screen.getByRole('textbox', { name: 'İngilizce metin' });
     await user.click(area);
     await user.paste(
@@ -184,14 +188,14 @@ describe('ImportPreviewPage', () => {
     expect(within(bank).getByRole('checkbox')).toHaveAttribute('aria-checked', 'false');
 
     // Type filter.
-    await user.click(screen.getByRole('radio', { name: /Yapı/ }));
+    await user.click(screen.getByRole('button', { name: /^Yapı/, pressed: false }));
     const patterns = new Set(FAKE_SPECS.filter((s) => s.type === 'pattern').map((s) => s.term));
     const shownPatterns = within(screen.getByRole('list', { name: 'Senin için' }))
       .getAllByRole('listitem')
       .map((li) => li.querySelector('span[lang="en"]')!.textContent!);
     expect(shownPatterns.length).toBeGreaterThan(0);
     expect(shownPatterns.every((t) => patterns.has(t))).toBe(true);
-    await user.click(screen.getByRole('radio', { name: /Tümü/ }));
+    await user.click(screen.getByRole('button', { name: /^Tümü/, pressed: false }));
 
     // "Biliyorum": cope moves to "Biliyorsun", unselected; the provider hears about it.
     const list = () =>

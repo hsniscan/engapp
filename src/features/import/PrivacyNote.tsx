@@ -5,7 +5,7 @@ import { Icon } from '@/ui';
 export function ImportPrivacyNote() {
   const { t } = useTranslation();
   return (
-    <p className="mb-5 flex items-start gap-2 rounded-control bg-warn-soft px-3 py-2.5 text-sm text-warn-text">
+    <p className="mb-5 flex items-start gap-2 rounded-inner bg-warn-soft px-4 py-3 text-meta text-warn-text">
       <Icon name="alert" size={18} className="mt-px shrink-0" />
       <span>
         <strong className="font-semibold">{t('importer.privacy')}</strong>{' '}

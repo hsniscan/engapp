@@ -205,7 +205,7 @@ test('vocabulary list: every entry is listed (above-level ones in their own clos
   // The list's own order inside "Senin için" (the pre-selected entries come first).
   const terms = await page
     .getByRole('list', { name: 'Senin için' })
-    .locator('li span[lang="en"].font-serif')
+    .locator('li span[lang="en"].font-serif.font-semibold')
     .allTextContents();
   expect(terms.slice(0, 6)).toEqual([
     'give up',

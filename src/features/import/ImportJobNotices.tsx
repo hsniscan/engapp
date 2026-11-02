@@ -13,11 +13,13 @@ export function ImportJobNotices() {
   const { pathname } = useLocation();
   const jobs = useLiveQuery(
     async () =>
-      (await db.import_jobs.where('status').anyOf('queued', 'processing', 'ready').toArray()).map((j) => ({
-        id: j.id,
-        status: j.status,
-        title: (j as { title?: string }).title ?? '',
-      })),
+      (await db.import_jobs.where('status').anyOf('queued', 'processing', 'ready').toArray()).map(
+        (j) => ({
+          id: j.id,
+          status: j.status,
+          title: (j as { title?: string }).title ?? '',
+        }),
+      ),
     [],
   );
   const seen = useRef<Map<string, string> | null>(null);

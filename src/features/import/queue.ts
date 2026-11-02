@@ -3,7 +3,12 @@
 // starts at least gapMs after the previous one); results are always recorded in chunk order,
 // so progress, resume and candidate order are the same as one by one. Offline: the job waits
 // ("sırada") and resumes on the `online` event. One tab runs it.
-import { AiClientError, EXTRACT_PROMPT_VERSION, extractChunk, type ExtractResponse } from '@/ai/client';
+import {
+  AiClientError,
+  EXTRACT_PROMPT_VERSION,
+  extractChunk,
+  type ExtractResponse,
+} from '@/ai/client';
 import {
   getCachedChunk,
   listPendingImportJobs,
