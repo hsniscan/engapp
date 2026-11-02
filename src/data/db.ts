@@ -419,6 +419,13 @@ export class EngDb extends Dexie {
         await meta.bulkDelete(['examples_since', 'examples_backfill']);
         await meta.where('key').startsWith('example_calls:').delete();
       });
+    // v38 (v0.5.2 study, decision 0062; 37 and 39–45 belong to the other v0.5.2 packages): the
+    // settings row gains study_options (per-mode new-card limits, session length, leech
+    // auto-suspend; optional, absent = defaults). A device that pulled settings while it ran an
+    // older version dropped it: re-pull settings once. No new table or index.
+    this.version(38)
+      .stores({})
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
   }
 }
 

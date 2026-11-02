@@ -18,7 +18,7 @@ export type PracticeSize = (typeof PRACTICE_SIZES)[number];
 const DAY = 86_400_000;
 /** "Zorlandıklarım": a miss (Again or a practice "Bilemedim") within this window counts. */
 export const HARD_WINDOW_MS = 14 * DAY;
-/** "Son 7 günde öğrendiklerim": the card's first answer is within this window. */
+/** "Bu hafta yeni başladıkların" (was "Son 7 günde öğrendiklerim"; v0.5.2 copy): the card's first answer is within this window. */
 export const RECENT_WINDOW_MS = 7 * DAY;
 export const HARD_MIN_LAPSES = 2;
 export const HARD_MIN_DIFFICULTY = 7;

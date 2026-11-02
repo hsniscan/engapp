@@ -11,6 +11,7 @@ import { DAY_MINUTES_LIMITS, GOAL_LIMITS, type GoalKey } from '../domain/goals';
 import { FIRST_NOTIFY_HOUR, LAST_NOTIFY_HOUR } from '../domain/notify';
 import { isValidRange, MAX_VACATION_HISTORY } from '../domain/vacation';
 import { MAX_FREEZE_DAYS } from '../domain/streakFreeze';
+import { SESSION_CARDS_MAX, SESSION_CARDS_MIN } from '../domain/studyOptions';
 import { HLC_ZERO } from '../domain/hlc';
 import { DEFAULT_DIFFICULTY, READING_OFFSET_MAX, type ReadingDifficulty } from '../domain/texts';
 import type { Millis, Settings } from '../domain/types';
@@ -66,6 +67,18 @@ export async function ensureSettings(now: Millis = Date.now()): Promise<Settings
 const goalValue = (key: GoalKey) =>
   z.number().int().min(GOAL_LIMITS[key].min).max(GOAL_LIMITS[key].max).nullable().optional();
 
+const modeLimit = z.number().int().min(0).max(999).nullable().optional();
+
+/** settings.study_options (v0.5.2, ADR 0062); the domain limits are in domain/studyOptions.ts. */
+export const studyOptionsSchema = z.object({
+  mode_new_limits: z
+    .object({ production: modeLimit, cloze: modeLimit, dictation: modeLimit })
+    .nullable()
+    .optional(),
+  session_cards: z.number().int().min(SESSION_CARDS_MIN).max(SESSION_CARDS_MAX).nullable().optional(),
+  leech_auto_suspend: z.boolean().nullable().optional(),
+});
+
 const vacationRangeSchema = z
   .object({ start: z.string(), end: z.string() })
   .refine(isValidRange, 'Invalid vacation range');
@@ -104,6 +117,8 @@ export const settingsPatchSchema = z
     reader_highlight: z.boolean(),
     // v0.5.1 (decision 0054): "Hep tahmin ettir" in the reader.
     reader_always_guess: z.boolean(),
+    // v0.5.2 (ADR 0062): per-mode new-card limits, session length, leech auto-suspend.
+    study_options: studyOptionsSchema.nullable(),
     // v0.5 İP10: days a streak protection covered (domain/streakFreeze.ts, decision 0052).
     streak_freezes: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).max(MAX_FREEZE_DAYS).nullable(),
     // v0.3 İP3 load management (domain/capacity.ts, catchup.ts, vacation.ts).

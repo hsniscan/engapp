@@ -4,11 +4,12 @@
 // every answer given exactly when due; these tests reproduce every row.
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
+import { trInterval } from '../test/intervalTr';
 import {
   applyRating,
   createScheduler,
   emptyFsrs,
-  formatNextInterval,
+  nextIntervalParts,
   nextRampStep,
   previewIntervals,
   provenLevel,
@@ -140,7 +141,7 @@ describe('button previews (spec 5.1)', () => {
     const now = cardStage(card);
     return RATINGS.map((r) => {
       const arrow = stageChangeLabel(now, p[r].stageAfter);
-      return arrow ? `${p[r].label} ${arrow}` : p[r].label;
+      return arrow ? `${trInterval(p[r].label)} ${arrow}` : trInterval(p[r].label);
     });
   }
 
@@ -467,6 +468,6 @@ describe('formatNextInterval (spec 5.1)', () => {
     [531 * DAY, '1,5 yıl'],
     [730 * DAY, '2 yıl'],
   ])('%d ms → %s', (ms, label) => {
-    expect(formatNextInterval(ms)).toBe(label);
+    expect(trInterval(nextIntervalParts(ms))).toBe(label);
   });
 });

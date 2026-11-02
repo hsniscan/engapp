@@ -2,7 +2,7 @@
 // (domain/answerCheck.ts), plus a dictionary lookup when the answer is not the term itself, so
 // another word for the same meaning counts as right.
 import type { CardView } from '@/data';
-import { findSynonyms } from '@/data/synonyms';
+import { findSynonyms, synonymEntries } from '@/data/synonyms';
 import { type AnswerCheck, checkAnswer } from '@/domain/answerCheck';
 import { meaningOf } from './study';
 
@@ -23,5 +23,12 @@ export async function checkTypedAnswer(
     pos: sense?.pos ?? null,
     meaning: sense ? meaningOf(sense) : null,
   });
-  return synonyms.length ? checkAnswer(typed, answer, { synonyms }) : plain;
+  const withSynonyms = synonyms.length ? checkAnswer(typed, answer, { synonyms }) : plain;
+  if (withSynonyms.verdict !== 'close') return withSynonyms;
+  // v0.5.2 (review B11): a "close" answer that is another word in the dictionary on this device
+  // ("advise" for "advice") is a different word, not a typo.
+  const entries = await synonymEntries(typed).catch(() => []);
+  return entries.length
+    ? checkAnswer(typed, answer, { synonyms, otherWords: entries.map((e) => e.lemma) })
+    : withSynonyms;
 }

@@ -41,6 +41,8 @@ export interface TodayActivity {
   answers: Record<StudyMode, number>;
   /** Word study today: cards seen again, and new words met for the first time. */
   word: { reviewed: number; fresh: number };
+  /** Every mode today (v0.5.2): cards seen before today, and first-time cards. */
+  all: { reviewed: number; fresh: number };
 }
 
 const MODE_OF: Record<CardType, StudyMode> = {
@@ -82,22 +84,25 @@ export async function getTodayActivity(now: Millis = Date.now()): Promise<TodayA
 
   const answers: Record<StudyMode, number> = { word: 0, production: 0, cloze: 0, dictation: 0 };
   const wordCards = new Set<string>();
+  const allCards = new Set<string>();
   for (const l of kept) {
     const type = typeOf.get(l.card_id);
     if (!type) continue;
     answers[MODE_OF[type]]++;
+    allCards.add(l.card_id);
     if (type === 'recognition') wordCards.add(l.card_id);
   }
-  // A word card met before today is a review; one without earlier answers is a new word.
-  const seenBefore = wordCards.size
+  // A card met before today is a review; one without earlier answers is new today.
+  const seenBefore = allCards.size
     ? new Set(
-        [...(await logsByCard(wordCards)).values()]
+        [...(await logsByCard(allCards)).values()]
           .flat()
           .filter((l) => l.reviewed_at < bounds.start && !l.undo_of)
           .map((l) => l.card_id),
       )
     : new Set<string>();
   const reviewed = [...wordCards].filter((id) => seenBefore.has(id)).length;
+  const reviewedAll = [...allCards].filter((id) => seenBefore.has(id)).length;
 
   return {
     today: bounds.key,
@@ -106,6 +111,7 @@ export async function getTodayActivity(now: Millis = Date.now()): Promise<TodayA
     weekMinutes,
     answers,
     word: { reviewed, fresh: wordCards.size - reviewed },
+    all: { reviewed: reviewedAll, fresh: allCards.size - reviewedAll },
   };
 }
 

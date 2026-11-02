@@ -36,6 +36,8 @@ import { type KindProps, RecognitionStudy } from './kinds';
 import { ProductionStudy } from './ProductionStudy';
 import { SessionSummary } from './SessionSummary';
 import { modeLeft, useTodayStudy } from './studyModes';
+import { useStudyTick } from './studyClock';
+import { DEFAULT_LEARN_AHEAD_MS } from '@/domain/queue';
 import { StudyFrame } from './StudyFrame';
 import { useReviewSession } from './useReviewSession';
 import { prefetchPronunciations } from './pronunciation';
@@ -488,7 +490,8 @@ export function OtherModes({ current }: { current?: StudyMode }) {
   if (!study) return null;
   const { counts } = study;
   const left = modeLeft;
-  const others = study.waiting.filter((m) => m !== current);
+  // Modes with cards studiable now (a mode whose steps come back later is not offered yet).
+  const others = study.modes.filter((m) => m !== current && modeLeft(counts[m]) > 0);
   if (!others.length) return null;
   return (
     <div className="flex flex-col gap-2 rounded-[18px] border border-border bg-surface p-4 text-left">
@@ -522,6 +525,12 @@ function StudyEmpty({
   onUndo: () => void;
 }) {
   const { t } = useTranslation();
+  const [wakeAt, setWakeAt] = useState<number | null>(null);
+  // v0.5.2: when the next learning step falls due while this screen is open (or the app comes
+  // back), the screen offers to go on ("Devam et") instead of staying on "9 dk sonra".
+  const tick = useStudyTick([wakeAt]);
+  const study = useTodayStudy();
+  const resumeCount = ahead || deckName || !study ? 0 : studyMode ? modeLeft(study.counts[studyMode]) : study.ready;
   const info = useLiveQuery(async () => {
     const [next, settings, anyNote] = await Promise.all([
       // A mode's empty screen counts that mode's cards only ("Yarın 3 kart" in Dikte).
@@ -530,7 +539,9 @@ function StudyEmpty({
       db.notes.filter((n) => n.deleted_at === null).first(),
     ]);
     return { next, tz: cfgOf(settings).timezone, hasCards: !!anyNote, now: Date.now() };
-  }, [studyMode, ahead]);
+  }, [studyMode, ahead, tick]);
+  const later = info?.next.kind === 'later' ? info.next.at - DEFAULT_LEARN_AHEAD_MS : null;
+  if (later !== wakeAt) setWakeAt(later);
   if (!info) return <StudySkeleton />;
   const title = !info.hasCards
     ? t('review.noCardsTitle')
@@ -559,6 +570,22 @@ function StudyEmpty({
           <>
             {info.hasCards ? (
               <>
+                {resumeCount > 0 ? (
+                  <Link
+                    to={`/study?mode=${studyMode ?? 'mixed'}`}
+                    data-testid="study-resume"
+                    className={buttonClasses({ size: 'lg', className: 'min-w-60' })}
+                  >
+                    {t('study.empty.resume', { count: resumeCount })}
+                  </Link>
+                ) : (
+                  info.next.kind === 'later' &&
+                  !ahead && (
+                    <p className="text-sm text-fg-muted" data-testid="study-waiting">
+                      {t('study.empty.waitingHint')}
+                    </p>
+                  )
+                )}
                 {studyMode && !ahead && <OtherModes current={studyMode} />}
                 <Link
                   to="/study/more"

@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { trInterval } from '../test/intervalTr';
 import {
   applyRating,
   createScheduler,
   emptyFsrs,
-  formatInterval,
+  intervalParts,
   fromTsCard,
   fsrsEqual,
   previewIntervals,
@@ -32,8 +33,8 @@ describe('fsrs wrapper', () => {
   it('uses learning steps 1m / 10m for a new card', () => {
     const card = { id: 'c1', ...emptyFsrs(T) };
     const p = previewIntervals(sched, card, T);
-    expect(p[Rating.Again].label).toBe('1 dk');
-    expect(p[Rating.Good].label).toBe('10 dk');
+    expect(trInterval(p[Rating.Again].label)).toBe('1 dk');
+    expect(trInterval(p[Rating.Good].label)).toBe('10 dk');
     expect(p[Rating.Easy].interval_ms).toBeGreaterThanOrEqual(86_400_000);
     expect(p[Rating.Good].state).toBe(CardState.Learning);
   });
@@ -81,7 +82,7 @@ describe('fsrs wrapper', () => {
     [45 * 86_400_000, '1,5 ay'],
     [365 * 86_400_000, '1 yıl'],
     [548 * 86_400_000, '1,5 yıl'],
-  ])('formatInterval(%d) = %s', (ms, label) => {
-    expect(formatInterval(ms)).toBe(label);
+  ])('intervalParts(%d) = %s', (ms, label) => {
+    expect(trInterval(intervalParts(ms))).toBe(label);
   });
 });

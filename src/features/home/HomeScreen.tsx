@@ -16,6 +16,7 @@ import { InterestsPrompt } from '@/features/profile/InterestsPrompt';
 import { StreakFreezeNote } from '@/features/smart/StreakFreezeNote';
 import { useNow } from '@/features/settings/useNow';
 import { useTodayStudy } from '@/features/review/studyModes';
+import { useStudyTick } from '@/features/review/studyClock';
 import { useWordStages } from '@/features/stats/useWordStages';
 import { Button, cn, Icon, IconButton, Logo, Skeleton, Surface } from '@/ui';
 import { DecksForYou } from './DecksForYou';
@@ -42,7 +43,9 @@ import { WordsCard } from './WordsCard';
 import { TodayReadingCard } from '@/features/reader/TodayReadingCard';
 
 export function HomeScreen() {
-  const core = useLiveQuery(() => getHomeCore(), []);
+  // Time-dependent (streak day, "what comes next"): recomputed at the day change and on resume.
+  const tick = useStudyTick();
+  const core = useLiveQuery(() => getHomeCore(), [tick]);
   // A brand-new user gets the guided first run (features/onboarding, v0.5.1).
   if (core && !core.hasCards)
     return (
@@ -96,7 +99,8 @@ function HomeFrame({
 
 function Dashboard({ core }: { core: HomeCore }) {
   const study = useTodayStudy();
-  const activity = useLiveQuery(() => getTodayActivity(), []);
+  const tick = useStudyTick();
+  const activity = useLiveQuery(() => getTodayActivity(), [tick]);
   // The heavy, secondary reads (whole-history goals, extra-study queues, the weekly report and
   // the notes below the hero) start once the hero has its numbers: on a large collection they
   // otherwise share IndexedDB with the hero's queries and delay "Devam et" by seconds
@@ -109,7 +113,10 @@ function Dashboard({ core }: { core: HomeCore }) {
   const goalsView = useLiveQuery(() => (heroReady ? getGoalsView() : undefined), [heroReady]);
   const stages = useWordStages(heroReady);
   const totalWords = useLiveQuery(() => (heroReady ? countWords() : undefined), [heroReady]);
-  const moreResult = useLiveQuery(() => (heroReady ? getMoreOverview() : undefined), [heroReady]);
+  const moreResult = useLiveQuery(
+    () => (heroReady ? getMoreOverview() : undefined),
+    [heroReady, tick],
+  );
   const more = moreResult?.ok ? moreResult.more : null;
   const moreError = moreResult && !moreResult.ok ? moreResult.error : null;
   useEffect(() => {
@@ -120,7 +127,8 @@ function Dashboard({ core }: { core: HomeCore }) {
   const decks = useHomeDecks(heroReady);
 
   const ready = study && activity;
-  // "Biraz daha çalış" only once every mode is done for today (not just Kelime).
+  // "Biraz daha çalış" only once every mode is done for today (not just Kelime), the learning
+  // steps that come back later today included (v0.5.2, review B1).
   const allDone = study ? study.left === 0 : false;
 
   return (

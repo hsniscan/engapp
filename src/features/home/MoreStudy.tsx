@@ -7,7 +7,6 @@ import { addExtraNew, logError, type MoreStudyOverview } from '@/data';
 import { extraNewSteps, practiceHref } from '@/features/extra/links';
 import { cn, Spinner, toast } from '@/ui';
 import { HomeIcon, type HomeIconName } from './homeIcons';
-import { WORD_STUDY_HREF } from './TodayHero';
 
 export const AHEAD_HREF = '/study?mode=ahead';
 
@@ -36,15 +35,19 @@ export function MoreStudy({ more }: { more: MoreStudyOverview }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [busy, setBusy] = useState<number | null>(null);
-  const steps = extraNewSteps(more.newWaiting);
+  // "+5 yeni kart" goes to the mode that has first-time cards waiting (v0.5.2, review B6), and
+  // is not offered while catch-up, a vacation or the ramp after one pauses new cards.
+  const mode = more.newPaused ? null : more.extraMode;
+  const steps = mode ? extraNewSteps(more.newWaitingByMode[mode]) : [];
   const source = practiceSource(more);
   if (steps.length === 0 && !source && more.aheadCount === 0) return null;
 
   const add = async (n: number) => {
     setBusy(n);
     try {
-      await addExtraNew(n);
-      await navigate(WORD_STUDY_HREF);
+      if (!mode) return;
+      await addExtraNew(n, mode);
+      await navigate(`/study?mode=${mode}`);
     } catch (e) {
       void logError(e, 'home:addExtraNew');
       toast({ title: t('more.addFailed'), tone: 'danger' });
@@ -71,7 +74,7 @@ export function MoreStudy({ more }: { more: MoreStudyOverview }) {
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
             <span className="text-[0.9375rem] font-semibold">{t('today.moreNewTitle')}</span>
             <span className="text-[0.8125rem] text-fg-muted">
-              {t('today.moreNewBody', { count: more.newWaiting })}
+              {t('today.moreNewBody', { count: mode ? more.newWaitingByMode[mode] : 0 })}
             </span>
           </span>
           <div className="flex shrink-0 gap-1.5">

@@ -101,11 +101,11 @@ describe('catch-up queue', () => {
     expect((await getStudyQueue({}, T)).counts.review).toBe(200);
   });
 
-  it('does not cap "Yarının kartları"', async () => {
+  it('keeps "Yarının kartları" to tomorrow: the capped backlog is not pulled in (v0.5.2)', async () => {
     await seed(200);
     const q = await getStudyQueue({ mode: 'ahead' }, T);
     expect(q.load).toBeNull();
-    expect(q.counts.review).toBe(200);
+    expect(q.counts.review).toBe(0);
   });
 });
 

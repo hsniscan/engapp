@@ -288,3 +288,26 @@ describe('suggestRating', () => {
     expect(suggestRating('skipped', true)).toBe(Rating.Again);
   });
 });
+
+describe('another real word is not "neredeyse" (v0.5.2, review B11)', () => {
+  it.each([
+    ['then', 'than'],
+    ['quiet', 'quite'],
+    ['lose', 'loose'],
+    ['affect', 'effect'],
+    ['advise', 'advice'],
+  ])('%s for %s is wrong, with the other word named', (typed, term) => {
+    const r = checkAnswer(typed, term);
+    expect(r.verdict).toBe('wrong');
+    expect(r.otherWord).toBe(typed);
+  });
+
+  it('keeps real typos close, and uses the words the data layer knows', () => {
+    expect(checkAnswer('reluctnat', 'reluctant').verdict).toBe('close');
+    expect(checkAnswer('quitee', 'quite').verdict).toBe('close');
+    expect(checkAnswer('banks', 'bank').verdict).toBe('close');
+    expect(checkAnswer('banks', 'bank', { otherWords: ['banks'] }).verdict).toBe('wrong');
+    // The term itself in the list is never "another word".
+    expect(checkAnswer('than', 'than').verdict).toBe('correct');
+  });
+});
