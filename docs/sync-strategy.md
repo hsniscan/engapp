@@ -314,6 +314,12 @@ and day, so two devices of one account choose the same new cards; nothing of it 
   the sentences of the lexicon senses the user's senses reference, by `server_seq`
   (cursor `lexicon_examples_cursor`, reset with the lexicon cursor on account changes).
   It runs after the lexicon pull; a failure there never fails the sync.
+- The cursor skips sentences shipped before the user added the sense (their `server_seq`
+  is below it). After the pull, `lexicon_examples_find` (≤ 200 ids a call) is asked for
+  senses with no cached sentence; senses that had none are remembered in meta
+  `lexicon_examples_checked` and not asked again, since later sentences come down the cursor
+  (v0.5.2, decision 0061: the device example queue that used to fill this gap is gone).
 - Until `lexicon_examples_pull` has answered once (`server_examples`), content rows wait in
   the outbox without spending attempts, like `practice_logs` before `sync_pull_v3`.
-- Tests: `src/sync/examples.test.ts` (two devices, deterministic ids, gating, retired rows).
+- Tests: `src/sync/examples.test.ts` (two devices, deterministic ids, gating, retired rows,
+  senses added below the cursor).

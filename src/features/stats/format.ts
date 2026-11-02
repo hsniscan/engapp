@@ -45,11 +45,6 @@ export function formatWeekdayShort(key: DayKey): string {
   return fmt({ weekday: 'short' }).format(utcDate(key));
 }
 
-/** "P" style one-letter weekday for compact strips. */
-export function formatWeekdayNarrow(key: DayKey): string {
-  return fmt({ weekday: 'narrow' }).format(utcDate(key));
-}
-
 /** "14:30" in the given time zone. */
 export function formatClock(ms: number, timeZone?: string): string {
   return fmt(

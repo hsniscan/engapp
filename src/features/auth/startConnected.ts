@@ -1,8 +1,7 @@
 // Startup of the connected features: auth session, account linking, sync engine triggers
-// the AI import queue and the example sentence preparation. Idempotent; call once from main.tsx (it is also called by the
+// the AI import queue and the picture download. Idempotent; call once from main.tsx (it is also called by the
 // sync indicator as a safety net).
 import { kickAnkiEnrich, startAnkiEnrichQueue } from '@/features/anki/enrichQueue';
-import { kickExampleQueue, startExampleQueue } from '@/features/examples/queue';
 import { kickImportQueue, startImportQueue } from '@/features/import/queue';
 import { kickImageFetch, startImageFetch } from '@/features/images/fetcher';
 import { startGradedCatalog } from '@/features/library/fetcher';
@@ -27,7 +26,6 @@ export function startConnectedFeatures(): void {
       // The report waits for the account link (its data may be replaced or adopted).
       void linkAccount(user.id).finally(() => kickReports());
       kickImportQueue();
-      kickExampleQueue();
       kickAnkiEnrich();
       kickImageFetch();
     } else {
@@ -38,7 +36,6 @@ export function startConnectedFeatures(): void {
   startAuth();
   startSyncEngine();
   startImportQueue();
-  startExampleQueue();
   startAnkiEnrichQueue();
   startImageFetch();
   startGradedCatalog();

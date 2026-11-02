@@ -14,6 +14,38 @@ Pictures (v0.4: `image-v2`, `visual-v1`, `imagecheck-v2`) use Claude, not Gemini
 their own page: [ai-image.md](ai-image.md) (decisions 0029, 0030). The word bank job
 (`wordbank-v1`, decision 0038) also uses Claude: see "Word bank" below.
 
+## Content made once, not on request (v0.5.2, decision 0061)
+
+Example sentences and word pictures are **shared content produced once, in bulk, on the
+server, and shipped** to every user. The app only displays them; it never asks a model for
+one. The on-demand edge functions `ai-examples` (sentences, prompt `examples-v1`, with the
+device queue `example_jobs`, "Yenisini üret", "Bağlam ekle" and "Tüm kartlarım için hazırla")
+and `ai-image` ("Görsel üret" / "Yeniden üret", 10 a day) were removed at the owner's request
+(2026-11-01). The last version of the sentence prompt and its contract is in git history
+(`docs/ai-examples.md` and `supabase/functions/_shared/examples*.ts` before v0.5.2).
+
+- **Pictures** come from the nightly bulk job (`scripts/img-batch.ts`,
+  `.github/workflows/images.yml`, [ai-image.md](ai-image.md)); new ones pass the admin review
+  screen (`/admin/images`). The client downloads them into the Dexie `images` cache
+  (`src/features/images/fetcher.ts`), so cards, the word detail and guests/offline keep showing
+  the cached copies.
+- **Sentences** live in `public.lexicon_examples`, written by a service-role bulk job (none
+  exists yet; the word bank and the pre-generated audio already read the table). Clients pull
+  the sentences of their own senses with `lexicon_examples_pull` into the Dexie cache, and
+  ask `lexicon_examples_find` once for a sense added after its sentences were shipped (those
+  rows sit below the pull cursor);
+  translations, TTS, card-front rotation and like / skip / edit / reject work on that cache.
+  A user can still type an own example sentence in the card's edit form.
+- **Server leftovers on purpose:** the tables and functions `lexicon_examples_insert`,
+  `image_consume`, `image_user_has_sense`, `image_usage` and
+  `image_request_users` are kept (no migration in v0.5.2): a future bulk sentence job can write
+  through `lexicon_examples_insert`, and account deletion and the 90-day purge still clean the
+  per-user rows. `lexicon_examples_find` is now called by the sync engine (see above); nothing
+  calls the image functions any more.
+- Shared sentence helpers (cleaning, duplicate keys, locating a term) moved to
+  `_shared/sentences.ts`; the mnemonic, contrast, report and story pipelines use them. The
+  context catalogue and level bands stay in `_shared/examples-contracts.ts`.
+
 ## Rules
 
 - AI needs a signed-in (Google) account. Guests never reach the functions.

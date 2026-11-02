@@ -1,5 +1,5 @@
-// The picture pipeline, environment-neutral (decision 0030, docs/ai-image.md). Used by the
-// ai-image edge function (instant path) and by scripts/img-batch.ts / img-pilot.ts (Node).
+// The picture pipeline, environment-neutral (decision 0030, docs/ai-image.md). Used by
+// scripts/img-batch.ts / img-pilot.ts (Node); the on-demand ai-image function was removed in v0.5.2.
 //
 //   draw (image-v1) → parse → sanitize → token contrast → [render → coverage → vision check]
 //   → store. A failed check gives one redraw with the matching fixed problem sentence; a second

@@ -3,7 +3,7 @@
 // words to practise, an invitation to have it written (guests: to sign in first). Hidden when
 // there are not enough words, so a new user's Bugün stays calm.
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 import { logError } from '@/data';
@@ -12,22 +12,9 @@ import { MIN_STORY_TARGETS } from '@/domain/story';
 import { readerPath } from '@/domain/texts';
 import type { Id } from '@/domain/types';
 import { useAuth } from '@/features/auth/session';
+import { isOnline, useOnline } from '@/lib/online';
 import { Button, Spinner } from '@/ui';
 import { storyError, type StoryError } from './storyError';
-
-const subscribeOnline = (cb: () => void) => {
-  window.addEventListener('online', cb);
-  window.addEventListener('offline', cb);
-  return () => {
-    window.removeEventListener('online', cb);
-    window.removeEventListener('offline', cb);
-  };
-};
-const isOnline = () => (typeof navigator === 'undefined' ? true : navigator.onLine);
-
-function useOnline(): boolean {
-  return useSyncExternalStore(subscribeOnline, isOnline, () => true);
-}
 
 type RunState = { status: 'idle' } | { status: 'loading' } | { status: 'error'; error: StoryError };
 

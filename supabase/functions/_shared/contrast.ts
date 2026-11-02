@@ -33,7 +33,7 @@ import {
   contrastModelOutput,
 } from './contrast-prompt.ts';
 import { ApiError } from './errors.ts';
-import { cleanExampleText, isCleanSentence, locateExampleTerm } from './examples.ts';
+import { cleanExampleText, isCleanSentence, locateExampleTerm } from './sentences.ts';
 import type { PipelineDeps } from './extract.ts';
 import { isTurkishText, mentionsTerm } from './mnemonic.ts';
 import type { LexiconPairNoteRow, NewPairNote, PairNoteStore } from './pair-notes.ts';

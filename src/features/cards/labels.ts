@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next';
-import type { CardStateValue, CardType, NoteTermType } from '@/domain/types';
+import type { CardStateValue, CardType } from '@/domain/types';
 
 /** Part-of-speech values are stored in English (like the shared lexicon); labels are Turkish. */
 export const POS_VALUES = [
@@ -27,10 +27,6 @@ export function posLabel(t: TFunction, pos: string): string {
   return (POS_LABELED as readonly string[]).includes(key)
     ? t(`cards.pos.${key as (typeof POS_LABELED)[number]}`)
     : pos;
-}
-
-export function termTypeLabel(t: TFunction, type: NoteTermType): string {
-  return t(`cards.termType.${type}`);
 }
 
 export const STATE_KEYS = ['new', 'learning', 'review', 'relearning'] as const;

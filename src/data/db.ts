@@ -7,7 +7,6 @@ import type {
   DailyActivity,
   Deck,
   ErrorLogRow,
-  ExampleJob,
   ImportCandidate,
   ImportJob,
   LexiconExample,
@@ -70,7 +69,6 @@ export class EngDb extends Dexie {
   lexicon_examples!: EntityTable<LexiconExample, 'id'>;
   content_feedback!: EntityTable<ContentFeedback, 'id'>;
   user_content!: EntityTable<UserContent, 'id'>;
-  example_jobs!: EntityTable<ExampleJob, 'key'>;
   ref_cache!: EntityTable<RefCacheRow, 'key'>;
   anki_imports!: EntityTable<AnkiImportRecord, 'id'>;
   lexicon_pair_notes!: EntityTable<LexiconPairNote, 'id'>;
@@ -409,6 +407,18 @@ export class EngDb extends Dexie {
     this.version(36)
       .stores({})
       .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
+    // v37 (v0.5.2, ADR 0061; 38–45 belong to the other v0.5.2 packages): the on-demand example
+    // sentence generation is gone, so its device-local queue `example_jobs` (never synced, never
+    // backed up) is dropped, with the meta keys only that queue used (examples_since,
+    // examples_backfill and the per-day example_calls:<day> counters). Shared sentences
+    // (lexicon_examples) and the user's verdicts and edits stay.
+    this.version(37)
+      .stores({ example_jobs: null })
+      .upgrade(async (tx) => {
+        const meta = tx.table('meta');
+        await meta.bulkDelete(['examples_since', 'examples_backfill']);
+        await meta.where('key').startsWith('example_calls:').delete();
+      });
   }
 }
 

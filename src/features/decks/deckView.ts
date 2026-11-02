@@ -55,5 +55,3 @@ export function useDeckView(data: BankData | undefined) {
   }, [data]);
 }
 
-export type DeckView = NonNullable<ReturnType<typeof useDeckView>>;
-

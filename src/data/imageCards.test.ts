@@ -7,7 +7,8 @@ import { SAMPLE_PICTURES } from '@/test/imageSamples';
 import { addNoteWithSenses, answerCard, setSuspended, softDeleteSense, undoAnswer } from './actions';
 import { db } from './db';
 import { imageCardsWithoutPicture, reconcileImageCards, setImageCardsEnabled } from './imageCards';
-import { chooseImage, setImageHidden, setImageVerdict, storeImage, undoImageReject } from './images';
+import { setImageHidden, storeImage } from './images';
+import { putLegacyChoice, putLegacyVerdict } from '@/test/legacyImageRows';
 import { getCardView, getStudyQueue } from './queries';
 
 const T = Date.UTC(2026, 9, 26, 9);
@@ -104,12 +105,13 @@ describe('reconcileImageCards', () => {
     expect((await db.cards.get(card!.id))!.unlocked).toBe(true);
   });
 
-  it('a picture in review alone makes no card; choosing it does', async () => {
+  it('a picture in review alone makes no card; an earlier pick of it does', async () => {
     const { sense } = await apple();
     await storeImage(img(0, { status: 'review' }));
     await reconcileImageCards({}, T);
     expect(await imageCards()).toHaveLength(0);
-    await chooseImage(sense.id, id(0), T);
+    await putLegacyChoice(sense, id(0), T);
+    await reconcileImageCards({ senseIds: [sense.id] }, T);
     expect(await liveImageCards()).toHaveLength(1);
   });
 
@@ -133,17 +135,20 @@ describe('reconcileImageCards', () => {
     expect(await db.review_logs.toArray()).toEqual(logs);
   });
 
-  it('"Hayır" for the only picture removes the card; undo brings it back; another picture keeps it', async () => {
+  it('an earlier "Hayır" for the only picture removes the card; taking it back brings it back; another picture keeps it', async () => {
     const { sense } = await apple();
     await storeImage(img(0));
     await reconcileImageCards({}, T);
-    await setImageVerdict(sense.id, id(0), 'reject', 'wrong_meaning', T + 1);
+    await putLegacyVerdict(sense, id(0), 'reject', 'wrong_meaning', T + 1);
+    await reconcileImageCards({ senseIds: [sense.id] }, T + 1);
     expect(await liveImageCards()).toHaveLength(0);
-    await undoImageReject(sense.id, id(0), { restoreChoice: false }, T + 2);
+    await putLegacyVerdict(sense, id(0), 'reject', 'wrong_meaning', T + 2, T + 2);
+    await reconcileImageCards({ senseIds: [sense.id] }, T + 2);
     expect(await liveImageCards()).toHaveLength(1);
 
     await storeImage(img(1));
-    await setImageVerdict(sense.id, id(0), 'reject', 'ugly', T + 3);
+    await putLegacyVerdict(sense, id(0), 'reject', 'ugly', T + 3);
+    await reconcileImageCards({ senseIds: [sense.id] }, T + 3);
     expect(await liveImageCards()).toHaveLength(1);
     const card = (await liveImageCards())[0]!;
     expect((await getCardView(card.id, T + 4))?.image?.id).toBe(id(1));

@@ -6,7 +6,7 @@
 //              one Message Batch (half price), reserving each request's upper bound first
 //   collect    read finished batches: settle the real cost, sanitize, render, vision check,
 //              store; one redraw (next night) after a failed check; also runs the vision check
-//              of pictures the instant path stored with the check pending
+//              of pictures stored with the check pending (pilot; old on-demand pictures)
 
 import type Anthropic from '@anthropic-ai/sdk';
 import {
@@ -517,7 +517,7 @@ async function collectOne(
   }
 }
 
-/** Vision check of pictures the instant path stored with the check pending. */
+/** Vision check of pictures stored with the check pending (the pilot; pictures of the old on-demand path). */
 async function checkPendingVision(
   deps: JobDeps,
   limit: number,

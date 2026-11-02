@@ -18,12 +18,3 @@ export function isNativeApp(): boolean {
     return false;
   }
 }
-
-/** 'android' | 'ios' | 'web'. */
-export function nativePlatform(): string {
-  try {
-    return (globalThis as { Capacitor?: CapacitorGlobal }).Capacitor?.getPlatform?.() ?? 'web';
-  } catch {
-    return 'web';
-  }
-}

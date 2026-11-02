@@ -1,9 +1,9 @@
-// The sanitizer as the client uses it, against the fixture files: the malicious set
+// The sanitizer (the client imports supabase/functions/_shared/svg-sanitize.ts directly), against the fixture files: the malicious set
 // (tests/fixtures/svg/malicious, plan acceptance criterion 4) and the viewable reference copies
 // (docs/image-style/refs). Unit tests: supabase/functions/_shared/svg-sanitize.test.ts.
 import { describe, expect, it } from 'vitest';
 import { IMAGE_REFS } from '../../supabase/functions/_shared/image-refs';
-import { sanitizeSvg } from './svgSanitize';
+import { sanitizeSvg } from '../../supabase/functions/_shared/svg-sanitize';
 
 const MALICIOUS = import.meta.glob<string>('../../tests/fixtures/svg/malicious/*.svg', {
   query: '?raw',

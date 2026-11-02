@@ -23,7 +23,7 @@ export class FakeServer implements SyncTransport {
   readonly lexicon = new Map<Id, { row: LexiconSense; seq: number }>();
   private lexSeq = 0;
   /** Calls made, for assertions. */
-  readonly calls = { push: 0, pull: 0, lexiconPull: 0, lexiconGet: 0, examplesPull: 0, registry: 0 };
+  readonly calls = { push: 0, pull: 0, lexiconPull: 0, lexiconGet: 0, examplesPull: 0, examplesFind: 0, registry: 0 };
   readonly examples = new Map<Id, { row: LexiconExample; seq: number }>();
   private exSeq = 0;
   /** Fault injection. */
@@ -235,7 +235,7 @@ export class FakeServer implements SyncTransport {
     return ids.map((id) => this.lexicon.get(id)?.row).filter((x): x is LexiconSense => !!x);
   }
 
-  /** Add or change a shared example sentence (server-side write, e.g. by ai-examples). */
+  /** Add or change a shared example sentence (server-side write, e.g. by the bulk content job). */
   addExample(row: LexiconExample): void {
     this.examples.set(row.id, { row, seq: ++this.exSeq });
   }
@@ -255,6 +255,18 @@ export class FakeServer implements SyncTransport {
       next_seq: page.length ? page[page.length - 1]!.seq : since,
       has_more: all.length > page.length,
     };
+  }
+
+  /** lexicon_examples_find: active sentences of these senses, whatever the cursor. */
+  async findLexiconExamples(senseIds: Id[]): Promise<LexiconExample[] | null> {
+    this.calls.examplesFind++;
+    if (this.faults.offline) throw new SyncApiError('network', 'offline');
+    if (!this.examplesSupported) return null;
+    if (senseIds.length > 200) throw new RangeError('at most 200 ids');
+    const ids = new Set(senseIds);
+    return [...this.examples.values()]
+      .filter((e) => ids.has(e.row.sense_id) && e.row.status === 'active')
+      .map((e) => structuredClone(e.row));
   }
 
   rowsOf(table: OutboxTable) {

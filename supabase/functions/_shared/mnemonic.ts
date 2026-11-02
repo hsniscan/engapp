@@ -13,7 +13,7 @@
 
 import { AiError } from './ai-provider.ts';
 import { ApiError } from './errors.ts';
-import { cleanExampleText, exampleTextKey, isCleanSentence, isNearDuplicateSentence, locateExampleTerm } from './examples.ts';
+import { cleanExampleText, exampleTextKey, isCleanSentence, isNearDuplicateSentence, locateExampleTerm } from './sentences.ts';
 import type { PipelineDeps } from './extract.ts';
 import {
   MAX_MNEMONIC_CHARS,

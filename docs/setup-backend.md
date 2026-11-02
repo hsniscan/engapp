@@ -101,7 +101,6 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 | `AI_SYSTEM_DAILY_LIMIT`     | model calls per UTC day for system jobs (the level job), separate from users' budgets [`100`]             |
 | `CLAUDE_MONTHLY_CREDIT_USD` | the monthly Claude credit in USD; pictures may use 80 % of it [`100`]                                     |
 | `APP_ADMIN_USER_ID`         | your Supabase user id (step 12): who may open the picture review screen [none]                            |
-| `IMAGE_DAILY_LIMIT`         | pictures a user may ask for per UTC day [`10`]                                                            |
 | `CLAUDE_IMAGE_MODEL`        | model that draws pictures [`claude-sonnet-5-5`]                                                           |
 | `CLAUDE_CHECK_MODEL`        | model that scores and checks pictures [`claude-haiku-5-5`]                                                |
 | `CLAUDE_WORDBANK_MODEL`     | model of the word bank job (step 14) [`CLAUDE_CHECK_MODEL`]                                               |
@@ -136,8 +135,10 @@ call AI unless added here. The deploy workflow always appends the production Pag
      `GEMINI_FALLBACK_MODEL`, `AI_PROVIDER=gemini`, `AI_DAILY_LIMIT`, `ALLOWED_ORIGINS`
    - on the first run only: a Web Push (VAPID) key pair, stored as the function secrets
      `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` (see step 10; nothing to do)
-   - `supabase functions deploy` (`ai-extract`, `ai-enrich`, `ai-examples`, `ai-themes`, `ai-mnemonic`, `ai-report`, `ai-contrast`, `push-send`, `tts`, `account-delete`, `fetch-article`; JWT is verified inside the
+   - `supabase functions deploy` (`ai-extract`, `ai-enrich`, `ai-themes`, `ai-mnemonic`, `ai-report`, `ai-contrast`, `push-send`, `tts`, `account-delete`, `fetch-article`; JWT is verified inside the
      functions, so `verify_jwt = false` from `supabase/config.toml` is expected)
+   - `supabase functions delete ai-image` / `ai-examples`: the on-demand picture and sentence
+     functions removed in v0.5.2 (decision 0061); skipped when already gone
    - `select public.push_configure(<push-send URL>)`, which turns on the 15-minute reminder job
 3. Both jobs must end green. If "Check secrets" fails, a secret from step 4 is missing.
 
@@ -149,7 +150,8 @@ dashboard auth settings from step 3 with the local-development `config.toml`).
 1. **Table Editor**: tables `profiles`, `notes`, `senses`, `cards`, `review_logs`,
    `sources`, `settings`, `lexicon_terms`, `lexicon_senses`, `ai_usage`,
    `ai_chunk_cache`, `sync_horizon`; none shows "RLS disabled".
-2. **Edge Functions**: `ai-extract`, `ai-enrich`, `ai-examples` and `ai-themes` are listed. **Secrets**
+2. **Edge Functions**: `ai-extract`, `ai-enrich` and `ai-themes` are listed (not `ai-image` or
+   `ai-examples`: removed in v0.5.2). **Secrets**
    (Edge Functions → Secrets) lists the variables from step 5.2.
 3. **Integrations → Cron** (or **Database → Cron Jobs**): job
    `engapp-purge-tombstones`, schedule `17 3 * * *`. If it is missing (pg_cron was not
@@ -262,14 +264,15 @@ the normal deploy (step 5). It needs no secret beyond the service role key every
 
 ## 12. Pictures (v0.4)
 
-Pictures are drawn by Claude (docs/ai-image.md, decisions 0029 and 0030). Nothing breaks
-without them: until the key is set, the picture workflow ends with a notice and the "draw now"
-button answers that pictures are not available.
+Pictures are drawn by Claude, only in bulk by the nightly job, and shipped to every user
+(docs/ai-image.md, decisions 0029, 0030 and 0061: there is no "draw now" in the app any more).
+Nothing breaks without them: until the key is set, the picture workflow ends with a notice.
 
 1. **Key.** Create an API key in the Anthropic Console
    (`https://console.anthropic.com/settings/keys`) and add it as the repository secret
-   `ANTHROPIC_API_KEY` (step 4). The deploy workflow copies it into the function secrets (never
-   printed); the picture workflow reads it directly.
+   `ANTHROPIC_API_KEY` (step 4). The picture workflow reads it directly; the deploy workflow
+   copies it into the function secrets for the Claude text fallback and the daily story (never
+   printed).
 2. **Credit.** Set the repository variable `CLAUDE_MONTHLY_CREDIT_USD` to the monthly amount you
    want to spend on Claude (default 100). Pictures stop for the month at 80 % of it; every call
    is reserved before it is sent, so the cap holds even with many users at once. Also set a
@@ -278,7 +281,7 @@ button answers that pictures are not available.
    address, column UID) and set it as the repository variable `APP_ADMIN_USER_ID`. The next
    deploy adds it to `public.app_admins`. Without GitHub, run once in **SQL Editor**:
    `insert into public.app_admins (user_id) values ('<your user id>') on conflict do nothing;`
-4. **Deploy** (step 5) so the migration, the `ai-image` function and the secrets are in place.
+4. **Deploy** (step 5) so the migration and the secrets are in place.
 5. **Pilot.** **Actions → Picture jobs → Run workflow**, job `pilot`: draws 50 random concrete
    words now and stores them for review. The log lists each picture with its cost and the total;
    the report is kept as the run's `pilot-report` artifact. Judge them in the app's review
@@ -294,16 +297,15 @@ button answers that pictures are not available.
    cards, then in other users' cards, then words within your level ±1 (your level in
    **Ayarlar → Seviye**) most frequent first, then the rest of the 5,000 most frequent words.
    Only meanings scored 1 to 3 for "can be drawn" are queued (`VISUAL_AUTO_MIN`; the model may
-   still decline); a user request and a redraw from the review screen always come first. Up to
+   still decline); a redraw from the review screen always comes first. Up to
    2,000 pictures a night (`count` / `--max`), always inside the monthly cap (decision 0037).
    `node scripts/img-report.ts` (job `report`) prints the counts that size the redraw: senses
    by visualizability, requests by state, pictures by prompt version and status.
 
-Optional variables: `IMAGE_DAILY_LIMIT` (pictures per user per day, default 10),
-`CLAUDE_IMAGE_MODEL`, `CLAUDE_CHECK_MODEL` (defaults in `_shared/image-models.ts`). The picture
+Optional variables: `CLAUDE_IMAGE_MODEL`, `CLAUDE_CHECK_MODEL` (defaults in `_shared/image-models.ts`). The picture
 workflow also needs the service-role key, exactly like the level job (step 9).
 
-Check: **Edge Functions** lists `ai-image`; in **SQL Editor**,
+Check: in **SQL Editor**,
 `select * from public.image_budget_status();` shows this month's cap and spending, and
 `select status, count(*) from public.lexicon_images group by 1;` grows after each night.
 
@@ -457,7 +459,7 @@ deploys `fetch-article`. Optional variables (step 4): `ARTICLE_DAILY_LIMIT`,
 - **Article import** needs no key: the server downloads the page itself (user agent
   `EngappReader/1.0`), returns plain text and stores nothing (decision 0044).
 - **Claude fallback**: when Gemini answers "quota exhausted" on both models, ai-extract,
-  ai-enrich, ai-examples, ai-themes, ai-mnemonic, ai-report and ai-contrast retry the same
+  ai-enrich, ai-themes, ai-mnemonic, ai-report and ai-contrast retry the same
   request on Claude Haiku. It uses the `ANTHROPIC_API_KEY` secret that pictures already use;
   without it the old `quota_exceeded` error remains. Each Claude call is logged as
   `text spend` in the function logs (USD and tokens) until the text budget lands.

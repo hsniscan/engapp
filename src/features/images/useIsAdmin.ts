@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { isAppAdmin } from '@/ai/image';
 import { useAuth } from '@/features/auth/session';
-import { useOnline } from '@/features/import/shared';
+import { useOnline } from '@/lib/online';
 
 const answers = new Map<string, Promise<boolean>>();
 

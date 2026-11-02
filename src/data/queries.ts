@@ -25,7 +25,6 @@ import { readCarry } from './smart';
 import { streakFrozenDay } from './streakFreeze';
 import { cachedTextSentences, loadTextSentences, readLastShown, textSentenceTables, writeLastShown } from './textSentences';
 import { dayConfig, getSettings, schedulerFor } from './settings';
-import { scanWhere } from './scan';
 
 export interface StudyQueue {
   items: (QueueItem & { card: Card })[];
@@ -388,17 +387,6 @@ export async function findNoteByTerm(term: string): Promise<{ note: Note; senses
   if (!note) return null;
   const senses = (await db.senses.where('note_id').equals(note.id).toArray()).filter((s) => s.deleted_at === null);
   return { note, senses };
-}
-
-/** Live notes, newest first; optional case/whitespace-insensitive substring filter on the term. */
-export async function listNotes(query = ''): Promise<Note[]> {
-  const q = normalizeTerm(query);
-  const notes = await scanWhere(db.notes, (n) => n.deleted_at === null && (!q || n.term_norm.includes(q)));
-  return notes.sort((a, b) => b.created_at - a.created_at);
-}
-
-export function listSources() {
-  return db.sources.orderBy('created_at').reverse().filter((s) => s.deleted_at === null).toArray();
 }
 
 /** Outbox rows waiting to be pushed ("12 değişiklik bekliyor"). */

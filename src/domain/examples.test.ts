@@ -4,7 +4,6 @@ import {
   contentRowId,
   exampleState,
   feedbackRowId,
-  missingContexts,
   pickRotation,
   rotationSentences,
   selectedContexts,
@@ -152,11 +151,5 @@ describe('rotation', () => {
     expect(pickRotation(['a', 'b', 'c'], 0)).toBe('a');
     expect(pickRotation(['a', 'b', 'c'], 4)).toBe('b');
     expect(pickRotation([], 3)).toBeNull();
-  });
-
-  it('missingContexts lists contexts without visible sentences', () => {
-    const examples = buildSenseExamples(rows, none, 'B1', ['daily', 'formal']);
-    expect(missingContexts(examples, ['daily', 'formal'])).toEqual(['formal']);
-    expect(missingContexts(null, ['daily'])).toEqual(['daily']);
   });
 });

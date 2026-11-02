@@ -26,9 +26,6 @@ export interface QueuedAnswer {
   at: Millis;
 }
 
-/** At most this many items are kept on the phone (a week of daily reminders is 7). */
-export const MAX_QUEUED_ANSWERS = 200;
-
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function ratingValue(r: QueuedRating): RatingValue {

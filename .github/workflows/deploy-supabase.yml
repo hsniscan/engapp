@@ -6,11 +6,11 @@
 #   SUPABASE_ACCESS_TOKEN   personal access token from supabase.com/dashboard/account/tokens
 #   SUPABASE_DB_PASSWORD    the database password of the project
 #   GEMINI_API_KEY          Google AI Studio API key
-#   ANTHROPIC_API_KEY       optional: Claude API key for pictures (ai-image). Without it the
-#                           function answers an error and pictures come only from the nightly job.
+#   ANTHROPIC_API_KEY       optional: Claude API key for the Claude fallback of the text tasks and
+#                           the daily story (decisions 0044, 0050). Pictures are drawn only by the
+#                           nightly job (images.yml), which reads its own copy of the secret.
 # Repository variables (same page > Variables), all optional:
 #   GEMINI_MODEL, GEMINI_FALLBACK_MODEL, AI_DAILY_LIMIT, ALLOWED_ORIGINS, VAPID_SUBJECT,
-#   CLAUDE_IMAGE_MODEL, CLAUDE_CHECK_MODEL, CLAUDE_MONTHLY_CREDIT_USD, IMAGE_DAILY_LIMIT,
 #   APP_ADMIN_USER_ID (the owner's auth user id: may use the picture review screen),
 #   ARTICLE_DAILY_LIMIT, CLAUDE_TEXT_MODEL, AI_CLAUDE_FALLBACK (decision 0044),
 #   STORY_DAILY_LIMIT, CLAUDE_STORY_MODEL, CLAUDE_TEXT_MONTHLY_USD (decision 0050)
@@ -61,7 +61,7 @@ jobs:
       - name: Type-check edge functions (Deno)
         working-directory: supabase/functions
         run: |
-          for fn in ai-extract ai-enrich ai-examples ai-themes ai-mnemonic ai-report ai-contrast ai-image push-send tts account-delete fetch-article ai-story; do (cd "$fn" && deno check index.ts); done
+          for fn in ai-extract ai-enrich ai-themes ai-mnemonic ai-report ai-contrast push-send tts account-delete fetch-article ai-story; do (cd "$fn" && deno check index.ts); done
       - name: Start local database
         # Only Postgres + Auth are needed for the SQL tests.
         run: supabase start -x studio,imgproxy,vector,logflare,storage-api,realtime,supavisor,mailpit,postgres-meta,edge-runtime,kong,postgrest
@@ -141,13 +141,8 @@ jobs:
           # https://localhost = the Android app (Capacitor), docs/decisions/0033-android-capacitor.md.
           ALLOWED_ORIGINS: ${{ format('{0},https://engapp-65y.pages.dev,http://localhost:5173,https://localhost', vars.ALLOWED_ORIGINS) }}
           VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT || 'https://engapp-65y.pages.dev' }}
-          # Pictures (ai-image, docs/decisions/0030-image-pipeline.md); all optional.
+          # Claude (text fallback, daily story); optional.
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          # Model ids: only when set; otherwise the defaults in _shared/image-models.ts apply.
-          CLAUDE_IMAGE_MODEL: ${{ vars.CLAUDE_IMAGE_MODEL }}
-          CLAUDE_CHECK_MODEL: ${{ vars.CLAUDE_CHECK_MODEL }}
-          CLAUDE_MONTHLY_CREDIT_USD: ${{ vars.CLAUDE_MONTHLY_CREDIT_USD || '100' }}
-          IMAGE_DAILY_LIMIT: ${{ vars.IMAGE_DAILY_LIMIT || '10' }}
           # Article import and the Claude fallback of the text AI tasks (decision 0044); optional.
           ARTICLE_DAILY_LIMIT: ${{ vars.ARTICLE_DAILY_LIMIT || '30' }}
           CLAUDE_TEXT_MODEL: ${{ vars.CLAUDE_TEXT_MODEL }}
@@ -179,10 +174,6 @@ jobs:
             echo "AI_DAILY_LIMIT=$AI_DAILY_LIMIT"
             echo "ALLOWED_ORIGINS=$ALLOWED_ORIGINS"
             echo "VAPID_SUBJECT=$VAPID_SUBJECT"
-            if [ -n "$CLAUDE_IMAGE_MODEL" ]; then echo "CLAUDE_IMAGE_MODEL=$CLAUDE_IMAGE_MODEL"; fi
-            if [ -n "$CLAUDE_CHECK_MODEL" ]; then echo "CLAUDE_CHECK_MODEL=$CLAUDE_CHECK_MODEL"; fi
-            echo "CLAUDE_MONTHLY_CREDIT_USD=$CLAUDE_MONTHLY_CREDIT_USD"
-            echo "IMAGE_DAILY_LIMIT=$IMAGE_DAILY_LIMIT"
             echo "ARTICLE_DAILY_LIMIT=$ARTICLE_DAILY_LIMIT"
             echo "AI_CLAUDE_FALLBACK=$AI_CLAUDE_FALLBACK"
             if [ -n "$CLAUDE_TEXT_MODEL" ]; then echo "CLAUDE_TEXT_MODEL=$CLAUDE_TEXT_MODEL"; fi
@@ -196,7 +187,7 @@ jobs:
             done
           } > "$f"
           if [ -z "$ANTHROPIC_API_KEY" ]; then
-            echo "::notice::ANTHROPIC_API_KEY is not set: ai-image cannot draw pictures (docs/setup-backend.md)."
+            echo "::notice::ANTHROPIC_API_KEY is not set: the Claude fallback and the daily story are off (docs/setup-backend.md)."
           fi
           supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" --env-file "$f"
 
@@ -228,6 +219,17 @@ jobs:
       - name: Deploy edge functions
         # verify_jwt = false comes from supabase/config.toml; the functions verify the JWT themselves.
         run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF" --use-api
+
+      - name: Remove retired edge functions
+        # `functions deploy` never deletes a function whose folder is gone. ai-image and
+        # ai-examples (on-demand pictures and sentences) were removed in v0.5.2 (ADR 0061);
+        # deleting them stops old app versions from spending the AI budget. Idempotent: a
+        # function that is already gone is skipped.
+        run: |
+          for fn in ai-image ai-examples; do
+            supabase functions delete "$fn" --project-ref "$SUPABASE_PROJECT_REF" \
+              || echo "::notice::$fn was not deployed (already removed)."
+          done
 
       - name: Schedule push reminders
         # pg_cron (migration 20261023000600_push.sql) calls push-send every 15 minutes once the

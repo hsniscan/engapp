@@ -8,7 +8,7 @@ import type { Id, Source } from '@/domain/types';
 import { Button, Icon, ProgressBar, Spinner, Surface, buttonClasses, cn } from '@/ui';
 import { importErrorMessage } from './errors';
 import { kickImportQueue } from './queue';
-import { useOnline } from './shared';
+import { useOnline } from '@/lib/online';
 
 /**
  * "Metni oku" (v0.5.1, decision 0056): the text the words come from, saved before the extraction.

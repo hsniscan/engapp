@@ -1,7 +1,6 @@
 {
   "app": {
-    "name": "Engapp",
-    "tagline": "English words, a little every day"
+    "name": "Engapp"
   },
   "nav": {
     "home": "Today",
@@ -302,7 +301,6 @@
     "addCards": "Add cards",
     "summary": {
       "title": "Session complete",
-      "cards": "Cards",
       "words": "Words",
       "studied_one": "You studied {{count}} word",
       "studied_other": "You studied {{count}} words",
@@ -418,7 +416,6 @@
   },
   "examples": {
     "title": "Example sentences",
-    "count": "{{count}} sentences",
     "contextsLabel": "Contexts",
     "contexts": {
       "daily": "Everyday",
@@ -442,7 +439,6 @@
     "liked": "Liked",
     "skip": "Skip",
     "skipHint": "Don't show this sentence on the card front; go to the next one",
-    "regenerate": "Write a new one",
     "actions": "More actions for this sentence",
     "edit": "Edit",
     "reject": "Reject",
@@ -454,20 +450,7 @@
     "next": "Next sentence",
     "position": "{{n}} / {{total}}",
     "rejected": "Sentence rejected; it won't be shown again.",
-    "addContext": "Add context",
-    "addContextTitle": "Ask for a sentence in another context",
-    "empty": "No sentence in this context yet.",
-    "emptyAsked": "No natural sentence could be written for this context; the word may be rare here.",
-    "preparing": "Preparing sentences…",
-    "waitingOffline": "Will be prepared when you're back online.",
-    "guest": "Sign in with Google for example sentences.",
-    "noLexicon": "This meaning is not in the shared dictionary, so no sentences can be prepared.",
-    "dailyLimit": "Today's AI limit is used up; try again tomorrow.",
-    "failed": "Sentences could not be prepared.",
-    "busy": "The server is busy; try again in a moment.",
-    "generating": "Writing a new sentence…",
-    "noneNew": "No new sentence could be written; you can try again.",
-    "added": "New sentence added.",
+    "noLexicon": "This meaning is not in the shared dictionary, so it has no example sentences.",
     "speak": "Listen to the sentence",
     "editTitle": "Edit sentence",
     "editHint": "Your edit stays in your account only; it is never written to the shared dictionary.",
@@ -476,7 +459,8 @@
     "tooLong": "At most {{max}} characters.",
     "emptyText": "The sentence cannot be empty.",
     "saved": "Sentence saved.",
-    "saveFailed": "Could not save. Try again."
+    "saveFailed": "Could not save. Try again.",
+    "none": "There are no example sentences for this meaning yet."
   },
   "mnemonic": {
     "title": "Mnemonic",
@@ -651,9 +635,6 @@
     "textTitle": "Add a text",
     "textLead": "The text is saved and opens in the reader. You can pick out its new words too.",
     "otherWays": "Or from somewhere else"
-  },
-  "import": {
-    "title": "Preview"
   },
   "library": {
     "title": "Cards",
@@ -1049,18 +1030,12 @@
       "testLastUnreliable": "Last test: {{date}}, result {{level}}; not applied because it was not reliable."
     },
     "examples": {
-      "description": "Sentences on the back of a card and in word details, written for your level.",
-      "contexts": "Contexts to prepare",
-      "contextsHint": "Pick 2–4. Ask for others on a card with “Add context”.",
+      "description": "Ready-made sentences shown on the back of a card and in the word detail.",
+      "contexts": "Contexts on your cards",
+      "contextsHint": "Pick 2–4 contexts. The front of a card takes turns showing sentences from them; the word detail shows them all.",
       "contextsLimit": "Pick {{min}}–{{max}} contexts.",
       "showTr": "Show Turkish right away",
-      "showTrHint": "When off, the translation appears on tap, so you try to understand the sentence first.",
-      "prepareAll": "Prepare for all my cards",
-      "prepareAllHint": "New cards get sentences automatically. Older cards are prepared with at most 50 requests a day, spread over a few days.",
-      "prepareStarted": "Preparation started; it continues in the background while online.",
-      "status": "{{ready}} / {{total}} meanings ready",
-      "statusQueued": "{{count}} meanings queued",
-      "guest": "Example sentences need a Google account."
+      "showTrHint": "When off, the translation appears on tap, so you try to understand the sentence first."
     },
     "notify": {
       "description": "A short reminder, at most once a day. It arrives even when the app is closed.",
@@ -1865,15 +1840,9 @@
   "importer": {
     "privacy": "Don't upload confidential work documents.",
     "privacyWhy": "On the free AI tier, Google may read submitted text and use it to improve its models.",
-    "signInTitle": "Sign in to pull cards out with AI",
-    "signInBody": "Word and phrase suggestions come from AI on the server, so you need to sign in with Google. Adding cards by hand works as a guest too.",
-    "signInCta": "Sign in with Google",
-    "unavailableTitle": "AI is off in this version",
-    "unavailableBody": "No AI server is configured. You can add cards from the “Manual” tab.",
     "paste": {
       "label": "English text",
       "placeholder": "Paste an article, email or book chapter…",
-      "stats": "{{chars}} characters · {{chunks}} parts",
       "words_one": "{{count}} word · {{chars}} characters",
       "words_other": "{{count}} words · {{chars}} characters",
       "statsEmpty": "Paste whole sentences; long texts are split into parts.",
@@ -2148,7 +2117,6 @@
       "user": "You chose this level; it applies only to you."
     },
     "correction": "{{list}}: {{from}} → {{to}} for Turkish learners",
-    "correction_reason": "{{list}}: {{from}} → {{to}} for Turkish learners (AI: {{reason}})",
     "autoWas": "Automatic level: {{level}} ({{source}}).",
     "autoUnknown": "The automatic level of this word is not known.",
     "unknown": "Level not known yet.",
@@ -2158,7 +2126,8 @@
     "overrideAuto": "Automatic ({{level}})",
     "overrideAutoUnknown": "Automatic",
     "overrideHint": "A level you choose is visible only to you and syncs between your devices.",
-    "overrideFailed": "The level could not be saved. Try again."
+    "overrideFailed": "The level could not be saved. Try again.",
+    "correction_reason": "{{list}}: {{from}} → {{to}} for Turkish learners (AI: {{reason}})"
   },
   "sources": {
     "title": "Sources",
@@ -2505,10 +2474,6 @@
     "levels": "Level: {{levels}}",
     "topics_one": "{{count}} topic",
     "topics_other": "{{count}} topics",
-    "practice": "Practice",
-    "edit": "Edit",
-    "up": "Move up",
-    "delete": "Delete",
     "deleteTitle": "Delete “{{name}}”?",
     "deleteBody": "Only the deck is deleted; your words and tags stay as they are.",
     "deleted": "Deck deleted",
@@ -2837,34 +2802,14 @@
       "senseLabel": "Meaning whose picture is shown",
       "loading": "Loading the picture…",
       "none": "There is no picture for this meaning yet.",
-      "noneGuest": "There is no picture for this meaning yet. Sign in with Google to make one.",
-      "noneOffline": "There is no picture for this meaning yet. You can make one when you are online.",
-      "noLexicon": "This meaning is not in the shared dictionary, so no picture can be made.",
+      "noneGuest": "There is no picture for this meaning yet. Ready-made pictures download to this device once you sign in with Google.",
+      "noneOffline": "There is no picture for this meaning yet. Ready-made pictures download when you are online.",
+      "noLexicon": "This meaning is not in the shared dictionary, so it has no picture.",
       "hidden": "You hid the picture of this meaning; it does not show on your cards.",
       "show": "Show the picture",
       "hide": "Hide the picture",
       "hiddenToast": "Picture hidden",
       "shownToast": "The picture is back on your cards",
-      "generate": "Make a picture",
-      "regenerate": "Draw again",
-      "generating": "Drawing the picture, this can take a few seconds…",
-      "generated": "The new picture is ready and on your cards.",
-      "newNote": "This picture is new; nobody has reviewed it yet.",
-      "variantsLabel": "Other pictures",
-      "variantsHint": "Choose which one your cards show.",
-      "variantLabel": "Picture {{n}}",
-      "inUse": "Your cards show this one",
-      "useThis": "Use this",
-      "chosenToast": "Your cards will show this picture",
-      "question": "Does this picture show the meaning?",
-      "yes": "Yes",
-      "no": "No",
-      "whyNo": "Why not?",
-      "answeredYes": "You said “Yes”, thank you.",
-      "answeredNo": "You said “No”: {{reason}}.",
-      "change": "Change the answer",
-      "thanks": "Thank you, noted.",
-      "rejectedToast": "Thank you, this picture will no longer show on your cards.",
       "saveFailed": "Could not save. Try again."
     },
     "reasons": {
@@ -2872,15 +2817,6 @@
       "unclear": "It is hard to tell what it is",
       "ugly": "The drawing looks bad",
       "other": "Another reason"
-    },
-    "errors": {
-      "daily_limit": "You made {{limit}} pictures today, which is the daily limit. Try again tomorrow.",
-      "budget": "This month's picture budget is spent. You can make pictures again next month.",
-      "not_visual": "This meaning is not something a picture can show, so none was drawn.",
-      "failed": "The picture could not be made. Try again a little later.",
-      "offline": "Making a picture needs an internet connection.",
-      "signed_out": "Sign in with Google to make a picture.",
-      "no_lexicon": "This meaning is not in the shared dictionary, so no picture can be made."
     },
     "settings": {
       "front": "Show the picture on the front too",
@@ -3299,7 +3235,6 @@
       "freq": "Frequency {{n}} of 5",
       "known": "Known",
       "carded": "Added",
-      "select": "Pick {{term}}",
       "selectedBody": "Will be added to All my words",
       "showing": "Showing {{shown}} / {{total}}",
       "quick": "A mix of {{count}} words from your level"
@@ -3377,7 +3312,6 @@
     "words_other": "{{count}} words",
     "truncated": "The article is very long, so its first part was taken.",
     "notEnglish": "This page does not look English. You can still open it.",
-    "extract": "Find words",
     "saveFailed": "Could not save the text. Try again.",
     "extractFailed": "Could not start finding words. Try again.",
     "failTitle": "This page could not be fetched",

@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useSyncExternalStore } from 'react';
 import { getMeta, pendingChangesCount, stuckOutboxCount } from '@/data';
+import { useOnline } from '@/lib/online';
 import { isBackendConfigured } from '@/lib/supabase';
 import type { SyncState } from '@/ui';
 import { LAST_SYNC_KEY, type SyncErrorKind } from './engine';
@@ -17,15 +18,6 @@ export interface SyncStatusInfo {
   lastSyncAt: number | null;
   error: SyncErrorKind | null;
   backendConfigured: boolean;
-}
-
-function subscribeOnline(cb: () => void) {
-  window.addEventListener('online', cb);
-  window.addEventListener('offline', cb);
-  return () => {
-    window.removeEventListener('online', cb);
-    window.removeEventListener('offline', cb);
-  };
 }
 
 /** Pure mapping used by the hook (and tests). */
@@ -47,11 +39,7 @@ export function deriveSyncState(x: {
 
 export function useSyncStatus(): SyncStatusInfo {
   const snap = useSyncExternalStore(engine.subscribe, engine.getSnapshot, engine.getSnapshot);
-  const online = useSyncExternalStore(
-    subscribeOnline,
-    () => navigator.onLine,
-    () => true,
-  );
+  const online = useOnline();
   const active = snap.active && isBackendConfigured();
   const pending = useLiveQuery(() => pendingChangesCount(), []) ?? 0;
   // stuckOutboxCount scans the outbox; a guest's outbox only grows (nothing is pushed) and is

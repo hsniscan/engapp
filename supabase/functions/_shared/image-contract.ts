@@ -182,22 +182,6 @@ export function svgForTheme(svg: string, theme: 'light' | 'dark'): string {
 // Server surface used by the client (İP2 implements, İP3/İP4 call).
 // ---------------------------------------------------------------------------
 
-/** `ai-image` edge function: draw one picture now (signed-in users, daily limit, budget). */
-export const aiImageRequest = z.object({ sense_id: z.string().uuid() });
-export const aiImageResponse = z.discriminatedUnion('ok', [
-  z.object({ ok: z.literal(true), image: lexiconImageRow }),
-  z.object({
-    ok: z.literal(false),
-    /** daily_limit: 10 a day used; budget: this month's picture budget is spent;
-     *  not_visual: the model declined (nothing sensible to draw); failed: check failed twice. */
-    reason: z.enum(['daily_limit', 'budget', 'not_visual', 'failed']),
-  }),
-]);
-export type AiImageResponse = z.infer<typeof aiImageResponse>;
-
-/** Pictures drawn on demand per user per day. */
-export const IMAGE_DAILY_LIMIT = 10;
-
 /** Database functions (supabase.rpc). Admin ones check public.app_admins server-side. */
 export const IMAGE_RPC = {
   /** () → boolean */

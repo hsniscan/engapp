@@ -69,10 +69,10 @@ export const privacyTr: LegalDocument = {
           p: '**Bugünün hikâyesi.** Hikâye istediğinde sunucuya yalnızca o günün 5–8 kelimesi (kartlarındaki sözlük biçimleriyle), seviyen, seçtiğin okuma zorluğu ve en fazla üç ilgi alanın gider; metinlerin, cümlelerin ve anlamların gitmez. Sunucu hikâyeyi Anthropic Claude ile yazdırır, sana gönderir ve saklamaz; yalnızca günde kaç hikâye istediğin sayılır. Hikâye senin metnin olarak cihazına kaydedilir ve yalnızca kendi hesabınla eşitlenir.',
         },
         {
-          p: '**Kullanım sayaçları.** Günlük AI, sesli okuma ve "Görsel üret" hakkını uygulamak için gün başına kaç çağrı yaptığın sayılır.',
+          p: '**Kullanım sayaçları.** Günlük AI ve sesli okuma hakkını uygulamak için gün başına kaç çağrı yaptığın sayılır.',
         },
         {
-          p: '**Görseller.** Bir kelime görseline verdiğin evet/hayır cevabı ve seçtiğin ya da gizlediğin görsel, öğrenme verilerinle birlikte saklanır. Bir anlamın görselini istediğinde, aynı görseli kaç kişinin istediğini saymak için isteğin hesabınla birlikte kaydedilir.',
+          p: '**Görseller.** Gizlediğin görseller (ve uygulamanın eski sürümlerinde verdiğin evet/hayır cevapları ile seçtiğin görseller) öğrenme verilerinle birlikte saklanır. Görseller ortak sözlük için bir kez toplu olarak çizilir; uygulama senin adına görsel istemez.',
         },
         {
           p: '**Bildirimler.** Hatırlatma bildirimlerini açarsan: tarayıcının bildirim servisi adresi ve şifreleme anahtarları, cihaz ya da tarayıcı adı ve hangi gün hatırlatma gönderildiği.',
@@ -92,7 +92,7 @@ export const privacyTr: LegalDocument = {
         {
           ul: [
             'Hesabını açmak, girişini sürdürmek ve verilerini cihazların arasında eşitlemek (KVKK m. 5/2-c: sözleşmenin ifası).',
-            'Senin isteğinle AI özelliklerini çalıştırmak: metinden kart çıkarma, anlam bulma, temalara ayırma, sesli okuma, kelime görseli üretme (KVKK m. 5/2-c).',
+            'Senin isteğinle AI özelliklerini çalıştırmak: metinden kart çıkarma, anlam bulma, temalara ayırma, sesli okuma (KVKK m. 5/2-c).',
             'Hizmeti kötüye kullanıma karşı korumak, örneğin günlük kullanım sınırları (KVKK m. 5/2-f: meşru menfaat).',
             'Açtıysan, günde en fazla bir tekrar hatırlatması göndermek.',
           ],
@@ -114,7 +114,7 @@ export const privacyTr: LegalDocument = {
             "**Supabase** (veritabanı, giriş, sunucu fonksiyonları): hesabın ve öğrenme verilerin. Sunucular Avrupa Birliği'nde, İrlanda bölgesindedir.",
             '**Cloudflare** (web sitesinin barındırılması): uygulama dosyalarını sunarken IP adresin ve tarayıcı bilgin gibi teknik bağlantı verilerini işler.',
             '**Google**: Google ile giriş; profil fotoğrafın Google\'ın sunucusundan yüklenir. **Google ML Kit** (yalnızca Android uygulamasında "Fotoğraftan metin" kullanınca): yukarıda anlatılan kullanım ve performans bilgisi; fotoğraf ve metin gönderilmez. **Google Gemini** (AI): kart çıkarmak için gönderdiğin metin parçaları, elle eklediğin kelime, temalara ayırma için kelimelerin ve kısa İngilizce tanımları, sesli okunacak kelime ya da cümle, haftalık rapor yorumu için yalnızca sayılar.',
-            "**Anthropic Claude** (kelime görselleri): yalnızca ortak sözlükteki kelime, sözcük türü ve Türkçe anlamı, kısa bir çizim ipucu, yeniden çizimde hazır bir düzeltme notu ve kontrol için Claude'un çizdiği resmin kendisi. Hesabına, kartlarına ya da cümlelerine ait hiçbir bilgi gönderilmez; görseli kimin istediği de gönderilmez.",
+            "**Anthropic Claude** (kelime görselleri, ortak sözlük için toplu olarak bir kez çizilir): yalnızca ortak sözlükteki kelime, sözcük türü ve Türkçe anlamı, kısa bir çizim ipucu, yeniden çizimde hazır bir düzeltme notu ve kontrol için Claude'un çizdiği resmin kendisi. Hesabına, kartlarına ya da cümlelerine ait hiçbir bilgi gönderilmez.",
             "**Anthropic Claude** (AI yedeği): Gemini'nin kotası dolduğunda, yukarıda Gemini için sayılan aynı AI istekleri Claude ile işlenir. **Anthropic Claude** (Bugünün hikâyesi): yalnızca yukarıda sayılan kelime listesi, seviye, zorluk ve ilgi alanları.",
             '**Tarayıcıların bildirim servisleri** (Google, Mozilla, Apple, Microsoft): web bildirimlerini açtıysan, şifreli hatırlatma metni ("Bugün 12 kart çalışmaya hazır" gibi).',
           ],
