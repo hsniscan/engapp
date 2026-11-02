@@ -10,7 +10,7 @@ import { Link } from 'react-router';
 import { db } from '@/data';
 import type { StudyMode } from '@/domain/studyMode';
 import { openAddSheet } from '@/features/add/addSheetStore';
-import { DISCOVER_DECKS_HREF } from '@/features/home/DecksForYou';
+import { DISCOVER_DECKS_HREF } from '@/features/decks/deckUi';
 import { flags } from '@/features/settings/platform';
 import { buttonClasses, cn, EmptyState, Icon, Skeleton, Switch } from '@/ui';
 import { reconcileDictationCards } from '@/data/dictation';

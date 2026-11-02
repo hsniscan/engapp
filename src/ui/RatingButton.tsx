@@ -1,4 +1,4 @@
-import type { ComponentPropsWithRef } from 'react';
+import type { ComponentPropsWithRef, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from './cn';
 import { Kbd } from './Kbd';
@@ -12,6 +12,8 @@ export interface RatingButtonProps extends Omit<ComponentPropsWithRef<'button'>,
   interval?: string;
   /** Keyboard shortcut hint (1–4), shown on devices with a keyboard. */
   shortcut?: string;
+  /** Optional third line, e.g. a stage change ("↑ Öğrenildi") or "Bir daha dokun". */
+  note?: ReactNode;
 }
 
 /**
@@ -23,6 +25,7 @@ export function RatingButton({
   label: labelOverride,
   interval,
   shortcut,
+  note,
   className,
   ...rest
 }: RatingButtonProps) {
@@ -48,6 +51,7 @@ export function RatingButton({
           {interval}
         </span>
       )}
+      {note != null && <span className="text-caption leading-tight font-semibold">{note}</span>}
       {shortcut && (
         <span aria-hidden="true" className="absolute top-1.5 right-1.5 hidden md:pointer-fine:flex">
           <Kbd size="sm">{shortcut}</Kbd>

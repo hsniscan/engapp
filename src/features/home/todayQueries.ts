@@ -11,7 +11,6 @@ import {
 import { STAGE_RULE_NOTICE_KEY } from '@/data/db';
 import { logsByCard } from '@/data/history';
 import { addDays, dayBounds, type DayKey } from '@/domain/day';
-import { CEFR_ORDER } from '@/domain/deckFilter';
 import { dayMinutesGoal, targetLevel } from '@/domain/goals';
 import type { CardType, CefrLevel, LevelSourceKind, Millis } from '@/domain/types';
 import { mondayOf } from '@/domain/weeklyReport';
@@ -125,12 +124,6 @@ export interface HomeGoals {
   target: CefrLevel;
   /** Hatırlama hedefi (FSRS request_retention). */
   retentionGoal: number;
-}
-
-/** Levels shown on the path: A1 up to the target (or the current level when it is higher). */
-export function levelPath(level: CefrLevel, target: CefrLevel): CefrLevel[] {
-  const last = Math.max(CEFR_ORDER.indexOf(level), CEFR_ORDER.indexOf(target));
-  return CEFR_ORDER.slice(0, last + 1);
 }
 
 export async function getHomeGoals(now: Millis = Date.now()): Promise<HomeGoals> {

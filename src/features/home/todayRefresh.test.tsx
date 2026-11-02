@@ -53,7 +53,7 @@ describe('learning steps later today', () => {
     vi.setSystemTime(T + 12 * MIN);
     await act(async () => bumpStudyTickForTesting());
     const hero = await screen.findByTestId('today-hero');
-    expect(within(hero).getByRole('heading')).toHaveTextContent('1 kart kaldı');
+    expect(within(hero).getByTestId('today-split')).toHaveTextContent('1 kart kaldı');
     expect(within(hero).getByTestId('start-study')).toHaveAttribute('href', '/study?mode=word');
   });
 
