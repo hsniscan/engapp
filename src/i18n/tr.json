@@ -694,7 +694,8 @@
       "allLevels": "Tüm seviyeler",
       "levelUnknown": "Seviyesi bilinmeyenler",
       "sortLevel": "Seviye: kolaydan zora",
-      "sortLevelDesc": "Seviye: zordan kolaya"
+      "sortLevelDesc": "Seviye: zordan kolaya",
+      "allChip": "Tümü"
     },
     "bulk": {
       "label": "Seçili kelimeler için işlemler",
@@ -725,10 +726,7 @@
       "locked": "Kilitli",
       "dueNow": "Sırası geldi",
       "due": "Sıradaki: {{when}}",
-      "suspendNote": "Bu kelimeyi askıya al",
-      "suspendHint": "Askıdaki kartlar çalışmaya gelmez; geçmişleri korunur.",
       "deleteNote": "Kelimeyi sil",
-      "deleteNoteTitle": "“{{term}}” silinsin mi?",
       "deleteSenseTitle": "“{{meaning}}” anlamı silinsin mi?",
       "deleteSenseBody": "Bu anlamın üretme ve boşluk doldurma kartları silinir. Tekrar geçmişi korunur.",
       "saved": "Değişiklikler kaydedildi",
@@ -739,13 +737,23 @@
       "markKnownHint": "Kelime Bildiğim kelimeler'e taşınır, kartları çalışmaya gelmez. Geçmişi korunur.",
       "knownDone": "“{{term}}” Bildiğim kelimeler'e taşındı",
       "reset": "İlerlemeyi sıfırla",
-      "resetTitle": "“{{term}}” baştan başlasın mı?",
-      "resetBody": "Kartları yeni gibi yeniden sıraya girer. Tekrar geçmişin silinmez.",
       "resetDone": "“{{term}}” baştan başlıyor",
       "discardTitle": "Değişiklikler kaydedilmedi",
       "discardBody": "Kaydetmeden kapatırsan yaptığın değişiklikler kaybolur.",
       "discard": "Kaydetmeden kapat",
-      "keepEditing": "Düzenlemeye dön"
+      "keepEditing": "Düzenlemeye dön",
+      "listen": "“{{term}}” kelimesini dinle",
+      "listenSentence": "Cümleyi dinle",
+      "meaning": "Anlamı",
+      "ownExample": "Senin örneğin",
+      "memory": "Hafıza",
+      "next": "Sıradaki tekrar",
+      "interval": "Aralık",
+      "daysUnit": "gün",
+      "reps": "Tekrar",
+      "lapses": "Unuttuğun",
+      "notStudied": "Henüz yok",
+      "moreActions": "Diğer işlemler"
     },
     "cardCount": "{{count}} kart",
     "decks": {
@@ -785,7 +793,13 @@
       "learned": "Öğrenildi",
       "mastered": "Kalıcı"
     },
-    "title": "Kelimelerim"
+    "title": "Kelimelerim",
+    "row": {
+      "actions": "“{{term}}” için işlemler",
+      "edit": "Düzenle",
+      "suspended": "“{{term}}” askıya alındı",
+      "unsuspended": "“{{term}}” askıdan çıkarıldı"
+    }
   },
   "stats": {
     "title": "İstatistik",
@@ -2991,7 +3005,10 @@
     "entryLink": "Kelime Bankası'nı aç",
     "markKnown": "Biliyorum",
     "markKnownLabel": "“{{term}}” kelimesini biliyorum",
-    "knownMarked": "{{count}} kelime Bildiğim kelimeler'e eklendi"
+    "knownMarked": "{{count}} kelime Bildiğim kelimeler'e eklendi",
+    "cardedLabel": "{{term}} kelimelerinde",
+    "addPicked_one": "{{count}} anlamı ekle",
+    "addPicked_other": "{{count}} anlamı ekle"
   },
   "discover": {
     "title": "Keşfet",
@@ -3092,16 +3109,8 @@
     "title": "Kelimelerim",
     "segments": "Deste görünümü",
     "tabMine": "Destelerim",
-    "tabDiscover": "Keşfet",
     "tabBank": "Kelime Bankası",
-    "import": "İçe aktar: Anki, CSV ya da yedek",
-    "back": "Geri",
     "study": "Çalış",
-    "studyAnyway": "Yine de çalış",
-    "studyLabel": "“{{name}}” destesini çalış",
-    "dueToday_one": "bugün {{count}} kart",
-    "dueToday_other": "bugün {{count}} kart",
-    "dueNone": "bugün kart yok",
     "words_one": "{{formatted}} kelime",
     "words_other": "{{formatted}} kelime",
     "wordsCards": "{{words}} kelime · {{cards}} kart",
@@ -3114,18 +3123,14 @@
       "decks": "Destelerim",
       "deckCount_one": "{{count}} deste",
       "deckCount_other": "{{count}} deste",
-      "empty": "Henüz desten yok. Keşfet'ten hazır bir deste ekle ya da aşağıdan kendin oluştur.",
+      "empty": "Kurallarla kendini güncelleyen bir deste kur ya da kelimelerinden elle seç.",
       "fromSuggestion": "Öneriden eklendi",
       "kindSmart": "Akıllı deste",
       "kindTag": "Elle seçilen",
-      "progress": "{{learned}} öğrendin, {{studying}} öğreniyorsun, {{fresh}} yeni",
       "needsUpdate": "Bu deste uygulamanın daha yeni bir sürümünde yapıldı.",
       "newTitle": "Yeni deste",
-      "newBody": "İki yoldan biriyle başla",
       "byRules": "Kurallarla",
-      "byRulesBody": "Durum, etiket, seviye, konu, tarih. Kendini günceller.",
       "byHand": "Elle seç",
-      "byHandBody": "Kelimelerinden tek tek işaretle.",
       "tools": "Düzenleme araçları",
       "themes": "Yapay zekâ ile temalara ayır",
       "themesBody_one": "{{count}} kelimeni anlam gruplarına böler",
@@ -3136,7 +3141,13 @@
       "tagsBody_other": "{{count}} etiket · yeniden adlandır, sil",
       "tagsNone": "Henüz etiket yok",
       "importTitle": "İçe aktar",
-      "importBody": "Anki destesi, CSV ya da yedek dosyası"
+      "importBody": "Anki destesi, CSV ya da yedek dosyası",
+      "allUnit": "kelime",
+      "emptyTitle": "Kendi desteni oluştur",
+      "browse": "Hazır destelere göz at",
+      "browseBody": "Keşfet'te seviyene ve ilgi alanlarına göre desteler",
+      "dueBadge_one": "{{count}} tekrar",
+      "dueBadge_other": "{{count}} tekrar"
     },
     "manual": {
       "title": "Elle seçilen deste",
@@ -3236,7 +3247,7 @@
       "paceBody_other": "{{count}} yeni kelime yaklaşık {{days}} günde biter",
       "paceNone": "Eklenecek yeni kelime kalmadı",
       "paceChange": "Değiştir",
-      "add": "Destelerime ekle",
+      "add": "Kelimelerime ekle",
       "addMore_one": "Kalan {{count}} kelimeyi ekle",
       "addMore_other": "Kalan {{count}} kelimeyi ekle",
       "adding": "Ekleniyor… {{done}} / {{total}}",
@@ -3267,7 +3278,8 @@
       "sKnown": "Biliyorsun",
       "sNew": "Yeni",
       "more": "{{count}} kelime daha göster",
-      "empty": "Bu süzgeçte kelime yok."
+      "empty": "Bu süzgeçte kelime yok.",
+      "freshLabel": "Yeni kelime"
     },
     "detail": {
       "parent": "Destelerim",
@@ -3277,10 +3289,6 @@
       "addWords": "Kelime ekle",
       "suggestedOpen": "Önerilen desteyi aç",
       "status": "Bu destedeki durumun",
-      "learnedPct": "öğrendin",
-      "learned": "öğrendin",
-      "studying": "öğreniyorsun",
-      "fresh": "yeni",
       "words": "Destedeki kelimeler",
       "newest": "En yeni önce",
       "empty": "Bu destede henüz kelime yok.",
@@ -3291,16 +3299,24 @@
       "unsupported": "Bu destenin süzgeci uygulamanın daha yeni bir sürümünde yapıldı; burada kelimeleri gösterilemiyor.",
       "noMeaning": "Anlam yok",
       "filter": "Aşamaya göre süz",
-      "fAll": "Tümü {{count}}",
-      "fStudying": "Öğreniyor {{count}}",
-      "fLearned": "Öğrendin {{count}}",
-      "fNew": "Yeni {{count}}",
+      "fAll": "Tümü",
+      "fStudying": "Öğreniyor",
+      "fLearned": "Öğrenilen",
+      "fNew": "Yeni",
       "up": "Yukarı taşı",
       "down": "Aşağı taşı",
       "export": "CSV olarak indir",
       "exported": "{{count}} kelime indirildi",
       "deleted": "“{{name}}” silindi",
-      "handPicked": "Elle seçilen deste"
+      "handPicked": "Elle seçilen deste",
+      "loading": "Deste yükleniyor",
+      "statWords": "Kelime",
+      "statDue": "Tekrar bekleyen",
+      "statLearned": "Öğrenilen",
+      "wordsTitle": "Kelimeler",
+      "emptyTitle": "Henüz kelime yok",
+      "studyDeck": "Bu desteyi çalış",
+      "startDeck": "Bu desteye başla"
     },
     "picker": {
       "title": "“{{name}}” destesine kelime ekle",
@@ -3341,7 +3357,8 @@
       "showing": "{{shown}} / {{total}} gösteriliyor",
       "quick": "Seviyenden karışık {{count}} kelime",
       "downloading": "Kelime Bankası iniyor… şimdiye kadar {{count}} kelime",
-      "partial": "Kelime Bankası yarım kaldı ({{count}} kelime). Bağlantı gelince tamamlayabilirsin."
+      "partial": "Kelime Bankası yarım kaldı ({{count}} kelime). Bağlantı gelince tamamlayabilirsin.",
+      "sortLabel": "Sıralama: {{order}}"
     },
     "start": "Başla"
   },

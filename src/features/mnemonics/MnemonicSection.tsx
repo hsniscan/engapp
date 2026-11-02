@@ -45,7 +45,7 @@ export function MnemonicSection({ termNorm, senses, headingId, requestDeps }: Mn
   if (!sense) return null;
   return (
     <section aria-labelledby={hId} aria-live="off" className="flex flex-col gap-2" data-testid="mnemonic-section">
-      <h3 id={hId} className="font-serif text-lg font-semibold text-fg">
+      <h3 id={hId} className="text-ui font-semibold text-fg">
         {t('mnemonic.title')}
       </h3>
       <p className="-mt-1 text-sm text-fg-muted">{t('mnemonic.intro')}</p>

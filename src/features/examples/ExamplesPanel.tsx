@@ -96,7 +96,7 @@ export function ExamplesSection(props: ExamplesProps & { headingId?: string }) {
   const headingId = props.headingId ?? `${id}-h`;
   return (
     <section aria-labelledby={headingId} aria-live="off" className="flex flex-col gap-2">
-      <h3 id={headingId} className="font-serif text-lg font-semibold text-fg">
+      <h3 id={headingId} className="text-ui font-semibold text-fg">
         {t('examples.title')}
       </h3>
       <ExamplesBody {...props} />

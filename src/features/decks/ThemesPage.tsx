@@ -32,13 +32,13 @@ import { ConfirmDialog } from '@/features/cards/ConfirmDialog';
 import {
   Button,
   buttonClasses,
+  Card,
   cn,
   EmptyState,
   Icon,
-  Page,
+  PageFrame,
   Skeleton,
   Spinner,
-  Surface,
   Switch,
   TextField,
   toast,
@@ -49,24 +49,22 @@ export function ThemesPage() {
   const { t } = useTranslation();
   const preview = useLiveQuery(async () => (await getThemePreview()) ?? null, []);
   return (
-    <Page title={t('themes.title')} description={t('themes.description')}>
-      <Link
-        to="/decks"
-        className="-mt-3 mb-5 inline-flex min-h-11 items-center gap-1 text-[0.9375rem] font-medium text-accent-text underline-offset-4 hover:underline md:-mt-5"
-      >
-        <Icon name="chevron-left" size={18} />
-        {t('decks.title')}
-      </Link>
+    <PageFrame
+      width="reading"
+      back={{ to: '/decks', label: t('deckHub.library.parent') }}
+      title={t('themes.title')}
+      description={t('themes.description')}
+    >
       {preview === undefined ? (
-        <Surface aria-busy="true">
+        <Card aria-busy="true">
           <Skeleton lines={4} />
-        </Surface>
+        </Card>
       ) : preview ? (
         <PreviewView preview={preview} />
       ) : (
         <StartView />
       )}
-    </Page>
+    </PageFrame>
   );
 }
 
@@ -133,14 +131,14 @@ function StartView() {
 
   if (auth.status === 'loading' || source === undefined) {
     return (
-      <Surface aria-busy="true">
+      <Card aria-busy="true">
         <Skeleton lines={3} />
-      </Surface>
+      </Card>
     );
   }
   if (auth.status !== 'signed_in') {
     return (
-      <Surface>
+      <Card>
         <EmptyState
           icon="user"
           title={t('decks.themes.title')}
@@ -153,21 +151,21 @@ function StartView() {
             ) : undefined
           }
         />
-      </Surface>
+      </Card>
     );
   }
 
   if (progress) {
     return (
-      <Surface
+      <Card
         padding="lg"
         className="flex flex-col items-center gap-4 py-10 text-center"
         aria-live="polite"
       >
         <Spinner size={24} />
-        <p className="font-serif text-xl font-semibold text-fg">{t('themes.running')}</p>
+        <p className="text-title font-semibold text-fg">{t('themes.running')}</p>
         {progress.total > 1 && (
-          <p className="tabular text-sm text-fg-muted">
+          <p className="tabular text-meta text-fg-muted">
             {t('themes.runningStep', { done: progress.done + 1, total: progress.total })}
           </p>
         )}
@@ -176,20 +174,20 @@ function StartView() {
             {t('themes.cancel')}
           </Button>
         )}
-      </Surface>
+      </Card>
     );
   }
 
   const tooFew = n < MIN_THEME_WORDS;
   return (
-    <Surface as="section" padding="none" className="flex flex-col gap-5 p-5 sm:p-6">
+    <Card as="section" className="flex flex-col gap-5">
       <div className="flex flex-col gap-1">
-        <p className="text-[0.9375rem] text-fg">
+        <p className="text-ui text-fg">
           {t('themes.untagged', { count: untagged ?? 0 })}
           {includeTagged && <> {t('themes.selected', { count: source.total })}</>}
         </p>
         {source.total > n && (
-          <p className="text-sm text-fg-muted">{t('themes.limitNote', { count: n })}</p>
+          <p className="text-meta text-fg-muted">{t('themes.limitNote', { count: n })}</p>
         )}
       </div>
       <Switch
@@ -198,14 +196,14 @@ function StartView() {
         checked={includeTagged}
         onCheckedChange={setIncludeTagged}
       />
-      <p className="flex gap-2 rounded-control bg-surface-sunken px-3 py-2.5 text-sm text-fg-muted">
+      <p className="flex gap-2 rounded-control bg-surface-sunken px-3 py-2.5 text-meta text-fg-muted">
         <Icon name="info" size={18} className="mt-px shrink-0" />
         <span>{t('themes.privacy')}</span>
       </p>
       {error && (
         <p
           role="alert"
-          className="rounded-control bg-danger-soft px-3 py-2.5 text-sm text-danger-text"
+          className="rounded-control bg-danger-soft px-3 py-2.5 text-meta text-danger-text"
         >
           {error}
         </p>
@@ -214,13 +212,13 @@ function StartView() {
         <Button size="lg" disabled={tooFew} onClick={() => void run()} className="sm:w-auto">
           {error ? t('themes.retry') : t('themes.start')}
         </Button>
-        <p className="text-sm text-fg-muted">
+        <p className="text-meta text-fg-muted">
           {tooFew
             ? t('themes.tooFew', { count: MIN_THEME_WORDS })
             : t('themes.calls', { count: calls })}
         </p>
       </div>
-    </Surface>
+    </Card>
   );
 }
 
@@ -269,12 +267,12 @@ function PreviewView({ preview }: { preview: ThemePreview }) {
   return (
     <div className="flex flex-col gap-4">
       {visible.length === 0 ? (
-        <Surface>
+        <Card>
           <EmptyState icon="info" title={t('themes.noGroups')} />
-        </Surface>
+        </Card>
       ) : (
         <>
-          <p className="text-[0.9375rem] text-fg-muted">
+          <p className="text-ui text-fg-muted">
             {t('themes.summary', { count: visible.length })}
           </p>
           <ul aria-label={t('themes.groupsLabel')} className="flex flex-col gap-3">
@@ -341,24 +339,24 @@ function GroupCard({
 
   return (
     <li>
-      <Surface
+      <Card
         as="section"
         aria-labelledby={headingId}
-        padding="none"
+        padding="md"
         className={cn(
-          'flex flex-col gap-4 p-4 sm:p-5',
-          group.rejected && 'bg-surface-sunken shadow-none',
+          'flex flex-col gap-4',
+          group.rejected && 'bg-surface-sunken',
         )}
       >
         <div className="flex items-start justify-between gap-3">
           <h2
             id={headingId}
-            className="min-w-0 pt-1 font-serif text-lg leading-snug font-semibold text-fg"
+            className="min-w-0 pt-1 text-title font-semibold text-fg"
           >
             <span className={cn(group.rejected && 'text-fg-muted line-through decoration-1')}>
               {clean || group.suggested}
             </span>
-            <span className="tabular block font-sans text-sm font-normal text-fg-muted sm:ml-2 sm:inline">
+            <span className="tabular block text-meta font-normal text-fg-muted sm:ml-2 sm:inline">
               {t('themes.words', { count: kept.length })}
             </span>
           </h2>
@@ -373,7 +371,7 @@ function GroupCard({
           </Button>
         </div>
         {group.rejected ? (
-          <p className="text-sm text-fg-muted">{t('themes.rejected')}</p>
+          <p className="text-meta text-fg-muted">{t('themes.rejected')}</p>
         ) : (
           <>
             <TextField
@@ -392,14 +390,14 @@ function GroupCard({
                   key={id}
                   className="inline-flex h-9 items-center gap-0.5 rounded-sm bg-surface-sunken pr-0.5 pl-2.5"
                 >
-                  <span lang="en" className="font-serif text-[0.9375rem] text-fg">
+                  <span lang="en" className="font-serif text-ui text-fg">
                     {terms.get(id)}
                   </span>
                   <button
                     type="button"
                     aria-label={t('themes.removeWord', { term: terms.get(id) })}
                     onClick={() => onEdit((g) => ({ ...g, removed: [...g.removed, id] }))}
-                    className="relative inline-flex size-8 items-center justify-center rounded-[4px] text-fg-muted after:absolute after:-inset-1 after:content-[''] hover:bg-hover hover:text-fg"
+                    className="relative inline-flex size-8 items-center justify-center rounded-xs text-fg-muted after:absolute after:-inset-1 after:content-[''] hover:bg-hover hover:text-fg"
                   >
                     <Icon name="x" size={16} />
                   </button>
@@ -407,7 +405,7 @@ function GroupCard({
               ))}
             </ul>
             {removed.length > 0 && (
-              <p className="flex flex-wrap items-center gap-x-3 text-sm text-fg-muted">
+              <p className="flex flex-wrap items-center gap-x-3 text-meta text-fg-muted">
                 {t('themes.removed', { count: removed.length })}
                 <button
                   type="button"
@@ -420,7 +418,7 @@ function GroupCard({
             )}
           </>
         )}
-      </Surface>
+      </Card>
     </li>
   );
 }

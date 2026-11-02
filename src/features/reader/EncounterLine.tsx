@@ -10,7 +10,7 @@ export function EncounterLine({ noteId }: { noteId: Id }) {
   const s = useLiveQuery(() => getEncounterSummary(noteId), [noteId]);
   if (!s) return null;
   return (
-    <p className="text-sm text-fg-muted" data-testid="encounter-line">
+    <p className="text-meta text-fg-muted" data-testid="encounter-line">
       {s.total === 0
         ? t('reader.encounters.none')
         : s.texts === 0

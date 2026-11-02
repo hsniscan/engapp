@@ -694,7 +694,8 @@
       "allLevels": "All levels",
       "levelUnknown": "Unknown level",
       "sortLevel": "Level: easy to hard",
-      "sortLevelDesc": "Level: hard to easy"
+      "sortLevelDesc": "Level: hard to easy",
+      "allChip": "All"
     },
     "bulk": {
       "label": "Actions for selected words",
@@ -725,10 +726,7 @@
       "locked": "Locked",
       "dueNow": "Due",
       "due": "Next: {{when}}",
-      "suspendNote": "Suspend this word",
-      "suspendHint": "Suspended cards are not reviewed; their history is kept.",
       "deleteNote": "Delete word",
-      "deleteNoteTitle": "Delete “{{term}}”?",
       "deleteSenseTitle": "Delete the meaning “{{meaning}}”?",
       "deleteSenseBody": "Its production and cloze cards are deleted. Review history is kept.",
       "saved": "Changes saved",
@@ -739,13 +737,23 @@
       "markKnownHint": "The word moves to Known words and its cards leave study. Its history is kept.",
       "knownDone": "“{{term}}” moved to Known words",
       "reset": "Reset progress",
-      "resetTitle": "Start “{{term}}” over?",
-      "resetBody": "Its cards start again as new. Your review history is not deleted.",
       "resetDone": "“{{term}}” starts over",
       "discardTitle": "Changes not saved",
       "discardBody": "If you close without saving, your changes are lost.",
       "discard": "Close without saving",
-      "keepEditing": "Keep editing"
+      "keepEditing": "Keep editing",
+      "listen": "Listen to “{{term}}”",
+      "listenSentence": "Listen to the sentence",
+      "meaning": "Meaning",
+      "ownExample": "Your example",
+      "memory": "Memory",
+      "next": "Next review",
+      "interval": "Interval",
+      "daysUnit": "days",
+      "reps": "Reviews",
+      "lapses": "Forgotten",
+      "notStudied": "Not yet",
+      "moreActions": "More actions"
     },
     "cardCount": "{{count}} cards",
     "decks": {
@@ -785,7 +793,13 @@
       "learned": "Learned",
       "mastered": "Mastered"
     },
-    "title": "My words"
+    "title": "My words",
+    "row": {
+      "actions": "Actions for “{{term}}”",
+      "edit": "Edit",
+      "suspended": "“{{term}}” suspended",
+      "unsuspended": "“{{term}}” back in study"
+    }
   },
   "stats": {
     "title": "Stats",
@@ -2991,7 +3005,10 @@
     "entryLink": "Open the word bank",
     "markKnown": "I know it",
     "markKnownLabel": "I know “{{term}}”",
-    "knownMarked": "{{count}} words added to Known words"
+    "knownMarked": "{{count}} words added to Known words",
+    "cardedLabel": "{{term}} is in your words",
+    "addPicked_one": "Add {{count}} meaning",
+    "addPicked_other": "Add {{count}} meanings"
   },
   "discover": {
     "title": "Discover",
@@ -3092,16 +3109,8 @@
     "title": "My words",
     "segments": "Deck view",
     "tabMine": "My decks",
-    "tabDiscover": "Discover",
     "tabBank": "Word bank",
-    "import": "Import: Anki, CSV or a backup",
-    "back": "Back",
     "study": "Study",
-    "studyAnyway": "Study anyway",
-    "studyLabel": "Study “{{name}}”",
-    "dueToday_one": "{{count}} card today",
-    "dueToday_other": "{{count}} cards today",
-    "dueNone": "no cards today",
     "words_one": "{{formatted}} word",
     "words_other": "{{formatted}} words",
     "wordsCards": "{{words}} words · {{cards}} cards",
@@ -3114,18 +3123,14 @@
       "decks": "My decks",
       "deckCount_one": "{{count}} deck",
       "deckCount_other": "{{count}} decks",
-      "empty": "No decks yet. Add a ready-made deck from Discover or create one below.",
+      "empty": "Set up a deck that updates itself by rules, or pick words by hand.",
       "fromSuggestion": "Added from a suggestion",
       "kindSmart": "Smart deck",
       "kindTag": "Hand-picked",
-      "progress": "{{learned}} learned, {{studying}} learning, {{fresh}} new",
       "needsUpdate": "This deck was made in a newer version of the app.",
       "newTitle": "New deck",
-      "newBody": "Start one of two ways",
       "byRules": "By rules",
-      "byRulesBody": "Status, tag, level, topic, date. Updates itself.",
       "byHand": "Pick by hand",
-      "byHandBody": "Tick words from your collection.",
       "tools": "Organising tools",
       "themes": "Group into themes with AI",
       "themesBody_one": "Splits your {{count}} word into meaning groups",
@@ -3136,7 +3141,13 @@
       "tagsBody_other": "{{count}} tags · rename, delete",
       "tagsNone": "No tags yet",
       "importTitle": "Import",
-      "importBody": "Anki deck, CSV or a backup file"
+      "importBody": "Anki deck, CSV or a backup file",
+      "allUnit": "words",
+      "emptyTitle": "Make your own deck",
+      "browse": "Browse ready-made decks",
+      "browseBody": "Decks for your level and interests in Discover",
+      "dueBadge_one": "{{count}} due",
+      "dueBadge_other": "{{count}} due"
     },
     "manual": {
       "title": "Hand-picked deck",
@@ -3236,7 +3247,7 @@
       "paceBody_other": "{{count}} new words take about {{days}} days",
       "paceNone": "No new words left to add",
       "paceChange": "Change",
-      "add": "Add to my decks",
+      "add": "Add to my words",
       "addMore_one": "Add the {{count}} word left",
       "addMore_other": "Add the {{count}} words left",
       "adding": "Adding… {{done}} / {{total}}",
@@ -3267,7 +3278,8 @@
       "sKnown": "Known",
       "sNew": "New",
       "more": "Show {{count}} more words",
-      "empty": "No words with this filter."
+      "empty": "No words with this filter.",
+      "freshLabel": "New words"
     },
     "detail": {
       "parent": "My decks",
@@ -3277,10 +3289,6 @@
       "addWords": "Add words",
       "suggestedOpen": "Open the suggested deck",
       "status": "Your progress in this deck",
-      "learnedPct": "learned",
-      "learned": "learned",
-      "studying": "learning",
-      "fresh": "new",
       "words": "Words in the deck",
       "newest": "Newest first",
       "empty": "No words in this deck yet.",
@@ -3291,16 +3299,24 @@
       "unsupported": "This deck's filter was made in a newer version of the app; its words cannot be shown here.",
       "noMeaning": "No meaning",
       "filter": "Filter by stage",
-      "fAll": "All {{count}}",
-      "fStudying": "Learning {{count}}",
-      "fLearned": "Learned {{count}}",
-      "fNew": "New {{count}}",
+      "fAll": "All",
+      "fStudying": "Learning",
+      "fLearned": "Learned",
+      "fNew": "New",
       "up": "Move up",
       "down": "Move down",
       "export": "Download as CSV",
       "exported": "{{count}} words downloaded",
       "deleted": "“{{name}}” deleted",
-      "handPicked": "Hand-picked deck"
+      "handPicked": "Hand-picked deck",
+      "loading": "Loading the deck",
+      "statWords": "Words",
+      "statDue": "Due today",
+      "statLearned": "Learned",
+      "wordsTitle": "Words",
+      "emptyTitle": "No words yet",
+      "studyDeck": "Study this deck",
+      "startDeck": "Start this deck"
     },
     "picker": {
       "title": "Add words to “{{name}}”",
@@ -3341,7 +3357,8 @@
       "showing": "Showing {{shown}} / {{total}}",
       "quick": "A mix of {{count}} words from your level",
       "downloading": "Downloading the Word bank… {{count}} words so far",
-      "partial": "The Word bank download stopped part-way ({{count}} words). Finish it when you are online."
+      "partial": "The Word bank download stopped part-way ({{count}} words). Finish it when you are online.",
+      "sortLabel": "Order: {{order}}"
     },
     "start": "Start"
   },

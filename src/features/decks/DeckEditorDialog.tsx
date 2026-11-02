@@ -20,8 +20,8 @@ import { TOPIC_KEYS } from '@/domain/topics';
 import type { WordStage } from '@/domain/stages';
 import type { CefrLevel, Deck } from '@/domain/types';
 import { useLevelData } from '@/features/levels/useLevelData';
-import { Button, Dialog, DialogClose, SegmentedControl, TextField, toast } from '@/ui';
-import { Chip } from './Chip';
+import { Button, Chip, Dialog, DialogClose, SegmentedControl, TextField, toast } from '@/ui';
+import { SheetActions } from '@/features/cards/SheetActions';
 
 export function DeckEditorDialog({
   open,
@@ -191,32 +191,32 @@ function EditorBody({ deck, onDone }: { deck: Deck | null; onDone: (d: Deck) => 
       />
 
       {unsupported ? (
-        <p className="rounded-control bg-warn-soft px-3 py-2.5 text-sm text-warn-text">
+        <p className="rounded-control bg-warn-soft px-3 py-2.5 text-meta text-warn-text">
           {t('decks.editor.unsupported')}
         </p>
       ) : (
         <>
           <fieldset className="flex flex-col gap-2">
-            <legend className="mb-1 text-sm font-medium text-fg">{t('decks.editor.states')}</legend>
+            <legend className="mb-1 text-meta font-semibold text-fg">{t('decks.editor.states')}</legend>
             <div className="flex flex-wrap gap-2">
               {DECK_STAGES.map((s) => (
-                <Chip key={s} pressed={stages.includes(s)} onClick={() => toggleStage(s)}>
+                <Chip key={s} selected={stages.includes(s)} onClick={() => toggleStage(s)}>
                   {t(`library.stage.${s}`)}
                 </Chip>
               ))}
               {DECK_OVERLAYS.map((s) => (
-                <Chip key={s} pressed={states.includes(s)} onClick={() => toggleState(s)}>
+                <Chip key={s} selected={states.includes(s)} onClick={() => toggleState(s)}>
                   {t(`decks.state.${s}`)}
                 </Chip>
               ))}
             </div>
-            <p className="text-sm text-fg-muted">{t('decks.editor.statesHint')}</p>
+            <p className="text-meta text-fg-muted">{t('decks.editor.statesHint')}</p>
           </fieldset>
 
           <fieldset className="flex flex-col gap-2" aria-describedby={`${id}-tags`}>
-            <legend className="mb-1 text-sm font-medium text-fg">{t('decks.editor.tags')}</legend>
+            <legend className="mb-1 text-meta font-semibold text-fg">{t('decks.editor.tags')}</legend>
             {tagOptions.length === 0 ? (
-              <p id={`${id}-tags`} className="text-sm text-fg-muted">
+              <p id={`${id}-tags`} className="text-meta text-fg-muted">
                 {t('decks.editor.tagsNone')}
               </p>
             ) : (
@@ -224,8 +224,8 @@ function EditorBody({ deck, onDone }: { deck: Deck | null; onDone: (d: Deck) => 
                 {tagOptions.map((x) => (
                   <Chip
                     key={x.tag}
-                    pressed={hasTag(tags, x.tag)}
-                    meta={x.count || undefined}
+                    selected={hasTag(tags, x.tag)}
+                    count={x.count || undefined}
                     onClick={() => toggleTag(x.tag)}
                   >
                     #{x.tag}
@@ -248,27 +248,27 @@ function EditorBody({ deck, onDone }: { deck: Deck | null; onDone: (d: Deck) => 
           </fieldset>
 
           <fieldset className="flex flex-col gap-2">
-            <legend className="mb-1 text-sm font-medium text-fg">{t('decks.editor.levels')}</legend>
+            <legend className="mb-1 text-meta font-semibold text-fg">{t('decks.editor.levels')}</legend>
             <div className="flex flex-wrap gap-2">
               {CEFR_ORDER.map((l) => (
-                <Chip key={l} pressed={levels.includes(l)} onClick={() => toggleLevel(l)}>
+                <Chip key={l} selected={levels.includes(l)} onClick={() => toggleLevel(l)}>
                   {l}
                 </Chip>
               ))}
             </div>
-            <p className="text-sm text-fg-muted">{t('decks.editor.levelsHint')}</p>
+            <p className="text-meta text-fg-muted">{t('decks.editor.levelsHint')}</p>
           </fieldset>
 
           <fieldset className="flex flex-col gap-2">
-            <legend className="mb-1 text-sm font-medium text-fg">{t('decks.editor.topics')}</legend>
+            <legend className="mb-1 text-meta font-semibold text-fg">{t('decks.editor.topics')}</legend>
             <div className="flex max-h-48 flex-wrap gap-2 overflow-y-auto p-0.5">
               {topicOptions.map((k) => (
-                <Chip key={k} pressed={topics.includes(k)} onClick={() => toggleTopic(k)}>
+                <Chip key={k} selected={topics.includes(k)} onClick={() => toggleTopic(k)}>
                   {t(`topics.${k}` as 'topics.travel', { defaultValue: k })}
                 </Chip>
               ))}
             </div>
-            <p className="text-sm text-fg-muted">{t('decks.editor.topicsHint')}</p>
+            <p className="text-meta text-fg-muted">{t('decks.editor.topicsHint')}</p>
           </fieldset>
 
           <SegmentedControl<Added>
@@ -284,7 +284,7 @@ function EditorBody({ deck, onDone }: { deck: Deck | null; onDone: (d: Deck) => 
 
           <p
             aria-live="polite"
-            className="rounded-control bg-surface-sunken px-3 py-2.5 text-[0.9375rem] text-fg"
+            className="rounded-control bg-surface-sunken px-3 py-2.5 text-ui text-fg"
           >
             {count === undefined || count === null ? ' ' : t('decks.editor.preview', { count })}
             {filter &&
@@ -294,20 +294,20 @@ function EditorBody({ deck, onDone }: { deck: Deck | null; onDone: (d: Deck) => 
               !filter.addedWithinDays &&
               !filter.levels &&
               !filter.topics && (
-                <span className="block text-sm text-fg-muted">{t('decks.editor.previewAll')}</span>
+                <span className="block text-meta text-fg-muted">{t('decks.editor.previewAll')}</span>
               )}
           </p>
         </>
       )}
 
-      <div className="sticky bottom-[calc(-1*max(1.25rem,env(safe-area-inset-bottom)))] z-10 -mx-5 -mt-2 grid grid-cols-2 gap-2 border-t border-border bg-surface-raised px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:bottom-[-1.5rem] sm:-mx-6 sm:flex sm:justify-end sm:px-6 sm:pb-6">
+      <SheetActions>
         <DialogClose asChild>
           <Button variant="secondary">{t('common.cancel')}</Button>
         </DialogClose>
         <Button type="submit" loading={busy} disabled={busy}>
           {deck ? t('common.save') : t('decks.editor.create')}
         </Button>
-      </div>
+      </SheetActions>
     </form>
   );
 }

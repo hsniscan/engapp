@@ -21,8 +21,8 @@ import {
   type TopSize,
 } from '@/domain/suggestedDecks';
 import type { CefrLevel } from '@/domain/types';
-import { Button, cn, EmptyState, Icon, Skeleton, Spinner, Surface } from '@/ui';
-import { LEVEL_MARK, MARK, nf, pct } from './deckUi';
+import { Button, Card, cn, EmptyState, Icon, Skeleton, Spinner } from '@/ui';
+import { BAR, levelColor, nf, pct } from './deckUi';
 import { LevelPill, ProgressBar2, SegBar } from './parts';
 import { type BankData, falseFriendLemmas, specHref, specTitle } from './suggested';
 import { type DeckCard, deckCard, useDeckView } from './deckView';
@@ -114,12 +114,12 @@ export function DeckCatalog({
                     {t('deckHub.words', { count: d.progress.total, formatted: nf.format(d.progress.total) })}
                     <span className="sr-only">, %{Math.round(share * 100)}</span>
                   </span>
-                  <span aria-hidden="true" className="h-1 overflow-hidden rounded-full" style={{ background: mine ? MARK.trackOnSoft : MARK.track }}>
+                  <span aria-hidden="true" className="h-1 overflow-hidden rounded-full" style={{ background: mine ? BAR.trackOnSoft : BAR.track }}>
                     <span
                       className="block h-1"
                       style={{
                         width: `${share * 100}%`,
-                        background: levelRank(lv) <= levelRank(level) ? MARK.learned : share > 0.2 ? MARK.studying : MARK.faint,
+                        background: levelRank(lv) <= levelRank(level) ? BAR.learned : share > 0.2 ? BAR.studying : BAR.faint,
                       }}
                     />
                   </span>
@@ -316,9 +316,9 @@ function TopSection({ decks, inMine }: { decks: DeckCard[]; inMine: (s: Suggeste
                     'flex flex-col justify-end overflow-hidden rounded-t-lg rounded-b',
                     mine && 'outline-2 outline-offset-2 outline-accent',
                   )}
-                  style={{ height: TOP_HEIGHT[size(d)], background: MARK.track }}
+                  style={{ height: TOP_HEIGHT[size(d)], background: BAR.track }}
                 >
-                  <span style={{ height: `${share * 100}%`, background: share >= 0.5 ? MARK.learned : MARK.studying }} />
+                  <span style={{ height: `${share * 100}%`, background: share >= 0.5 ? BAR.learned : BAR.studying }} />
                 </span>
                 <span className="tabular text-center font-serif text-lg font-semibold">{size(d)}</span>
               </Link>
@@ -378,7 +378,7 @@ function PosSection({
         <ul aria-label={t('deckHub.discover.posLegend')} className="flex flex-wrap gap-2.5 text-xs text-fg-muted">
           {CEFR.map((lv) => (
             <li key={lv} className="flex items-center gap-1">
-              <span aria-hidden="true" className="size-2 rounded-[2px]" style={{ background: LEVEL_MARK[lv] }} />
+              <span aria-hidden="true" className="size-2 rounded-[2px]" style={{ background: levelColor(lv) }} />
               {lv}
             </li>
           ))}
@@ -404,7 +404,7 @@ function PosSection({
                 </span>
                 <SegBar
                   label={CEFR.map((lv) => `${lv} ${nf.format(byLevel[lv])}`).join(', ')}
-                  parts={CEFR.map((lv) => ({ value: byLevel[lv], color: LEVEL_MARK[lv] }))}
+                  parts={CEFR.map((lv) => ({ value: byLevel[lv], color: levelColor(lv) }))}
                   gap={1}
                   track="transparent"
                 />
@@ -435,15 +435,15 @@ export function BankMissing({ download, onRetry }: { download: string; onRetry: 
   const { t } = useTranslation();
   if (download === 'running')
     return (
-      <Surface className="flex items-center gap-3" role="status">
+      <Card className="flex items-center gap-3" role="status">
         <Spinner />
-        <span className="text-[0.9375rem] text-fg-muted">{t('deckHub.discover.loading')}</span>
-      </Surface>
+        <span className="text-ui text-fg-muted">{t('deckHub.discover.loading')}</span>
+      </Card>
     );
   return (
-    <Surface>
-      <EmptyState
-        icon="layers"
+    <EmptyState
+        tone={download === 'offline' || download === 'no_backend' ? 'card' : 'error'}
+        icon={download === 'offline' || download === 'no_backend' ? 'cloud' : 'alert'}
         title={t('wordBank.emptyTitle')}
         description={
           download === 'no_backend'
@@ -459,7 +459,7 @@ export function BankMissing({ download, onRetry }: { download: string; onRetry: 
             </Button>
           )
         }
+        className="rounded-card border border-border bg-surface"
       />
-    </Surface>
   );
 }

@@ -46,10 +46,10 @@ export function TagsDialog({ open, onOpenChange }: { open: boolean; onOpenChange
                 <li key={x.tag} className="flex items-center gap-1">
                   <Link
                     to={`/library?tag=${encodeURIComponent(x.tag)}`}
-                    className="flex min-h-12 min-w-0 flex-1 items-center gap-3 rounded-control px-2 hover:bg-hover"
+                    className="flex min-h-12 min-w-0 flex-1 items-center gap-3 rounded-control px-2 text-ui hover:bg-hover"
                   >
                     <span className="truncate font-medium text-fg">#{x.tag}</span>
-                    <span className="tabular ml-auto shrink-0 text-sm text-fg-muted">
+                    <span className="tabular ml-auto shrink-0 text-meta text-fg-muted">
                       {t('decks.count', { count: x.count, formattedCount: nf.format(x.count) })}
                     </span>
                   </Link>

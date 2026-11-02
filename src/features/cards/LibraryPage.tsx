@@ -1,3 +1,7 @@
+// "Tüm kelimelerim" (/library, docs/design.md §4.6): every word with search, stage chips, the
+// rest of the filters in a sheet, a row menu (Düzenle, Askıya al, Sil → "Geri al") and a bulk
+// bar for the selected words (data/wordActions.ts, ADR 0063). ?note=<id> opens the word sheet
+// (read view; &edit=1 opens it in edit mode); ?deck=<id> narrows the list to one deck.
 import { useLiveQuery } from 'dexie-react-hooks';
 import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,25 +20,28 @@ import {
 } from '@/data';
 import { CEFR, noteLevel } from '@/domain/level';
 import type { CardType } from '@/domain/types';
-import { LevelBadge } from '@/features/levels/LevelBadge';
 import { useLevelData } from '@/features/levels/useLevelData';
 import {
   Badge,
   Button,
+  Card,
   Checkbox,
+  Chip,
+  ChipRow,
   Dialog,
   DialogClose,
+  DropdownMenu,
   EmptyState,
-  Icon,
   IconButton,
-  Page,
+  PageFrame,
   Select,
   Skeleton,
-  Surface,
+  StagePill,
   Switch,
   TextField,
   buttonClasses,
   cn,
+  stageBg,
   toast,
 } from '@/ui';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -54,16 +61,16 @@ import {
   rowStage,
 } from './libraryFilter';
 import { NoteDetailSheet } from './NoteDetailSheet';
-import { useNow } from '@/features/settings/useNow';
 import { DeckEditorDialog } from '@/features/decks/DeckEditorDialog';
 import { describeDeckFilter } from '@/features/decks/describe';
-import { BackBar, StatusPill, type PillTone } from '@/features/decks/parts';
 import { WORD_STAGES, type WordStage } from '@/domain/stages';
 import { TagSheet } from '@/features/decks/TagSheet';
+import { ChipCount } from '@/features/decks/parts';
 import { practiceHref } from '@/features/extra/links';
 import { scanWhere } from '@/data/scan';
 
 const PAGE_SIZE = 60;
+const nf = new Intl.NumberFormat('tr-TR');
 
 /**
  * Live notes with their senses, cards and levels, grouped. One pass over three tables plus the
@@ -90,13 +97,17 @@ function useLibraryRows(): LibraryRow[] | undefined {
   }, [raw, levelData]);
 }
 
+const isSuspendedRow = (r: LibraryRow) =>
+  r.cards.length > 0 && r.suspendedCards === r.cards.length;
+
 export function LibraryPage() {
   const { t } = useTranslation();
   const [params, setParams] = useSearchParams();
   const filters = useMemo(() => filtersFromParams(params), [params]);
   const openNoteId = params.get('note');
+  const openInEdit = params.get('edit') === '1';
   const rows = useLibraryRows();
-  // Smart decks (v0.2 İP8): chips above the list; ?deck=<id> narrows the list to the deck.
+  // Smart decks (v0.2 İP8): ?deck=<id> narrows the list to the deck.
   const deckId = params.get('deck');
   // Deck counts use levels from the level file once it has loaded (levelData).
   const levelData = useLevelData();
@@ -122,24 +133,62 @@ export function LibraryPage() {
     }, 300);
     return () => clearTimeout(id);
   }, [deferredQ, filters.q, setFilters]);
+  // Kelimelerim's search icon lands here with ?find=1: focus the field once.
+  const searchRef = useRef<HTMLInputElement>(null);
+  const wantFocus = params.get('find') === '1';
+  useEffect(() => {
+    if (!wantFocus || rows === undefined) return;
+    searchRef.current?.focus();
+    setParams(
+      (p) => {
+        p.delete('find');
+        return p;
+      },
+      { replace: true },
+    );
+  }, [wantFocus, rows, setParams]);
 
   const effective = useMemo(() => ({ ...filters, q: deferredQ }), [filters, deferredQ]);
   const deckFilterIds = deckId && deckIds?.id === deckId ? deckIds.ids : undefined;
-  const filtered = useMemo(() => {
-    const list = rows ? filterRows(rows, effective) : [];
-    if (!deckId) return list;
-    if (!deckFilterIds) return []; // loading, or a deck this version cannot evaluate
-    return list.filter((r) => deckFilterIds.has(r.note.id));
-  }, [rows, effective, deckId, deckFilterIds]);
+  const inDeck = useCallback(
+    (list: LibraryRow[]) => {
+      if (!deckId) return list;
+      if (!deckFilterIds) return []; // loading, or a deck this version cannot evaluate
+      return list.filter((r) => deckFilterIds.has(r.note.id));
+    },
+    [deckId, deckFilterIds],
+  );
+  const filtered = useMemo(
+    () => inDeck(rows ? filterRows(rows, effective) : []),
+    [rows, effective, inDeck],
+  );
+  // Counts on the stage chips: everything the other filters let through.
+  const chipCounts = useMemo(() => {
+    const base = inDeck(
+      rows ? filterRows(rows, { ...effective, state: 'all', suspended: 'all' }) : [],
+    );
+    const c: Record<WordStage | 'all' | 'suspended', number> = {
+      all: base.length,
+      suspended: 0,
+      new: 0,
+      learning: 0,
+      consolidating: 0,
+      learned: 0,
+      mastered: 0,
+    };
+    for (const r of base) {
+      const s = rowStage(r);
+      if (s) c[s]++;
+      if (isSuspendedRow(r)) c.suspended++;
+    }
+    return c;
+  }, [rows, effective, inDeck]);
   const tagList = useLiveQuery(() => listTags(), []);
   const tags = useMemo(
     () => (tagList ?? []).map((x) => x.tag).sort((a, b) => a.localeCompare(b, 'tr')),
     [tagList],
   );
-  const hasDuplicates = useMemo(
-    () => rows?.some((r) => r.note.possible_duplicate) ?? false,
-    [rows],
-  );
+  const hasDuplicates = useMemo(() => rows?.some((r) => r.note.possible_duplicate) ?? false, [rows]);
 
   // Paging: render 60 rows, add more when the sentinel scrolls into view (or the button is pressed).
   const [limit, setLimit] = useState(PAGE_SIZE);
@@ -191,128 +240,163 @@ export function LibraryPage() {
   const someSelected = filtered.some((r) => selected.has(r.note.id));
 
   const openNote = useCallback(
-    (id: string | null) =>
+    (id: string | null, edit = false) =>
       setParams((p) => {
         if (id) p.set('note', id);
         else p.delete('note');
+        if (id && edit) p.set('edit', '1');
+        else p.delete('edit');
         return p;
       }),
     [setParams],
   );
+  const closeNote = useCallback(() => openNote(null), [openNote]);
 
-  const now = useNow();
   const totalCards = useMemo(() => rows?.reduce((n, r) => n + r.cards.length, 0) ?? 0, [rows]);
+  const sheetFilterCount =
+    (filters.type !== 'all' ? 1 : 0) +
+    (filters.tag ? 1 : 0) +
+    (filters.dup ? 1 : 0) +
+    (filters.level !== 'all' ? 1 : 0) +
+    (filters.suspended === 'active' ? 1 : 0);
   const filterCount = activeFilterCount(filters);
-  const nf = new Intl.NumberFormat('tr-TR');
+  const stageChip = filters.suspended === 'suspended' ? 'suspended' : filters.state;
 
   return (
-    <>
-    <BackBar to="/decks" parent={t('deckHub.library.parent')} />
-    <Page
+    <PageFrame
+      back={{ to: '/decks', label: t('deckHub.library.parent') }}
       title={t('deckHub.library.title')}
-      width="wide"
       description={
         rows && rows.length > 0
           ? t('library.summary', { notes: nf.format(rows.length), cards: nf.format(totalCards) })
           : undefined
       }
-      actions={
-        rows && rows.length > 0 ? (
-          <Link
-            to="/add"
-            className={buttonClasses({ variant: 'secondary', className: 'hidden sm:inline-flex' })}
-          >
-            <Icon name="plus" size={18} />
-            {t('home.addCard')}
-          </Link>
-        ) : undefined
-      }
     >
       {rows === undefined ? (
         <div aria-busy="true" className="flex flex-col gap-3">
           <Skeleton className="h-11" />
+          <Skeleton className="h-9 w-3/4" />
           <Skeleton lines={6} />
         </div>
       ) : rows.length === 0 ? (
-        <Surface>
-          <EmptyState
-            icon="cards"
-            title={t('library.empty')}
-            description={t('library.emptyHint')}
-            action={
-              <div className="flex flex-wrap justify-center gap-2">
-                <Link to="/add" className={buttonClasses({ variant: 'primary' })}>
-                  <Icon name="plus" size={18} />
-                  {t('home.addCard')}
-                </Link>
-                <Link to="/decks?tab=bank" className={buttonClasses({ variant: 'secondary' })}>
-                  {t('library.emptyBank')}
-                </Link>
-              </div>
-            }
-          />
-        </Surface>
+        <EmptyState
+          tone="card"
+          icon="cards"
+          title={t('library.empty')}
+          description={t('library.emptyHint')}
+          action={
+            <>
+              <Link to="/add" className={buttonClasses({ variant: 'primary' })}>
+                {t('home.addCard')}
+              </Link>
+              <Link to="/decks?tab=bank" className={buttonClasses({ variant: 'ghost' })}>
+                {t('library.emptyBank')}
+              </Link>
+            </>
+          }
+        />
       ) : (
         <div className="flex flex-col gap-4">
-          {decks && activeDeck && (
-            <div className="flex flex-col gap-2">
-              {activeDeck && (
-                <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-fg-muted">
-                  <span className="min-w-0">
-                    <strong className="font-semibold text-fg">
-                      {t('deckHub.library.deckLine', { name: activeDeck.deck.name })}
-                    </strong>{' '}
-                    · {describeDeckFilter(t, activeDeck.filter)}
-                  </span>
+          {activeDeck && (
+            <Card tone="sunken" padding="sm" className="flex flex-col gap-1 px-4">
+              <p className="text-meta text-fg-muted">
+                <strong className="font-semibold text-fg">
+                  {t('deckHub.library.deckLine', { name: activeDeck.deck.name })}
+                </strong>{' '}
+                · {describeDeckFilter(t, activeDeck.filter)}
+              </p>
+              <div className="-ml-3 flex flex-wrap">
+                <Link
+                  to={`/decks/${encodeURIComponent(activeDeck.deck.id)}`}
+                  className={buttonClasses({ variant: 'ghost', size: 'sm' })}
+                >
+                  {t('deckHub.library.deckOpen')}
+                </Link>
+                {activeDeck.count !== null && activeDeck.count > 0 && (
                   <Link
-                    to={`/decks/${encodeURIComponent(activeDeck.deck.id)}`}
-                    className="inline-flex min-h-11 items-center font-medium text-accent-text underline-offset-4 hover:underline"
+                    to={practiceHref({ source: 'deck', size: 10, tag: null, deck: activeDeck.deck.id })}
+                    className={buttonClasses({ variant: 'ghost', size: 'sm' })}
                   >
-                    {t('deckHub.library.deckOpen')}
+                    {t('library.decks.practice')}
                   </Link>
-                  {activeDeck.count !== null && activeDeck.count > 0 && (
-                    <Link
-                      to={practiceHref({ source: 'deck', size: 10, tag: null, deck: activeDeck.deck.id })}
-                      className="inline-flex min-h-11 items-center font-medium text-accent-text underline-offset-4 hover:underline"
-                    >
-                      {t('library.decks.practice')}
-                    </Link>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setEditDeck(true)}
-                    className="inline-flex min-h-11 items-center font-medium text-accent-text underline-offset-4 hover:underline"
-                  >
-                    {t('library.decks.edit')}
-                  </button>
-                </p>
-              )}
-            </div>
+                )}
+                <Button variant="ghost" size="sm" onClick={() => setEditDeck(true)}>
+                  {t('library.decks.edit')}
+                </Button>
+              </div>
+            </Card>
           )}
-          <div role="search" className="flex items-end gap-2">
-            <TextField
-              label={t('common.search')}
-              hideLabel
-              type="search"
-              leadingIcon="search"
-              placeholder={t('library.searchPlaceholder')}
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              fieldClassName="flex-1"
-              enterKeyHint="search"
-              autoComplete="off"
-            />
-            <FilterSheet
-              filters={filters}
-              tags={tags}
-              hasDuplicates={hasDuplicates}
-              onChange={setFilters}
-              count={filterCount}
-            />
-          </div>
-          <div className="hidden gap-3 md:grid md:grid-cols-3 2xl:grid-cols-6">
-            <FilterSelects filters={filters} tags={tags} onChange={setFilters} />
-            <SortSelect filters={filters} onChange={setFilters} />
+
+          {/* Search stays under the header while the list scrolls (canvas behind it). */}
+          <div className="sticky top-0 z-10 -mx-4 flex flex-col gap-2 bg-canvas px-4 pt-2 pb-1 sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">
+            <div role="search" className="flex items-end gap-2">
+              <TextField
+                ref={searchRef}
+                label={t('common.search')}
+                hideLabel
+                type="search"
+                leadingIcon="search"
+                placeholder={t('library.searchPlaceholder')}
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                fieldClassName="flex-1"
+                enterKeyHint="search"
+                autoComplete="off"
+              />
+              <FilterSheet
+                filters={filters}
+                tags={tags}
+                hasDuplicates={hasDuplicates}
+                onChange={setFilters}
+                count={sheetFilterCount}
+              />
+            </div>
+            <ChipRow label={t('library.filter.state')}>
+              <Chip
+                selected={stageChip === 'all'}
+                onClick={() => setFilters({ state: 'all', suspended: 'all' })}
+              >
+                <ChipCount label={t('library.filter.allChip')} count={chipCounts.all} selected={stageChip === 'all'} />
+              </Chip>
+              {WORD_STAGES.map((k) => (
+                <Chip
+                  key={k}
+                  selected={stageChip === k}
+                  onClick={() =>
+                    setFilters(
+                      stageChip === k
+                        ? { state: 'all', suspended: 'all' }
+                        : { state: k, suspended: 'all' },
+                    )
+                  }
+                >
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      'size-2 rounded-full',
+                      stageBg[k],
+                      k === 'new' && 'ring-1 ring-border-strong ring-inset',
+                    )}
+                  />
+                  <ChipCount label={t(`ui.stage.${k}`)} count={chipCounts[k]} selected={stageChip === k} />
+                </Chip>
+              ))}
+              {(chipCounts.suspended > 0 || stageChip === 'suspended') && (
+                <Chip
+                  icon="pause"
+                  selected={stageChip === 'suspended'}
+                  onClick={() =>
+                    setFilters(
+                      stageChip === 'suspended'
+                        ? { state: 'all', suspended: 'all' }
+                        : { state: 'all', suspended: 'suspended' },
+                    )
+                  }
+                >
+                  <ChipCount label={t('cards.suspended')} count={chipCounts.suspended} selected={stageChip === 'suspended'} />
+                </Chip>
+              )}
+            </ChipRow>
           </div>
 
           <div className="flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-1">
@@ -330,23 +414,9 @@ export function LibraryPage() {
                 })
               }
               disabled={filtered.length === 0}
-              className="pl-3 sm:pl-4"
+              className="pl-4"
             />
-            <div className="flex items-center gap-3 text-sm text-fg-muted">
-              {(hasDuplicates || filters.dup) && (
-                <button
-                  type="button"
-                  aria-pressed={filters.dup}
-                  onClick={() => setFilters({ dup: !filters.dup })}
-                  className={cn(
-                    'hidden min-h-11 items-center gap-1.5 font-medium underline-offset-4 hover:underline md:inline-flex',
-                    filters.dup ? 'text-accent-text' : 'text-warn-text',
-                  )}
-                >
-                  {filters.dup && <Icon name="check" size={16} />}
-                  {t('library.filter.dupOnly')}
-                </button>
-              )}
+            <div className="flex items-center gap-1 text-meta text-fg-muted">
               <p aria-live="polite" className="tabular">
                 {t('library.showing', {
                   count: filtered.length,
@@ -354,9 +424,10 @@ export function LibraryPage() {
                 })}
               </p>
               {(filterCount > 0 || q) && (
-                <button
-                  type="button"
-                  className="min-h-11 font-medium text-accent-text underline-offset-4 hover:underline"
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="-mr-2"
                   onClick={() => {
                     setQ('');
                     setParams((p) => writeFilters(p, { ...EMPTY_FILTERS, sort: filters.sort }), {
@@ -365,39 +436,40 @@ export function LibraryPage() {
                   }}
                 >
                   {t('library.clearFilters')}
-                </button>
+                </Button>
               )}
             </div>
           </div>
 
           {deckId && deckIds?.id === deckId && deckIds.ids === null && activeDeck ? (
-            <Surface>
-              <EmptyState icon="info" title={activeDeck.deck.name} description={t('library.decks.unsupported')} />
-            </Surface>
+            <EmptyState
+              tone="card"
+              icon="info"
+              title={activeDeck.deck.name}
+              description={t('library.decks.unsupported')}
+            />
           ) : deckId && activeDeck && activeDeck.count === 0 ? (
-            <Surface>
-              <EmptyState
-                icon="layers"
-                title={t('library.decks.empty')}
-                description={t('library.decks.emptyHint')}
-              />
-            </Surface>
+            <EmptyState
+              tone="card"
+              icon="layers"
+              title={t('library.decks.empty')}
+              description={t('library.decks.emptyHint')}
+            />
           ) : filtered.length === 0 ? (
-            <Surface>
-              <EmptyState
-                icon="search"
-                title={t('library.noMatch')}
-                description={t('library.noMatchHint')}
-              />
-            </Surface>
+            <EmptyState
+              tone="placeholder"
+              compact
+              icon="search"
+              title={t('library.noMatch')}
+              description={t('library.noMatchHint')}
+            />
           ) : (
-            <Surface padding="none" className="overflow-hidden">
-              <ul aria-label={t('library.listLabel')}>
+            <div className="overflow-hidden rounded-card border border-border bg-surface">
+              <ul aria-label={t('library.listLabel')} className="divide-y divide-border">
                 {visible.map((r) => (
                   <NoteRow
                     key={r.note.id}
                     row={r}
-                    now={now}
                     selected={selected.has(r.note.id)}
                     onToggle={toggle}
                     onOpen={openNote}
@@ -411,7 +483,7 @@ export function LibraryPage() {
                   </Button>
                 </div>
               )}
-            </Surface>
+            </div>
           )}
         </div>
       )}
@@ -420,62 +492,75 @@ export function LibraryPage() {
         <BulkBar rows={filtered} selected={selected} onClear={() => setSelected(new Set())} />
       )}
 
-      <NoteDetailSheet noteId={openNoteId} onClose={() => openNote(null)} />
+      <NoteDetailSheet noteId={openNoteId} startInEdit={openInEdit} onClose={closeNote} />
       <DeckEditorDialog
         open={editDeck && !!activeDeck}
         onOpenChange={setEditDeck}
         deck={activeDeck?.deck ?? null}
       />
-    </Page>
-    </>
+    </PageFrame>
   );
 }
 
-const rtf = new Intl.RelativeTimeFormat('tr', { numeric: 'auto' });
-
-const STAGE_TONE: Record<WordStage, PillTone> = {
-  new: 'outline',
-  learning: 'warn',
-  consolidating: 'accent',
-  learned: 'success',
-  mastered: 'success',
-};
-
-/** One note. The checkbox selects; the rest of the row opens the detail sheet. */
+/**
+ * One word: the checkbox selects; the row opens the word sheet; the ⋯ menu edits, suspends or
+ * deletes it at once (with "Geri al").
+ */
 const NoteRow = memo(function NoteRow({
   row,
-  now,
   selected,
   onToggle,
   onOpen,
 }: {
   row: LibraryRow;
-  /** One shared clock for the whole list (one timer, not one per row). */
-  now: number;
   selected: boolean;
   onToggle: (id: string, on: boolean) => void;
-  onOpen: (id: string) => void;
+  onOpen: (id: string, edit?: boolean) => void;
 }) {
   const { t } = useTranslation();
   const { note, senses, cards } = row;
   const stage = rowStage(row);
-  const allSuspended = cards.length > 0 && row.suspendedCards === cards.length;
-  const studied = cards.filter((c) => !c.suspended && c.state !== 0);
-  const nextDue = studied.length ? Math.min(...studied.map((c) => c.due)) : null;
-  const dueLabel = (due: number) => {
-    const days = Math.round((due - now) / 86_400_000);
-    return days <= 0
-      ? t('library.detail.dueNow')
-      : t('library.detail.due', { when: rtf.format(days, 'day') });
-  };
+  const allSuspended = isSuspendedRow(row);
   const meanings =
     senses.length === 1
       ? senseText(senses[0]!)
       : senses.map((s, i) => `${i + 1}. ${senseText(s)}`).join('  ·  ');
+
+  const suspend = (on: boolean) =>
+    void bulkSetSuspended([note.id], on).then(
+      () =>
+        toast.undo({
+          title: on
+            ? t('library.row.suspended', { term: note.term })
+            : t('library.row.unsuspended', { term: note.term }),
+          undoLabel: t('ui.undo'),
+          onUndo: () =>
+            void bulkSetSuspended([note.id], !on).catch((e) => logError(e, 'Library.rowUndo')),
+        }),
+      (e: unknown) => {
+        void logError(e, 'Library.rowSuspend');
+        toast({ title: t('library.bulk.failed'), tone: 'danger' });
+      },
+    );
+  const remove = () =>
+    void bulkSoftDeleteNotes([note.id]).then(
+      (res) =>
+        toast.undo({
+          title: t('library.detail.noteDeleted', { term: note.term }),
+          undoLabel: t('ui.undo'),
+          onUndo: () =>
+            void restoreNotes(res.ids, res.at).catch((e) => logError(e, 'Library.rowUndo')),
+        }),
+      (e: unknown) => {
+        void logError(e, 'Library.rowDelete');
+        toast({ title: t('library.bulk.failed'), tone: 'danger' });
+      },
+    );
+
   return (
     <li
       className={cn(
-        'flex items-start gap-1 border-b border-border pr-1 pl-3 last:border-b-0 sm:pl-4 [content-visibility:auto] [contain-intrinsic-size:auto_88px]',
+        'flex items-center gap-1 pr-1 pl-3 [content-visibility:auto] [contain-intrinsic-size:auto_72px] sm:pl-4',
         selected && 'bg-selected',
       )}
     >
@@ -484,56 +569,58 @@ const NoteRow = memo(function NoteRow({
         label={t('library.selectNote', { term: note.term })}
         checked={selected}
         onCheckedChange={(v) => onToggle(note.id, v === true)}
-        className="mt-1.5"
       />
       <button
         type="button"
         onClick={() => onOpen(note.id)}
-        className="group flex min-w-0 flex-1 items-center gap-2 rounded-control py-3.5 pl-2 text-left focus-visible:outline-offset-[-2px]"
+        className="flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-control py-3 pl-1 text-left focus-visible:outline-offset-[-2px]"
       >
-        <span className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="flex flex-wrap items-baseline gap-x-2">
-            <span
-              lang="en"
-              className="font-serif text-lg leading-snug font-semibold text-fg group-hover:underline group-hover:decoration-border-strong group-hover:underline-offset-4"
-            >
-              {note.term}
-            </span>
-            {row.level && <LevelBadge level={row.level} className="self-center" />}
-            {note.ipa && <span className="font-serif text-sm text-fg-muted">{note.ipa}</span>}
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span lang="en" className="truncate font-serif text-lead font-medium text-fg">
+            {note.term}
           </span>
           <span
-            className={cn(
-              'line-clamp-2 text-[0.9375rem]',
-              senses.length ? 'text-fg-muted' : 'text-fg-subtle italic',
-            )}
+            className={cn('line-clamp-2 text-meta', senses.length ? 'text-fg-muted' : 'text-fg-subtle italic')}
           >
             {senses.length ? meanings : t('library.noSenses')}
           </span>
-          <span className="mt-1 flex flex-wrap items-center gap-1.5">
-            {allSuspended ? (
-              <Badge tone="outline">{t('cards.suspended')}</Badge>
-            ) : (
-              row.suspendedCards > 0 && (
-                <Badge tone="outline">
-                  {t('cards.partlySuspended', { count: row.suspendedCards })}
-                </Badge>
-              )
-            )}
-            {note.possible_duplicate && <Badge tone="warn">{t('cards.possibleDuplicate')}</Badge>}
-            {note.tags.map((tag) => (
-              <span key={tag} className="text-xs text-fg-muted">
-                #{tag}
-              </span>
-            ))}
-          </span>
+          {(allSuspended || row.suspendedCards > 0 || note.possible_duplicate) && (
+            <span className="mt-1 flex flex-wrap gap-1.5">
+              {allSuspended ? (
+                <Badge tone="outline">{t('cards.suspended')}</Badge>
+              ) : (
+                row.suspendedCards > 0 && (
+                  <Badge tone="outline">
+                    {t('cards.partlySuspended', { count: row.suspendedCards })}
+                  </Badge>
+                )
+              )}
+              {note.possible_duplicate && <Badge tone="warn">{t('cards.possibleDuplicate')}</Badge>}
+            </span>
+          )}
         </span>
-        <span className="hidden w-36 shrink-0 flex-col items-end gap-0.5 text-right text-sm md:flex">
-          <span className="tabular text-fg">{t('library.cardCount', { count: cards.length })}</span>
-          {nextDue !== null && <span className="tabular text-fg-muted">{dueLabel(nextDue)}</span>}
-        </span>
-        {stage && <StatusPill tone={STAGE_TONE[stage]}>{t(`library.stage.${stage}`)}</StatusPill>}
+        {stage && <StagePill stage={stage} />}
       </button>
+      <DropdownMenu
+        label={t('library.row.actions', { term: note.term })}
+        trigger={<IconButton icon="more" label={t('library.row.actions', { term: note.term })} />}
+        items={[
+          { label: t('library.row.edit'), icon: 'pencil', onSelect: () => onOpen(note.id, true) },
+          ...(cards.length === 0
+            ? []
+            : allSuspended
+              ? [
+                  {
+                    label: t('library.bulk.unsuspend'),
+                    icon: 'refresh' as const,
+                    onSelect: () => suspend(false),
+                  },
+                ]
+              : [{ label: t('common.suspend'), icon: 'pause' as const, onSelect: () => suspend(true) }]),
+          { kind: 'separator' },
+          { label: t('common.delete'), icon: 'trash', danger: true, onSelect: remove },
+        ]}
+      />
     </li>
   );
 });
@@ -546,112 +633,33 @@ interface FilterProps {
 
 const ANY_TAG = '__any';
 
-function FilterSelects({ filters, tags, onChange }: FilterProps) {
-  const { t } = useTranslation();
-  return (
-    <>
-      <Select
-        label={t('library.filter.type')}
-        value={filters.type}
-        onValueChange={(v) => onChange({ type: v as CardType | 'all' })}
-        options={[
-          { value: 'all', label: t('library.filter.allTypes') },
-          { value: 'recognition', label: t('cards.cardType.recognition') },
-          { value: 'production', label: t('cards.cardType.production') },
-          { value: 'cloze', label: t('cards.cardType.cloze') },
-          { value: 'image', label: t('cards.cardType.image') },
-        ]}
-      />
-      <Select
-        label={t('library.filter.state')}
-        value={filters.state}
-        onValueChange={(v) => onChange({ state: v as WordStage | 'all' })}
-        options={[
-          { value: 'all', label: t('library.filter.allStates') },
-          ...WORD_STAGES.map((k) => ({ value: k, label: t(`library.stage.${k}`) })),
-        ]}
-      />
-      <Select
-        label={t('library.filter.suspended')}
-        value={filters.suspended}
-        onValueChange={(v) => onChange({ suspended: v as SuspendedFilter })}
-        options={[
-          { value: 'all', label: t('library.filter.suspendedAll') },
-          { value: 'active', label: t('library.filter.suspendedActive') },
-          { value: 'suspended', label: t('library.filter.suspendedOnly') },
-        ]}
-      />
-      <Select
-        label={t('library.filter.level')}
-        value={filters.level}
-        onValueChange={(v) => onChange({ level: v as LevelFilter })}
-        options={[
-          { value: 'all', label: t('library.filter.allLevels') },
-          ...CEFR.map((l) => ({ value: l, label: `${l} · ${t(`settings.levels.${l}`)}` })),
-          { value: 'none', label: t('library.filter.levelUnknown') },
-        ]}
-      />
-      <Select
-        label={t('library.filter.tag')}
-        value={filters.tag || ANY_TAG}
-        onValueChange={(v) => onChange({ tag: v === ANY_TAG ? '' : v })}
-        disabled={tags.length === 0}
-        options={[
-          { value: ANY_TAG, label: t('library.filter.anyTag') },
-          ...tags.map((x) => ({ value: x, label: `#${x}` })),
-        ]}
-      />
-    </>
-  );
-}
-
-function SortSelect({ filters, onChange }: Pick<FilterProps, 'filters' | 'onChange'>) {
-  const { t } = useTranslation();
-  return (
-    <Select
-      label={t('library.filter.sort')}
-      value={filters.sort}
-      onValueChange={(v) => onChange({ sort: v as SortOrder })}
-      options={[
-        { value: 'new', label: t('library.filter.sortNew') },
-        { value: 'az', label: t('library.filter.sortAz') },
-        { value: 'level', label: t('library.filter.sortLevel') },
-        { value: 'level_desc', label: t('library.filter.sortLevelDesc') },
-      ]}
-    />
-  );
-}
-
-/** Phones and tablets: filters live in a sheet behind one button. Desktop shows them inline too. */
+/** The filters behind the "Süz" button (stage and Askıda are the chips on the page). */
 function FilterSheet({
   count,
   hasDuplicates,
-  ...props
+  filters,
+  tags,
+  onChange,
 }: FilterProps & { count: number; hasDuplicates: boolean }) {
   const { t } = useTranslation();
-  const { filters, onChange } = props;
   return (
     <Dialog
       title={t('library.filter.title')}
       trigger={
-        <button
-          type="button"
-          className={buttonClasses({ variant: 'secondary', className: 'shrink-0 px-3 md:hidden' })}
-        >
-          <Icon name="filter" size={18} />
+        <Button variant="secondary" leadingIcon="filter" className="shrink-0 px-3">
           <span className="sr-only sm:not-sr-only">{t('library.filter.short')}</span>
           {count > 0 && (
             <>
               <span
                 aria-hidden="true"
-                className="tabular inline-flex size-5 items-center justify-center rounded-full bg-accent text-xs text-accent-fg"
+                className="tabular inline-flex size-5 items-center justify-center rounded-full bg-accent text-caption text-accent-fg"
               >
                 {count}
               </span>
               <span className="sr-only">{t('library.filter.activeSr', { count })}</span>
             </>
           )}
-        </button>
+        </Button>
       }
       footer={
         <>
@@ -659,7 +667,7 @@ function FilterSheet({
             variant="ghost"
             disabled={count === 0}
             onClick={() =>
-              onChange({ type: 'all', state: 'all', suspended: 'all', tag: '', dup: false, level: 'all' })
+              onChange({ type: 'all', suspended: 'all', tag: '', dup: false, level: 'all' })
             }
           >
             {t('library.filter.reset')}
@@ -671,8 +679,59 @@ function FilterSheet({
       }
     >
       <div className="flex flex-col gap-4">
-        <FilterSelects {...props} />
-        <SortSelect filters={filters} onChange={onChange} />
+        <Select
+          label={t('library.filter.sort')}
+          value={filters.sort}
+          onValueChange={(v) => onChange({ sort: v as SortOrder })}
+          options={[
+            { value: 'new', label: t('library.filter.sortNew') },
+            { value: 'az', label: t('library.filter.sortAz') },
+            { value: 'level', label: t('library.filter.sortLevel') },
+            { value: 'level_desc', label: t('library.filter.sortLevelDesc') },
+          ]}
+        />
+        <Select
+          label={t('library.filter.level')}
+          value={filters.level}
+          onValueChange={(v) => onChange({ level: v as LevelFilter })}
+          options={[
+            { value: 'all', label: t('library.filter.allLevels') },
+            ...CEFR.map((l) => ({ value: l, label: `${l} · ${t(`settings.levels.${l}`)}` })),
+            { value: 'none', label: t('library.filter.levelUnknown') },
+          ]}
+        />
+        <Select
+          label={t('library.filter.tag')}
+          value={filters.tag || ANY_TAG}
+          onValueChange={(v) => onChange({ tag: v === ANY_TAG ? '' : v })}
+          disabled={tags.length === 0}
+          options={[
+            { value: ANY_TAG, label: t('library.filter.anyTag') },
+            ...tags.map((x) => ({ value: x, label: `#${x}` })),
+          ]}
+        />
+        <Select
+          label={t('library.filter.type')}
+          value={filters.type}
+          onValueChange={(v) => onChange({ type: v as CardType | 'all' })}
+          options={[
+            { value: 'all', label: t('library.filter.allTypes') },
+            { value: 'recognition', label: t('cards.cardType.recognition') },
+            { value: 'production', label: t('cards.cardType.production') },
+            { value: 'cloze', label: t('cards.cardType.cloze') },
+            { value: 'image', label: t('cards.cardType.image') },
+          ]}
+        />
+        <Select
+          label={t('library.filter.suspended')}
+          value={filters.suspended}
+          onValueChange={(v) => onChange({ suspended: v as SuspendedFilter })}
+          options={[
+            { value: 'all', label: t('library.filter.suspendedAll') },
+            { value: 'active', label: t('library.filter.suspendedActive') },
+            { value: 'suspended', label: t('library.filter.suspendedOnly') },
+          ]}
+        />
         {(hasDuplicates || filters.dup) && (
           <Switch
             label={t('library.filter.dupOnly')}
@@ -686,7 +745,7 @@ function FilterSheet({
   );
 }
 
-/** Sticky action bar for the selected notes. Sits above the phone tab bar. */
+/** Sticky action bar for the selected words. Sits above the phone tab bar. */
 function BulkBar({
   rows,
   selected,
@@ -703,9 +762,7 @@ function BulkBar({
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const chosen = rows.filter((r) => selected.has(r.note.id));
-  const allSuspended =
-    chosen.length > 0 &&
-    chosen.every((r) => r.cards.length > 0 && r.suspendedCards === r.cards.length);
+  const allSuspended = chosen.length > 0 && chosen.every(isSuspendedRow);
   const n = chosen.length;
   // The confirm dialog keeps the count it opened with (rows leave the list while it works).
   const [frozenN, setFrozenN] = useState(n);
@@ -731,13 +788,13 @@ function BulkBar({
     const count = ids.length;
     const ok = await run(() => bulkSetSuspended(ids, on, { onProgress }).then(() => true));
     if (ok)
-      toast({
-        title: on ? t('library.bulk.suspended', { count }) : t('library.bulk.unsuspended', { count }),
-        tone: 'success',
-        action: {
-          label: t('library.undo'),
-          onClick: () => void bulkSetSuspended(ids, !on).catch((e) => logError(e, 'Library.bulkUndo')),
-        },
+      toast.undo({
+        title: on
+          ? t('library.bulk.suspended', { count })
+          : t('library.bulk.unsuspended', { count }),
+        undoLabel: t('ui.undo'),
+        onUndo: () =>
+          void bulkSetSuspended(ids, !on).catch((e) => logError(e, 'Library.bulkUndo')),
       });
   };
 
@@ -745,13 +802,10 @@ function BulkBar({
     const res = await run(() => markNotesKnown(chosen.map((r) => r.note.id)));
     if (!res) return;
     onClear();
-    toast({
+    toast.undo({
       title: t('library.bulk.known', { count: res.ids.length }),
-      tone: 'success',
-      action: {
-        label: t('library.undo'),
-        onClick: () => void undoMarkNotesKnown(res).catch((e) => logError(e, 'Library.knownUndo')),
-      },
+      undoLabel: t('ui.undo'),
+      onUndo: () => void undoMarkNotesKnown(res).catch((e) => logError(e, 'Library.knownUndo')),
     });
   };
 
@@ -773,15 +827,12 @@ function BulkBar({
         className="pointer-events-auto flex w-full max-w-xl animate-pop-in items-center gap-1 rounded-card border border-border bg-surface-raised py-1.5 pr-1.5 pl-1 shadow-overlay"
       >
         <IconButton icon="x" label={t('library.bulk.clear')} onClick={onClear} disabled={busy} />
-        <p
-          className="tabular min-w-0 flex-1 truncate text-[0.9375rem] font-medium text-fg"
-          aria-live="polite"
-        >
+        <p className="tabular min-w-0 flex-1 truncate text-ui font-semibold text-fg" aria-live="polite">
           {progress
             ? t('library.bulk.progress', { done: progress.done, total: progress.total })
             : t('library.bulk.count', { count: n })}
           {!progress && selected.size > n && (
-            <span className="block text-xs font-normal text-fg-muted">
+            <span className="block text-caption font-normal text-fg-muted">
               {t('library.bulk.hidden', { count: selected.size - n })}
             </span>
           )}
@@ -795,32 +846,18 @@ function BulkBar({
         >
           {t('library.bulk.tag')}
         </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          leadingIcon="check"
+        <IconButton
+          icon="check"
+          label={t('library.bulk.markKnown')}
           disabled={busy || n === 0}
           onClick={() => void markKnown()}
-          aria-label={t('library.bulk.markKnown')}
-          className="max-sm:px-2.5"
-        >
-          <span aria-hidden="true" className="max-sm:hidden">
-            {t('library.bulk.markKnown')}
-          </span>
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          leadingIcon={allSuspended ? 'refresh' : 'pause'}
+        />
+        <IconButton
+          icon={allSuspended ? 'refresh' : 'pause'}
+          label={allSuspended ? t('library.bulk.unsuspend') : t('common.suspend')}
           disabled={busy || n === 0}
           onClick={() => void suspend(!allSuspended)}
-          aria-label={allSuspended ? t('library.bulk.unsuspend') : t('common.suspend')}
-          className="max-sm:px-2.5"
-        >
-          <span aria-hidden="true" className="max-sm:hidden">
-            {allSuspended ? t('library.bulk.unsuspend') : t('common.suspend')}
-          </span>
-        </Button>
+        />
         <IconButton
           icon="trash"
           label={t('library.bulk.delete', { count: n })}
@@ -832,11 +869,7 @@ function BulkBar({
           className="hover:text-danger-text"
         />
       </div>
-      <TagSheet
-        open={tagging}
-        onOpenChange={setTagging}
-        notes={chosen.map((r) => r.note)}
-      />
+      <TagSheet open={tagging} onOpenChange={setTagging} notes={chosen.map((r) => r.note)} />
       <ConfirmDialog
         open={confirm}
         onOpenChange={setConfirm}
@@ -854,13 +887,11 @@ function BulkBar({
           setConfirm(false);
           if (!res) return;
           onClear();
-          toast({
+          toast.undo({
             title: t('library.bulk.deleted', { count: res.ids.length }),
-            tone: 'success',
-            action: {
-              label: t('library.undo'),
-              onClick: () => void restoreNotes(res.ids, res.at).catch((e) => logError(e, 'Library.deleteUndo')),
-            },
+            undoLabel: t('ui.undo'),
+            onUndo: () =>
+              void restoreNotes(res.ids, res.at).catch((e) => logError(e, 'Library.deleteUndo')),
           });
         }}
       />
