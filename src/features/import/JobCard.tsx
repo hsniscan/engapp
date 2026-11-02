@@ -1,11 +1,27 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
-import { db, deleteImportJob, previewPartialImportJob, retryImportJob, type ImportJobRecord } from '@/data';
+import {
+  db,
+  deleteImportJob,
+  previewPartialImportJob,
+  retryImportJob,
+  type ImportJobRecord,
+} from '@/data';
 import { getText } from '@/data/texts';
 import { readerPath } from '@/domain/texts';
 import type { Id, Source } from '@/domain/types';
-import { Button, Icon, ProgressBar, Spinner, Surface, buttonClasses, cn } from '@/ui';
+import {
+  Button,
+  Card,
+  Icon,
+  IconTile,
+  ProgressBar,
+  SectionHeader,
+  Spinner,
+  buttonClasses,
+  cn,
+} from '@/ui';
 import { importErrorMessage } from './errors';
 import { kickImportQueue } from './queue';
 import { useOnline } from '@/lib/online';
@@ -22,7 +38,7 @@ export function ReadTextLink({ textId, className }: { textId?: Id | null; classN
     <Link
       to={readerPath(textId)}
       className={cn(
-        'inline-flex min-h-11 items-center gap-1.5 self-start text-[0.9375rem] font-medium text-accent-text underline-offset-4 hover:underline',
+        'inline-flex min-h-11 items-center gap-1.5 self-start text-ui font-medium text-accent-text underline-offset-4 hover:underline',
         className,
       )}
       data-testid="read-text"
@@ -65,12 +81,12 @@ export function JobCard({ job, className }: { job: ImportJobRecord; className?: 
         : tomorrow
           ? t('importer.job.tomorrow')
           : waiting && job.error_code === 'not_signed_in'
-          ? importErrorMessage('not_signed_in')
-          : waiting && !online
-            ? t('importer.job.queuedOffline')
-            : job.chunk_done === 0 && waiting
-              ? t('importer.job.queued')
-              : t('importer.job.processing', { pct: Math.round(pct * 100) });
+            ? importErrorMessage('not_signed_in')
+            : waiting && !online
+              ? t('importer.job.queuedOffline')
+              : job.chunk_done === 0 && waiting
+                ? t('importer.job.queued')
+                : t('importer.job.processing', { pct: Math.round(pct * 100) });
 
   const icon = failed
     ? 'alert'
@@ -81,33 +97,31 @@ export function JobCard({ job, className }: { job: ImportJobRecord; className?: 
         : null;
 
   return (
-    <Surface padding="md" className={cn('flex flex-col gap-3', className)} aria-live="polite">
+    <Card
+      className={cn('flex flex-col gap-3', className)}
+      aria-live="polite"
+      data-testid="job-card"
+    >
       <div className="flex items-start gap-3">
-        <span
-          className={cn(
-            'mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full',
-            failed
-              ? 'bg-danger-soft text-danger-text'
-              : ready || done
-                ? 'bg-success-soft text-success-text'
-                : 'bg-surface-sunken text-fg-muted',
-          )}
-        >
-          {icon ? (
-            <Icon name={icon} size={18} />
-          ) : working ? (
-            <Spinner size={16} />
-          ) : (
-            <Icon name={(job.kind as Source['kind']) === 'pdf' ? 'upload' : 'file'} size={18} />
-          )}
-        </span>
+        {icon ? (
+          <IconTile icon={icon} tone={failed ? 'danger' : ready || done ? 'accent' : 'neutral'} />
+        ) : working ? (
+          <span
+            aria-hidden="true"
+            className="flex size-10 shrink-0 items-center justify-center rounded-md bg-surface-sunken text-fg-muted"
+          >
+            <Spinner size={20} />
+          </span>
+        ) : (
+          <IconTile icon={(job.kind as Source['kind']) === 'pdf' ? 'upload' : 'file'} />
+        )}
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <p className="truncate font-medium text-fg">{job.title}</p>
-          <p className={cn('text-sm', failed ? 'text-danger-text' : 'text-fg-muted')}>
+          <p className="truncate text-ui font-semibold text-fg">{job.title}</p>
+          <p className={cn('text-meta', failed ? 'text-danger-text' : 'text-fg-muted')}>
             {statusText}
           </p>
         </div>
-        <span className="tabular shrink-0 pt-0.5 text-sm text-fg-muted">
+        <span className="tabular shrink-0 pt-0.5 text-meta text-fg-muted">
           {t('importer.job.progress', { pct: Math.round(pct * 100) })}
         </span>
       </div>
@@ -122,10 +136,10 @@ export function JobCard({ job, className }: { job: ImportJobRecord; className?: 
         />
       )}
 
-      {failed && <p className="text-sm text-fg">{importErrorMessage(job.error_code)}</p>}
+      {failed && <p className="text-meta text-fg">{importErrorMessage(job.error_code)}</p>}
 
       {(job.chunk_cache_hits ?? 0) > 0 && (
-        <p className="flex items-center gap-1.5 text-sm text-fg-muted">
+        <p className="flex items-center gap-1.5 text-meta text-fg-muted">
           <Icon name="check" size={16} />
           {t('importer.job.cacheHits', { count: job.chunk_cache_hits })}
         </p>
@@ -135,7 +149,7 @@ export function JobCard({ job, className }: { job: ImportJobRecord; className?: 
 
       {ready && (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-fg-muted">
+          <p className="text-meta text-fg-muted">
             {candidates > 0
               ? t('importer.job.readyBody', { count: candidates })
               : t('importer.job.readyEmpty')}
@@ -160,7 +174,7 @@ export function JobCard({ job, className }: { job: ImportJobRecord; className?: 
 
       {partial && (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-fg-muted">{t('importer.job.partialBody')}</p>
+          <p className="text-meta text-fg-muted">{t('importer.job.partialBody')}</p>
           <Button
             variant="secondary"
             onClick={async () => {
@@ -197,7 +211,7 @@ export function JobCard({ job, className }: { job: ImportJobRecord; className?: 
           </Button>
         </div>
       )}
-    </Surface>
+    </Card>
   );
 }
 
@@ -219,16 +233,18 @@ export function ActiveJobs({ kind, limit = 5 }: { kind?: Source['kind']; limit?:
   const id = `jobs-${kind ?? 'all'}`;
   return (
     <section aria-labelledby={id} className="mt-8 flex flex-col gap-3">
-      <div className="flex items-baseline justify-between gap-2">
-        <h2 id={id} className="text-sm font-medium text-fg-muted">
-          {t('importer.job.recent')}
-        </h2>
-        {jobs.length > limit && (
-          <Link to="/import" className="text-sm font-medium text-accent-text underline-offset-4 hover:underline">
-            {t('importer.job.all', { count: jobs.length })}
-          </Link>
-        )}
-      </div>
+      <SectionHeader
+        id={id}
+        title={t('importer.job.recent')}
+        className="mb-0"
+        action={
+          jobs.length > limit && (
+            <Link to="/import" className={buttonClasses({ variant: 'ghost', size: 'sm' })}>
+              {t('importer.job.all', { count: jobs.length })}
+            </Link>
+          )
+        }
+      />
       {jobs.slice(0, limit).map((j) => (
         <JobCard key={j.id} job={j} />
       ))}

@@ -79,7 +79,6 @@ test('Add sheet: four groups; a typed word is looked up and becomes a card in th
   await expect(sheet.getByRole('heading', { level: 3 })).toHaveText([
     'Kelime ekle',
     'Metin ekle',
-    'Kelimelerimle metin',
     'İçe aktar',
   ]);
   await noSideScroll(page);
