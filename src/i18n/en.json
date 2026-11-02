@@ -1500,7 +1500,11 @@
     "unsupported": "This browser does not support keeping data safe.",
     "usedTitle": "Storage used",
     "used": "{{used}} used · {{quota}} available",
-    "unknown": "This browser does not report storage use."
+    "unknown": "This browser does not report storage use.",
+    "appGuestTitle": "Your data lives on this phone",
+    "appGuest": "Uninstalling the app or clearing its data deletes your words. Create an account or make a backup.",
+    "appTitle": "Where is your data?",
+    "appSignedIn": "Your data is on this phone and in your account; it comes back from your account even if you uninstall the app."
   },
   "install": {
     "title": "Install the app",
@@ -1556,7 +1560,9 @@
     "updateReady": "New version ready — reload",
     "reload": "Reload",
     "reloadAlt": "Reload the page to open the new version",
-    "offlineReady": "Engapp now works offline"
+    "offlineReady": "Engapp now works offline",
+    "dbReplacedTitle": "Engapp was updated in another tab",
+    "dbReplaced": "Reload this page to carry on where you left off."
   },
   "native": {
     "signIn": {

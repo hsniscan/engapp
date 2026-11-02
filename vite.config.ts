@@ -88,6 +88,31 @@ export default defineConfig({
         background_color: themeColor.light,
         theme_color: themeColor.light,
         categories: ['education'],
+        // Long-press on the installed app's icon (Android Chrome, desktop): straight to a task
+        // (v0.5.2, ADR 0064). The Android app has no web manifest; these are for the PWA.
+        shortcuts: [
+          {
+            name: 'Çalış',
+            short_name: 'Çalış',
+            description: 'Bugünün kartlarıyla çalışmaya başla',
+            url: '/study',
+            icons: [{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
+          },
+          {
+            name: 'Kelime ekle',
+            short_name: 'Ekle',
+            description: 'Yeni bir kelime ekle',
+            url: '/add',
+            icons: [{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
+          },
+          {
+            name: 'Oku',
+            short_name: 'Oku',
+            description: 'Seviyene uygun bir metin seç ve oku',
+            url: '/kesfet?f=okuma',
+            icons: [{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
+          },
+        ],
         // "Paylaş → Engapp" for the installed web app (Android Chrome): /share?title&text&url,
         // the same page the Android app opens (docs/decisions/0034-share-target.md).
         share_target: {
@@ -113,7 +138,10 @@ export default defineConfig({
         // below (docs/decisions/0008-pdf-worker-runtime-cache.md). The word-level file (.tsv) is
         // not matched either and is cached on first use as well (0012).
         // Nor the OCR engine (/ocr/, ~7 MB, web photo flow only, decision 0045): cached on first use.
-        globIgnores: ['**/pdf.worker*.mjs', 'ocr/**'],
+        // Nor pdf.js itself (assets/pdf-*.js, ~430 KB) and the Anki reader worker (~150 KB), used
+        // only by those imports (v0.5.2, ADR 0064): cached on first use below. Offline before
+        // the first use, the import says the reader could not be downloaded (as for the worker).
+        globIgnores: ['**/pdf.worker*.mjs', 'ocr/**', 'assets/pdf-*.js', 'assets/apkg.worker-*.js'],
         maximumFileSizeToCacheInBytes: 2 * 1024 * 1024,
         cleanupOutdatedCaches: true,
         // Web Push: `push` and `notificationclick` handlers (public/push-sw.js, decision 0024).
@@ -148,6 +176,16 @@ export default defineConfig({
             options: {
               cacheName: 'engapp-pdf-worker',
               expiration: { maxEntries: 2 },
+            },
+          },
+          {
+            // pdf.js and the Anki reader worker (not precached, see globIgnores): hashed names.
+            urlPattern: ({ url, sameOrigin }) =>
+              sameOrigin && /\/assets\/(pdf|apkg\.worker)-[^/]*\.js$/.test(url.pathname),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'engapp-import-readers',
+              expiration: { maxEntries: 4 },
             },
           },
           {

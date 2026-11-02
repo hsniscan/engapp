@@ -1,8 +1,10 @@
 // Android back button (docs/decisions/0033-android-capacitor.md): close the open sheet or menu
 // first, then go back in the app's history, and leave the app only from the home screen. A screen
 // opened without history (a share, a notification) goes to the home screen instead of exiting.
+// Leaving moves the task to the back (v0.5.2, ADR 0064) like Android 12+ does for launcher
+// apps: the WebView stays warm, so coming back is instant instead of a cold start.
 
-export type BackAction = 'close-overlay' | 'back' | 'home' | 'exit';
+export type BackAction = 'close-overlay' | 'back' | 'home' | 'minimize';
 
 export interface BackState {
   /** A dialog, sheet, menu or select list is open. */
@@ -15,7 +17,7 @@ export interface BackState {
 
 export function decideBack(s: BackState): BackAction {
   if (s.overlayOpen) return 'close-overlay';
-  if (s.path === '/' || s.path === '') return 'exit';
+  if (s.path === '/' || s.path === '') return 'minimize';
   if (s.canGoBack) return 'back';
   return 'home';
 }

@@ -49,9 +49,26 @@ android {
     buildTypes {
         release {
             if (hasReleaseKey) signingConfig signingConfigs.release
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // R8 (docs/decisions/0064): smaller download, faster cold start. Capacitor keeps its
+            // plugins through its consumer rules; proguard-rules.pro adds what is reached by
+            // reflection here (app plugins, Glance callbacks, Credential Manager, ML Kit).
+            // The mapping file travels inside the AAB, so Play shows readable stack traces.
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
+    }
+    lint {
+        // CI runs :app:lintRelease (its own step, report uploaded). Missing translations are
+        // expected: the app strings are Turkish only.
+        abortOnError true
+        // assembleRelease/bundleRelease do not run lint themselves (CI runs it once, separately).
+        checkReleaseBuilds false
+        disable 'MissingTranslation'
+        // Dependency/SDK "newer version available" checks need the network and change daily.
+        disable 'GradleDependency', 'NewerVersionAvailable', 'AndroidGradlePluginVersion'
+        htmlReport true
+        xmlReport false
     }
 }
 

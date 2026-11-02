@@ -7,20 +7,13 @@ komutla ölçüldü (Play Unicode karakter sayar; "–" ve Türkçe harfler bire
 ## Uygulama adı (en çok 30 karakter)
 
 ```
-Engapp – İngilizce Kelime Kartları
+Engapp – İngilizce Kelimeler
 ```
 
-**34 karakter: sınırı aşıyor.** Plandaki ad Play'in 30 karakter sınırına sığmıyor. Seçenekler
-(hepsi sığar):
-
-| Ad | Karakter |
-| --- | --- |
-| `Engapp: İngilizce Kelime Kartı` | 30 |
-| `Engapp – İngilizce Kelimeler` | 28 |
-| `Engapp – Kelime Kartları` | 24 |
-
-Önerim **`Engapp – İngilizce Kelimeler`** (28): "İngilizce" ve "kelime" aramaları adda kalır.
-Sahibinin seçmesi gerekir (ADR 0035, "Sapmalar").
+28 karakter (v0.5.2'de seçildi, ADR 0064). Plandaki `Engapp – İngilizce Kelime Kartları` 34
+karakterdi ve Play'in 30 karakter sınırını aşıyordu. Bu ad "İngilizce" ve "kelime" aramalarını
+adda tutar. Telefondaki simgenin altındaki ad kısa kalır: **Engapp**. Başka bir ad istersen
+sığan seçenekler: `Engapp: İngilizce Kelime Kartı` (30), `Engapp – Kelime Kartları` (24).
 
 ## Kısa açıklama (en çok 80 karakter)
 
@@ -82,7 +75,7 @@ Bilerek yazılmayanlar: "en iyi", "1 numara", "garantili", kullanıcı sayısı,
 | --- | --- |
 | Uygulama simgesi (512×512) | `graphics/icon-512.png` |
 | Öne çıkan grafik (1024×500) | `graphics/feature-graphic-1024x500.png` |
-| Telefon ekran görüntüleri (1080×1920; Play en az 2, en çok 8 ister) | `screenshots/1-…6-*-light.png` sırayla; istersen iki koyu tema görüntüsü (ör. `2-review-front-dark.png`, `4-add-from-text-dark.png`) 7. ve 8. sıraya |
+| Telefon ekran görüntüleri (1080×1920; Play en az 2, en çok 8 ister) | `screenshots/1-…8-*-light.png` sırayla (Bugün, kart önü, kart arkası, Kelimelerim, okuyucu, metinden kelimeler, Keşfet, İlerleme). v0.5.2'den önceki `1-home…6-settings` görüntüleri eski dört sekmeli tasarımı gösterir: yeni tasarımdan sonra betikle yeniden üret, eskilerini sil |
 
 Ekran görüntüleri sahte bir demo hesabıyla (Deniz Yılmaz, deniz@example.com) ve tohumlanmış demo
 verisiyle üretilir; gerçek kişi ya da gerçek veri yoktur. Yeniden üretmek için:

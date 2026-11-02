@@ -43,7 +43,7 @@ function startBackButton(): void {
     if (action === 'close-overlay') closeTopOverlay();
     else if (action === 'back') void router.navigate(-1);
     else if (action === 'home') void router.navigate('/', { replace: true });
-    else void App.exitApp();
+    else void App.minimizeApp();
   });
 }
 

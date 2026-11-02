@@ -2,11 +2,21 @@ package io.github.hsniscan.engapp;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
+import androidx.core.content.IntentCompat;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Delivers "Paylaş → Engapp" shares to the web app as the `shareReceived` event
@@ -19,12 +29,18 @@ import com.getcapacitor.annotation.CapacitorPlugin;
  * QuickCaptureActivity an ACTION_PROCESS_TEXT intent becomes `processTextReceived`; the sheet
  * closes with finishQuick() and hands over to the main app with openInApp(), which MainActivity
  * receives as `openPathReceived` (an address) or as an ordinary share (a text).
+ *
+ * A shared photo or screenshot (image/*, docs/decisions/0064) is copied into the app's cache and
+ * delivered as `imageShared` with the copy's path; the web app opens it in "Fotoğraftan metin".
  */
 @CapacitorPlugin(name = "ShareTarget")
 public class ShareTargetPlugin extends Plugin {
 
     private static final String CONSUMED = "io.github.hsniscan.engapp.SHARE_CONSUMED";
     private int seq = 0;
+    /** Copies shared images off the UI thread (a content URI may be slow, e.g. a cloud photo). */
+    private final ExecutorService io = Executors.newSingleThreadExecutor();
+    private final Handler main = new Handler(Looper.getMainLooper());
 
     private String nextId() {
         return System.currentTimeMillis() + "-" + (++seq);
@@ -36,7 +52,7 @@ public class ShareTargetPlugin extends Plugin {
         if (intent == null || intent.getBooleanExtra(CONSUMED, false)) return;
         // Reopening from Recents replays the original share intent: ignore it.
         if ((intent.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0) return;
-        if (deliverProcessText(intent) || deliverOpenPath(intent)) return;
+        if (deliverProcessText(intent) || deliverOpenPath(intent) || deliverImage(intent)) return;
         SharePayload p = SharePayload.from(
             intent.getAction(),
             intent.getType(),
@@ -71,6 +87,57 @@ public class ShareTargetPlugin extends Plugin {
         data.put("readonly", q.readonly);
         notifyListeners("processTextReceived", data, true);
         return true;
+    }
+
+    /** "Paylaş → Engapp" with a photo (MainActivity only has that intent filter). */
+    private boolean deliverImage(Intent intent) {
+        if (!SharedImage.accepts(intent.getAction(), intent.getType())) return false;
+        Uri uri = IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri.class);
+        if (uri == null) return true;
+        intent.putExtra(CONSUMED, true);
+        String id = nextId();
+        String type = intent.getType();
+        File dir = new File(getContext().getCacheDir(), SharedImage.DIR);
+        io.execute(() -> {
+            File out = copyImage(uri, dir, SharedImage.fileName(id, type));
+            if (out == null) return;
+            JSObject data = new JSObject();
+            data.put("id", id);
+            data.put("path", out.getAbsolutePath());
+            data.put("mimeType", type);
+            main.post(() -> notifyListeners("imageShared", data, true));
+        });
+        return true;
+    }
+
+    /** Copy into the cache (only the newest share is kept); null if unreadable or too large. */
+    private File copyImage(Uri uri, File dir, String name) {
+        if (!dir.isDirectory() && !dir.mkdirs()) return null;
+        File[] old = dir.listFiles();
+        if (old != null) for (File f : old) f.delete();
+        File out = new File(dir, name);
+        try (InputStream in = getContext().getContentResolver().openInputStream(uri);
+             OutputStream os = new FileOutputStream(out)) {
+            if (in == null) return null;
+            byte[] buf = new byte[64 * 1024];
+            long total = 0;
+            int n;
+            while ((n = in.read(buf)) != -1) {
+                total += n;
+                if (total > SharedImage.MAX_BYTES) throw new java.io.IOException("Shared image too large");
+                os.write(buf, 0, n);
+            }
+            return out;
+        } catch (Exception e) {
+            out.delete();
+            return null;
+        }
+    }
+
+    @Override
+    protected void handleOnDestroy() {
+        io.shutdown();
+        super.handleOnDestroy();
     }
 
     /** The quick sheet's "Okuyucuda aç" / "Anlamını kendim yazayım" (MainActivity). */
