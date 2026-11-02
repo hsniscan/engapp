@@ -698,7 +698,9 @@
       "known": "{{count}} words moved to Known words",
       "markKnown": "I know these",
       "progress": "Working… {{done}} / {{total}}",
-      "hidden": "{{count}} selected words hidden by the filter are left alone."
+      "hidden": "{{count}} selected words hidden by the filter are left alone.",
+      "countShort_one": "{{count}} selected",
+      "countShort_other": "{{count}} selected"
     },
     "detail": {
       "meta": "{{cards}} cards · added {{date}}",
@@ -3272,7 +3274,6 @@
       "export": "Download as CSV",
       "exported": "{{count}} words downloaded",
       "deleted": "“{{name}}” deleted",
-      "handPicked": "Hand-picked deck",
       "loading": "Loading the deck",
       "statWords": "Words",
       "statDue": "Due today",

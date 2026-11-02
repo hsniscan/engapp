@@ -154,7 +154,13 @@ export function DeckDetailPage() {
       ? [{ label: t('deckHub.detail.up'), icon: 'chevron-up' as const, onSelect: () => move(-1) }]
       : []),
     ...(pos >= 0 && order && pos < order.length - 1
-      ? [{ label: t('deckHub.detail.down'), icon: 'chevron-down' as const, onSelect: () => move(1) }]
+      ? [
+          {
+            label: t('deckHub.detail.down'),
+            icon: 'chevron-down' as const,
+            onSelect: () => move(1),
+          },
+        ]
       : []),
     ...(words.length > 0
       ? [
@@ -191,11 +197,8 @@ export function DeckDetailPage() {
       }
       title={<span className="break-words">{deck.name}</span>}
       description={
-        !filter
-          ? t('deckHub.detail.unsupported')
-          : tag && !suggested
-            ? t('deckHub.detail.handPicked')
-            : describeDeckFilter(t, filter)
+        // The eyebrow already says the kind; the line says what is in it ("#iş", "Zorlandıklarım").
+        !filter ? t('deckHub.detail.unsupported') : describeDeckFilter(t, filter)
       }
       actions={
         <DropdownMenu
@@ -210,7 +213,11 @@ export function DeckDetailPage() {
           {filter && words.length > 0 && (
             <>
               <div className="grid grid-cols-3 divide-x divide-border [&>*]:px-3 [&>*:first-child]:pl-0">
-                <StatTile bare value={nf.format(words.length)} label={t('deckHub.detail.statWords')} />
+                <StatTile
+                  bare
+                  value={nf.format(words.length)}
+                  label={t('deckHub.detail.statWords')}
+                />
                 <StatTile bare value={nf.format(due)} label={t('deckHub.detail.statDue')} />
                 <StatTile
                   bare
@@ -406,11 +413,18 @@ function WordPicker({
         ) : list.length === 0 ? (
           <p className="text-[15px] text-fg-muted">{t('deckHub.picker.none')}</p>
         ) : (
-          <ul aria-label={t('deckHub.picker.list')} className="-mx-1 flex max-h-[50dvh] flex-col overflow-y-auto">
+          <ul
+            aria-label={t('deckHub.picker.list')}
+            className="-mx-1 flex max-h-[50dvh] flex-col overflow-y-auto"
+          >
             {list.map((n) => (
               <li key={n.id} className="px-1">
                 <Checkbox
-                  label={<span lang="en" className="font-serif text-base font-semibold">{n.term}</span>}
+                  label={
+                    <span lang="en" className="font-serif text-base font-semibold">
+                      {n.term}
+                    </span>
+                  }
                   checked={picked.has(n.id)}
                   onCheckedChange={(v) =>
                     setPicked((s) => {

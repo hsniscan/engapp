@@ -698,7 +698,9 @@
       "known": "{{count}} kelime Bildiğim kelimeler'e taşındı",
       "markKnown": "Biliyorum",
       "progress": "İşleniyor… {{done}} / {{total}}",
-      "hidden": "Süzgecin gizlediği {{count}} seçili kelimeye dokunulmaz."
+      "hidden": "Süzgecin gizlediği {{count}} seçili kelimeye dokunulmaz.",
+      "countShort_one": "{{count}} seçili",
+      "countShort_other": "{{count}} seçili"
     },
     "detail": {
       "meta": "{{cards}} kart · {{date}} tarihinde eklendi",
@@ -3272,7 +3274,6 @@
       "export": "CSV olarak indir",
       "exported": "{{count}} kelime indirildi",
       "deleted": "“{{name}}” silindi",
-      "handPicked": "Elle seçilen deste",
       "loading": "Deste yükleniyor",
       "statWords": "Kelime",
       "statDue": "Tekrar bekleyen",

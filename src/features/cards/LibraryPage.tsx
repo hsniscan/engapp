@@ -868,9 +868,17 @@ function BulkBar({
           className="tabular min-w-0 flex-1 truncate text-ui font-semibold text-fg"
           aria-live="polite"
         >
-          {progress
-            ? t('library.bulk.progress', { done: progress.done, total: progress.total })
-            : t('library.bulk.count', { count: n })}
+          {progress ? (
+            t('library.bulk.progress', { done: progress.done, total: progress.total })
+          ) : (
+            <>
+              {/* Phones: "2 seçili" fits beside the actions; the full sentence is still read. */}
+              <span aria-hidden="true" className="sm:hidden">
+                {t('library.bulk.countShort', { count: n })}
+              </span>
+              <span className="max-sm:sr-only">{t('library.bulk.count', { count: n })}</span>
+            </>
+          )}
           {!progress && selected.size > n && (
             <span className="block text-caption font-normal text-fg-muted">
               {t('library.bulk.hidden', { count: selected.size - n })}

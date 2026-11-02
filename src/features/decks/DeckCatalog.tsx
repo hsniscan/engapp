@@ -405,7 +405,7 @@ function PosSection({
         })}
       </ul>
       {levelPos.length > 0 && (
-        <ChipRow label={t('deckHub.discover.byPos')}>
+        <ChipRow label={t('deckHub.discover.byPos')} bleed={false}>
           {levelPos.map((d) => (
             <Link
               key={specHref(d.spec)}

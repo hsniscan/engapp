@@ -178,8 +178,7 @@ export function WordBankPanel() {
       toast.undo({
         title: t('wordBank.knownMarked', { count: added.length }),
         undoLabel: t('ui.undo'),
-        onUndo: () =>
-          void unmarkKnownKeys(added).catch((e) => logError(e, 'wordBank.knownUndo')),
+        onUndo: () => void unmarkKnownKeys(added).catch((e) => logError(e, 'wordBank.knownUndo')),
       });
     } catch (err) {
       void logError(err, 'wordBank.known');
@@ -203,7 +202,11 @@ export function WordBankPanel() {
   ].filter(Boolean);
   const posChips: [PosFilter, string, number][] = [
     [null, t('deckHub.bank.posAll'), posCounts.all!],
-    ...CONTENT_POS.map((p): [PosFilter, string, number] => [p, capital(posLabel(t, p)), posCounts[p]!]),
+    ...CONTENT_POS.map((p): [PosFilter, string, number] => [
+      p,
+      capital(posLabel(t, p)),
+      posCounts[p]!,
+    ]),
     ...(posCounts[OTHER]
       ? ([[OTHER, t('deckHub.bank.posOther'), posCounts[OTHER]]] as [PosFilter, string, number][])
       : []),
@@ -455,17 +458,17 @@ function BankRow({
           {many && <Eyebrow>{t('wordBank.meaningsPick')}</Eyebrow>}
           {entry.senses.map((s, i) => (
             <div key={i} className="flex flex-col gap-1">
-              {many ? (
-                <Checkbox
-                  label={s.meaning_tr}
-                  checked={picked.includes(i)}
-                  onCheckedChange={(v) =>
-                    setPicked((p) => (v === true ? [...p, i] : p.filter((x) => x !== i)))
-                  }
-                />
-              ) : (
-                <p className="text-ui font-semibold text-fg">{s.meaning_tr}</p>
-              )}
+              {
+                many ? (
+                  <Checkbox
+                    label={s.meaning_tr}
+                    checked={picked.includes(i)}
+                    onCheckedChange={(v) =>
+                      setPicked((p) => (v === true ? [...p, i] : p.filter((x) => x !== i)))
+                    }
+                  />
+                ) : null /* one meaning: the row above already shows it */
+              }
               {s.example_en && (
                 <Term italic className="text-fg">
                   {s.example_en}
