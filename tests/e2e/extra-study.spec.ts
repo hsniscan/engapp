@@ -36,7 +36,7 @@ test('done for today → "Biraz daha çalış": +5 new cards, then a practice ro
   await expect(page).toHaveURL(/\/study\/more$/);
   await expect(page.getByRole('heading', { name: 'Biraz daha çalış', level: 1 })).toBeVisible();
   const newCards = page.getByRole('region', { name: 'Yeni kartlar' });
-  await expect(newCards.getByText('Bekleyen yeni kart: 6')).toBeVisible();
+  await expect(newCards.getByText('Bekleyen yeni kart: 6 (Kelime)')).toBeVisible();
 
   // +5: exactly five more cards today, then done again.
   await newCards.getByRole('button', { name: '+5 yeni kart' }).click();
@@ -47,13 +47,13 @@ test('done for today → "Biraz daha çalış": +5 new cards, then a practice ro
   await expect(page.getByTestId('today-hero-done')).toBeVisible();
   await expect(page.getByRole('region', { name: 'Biraz daha çalış' })).toBeVisible();
   await page.goto('/more'); // the old address still leads to the extra-study page
-  await expect(newCards.getByText('Bekleyen yeni kart: 1')).toBeVisible();
+  await expect(newCards.getByText('Bekleyen yeni kart: 1 (Kelime)')).toBeVisible();
   await expect(newCards.getByText('Bugün 5 ek kart açtın.')).toBeVisible();
 
   // Practice: the 7 cards first studied this week. Nothing was hard, so that source is off.
   const practice = page.getByRole('region', { name: 'Pratik turu' });
   await expect(practice.getByRole('radio', { name: /Zorlandıklarım/ })).toBeDisabled();
-  await expect(practice.getByRole('radio', { name: /Son 7 günde/ })).toBeChecked();
+  await expect(practice.getByRole('radio', { name: /Bu hafta yeni başladıkların/ })).toBeChecked();
   await expect(practice.getByText('7 kelime')).toBeVisible();
 
   const before = await dumpTables(page, ['cards', 'review_logs', 'daily_activity']);
