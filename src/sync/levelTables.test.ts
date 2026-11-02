@@ -187,7 +187,8 @@ describe('level tables sync', () => {
 
 describe('backups', () => {
   it('round-trip level tests and known words; an older file without them keeps the local ones', async () => {
-    await newDevice('dev-a');
+    // A guest's backup: an account's backup restores with its history only into that account (ADR 0063).
+    await newDevice('dev-a', null);
     await saveLevelTest(testInput, T);
     await markKnown('give up', 'manual', T);
     const backup = await exportBackup(T + MIN);

@@ -180,6 +180,8 @@ describe('weekly reports sync', () => {
 describe('backups', () => {
   it('round-trip reports and goals; a week the device has keeps its own report', async () => {
     await newDevice('dev-a');
+    // A guest's backup: an account's backup restores with its history only into that account (ADR 0063).
+    await db.transaction('rw', db.meta, () => setMeta(META.userId, null));
     await study('apple');
     await makeReport(MON, 'Yedekteki yorum. İkinci cümle. Üçüncü cümle.');
     await setGoals({ week_minutes: 90 }, MON);
