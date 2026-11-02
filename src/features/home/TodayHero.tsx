@@ -211,7 +211,7 @@ function ModeChips({ data }: { data: HeroData }) {
   const lockedHint = study.locked.some((m) => m === 'production' || m === 'cloze');
   return (
     <div className="flex flex-col gap-2">
-      <ChipRow label={t('today.typesTitle')} bleed={false}>
+      <ChipRow label={t('today.typesTitle')} bleed={false} className="flex-wrap overflow-visible">
         {study.modes.map((m) => {
           const c = study.counts[m];
           const n = modeLeftToday(c);
