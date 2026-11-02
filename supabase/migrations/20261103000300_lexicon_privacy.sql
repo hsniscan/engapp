@@ -21,7 +21,7 @@
 
 -- Same body as 20261021000400_sync.sql; SECURITY DEFINER: reads the lexicon as the owner,
 -- but only the senses the caller's own (RLS-free here, so filtered by auth.uid()) cards use.
-create or replace function public.lexicon_pull(p_since bigint, p_limit integer)
+create or replace function public.lexicon_pull(p_since bigint default 0, p_limit integer default 500)
 returns jsonb
 language plpgsql
 stable
