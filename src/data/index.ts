@@ -137,7 +137,7 @@ export {
   type Knowledge,
   type ReaderKnowledge,
 } from './knowledge';
-export { lookupReaderWord, type ReaderMeaning, type ReaderWordInfo } from './readerLookup';
+export { glossFor, lookupReaderWord, type ReaderMeaning, type ReaderWordInfo, type TextGloss } from './readerLookup';
 export { rebuildDailyActivity, listDailyActivity } from './dailyActivity';
 export {
   adoptFsrsParams,

@@ -14,6 +14,7 @@ import {
   lookupReaderWord,
   type ReaderMeaning,
   type ReaderWordInfo,
+  type TextGloss,
 } from '@/data';
 import type { WordStage } from '@/domain/stages';
 import type { Id } from '@/domain/types';
@@ -47,6 +48,8 @@ export interface WordPick {
 
 interface Props {
   pick: WordPick | null;
+  /** The text's own glosses (library texts, stories). */
+  glosses?: readonly TextGloss[];
   voice: VoicePref;
   /** "Hep tahmin ettir": ask for a guess even for the user's own words. */
   alwaysGuess?: boolean;
@@ -62,7 +65,7 @@ type Lookup =
 const isOnline = () => typeof navigator === 'undefined' || navigator.onLine !== false;
 
 /** The meanings of a pick: device first, then (online, signed in) the shared lexicon. */
-function useWordLookup(pick: WordPick | null): Lookup {
+function useWordLookup(pick: WordPick | null, glosses?: readonly TextGloss[]): Lookup {
   const auth = useAuth();
   const signedIn = auth.status === 'signed_in';
   const lemma = pick?.lemma ?? '';
@@ -78,7 +81,7 @@ function useWordLookup(pick: WordPick | null): Lookup {
     const done = (lookup: Lookup) => live && setState({ key, lookup });
     void (async () => {
       try {
-        const info = await lookupReaderWord(lemma, written);
+        const info = await lookupReaderWord(lemma, written, glosses);
         if (info.source) return done({ status: 'ready', info, online: false });
         if (!isOnline()) return done({ status: 'none', reason: 'offline' });
         if (!signedIn) return done({ status: 'none', reason: 'signIn' });
@@ -116,11 +119,11 @@ function useWordLookup(pick: WordPick | null): Lookup {
       live = false;
     };
     // `key` identifies the pick; the rest of it never changes for the same key.
-  }, [key, lemma, written, signedIn]);
+  }, [key, lemma, written, signedIn, glosses]);
   return state.key === key ? state.lookup : { status: 'loading' };
 }
 
-export function WordSheet({ pick, voice, alwaysGuess = false, onClose, onExtend }: Props) {
+export function WordSheet({ pick, glosses, voice, alwaysGuess = false, onClose, onExtend }: Props) {
   const { t } = useTranslation();
   return (
     <Dialog
@@ -140,6 +143,7 @@ export function WordSheet({ pick, voice, alwaysGuess = false, onClose, onExtend 
         <SheetBody
           key={`${pick.lemma}|${pick.written}|${pick.sentence}`}
           pick={pick}
+          glosses={glosses}
           voice={voice}
           guessFirst={alwaysGuess || pick.noteId === null}
           onExtend={onExtend}
@@ -151,17 +155,19 @@ export function WordSheet({ pick, voice, alwaysGuess = false, onClose, onExtend 
 
 function SheetBody({
   pick,
+  glosses,
   voice,
   guessFirst,
   onExtend,
 }: {
   pick: WordPick;
+  glosses?: readonly TextGloss[];
   voice: VoicePref;
   guessFirst: boolean;
   onExtend: Props['onExtend'];
 }) {
   const { t } = useTranslation();
-  const lookup = useWordLookup(pick);
+  const lookup = useWordLookup(pick, glosses);
   const [revealed, setRevealed] = useState(!guessFirst);
   const [showTr, setShowTr] = useState(false);
   const [chosen, setChosen] = useState(0);

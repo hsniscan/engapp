@@ -5,7 +5,7 @@
 // look the remaining words up in the shared dictionary (which may ask the yapay zekâ).
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { addNoteWithSenses, logError, lookupReaderWord, type ReaderMeaning } from '@/data';
+import { addNoteWithSenses, logError, lookupReaderWord, type ReaderMeaning, type TextGloss } from '@/data';
 import { useAuth } from '@/features/auth/session';
 import { locateTerm } from '@/features/cards/locateTerm';
 import { lookupLexicon } from '@/features/import/lexicon';
@@ -34,10 +34,12 @@ export function NewWordsSheet({
   open,
   onOpenChange,
   words,
+  glosses,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   words: readonly NewWordItem[];
+  glosses?: readonly TextGloss[];
 }) {
   const { t } = useTranslation();
   return (
@@ -48,12 +50,20 @@ export function NewWordsSheet({
       title={t('reader.newWords.title')}
       description={t('reader.newWords.description')}
     >
-      {open && <SheetBody words={words} onDone={() => onOpenChange(false)} />}
+      {open && <SheetBody words={words} glosses={glosses} onDone={() => onOpenChange(false)} />}
     </Dialog>
   );
 }
 
-function SheetBody({ words, onDone }: { words: readonly NewWordItem[]; onDone: () => void }) {
+function SheetBody({
+  words,
+  glosses,
+  onDone,
+}: {
+  words: readonly NewWordItem[];
+  glosses?: readonly TextGloss[];
+  onDone: () => void;
+}) {
   const { t } = useTranslation();
   const auth = useAuth();
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -66,7 +76,7 @@ function SheetBody({ words, onDone }: { words: readonly NewWordItem[]; onDone: (
       const out: Row[] = [];
       for (const item of words.slice(0, NEW_WORDS_MAX)) {
         try {
-          const info = await lookupReaderWord(item.lemma, item.written);
+          const info = await lookupReaderWord(item.lemma, item.written, glosses);
           out.push({
             item,
             term: info.source ? info.term || item.lemma : item.lemma,
@@ -85,7 +95,7 @@ function SheetBody({ words, onDone }: { words: readonly NewWordItem[]; onDone: (
     return () => {
       live = false;
     };
-  }, [words]);
+  }, [words, glosses]);
 
   const missing = useMemo(() => rows?.filter((r) => !r.meaning) ?? [], [rows]);
   const canLookUp = auth.status === 'signed_in' && missing.length > 0 && isOnline();

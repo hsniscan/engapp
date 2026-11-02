@@ -26,6 +26,7 @@ import {
   setTextFeedback,
   setTextFinished,
   type ReaderKnowledge,
+  type TextGloss,
 } from '@/data';
 import {
   getGradedBody,
@@ -182,6 +183,8 @@ function NotFound() {
 interface GradedExtras {
   spans: GradedSpan[];
   sentences: GradedSentenceRow[];
+  /** The text's own glosses (graded_bodies.glosses): the word sheet's meaning for them. */
+  glosses: TextGloss[];
 }
 
 type BodyState =
@@ -203,7 +206,7 @@ function GradedReader({ text }: { text: ReaderText }) {
         setState({
           status: 'ready',
           body: built.body,
-          extras: { spans: built.spans, sentences: b.sentences },
+          extras: { spans: built.spans, sentences: b.sentences, glosses: b.glosses ?? [] },
         });
       })
       .catch((e: unknown) => {
@@ -290,6 +293,17 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
     [text.body, graded],
   );
   const view = useMemo(() => (k ? buildReaderView(tokens, k, k.noteTerms) : null), [tokens, k]);
+  // Meanings the text itself carries: a library text's glosses, a story's glossed words. The
+  // word sheet shows them offline and for guests too (B1).
+  const textGlosses = useMemo<TextGloss[]>(() => {
+    if (graded) return graded.glosses;
+    const s = text.story;
+    if (!s) return [];
+    return [
+      ...s.glossed.map((g) => ({ word: g.lemma, tr: g.gloss_tr })),
+      ...s.targets.flatMap((g) => (g.gloss_tr ? [{ word: g.lemma, tr: g.gloss_tr }] : [])),
+    ];
+  }, [graded, text.story]);
   const sentences = useMemo(
     () => tokens.sentences.map((s) => text.body.slice(s.start, s.end)),
     [tokens, text.body],
@@ -696,13 +710,14 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
 
       <WordSheet
         pick={pick}
+        glosses={textGlosses}
         voice={voice}
         alwaysGuess={alwaysGuess}
         onClose={() => setSelection(null)}
         onExtend={extend}
       />
 
-      <NewWordsSheet open={newWordsOpen} onOpenChange={setNewWordsOpen} words={toAdd} />
+      <NewWordsSheet open={newWordsOpen} onOpenChange={setNewWordsOpen} words={toAdd} glosses={textGlosses} />
 
       <Dialog
         open={optionsOpen}
