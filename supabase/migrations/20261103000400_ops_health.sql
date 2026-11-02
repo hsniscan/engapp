@@ -7,12 +7,15 @@
 -- was used up, stale budget holds, the nightly jobs' heartbeats (job_runs, including the
 -- backup itself), failed pg_cron runs in the last day, the database size against the Free
 -- plan's 500 MB, and new lexicon terms waiting for review.
+--
+-- SECURITY DEFINER: service_role has no access to the cron schema on Supabase, so the
+-- pg_cron check runs as the owner. Only service_role may execute it (grants below).
 
 create or replace function public.ops_health()
 returns table (check_name text, status text, detail text)
 language plpgsql
 stable
-security invoker
+security definer
 set search_path = ''
 as $$
 declare

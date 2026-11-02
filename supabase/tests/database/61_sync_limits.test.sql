@@ -26,20 +26,20 @@ returns jsonb language sql as $$
 $$;
 
 -- ---------------------------------------------------------------- byte-bounded pages
--- Three texts of ~400 KB each: a 1 MB page holds two of them.
+-- Three texts of ~250 KB each (the table allows 300 000 characters): a 600 KB page holds two.
 select is(jsonb_array_length(public.sync_push(jsonb_build_array(
   jsonb_build_object('table', 'user_texts', 'op', 'upsert', 'payload',
-    pg_temp.text_row('0193a000-0000-7000-8000-000000006101', '001761000000000:00001:d', repeat('a', 400000))),
+    pg_temp.text_row('0193a000-0000-7000-8000-000000006101', '001761000000000:00001:d', repeat('a', 250000))),
   jsonb_build_object('table', 'user_texts', 'op', 'upsert', 'payload',
-    pg_temp.text_row('0193a000-0000-7000-8000-000000006102', '001761000000000:00002:d', repeat('b', 400000))),
+    pg_temp.text_row('0193a000-0000-7000-8000-000000006102', '001761000000000:00002:d', repeat('b', 250000))),
   jsonb_build_object('table', 'user_texts', 'op', 'upsert', 'payload',
-    pg_temp.text_row('0193a000-0000-7000-8000-000000006103', '001761000000000:00003:d', repeat('c', 400000)))
+    pg_temp.text_row('0193a000-0000-7000-8000-000000006103', '001761000000000:00003:d', repeat('c', 250000)))
 )) -> 'acked'), 3, 'three long texts pushed');
 
-create temporary table p1 as select public.sync_pull_v4(0, 500, 0, 1048576) as r;
-select is(jsonb_array_length((select r from p1) -> 'rows'), 2, 'a 1 MB page stops after two long texts');
+create temporary table p1 as select public.sync_pull_v4(0, 500, 0, 600000) as r;
+select is(jsonb_array_length((select r from p1) -> 'rows'), 2, 'a 600 KB page stops after two long texts');
 select is(((select r from p1) ->> 'has_more')::boolean, true, 'and says there is more');
-select is(jsonb_array_length(public.sync_pull_v4(((select r from p1) ->> 'next_seq')::bigint, 500, 0, 1048576) -> 'rows'),
+select is(jsonb_array_length(public.sync_pull_v4(((select r from p1) ->> 'next_seq')::bigint, 500, 0, 600000) -> 'rows'),
   1, 'the next page brings the third');
 select is(jsonb_array_length(public.sync_pull_v4(0, 500, 0, 1) -> 'rows'), 1,
   'a page always holds at least one row (the cursor moves even past a huge row)');
@@ -58,7 +58,7 @@ select is(pg_temp.push('user_texts',
       '{"progress_offset": 120, "read_ms": 5000, "updated_at": 1761000001000}') - 'body') -> 'acked',
   '["0193a000-0000-7000-8000-000000006101"]'::jsonb, 'a progress change without the body is accepted');
 reset role;
-select is((select length(body) from public.user_texts where id = '0193a000-0000-7000-8000-000000006101'), 400000,
+select is((select length(body) from public.user_texts where id = '0193a000-0000-7000-8000-000000006101'), 250000,
   'the server keeps the body');
 select is((select progress_offset from public.user_texts where id = '0193a000-0000-7000-8000-000000006101'), 120,
   'and stores the progress');
@@ -66,7 +66,7 @@ set local role authenticated;
 create temporary table p2 as select public.sync_pull_v4((select last from cur), 500, (select last from cur)) as r;
 select is((select r -> 'rows' -> 0 -> 'row' ->> 'progress_offset' from p2), '120', 'the change is pulled');
 select ok(not ((select r -> 'rows' -> 0 -> 'row' from p2) ? 'body'), 'without the unchanged body');
-select is((select (r -> 'rows' -> 0 -> 'row' ->> 'body_bytes')::int from p2), 400000, 'but with its length');
+select is((select (r -> 'rows' -> 0 -> 'row' ->> 'body_bytes')::int from p2), 250000, 'but with its length');
 select ok((public.sync_pull_v4((select last from cur), 500, 0) -> 'rows' -> 0 -> 'row') ? 'body',
   'a full pull (p_from = 0) always sends the body');
 select is(pg_temp.push('user_texts',
