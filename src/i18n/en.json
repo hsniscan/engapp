@@ -51,7 +51,9 @@
     "offlineShort": "Offline",
     "error": "Sync failed — will retry",
     "errorShort": "Sync error",
-    "syncNow": "Sync now"
+    "syncNow": "Sync now",
+    "quota": "Today's sync limit reached",
+    "quotaShort": "Limit reached"
   },
   "theme": {
     "label": "Theme",
@@ -1132,7 +1134,8 @@
       "groups": {
         "learning": "Learning",
         "cards": "Cards and appearance",
-        "account": "Account and data"
+        "account": "Account and data",
+        "app": "App"
       },
       "version": "engapp · version {{version}}",
       "savedNote": "Changes are saved at once; when signed in they reach your other devices too."
@@ -1897,7 +1900,9 @@
     "authFailed": "Your session has expired. Sign in again.",
     "localIndicator": "On this device",
     "localIndicatorFull": "Guest mode — your data is safe on this device. Sign in to sync.",
-    "unavailableIndicatorFull": "Your data is safe on this device."
+    "unavailableIndicatorFull": "Your data is safe on this device.",
+    "quotaHint": "Too many changes were sent today. Your changes are safe on this device and will be sent automatically tomorrow.",
+    "quotaToast": "Today's sync limit is reached. Your changes are safe on this device and will be sent tomorrow."
   },
   "importer": {
     "privacy": "Do not send confidential work documents; the text goes to the server to find the words.",
@@ -2495,7 +2500,10 @@
       "settingsHint": "Study, reminders, appearance, backup",
       "goalLevel": "Target level {{level}}",
       "unreliableHint": "Your last test did not give a reliable result. Take it again to measure your level.",
-      "levelSection": "Level and vocabulary"
+      "levelSection": "Level and vocabulary",
+      "planAccount": "Account",
+      "goals": "Goals",
+      "goalsHint": "Your daily and weekly goals"
     }
   },
   "onboarding": {
@@ -3086,7 +3094,8 @@
     "week": "Last 7 days",
     "weekLabel_one": "You studied on {{count}} day in the last 7",
     "weekLabel_other": "You studied on {{count}} days in the last 7",
-    "none": "No study yet. It shows here after your first session."
+    "none": "No study yet. It shows here after your first session.",
+    "dayUnit": "days"
   },
   "deckHub": {
     "title": "My words",

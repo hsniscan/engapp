@@ -57,7 +57,7 @@ export function ExamplesSettingsSection() {
                     title={locked ? t('settings.examples.contextsLimit', { min: MIN_SELECTED_CONTEXTS, max: MAX_EXAMPLE_CONTEXTS }) : undefined}
                     onClick={() => toggle(key)}
                     className={cn(
-                      'inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3.5 text-sm transition-colors duration-(--duration-micro)',
+                      'inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3.5 text-meta transition-colors duration-(--duration-micro)',
                       on
                         ? 'border-accent bg-accent-soft text-accent-text'
                         : 'border-border text-fg-muted hover:border-border-strong hover:text-fg',

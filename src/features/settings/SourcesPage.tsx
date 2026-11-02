@@ -20,7 +20,7 @@ export function SourcesPage() {
       <div className="flex flex-col gap-4">
         <Link
           to="/settings/hakkinda"
-          className="-mt-2 inline-flex min-h-11 items-center gap-1 self-start text-sm font-medium text-accent-text underline-offset-4 hover:underline"
+          className="-mt-2 inline-flex min-h-11 items-center gap-1 self-start text-meta font-medium text-accent-text underline-offset-4 hover:underline"
         >
           <Icon name="chevron-left" size={16} />
           {t('sources.back')}
@@ -29,22 +29,22 @@ export function SourcesPage() {
           {SOURCES.map(({ key, url }) => (
             <li key={key}>
               <Surface className="flex flex-col gap-2">
-                <h2 className="font-serif text-lg font-semibold text-fg">
+                <h2 className="font-serif text-lead font-semibold text-fg">
                   {t(`sources.${key}.name`)}
                 </h2>
-                <p className="text-[0.9375rem] text-fg-muted">{t(`sources.${key}.what`)}</p>
-                <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+                <p className="text-ui text-fg-muted">{t(`sources.${key}.what`)}</p>
+                <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-meta">
                   <dt className="text-fg-subtle">{t('sources.license')}</dt>
                   <dd className="text-fg">{t(`sources.${key}.license`)}</dd>
                 </dl>
-                <p lang="en" className="text-sm text-fg-muted italic">
+                <p lang="en" className="text-meta text-fg-muted italic">
                   {t(`sources.${key}.cite`)}
                 </p>
                 <a
                   href={url}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="inline-flex min-h-11 items-center gap-1 self-start text-sm font-medium text-accent-text underline-offset-4 hover:underline"
+                  className="inline-flex min-h-11 items-center gap-1 self-start text-meta font-medium text-accent-text underline-offset-4 hover:underline"
                 >
                   {t('sources.link')}
                   <span aria-hidden="true">↗</span>
@@ -54,11 +54,11 @@ export function SourcesPage() {
           ))}
           <li>
             <Surface tone="flat" className="flex flex-col gap-2">
-              <h2 className="font-serif text-lg font-semibold text-fg">
+              <h2 className="font-serif text-lead font-semibold text-fg">
                 {t('sources.derived.name')}
               </h2>
-              <p className="text-[0.9375rem] text-fg-muted">{t('sources.derived.what')}</p>
-              <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+              <p className="text-ui text-fg-muted">{t('sources.derived.what')}</p>
+              <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-meta">
                 <dt className="text-fg-subtle">{t('sources.license')}</dt>
                 <dd className="text-fg">{t('sources.derived.license')}</dd>
               </dl>
@@ -66,19 +66,19 @@ export function SourcesPage() {
           </li>
         </ul>
         <section aria-labelledby="sources-ai" className="flex flex-col gap-1.5 px-1 pt-2">
-          <h2 id="sources-ai" className="font-serif text-lg font-semibold text-fg">
+          <h2 id="sources-ai" className="font-serif text-lead font-semibold text-fg">
             {t('sources.aiTitle')}
           </h2>
-          <p className="text-[0.9375rem] text-fg-muted">{t('sources.aiBody')}</p>
+          <p className="text-ui text-fg-muted">{t('sources.aiBody')}</p>
         </section>
         <section aria-labelledby="sources-word-bank" className="flex flex-col gap-1.5 px-1 pt-2">
-          <h2 id="sources-word-bank" className="font-serif text-lg font-semibold text-fg">
+          <h2 id="sources-word-bank" className="font-serif text-lead font-semibold text-fg">
             {t('sources.wordBankTitle')}
           </h2>
-          <p className="text-[0.9375rem] text-fg-muted">{t('sources.wordBankBody')}</p>
+          <p className="text-ui text-fg-muted">{t('sources.wordBankBody')}</p>
           <Link
             to="/decks?tab=bank"
-            className="inline-flex min-h-11 items-center gap-1 self-start text-sm font-medium text-accent-text underline-offset-4 hover:underline"
+            className="inline-flex min-h-11 items-center gap-1 self-start text-meta font-medium text-accent-text underline-offset-4 hover:underline"
           >
             {t('wordBank.entryLink')}
           </Link>

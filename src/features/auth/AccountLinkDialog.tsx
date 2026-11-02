@@ -179,14 +179,14 @@ function ChooseDialog({ applying, otherAccount }: { applying: boolean; otherAcco
               />
               <span className="flex flex-col gap-0.5">
                 <span className="font-medium text-fg">{t(o.label)}</span>
-                <span className="text-sm text-fg-muted">{t(o.hint)}</span>
+                <span className="text-meta text-fg-muted">{t(o.hint)}</span>
               </span>
             </label>
           );
         })}
       </fieldset>
       {destructive && (
-        <p role="alert" className="mt-4 text-sm text-danger-text">
+        <p role="alert" className="mt-4 text-meta text-danger-text">
           {t('account.irreversible')}
         </p>
       )}

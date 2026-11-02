@@ -2,7 +2,7 @@ import { useContext, useId, type ReactNode } from 'react';
 import { cn } from '@/ui';
 import { SoloSectionContext } from './soloSection';
 
-/** A titled group of rows on one surface. */
+/** A titled group of rows on one card (the ListGroup look: caps label, hairline rows). */
 export function SettingsSection({
   id,
   title,
@@ -19,14 +19,17 @@ export function SettingsSection({
   const solo = useContext(SoloSectionContext);
   return (
     <section id={id} aria-labelledby={headingId} className="scroll-mt-20">
-      <div className={cn('mb-2 flex flex-col gap-1 px-1.5', solo && !description && 'mb-0')}>
+      <div className={cn('mb-2 flex flex-col gap-1 px-1', solo && !description && 'mb-0')}>
         <h2
           id={headingId}
-          className={cn('text-[0.8125rem] font-semibold text-fg-muted', solo && 'sr-only')}
+          className={cn(
+            'text-caption font-semibold tracking-[0.08em] text-fg-muted uppercase',
+            solo && 'sr-only',
+          )}
         >
           {title}
         </h2>
-        {description && <p className="text-sm text-fg-muted">{description}</p>}
+        {description && <p className="text-meta text-fg-muted">{description}</p>}
       </div>
       <div className="divide-y divide-border rounded-card border border-border bg-surface">
         {children}
@@ -52,15 +55,15 @@ export function SettingsRow({
   return (
     <div
       className={cn(
-        'flex gap-x-6 gap-y-3 p-4 sm:px-5',
+        'flex min-h-14 gap-x-6 gap-y-3 px-4 py-3.5',
         stack ? 'flex-col' : 'flex-col sm:flex-row sm:items-center',
         className,
       )}
     >
       {(label || description) && (
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          {label && <div className="text-[0.9375rem] font-medium text-fg">{label}</div>}
-          {description && <div className="text-sm text-fg-muted">{description}</div>}
+          {label && <div className="text-ui font-medium text-fg">{label}</div>}
+          {description && <div className="text-meta text-fg-muted">{description}</div>}
         </div>
       )}
       {children}

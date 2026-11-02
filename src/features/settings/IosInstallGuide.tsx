@@ -20,7 +20,7 @@ export function IosInstallSteps() {
           <span className="flex size-9 shrink-0 items-center justify-center rounded-control border border-border bg-surface text-fg">
             <Icon name={s.icon} size={18} />
           </span>
-          <span className="pt-1.5 text-[0.9375rem] text-fg">
+          <span className="pt-1.5 text-ui text-fg">
             <span className="tabular mr-1 font-medium text-fg-muted">{i + 1}.</span>
             {s.text}
           </span>

@@ -51,7 +51,9 @@
     "offlineShort": "Çevrimdışı",
     "error": "Eşitleme başarısız — yeniden denenecek",
     "errorShort": "Eşitleme hatası",
-    "syncNow": "Şimdi eşitle"
+    "syncNow": "Şimdi eşitle",
+    "quota": "Bugünkü eşitleme sınırı doldu",
+    "quotaShort": "Sınır doldu"
   },
   "theme": {
     "label": "Tema",
@@ -1132,7 +1134,8 @@
       "groups": {
         "learning": "Öğrenme",
         "cards": "Kartlar ve görünüm",
-        "account": "Hesap ve veri"
+        "account": "Hesap ve veri",
+        "app": "Uygulama"
       },
       "version": "engapp · sürüm {{version}}",
       "savedNote": "Değişiklikler hemen kaydedilir; giriş yaptıysan diğer cihazlarına da geçer."
@@ -1897,7 +1900,9 @@
     "authFailed": "Oturumun sona ermiş. Tekrar giriş yap.",
     "localIndicator": "Bu cihazda",
     "localIndicatorFull": "Misafir modu — verilerin bu cihazda güvende. Cihazlar arasında eşitlemek için giriş yap.",
-    "unavailableIndicatorFull": "Verilerin bu cihazda güvende."
+    "unavailableIndicatorFull": "Verilerin bu cihazda güvende.",
+    "quotaHint": "Bugün çok fazla değişiklik gönderildi. Değişikliklerin bu cihazda güvende; yarın kendiliğinden gönderilir.",
+    "quotaToast": "Bugünkü eşitleme sınırı doldu. Değişikliklerin bu cihazda güvende, yarın gönderilir."
   },
   "importer": {
     "privacy": "Gizli iş belgelerini gönderme; metin kelimeleri bulmak için sunucuya gider.",
@@ -2495,7 +2500,10 @@
       "settingsHint": "Çalışma, hatırlatmalar, görünüm, yedek",
       "goalLevel": "Hedef seviye {{level}}",
       "unreliableHint": "Son testin güvenilir bir sonuç vermedi. Yeniden çözersen seviyeni ölçebiliriz.",
-      "levelSection": "Seviye ve kelime hazinen"
+      "levelSection": "Seviye ve kelime hazinen",
+      "planAccount": "Hesaplı",
+      "goals": "Hedefler",
+      "goalsHint": "Günlük ve haftalık hedeflerin"
     }
   },
   "onboarding": {
@@ -3086,7 +3094,8 @@
     "week": "Son 7 gün",
     "weekLabel_one": "Son 7 günde {{count}} gün çalıştın",
     "weekLabel_other": "Son 7 günde {{count}} gün çalıştın",
-    "none": "Henüz çalışma yok. İlk çalışmandan sonra burada görünür."
+    "none": "Henüz çalışma yok. İlk çalışmandan sonra burada görünür.",
+    "dayUnit": "gün"
   },
   "deckHub": {
     "title": "Kelimelerim",

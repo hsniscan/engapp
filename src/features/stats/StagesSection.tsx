@@ -35,7 +35,7 @@ export function StagesSection() {
       data-testid="word-stages"
     >
       <div className="flex flex-col gap-1">
-        <h2 id="stages-title" className="font-serif text-[1.1875rem] font-semibold text-fg">
+        <h2 id="stages-title" className="font-serif text-title font-semibold text-fg">
           {t('stats.overview.stagesTitle')}
         </h2>
         <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -46,22 +46,22 @@ export function StagesSection() {
             {formatNumber(s.learnedTotal)}
           </span>
           {s.weekDelta > 0 && (
-            <span className="rounded-full bg-success-soft px-2.5 py-0.5 text-sm font-semibold text-success-text">
+            <span className="rounded-full bg-success-soft px-2.5 py-0.5 text-meta font-semibold text-success-text">
               {t('stats.overview.weekDelta', { count: s.weekDelta })}
             </span>
           )}
         </p>
-        <p className="mt-1 text-sm text-fg-muted">{t('stats.overview.stagesRule')}</p>
+        <p className="mt-1 text-meta text-fg-muted">{t('stats.overview.stagesRule')}</p>
       </div>
 
       {started === 0 ? (
-        <p className="text-[0.9375rem] text-fg-muted">{t('stats.overview.stagesEmpty')}</p>
+        <p className="text-ui text-fg-muted">{t('stats.overview.stagesEmpty')}</p>
       ) : (
         <StageBar s={s} total={started} />
       )}
 
       {s.active > 0 && (
-        <p className="text-sm text-fg">{t('stats.overview.active', { count: s.active })}</p>
+        <p className="text-meta text-fg">{t('stats.overview.active', { count: s.active })}</p>
       )}
 
       <Link
@@ -70,11 +70,11 @@ export function StagesSection() {
         data-testid="already-known"
       >
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="text-[0.9375rem] font-semibold">
+          <span className="text-ui font-semibold">
             {t('stats.overview.alreadyKnown')}:{' '}
             <span className="tabular">{formatNumber(s.alreadyKnown)}</span>
           </span>
-          <span className="text-[0.8125rem] text-fg-muted">
+          <span className="text-meta text-fg-muted">
             {t('stats.overview.alreadyKnownHint')}
           </span>
         </span>
@@ -108,11 +108,11 @@ function StageBar({ s, total }: { s: WordStageCounts; total: number }) {
           >
             <span
               aria-hidden="true"
-              className={cn('mt-1.5 size-2.5 shrink-0 rounded-[3px]', SWATCH[k])}
+              className={cn('mt-1.5 size-2.5 shrink-0 rounded-xs', SWATCH[k])}
             />
             <span className="flex min-w-0 flex-col">
-              <span className="text-sm text-fg-muted">{t(`stats.overview.stage.${k}`)}</span>
-              <span className="tabular text-[0.9375rem] font-semibold text-fg">
+              <span className="text-meta text-fg-muted">{t(`stats.overview.stage.${k}`)}</span>
+              <span className="tabular text-ui font-semibold text-fg">
                 {formatNumber(s[k])}
                 <span className="sr-only">
                   {' '}

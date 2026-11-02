@@ -44,9 +44,9 @@ export function Onboarding({ step }: { step: OnboardingStep }) {
       <header className="flex items-center gap-2.5 px-1">
         <Logo size={34} wordmark={false} />
         <div className="flex min-w-0 flex-1 flex-col">
-          <h1 className="font-serif text-xl font-semibold md:text-3xl">{t('onboarding.title')}</h1>
+          <h1 className="font-serif text-title font-semibold md:text-page">{t('onboarding.title')}</h1>
           {index > 0 && (
-            <span className="text-[0.8125rem] text-fg-muted" data-testid="onboarding-step">
+            <span className="text-meta text-fg-muted" data-testid="onboarding-step">
               {t('onboarding.stepOf', { n: index, total: ONBOARDING_STEPS.length - 1 })}
             </span>
           )}
@@ -77,7 +77,7 @@ function ManualLink() {
         openAddSheet();
       }}
       aria-haspopup="dialog"
-      className="mx-auto inline-flex min-h-11 items-center px-2 text-sm text-fg-muted underline decoration-1 underline-offset-2 hover:text-fg"
+      className="mx-auto inline-flex min-h-11 items-center px-2 text-meta text-fg-muted underline decoration-1 underline-offset-2 hover:text-fg"
     >
       {t('onboarding.manual')}
     </button>
@@ -100,17 +100,17 @@ function StepCard({
       as="section"
       aria-labelledby={`${testId}-title`}
       padding="lg"
-      className="flex flex-col gap-5 rounded-[20px]"
+      className="flex flex-col gap-5 rounded-card"
       data-testid={testId}
     >
       <div className="flex flex-col gap-2">
         <h2
           id={`${testId}-title`}
-          className="font-serif text-[1.375rem] leading-snug font-semibold"
+          className="font-serif text-heading font-semibold"
         >
           {title}
         </h2>
-        <p className="text-[0.9375rem] text-fg-muted">{body}</p>
+        <p className="text-ui text-fg-muted">{body}</p>
       </div>
       {children}
     </Surface>
@@ -138,14 +138,14 @@ function Welcome({ onStart }: { onStart: () => void }) {
               <span
                 aria-hidden="true"
                 className={cn(
-                  'flex size-9 shrink-0 items-center justify-center rounded-full font-serif text-lg font-semibold',
+                  'flex size-9 shrink-0 items-center justify-center rounded-full font-serif text-lead font-semibold',
                   i === 0 ? 'bg-accent text-accent-fg' : 'border border-border text-fg-muted',
                 )}
               >
                 {/* Three numbered steps (Adım 1 / 3 …), then the first study session. */}
                 {i < steps.length - 1 ? i + 1 : <Icon name="arrow-right" size={18} />}
               </span>
-              <p className="pt-1.5 text-[0.9375rem] text-fg">{s}</p>
+              <p className="pt-1.5 text-ui text-fg">{s}</p>
             </li>
           ))}
         </ol>
@@ -181,7 +181,7 @@ function HaveAccount() {
     }
   };
   return (
-    <p className="flex flex-wrap items-center justify-center gap-x-1 text-sm text-fg-muted">
+    <p className="flex flex-wrap items-center justify-center gap-x-1 text-meta text-fg-muted">
       {t('onboarding.welcome.haveAccount')}
       <Button variant="ghost" size="sm" loading={busy} onClick={() => void signIn()} data-testid="onboarding-signin">
         {t('onboarding.welcome.signIn')}
@@ -335,7 +335,7 @@ function DeckStep() {
   } else if (decks.length === 0) {
     body = (
       <div className="flex flex-col gap-3" data-testid="onboarding-deck-offline">
-        <p className="text-[0.9375rem] text-fg">{t('onboarding.deck.offline')}</p>
+        <p className="text-ui text-fg">{t('onboarding.deck.offline')}</p>
         <Button variant="secondary" onClick={retry}>
           {t('onboarding.deck.retry')}
         </Button>
@@ -373,10 +373,10 @@ function DeckStep() {
                   className="size-5 shrink-0 accent-(--color-accent)"
                 />
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="font-serif text-[1.0625rem] leading-tight font-semibold text-fg">
+                  <span className="font-serif text-lead font-semibold text-fg">
                     {specTitle(t, spec)}
                   </span>
-                  <span className="text-[0.8125rem] text-fg-muted">
+                  <span className="text-meta text-fg-muted">
                     {t(
                       `onboarding.deck.hint.${i === 0 ? 'top500' : i === 1 ? 'top100' : measured ? 'verbs' : 'verbsLevel'}`,
                       {
@@ -388,7 +388,7 @@ function DeckStep() {
                   </span>
                 </span>
                 {i === 0 && (
-                  <span className="shrink-0 rounded-md bg-surface px-2 py-0.5 text-xs font-semibold text-accent-text">
+                  <span className="shrink-0 rounded-md bg-surface px-2 py-0.5 text-caption font-semibold text-accent-text">
                     {t('onboarding.deck.recommended')}
                   </span>
                 )}
@@ -396,7 +396,7 @@ function DeckStep() {
             );
           })}
         </fieldset>
-        <p className="text-[0.8125rem] text-fg-muted">{t('onboarding.deck.pace')}</p>
+        <p className="text-meta text-fg-muted">{t('onboarding.deck.pace')}</p>
         <Button size="lg" fullWidth loading={adding !== null} onClick={() => void start()}>
           {adding
             ? t('onboarding.deck.adding', {

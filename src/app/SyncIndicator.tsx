@@ -43,7 +43,7 @@ export function SyncIndicator({ compact = false }: { compact?: boolean }) {
       </>
     );
     const cls =
-      'inline-flex h-9 items-center gap-1.5 rounded-full px-2.5 text-sm text-fg-subtle transition-colors duration-(--duration-micro) hover:bg-hover hover:text-fg-muted';
+      'inline-flex h-9 items-center gap-1.5 rounded-full px-2.5 text-meta text-fg-subtle transition-colors duration-(--duration-micro) hover:bg-hover hover:text-fg-muted';
     return (
       <Tooltip content={full}>
         {s.backendConfigured ? (
@@ -64,5 +64,22 @@ export function SyncIndicator({ compact = false }: { compact?: boolean }) {
     );
   }
 
+  if (s.state === 'error' && s.error === 'quota') {
+    // A refused daily quota (ADR 0060/0070): say plainly what happened and that data is safe.
+    return (
+      <Tooltip content={t('syncPanel.quotaHint')}>
+        <Link
+          to="/settings/hesap#senkron"
+          aria-label={`${t('sync.label')}: ${t('sync.quota')}`}
+          className="inline-flex h-11 items-center gap-1.5 rounded-full bg-warn-soft px-2.5 text-meta font-semibold text-warn-text transition-colors duration-(--duration-micro) hover:bg-hover"
+        >
+          <Icon name="sync-error" size={18} />
+          <span aria-hidden="true" className={compact ? 'sr-only' : 'whitespace-nowrap'}>
+            {t('sync.quotaShort')}
+          </span>
+        </Link>
+      </Tooltip>
+    );
+  }
   return <SyncStatus state={s.state} pendingCount={s.pending} />;
 }

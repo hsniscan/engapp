@@ -147,13 +147,13 @@ function General({ onReport }: { onReport: () => void }) {
           className="flex min-h-[3.75rem] items-center gap-3.5 rounded-card border border-border bg-surface px-4 py-3 text-left text-fg hover:bg-surface-hover lg:col-span-2"
         >
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="text-[0.9375rem] font-semibold">{t('stats.overview.reportLink')}</span>
-            <span className="text-[0.8125rem] text-fg-muted">{t('stats.overview.reportHint')}</span>
+            <span className="text-ui font-semibold">{t('stats.overview.reportLink')}</span>
+            <span className="text-meta text-fg-muted">{t('stats.overview.reportHint')}</span>
           </span>
           <Icon name="chevron-right" size={18} className="shrink-0 text-fg-subtle" />
         </button>
       ) : (
-        <p className="px-1 text-sm text-fg-muted lg:col-span-2" data-testid="report-locked">
+        <p className="px-1 text-meta text-fg-muted lg:col-span-2" data-testid="report-locked">
           {t('stats.unlock.reportLater')}
         </p>
       )}
@@ -173,19 +173,19 @@ function FirstStepsCard({ unlocks }: { unlocks: UnlockInfo[] }) {
       data-testid="progress-first-steps"
     >
       <div className="flex flex-col gap-1.5">
-        <h2 id="first-steps-title" className="font-serif text-[1.375rem] font-semibold text-fg">
+        <h2 id="first-steps-title" className="font-serif text-heading font-semibold text-fg">
           {t('stats.unlock.title')}
         </h2>
-        <p className="text-[0.9375rem] text-fg-muted">{t('stats.unlock.body')}</p>
+        <p className="text-ui text-fg-muted">{t('stats.unlock.body')}</p>
       </div>
       <Link to="/study" className={buttonClasses({ className: 'self-start' })}>
         {t('stats.unlock.start')}
       </Link>
       <div className="flex flex-col gap-2 border-t border-border pt-4">
-        <h3 className="text-sm font-semibold text-fg">{t('stats.unlock.listTitle')}</h3>
+        <h3 className="text-meta font-semibold text-fg">{t('stats.unlock.listTitle')}</h3>
         <ul className="flex flex-col gap-2.5" aria-label={t('stats.unlock.listTitle')}>
           {unlocks.map((u) => (
-            <li key={u.key} className="flex items-start gap-2.5 text-sm">
+            <li key={u.key} className="flex items-start gap-2.5 text-meta">
               {u.open ? (
                 <Icon name="check" size={16} className="mt-0.5 shrink-0 text-success-text" />
               ) : (
@@ -232,7 +232,7 @@ function Continuity({
       padding="none"
       className={cn('flex flex-col gap-4 p-5 sm:p-6', className)}
     >
-      <h2 id="continuity-title" className="font-serif text-[1.1875rem] font-semibold">
+      <h2 id="continuity-title" className="font-serif text-title font-semibold">
         {t('stats.overview.continuity')}
       </h2>
       <dl className="grid grid-cols-[1.3fr_1fr_1fr] gap-3">
@@ -241,11 +241,11 @@ function Continuity({
             key={m.key}
             className={cn('flex min-w-0 flex-col gap-1', i > 0 && 'border-l border-border pl-3')}
           >
-            <dt className="text-[0.8125rem] text-fg-muted">{m.label}</dt>
-            <dd className="tabular font-serif text-[2rem] leading-none font-semibold text-fg">
+            <dt className="text-meta text-fg-muted">{m.label}</dt>
+            <dd className="tabular font-serif text-page-lg leading-none font-semibold text-fg">
               {formatNumber(m.value)}
               {m.unit && (
-                <span className="ml-1 font-serif text-base font-normal text-fg-muted">
+                <span className="ml-1 font-serif text-body font-normal text-fg-muted">
                   {t('stats.daysUnit', { count: m.value })}
                 </span>
               )}
@@ -253,11 +253,11 @@ function Continuity({
           </div>
         ))}
       </dl>
-      <p className="text-sm text-fg-muted">
+      <p className="text-meta text-fg-muted">
         {s.todayActive ? t('stats.currentStreakToday') : t('stats.currentStreakPending')}
       </p>
       <Heatmap weeks={weeks} />
-      <dl className="grid grid-cols-2 gap-3 border-t border-border pt-4 text-sm">
+      <dl className="grid grid-cols-2 gap-3 border-t border-border pt-4 text-meta">
         <div className="flex flex-col">
           <dt className="text-fg-muted">{t('stats.last30')}</dt>
           <dd className="tabular font-semibold text-fg">
@@ -283,11 +283,11 @@ function HardTile({ count }: { count: number }) {
   const { t } = useTranslation();
   const body = (
     <>
-      <span className="text-[0.8125rem] font-semibold">{t('stats.overview.hardTitle')}</span>
-      <span className="tabular font-serif text-[2rem] leading-none font-semibold">
+      <span className="text-meta font-semibold">{t('stats.overview.hardTitle')}</span>
+      <span className="tabular font-serif text-page-lg leading-none font-semibold">
         {formatNumber(count)}
       </span>
-      <span className="mt-auto inline-flex items-center gap-1 text-sm font-semibold">
+      <span className="mt-auto inline-flex items-center gap-1 text-meta font-semibold">
         {count > 0 ? t('stats.overview.hardPractice') : t('stats.overview.hardNone')}
         {count > 0 && <Icon name="chevron-right" size={16} />}
       </span>
@@ -316,13 +316,13 @@ function RecallTile({ rate, remaining }: { rate: number | null; remaining: numbe
   const { t } = useTranslation();
   return (
     <div className="flex min-h-32 flex-col gap-1 rounded-card border border-border bg-surface p-4 sm:p-5">
-      <span className="text-[0.8125rem] font-semibold text-fg-muted">
+      <span className="text-meta font-semibold text-fg-muted">
         {t('stats.overview.recallTitle')}
       </span>
-      <span className="tabular font-serif text-[2rem] leading-none font-semibold text-fg">
+      <span className="tabular font-serif text-page-lg leading-none font-semibold text-fg">
         {rate === null ? '—' : formatPercent(rate)}
       </span>
-      <span className="mt-auto text-[0.8125rem] text-fg-muted">
+      <span className="mt-auto text-meta text-fg-muted">
         {rate === null
           ? t('stats.unlock.items.recall.when', { count: Math.max(1, remaining) })
           : t('stats.overview.recallDetail')}

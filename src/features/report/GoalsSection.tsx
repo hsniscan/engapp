@@ -44,7 +44,7 @@ export function GoalsSection() {
   return (
     <Surface as="section" aria-labelledby="goals-title" padding="lg" data-testid="goals">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="goals-title" className="font-serif text-xl font-semibold">
+        <h2 id="goals-title" className="font-serif text-title font-semibold">
           {t('goals.title')}
         </h2>
         <Button variant={hasGoals ? 'secondary' : 'primary'} onClick={() => setOpen(true)}>
@@ -61,7 +61,7 @@ export function GoalsSection() {
             </ul>
           )}
           {(day !== null || level !== null) && (
-            <p className="mt-4 text-sm text-fg-muted" data-testid="goals-day-level">
+            <p className="mt-4 text-meta text-fg-muted" data-testid="goals-day-level">
               {[
                 day !== null ? t('goals.dayLine', { count: day }) : null,
                 level !== null ? t('profile.home.goalLevel', { level }) : null,
@@ -72,7 +72,7 @@ export function GoalsSection() {
           )}
         </>
       ) : (
-        <p className="mt-3 text-[0.9375rem] text-fg-muted">{t('goals.intro')}</p>
+        <p className="mt-3 text-ui text-fg-muted">{t('goals.intro')}</p>
       )}
       {open ? <GoalsDialog view={view} onClose={close} /> : null}
     </Surface>
@@ -109,8 +109,8 @@ function GoalRing({ progress: p }: { progress: GoalProgress }) {
         />
       </svg>
       <div className="flex min-w-0 flex-col">
-        <span className="text-sm text-fg-muted">{label}</span>
-        <span className="tabular text-[0.9375rem] font-medium text-fg">
+        <span className="text-meta text-fg-muted">{label}</span>
+        <span className="tabular text-ui font-medium text-fg">
           {value} / {target}
           {p.met ? <span className="ml-1.5 text-accent-text">· {t('goals.met')}</span> : null}
         </span>

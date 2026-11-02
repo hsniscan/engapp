@@ -44,7 +44,7 @@ export function PublicLayout({
       <footer className="border-t border-border">
         <nav
           aria-label={t('legal.footerNav')}
-          className="mx-auto flex w-full max-w-3xl flex-wrap gap-x-6 gap-y-2 px-4 py-5 text-sm sm:px-6"
+          className="mx-auto flex w-full max-w-3xl flex-wrap gap-x-6 gap-y-2 px-4 py-5 text-meta sm:px-6"
         >
           <Link to="/gizlilik" className="text-fg-muted hover:text-fg">
             {t('legal.privacyLink')}

@@ -58,7 +58,7 @@ export function ReportPanel({ onOpen = kickReports }: { onOpen?: () => void }) {
   if (!latest) {
     return (
       <Surface padding="lg">
-        <p className="text-[0.9375rem] text-fg">{t('report.empty')}</p>
+        <p className="text-ui text-fg">{t('report.empty')}</p>
       </Surface>
     );
   }
@@ -121,10 +121,10 @@ function ReportCard({
   return (
     <Surface as="section" aria-labelledby="report-title" padding="lg" data-testid="weekly-report">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 id="report-title" className="font-serif text-xl font-semibold">
+        <h2 id="report-title" className="font-serif text-title font-semibold">
           {t('report.title')}
         </h2>
-        <p className="text-sm text-fg-muted">{weekRange(s, t)}</p>
+        <p className="text-meta text-fg-muted">{weekRange(s, t)}</p>
       </div>
 
       <dl
@@ -133,12 +133,12 @@ function ReportCard({
       >
         {numbers.map((n) => (
           <div key={n.key} className="flex min-w-0 flex-col">
-            <dt className="text-sm text-fg-muted">{n.label}</dt>
+            <dt className="text-meta text-fg-muted">{n.label}</dt>
             <dd
               className={
                 n.muted
-                  ? 'mt-1 font-serif text-xl leading-tight text-fg-muted'
-                  : 'tabular mt-1 font-serif text-3xl leading-tight font-semibold'
+                  ? 'mt-1 font-serif text-title text-fg-muted'
+                  : 'tabular mt-1 font-serif text-page font-semibold'
               }
             >
               {n.value}
@@ -146,9 +146,9 @@ function ReportCard({
           </div>
         ))}
       </dl>
-      <p className="mt-2 text-xs text-fg-muted">{t('report.retentionHint')}</p>
+      <p className="mt-2 text-caption text-fg-muted">{t('report.retentionHint')}</p>
 
-      <div className="mt-5 flex flex-col gap-1.5 text-[0.9375rem] text-fg">
+      <div className="mt-5 flex flex-col gap-1.5 text-ui text-fg">
         {s.strongest ? (
           <p>
             {t('report.strongest', {
@@ -168,14 +168,14 @@ function ReportCard({
           <p className="text-fg-muted">{t('report.noGroups')}</p>
         )}
         {s.weakest && s.groups_days === 28 ? (
-          <p className="text-xs text-fg-muted">{t('report.groups28')}</p>
+          <p className="text-caption text-fg-muted">{t('report.groups28')}</p>
         ) : null}
       </div>
 
       {s.goals.length > 0 ? (
         <div className="mt-5">
           <h3 className="font-medium">{t('report.goalsTitle')}</h3>
-          <ul className="mt-1 flex flex-col gap-1 text-[0.9375rem]">
+          <ul className="mt-1 flex flex-col gap-1 text-ui">
             {s.goals.map((g) => (
               <li key={g.key} className="tabular">
                 {t('report.goalLine', {
@@ -193,13 +193,13 @@ function ReportCard({
         <h3 className="font-medium">{t('report.commentTitle')}</h3>
         {report.comment ? (
           <>
-            <p className="mt-1 text-[0.9375rem] text-fg" data-testid="report-comment">
+            <p className="mt-1 text-ui text-fg" data-testid="report-comment">
               {report.comment}
             </p>
-            <p className="mt-2 text-xs text-fg-muted">{t('report.commentNote')}</p>
+            <p className="mt-2 text-caption text-fg-muted">{t('report.commentNote')}</p>
           </>
         ) : (
-          <p className="mt-1 text-[0.9375rem] text-fg-muted" data-testid="report-comment-missing">
+          <p className="mt-1 text-ui text-fg-muted" data-testid="report-comment-missing">
             {report.pending
               ? t(signedIn ? 'report.commentPending' : 'report.commentGuest')
               : t('report.commentNone')}
@@ -245,9 +245,9 @@ function FocusBlock({ summary: s }: { summary: WeeklyReportSummary }) {
     // lowered further must not be raised back by this button.
     action =
       limitAction === null ? null : limitAction === 'done' ? (
-        <p className="text-sm text-fg-muted">{t('report.action.lower_new_limitDone', { value })}</p>
+        <p className="text-meta text-fg-muted">{t('report.action.lower_new_limitDone', { value })}</p>
       ) : limitAction === 'already' ? (
-        <p className="text-sm text-fg-muted">
+        <p className="text-meta text-fg-muted">
           {t('report.action.lower_new_limitAlready', { limit })}
         </p>
       ) : (
@@ -302,7 +302,7 @@ function FocusBlock({ summary: s }: { summary: WeeklyReportSummary }) {
       data-testid="report-focus"
     >
       <h3 className="font-medium">{t('report.focusTitle')}</h3>
-      <p className="text-[0.9375rem] text-fg">
+      <p className="text-ui text-fg">
         {t(`report.focus.${focus as 'come_back'}`, { value })}
       </p>
       {action}
@@ -314,19 +314,19 @@ function PastReports({ reports }: { reports: ReportListItem[] }) {
   const { t } = useTranslation();
   return (
     <Surface as="section" aria-labelledby="past-reports-title" padding="lg">
-      <h2 id="past-reports-title" className="font-serif text-xl font-semibold">
+      <h2 id="past-reports-title" className="font-serif text-title font-semibold">
         {t('report.pastTitle')}
       </h2>
       {reports.length === 0 ? (
-        <p className="mt-3 text-sm text-fg-muted">{t('report.pastEmpty')}</p>
+        <p className="mt-3 text-meta text-fg-muted">{t('report.pastEmpty')}</p>
       ) : (
         <ul className="mt-3 flex flex-col divide-y divide-border">
           {reports.map((r) => (
             <li key={r.week}>
               <details className="group py-3">
-                <summary className="flex cursor-pointer flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-control text-[0.9375rem]">
+                <summary className="flex cursor-pointer flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-control text-ui">
                   <span className="font-medium text-fg">{weekRange(r.summary, t)}</span>
-                  <span className="tabular text-sm text-fg-muted">
+                  <span className="tabular text-meta text-fg-muted">
                     {t('report.pastSummary', {
                       days: r.summary.active_days,
                       reviews: formatNumber(r.summary.reviews),
@@ -337,7 +337,7 @@ function PastReports({ reports }: { reports: ReportListItem[] }) {
                       : ''}
                   </span>
                 </summary>
-                {r.comment ? <p className="mt-2 text-sm text-fg">{r.comment}</p> : null}
+                {r.comment ? <p className="mt-2 text-meta text-fg">{r.comment}</p> : null}
               </details>
             </li>
           ))}

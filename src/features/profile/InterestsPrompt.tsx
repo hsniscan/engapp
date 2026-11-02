@@ -37,10 +37,10 @@ function PromptCard({ className }: { className?: string }) {
       padding="none"
       className={cn('p-5 sm:p-6', className)}
     >
-      <h2 id="interests-prompt-title" className="font-serif text-lg font-semibold text-fg">
+      <h2 id="interests-prompt-title" className="font-serif text-lead font-semibold text-fg">
         {t('profile.promptTitle')}
       </h2>
-      <p className="mt-1 mb-4 text-[0.9375rem] text-fg-muted">{t('profile.promptBody')}</p>
+      <p className="mt-1 mb-4 text-ui text-fg-muted">{t('profile.promptBody')}</p>
       <TopicChips
         labelledBy="interests-prompt-title"
         compact

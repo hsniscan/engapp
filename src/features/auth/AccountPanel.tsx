@@ -78,9 +78,9 @@ export function AccountPanel() {
           <div className="flex min-w-0 flex-col">
             <p className="truncate font-medium text-fg">{name}</p>
             {u.email && u.email !== name && (
-              <p className="truncate text-sm text-fg-muted">{u.email}</p>
+              <p className="truncate text-meta text-fg-muted">{u.email}</p>
             )}
-            <p className="mt-0.5 flex items-center gap-1.5 text-sm text-fg-muted">
+            <p className="mt-0.5 flex items-center gap-1.5 text-meta text-fg-muted">
               <Icon name={sync.state === 'error' ? 'sync-error' : 'sync-synced'} size={16} />
               <span className="tabular">
                 {sync.lastSyncAt
@@ -127,7 +127,7 @@ export function AccountPanel() {
           {unsynced ? (
             <p
               role="alert"
-              className="mt-3 rounded-control bg-warn-soft px-3 py-2.5 text-sm text-warn-text"
+              className="mt-3 rounded-control bg-warn-soft px-3 py-2.5 text-meta text-warn-text"
             >
               {t(wipe ? 'auth.signOutPendingWipe' : 'auth.signOutPending', { count: unsynced })}
             </p>
@@ -149,7 +149,7 @@ export function AccountPanel() {
           <p className="font-medium text-fg">
             {signedOut ? t('auth.signedOutLocal') : t('auth.guestTitle')}
           </p>
-          <p className="text-sm text-fg-muted">
+          <p className="text-meta text-fg-muted">
             {!auth.available
               ? t('auth.unavailableBody')
               : signedOut

@@ -37,10 +37,10 @@ export function InterestsBody() {
 function SectionHead({ id, title, body }: { id: string; title: string; body?: string }) {
   return (
     <div className="mb-4 flex flex-col gap-1">
-      <h2 id={id} className="font-serif text-xl font-semibold text-fg">
+      <h2 id={id} className="font-serif text-title font-semibold text-fg">
         {title}
       </h2>
-      {body && <p className="text-[0.9375rem] text-fg-muted">{body}</p>}
+      {body && <p className="text-ui text-fg-muted">{body}</p>}
     </div>
   );
 }
@@ -74,7 +74,7 @@ function WeightsSection({ weights }: { weights: TopicWeight[] }) {
         body={shown.length ? t('profile.weightsBody') : undefined}
       />
       {shown.length === 0 ? (
-        <p className="text-[0.9375rem] text-fg-muted">{t('profile.weightsEmpty')}</p>
+        <p className="text-ui text-fg-muted">{t('profile.weightsEmpty')}</p>
       ) : (
         <ul className="-my-3 divide-y divide-border">
           {shown.map((w) => {
@@ -85,7 +85,7 @@ function WeightsSection({ weights }: { weights: TopicWeight[] }) {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-3">
                     <span className="font-medium text-fg">{name}</span>
-                    <span aria-hidden="true" className="tabular text-sm text-fg-muted">
+                    <span aria-hidden="true" className="tabular text-meta text-fg-muted">
                       {value}
                     </span>
                   </div>
@@ -97,7 +97,7 @@ function WeightsSection({ weights }: { weights: TopicWeight[] }) {
                     label={name}
                     valueText={t('profile.weightValue', { value })}
                   />
-                  <p className="mt-1.5 text-sm text-fg-muted">{topicReason(t, w)}</p>
+                  <p className="mt-1.5 text-meta text-fg-muted">{topicReason(t, w)}</p>
                 </div>
                 <Button
                   variant="ghost"
@@ -153,7 +153,7 @@ function MutedSection({ weights }: { weights: TopicWeight[] }) {
 function RuleNote() {
   const { t } = useTranslation();
   return (
-    <details className="group rounded-card px-1 text-sm text-fg-muted">
+    <details className="group rounded-card px-1 text-meta text-fg-muted">
       <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 font-medium text-fg [&::-webkit-details-marker]:hidden">
         <Icon
           name="chevron-right"

@@ -83,7 +83,7 @@ export function StudySection() {
               v === 0 ? t('settings.study.noNew') : t('settings.study.cardsPerDay', { count: v })
             }
           />
-          <p className="-mt-1 text-sm text-fg-muted">{t('settings.study.dailyNewHint')}</p>
+          <p className="-mt-1 text-meta text-fg-muted">{t('settings.study.dailyNewHint')}</p>
         </SettingsRow>
         <ModeLimitRows settings={settings} update={update} />
         <NewOrderRow
@@ -103,7 +103,7 @@ export function StudySection() {
             onValueChange={(v) => setRetention(v / 100)}
             format={(v) => `%${v}`}
           />
-          <div className="-mt-1 flex flex-col gap-1 text-sm text-fg-muted" aria-live="polite">
+          <div className="-mt-1 flex flex-col gap-1 text-meta text-fg-muted" aria-live="polite">
             <p>{t('settings.study.retentionExplain', { pct })}</p>
             <p className="text-fg">{retentionNote}</p>
           </div>
@@ -176,7 +176,7 @@ function ModeLimitRows({ settings, update }: { settings: Settings; update: (p: S
   };
   return (
     <SettingsRow stack>
-      <p className="text-sm text-fg-muted">{t('settings.study.modeLimitsHint')}</p>
+      <p className="text-meta text-fg-muted">{t('settings.study.modeLimitsHint')}</p>
       {(['production', 'cloze', 'dictation'] as const).map((m) => {
         const v = modeNewLimit(settings, m);
         return (
@@ -246,7 +246,7 @@ function NewOrderRow({ value, onChange }: { value: NewCardOrder; onChange: (v: N
           { value: 'added', label: t('settings.study.newOrderAdded') },
         ]}
       />
-      <p className="-mt-1 text-sm text-fg-muted" aria-live="polite">
+      <p className="-mt-1 text-meta text-fg-muted" aria-live="polite">
         {shown === 'smart' ? t('settings.study.newOrderSmartHint') : t('settings.study.newOrderAddedHint')}
       </p>
     </SettingsRow>
@@ -274,7 +274,7 @@ export function AppearanceSection() {
             { value: 'dark', label: t('theme.dark'), icon: 'moon' },
           ]}
         />
-        <p className="-mt-1 text-sm text-fg-muted">{t('settings.appearance.hint')}</p>
+        <p className="-mt-1 text-meta text-fg-muted">{t('settings.appearance.hint')}</p>
       </SettingsRow>
       <ImageSettingsRows />
     </SettingsSection>
@@ -349,7 +349,7 @@ export function VoiceSection() {
             {t('settings.voice.test')}
           </Button>
         </div>
-        <p className="-mt-1 text-sm text-fg-muted">
+        <p className="-mt-1 text-meta text-fg-muted">
           {!supported
             ? t('settings.voice.unsupported')
             : voiceMissing && !serverVoice

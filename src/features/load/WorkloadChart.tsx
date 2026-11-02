@@ -22,10 +22,10 @@ export function WorkloadSection() {
   return (
     <Surface as="section" aria-labelledby="workload-title" padding="lg">
       <div className="mb-4 flex flex-col gap-1">
-        <h2 id="workload-title" className="font-serif text-xl font-semibold">
+        <h2 id="workload-title" className="font-serif text-title font-semibold">
           {t('load.forecastTitle')}
         </h2>
-        <p className="text-sm text-fg-muted">{t('load.forecastSubtitle')}</p>
+        <p className="text-meta text-fg-muted">{t('load.forecastSubtitle')}</p>
       </div>
       {view ? (
         <WorkloadChart view={view} />
@@ -64,7 +64,7 @@ export function WorkloadChart({ view }: { view: WorkloadView }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-sm text-fg">
+      <p className="text-meta text-fg">
         {t('load.forecastSummary', {
           avg,
           peakDay: peak === 0 ? t('load.forecastToday') : formatDayLong(view.days[peak]!),
@@ -129,20 +129,20 @@ export function WorkloadChart({ view }: { view: WorkloadView }) {
         </svg>
         <span
           aria-hidden="true"
-          className="tabular absolute left-0 -translate-y-1/2 text-xs text-fg-muted"
+          className="tabular absolute left-0 -translate-y-1/2 text-caption text-fg-muted"
           style={{ top: `${(capY / H) * 100}%` }}
         >
           {view.capacity}
         </span>
         <span
           aria-hidden="true"
-          className="tabular absolute left-0 -translate-y-1/2 text-xs text-fg-muted"
+          className="tabular absolute left-0 -translate-y-1/2 text-caption text-fg-muted"
           style={{ top: `${((PAD_T + plotH) / H) * 100}%` }}
         >
           0
         </span>
       </div>
-      <div aria-hidden="true" className="relative ml-7 h-4 text-xs text-fg-muted">
+      <div aria-hidden="true" className="relative ml-7 h-4 text-caption text-fg-muted">
         {ticks.map((i) => (
           <span
             key={i}
@@ -153,7 +153,7 @@ export function WorkloadChart({ view }: { view: WorkloadView }) {
           </span>
         ))}
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 text-meta">
         <p className="tabular min-h-5 text-fg" aria-hidden="true">
           <span className="font-medium">
             {shown === 0 ? t('load.forecastToday') : formatDayLong(view.days[shown]!)}
@@ -168,11 +168,11 @@ export function WorkloadChart({ view }: { view: WorkloadView }) {
           aria-label={t('stats.legend')}
         >
           <li className="flex items-center gap-1.5">
-            <span aria-hidden="true" className="size-3 rounded-[3px] bg-accent/55" />
+            <span aria-hidden="true" className="size-3 rounded-xs bg-accent/55" />
             {t('load.forecastBars')}
           </li>
           <li className="flex items-center gap-1.5">
-            <span aria-hidden="true" className="size-3 rounded-[3px] bg-warn" />
+            <span aria-hidden="true" className="size-3 rounded-xs bg-warn" />
             {t('load.forecastOver')}
           </li>
           <li className="flex items-center gap-1.5">
@@ -181,7 +181,7 @@ export function WorkloadChart({ view }: { view: WorkloadView }) {
           </li>
         </ul>
       </div>
-      <details className="text-sm">
+      <details className="text-meta">
         <summary className="cursor-pointer text-accent-text underline-offset-4 hover:underline">
           {t('load.forecastTable')}
         </summary>
@@ -215,7 +215,7 @@ export function WorkloadChart({ view }: { view: WorkloadView }) {
           </tbody>
         </table>
       </details>
-      <p className="text-xs text-fg-muted">{t('load.forecastNote')}</p>
+      <p className="text-caption text-fg-muted">{t('load.forecastNote')}</p>
     </div>
   );
 }
