@@ -9,7 +9,7 @@ import { SignInNeeded } from '@/features/add/SignInNeeded';
 import { ArticleFetch } from '@/features/article/ArticleFetch';
 import { useAuth } from '@/features/auth/session';
 import { firstWords } from '@/features/import/shared';
-import { EmptyState, Icon, Page, Spinner, Surface, buttonClasses } from '@/ui';
+import { Card, EmptyState, Icon, PageFrame, Spinner, buttonClasses } from '@/ui';
 import { countWords, MAX_TERM_WORDS, routeShared, shareHref } from './route';
 
 /**
@@ -19,16 +19,16 @@ import { countWords, MAX_TERM_WORDS, routeShared, shareHref } from './route';
 function SharedText({ text, title }: { text: string; title: string | null }) {
   const { t } = useTranslation();
   return (
-    <Page title={t('share.textTitle')} description={t('share.textLead')}>
-      <Surface tone="sunken" padding="sm" className="mb-6 px-4">
+    <PageFrame width="reading" title={t('share.textTitle')} description={t('share.textLead')}>
+      <Card tone="sunken" className="mb-6">
         <p
           lang="en"
           data-testid="shared-text"
-          className="line-clamp-6 font-serif text-[1.0625rem] whitespace-pre-line text-fg"
+          className="line-clamp-6 font-serif text-lead whitespace-pre-line text-fg"
         >
           {text}
         </p>
-      </Surface>
+      </Card>
       <CaptureActions
         input={() => ({
           kind: 'paste',
@@ -36,7 +36,7 @@ function SharedText({ text, title }: { text: string; title: string | null }) {
           body: text,
         })}
       />
-    </Page>
+    </PageFrame>
   );
 }
 
@@ -46,7 +46,9 @@ function TitleOnly({ title }: { title: string | null }) {
   const titleWords = title ? countWords(title) : 0;
   return (
     <div className="flex flex-col gap-3">
-      {title && titleWords > 0 && <p className="text-sm text-fg-muted">{t('article.titleOnly')}</p>}
+      {title && titleWords > 0 && (
+        <p className="text-meta text-fg-muted">{t('article.titleOnly')}</p>
+      )}
       <div className="flex flex-col gap-3 sm:flex-row">
         {title && titleWords > 0 && (
           <Link
@@ -77,29 +79,29 @@ function SharedLink({ url, title }: { url: string; title: string | null }) {
   const { t } = useTranslation();
   const auth = useAuth();
   return (
-    <Page title={t('share.linkTitle')}>
-      <Surface padding="md" className="mb-6 flex flex-col gap-2">
+    <PageFrame width="reading" title={t('share.linkTitle')}>
+      <Card className="mb-6 flex flex-col gap-2">
         {title && (
           <p
             lang="en"
-            className="font-serif text-xl font-semibold text-fg"
+            className="font-serif text-title font-semibold text-fg"
             data-testid="shared-title"
           >
             {title}
           </p>
         )}
         <p
-          className="flex items-start gap-2 text-sm break-all text-fg-muted"
+          className="flex items-start gap-2 text-meta break-all text-fg-muted"
           data-testid="shared-url"
         >
           <Icon name="link" size={16} className="mt-0.5 shrink-0" />
           {url}
         </p>
-      </Surface>
+      </Card>
       {auth.status === 'signed_in' ? (
         <ArticleFetch url={url} fallback={<TitleOnly title={title} />} />
       ) : auth.status === 'loading' ? (
-        <p role="status" className="flex items-center gap-2 text-[0.9375rem] text-fg-muted">
+        <p role="status" className="flex items-center gap-2 text-ui text-fg-muted">
           <Spinner size={16} /> {t('article.fetching')}
         </p>
       ) : (
@@ -112,7 +114,7 @@ function SharedLink({ url, title }: { url: string; title: string | null }) {
           <TitleOnly title={title} />
         </div>
       )}
-    </Page>
+    </PageFrame>
   );
 }
 
@@ -135,7 +137,7 @@ export function SharePage() {
       return <SharedLink url={route.url} title={route.title} />;
     default:
       return (
-        <Page title={t('share.title')} hideTitle>
+        <PageFrame width="reading" title={t('share.title')} hideTitle>
           <EmptyState
             icon="info"
             title={t('share.emptyTitle')}
@@ -146,7 +148,7 @@ export function SharePage() {
               </Link>
             }
           />
-        </Page>
+        </PageFrame>
       );
   }
 }

@@ -5,9 +5,10 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { isLowConfidence, ocrQuality, rebuildText, type ReviewLine } from '@/domain/ocr';
-import { Badge, Button, Icon, IconButton, Page, cn } from '@/ui';
+import { Badge, Button, Icon, IconButton, cn } from '@/ui';
 import { countWords } from '@/features/share/route';
 import { ExtractSignIn } from '@/features/add/CaptureActions';
+import { AddFlowPage, StickyBar } from '@/features/add/ui';
 import { useAuth } from '@/features/auth/session';
 
 /** A printed line is far shorter; the cap only stops a runaway paste. */
@@ -73,7 +74,7 @@ function LineRow({
           autoCapitalize="none"
           spellCheck={false}
           maxLength={MAX_LINE_CHARS}
-          className="h-11 min-w-0 flex-1 rounded-control border border-accent bg-surface px-3 font-serif text-[1.0625rem] text-fg"
+          className="h-11 min-w-0 flex-1 rounded-control border border-accent bg-surface px-3 font-serif text-lead text-fg"
         />
         <Button
           size="sm"
@@ -94,14 +95,12 @@ function LineRow({
         aria-pressed={line.included}
         onClick={onToggle}
         data-testid="ocr-line"
-        className={cn(
-          'flex min-h-12 min-w-0 flex-1 items-start gap-3 px-3 py-2.5 text-left transition-colors duration-(--duration-micro) hover:bg-hover',
-        )}
+        className="flex min-h-12 min-w-0 flex-1 items-start gap-3 px-4 py-3 text-left transition-colors duration-(--duration-micro) hover:bg-hover focus-visible:outline-offset-[-2px]"
       >
         <span
           aria-hidden="true"
           className={cn(
-            'mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-[5px] border',
+            'mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-xs border',
             line.included
               ? 'border-accent bg-accent text-accent-fg'
               : 'border-border-strong bg-surface',
@@ -113,7 +112,7 @@ function LineRow({
           <span
             lang="en"
             className={cn(
-              'font-serif text-[1.0625rem] leading-snug break-words',
+              'font-serif text-lead break-words',
               line.included ? 'text-fg' : 'text-fg-subtle line-through decoration-1',
             )}
           >
@@ -171,12 +170,12 @@ export function OcrReview({
   };
 
   return (
-    <Page title={t('ocr.reviewTitle')} description={t('ocr.reviewLead')}>
+    <AddFlowPage title={t('ocr.reviewTitle')} description={t('ocr.reviewLead')}>
       {quality.low && (
         <p
           role="status"
           data-testid="ocr-low-warning"
-          className="mb-4 flex items-start gap-2 rounded-control bg-warn-soft px-3 py-2.5 text-sm text-warn-text"
+          className="mb-4 flex items-start gap-2 rounded-inner bg-warn-soft px-4 py-3 text-meta text-warn-text"
         >
           <Icon name="alert" size={18} className="mt-px shrink-0" />
           <span>{t('ocr.lowWarning')}</span>
@@ -185,7 +184,7 @@ export function OcrReview({
 
       {photoUrl && (
         <details className="group mb-4 rounded-card border border-border bg-surface">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 text-[0.9375rem] font-medium text-accent-text">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 text-ui font-medium text-accent-text">
             <Icon name="image" size={18} />
             {t('ocr.showPhoto')}
             <Icon
@@ -199,7 +198,7 @@ export function OcrReview({
       )}
 
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2 pl-1">
-        <p className="text-sm text-fg-muted" aria-live="polite" data-testid="ocr-count">
+        <p className="text-meta text-fg-muted" aria-live="polite" data-testid="ocr-count">
           {t('ocr.selected', { count: selected, total: lines.length })} ·{' '}
           {t('ocr.words', { count: words })}
         </p>
@@ -215,13 +214,14 @@ export function OcrReview({
 
       <ul
         aria-label={t('ocr.lines')}
-        className="mb-6 flex flex-col overflow-hidden rounded-[20px] border border-border bg-surface-raised"
+        className="mb-4 flex flex-col overflow-hidden rounded-card border border-border bg-surface"
       >
         {lines.map((l, i) => (
           <li
             key={l.id}
             className={cn(
               i > 0 && 'border-t',
+              // A new paragraph of the photo gets a full hairline, lines inside it a faint one.
               i > 0 && lines[i - 1]!.block !== l.block ? 'border-border' : 'border-surface-sunken',
             )}
           >
@@ -241,9 +241,33 @@ export function OcrReview({
         ))}
       </ul>
 
-      <div className="sticky bottom-[calc(var(--nav-height)+env(safe-area-inset-bottom))] z-10 -mx-4 flex flex-col gap-2 border-t border-border bg-canvas px-4 pt-3 pb-3 sm:-mx-6 sm:flex-row sm:px-6 md:bottom-0">
+      <div className="flex flex-col gap-3">
+        <Button variant="ghost" leadingIcon="camera" onClick={onRetake} className="self-start">
+          {t('ocr.retake')}
+        </Button>
+        {onExtract ? (
+          <p className="flex items-start gap-1.5 px-1 text-meta text-fg-muted">
+            <Icon name="info" size={16} className="mt-0.5 shrink-0" />
+            <span>
+              <strong className="font-medium text-fg">{t('importer.privacy')}</strong>{' '}
+              {t('importer.privacyWhy')}
+            </span>
+          </p>
+        ) : auth.status === 'guest' ? (
+          // The same sign-in line with its Google button as the other capture screens (B10).
+          <div data-testid="ocr-extract-signin">
+            <ExtractSignIn />
+          </div>
+        ) : auth.status === 'unavailable' ? (
+          <p className="px-1 text-meta text-fg-muted" data-testid="ocr-extract-off">
+            {t('capture.extractUnavailable')}
+          </p>
+        ) : null}
+      </div>
+
+      <StickyBar className="flex flex-col gap-2 sm:flex-row sm:items-center">
         {!text && (
-          <p role="status" className="text-sm text-fg-muted sm:self-center">
+          <p role="status" className="text-meta text-fg-muted sm:mr-auto">
             {t('ocr.nothingSelected')}
           </p>
         )}
@@ -257,7 +281,7 @@ export function OcrReview({
         >
           {t('ocr.openReader')}
         </Button>
-        {onExtract ? (
+        {onExtract && (
           <Button
             size="lg"
             variant="secondary"
@@ -272,29 +296,8 @@ export function OcrReview({
           >
             {t('capture.extract')}
           </Button>
-        ) : auth.status === 'guest' ? (
-          // The same sign-in line with its Google button as the other capture screens (B10).
-          <div data-testid="ocr-extract-signin">
-            <ExtractSignIn />
-          </div>
-        ) : auth.status === 'unavailable' ? (
-          <p className="text-sm text-fg-muted sm:self-center" data-testid="ocr-extract-off">
-            {t('capture.extractUnavailable')}
-          </p>
-        ) : null}
-        {onExtract && (
-          <p className="flex items-start gap-1.5 text-sm text-fg-muted sm:self-center">
-            <Icon name="info" size={16} className="mt-0.5 shrink-0" />
-            <span>
-              <strong className="font-medium text-fg">{t('importer.privacy')}</strong>{' '}
-              {t('importer.privacyWhy')}
-            </span>
-          </p>
         )}
-        <Button size="lg" variant="ghost" leadingIcon="camera" onClick={onRetake}>
-          {t('ocr.retake')}
-        </Button>
-      </div>
-    </Page>
+      </StickyBar>
+    </AddFlowPage>
   );
 }

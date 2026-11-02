@@ -5,7 +5,8 @@ import { useId, useRef, useState, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { logError } from '@/data';
 import { parseSubtitles, type SubtitleText } from '@/domain/subtitles';
-import { Button, Page } from '@/ui';
+import { AddFlowPage } from '@/features/add/ui';
+import { Button } from '@/ui';
 import { TextResult } from './TextResult';
 
 /** Subtitle files are small; anything larger is not one. */
@@ -57,7 +58,7 @@ export function SubtitlePage() {
   };
 
   return (
-    <Page title={t('article.subtitles.title')} description={t('article.subtitles.lead')}>
+    <AddFlowPage title={t('article.subtitles.title')} description={t('article.subtitles.lead')}>
       <div className="mb-6 flex flex-col gap-3">
         <input
           ref={inputRef}
@@ -80,7 +81,7 @@ export function SubtitlePage() {
           </Button>
         </div>
         {problem && (
-          <p role="alert" className="text-sm text-danger-text" data-testid="subtitle-problem">
+          <p role="alert" className="text-meta text-danger-text" data-testid="subtitle-problem">
             {t(`article.subtitles.${problem}`)}
           </p>
         )}
@@ -95,6 +96,6 @@ export function SubtitlePage() {
           sourceUrl={result.fileName}
         />
       )}
-    </Page>
+    </AddFlowPage>
   );
 }
