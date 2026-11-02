@@ -3007,12 +3007,8 @@
     "loading": "Keşfet hazırlanıyor",
     "continue": {
       "eyebrow": "Devam et",
-      "pct": "%{{pct}} okudun",
       "start": "Açtın, henüz okumaya başlamadın",
       "action": "Kaldığın yerden oku"
-    },
-    "story": {
-      "eyebrow": "Bugünün hikâyesi"
     },
     "suggestions": {
       "eyebrow": "Sana uygun metinler",
@@ -3070,7 +3066,11 @@
       "body": "Metinler ve desteler bir kez indikten sonra internetsiz de görünür.",
       "retry": "Tekrar dene"
     },
-    "empty": "Şimdilik gösterecek bir şey yok. Bir kelime ya da metin ekleyince burası dolmaya başlar."
+    "empty": "Şimdilik gösterecek bir şey yok. Bir kelime ya da metin ekleyince burası dolmaya başlar.",
+    "emptyTitle": "Burası yakında dolacak",
+    "decks": {
+      "known": "%{{pct}} biliyorsun"
+    }
   },
   "progressGlance": {
     "title": "İlerleme",
@@ -3368,8 +3368,8 @@
       "hard": "Zor"
     },
     "meta": "{{level}} · {{topic}} · {{minutes}} dk",
-    "finished": "Okundu",
-    "started": "Yarım kaldı",
+    "finished": "Bitti",
+    "started": "Başladın",
     "offlineReady": "İnternetsiz okunur",
     "openFailed": "Metin açılamadı. Bağlantını kontrol edip yeniden dene.",
     "noMatch": "Bu süzgeçlere uyan metin yok.",
@@ -3378,7 +3378,7 @@
     "loading": "Kitaplık indiriliyor…",
     "emptyTitle": "Kitaplık henüz boş",
     "emptyOffline": "Kitaplığı indirmek için bir kez internete bağlan. Sonra internetsiz de okursun.",
-    "emptyNoBackend": "Kitaplık şu an yüklenemiyor. İnternet gelince yüklenecek.",
+    "emptyNoBackend": "Kitaplık bu uygulamada şu an kapalı. Kendi metinlerini yapıştırıp okuyabilirsin.",
     "emptySoon": "Yeni metinler hazırlanıyor; kısa süre sonra burada olacak.",
     "emptyFailed": "Kitaplık indirilemedi.",
     "retry": "Yeniden dene",
@@ -3402,7 +3402,13 @@
       "games": "Oyun",
       "politics": "Toplum ve yönetim",
       "law": "Hukuk"
-    }
+    },
+    "title": "Kitaplık",
+    "search": "Kitaplıkta ara",
+    "searchPlaceholder": "Başlık ya da konu ara",
+    "allLevels": "Tüm seviyeler",
+    "allTopics": "Tüm konular",
+    "noMatchQuery": "“{{query}}” ile eşleşen metin yok. Başka bir kelime dene."
   },
   "article": {
     "pageTitle": "Bağlantıdan makale",
@@ -3550,7 +3556,7 @@
       "known": "Biliyorsun ya da öğrendin: işaret yok",
       "title": "Renklerin anlamı",
       "close": "Renk açıklamasını kapat",
-      "later": "Bunu istediğin zaman ⚙ Okuma ayarlarında da görebilirsin."
+      "later": "Bunu istediğin zaman Okuma ayarlarında da görebilirsin."
     },
     "finished": {
       "cta": "Bitirdim",
@@ -3560,9 +3566,11 @@
     "summary": {
       "line_one": "Bu metinde {{count}} yeni kelime gördün · {{added}}'{{suffix}} ekledin",
       "line_other": "Bu metinde {{count}} yeni kelime gördün · {{added}}'{{suffix}} ekledin",
-      "cta": "Bu metindeki yeni kelimeler",
+      "cta": "Yeni kelimeleri ekle",
       "lineNone_one": "Bu metinde {{count}} yeni kelime gördün · henüz eklemedin",
-      "lineNone_other": "Bu metinde {{count}} yeni kelime gördün · henüz eklemedin"
+      "lineNone_other": "Bu metinde {{count}} yeni kelime gördün · henüz eklemedin",
+      "eyebrow": "Metnin sonu",
+      "study": "Bunları çalış"
     },
     "newWords": {
       "title": "Bu metindeki yeni kelimeler",
@@ -3588,26 +3596,27 @@
       "listen": "Dinle",
       "extendBefore": "← Öncekiyle",
       "extendAfter": "Sonrakiyle →",
-      "guessHint": "Önce cümleye bak ve anlamını tahmin et. Tahmin etmeye çalışmak, doğrudan bakmaktan daha iyi akılda kalır.",
+      "guessHint": "Önce cümleye bak ve anlamını tahmin et. Tahmin etmek, doğrudan bakmaktan daha iyi akılda kalır.",
       "showTranslation": "Cümlenin Türkçesini göster",
       "reveal": "Anlamı göster",
       "loading": "Anlam aranıyor…",
       "meanings": "Anlamlar",
       "fromOnline": "Anlam ortak sözlükten geldi.",
       "inCards": "Bu kelime kartlarında var.",
-      "addCard": "Karta ekle",
+      "addCard": "Kelimelerime ekle",
       "added": "“{{term}}” kartlarına eklendi",
       "addFailed": "Kart eklenemedi. Tekrar dene.",
-      "addYourself": "Kartı kendin ekle",
       "none": {
         "offline": "İnternet yok ve bu kelime cihazdaki sözlükte bulunamadı.",
         "signIn": "Bu kelime cihazdaki sözlükte yok. Ortak sözlüğe bakmak için Google ile giriş yap.",
         "notFound": "Bu kelimenin anlamı bulunamadı."
       },
-      "markKnown": "Biliyorum, işaretleme",
+      "markKnown": "Biliyorum",
       "knownMarked": "“{{term}}” bildiğin kelimelere eklendi",
       "knownFailed": "Kaydedilemedi. Tekrar dene.",
-      "listenHere": "Buradan dinle"
+      "listenHere": "Buradan dinle",
+      "ownMeaning": "Türkçe anlamı",
+      "ownMeaningHint": "Anlamını sen yaz; kelime bu cümleyle birlikte eklenir."
     },
     "stage": {
       "new": "Yeni kart",
@@ -3672,18 +3681,16 @@
     "list": {
       "title": "Metinlerim",
       "add": "Metin ekle",
-      "empty": "Henüz metin yok. “Metin ekle”den bir metin yapıştır ya da PDF yükle; okuyucuda açılır.",
+      "empty": "Bir metin yapıştır ya da PDF yükle; okuyucuda kelimeler bildiğine göre işaretlenir.",
       "unread": "Okunmadı",
       "progress": "%{{pct}} okundu",
-      "reading": "Okunuyor %{{pct}}",
       "continue": "Devam et",
       "finished": "Bitti",
       "delete": "“{{title}}” metnini sil",
-      "confirmTitle": "Metin silinsin mi?",
-      "confirmBody": "“{{title}}” bu cihazdan ve hesabından silinir. Bu metinden eklediğin kartlar kalır.",
-      "confirm": "Sil",
-      "deleted": "Metin silindi",
-      "deleteFailed": "Metin silinemedi. Tekrar dene."
+      "deleted": "“{{title}}” silindi",
+      "deleteFailed": "Metin silinemedi. Tekrar dene.",
+      "started": "Başladın",
+      "emptyTitle": "Henüz metnin yok"
     },
     "today": {
       "title": "Bugünün okuması",
@@ -3708,6 +3715,14 @@
       "s": "Küçük",
       "m": "Orta",
       "l": "Büyük"
+    },
+    "loading": "Metin açılıyor",
+    "coverageStory": "Hedef kelimeler dışında hikâyenin %{{pct}}'{{suffix}} biliyorsun",
+    "mark": {
+      "new": "yeni kelime",
+      "learning": "öğrendiğin kelime",
+      "consolidating": "pekişen kelime",
+      "target": "hikâyedeki tekrar kelimen"
     }
   },
   "story": {
@@ -3735,7 +3750,8 @@
       "budget": "Bu ayın hikâye hakkı doldu. Ay başında yeniden açılır; tekrarların her zamanki gibi sürer.",
       "notEnough": "Hikâye için bugün en az 5 tekrar kelimesi gerekir.",
       "generic": "Hikâye şu an hazırlanamadı. Biraz sonra yeniden dene."
-    }
+    },
+    "about": "Tekrar kelimelerinle yazıldı, sonunda 3 soru var"
   },
   "compose": {
     "title": "Kelimelerimle metin oluştur",

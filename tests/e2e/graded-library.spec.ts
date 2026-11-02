@@ -114,7 +114,7 @@ test('Okuma kitaplığı: catalogue, filters, coverage chip, open and cache', as
   expect((await dumpTables(page, ['texts'])).texts).toHaveLength(1);
 });
 
-test('Okuma: an opened library text is listed once, as "Okunuyor", and a suggestion link opens it', async ({
+test('Okuma: an opened library text is listed once, with its progress, and a suggestion link opens it', async ({
   page,
   backend,
 }) => {

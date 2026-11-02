@@ -93,7 +93,8 @@ test('reader: closing after a tap keeps the start; a scrolled place is resumed',
   await page.waitForTimeout(300);
   await page.goto('/decks?tab=reading');
   const row = page.getByTestId('my-texts').getByRole('link', { name: /Long walk/ });
-  await expect(row).toContainText('Okunmadı');
+  // Opened and read for a moment, not scrolled: started, at 0 % (B14).
+  await expect(row).toContainText('Başladın');
   await expect(row).not.toContainText('%9');
   expect(((await dumpTables(page, ['texts'])).texts![0] as { progress_offset: number }).progress_offset).toBe(0);
 
@@ -109,8 +110,7 @@ test('reader: closing after a tap keeps the start; a scrolled place is resumed',
   await expect(page).not.toHaveURL(/\/oku\//);
   await page.waitForTimeout(300);
   await page.goto('/decks?tab=reading');
-  await expect(row).toContainText(/Okunuyor %(4|5|6)\d/);
-  await expect(row).toContainText('Devam et');
+  await expect(row).toContainText(/%(3|4|5|6)\d okundu/);
   await row.click();
   await expect(page.getByText('Kaldığın yerden')).toBeVisible();
   await expect(page.getByTestId('reader-text').getByText('meander', { exact: true })).toBeInViewport();

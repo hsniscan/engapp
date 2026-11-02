@@ -127,7 +127,7 @@ test('Keşfet: a suggested deck adds only new words, once, and shows up in Deste
 
   // Suggested decks live in the Keşfet tab, under "Desteler".
   await page.getByRole('navigation', { name: 'Ana gezinme' }).first().getByRole('link', { name: 'Keşfet', exact: true }).click();
-  await page.getByRole('navigation', { name: 'Keşfet süzgeci' }).getByRole('link', { name: 'Desteler' }).click();
+  await page.getByRole('group', { name: 'Keşfet süzgeci' }).getByRole('button', { name: 'Desteler' }).click();
   await expect(page).toHaveURL(/\/kesfet\?f=desteler$/);
   await page.getByRole('link', { name: /^B1 kelimeleri/ }).click();
   await expect(page).toHaveURL(/\/decks\/suggested\/level-b1$/);

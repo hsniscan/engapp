@@ -131,3 +131,23 @@ for (const scheme of ['light', 'dark'] as const) {
     await axe(page, `okuma tab ${scheme}`);
   });
 }
+
+// v0.5.2: the word sheet is non-modal: another word moves it, the same word closes it.
+test('word sheet: tap the next word while it is open, the same word closes it', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/add?tab=paste');
+  await page.getByRole('textbox', { name: 'İngilizce metin' }).fill('One day I found serendipity in the park.\n\n' + 'The weather was calm and the trees were green and people walked slowly. '.repeat(40) + '\n\nHe keeps one warm simit for her, even on busy days.');
+  await page.getByRole('button', { name: 'Okuyucuda aç' }).click();
+  await expect(page.getByTestId('reader-coverage')).toBeVisible();
+  const text = page.getByTestId('reader-text');
+  await text.getByText('serendipity', { exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'serendipity' })).toBeVisible();
+  await text.getByText('park', { exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'park' })).toBeVisible();
+  await text.getByText('park', { exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await text.getByText('simit', { exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'simit' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+});
