@@ -51,7 +51,7 @@ export function DiscoverPage() {
           <FeedSkeleton />
         ) : (
           feed.length > 0 && (
-            <div className="grid items-start gap-4 lg:grid-cols-2">
+            <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
               {feed.map((item) => (
                 <FeedCard key={item.key} item={item} level={level} continueId={continueId} />
               ))}
@@ -94,7 +94,7 @@ export function DiscoverPage() {
 function FeedSkeleton() {
   const { t } = useTranslation();
   return (
-    <div aria-busy="true" className="grid items-start gap-4 lg:grid-cols-2">
+    <div aria-busy="true" className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
       <span className="sr-only">{t('discover.loading')}</span>
       {[0, 1, 2].map((i) => (
         <div key={i} className="flex flex-col gap-3 rounded-card border border-border bg-surface p-4 sm:p-5">

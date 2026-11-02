@@ -539,13 +539,39 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
       ?.scrollIntoView({ block: 'center', behavior: 'smooth' });
   }, [speaking]);
 
-  // ---- word selection.
+  // ---- word selection. The word sheet is non-modal: a press on another word must not close
+  // it (the sheet would otherwise take the "outside" press as a dismissal), it moves it; a
+  // press on the same word closes it.
+  const pressedWord = useRef(0);
+  useEffect(() => {
+    const onDown = (e: PointerEvent) => {
+      if ((e.target as Element | null)?.closest?.('[data-testid="reader-text"] [data-t]'))
+        pressedWord.current = Date.now();
+    };
+    // A key (Escape) always closes.
+    const onKey = () => {
+      pressedWord.current = 0;
+    };
+    document.addEventListener('pointerdown', onDown, true);
+    document.addEventListener('keydown', onKey, true);
+    return () => {
+      document.removeEventListener('pointerdown', onDown, true);
+      document.removeEventListener('keydown', onKey, true);
+    };
+  }, []);
+  const closeSheet = useCallback(() => {
+    if (Date.now() - pressedWord.current < 600) return;
+    setSelection(null);
+  }, []);
   const onWord = useCallback(
     (i: number) => {
       const tok = tokens.tokens[i];
       if (!tok || !/\p{L}/u.test(tok.text)) return;
       const ph = view?.phrases.find((p) => i >= p.first && i < p.end);
-      setSelection(ph ? { first: ph.first, end: ph.end } : { first: i, end: i + 1 });
+      const next = ph ? { first: ph.first, end: ph.end } : { first: i, end: i + 1 };
+      setSelection((cur) =>
+        cur && cur.first === next.first && cur.end === next.end ? null : next,
+      );
     },
     [tokens, view],
   );
@@ -858,7 +884,7 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
         glosses={textGlosses}
         voice={voice}
         alwaysGuess={alwaysGuess}
-        onClose={() => setSelection(null)}
+        onClose={closeSheet}
         onExtend={extend}
         onListenHere={() => {
           if (!selection) return;
