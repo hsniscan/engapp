@@ -99,6 +99,8 @@ export {
   recordBackup,
   exportCsv,
   restoreBackup,
+  isForeignBackup,
+  importForeignBackupCards,
   RESTORE_CHUNK,
   runIntegrityCheck,
   repairIntegrity,

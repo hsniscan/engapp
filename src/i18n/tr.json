@@ -1479,13 +1479,13 @@
     "button": "Geri yükle",
     "title": "Yedeği geri yükle",
     "fileInfo": "{{file}} · {{date}}",
-    "summary": "{{notes}} not, {{cards}} kart, {{reviews}} tekrar",
+    "summary": "{{notes}} kelime, {{cards}} kart, {{reviews}} tekrar",
     "merge": "Birleştir",
     "mergeHint": "Yedekteki kayıtlar eklenir; iki tarafta da olan kayıtta en yeni sürüm kalır. Bu cihazdaki hiçbir şey silinmez.",
     "overwrite": "Üzerine yaz",
     "overwriteHint": "Bu cihazdaki notlar ve kartlar yedekteki hâline döner; yedekte olmayanlar silinir. Tekrar geçmişi her durumda korunur.",
     "backupFirst": "Önce şimdiki verilerini yedekle",
-    "backupFirstHint": "Bir şey ters giderse bu dosyadan geri dönebilirsin.",
+    "backupFirstHint": "Önce şimdiki verilerini yedeklersen, bir şey ters giderse o dosyadan geri dönebilirsin.",
     "backedUp": "Yedek alındı",
     "done": "Geri yükleme tamamlandı",
     "doneDetail": "{{added}} kayıt eklendi, {{updated}} kayıt güncellendi, {{logs}} tekrar eklendi.",
@@ -1496,7 +1496,11 @@
       "invalid_format": "Bu dosya bir Engapp yedeği değil ya da eksik.",
       "unsupported_version": "Bu yedek daha yeni bir sürümle alınmış. Önce uygulamayı güncelle.",
       "checksum_mismatch": "Yedek dosyası bozulmuş ya da değiştirilmiş (sağlama toplamı tutmuyor)."
-    }
+    },
+    "foreign": "Bu yedek başka bir hesaba ait. Çalışma geçmişi hesaplar arasında taşınmaz: bu yedekteki kelimeler yeni kart olarak eklenir, tekrar geçmişi, ayarlar ve raporlar eklenmez. Geçmişiyle birlikte geri yüklemek için önce yedeğin ait olduğu hesapla giriş yap.",
+    "cardsOnly": "Yalnızca kelimeleri al",
+    "cardsDone_one": "{{count}} kelime yeni kart olarak eklendi",
+    "cardsDone_other": "{{count}} kelime yeni kart olarak eklendi"
   },
   "csv": {
     "title": "CSV dışa aktar",

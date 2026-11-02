@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { exportCsv, logError, resetStudyHistory, restoreBackup, type RestoreMode } from '@/data';
+import {
+  exportCsv,
+  importForeignBackupCards,
+  isForeignBackup,
+  logError,
+  resetStudyHistory,
+  restoreBackup,
+  type RestoreMode,
+} from '@/data';
 import { verifyBackup, type BackupError, type BackupSummary } from '@/domain/backup';
 import { ConfirmDialog } from '@/features/cards/ConfirmDialog';
 import { Link } from 'react-router';
@@ -17,6 +25,8 @@ interface PendingRestore {
   json: string;
   summary: BackupSummary;
   exportedAt: number;
+  /** Another account's backup: only its words may come along (v0.5.2, ADR 0063). */
+  foreign: boolean;
 }
 
 const nf = new Intl.NumberFormat('tr-TR');
@@ -44,7 +54,7 @@ export function DataSection() {
   const storage = useStorageInfo();
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<
-    'backup' | 'csv' | 'read' | RestoreMode | 'persist' | 'reset' | null
+    'backup' | 'csv' | 'read' | RestoreMode | 'cards' | 'persist' | 'reset' | null
   >(null);
   const [pending, setPending] = useState<PendingRestore | null>(null);
   const [backedUp, setBackedUp] = useState(false);
@@ -107,6 +117,7 @@ export function DataSection() {
         json,
         summary: res.summary,
         exportedAt: res.backup.exported_at,
+        foreign: await isForeignBackup(res.backup),
       });
     } catch (e) {
       void logError(e, 'restore.read');
@@ -141,6 +152,21 @@ export function DataSection() {
       });
     } catch (e) {
       void logError(e, 'restore.apply');
+      toast({ title: t('restore.failed'), tone: 'danger' });
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const importCards = async () => {
+    if (!pending) return;
+    setBusy('cards');
+    try {
+      const n = await importForeignBackupCards(pending.json);
+      setPending(null);
+      toast({ title: t('restore.cardsDone', { count: n }), tone: 'success', duration: 8000 });
+    } catch (e) {
+      void logError(e, 'restore.cards');
       toast({ title: t('restore.failed'), tone: 'danger' });
     } finally {
       setBusy(null);
@@ -316,21 +342,29 @@ export function DataSection() {
                 {t('common.cancel')}
               </Button>
             </DialogClose>
-            <Button
-              variant="danger"
-              loading={busy === 'overwrite'}
-              disabled={busy === 'merge'}
-              onClick={() => void restore('overwrite')}
-            >
-              {t('restore.overwrite')}
-            </Button>
-            <Button
-              loading={busy === 'merge'}
-              disabled={busy === 'overwrite'}
-              onClick={() => void restore('merge')}
-            >
-              {t('restore.merge')}
-            </Button>
+            {pending?.foreign ? (
+              <Button loading={busy === 'cards'} onClick={() => void importCards()} data-testid="restore-cards">
+                {t('restore.cardsOnly')}
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="danger"
+                  loading={busy === 'overwrite'}
+                  disabled={busy === 'merge'}
+                  onClick={() => void restore('overwrite')}
+                >
+                  {t('restore.overwrite')}
+                </Button>
+                <Button
+                  loading={busy === 'merge'}
+                  disabled={busy === 'overwrite'}
+                  onClick={() => void restore('merge')}
+                >
+                  {t('restore.merge')}
+                </Button>
+              </>
+            )}
           </>
         }
       >
@@ -346,6 +380,11 @@ export function DataSection() {
                 reviews: nf.format(pending.summary.reviews),
               })}
             </p>
+            {pending.foreign && (
+              <p className="rounded-control border border-border px-4 py-3 text-sm text-fg" data-testid="restore-foreign">
+                {t('restore.foreign')}
+              </p>
+            )}
             <div className="flex flex-col gap-2 rounded-control border border-border px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
               <p className="text-fg-muted">{t('restore.backupFirstHint')}</p>
               {backedUp ? (
@@ -369,7 +408,7 @@ export function DataSection() {
                 </Button>
               )}
             </div>
-            <dl className="flex flex-col gap-3 text-sm">
+            {!pending.foreign && <dl className="flex flex-col gap-3 text-sm">
               <div className="flex gap-3">
                 <Icon name="check" size={18} className="mt-0.5 shrink-0 text-success-text" />
                 <div>
@@ -384,7 +423,7 @@ export function DataSection() {
                   <dd className="text-fg-muted">{t('restore.overwriteHint')}</dd>
                 </div>
               </div>
-            </dl>
+            </dl>}
           </div>
         )}
       </Dialog>

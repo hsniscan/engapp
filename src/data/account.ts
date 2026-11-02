@@ -6,7 +6,7 @@
 //     (copyCardsFromOtherAccount) or start with the account's data (discardLocalData).
 //     Review history is never moved between accounts.
 import { LIMITS } from '../domain/limits';
-import type { Id, Millis, Note, Sense } from '../domain/types';
+import type { Deck, Id, Millis, Note, Sense, Source } from '../domain/types';
 import { type AddNoteInput, addNoteWithSenses } from './actions';
 import { db } from './db';
 import { adoptGuestData, applyRemoteRows, type RemoteBatch } from './maintenance';
@@ -183,16 +183,12 @@ function copyInput(note: Note, senses: Sense[], sourceIds: Map<Id, Id>): AddNote
  */
 export async function copyCardsFromOtherAccount(userId: string, snapshot: RemoteSnapshot, now: Millis = Date.now()): Promise<number> {
   return db.transaction('rw', db.tables, async () => {
-    const notes = (await db.notes.toArray()).filter((n) => n.deleted_at === null).sort((a, b) => a.created_at - b.created_at);
-    const senses = (await db.senses.toArray()).filter((s) => s.deleted_at === null);
-    const sources = new Map((await db.sources.toArray()).filter((s) => s.deleted_at === null).map((s) => [s.id, s]));
-    const decks = (await db.decks.toArray()).filter((d) => d.deleted_at === null).sort((a, b) => a.sort - b.sort);
-    const sensesByNote = new Map<Id, Sense[]>();
-    for (const s of senses) {
-      const list = sensesByNote.get(s.note_id);
-      if (list) list.push(s);
-      else sensesByNote.set(s.note_id, [s]);
-    }
+    const from = {
+      notes: await db.notes.toArray(),
+      senses: await db.senses.toArray(),
+      sources: await db.sources.toArray(),
+      decks: await db.decks.toArray(),
+    };
 
     for (const t of db.tables) if (!KEEP_ON_COPY.has(t.name)) await t.clear();
     await setMeta(META.userId, userId);
@@ -204,48 +200,87 @@ export async function copyCardsFromOtherAccount(userId: string, snapshot: Remote
     for (const { table, row } of snapshot.rows) (batch[table as keyof RemoteBatch] ??= []).push(row);
     await applyRemoteRows(batch, now);
 
-    // Sources referenced by a copied sense come along under new ids.
-    const used = new Set(senses.map((s) => s.source_id).filter((id): id is Id => !!id && sources.has(id)));
-    const sourceIds = await writeTx([db.sources], now, async (w) => {
-      const map = new Map<Id, Id>();
-      for (const id of used) {
-        const { kind, title, file_name, page_count, topics } = sources.get(id)!;
-        const copy = { ...w.base(), kind, title, file_name, page_count, ...(topics ? { topics } : {}) };
-        map.set(id, (await w.put('sources', copy)).id);
-      }
-      return map;
-    });
-
-    let copied = 0;
-    for (const note of notes) {
-      const input = copyInput(note, sensesByNote.get(note.id) ?? [], sourceIds);
-      // The rows passed the same checks before; only the tag union with a note the account
-      // already has can overflow. A failing add would abort this whole transaction.
-      const existing = (await db.notes.where('term_norm').equals(note.term_norm).toArray()).find((n) => n.deleted_at === null);
-      if (existing) {
-        const extra = (input.tags ?? []).filter((t) => !existing.tags.includes(t));
-        input.tags = extra.slice(0, Math.max(0, LIMITS.tags - existing.tags.length));
-      }
-      const res = await addNoteWithSenses(input, now);
-      if (res.status !== 'existing' || res.addedSenses.length > 0) copied++;
-    }
-
-    // Smart decks are saved filters, not history: they come along under new ids unless the
-    // account already has a deck with the same name.
-    if (decks.length) {
-      await writeTx([db.decks], now, async (w) => {
-        const have = (await db.decks.toArray()).filter((d) => d.deleted_at === null);
-        const names = new Set(have.map((d) => d.name.toLocaleLowerCase('tr')));
-        let sort = have.reduce((m, d) => Math.max(m, d.sort), 0);
-        for (const d of decks) {
-          if (names.has(d.name.toLocaleLowerCase('tr'))) continue;
-          names.add(d.name.toLocaleLowerCase('tr'));
-          await w.put('decks', { ...w.base(), name: d.name, filter: d.filter, sort: ++sort });
-        }
-      });
-    }
-    return copied;
+    return addCopiedCards(from, now);
   });
+}
+
+/** The rows a card copy reads: another account's words, their sources and its smart decks. */
+export interface CardCopySource {
+  notes: readonly Note[];
+  senses: readonly Sense[];
+  sources: readonly Source[];
+  decks?: readonly Deck[];
+}
+
+/**
+ * Adds another account's live words as this user's own: new ids, user_id of this device,
+ * fresh HLC, every card New. No review history, settings, texts or reports come along (the
+ * multi-account rule). A term the user already has gets only the senses it is missing.
+ * Returns the number of notes copied (created, reactivated or extended).
+ */
+async function addCopiedCards(from: CardCopySource, now: Millis): Promise<number> {
+  const notes = from.notes.filter((n) => n.deleted_at === null).sort((a, b) => a.created_at - b.created_at);
+  const senses = from.senses.filter((s) => s.deleted_at === null);
+  const sources = new Map(from.sources.filter((s) => s.deleted_at === null).map((s) => [s.id, s]));
+  const decks = (from.decks ?? []).filter((d) => d.deleted_at === null).sort((a, b) => a.sort - b.sort);
+  const sensesByNote = new Map<Id, Sense[]>();
+  for (const s of senses) {
+    const list = sensesByNote.get(s.note_id);
+    if (list) list.push(s);
+    else sensesByNote.set(s.note_id, [s]);
+  }
+
+  // Sources referenced by a copied sense come along under new ids.
+  const used = new Set(senses.map((s) => s.source_id).filter((id): id is Id => !!id && sources.has(id)));
+  const sourceIds = await writeTx([db.sources], now, async (w) => {
+    const map = new Map<Id, Id>();
+    for (const id of used) {
+      const { kind, title, file_name, page_count, topics } = sources.get(id)!;
+      const copy = { ...w.base(), kind, title, file_name, page_count, ...(topics ? { topics } : {}) };
+      map.set(id, (await w.put('sources', copy)).id);
+    }
+    return map;
+  });
+
+  let copied = 0;
+  for (const note of notes) {
+    const input = copyInput(note, sensesByNote.get(note.id) ?? [], sourceIds);
+    // The rows passed the same checks before; only the tag union with a note the account
+    // already has can overflow. A failing add would abort this whole transaction.
+    const existing = (await db.notes.where('term_norm').equals(note.term_norm).toArray()).find((n) => n.deleted_at === null);
+    if (existing) {
+      const extra = (input.tags ?? []).filter((t) => !existing.tags.includes(t));
+      input.tags = extra.slice(0, Math.max(0, LIMITS.tags - existing.tags.length));
+    }
+    const res = await addNoteWithSenses(input, now);
+    if (res.status !== 'existing' || res.addedSenses.length > 0) copied++;
+  }
+
+  // Smart decks are saved filters, not history: they come along under new ids unless the
+  // account already has a deck with the same name.
+  if (decks.length) {
+    await writeTx([db.decks], now, async (w) => {
+      const have = (await db.decks.toArray()).filter((d) => d.deleted_at === null);
+      const names = new Set(have.map((d) => d.name.toLocaleLowerCase('tr')));
+      let sort = have.reduce((m, d) => Math.max(m, d.sort), 0);
+      for (const d of decks) {
+        if (names.has(d.name.toLocaleLowerCase('tr'))) continue;
+        names.add(d.name.toLocaleLowerCase('tr'));
+        await w.put('decks', { ...w.base(), name: d.name, filter: d.filter, sort: ++sort });
+      }
+    });
+  }
+  return copied;
+}
+
+/**
+ * "Yalnızca kelimeleri al" for a backup that belongs to another account (v0.5.2, ADR 0063):
+ * only its words come along, as new cards of this device's user, like "Kartları kopyala".
+ * Each word is its own transaction (adding a word may load level data); running it again
+ * after an interruption adds only what is missing. Returns the number of notes copied.
+ */
+export async function importBackupCards(from: CardCopySource, now: Millis = Date.now()): Promise<number> {
+  return addCopiedCards(from, now);
 }
 
 /** Notes flagged possible_duplicate (shown in the library after a merge). */

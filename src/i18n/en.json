@@ -1479,13 +1479,13 @@
     "button": "Restore",
     "title": "Restore backup",
     "fileInfo": "{{file}} · {{date}}",
-    "summary": "{{notes}} notes, {{cards}} cards, {{reviews}} reviews",
+    "summary": "{{notes}} words, {{cards}} cards, {{reviews}} reviews",
     "merge": "Merge",
     "mergeHint": "Records from the backup are added; where both sides have a record, the newest wins. Nothing on this device is deleted.",
     "overwrite": "Overwrite",
     "overwriteHint": "Notes and cards on this device go back to the backup; anything not in it is deleted. Review history is always kept.",
     "backupFirst": "Back up your current data first",
-    "backupFirstHint": "If something goes wrong, you can go back to this file.",
+    "backupFirstHint": "If you back up your current data first, you can go back to that file if something goes wrong.",
     "backedUp": "Backed up",
     "done": "Restore finished",
     "doneDetail": "{{added}} records added, {{updated}} updated, {{logs}} reviews added.",
@@ -1496,7 +1496,11 @@
       "invalid_format": "This is not an Engapp backup, or it is incomplete.",
       "unsupported_version": "This backup comes from a newer version. Update the app first.",
       "checksum_mismatch": "The backup file is damaged or was edited (checksum mismatch)."
-    }
+    },
+    "foreign": "This backup belongs to another account. Study history never moves between accounts: its words are added as new cards, without review history, settings or reports. To restore it with its history, sign in to the account it belongs to first.",
+    "cardsOnly": "Take the words only",
+    "cardsDone_one": "{{count}} word added as new cards",
+    "cardsDone_other": "{{count}} words added as new cards"
   },
   "csv": {
     "title": "Export CSV",
