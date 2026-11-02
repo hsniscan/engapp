@@ -33,7 +33,7 @@ export const privacyEn: LegalDocument = {
           p: `[[email]] The data controller is ${CONTROLLER_NAME}, who publishes Engapp as an individual developer. For any question or request about this policy or your data: {{email}}.`,
         },
         {
-          p: `[[noemail]] The data controller is ${CONTROLLER_NAME}, who publishes Engapp as an individual developer. No separate contact address has been published yet; until then you can do everything about your data inside the app: take a copy with **Profil → ⚙ Ayarlar → Yedek ve veri → Yedek al (Back up)**, correct a wrong entry, and delete your account and all your data with **Profil → ⚙ Ayarlar → Hesap ve eşitleme → Hesabımı ve verilerimi sil** or on the [account deletion page](/hesap-sil).`,
+          p: `[[noemail]] The data controller is ${CONTROLLER_NAME}, who publishes Engapp as an individual developer. No separate contact address has been published yet; until then you can do everything about your data inside the app: take a copy with **Profil → Ayarlar → Yedek ve veri → Yedek al (Back up)**, correct a wrong entry, and delete your account and all your data with **Profil → Ayarlar → Hesap ve eşitleme → Hesabımı ve verilerimi sil** or on the [account deletion page](/hesap-sil).`,
         },
       ],
     },
@@ -165,16 +165,16 @@ export const privacyEn: LegalDocument = {
       blocks: [
         {
           ul: [
-            'In the app: **Profil → ⚙ Ayarlar (Settings) → Hesap ve eşitleme (Account and sync) → Hesabımı ve verilerimi sil (Delete my account and data).**',
+            'In the app: **Profil → Ayarlar (Settings) → Hesap ve eşitleme (Account and sync) → Hesabımı ve verilerimi sil (Delete my account and data).**',
             'On the web: the [account deletion page](/hesap-sil) — sign in with Google and do the same.',
             '[[email]] By e-mail: write to {{email}}; we delete your account within 30 days.',
           ],
         },
         {
-          p: 'What is deleted: your cards and words, your reading texts and word encounter counts, study history and statistics, settings, reports, notification records, AI cache, AI and sync counters, your monthly AI spend amount, picture counters, picture requests and picture answers (for an admin also the admin record and picture review decisions), and then the account itself. Pictures in the shared dictionary stay. Deletion cannot be undone; if you like, first download the JSON backup under **Profil → ⚙ Ayarlar → Yedek ve veri (Backup and data)**.',
+          p: 'What is deleted: your cards and words, your reading texts and word encounter counts, study history and statistics, settings, reports, notification records, AI cache, AI and sync counters, your monthly AI spend amount, picture counters, picture requests and picture answers (for an admin also the admin record and picture review decisions), and then the account itself. Pictures in the shared dictionary stay. Deletion cannot be undone; if you like, first download the JSON backup under **Profil → Ayarlar → Yedek ve veri (Backup and data)**.',
         },
         {
-          p: 'Guest-mode data exists only on your device: delete it with **Profil → ⚙ Ayarlar → Hesap ve eşitleme → Bu cihazdaki verileri sil (Delete the data on this device)** or by uninstalling the app.',
+          p: 'Guest-mode data exists only on your device: delete it with **Profil → Ayarlar → Hesap ve eşitleme → Bu cihazdaki verileri sil (Delete the data on this device)** or by uninstalling the app.',
         },
       ],
     },
@@ -202,7 +202,7 @@ export const privacyEn: LegalDocument = {
           p: '[[noemail]] No separate address for requests has been published yet. Until then you can exercise most of these rights yourself inside the app (see below), and delete your account and data on the [account deletion page](/hesap-sil). Your right to complain to the Turkish Personal Data Protection Board (Kişisel Verileri Koruma Kurulu) always remains.',
         },
         {
-          p: 'You can take a copy of your data yourself at any time with **Profil → ⚙ Ayarlar → Yedek ve veri → Yedek al (Back up)**, and correct a wrong entry in the app.',
+          p: 'You can take a copy of your data yourself at any time with **Profil → Ayarlar → Yedek ve veri → Yedek al (Back up)**, and correct a wrong entry in the app.',
         },
       ],
     },

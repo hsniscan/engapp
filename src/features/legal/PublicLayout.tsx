@@ -29,7 +29,7 @@ export function PublicLayout({
   return (
     <div className="flex min-h-dvh flex-col bg-canvas text-fg">
       <header className="safe-top border-b border-border">
-        <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+        <div className="mx-auto flex w-full max-w-(--page-reading) items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <a href="/" className="rounded-control">
             <Logo size={28} />
           </a>
@@ -38,21 +38,21 @@ export function PublicLayout({
           </a>
         </div>
       </header>
-      <main id="main" className="mx-auto w-full max-w-3xl flex-1 px-4 pt-8 pb-14 sm:px-6 md:pt-12">
+      <main id="main" className="mx-auto w-full max-w-(--page-reading) flex-1 px-4 pt-8 pb-14 sm:px-6 md:pt-12">
         {children}
       </main>
       <footer className="border-t border-border">
         <nav
           aria-label={t('legal.footerNav')}
-          className="mx-auto flex w-full max-w-3xl flex-wrap gap-x-6 gap-y-2 px-4 py-5 text-meta sm:px-6"
+          className="mx-auto flex w-full max-w-(--page-reading) flex-wrap gap-x-6 px-4 py-3 text-meta sm:px-6"
         >
-          <Link to="/gizlilik" className="text-fg-muted hover:text-fg">
+          <Link to="/gizlilik" className="inline-flex min-h-11 items-center text-fg-muted hover:text-fg">
             {t('legal.privacyLink')}
           </Link>
-          <Link to="/privacy" className="text-fg-muted hover:text-fg">
+          <Link to="/privacy" className="inline-flex min-h-11 items-center text-fg-muted hover:text-fg">
             {t('legal.privacyEnLink')}
           </Link>
-          <Link to="/hesap-sil" className="text-fg-muted hover:text-fg">
+          <Link to="/hesap-sil" className="inline-flex min-h-11 items-center text-fg-muted hover:text-fg">
             {t('legal.deleteLink')}
           </Link>
         </nav>

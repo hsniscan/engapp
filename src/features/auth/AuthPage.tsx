@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { logError } from '@/data';
-import { Button, Icon, Logo, Spinner, Surface } from '@/ui';
+import { Button, Card, Icon, Logo, Spinner } from '@/ui';
 import { AccountPanel } from './AccountPanel';
 import { useLinkState } from './link';
 import { useAuth } from './session';
@@ -58,8 +58,8 @@ export function AuthPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col items-center px-4 pt-10 pb-12 text-center sm:px-6 md:pt-16">
-      <Logo size={52} wordmark={false} />
-      <h1 className="mt-6 text-page font-semibold text-fg md:text-numeral">
+      <Logo size={48} wordmark={false} />
+      <h1 className="mt-6 text-page font-semibold text-fg md:text-page-lg">
         {auth.status === 'signed_in' && !finishing ? t('auth.signedInTitle') : t('auth.heading')}
       </h1>
 
@@ -74,9 +74,9 @@ export function AuthPage() {
         </div>
       ) : auth.status === 'signed_in' ? (
         <>
-          <Surface padding="none" className="mt-8 w-full text-left">
+          <Card padding="none" className="mt-8 w-full text-left">
             <AccountPanel />
-          </Surface>
+          </Card>
           <Button size="lg" fullWidth className="mt-6" onClick={() => void navigate('/')}>
             {t('auth.toHome')}
           </Button>
@@ -84,18 +84,18 @@ export function AuthPage() {
       ) : !auth.available ? (
         <>
           <p className="mt-3 max-w-sm text-ui text-fg-muted">{t('auth.lead')}</p>
-          <Surface padding="lg" className="mt-8 w-full text-left">
+          <Card className="mt-8 w-full text-left">
             <div className="flex items-start gap-3">
               <Icon name="info" size={20} className="mt-0.5 shrink-0 text-fg-muted" />
               <div className="flex flex-col gap-1">
-                <h2 className="font-medium text-fg">{t('auth.unavailableTitle')}</h2>
+                <h2 className="text-ui font-semibold text-fg">{t('auth.unavailableTitle')}</h2>
                 <p className="text-meta text-fg-muted">{t('auth.unavailableBody')}</p>
               </div>
             </div>
             <Button size="lg" fullWidth className="mt-6" onClick={() => void navigate('/')}>
               {t('auth.guest')}
             </Button>
-          </Surface>
+          </Card>
         </>
       ) : (
         <>
@@ -112,7 +112,7 @@ export function AuthPage() {
               </span>
             </p>
           )}
-          <Surface padding="lg" className="mt-8 w-full">
+          <Card className="mt-8 w-full">
             <Button
               variant="secondary"
               size="lg"
@@ -137,7 +137,7 @@ export function AuthPage() {
               {t('auth.guest')}
             </Button>
             <p className="mt-3 text-meta text-fg-muted">{t('auth.guestNote')}</p>
-          </Surface>
+          </Card>
           <p className="mt-6 max-w-sm text-caption text-fg-muted">{t('auth.privacy')}</p>
         </>
       )}

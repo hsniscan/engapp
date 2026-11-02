@@ -17,7 +17,7 @@ test('privacy and account deletion never show a missing-address placeholder', as
   await page.goto('/hesap-sil');
   await expect(page.getByText('iletişim adresi henüz eklenmedi')).toHaveCount(0);
   await expect(
-    page.getByText(/Profil → ⚙ Ayarlar → Hesap ve eşitleme → Hesabımı ve verilerimi sil/),
+    page.getByText(/Profil → Ayarlar → Hesap ve eşitleme → Hesabımı ve verilerimi sil/),
   ).toBeVisible();
 });
 

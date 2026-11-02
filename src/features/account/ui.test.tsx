@@ -226,7 +226,7 @@ describe('public pages', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Google ile giriş yap' })).toBeInTheDocument();
     expect(
-      screen.getByText(/Profil → ⚙ Ayarlar → Hesap ve eşitleme → Hesabımı ve verilerimi sil/),
+      screen.getByText(/Profil → Ayarlar → Hesap ve eşitleme → Hesabımı ve verilerimi sil/),
     ).toBeInTheDocument();
     expect(screen.queryByText(/iletişim adresi henüz eklenmedi/)).toBeNull();
     expect(screen.queryByRole('link', { name: /github/ })).toBeNull();

@@ -13,10 +13,11 @@ export const E_PATH =
 /** Source Serif 4 "ˈ" (U+02C8), font units. */
 export const TICK_PATH = 'M61 533 53 733H154L146 533Z';
 
+/** v0.5.2 "Çam" (ADR 0065/0070): pine tile (accent), white e, pale-pine stress tick. */
 export const markColors = {
-  tile: '#1f1d1a',
-  letter: '#f5f2ec',
-  tick: '#9dbde3',
+  tile: '#1f5c4f',
+  letter: '#ffffff',
+  tick: '#88cdb9',
 } as const;
 
 /** Transform that places the glyph pair in a 512 box. `scale` 0.44 for icons, 0.34 for maskable. */
