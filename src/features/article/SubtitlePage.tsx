@@ -66,6 +66,8 @@ export function SubtitlePage() {
           type="file"
           accept=".srt,.vtt,text/vtt,application/x-subrip"
           className="sr-only"
+          tabIndex={-1}
+          aria-hidden="true"
           onChange={(e) => void onFile(e)}
           data-testid="subtitle-file"
         />

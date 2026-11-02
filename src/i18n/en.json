@@ -226,7 +226,8 @@
       "offline": "This word is not on your phone. Once online I can find its meaning; or add it by hand.",
       "signIn": "This word is not on your phone. Sign in so AI can find its meaning, or add it by hand.",
       "notFound": "I couldn't find this word's meaning. You can add it by hand.",
-      "field": "Type a word or phrase"
+      "field": "Type a word or phrase",
+      "placeholder": "Type a word"
     },
     "text": {
       "title": "Add a text",
@@ -236,7 +237,7 @@
       "photo": "Photo",
       "subtitle": "Subtitles",
       "body": "The text is saved and opens in the reader. You can pick out its new words too.",
-      "compose": "A text from my words"
+      "compose": "Write a text"
     },
     "import": {
       "title": "Import",

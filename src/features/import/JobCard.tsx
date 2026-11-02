@@ -173,10 +173,10 @@ export function JobCard({ job, className }: { job: ImportJobRecord; className?: 
       )}
 
       {partial && (
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-meta text-fg-muted">{t('importer.job.partialBody')}</p>
           <Button
-            variant="secondary"
+            variant="tonal"
             onClick={async () => {
               if (await previewPartialImportJob(job.id)) void navigate(`/import/${job.id}`);
             }}
@@ -195,7 +195,7 @@ export function JobCard({ job, className }: { job: ImportJobRecord; className?: 
       )}
 
       {failed && (
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <Button variant="ghost" onClick={() => void deleteImportJob(job.id)}>
             {t('importer.job.discard')}
           </Button>

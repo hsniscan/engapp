@@ -226,7 +226,8 @@
       "offline": "Bu kelime telefonunda yok. İnternete bağlanınca anlamını bulabilirim; istersen elle ekle.",
       "signIn": "Bu kelime telefonunda yok. Yapay zekânın anlamını bulması için giriş yap ya da elle ekle.",
       "notFound": "Bu kelimenin anlamını bulamadım. Elle ekleyebilirsin.",
-      "field": "Kelime ya da ifade yaz"
+      "field": "Kelime ya da ifade yaz",
+      "placeholder": "Bir kelime yaz"
     },
     "text": {
       "title": "Metin ekle",
@@ -236,7 +237,7 @@
       "photo": "Fotoğraf",
       "subtitle": "Altyazı",
       "body": "Metin kaydedilir ve okuyucuda açılır. İstersen içindeki yeni kelimeleri çıkarırsın.",
-      "compose": "Kelimelerimle metin"
+      "compose": "Metin oluştur"
     },
     "import": {
       "title": "İçe aktar",

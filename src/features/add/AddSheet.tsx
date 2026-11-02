@@ -12,7 +12,7 @@
 //
 // Ready-made decks and the word bank live in Keşfet and Kelimelerim, not here.
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { db } from '@/data';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
@@ -152,10 +152,10 @@ export function AddSheetView({
                   inset
                   padding="sm"
                   data-testid={w.testId}
-                  className="flex min-h-24 w-full flex-col items-start gap-2 text-fg"
+                  className="flex min-h-16 w-full items-center gap-3 text-fg"
                 >
                   <IconTile icon={w.icon} />
-                  <span className="text-ui font-medium break-words hyphens-auto">{w.label}</span>
+                  <span className="min-w-0 text-ui font-medium">{w.label}</span>
                 </Card>
               </li>
             ))}
@@ -230,6 +230,7 @@ function WordAdd({
   const { t } = useTranslation();
   const [term, setTerm] = useState('');
   const [query, setQuery] = useState('');
+  const hintId = useId();
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -248,32 +249,39 @@ function WordAdd({
 
   return (
     <div className="flex flex-col gap-3">
-      <form onSubmit={submit} className="flex items-start gap-2">
-        <TextField
-          ref={inputRef}
-          label={t('addSheet.word.field')}
-          hideLabel
-          hint={query ? undefined : t('addSheet.word.label')}
-          type="text"
-          lang="en"
-          value={term}
-          onChange={(e) => {
-            setTerm(e.target.value);
-            if (query) setQuery('');
-          }}
-          placeholder={t('addSheet.word.field')}
-          autoComplete="off"
-          autoCapitalize="none"
-          spellCheck={false}
-          enterKeyHint="search"
-          maxLength={LIMITS.term}
-          data-testid="add-word-input"
-          fieldClassName="min-w-0 flex-1"
-          className="font-serif text-lead"
-        />
-        <Button type="submit" variant={query ? 'secondary' : 'primary'} className="shrink-0">
-          {t('addSheet.word.submit')}
-        </Button>
+      <form onSubmit={submit} className="flex flex-col gap-1.5">
+        <div className="flex items-start gap-2">
+          <TextField
+            ref={inputRef}
+            label={t('addSheet.word.field')}
+            hideLabel
+            aria-describedby={query ? undefined : hintId}
+            type="text"
+            lang="en"
+            value={term}
+            onChange={(e) => {
+              setTerm(e.target.value);
+              if (query) setQuery('');
+            }}
+            placeholder={t('addSheet.word.placeholder')}
+            autoComplete="off"
+            autoCapitalize="none"
+            spellCheck={false}
+            enterKeyHint="search"
+            maxLength={LIMITS.term}
+            data-testid="add-word-input"
+            fieldClassName="min-w-0 flex-1"
+            className="font-serif text-lead"
+          />
+          <Button type="submit" variant={query ? 'secondary' : 'primary'} className="shrink-0">
+            {t('addSheet.word.submit')}
+          </Button>
+        </div>
+        {!query && (
+          <p id={hintId} className="px-1 text-meta text-fg-muted">
+            {t('addSheet.word.label')}
+          </p>
+        )}
       </form>
       {query ? (
         <WordResult key={query} term={query} onNavigate={onNavigate} onAgain={again} />
