@@ -179,6 +179,36 @@ not delete local insert-only rows that the pull did not return.
 Known gap: a v0.1 client pulls with v2 and moves its cursor past practice rows written by
 another device. After it updates, it does not get them (decision 0010).
 
+**v4 (v0.5.2, migration 20261103000200, decision 0060).** `sync_pull_v4(p_since, p_limit,
+p_from, p_max_bytes)` returns what v3 returns, in the same order, but stops a page once the
+rows' estimated size would pass `p_max_bytes` (client: 1 MB; server clamps 64 KB–8 MB). The
+first row is always included, so the cursor moves even past one huge row. On an incremental
+pull (`p_from > 0`) a `user_texts` row whose body has not changed since `p_since`
+(`body_seq ≤ p_since`, a server-only column) comes without `body` and with `body_bytes`;
+the client (`src/sync/api.ts` `fillTextBodies`) keeps the local body when its UTF-8 length
+matches, otherwise fetches the bodies with a plain select (RLS, 50 ids per request). A full
+pull (`p_from = 0`) always sends bodies. The client falls back v4 → v3 → v2 → v1 and reports
+v4 as version 3.
+
+**Text bodies on push.** A `texts` update whose `updated_at > created_at`, and every delete, is
+pushed without `body` (`slimTextPayload`, `src/sync/engine.ts`). The server applies it with
+`_sync_update_partial` (columns missing from the payload keep their value, same HLC rule); if
+the server does not have the row it answers `23502` and the engine resends that row in full in
+the same run. The outbox still stores the full payload, so nothing is lost if the server is
+older (it would reject the body-less upsert with 23502 too, and the full resend follows).
+
+**Limits.** `sync_push` counts calls, rows and bytes per user per UTC day (`sync_usage`) against
+`public.sync_limits`; over a limit the whole call fails with SQLSTATE `53400` and the outbox
+waits (normal backoff). `user_texts` has a per-user count and total-size quota (BEFORE INSERT
+trigger, `53400` as a per-row rejection: the row stays in the outbox with exponential backoff
+and shows as stuck after 10 attempts; a quota message in the UI is a later wave). A payload whose HLC is more than one day ahead of the
+server clock is rejected (`22023`), so one device with a wrong clock cannot win every LWW race
+for ever.
+
+**Polling.** Instead of a fixed 60 s interval the loop waits 60 s × 2^idle (at most 10 min),
+where idle counts runs that moved nothing; a local write, `online`, or the tab becoming visible
+wakes it at once (`src/sync/index.ts`, `nextPollDelayMs`).
+
 ### Tables added after v3: `content_feedback`, `user_content` (İP5), `decks` (İP8)
 
 `content_feedback`, `user_content` (migration `20261022000100_examples.sql`, ADR 0013) and
@@ -225,6 +255,10 @@ sense older than the cursor that becomes referenced later (e.g. a note synced fr
 another device) is not in that feed: after a pull, look for `lexicon_sense_id`s missing
 from `lexicon_cache` and fetch them with `lexicon_get(ids)` (≤ 500). `meaning_tr_override`
 on the user's sense always wins over the lexicon.
+
+Since v0.5.2 (decision 0060) clients cannot read the lexicon tables directly; `lexicon_pull`
+and `lexicon_get` are `SECURITY DEFINER` and are the only read paths (`lexicon_find` is for the
+edge functions only).
 
 **Word levels (v0.2 İP2).** Lexicon rows carry `cefr`, `cefr_source`, `cefr_list`,
 `cefr_reason_tr` and `zipf` (the term's frequency) at the end of `lexicon_entries`; the raw
