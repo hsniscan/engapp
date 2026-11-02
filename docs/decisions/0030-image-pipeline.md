@@ -1,5 +1,7 @@
 # 0030 — Picture pipeline: sanitizer, checks, budget, batch and instant paths
 
+> **v0.5.2:** the instant path (`ai-image`) was removed; pictures come only from the bulk jobs. See [0061](0061-remove-on-demand-ai-content.md).
+
 **Context.** v0.4 İP2 (plan Annex A.2–A.4, A.8): pictures for lexicon senses, drawn by Claude
 (`image-v1`, decision 0029), must be safe to show in the app, readable in both themes, checked
 before anyone sees them, and must never cost more than the monthly Claude credit allows. The
