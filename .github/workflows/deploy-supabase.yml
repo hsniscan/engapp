@@ -190,7 +190,7 @@ jobs:
             for v in GEMINI_MODEL GEMINI_FALLBACK_MODEL GEMINI_TTS_MODEL GEMINI_TTS_FALLBACK_MODEL \
                      AI_DAILY_LIMIT_EXTRACT AI_DAILY_LIMIT_ENRICH AI_DAILY_LIMIT_THEMES \
                      AI_DAILY_LIMIT_MNEMONIC AI_DAILY_LIMIT_CONTRAST AI_DAILY_LIMIT_REPORT; do
-              if [ -n "${!v}" ]; then echo "$v=${!v}"; fi
+              if [ -n "${!v:-}" ]; then echo "$v=${!v}"; fi
             done
             echo "TTS_DAILY_LIMIT=$TTS_DAILY_LIMIT"
             echo "AI_PROVIDER=gemini"
@@ -208,7 +208,7 @@ jobs:
             # Only when the secret exists, so a missing key never overwrites a stored one.
             if [ -n "$ANTHROPIC_API_KEY" ]; then echo "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY"; fi
             for v in R2_ACCOUNT_ID R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET AUDIO_BASE_URL; do
-              if [ -n "${!v}" ]; then echo "$v=${!v}"; fi
+              if [ -n "${!v:-}" ]; then echo "$v=${!v}"; fi
             done
           } > "$f"
           if [ -z "$ANTHROPIC_API_KEY" ]; then
@@ -220,7 +220,7 @@ jobs:
           unset_names=()
           for v in GEMINI_MODEL GEMINI_FALLBACK_MODEL GEMINI_TTS_MODEL GEMINI_TTS_FALLBACK_MODEL \
                    CLAUDE_IMAGE_MODEL CLAUDE_CHECK_MODEL CLAUDE_TEXT_MODEL CLAUDE_STORY_MODEL; do
-            if [ -z "${!v}" ]; then unset_names+=("$v"); fi
+            if [ -z "${!v:-}" ]; then unset_names+=("$v"); fi
           done
           existing="$(supabase secrets list --project-ref "$SUPABASE_PROJECT_REF")"
           for v in "${unset_names[@]}"; do
