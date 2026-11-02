@@ -75,7 +75,8 @@ for (const width of [360, 1280]) {
         await expect(front.or(empty).first()).toBeVisible();
         if (!(await front.isVisible())) continue;
         await check(page, `study-${mode}`, tag);
-        if (mode === 'production') await page.getByRole('button', { name: 'Bilmiyorum, göster' }).click();
+        if (mode === 'production')
+          await page.getByRole('button', { name: 'Bilmiyorum, göster' }).click();
         else {
           const choices = page.getByRole('group', { name: 'Seçenekler' }).getByRole('button');
           if (await choices.count()) await choices.first().click();
@@ -91,8 +92,8 @@ for (const width of [360, 1280]) {
       await expect(page.getByRole('heading', { level: 1, name: 'Kelime ekle' })).toBeVisible();
       await check(page, 'add-manual', tag);
       for (const [tab, label] of [
-        ['paste', 'Yapıştır'],
-        ['pdf', 'PDF'],
+        ['paste', 'Metin yapıştır'],
+        ['pdf', 'PDF dosyası'],
       ] as const) {
         await page.goto(`/add?tab=${tab}`);
         await expect(page.getByRole('tab', { name: label, selected: true })).toBeVisible();
@@ -139,9 +140,9 @@ for (const width of [360, 1280]) {
         .getByRole('checkbox', { name: /kelimesini seç$/ })
         .nth(1)
         .check();
-      await expect(page.getByRole('region', { name: 'Seçili kelimeler için işlemler' })).toContainText(
-        '2 kelime seçili',
-      );
+      await expect(
+        page.getByRole('region', { name: 'Seçili kelimeler için işlemler' }),
+      ).toContainText('2 kelime seçili');
       // Keyboard focus on a row under the floating bar scrolls it into the clear.
       const rows = page.getByRole('checkbox', { name: /kelimesini seç$/ });
       await rows.nth(4).focus();
@@ -216,7 +217,9 @@ for (const width of [360, 1280]) {
 
       // Level test: intro, a word, a meaning question, the result; the known words.
       await page.goto('/level-test');
-      await expect(page.getByRole('button', { name: 'Teste başla', disabled: false })).toBeVisible();
+      await expect(
+        page.getByRole('button', { name: 'Teste başla', disabled: false }),
+      ).toBeVisible();
       await check(page, 'level-intro', tag);
       await page.getByRole('button', { name: 'Teste başla' }).click();
       await expect(page.getByTestId('level-word')).toBeVisible();
@@ -235,7 +238,9 @@ for (const width of [360, 1280]) {
         } else {
           await page.getByRole('button', { name: 'Biliyorum', exact: true }).click();
         }
-        await expect(page.locator(`[data-testid="level-question"][data-step="${step}"]`)).toHaveCount(0);
+        await expect(
+          page.locator(`[data-testid="level-question"][data-step="${step}"]`),
+        ).toHaveCount(0);
       }
       await expect(result).toBeVisible();
       await check(page, 'level-result', tag);

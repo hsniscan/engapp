@@ -1,17 +1,18 @@
-// "Ne eklemek istersin?": the sheet behind the raised (+) of the tab bar (v0.5.1, decision 0056).
-// Four groups, top to bottom:
+// "Ekle": the sheet behind the (+) of the tab bar (v0.5.1, decision 0056; v0.5.2 "Çam" layout,
+// ADR 0068). Three groups, top to bottom:
 //
 //   Kelime ekle                  a word, looked up at once (the user's card → Kelime Bankası →
 //                                the lexicon → yapay zekâ when signed in); "Elle düzenle" opens
 //                                the full form
-//   Metin ekle                   Yapıştır · PDF · Bağlantı · Fotoğraf · Altyazı: each saves the
-//                                text and opens the reader (word extraction is the second choice)
-//   Kelimelerimle metin oluştur  a short text around 3–8 of the user's own words
+//   Metin ekle                   a 2-column grid (3 from 400 px) of tiles whose labels wrap,
+//                                never cut: Yapıştır · PDF · Bağlantı · Fotoğraf · Altyazı each
+//                                save the text and open the reader (extraction is the second
+//                                choice); Metin oluştur writes a text around the user's words
 //   İçe aktar                    Anki, CSV, a backup file
 //
 // Ready-made decks and the word bank live in Keşfet and Kelimelerim, not here.
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { db } from '@/data';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
@@ -19,7 +20,22 @@ import { LIMITS } from '@/domain/limits';
 import { MineMeanings, SenseChoices } from '@/features/quick/QuickSheet';
 import { useTermLookup } from '@/features/quick/useTermLookup';
 import { SignInNeeded } from './SignInNeeded';
-import { Badge, Button, cn, Dialog, Icon, Skeleton, type IconName } from '@/ui';
+import {
+  Badge,
+  Button,
+  buttonClasses,
+  Card,
+  Eyebrow,
+  Icon,
+  IconTile,
+  ListGroup,
+  Sheet,
+  Skeleton,
+  Term,
+  TextField,
+  type IconName,
+} from '@/ui';
+import { Notice } from './ui';
 import {
   quickAddHref,
   setAddSheetOpen,
@@ -57,11 +73,16 @@ export function AddSheetView({
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Opened at a group: bring it into view once the sheet has laid out ('word' also focuses).
+  // "Metin oluştur" is a tile of the text group since v0.5.2.
   useEffect(() => {
     if (!open || !section) return;
     const id = window.setTimeout(() => {
       if (section === 'word') inputRef.current?.focus();
-      else groups.current[section]?.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
+      else
+        groups.current[section === 'compose' ? 'text' : section]?.scrollIntoView?.({
+          block: 'start',
+          behavior: 'smooth',
+        });
     }, 60);
     return () => window.clearTimeout(id);
   }, [open, section]);
@@ -77,6 +98,12 @@ export function AddSheetView({
       label: t('addSheet.text.subtitle'),
       testId: 'add-way-subtitle',
     },
+    {
+      to: '/metin-olustur',
+      icon: 'pen',
+      label: t('addSheet.text.compose'),
+      testId: 'add-way-compose',
+    },
   ];
   const importWays: (Way & { body: string })[] = [
     {
@@ -88,14 +115,14 @@ export function AddSheetView({
     },
     {
       to: '/import/csv',
-      icon: 'file',
+      icon: 'list',
       label: t('addSheet.import.csv'),
       body: t('addSheet.import.csvBody'),
       testId: 'add-way-csv',
     },
     {
       to: '/settings/veri',
-      icon: 'refresh',
+      icon: 'database',
       label: t('addSheet.import.backup'),
       body: t('addSheet.import.backupBody'),
       testId: 'add-way-backup',
@@ -103,66 +130,38 @@ export function AddSheetView({
   ];
 
   return (
-    <Dialog
+    <Sheet
       open={open}
       onOpenChange={(next) => (next ? onOpenChange(true) : close())}
-      variant="sheet"
       title={t('addSheet.title')}
-      className="bg-surface pb-[max(1.75rem,env(safe-area-inset-bottom))]"
     >
-      <div className="flex flex-col gap-6" data-testid="add-sheet">
+      <div className="flex flex-col gap-8" data-testid="add-sheet">
         <Group id="add-sheet-word" title={t('addSheet.word.title')} sectionRef={groupRef('word')}>
           <WordAdd inputRef={inputRef} onNavigate={close} />
         </Group>
 
         <Group id="add-sheet-text" title={t('addSheet.text.title')} sectionRef={groupRef('text')}>
-          <ul className="grid grid-cols-5 gap-2">
+          <ul className="grid grid-cols-2 gap-2 min-[25rem]:grid-cols-3">
             {textWays.map((w) => (
-              <li key={w.testId} className="min-w-0">
-                <Link
+              <li key={w.testId} className="flex min-w-0">
+                <Card
+                  as={Link}
                   to={w.to}
                   onClick={close}
+                  interactive
+                  inset
+                  padding="sm"
                   data-testid={w.testId}
-                  className="flex min-h-19 flex-col items-center justify-center gap-1.5 rounded-[16px] border border-border bg-surface-raised px-1 py-2.5 text-center text-fg transition-colors duration-(--duration-micro) hover:bg-hover"
+                  className="flex min-h-24 w-full flex-col items-start gap-2 text-fg"
                 >
-                  <span
-                    aria-hidden="true"
-                    className="flex size-9 items-center justify-center rounded-[11px] bg-success-soft text-success-text"
-                  >
-                    <Icon name={w.icon} size={20} strokeWidth={1.7} />
-                  </span>
-                  <span className="w-full truncate text-[0.8125rem] font-medium">{w.label}</span>
-                </Link>
+                  <IconTile icon={w.icon} />
+                  <span className="text-ui font-medium break-words hyphens-auto">{w.label}</span>
+                </Card>
               </li>
             ))}
           </ul>
-          <p className="px-1 text-sm text-fg-muted">{t('addSheet.text.body')}</p>
+          <p className="px-1 text-meta text-fg-muted">{t('addSheet.text.body')}</p>
           <JobsLink onNavigate={close} />
-        </Group>
-
-        <Group
-          id="add-sheet-compose"
-          title={t('addSheet.compose.title')}
-          sectionRef={groupRef('compose')}
-        >
-          <Link
-            to="/metin-olustur"
-            onClick={close}
-            data-testid="add-way-compose"
-            className="flex min-h-18 items-center gap-3.5 rounded-[20px] border border-accent/30 bg-accent-soft px-4 py-3.5 text-fg transition-colors duration-(--duration-micro) hover:border-accent/60"
-          >
-            <span
-              aria-hidden="true"
-              className="flex size-11 shrink-0 items-center justify-center rounded-[13px] bg-accent text-accent-fg"
-            >
-              <Icon name="pencil" size={22} strokeWidth={1.7} />
-            </span>
-            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span className="text-base font-semibold">{t('addSheet.compose.cta')}</span>
-              <span className="text-sm text-fg-muted">{t('addSheet.compose.body')}</span>
-            </span>
-            <Icon name="chevron-right" size={18} className="shrink-0 text-fg-subtle" />
-          </Link>
         </Group>
 
         <Group
@@ -170,33 +169,27 @@ export function AddSheetView({
           title={t('addSheet.import.title')}
           sectionRef={groupRef('import')}
         >
-          <ul className="flex flex-col overflow-hidden rounded-[20px] border border-border bg-surface-raised">
-            {importWays.map((w, i) => (
-              <li key={w.testId} className={cn(i > 0 && 'border-t border-surface-sunken')}>
-                <Link
-                  to={w.to}
-                  onClick={close}
-                  data-testid={w.testId}
-                  className="flex min-h-15 items-center gap-3.5 px-4 py-3 text-fg transition-colors duration-(--duration-micro) hover:bg-hover"
-                >
-                  <span
-                    aria-hidden="true"
-                    className="flex size-9 shrink-0 items-center justify-center rounded-[11px] bg-surface-sunken text-fg"
-                  >
-                    <Icon name={w.icon} size={19} strokeWidth={1.7} />
-                  </span>
-                  <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="text-[0.9375rem] font-semibold">{w.label}</span>
-                    <span className="text-sm text-fg-muted">{w.body}</span>
-                  </span>
-                  <Icon name="chevron-right" size={18} className="shrink-0 text-fg-subtle" />
-                </Link>
-              </li>
+          <ListGroup>
+            {importWays.map((w) => (
+              <Link
+                key={w.testId}
+                to={w.to}
+                onClick={close}
+                data-testid={w.testId}
+                className="flex min-h-14 w-full items-center gap-3 px-4 text-left transition-colors duration-(--duration-micro) hover:bg-hover focus-visible:outline-offset-[-2px]"
+              >
+                <IconTile icon={w.icon} />
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5 py-3">
+                  <span className="text-ui font-medium text-fg">{w.label}</span>
+                  <span className="text-meta text-fg-muted">{w.body}</span>
+                </span>
+                <Icon name="chevron-right" size={18} className="shrink-0 text-fg-subtle" />
+              </Link>
             ))}
-          </ul>
+          </ListGroup>
         </Group>
       </div>
-    </Dialog>
+    </Sheet>
   );
 }
 
@@ -216,11 +209,11 @@ function Group({
       ref={sectionRef}
       aria-labelledby={id}
       data-testid={id}
-      className="flex scroll-mt-4 flex-col gap-2.5"
+      className="flex scroll-mt-4 flex-col gap-3"
     >
-      <h3 id={id} className="pl-1 text-xs font-semibold tracking-[0.08em] text-fg-muted uppercase">
-        {title}
-      </h3>
+      <Eyebrow as="h3" className="px-1">
+        <span id={id}>{title}</span>
+      </Eyebrow>
       {children}
     </section>
   );
@@ -235,7 +228,6 @@ function WordAdd({
   onNavigate: () => void;
 }) {
   const { t } = useTranslation();
-  const inputId = useId();
   const [term, setTerm] = useState('');
   const [query, setQuery] = useState('');
 
@@ -256,42 +248,32 @@ function WordAdd({
 
   return (
     <div className="flex flex-col gap-3">
-      <form onSubmit={submit} className="flex flex-col gap-1.5">
-        <label htmlFor={inputId} className="pl-1 text-sm text-fg-muted">
-          {t('addSheet.word.label')}
-        </label>
-        <div className="flex gap-2">
-          <input
-            ref={inputRef}
-            id={inputId}
-            type="text"
-            lang="en"
-            value={term}
-            onChange={(e) => {
-              setTerm(e.target.value);
-              if (query) setQuery('');
-            }}
-            placeholder={t('addSheet.quickPlaceholder')}
-            autoComplete="off"
-            autoCapitalize="none"
-            spellCheck={false}
-            enterKeyHint="search"
-            maxLength={LIMITS.term}
-            data-testid="add-word-input"
-            className={cn(
-              'h-13 min-w-0 flex-1 rounded-[14px] border border-border bg-surface-raised px-4',
-              'font-serif text-lg text-fg placeholder:text-fg-subtle',
-              'focus-visible:border-accent',
-            )}
-          />
-          <button
-            type="submit"
-            aria-label={t('addSheet.word.submit')}
-            className="flex size-13 shrink-0 items-center justify-center rounded-[14px] bg-accent text-accent-fg transition-colors duration-(--duration-micro) hover:bg-accent-hover"
-          >
-            <Icon name="search" size={22} strokeWidth={2} />
-          </button>
-        </div>
+      <form onSubmit={submit} className="flex items-start gap-2">
+        <TextField
+          ref={inputRef}
+          label={t('addSheet.word.field')}
+          hideLabel
+          hint={query ? undefined : t('addSheet.word.label')}
+          type="text"
+          lang="en"
+          value={term}
+          onChange={(e) => {
+            setTerm(e.target.value);
+            if (query) setQuery('');
+          }}
+          placeholder={t('addSheet.word.field')}
+          autoComplete="off"
+          autoCapitalize="none"
+          spellCheck={false}
+          enterKeyHint="search"
+          maxLength={LIMITS.term}
+          data-testid="add-word-input"
+          fieldClassName="min-w-0 flex-1"
+          className="font-serif text-lead"
+        />
+        <Button type="submit" variant={query ? 'secondary' : 'primary'} className="shrink-0">
+          {t('addSheet.word.submit')}
+        </Button>
       </form>
       {query ? (
         <WordResult key={query} term={query} onNavigate={onNavigate} onAgain={again} />
@@ -299,7 +281,7 @@ function WordAdd({
         <Link
           to="/add"
           onClick={onNavigate}
-          className="inline-flex min-h-11 items-center gap-1.5 self-start pl-1 text-[0.9375rem] font-medium text-accent-text underline-offset-4 hover:underline"
+          className={buttonClasses({ variant: 'ghost', size: 'sm', className: 'self-start' })}
           data-testid="add-way-word"
         >
           <Icon name="pencil" size={16} />
@@ -323,7 +305,7 @@ function JobsLink({ onNavigate }: { onNavigate: () => void }) {
       to="/import"
       onClick={onNavigate}
       data-testid="add-jobs-link"
-      className="inline-flex min-h-11 items-center gap-1.5 self-start px-1 text-[0.9375rem] font-medium text-accent-text underline-offset-4 hover:underline"
+      className={buttonClasses({ variant: 'tonal', size: 'sm', className: 'self-start' })}
     >
       <Icon name="sync-pending" size={16} />
       {t('importer.jobs.link', { count: open })}
@@ -351,24 +333,28 @@ function WordResult({
     <Link
       to={quickAddHref(shown)}
       onClick={onNavigate}
-      className="inline-flex min-h-11 items-center gap-1.5 self-center text-[0.9375rem] font-medium text-accent-text underline-offset-4 hover:underline"
+      className={buttonClasses({ variant: 'ghost', size: 'sm', className: 'self-center' })}
       data-testid="add-word-manual"
     >
       <Icon name="pencil" size={16} />
       {/* Nothing found: there is nothing to edit, so it stays "Elle ekle" (B4). */}
-      {senses.length === 0 && mine.length === 0 ? t('addSheet.word.manual') : t('addSheet.word.edit')}
+      {senses.length === 0 && mine.length === 0
+        ? t('addSheet.word.manual')
+        : t('addSheet.word.edit')}
     </Link>
   );
 
   if (saved) {
     const nothing = saved.added === 0;
     return (
-      <div
+      <Card
+        tone="sunken"
+        inset
         role="status"
-        className="flex flex-col gap-3 rounded-[16px] bg-surface-sunken px-4 py-3"
+        className="flex flex-col items-start gap-3"
         data-testid="add-word-saved"
       >
-        <p className="flex items-center gap-2 font-medium text-fg">
+        <p className="flex items-center gap-2 text-ui font-medium text-fg">
           <Icon
             name={nothing ? 'info' : 'check'}
             size={18}
@@ -378,21 +364,19 @@ function WordResult({
             ? t('quick.nothingNew', { term: saved.term })
             : t('quick.saved', { term: saved.term })}
         </p>
-        <Button variant="secondary" onClick={onAgain} className="self-start">
+        <Button variant="secondary" onClick={onAgain}>
           {t('addSheet.word.another')}
         </Button>
-      </div>
+      </Card>
     );
   }
 
   return (
     <div className="flex flex-col gap-3" data-testid="add-word-result">
-      <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1 pl-1">
-        <span lang="en" className="font-serif text-2xl font-semibold text-fg">
-          {shown}
-        </span>
+      <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1 px-1">
+        <Term size="title">{shown}</Term>
         {preview?.ipa && (
-          <span lang="en" className="font-serif text-sm text-fg-muted">
+          <span lang="en" className="font-serif text-meta text-fg-muted">
             /{preview.ipa.replace(/^\/|\/$/g, '')}/
           </span>
         )}
@@ -406,7 +390,7 @@ function WordResult({
               {t('quick.searching')}
             </p>
           )}
-          <Skeleton className="h-14 w-full rounded-[14px]" />
+          <Skeleton className="h-14 w-full rounded-inner" />
         </div>
       ) : senses.length > 0 ? (
         <SenseChoices senses={senses} picked={picked} onToggle={toggle} />
@@ -414,13 +398,7 @@ function WordResult({
         // A guest gets the Google button right here, not only a sentence (B4).
         <SignInNeeded title={t('addSheet.word.signIn')} testId="add-word-signin" />
       ) : (
-        <p
-          role={lookup === 'failed' ? 'alert' : 'status'}
-          className={cn(
-            'rounded-[14px] bg-surface-sunken px-4 py-3 text-[0.9375rem]',
-            lookup === 'failed' ? 'text-danger-text' : 'text-fg-muted',
-          )}
-        >
+        <Notice tone={lookup === 'failed' ? 'danger' : 'muted'}>
           {t(
             lookup === 'offline'
               ? 'addSheet.word.offline'
@@ -428,10 +406,10 @@ function WordResult({
                 ? 'quick.failed'
                 : 'addSheet.word.notFound',
           )}
-        </p>
+        </Notice>
       )}
       {addError && (
-        <p role="alert" className="text-sm text-danger-text">
+        <p role="alert" className="text-meta text-danger-text">
           {addError}
         </p>
       )}

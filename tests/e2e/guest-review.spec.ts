@@ -9,7 +9,7 @@ test('first open: add 3 words, review with the keyboard (Space, 1–4, Z), strea
   await expect(page.getByRole('heading', { name: 'Hoş geldin' })).toBeVisible();
   // The welcome button opens the Add sheet; "Kelime yaz" leads to the add form.
   await page.getByRole('button', { name: 'İlk kelimeni ekle' }).click();
-  await page.getByRole('dialog', { name: 'Ne eklemek istersin?' }).getByTestId('add-way-word').click();
+  await page.getByRole('dialog', { name: 'Ekle' }).getByTestId('add-way-word').click();
   await expect(page).toHaveURL(/\/add$/);
 
   for (const w of WORDS) await addWord(page, w);

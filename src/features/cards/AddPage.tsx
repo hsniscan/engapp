@@ -4,9 +4,11 @@
 //   /add?tab=paste | tab=pdf   "Metin ekle": paste or PDF, then the capture's two ways on
 //
 // The tab is kept in the URL so links and reloads land on it; old links (?tab=manual) still work.
+// v0.5.2 "Çam" (ADR 0068): the shared Ekle frame (back to the sheet), the other sources as a list.
 import { useTranslation } from 'react-i18next';
-import { Link, useSearchParams } from 'react-router';
-import { Icon, Page, Tabs, type IconName } from '@/ui';
+import { useSearchParams } from 'react-router';
+import { AddFlowPage } from '@/features/add/ui';
+import { ListGroup, ListRow, Tabs, type IconName } from '@/ui';
 import { addTabPanels } from './addTabs';
 import { ManualAddForm } from './ManualAddForm';
 
@@ -23,21 +25,12 @@ const OTHER_WAYS: { to: string; icon: IconName; key: 'link' | 'photo' | 'subtitl
 function OtherWays() {
   const { t } = useTranslation();
   return (
-    <nav aria-label={t('add.otherWays')} className="mt-8 flex flex-col gap-2">
-      <p className="text-sm text-fg-muted">{t('add.otherWays')}</p>
-      <ul className="flex flex-wrap gap-2">
+    <nav aria-label={t('add.otherWays')} className="mt-8">
+      <ListGroup label={t('add.otherWays')}>
         {OTHER_WAYS.map((w) => (
-          <li key={w.key}>
-            <Link
-              to={w.to}
-              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-surface px-4 text-[0.9375rem] font-medium text-fg transition-colors duration-(--duration-micro) hover:border-border-strong"
-            >
-              <Icon name={w.icon} size={18} className="text-fg-muted" />
-              {t(`addSheet.text.${w.key}`)}
-            </Link>
-          </li>
+          <ListRow key={w.key} to={w.to} leadingIcon={w.icon} title={t(`addSheet.text.${w.key}`)} />
         ))}
-      </ul>
+      </ListGroup>
     </nav>
   );
 }
@@ -49,16 +42,16 @@ export function AddPage() {
 
   if (!isTextTab(tabParam)) {
     return (
-      <Page title={t('add.wordTitle')} description={t('add.wordLead')}>
+      <AddFlowPage title={t('add.wordTitle')} description={t('add.wordLead')}>
         <ManualAddForm />
-      </Page>
+      </AddFlowPage>
     );
   }
 
   const Paste = addTabPanels.paste;
   const Pdf = addTabPanels.pdf;
   return (
-    <Page title={t('add.textTitle')} description={t('add.textLead')}>
+    <AddFlowPage title={t('add.textTitle')} description={t('add.textLead')}>
       <Tabs
         label={t('add.textTitle')}
         value={tabParam}
@@ -77,6 +70,6 @@ export function AddPage() {
         ]}
       />
       <OtherWays />
-    </Page>
+    </AddFlowPage>
   );
 }
