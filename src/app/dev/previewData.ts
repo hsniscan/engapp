@@ -6,7 +6,9 @@ export const previewReading = {
   /** Tokens of the reader body; `mark` = how the reader highlights the word. */
   paragraphs: [
     [
-      ['Every morning, Mara unlocked the old library before the town woke up. She carried a small '],
+      [
+        'Every morning, Mara unlocked the old library before the town woke up. She carried a small ',
+      ],
       ['lantern', 'new'],
       [' even in summer, because the back rooms were dark and the '],
       ['corridors', 'learning'],
@@ -15,7 +17,9 @@ export const previewReading = {
     [
       ['She was not a '],
       ['meticulous', 'learning'],
-      [' person by nature, but the books had taught her patience. Each returned volume went back to its exact place, its '],
+      [
+        ' person by nature, but the books had taught her patience. Each returned volume went back to its exact place, its ',
+      ],
       ['spine', 'new'],
       [' facing out, its title level with its neighbours.'],
     ],

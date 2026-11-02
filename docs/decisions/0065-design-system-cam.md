@@ -45,7 +45,7 @@ calm, premium, simple, not childish, not generic, perfect Turkish, WCAG AA, exce
 ## Why
 
 A new identity only reads as "premium" if it is applied with no drift; the review showed drift,
-not the old palette, was the problem. So the change is the palette and type *plus* single scales,
+not the old palette, was the problem. So the change is the palette and type _plus_ single scales,
 a guard test and shared components that make the consistent choice the easy one. Keeping token
 names and component APIs lets the identity land everywhere at once without touching feature code
 in wave 1, while wave 2 rebuilds screens from the blueprints.

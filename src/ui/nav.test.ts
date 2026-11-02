@@ -33,7 +33,7 @@ describe('bottom navigation', () => {
     expect(activeTabs('/settings/calisma')).toEqual(['/profile']);
   });
 
-  it('marks no tab on the (+) sheet\'s own flows', () => {
+  it("marks no tab on the (+) sheet's own flows", () => {
     expect(activeTabs('/add')).toEqual([]);
     expect(activeTabs('/import/anki')).toEqual([]);
   });

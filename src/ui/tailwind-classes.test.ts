@@ -34,9 +34,7 @@ async function compiler() {
     base: dirname(entry),
     async loadStylesheet(id: string, base: string) {
       const path =
-        id === 'tailwindcss'
-          ? join(root, 'node_modules/tailwindcss/index.css')
-          : resolve(base, id);
+        id === 'tailwindcss' ? join(root, 'node_modules/tailwindcss/index.css') : resolve(base, id);
       return { path, base: dirname(path), content: readFileSync(path, 'utf8') };
     },
   });
