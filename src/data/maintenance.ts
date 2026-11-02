@@ -3,8 +3,10 @@ import { z } from 'zod';
 import {
   type BackupFile,
   type BackupTables,
+  backupAccountId,
   buildBackup,
   buildNotesCsv,
+  canonicalJson,
   type CsvHeaders,
   verifyBackup,
 } from '../domain/backup';
@@ -482,6 +484,9 @@ export async function exportBackup(now: Millis = Date.now()): Promise<BackupFile
   return buildBackup(await readTables(), {
     exported_at: now,
     device_id: await getDeviceId(),
+    // The account the rows belong to (null for a guest): restore tells "my backup" from
+    // another account's (v0.5.2, ADR 0063).
+    account_id: (await getMeta<string | null>(META.userId)) ?? null,
   });
 }
 
@@ -491,9 +496,17 @@ export async function recordBackup(now: Millis = Date.now()): Promise<void> {
 }
 
 /** Notes as CSV (UTF-8 BOM, ";" separated). Pass translated column headers from tr.json. */
-export async function exportCsv(headers?: CsvHeaders, now: Millis = Date.now()): Promise<string> {
+export async function exportCsv(
+  headers?: CsvHeaders,
+  now: Millis = Date.now(),
+  /** Only these notes (a deck or a selection, v0.5.2); every note when absent. */
+  noteIds?: Iterable<Id>,
+): Promise<string> {
   const settings = await getSettings(now);
-  const [notes, senses] = await Promise.all([db.notes.toArray(), db.senses.toArray()]);
+  const only = noteIds ? new Set(noteIds) : null;
+  const [allNotes, allSenses] = await Promise.all([db.notes.toArray(), db.senses.toArray()]);
+  const notes = only ? allNotes.filter((n) => only.has(n.id)) : allNotes;
+  const senses = only ? allSenses.filter((s) => only.has(s.note_id)) : allSenses;
   return buildNotesCsv(notes, senses, {
     timezone: dayConfig(settings).timezone,
     ...(headers ? { headers } : {}),
@@ -511,11 +524,14 @@ export interface RestoreResult {
   recomputedCards: number;
 }
 
-function sameRow(a: unknown, b: unknown): boolean {
-  return (
-    JSON.stringify(a, Object.keys(a as object).sort()) ===
-    JSON.stringify(b, Object.keys(b as object).sort())
-  );
+/**
+ * Same content, whatever the key order. The old version passed the top-level keys as a
+ * JSON.stringify allow-list, which also filtered nested objects (a deck's filter, a text's
+ * story, settings' FSRS params) and ignored keys only one side had: different rows compared
+ * equal and a restore kept the stale local row (v0.5.2).
+ */
+export function sameRow(a: unknown, b: unknown): boolean {
+  return canonicalJson(a) === canonicalJson(b);
 }
 
 /** Rows per transaction while restoring (decision 0025). */
@@ -553,6 +569,39 @@ export function restoreBackup(
   return whileRestoring(() => restoreBackupNow(file, mode, now, chunkSize));
 }
 
+/**
+ * Whether a verified backup belongs to an account other than this device's (v0.5.2, ADR
+ * 0063). A guest's backup belongs to nobody and restores anywhere; an account's backup
+ * restores with its history only on a device signed in to that account. Elsewhere only its
+ * words may come along (importForeignBackupCards), so review history never moves between
+ * accounts.
+ */
+export async function isForeignBackup(backup: BackupFile): Promise<boolean> {
+  const owner = backupAccountId(backup);
+  if (owner === null) return false;
+  return owner !== ((await getMeta<string | null>(META.userId)) ?? null);
+}
+
+/**
+ * "Yalnızca kelimeleri al": the words of another account's backup become new cards of this
+ * device's user (no history, settings, texts or reports). Returns the notes copied.
+ * @throws ActionError('invalid_backup') with the verify error as message.
+ */
+export async function importForeignBackupCards(file: unknown, now: Millis = Date.now()): Promise<number> {
+  const verified = await verifyBackup(file);
+  if (!verified.ok) throw new ActionError('invalid_backup', verified.error);
+  const t = verified.backup.tables;
+  const { importBackupCards } = await import('./account');
+  return whileRestoring(() =>
+    importBackupCards({ notes: t.notes, senses: t.senses, sources: t.sources, decks: t.decks ?? [] }, now),
+  );
+}
+
+/** Every row of a restore carries this device's account (null for a guest), never the file's. */
+function ownRow<T extends { user_id: string | null }>(row: T, userId: string | null): T {
+  return row.user_id === userId ? row : { ...row, user_id: userId };
+}
+
 async function restoreBackupNow(
   file: unknown,
   mode: RestoreMode,
@@ -561,6 +610,8 @@ async function restoreBackupNow(
 ): Promise<RestoreResult> {
   const verified = await verifyBackup(file);
   if (!verified.ok) throw new ActionError('invalid_backup', verified.error);
+  // Another account's backup never restores with its history (the multi-account rule).
+  if (await isForeignBackup(verified.backup)) throw new ActionError('foreign_backup');
   const tables = verified.backup.tables;
   const res: RestoreResult = {
     inserted: 0,
@@ -585,8 +636,9 @@ async function restoreBackupNow(
         )[];
         const asIs: MutableRows[MutableTable][] = [];
         const stamped: MutableRows[MutableTable][] = [];
-        for (const [i, row] of chunk.entries()) {
+        for (const [i, fileRow] of chunk.entries()) {
           const local = existing[i];
+          const row = ownRow(fileRow, w.userId);
           if (!local) {
             asIs.push(row);
             res.inserted++;
@@ -632,7 +684,7 @@ async function restoreBackupNow(
   for (const chunk of chunks(tables.review_logs, chunkSize)) {
     await writeTx([db.review_logs], now, async (w) => {
       const known = await db.review_logs.bulkGet(chunk.map((l) => l.id));
-      const fresh = chunk.filter((_, i) => !known[i]);
+      const fresh = chunk.filter((_, i) => !known[i]).map((l) => ownRow(l, w.userId));
       for (const log of fresh) w.observe(log.hlc);
       // A guest's logs are queued by adoptGuestData at the first sign-in (all of them), so
       // queuing them now would only fill the outbox (decision 0025).
@@ -643,7 +695,7 @@ async function restoreBackupNow(
   for (const chunk of chunks(tables.practice_logs ?? [], chunkSize)) {
     await writeTx([db.practice_logs], now, async (w) => {
       const known = await db.practice_logs.bulkGet(chunk.map((l) => l.id));
-      const fresh = chunk.filter((_, i) => !known[i]);
+      const fresh = chunk.filter((_, i) => !known[i]).map((l) => ownRow(l, w.userId));
       for (const log of fresh) w.observe(log.hlc);
       await w.insertPracticeLogs(fresh, w.userId !== null);
     });
@@ -651,7 +703,7 @@ async function restoreBackupNow(
   for (const chunk of chunks(tables.level_tests ?? [], chunkSize)) {
     await writeTx([db.level_tests], now, async (w) => {
       const known = await db.level_tests.bulkGet(chunk.map((t) => t.id));
-      const fresh = chunk.filter((_, i) => !known[i]);
+      const fresh = chunk.filter((_, i) => !known[i]).map((t) => ownRow(t, w.userId));
       for (const test of fresh) w.observe(test.hlc);
       await w.insertLevelTests(fresh, w.userId !== null);
     });
@@ -666,7 +718,7 @@ async function restoreBackupNow(
         if (haveWeeks.has(report.week)) continue;
         haveWeeks.add(report.week);
         w.observe(report.hlc);
-        fresh.push(report);
+        fresh.push(ownRow(report, w.userId));
       }
       await w.insertWeeklyReports(fresh, w.userId !== null);
       await db.report_drafts.bulkDelete(fresh.map((r) => r.week));

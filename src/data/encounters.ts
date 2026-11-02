@@ -10,8 +10,8 @@ import { getMeta, setMeta } from './meta';
 import { dayConfig, getSettings } from './settings';
 import { type SyncWriter, writeTx } from './writer';
 
-/** Meta key: the last reader opening counted for a text (device-local). */
-export const readerOpenKey = (textId: Id): string => `reader_open:${textId}`;
+/** Meta key: the notes already counted for a text on this device (v0.5.2: texts, not openings). */
+export const readerCountedKey = (textId: Id): string => `reader_counted:${textId}`;
 
 /** +1 for each note on today's row of this device and `source`. Call inside writeTx with db.encounters. */
 export async function bumpEncountersIn(
@@ -31,8 +31,9 @@ export async function bumpEncountersIn(
 
 /**
  * The reader opened `textId` and the user's notes `noteIds` occur in it: one reader
- * encounter each, once per opening. `openKey` identifies the opening (the router's location
- * key): a re-render, a remount or a reload of the same opening counts nothing again.
+ * encounter for each note the first time this device shows it in this text. "3 metinde" then
+ * means three texts, however often one of them is opened or reloaded (v0.5.2, ADR 0063).
+ * `openKey` (the router's location key) is kept for callers; it no longer decides anything.
  * Returns how many notes were counted.
  */
 export async function recordReaderEncounters(
@@ -42,12 +43,16 @@ export async function recordReaderEncounters(
   now: Millis = Date.now(),
   source: EncounterSource = 'reader',
 ): Promise<number> {
+  void openKey;
   const day = dayKeyOf(now, dayConfig(await getSettings(now)));
   return writeTx([db.encounters], now, async (w) => {
-    const key = readerOpenKey(textId);
-    if ((await getMeta<string>(key)) === openKey) return 0;
-    await setMeta(key, openKey);
-    return (await bumpEncountersIn(w, noteIds, source, day)).length;
+    const key = readerCountedKey(textId);
+    const seen = new Set((await getMeta<string[]>(key)) ?? []);
+    const fresh = [...new Set(noteIds)].filter((id) => !seen.has(id));
+    if (fresh.length === 0) return 0;
+    for (const id of fresh) seen.add(id);
+    await setMeta(key, [...seen]);
+    return (await bumpEncountersIn(w, fresh, source, day)).length;
   });
 }
 

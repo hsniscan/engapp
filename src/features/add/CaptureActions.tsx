@@ -106,7 +106,7 @@ export function CaptureActions({
 }
 
 /** Guests: extraction is the only part that needs an account, and the line says so. */
-function ExtractSignIn() {
+export function ExtractSignIn() {
   const { t } = useTranslation();
   const auth = useAuth();
   const [busy, setBusy] = useState(false);

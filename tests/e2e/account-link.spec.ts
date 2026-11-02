@@ -28,7 +28,7 @@ test('sign-in succeeds but the sync backend fails → "Misafir olarak devam et" 
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.getByRole('link', { name: /Eşitleme durumu: Misafir modu/ })).toBeVisible();
   await page.goto('/library');
-  await expect(page.getByRole('list', { name: 'Notlar' }).getByRole('listitem')).toHaveCount(1);
+  await expect(page.getByRole('list', { name: 'Kelimeler' }).getByRole('listitem')).toHaveCount(1);
 });
 
 test('second-device question can also be left with "Misafir olarak devam et" (nothing changes)', async ({
@@ -56,6 +56,6 @@ test('second-device question can also be left with "Misafir olarak devam et" (no
   expect(backend.count('sync_push')).toBe(0);
   await page.goto('/library');
   await expect(
-    page.getByRole('list', { name: 'Notlar' }).getByText('thrive', { exact: true }),
+    page.getByRole('list', { name: 'Kelimeler' }).getByText('thrive', { exact: true }),
   ).toBeVisible();
 });

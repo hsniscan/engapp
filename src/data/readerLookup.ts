@@ -18,8 +18,11 @@ export interface ReaderMeaning {
 export interface ReaderWordInfo {
   /** The form the meanings belong to (the lemma, or the written form when only that is known). */
   term: string;
-  /** 'note': the user's card; 'bank': Kelime Bankası; 'lexicon': the cached shared dictionary. */
-  source: 'note' | 'bank' | 'lexicon' | null;
+  /**
+   * 'note': the user's card; 'gloss': the text's own gloss (library texts and stories, works
+   * offline and for guests); 'bank': Kelime Bankası; 'lexicon': the cached shared dictionary.
+   */
+  source: 'note' | 'gloss' | 'bank' | 'lexicon' | null;
   noteId: Id | null;
   lexiconTermId: Id | null;
   ipa: string | null;
@@ -44,7 +47,28 @@ async function pictureOf(lexiconSenseId: Id | null, senseId: Id = ''): Promise<C
   }
 }
 
-async function lookupOne(term: string): Promise<ReaderWordInfo | null> {
+/** A gloss the text itself carries ("Fishermen" → "balıkçılar"). */
+export interface TextGloss {
+  word: string;
+  tr: string;
+}
+
+/** The text's gloss for one of these forms, matched like notes (normalized, lemma or written). */
+export function glossFor(glosses: readonly TextGloss[] | undefined, forms: readonly string[]): TextGloss | null {
+  if (!glosses?.length) return null;
+  const keys = new Set(forms.map(normalizeTerm).filter(Boolean));
+  return glosses.find((g) => keys.has(normalizeTerm(g.word)) && g.tr.trim()) ?? null;
+}
+
+async function noteHit(term: string): Promise<ReaderWordInfo | null> {
+  const norm = normalizeTerm(term);
+  if (!norm) return null;
+  const note = (await db.notes.where('term_norm').equals(norm).toArray()).find((n) => n.deleted_at === null);
+  if (!note) return null;
+  return (await lookupOne(term, true)) ?? null;
+}
+
+async function lookupOne(term: string, notesOnly = false): Promise<ReaderWordInfo | null> {
   const norm = normalizeTerm(term);
   if (!norm) return null;
   const note = (await db.notes.where('term_norm').equals(norm).toArray()).find(
@@ -71,6 +95,7 @@ async function lookupOne(term: string): Promise<ReaderWordInfo | null> {
       };
     }
   }
+  if (notesOnly) return null;
   const bank = await db.word_bank.where('lemma_norm').equals(norm).toArray();
   if (bank.length) {
     const sorted = [...bank].sort((a, b) => (b.zipf ?? 0) - (a.zipf ?? 0));
@@ -112,7 +137,28 @@ async function lookupOne(term: string): Promise<ReaderWordInfo | null> {
  * The meanings of a tapped word or selected phrase: the lemma first ("went" → "go"), then the
  * written form. `source: null` when the device has nothing (the sheet may then ask online).
  */
-export async function lookupReaderWord(lemma: string, written: string): Promise<ReaderWordInfo> {
+export async function lookupReaderWord(
+  lemma: string,
+  written: string,
+  /** The text's own glosses (graded_bodies.glosses, a story's glossary): after the user's card. */
+  glosses?: readonly TextGloss[],
+): Promise<ReaderWordInfo> {
+  for (const t of [lemma, written]) {
+    const hit = await noteHit(t);
+    if (hit) return hit;
+  }
+  const gloss = glossFor(glosses, [lemma, written]);
+  if (gloss)
+    return {
+      // The card gets the dictionary form even when the gloss is for the written one.
+      term: lemma.trim() || gloss.word,
+      source: 'gloss',
+      noteId: null,
+      lexiconTermId: null,
+      ipa: null,
+      meanings: [{ meaning_tr: gloss.tr, gloss_en: null, pos: null, lexicon_sense_id: null }],
+      picture: null,
+    };
   for (const t of [lemma, written]) {
     const hit = await lookupOne(t);
     if (hit) return hit;

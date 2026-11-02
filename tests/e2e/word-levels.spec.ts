@@ -17,7 +17,7 @@ test('Cards: level badges, filter and sort by level, and the user’s own level'
 }) => {
   for (const w of LEVEL_WORDS) await addWord(page, w);
   await page.goto('/library');
-  const list = page.getByRole('list', { name: 'Notlar' });
+  const list = page.getByRole('list', { name: 'Kelimeler' });
   const row = (term: string) => list.getByRole('listitem').filter({ hasText: term });
 
   // Badges: list level (solid) and frequency level, named with their source.
@@ -161,7 +161,7 @@ test('signed in: levels stored with the lexicon by ai-extract; an AI guess has a
   await page.getByRole('button', { name: '3 kelimeyi ekle' }).click();
   await expect(page).toHaveURL(/\/library/);
 
-  const list = page.getByRole('list', { name: 'Notlar' });
+  const list = page.getByRole('list', { name: 'Kelimeler' });
   const row = (term: string) => list.getByRole('listitem').filter({ hasText: term });
   // In the list: the list level wins over the model's guess (B1).
   await expect(

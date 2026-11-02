@@ -71,7 +71,26 @@ function cellsOf(line: string, sep: string | null): string[] {
   return [clean(line)];
 }
 
-const HEADER = /^(term|word|english|ingilizce|kelime|front|question|en)$/i;
+const HEADER = /^(term|word|english|ingilizce|kelime|sözcük|front|question|en)$/u;
+
+/** A header cell, compared with Turkish case rules ("İngilizce" = "ingilizce", B5). */
+const isHeader = (cell: string) => HEADER.test(cell.toLocaleLowerCase('tr').replace(/i̇/g, 'i'));
+
+const TR_ONLY = /[çğıöşüÇĞİÖŞÜ]/u;
+
+/**
+ * Does the last cell read like an English example sentence for `term`? Only when it uses the
+ * term (its first word) or ends like an English sentence, never for a Turkish phrase such as
+ * "tahammül etmek zorunda kalmak" (B5).
+ */
+export function looksLikeExample(cell: string, term: string): boolean {
+  const words = cell.split(' ').filter((w) => /\p{L}/u.test(w));
+  if (words.length < 3) return false;
+  const head = term.toLowerCase().split(/\s+/)[0] ?? '';
+  const stem = head.length > 4 ? head.slice(0, -1) : head;
+  if (stem && cell.toLowerCase().split(/[^\p{L}']+/u).some((w) => w.startsWith(stem))) return true;
+  return /[.?!]["'”’)]?$/u.test(cell) && !TR_ONLY.test(cell);
+}
 
 const clean = (s: string) => s.replace(/\s+/g, ' ').trim();
 
@@ -88,13 +107,13 @@ export function parseWordList(text: string): WordListParse {
   lines.forEach((line, i) => {
     const cells = cellsOf(line, sep);
     const [term = '', ...rest] = cells.filter((c, j) => j === 0 || c !== '');
-    // The last cell is an example sentence only when it reads like one (three words or more);
-    // otherwise it is more of the meaning ("bank, kıyı, sahil").
+    // The last cell is an example sentence only when it reads like one for this term;
+    // otherwise it is more of the meaning ("bank, kıyı, sahil", "katlanmak, tahammül etmek").
     const last = rest.length >= 2 ? rest[rest.length - 1]! : '';
-    const isSentence = last.split(' ').filter((w) => /\p{L}/u.test(w)).length >= 3;
+    const isSentence = last !== '' && looksLikeExample(last, term);
     const meaning = (isSentence ? rest.slice(0, -1) : rest).join(', ');
     const sentence = isSentence ? last : '';
-    if (i === 0 && HEADER.test(term)) return;
+    if (i === 0 && isHeader(term)) return;
     if (!/\p{L}/u.test(term) || !/\p{L}/u.test(meaning)) {
       skipped++;
       return;

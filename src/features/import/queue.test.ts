@@ -173,21 +173,34 @@ describe('import queue', () => {
     });
   });
 
-  it('daily_limit stops the queue with a friendly error; retrying continues', async () => {
+  it('daily_limit parks the job until the next UTC day; it resumes by itself (B3)', async () => {
     const h = harness();
     const chunks = chunkText(fakeText(), 1000);
     const job = await createImportJob({ kind: 'text', title: 'T', chunks, level: 'B1' });
     h.fail.push(null, new AiClientError('daily_limit', 'limit', 429));
     expect(await processImportQueue(h.deps)).toBe('daily_limit');
-    expect(await getImportJob(job.id)).toMatchObject({
-      status: 'failed',
-      error_code: 'daily_limit',
-      chunk_done: 1,
-    });
-    const { retryImportJob } = await import('@/data');
-    await retryImportJob(job.id);
+    const parked = await getImportJob(job.id);
+    expect(parked).toMatchObject({ status: 'queued', error_code: 'daily_limit', chunk_done: 1 });
+    expect(parked!.next_attempt_at).toBe(Date.UTC(2026, 9, 22, 0, 5));
+    // Still today: nothing is asked again.
+    const before = h.calls.length;
+    expect(await processImportQueue(h.deps)).toBe('idle');
+    expect(h.calls.length).toBe(before);
+    // Tomorrow: it continues from where it stopped.
+    h.clock.now = Date.UTC(2026, 9, 22, 6);
     expect(await processImportQueue(h.deps)).toBe('idle');
     expect(await getImportJob(job.id)).toMatchObject({ status: 'ready', error_code: null });
+  });
+
+  it('a stopped job can show the words found so far', async () => {
+    const h = harness();
+    const chunks = chunkText(fakeText(), 1000);
+    const job = await createImportJob({ kind: 'text', title: 'T', chunks, level: 'B1' });
+    h.fail.push(null, new AiClientError('daily_limit', 'limit', 429));
+    await processImportQueue(h.deps);
+    const { previewPartialImportJob } = await import('@/data');
+    expect(await previewPartialImportJob(job.id)).toBe(true);
+    expect(await getImportJob(job.id)).toMatchObject({ status: 'ready', chunk_total: 1, chunk_done: 1 });
   });
 
   it('quota_exceeded is retried with backoff before failing', async () => {

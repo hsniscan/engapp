@@ -25,7 +25,7 @@ export function PdfImportPanel(_props: ImportPanelProps) {
   return (
     <>
       <PdfImportForm />
-      <ActiveJobs kind="pdf" />
+      <ActiveJobs />
     </>
   );
 }

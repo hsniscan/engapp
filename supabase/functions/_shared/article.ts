@@ -30,6 +30,8 @@ export interface ArticleStore {
     userId: string,
     limit: number,
   ): Promise<{ allowed: boolean; used: number; limit: number }>;
+  /** Gives the fetch back when it returned no article (v0.5.2, article_refund). */
+  refund?(userId: string): Promise<void>;
 }
 
 export interface ArticleDeps {
@@ -260,6 +262,7 @@ export async function runFetchArticle(body: unknown, deps: ArticleDeps): Promise
   const timer = setTimeout(() => ctrl.abort(), deps.timeoutMs ?? ARTICLE_TIMEOUT_MS);
   const ctx: Ctx = { deps, signal: ctrl.signal, robots: new Map() };
   const started = Date.now();
+  let ok = false;
   try {
     let page: Fetched;
     try {
@@ -303,6 +306,7 @@ export async function runFetchArticle(body: unknown, deps: ArticleDeps): Promise
           : 'No readable article text was found on the page.',
       );
     }
+    ok = true;
     return {
       url: page.url.href,
       ...out.article,
@@ -310,5 +314,11 @@ export async function runFetchArticle(body: unknown, deps: ArticleDeps): Promise
     };
   } finally {
     clearTimeout(timer);
+    // A fetch that ends without an article (robots, paywall, timeout, no text) gives its
+    // daily slot back, as ai-story does (B9).
+    if (!ok)
+      await deps.store.refund?.(deps.userId).catch((e: unknown) =>
+        deps.log?.('article refund failed', { error: String(e) }),
+      );
   }
 }

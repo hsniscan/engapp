@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { resetDb } from '@/test/db';
 import { db } from '@/data/db';
-import { fetchWordBank, WORD_BANK_REFRESH_MS, type WordBankFetchDeps } from './fetcher';
+import { fetchWordBank, isWordBankComplete, WORD_BANK_REFRESH_MS, type WordBankFetchDeps } from './fetcher';
 
 const T = Date.UTC(2026, 9, 22, 9);
 
@@ -70,5 +70,27 @@ describe('fetchWordBank', () => {
     const failing = { ...s.deps, fetchPage: async () => Promise.reject(new Error('HTTP 503')) };
     expect(await fetchWordBank(failing)).toEqual({ status: 'failed', error: 'HTTP 503' });
     expect(await db.word_bank.count()).toBe(0);
+  });
+
+  it('reports progress, joins a run already going, and knows a cut-short copy is partial (B7)', async () => {
+    const rows = Array.from({ length: 2500 }, (_, i) => row(`w${i}`, i + 1));
+    const s = server(rows);
+    let failAt = 2;
+    const flaky: WordBankFetchDeps = {
+      ...s.deps,
+      fetchPage: async (after, limit) => {
+        if (failAt-- === 0) throw new Error('network');
+        return s.deps.fetchPage!(after, limit);
+      },
+    };
+    const seen: number[] = [];
+    expect((await fetchWordBank(flaky, { onProgress: (n) => seen.push(n) })).status).toBe('failed');
+    expect(seen).toEqual([1000, 2000]);
+    expect(await isWordBankComplete()).toBe(false);
+    s.calls.length = 0;
+    const [a, b] = await Promise.all([fetchWordBank(s.deps, { force: true }), fetchWordBank(s.deps, { force: true })]);
+    expect(a).toEqual(b);
+    expect(s.calls).toEqual([2000]);
+    expect(await isWordBankComplete()).toBe(true);
   });
 });

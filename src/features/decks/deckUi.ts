@@ -53,7 +53,7 @@ export const deckStudyHref = (deckId: string) =>
 /** The single tag of a hand-picked or suggested deck, if the filter is just that. */
 export function soleTag(f: DeckFilter | null): string | null {
   if (!f || f.tags?.length !== 1) return null;
-  if (f.states?.length || f.levels?.length || f.topics?.length || f.addedWithinDays) return null;
+  if (f.states?.length || f.stages?.length || f.levels?.length || f.topics?.length || f.addedWithinDays) return null;
   return f.tags[0]!;
 }
 

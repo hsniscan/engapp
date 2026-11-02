@@ -5,7 +5,9 @@ export type ActionErrorCode =
   | 'invalid_input'
   | 'already_undone'
   | 'not_undoable'
-  | 'invalid_backup';
+  | 'invalid_backup'
+  /** A backup of another account restored with its history (v0.5.2, ADR 0063). */
+  | 'foreign_backup';
 
 /** Expected failures of data actions; the UI maps `code` to a tr.json message. */
 export class ActionError extends Error {

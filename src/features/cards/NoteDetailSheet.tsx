@@ -1,7 +1,7 @@
 import { LIMITS } from '@/domain/limits';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useNow } from '@/features/settings/useNow';
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActionError,
@@ -10,12 +10,18 @@ import {
   editSense,
   getNoteDetail,
   listTags,
+  bulkSoftDeleteNotes,
   logError,
+  markNotesKnown,
+  resetNoteProgress,
+  restoreNotes,
   setSuspended,
-  softDeleteNote,
   softDeleteSense,
+  undoMarkNotesKnown,
+  undoNoteReset,
   type NoteDetail,
 } from '@/data';
+import { cardStage, type WordStage } from '@/domain/stages';
 import type { Card, NoteTermType, Sense } from '@/domain/types';
 import { FalseFriendStrips } from '@/features/family/FalseFriendStrip';
 import { FamilySection } from '@/features/family/FamilySection';
@@ -40,7 +46,7 @@ import { MnemonicSection } from '@/features/mnemonics';
 import { useAppSettings } from '@/features/settings/useAppSettings';
 import { useSpeech } from '@/features/review/useSpeech';
 import { ConfirmDialog } from './ConfirmDialog';
-import { cardTypeLabel, posLabel, stateKey } from './labels';
+import { cardTypeLabel, posLabel } from './labels';
 import { senseText } from './libraryFilter';
 import { locateTerm } from './locateTerm';
 import { SentencePreview } from './SentencePreview';
@@ -108,16 +114,42 @@ export function NoteDetailSheet({
   }, [noteId, detail, onClose]);
 
   const data = live ?? shown;
+  // Unsaved edits: Escape, the ✕, Vazgeç or a tap outside ask before throwing them away (B4).
+  const dirty = useRef(false);
+  const [ask, setAsk] = useState(false);
+  const setDirty = useCallback((d: boolean) => {
+    dirty.current = d;
+  }, []);
+  const requestClose = () => {
+    if (dirty.current) setAsk(true);
+    else onClose();
+  };
+  const { t } = useTranslation();
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(o) => !o && onClose()}
-      title={data?.note.term ?? ''}
-      description={data ? <DetailMeta detail={data} /> : undefined}
-      className="sm:w-[min(calc(100vw-2rem),36rem)]"
-    >
-      {data && <DetailBody key={data.note.id} detail={data} onClose={onClose} />}
-    </Dialog>
+    <>
+      <Dialog
+        open={open}
+        onOpenChange={(o) => !o && requestClose()}
+        title={data?.note.term ?? ''}
+        description={data ? <DetailMeta detail={data} /> : undefined}
+        className="sm:w-[min(calc(100vw-2rem),36rem)]"
+      >
+        {data && <DetailBody key={data.note.id} detail={data} onClose={onClose} onDirty={setDirty} />}
+      </Dialog>
+      <ConfirmDialog
+        open={ask}
+        onOpenChange={setAsk}
+        title={t('library.detail.discardTitle')}
+        description={t('library.detail.discardBody')}
+        confirmLabel={t('library.detail.discard')}
+        cancelLabel={t('library.detail.keepEditing')}
+        onConfirm={() => {
+          setAsk(false);
+          dirty.current = false;
+          onClose();
+        }}
+      />
+    </>
   );
 }
 
@@ -131,7 +163,15 @@ function DetailMeta({ detail }: { detail: NoteDetail }) {
   return <>{t('library.detail.meta', { cards: detail.cards.length, date })}</>;
 }
 
-function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => void }) {
+function DetailBody({
+  detail,
+  onClose,
+  onDirty,
+}: {
+  detail: NoteDetail;
+  onClose: () => void;
+  onDirty: (dirty: boolean) => void;
+}) {
   const { t } = useTranslation();
   const id = useId();
   const { note, senses, cards } = detail;
@@ -140,9 +180,9 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
   const [termError, setTermError] = useState<string>();
   const [senseErrors, setSenseErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
-  const [confirm, setConfirm] = useState<{ kind: 'note' } | { kind: 'sense'; sense: Sense } | null>(
-    null,
-  );
+  const [confirm, setConfirm] = useState<
+    { kind: 'note' } | { kind: 'reset' } | { kind: 'sense'; sense: Sense } | null
+  >(null);
   const [deleting, setDeleting] = useState(false);
   const knownTags = useLiveQuery(() => listTags(), []);
 
@@ -191,6 +231,10 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
       );
     });
   }, [draft, note, senses]);
+  useEffect(() => {
+    onDirty(dirty);
+    return () => onDirty(false);
+  }, [dirty, onDirty]);
 
   const save = async () => {
     const errs: Record<string, string> = {};
@@ -255,6 +299,7 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
         });
       }
       toast({ title: t('library.detail.saved'), tone: 'success' });
+      onDirty(false);
       onClose();
     } catch (e) {
       if (e instanceof ActionError && e.code === 'duplicate_term')
@@ -268,15 +313,53 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
     }
   };
 
+  const markKnown = async () => {
+    try {
+      const res = await markNotesKnown([note.id]);
+      toast({
+        title: t('library.detail.knownDone', { term: note.term }),
+        tone: 'success',
+        action: {
+          label: t('library.undo'),
+          onClick: () => void undoMarkNotesKnown(res).catch((e) => logError(e, 'NoteDetail.knownUndo')),
+        },
+      });
+      onDirty(false);
+      onClose();
+    } catch (e) {
+      void logError(e, 'NoteDetail.known');
+      toast({ title: t('library.detail.saveFailed'), tone: 'danger' });
+    }
+  };
+
   const doDelete = async () => {
     if (!confirm) return;
     setDeleting(true);
     try {
       if (confirm.kind === 'note') {
-        await softDeleteNote(note.id);
-        toast({ title: t('library.detail.noteDeleted', { term: note.term }), tone: 'neutral' });
+        const res = await bulkSoftDeleteNotes([note.id]);
+        toast({
+          title: t('library.detail.noteDeleted', { term: note.term }),
+          tone: 'neutral',
+          action: {
+            label: t('library.undo'),
+            onClick: () => void restoreNotes(res.ids, res.at).catch((e) => logError(e, 'NoteDetail.undo')),
+          },
+        });
         setConfirm(null);
+        onDirty(false);
         onClose();
+      } else if (confirm.kind === 'reset') {
+        const res = await resetNoteProgress(note.id);
+        toast({
+          title: t('library.detail.resetDone', { term: note.term }),
+          tone: 'success',
+          action: {
+            label: t('library.undo'),
+            onClick: () => void undoNoteReset(res).catch((e) => logError(e, 'NoteDetail.resetUndo')),
+          },
+        });
+        setConfirm(null);
       } else {
         await softDeleteSense(confirm.sense.id);
         setConfirm(null);
@@ -557,7 +640,16 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
         />
       </section>
 
-      <div className="border-t border-border pt-4">
+      <div className="flex flex-col items-start gap-1 border-t border-border pt-4">
+        <Button variant="ghost" leadingIcon="check" className="-ml-2" onClick={() => void markKnown()}>
+          {t('library.detail.markKnown')}
+        </Button>
+        <p className="-mt-1 mb-1 text-sm text-fg-muted">{t('library.detail.markKnownHint')}</p>
+        {cards.some((c) => c.reps > 0 || c.state !== 0) && (
+          <Button variant="ghost" leadingIcon="refresh" className="-ml-2" onClick={() => setConfirm({ kind: 'reset' })}>
+            {t('library.detail.reset')}
+          </Button>
+        )}
         <Button
           variant="ghost"
           leadingIcon="trash"
@@ -584,12 +676,18 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
         title={
           confirm?.kind === 'sense'
             ? t('library.detail.deleteSenseTitle', { meaning: senseText(confirm.sense) })
-            : t('library.detail.deleteNoteTitle', { term: note.term })
+            : confirm?.kind === 'reset'
+              ? t('library.detail.resetTitle', { term: note.term })
+              : t('library.detail.deleteNoteTitle', { term: note.term })
         }
         description={
-          confirm?.kind === 'sense' ? t('library.detail.deleteSenseBody') : t('library.deleteBody')
+          confirm?.kind === 'sense'
+            ? t('library.detail.deleteSenseBody')
+            : confirm?.kind === 'reset'
+              ? t('library.detail.resetBody')
+              : t('library.deleteBody')
         }
-        confirmLabel={t('common.delete')}
+        confirmLabel={confirm?.kind === 'reset' ? t('library.detail.reset') : t('common.delete')}
         busy={deleting}
         onConfirm={doDelete}
       />
@@ -597,12 +695,13 @@ function DetailBody({ detail, onClose }: { detail: NoteDetail; onClose: () => vo
   );
 }
 
-const STATE_TONE = {
+const STAGE_TONE: Record<WordStage, 'neutral' | 'accent' | 'success' | 'warn'> = {
   new: 'neutral',
-  learning: 'accent',
-  review: 'success',
-  relearning: 'warn',
-} as const;
+  learning: 'warn',
+  consolidating: 'accent',
+  learned: 'success',
+  mastered: 'success',
+};
 
 function CardList({ cards, senses }: { cards: Card[]; senses: Sense[] }) {
   const { t } = useTranslation();
@@ -641,8 +740,8 @@ function CardList({ cards, senses }: { cards: Card[]; senses: Sense[] }) {
             {d && <span className="tabular text-fg-muted">{d}</span>}
             {!c.unlocked && <Badge tone="outline">{t('library.detail.locked')}</Badge>}
             {c.suspended && <Badge tone="outline">{t('cards.suspended')}</Badge>}
-            <Badge tone={STATE_TONE[stateKey(c.state)]} dot>
-              {t(`cards.state.${stateKey(c.state)}`)}
+            <Badge tone={STAGE_TONE[cardStage(c)]} dot>
+              {t(`library.stage.${cardStage(c)}`)}
             </Badge>
           </li>
         );

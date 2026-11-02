@@ -53,6 +53,19 @@ describe('extractCapture', () => {
   });
 });
 
+describe('capture again (B7)', () => {
+  it('a finished job is not reopened, and a new title renames the saved text', async () => {
+    const input = { kind: 'paste' as const, title: 'A', body: BODY };
+    const first = await extractCapture(input);
+    await db.import_jobs.update(first, { status: 'done' });
+    const second = await extractCapture({ ...input, title: 'B' });
+    expect(second).not.toBe(first);
+    const job = (await getImportJob(second))!;
+    expect((await db.texts.get(job.text_id!))!.title).toBe('B');
+    expect(await db.texts.count()).toBe(1);
+  });
+});
+
 describe('captureTitle', () => {
   it('first line, cut on a word', () => {
     expect(captureTitle('  \nShort line\nmore')).toBe('Short line');

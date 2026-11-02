@@ -7,9 +7,12 @@ import {
   getDeckNoteIds,
   getDeckSummaries,
   listTags,
+  bulkSetSuspended,
+  bulkSoftDeleteNotes,
   logError,
-  setSuspended,
-  softDeleteNote,
+  markNotesKnown,
+  restoreNotes,
+  undoMarkNotesKnown,
 } from '@/data';
 import { CEFR, noteLevel } from '@/domain/level';
 import type { CardType } from '@/domain/types';
@@ -35,7 +38,6 @@ import {
   toast,
 } from '@/ui';
 import { ConfirmDialog } from './ConfirmDialog';
-import { STATE_KEYS, type StateKey } from './labels';
 import {
   activeFilterCount,
   buildRows,
@@ -49,13 +51,14 @@ import {
   type LibraryRow,
   type SortOrder,
   type SuspendedFilter,
+  rowStage,
 } from './libraryFilter';
 import { NoteDetailSheet } from './NoteDetailSheet';
 import { useNow } from '@/features/settings/useNow';
 import { DeckEditorDialog } from '@/features/decks/DeckEditorDialog';
 import { describeDeckFilter } from '@/features/decks/describe';
 import { BackBar, StatusPill, type PillTone } from '@/features/decks/parts';
-import { cardStage, STAGE_LABEL_TR, type WordStage } from '@/domain/stages';
+import { WORD_STAGES, type WordStage } from '@/domain/stages';
 import { TagSheet } from '@/features/decks/TagSheet';
 import { practiceHref } from '@/features/extra/links';
 import { scanWhere } from '@/data/scan';
@@ -140,10 +143,13 @@ export function LibraryPage() {
 
   // Paging: render 60 rows, add more when the sentinel scrolls into view (or the button is pressed).
   const [limit, setLimit] = useState(PAGE_SIZE);
-  const [limitFor, setLimitFor] = useState(effective);
-  if (limitFor !== effective) {
+  // Keyed on the filter values only: opening a word (?note=) must not reset the paging and
+  // the scroll position underneath the sheet.
+  const filterKey = JSON.stringify([effective, deckId]);
+  const [limitFor, setLimitFor] = useState(filterKey);
+  if (limitFor !== filterKey) {
     // New search or filter: start again from the first page.
-    setLimitFor(effective);
+    setLimitFor(filterKey);
     setLimit(PAGE_SIZE);
   }
   const sentinel = useRef<HTMLDivElement>(null);
@@ -194,6 +200,7 @@ export function LibraryPage() {
     [setParams],
   );
 
+  const now = useNow();
   const totalCards = useMemo(() => rows?.reduce((n, r) => n + r.cards.length, 0) ?? 0, [rows]);
   const filterCount = activeFilterCount(filters);
   const nf = new Intl.NumberFormat('tr-TR');
@@ -233,10 +240,15 @@ export function LibraryPage() {
             title={t('library.empty')}
             description={t('library.emptyHint')}
             action={
-              <Link to="/add" className={buttonClasses({ variant: 'primary' })}>
-                <Icon name="plus" size={18} />
-                {t('home.addCard')}
-              </Link>
+              <div className="flex flex-wrap justify-center gap-2">
+                <Link to="/add" className={buttonClasses({ variant: 'primary' })}>
+                  <Icon name="plus" size={18} />
+                  {t('home.addCard')}
+                </Link>
+                <Link to="/decks?tab=bank" className={buttonClasses({ variant: 'secondary' })}>
+                  {t('library.emptyBank')}
+                </Link>
+              </div>
             }
           />
         </Surface>
@@ -385,6 +397,7 @@ export function LibraryPage() {
                   <NoteRow
                     key={r.note.id}
                     row={r}
+                    now={now}
                     selected={selected.has(r.note.id)}
                     onToggle={toggle}
                     onOpen={openNote}
@@ -404,7 +417,7 @@ export function LibraryPage() {
       )}
 
       {selected.size > 0 && rows && (
-        <BulkBar rows={rows} selected={selected} onClear={() => setSelected(new Set())} />
+        <BulkBar rows={filtered} selected={selected} onClear={() => setSelected(new Set())} />
       )}
 
       <NoteDetailSheet noteId={openNoteId} onClose={() => openNote(null)} />
@@ -431,20 +444,22 @@ const STAGE_TONE: Record<WordStage, PillTone> = {
 /** One note. The checkbox selects; the rest of the row opens the detail sheet. */
 const NoteRow = memo(function NoteRow({
   row,
+  now,
   selected,
   onToggle,
   onOpen,
 }: {
   row: LibraryRow;
+  /** One shared clock for the whole list (one timer, not one per row). */
+  now: number;
   selected: boolean;
   onToggle: (id: string, on: boolean) => void;
   onOpen: (id: string) => void;
 }) {
   const { t } = useTranslation();
   const { note, senses, cards } = row;
-  const recognition = cards.find((c) => c.card_type === 'recognition') ?? cards[0];
+  const stage = rowStage(row);
   const allSuspended = cards.length > 0 && row.suspendedCards === cards.length;
-  const now = useNow();
   const studied = cards.filter((c) => !c.suspended && c.state !== 0);
   const nextDue = studied.length ? Math.min(...studied.map((c) => c.due)) : null;
   const dueLabel = (due: number) => {
@@ -517,11 +532,7 @@ const NoteRow = memo(function NoteRow({
           <span className="tabular text-fg">{t('library.cardCount', { count: cards.length })}</span>
           {nextDue !== null && <span className="tabular text-fg-muted">{dueLabel(nextDue)}</span>}
         </span>
-        {recognition && (
-          <StatusPill tone={STAGE_TONE[cardStage(recognition)]}>
-            {STAGE_LABEL_TR[cardStage(recognition)]}
-          </StatusPill>
-        )}
+        {stage && <StatusPill tone={STAGE_TONE[stage]}>{t(`library.stage.${stage}`)}</StatusPill>}
       </button>
     </li>
   );
@@ -554,10 +565,10 @@ function FilterSelects({ filters, tags, onChange }: FilterProps) {
       <Select
         label={t('library.filter.state')}
         value={filters.state}
-        onValueChange={(v) => onChange({ state: v as StateKey | 'all' })}
+        onValueChange={(v) => onChange({ state: v as WordStage | 'all' })}
         options={[
           { value: 'all', label: t('library.filter.allStates') },
-          ...STATE_KEYS.map((k) => ({ value: k, label: t(`cards.state.${k}`) })),
+          ...WORD_STAGES.map((k) => ({ value: k, label: t(`library.stage.${k}`) })),
         ]}
       />
       <Select
@@ -681,6 +692,7 @@ function BulkBar({
   selected,
   onClear,
 }: {
+  /** The rows the current filter shows: an action never touches a selected row it hides. */
   rows: LibraryRow[];
   selected: Set<string>;
   onClear: () => void;
@@ -689,32 +701,59 @@ function BulkBar({
   const [confirm, setConfirm] = useState(false);
   const [tagging, setTagging] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const chosen = rows.filter((r) => selected.has(r.note.id));
   const allSuspended =
     chosen.length > 0 &&
     chosen.every((r) => r.cards.length > 0 && r.suspendedCards === r.cards.length);
   const n = chosen.length;
+  // The confirm dialog keeps the count it opened with (rows leave the list while it works).
+  const [frozenN, setFrozenN] = useState(n);
 
-  const run = async (fn: () => Promise<unknown>, done: string) => {
+  const run = async <T,>(fn: () => Promise<T>): Promise<T | undefined> => {
     setBusy(true);
+    setProgress(null);
     try {
-      await fn();
-      toast({ title: done, tone: 'success' });
+      return await fn();
     } catch (e) {
       void logError(e, 'Library.bulk');
       toast({ title: t('library.bulk.failed'), tone: 'danger' });
+      return undefined;
     } finally {
       setBusy(false);
+      setProgress(null);
     }
   };
+  const onProgress = (done: number, total: number) => setProgress({ done, total });
 
-  const suspend = (on: boolean) =>
-    run(
-      async () => {
-        for (const r of chosen) await setSuspended({ note_id: r.note.id }, on);
+  const suspend = async (on: boolean) => {
+    const ids = chosen.map((r) => r.note.id);
+    const count = ids.length;
+    const ok = await run(() => bulkSetSuspended(ids, on, { onProgress }).then(() => true));
+    if (ok)
+      toast({
+        title: on ? t('library.bulk.suspended', { count }) : t('library.bulk.unsuspended', { count }),
+        tone: 'success',
+        action: {
+          label: t('library.undo'),
+          onClick: () => void bulkSetSuspended(ids, !on).catch((e) => logError(e, 'Library.bulkUndo')),
+        },
+      });
+  };
+
+  const markKnown = async () => {
+    const res = await run(() => markNotesKnown(chosen.map((r) => r.note.id)));
+    if (!res) return;
+    onClear();
+    toast({
+      title: t('library.bulk.known', { count: res.ids.length }),
+      tone: 'success',
+      action: {
+        label: t('library.undo'),
+        onClick: () => void undoMarkNotesKnown(res).catch((e) => logError(e, 'Library.knownUndo')),
       },
-      on ? t('library.bulk.suspended', { count: n }) : t('library.bulk.unsuspended', { count: n }),
-    );
+    });
+  };
 
   // While the bar floats over the list, keyboard focus scrolls rows clear of it.
   useEffect(() => {
@@ -730,20 +769,28 @@ function BulkBar({
       <div
         role="region"
         aria-label={t('library.bulk.label')}
+        aria-busy={busy}
         className="pointer-events-auto flex w-full max-w-xl animate-pop-in items-center gap-1 rounded-card border border-border bg-surface-raised py-1.5 pr-1.5 pl-1 shadow-overlay"
       >
-        <IconButton icon="x" label={t('library.bulk.clear')} onClick={onClear} />
+        <IconButton icon="x" label={t('library.bulk.clear')} onClick={onClear} disabled={busy} />
         <p
           className="tabular min-w-0 flex-1 truncate text-[0.9375rem] font-medium text-fg"
           aria-live="polite"
         >
-          {t('library.bulk.count', { count: n })}
+          {progress
+            ? t('library.bulk.progress', { done: progress.done, total: progress.total })
+            : t('library.bulk.count', { count: n })}
+          {!progress && selected.size > n && (
+            <span className="block text-xs font-normal text-fg-muted">
+              {t('library.bulk.hidden', { count: selected.size - n })}
+            </span>
+          )}
         </p>
         <Button
           variant="secondary"
           size="sm"
           leadingIcon="tag"
-          disabled={busy}
+          disabled={busy || n === 0}
           onClick={() => setTagging(true)}
         >
           {t('library.bulk.tag')}
@@ -751,8 +798,21 @@ function BulkBar({
         <Button
           variant="secondary"
           size="sm"
+          leadingIcon="check"
+          disabled={busy || n === 0}
+          onClick={() => void markKnown()}
+          aria-label={t('library.bulk.markKnown')}
+          className="max-sm:px-2.5"
+        >
+          <span aria-hidden="true" className="max-sm:hidden">
+            {t('library.bulk.markKnown')}
+          </span>
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
           leadingIcon={allSuspended ? 'refresh' : 'pause'}
-          disabled={busy}
+          disabled={busy || n === 0}
           onClick={() => void suspend(!allSuspended)}
           aria-label={allSuspended ? t('library.bulk.unsuspend') : t('common.suspend')}
           className="max-sm:px-2.5"
@@ -764,8 +824,11 @@ function BulkBar({
         <IconButton
           icon="trash"
           label={t('library.bulk.delete', { count: n })}
-          onClick={() => setConfirm(true)}
-          disabled={busy}
+          onClick={() => {
+            setFrozenN(n);
+            setConfirm(true);
+          }}
+          disabled={busy || n === 0}
           className="hover:text-danger-text"
         />
       </div>
@@ -777,19 +840,28 @@ function BulkBar({
       <ConfirmDialog
         open={confirm}
         onOpenChange={setConfirm}
-        title={t('library.bulk.confirmTitle', { count: n })}
-        description={t('library.deleteBody')}
+        title={t('library.bulk.confirmTitle', { count: frozenN })}
+        description={
+          progress
+            ? t('library.bulk.progress', { done: progress.done, total: progress.total })
+            : t('library.deleteBody')
+        }
         confirmLabel={t('common.delete')}
         busy={busy}
         onConfirm={async () => {
-          await run(
-            async () => {
-              for (const r of chosen) await softDeleteNote(r.note.id);
-            },
-            t('library.bulk.deleted', { count: n }),
-          );
+          const ids = chosen.map((r) => r.note.id);
+          const res = await run(() => bulkSoftDeleteNotes(ids, { onProgress }));
           setConfirm(false);
+          if (!res) return;
           onClear();
+          toast({
+            title: t('library.bulk.deleted', { count: res.ids.length }),
+            tone: 'success',
+            action: {
+              label: t('library.undo'),
+              onClick: () => void restoreNotes(res.ids, res.at).catch((e) => logError(e, 'Library.deleteUndo')),
+            },
+          });
         }}
       />
     </div>

@@ -174,10 +174,26 @@ describe('opening a library text', () => {
     expect(await db.texts.count()).toBe(1);
   });
 
-  it('opens offline too (the reader fetches the body later)', async () => {
+  it('offline before the first open: no empty row (it would hide the text and say "Devam et")', async () => {
     vi.stubGlobal('navigator', { onLine: false });
-    const id = await openGradedText({ id: ID(2), title: 'Text 2' }, T);
-    expect(await db.texts.get(id)).toMatchObject({ graded_id: ID(2), body: '' });
+    await expect(openGradedText({ id: ID(2), title: 'Text 2' }, T)).rejects.toBeInstanceOf(GradedUnavailableError);
+    expect(await db.texts.count()).toBe(0);
+  });
+
+  it('offline, a text read before still opens from its row', async () => {
+    const id = await saveText({ kind: 'graded', graded_id: ID(2), title: 'Text 2', body: 'Old body.' }, T);
+    vi.stubGlobal('navigator', { onLine: false });
+    expect(await openGradedText({ id: ID(2), title: 'Text 2' }, T + 1)).toBe(id);
+  });
+
+  it('a double tap makes one row', async () => {
+    remote.bodies.set(ID(1), body(1));
+    const [a, b] = await Promise.all([
+      openGradedText({ id: ID(1), title: 'Text 1' }, T),
+      openGradedText({ id: ID(1), title: 'Text 1' }, T),
+    ]);
+    expect(a).toBe(b);
+    expect(await db.texts.count()).toBe(1);
   });
 
   it('keeps a resume point and fills the body of a row made before v0.5.1', async () => {

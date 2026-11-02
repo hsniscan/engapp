@@ -116,7 +116,7 @@ test.describe('word detail: Görsel', () => {
     await expect.poll(() => cachedImageIds(page), { timeout: 30_000 }).toHaveLength(1);
 
     await page.goto('/library');
-    await page.getByRole('list', { name: 'Notlar' }).getByText('umbrella', { exact: true }).click();
+    await page.getByRole('list', { name: 'Kelimeler' }).getByText('umbrella', { exact: true }).click();
     const sheet = page.getByRole('dialog');
     const shown = sheet.getByTestId('image-shown');
     await expect(shown.getByRole('img', { name: ALT.umbrella })).toBeVisible();

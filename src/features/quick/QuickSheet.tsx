@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import type { QuickAddResult, QuickMine, QuickPreview, QuickSense } from '@/data/quick';
 import { posLabel } from '@/features/cards/labels';
 import { CardPicture } from '@/features/images/CardPicture';
+import { SignInNeeded } from '@/features/add/SignInNeeded';
 import { Badge, Button, cn, Icon, IconButton, Skeleton } from '@/ui';
 import type { QuickRoute } from './route';
 
@@ -242,16 +243,17 @@ function TermBody({
         </div>
       ) : senses.length > 0 ? (
         <SenseChoices senses={senses} picked={picked} onToggle={onToggleSense} />
-      ) : mine.length > 0 ? null : (
+      ) : mine.length > 0 ? null : lookup === 'signin' ? (
+        // A guest gets the Google button right here, not only a sentence (B4).
+        <SignInNeeded title={t('quick.signIn')} testId="quick-signin" />
+      ) : (
         <Notice tone={lookup === 'failed' ? 'danger' : 'muted'}>
           {t(
             lookup === 'offline'
               ? 'quick.offline'
-              : lookup === 'signin'
-                ? 'quick.signIn'
-                : lookup === 'failed'
-                  ? 'quick.failed'
-                  : 'quick.notFound',
+              : lookup === 'failed'
+                ? 'quick.failed'
+                : 'quick.notFound',
           )}
         </Notice>
       )}

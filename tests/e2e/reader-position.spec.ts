@@ -152,7 +152,7 @@ test('reader: own words show their meaning, new ones ask first; the new words at
 
   // The end of the text: how many new words, then add several at once.
   const summary = page.getByTestId('reader-summary');
-  await expect(summary).toContainText(/Bu metinde \d+ yeni kelime gördün · 0 tanesini ekledin/);
+  await expect(summary).toContainText(/Bu metinde \d+ yeni kelime gördün · henüz eklemedin/);
   await summary.getByTestId('reader-new-words-open').click();
   const words = page.getByRole('dialog', { name: 'Bu metindeki yeni kelimeler' });
   await expect(words.getByRole('checkbox', { name: /serendipity mutlu tesadüf/ })).toBeChecked();
@@ -167,7 +167,7 @@ test('reader: own words show their meaning, new ones ask first; the new words at
   }
   await words.getByTestId('reader-new-words-add').click();
   await expect(page.getByText('2 kelime kartlarına eklendi', { exact: true })).toBeVisible();
-  await expect(summary).toContainText('· 2 tanesini ekledin');
+  await expect(summary).toContainText("· 2'sini ekledin");
   const { notes } = await dumpTables(page, ['notes']);
   expect((notes as { term: string }[]).map((n) => n.term).sort()).toEqual(['meander', 'park', 'serendipity']);
 });

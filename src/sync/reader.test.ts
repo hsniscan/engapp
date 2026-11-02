@@ -202,7 +202,10 @@ describe('encounters', () => {
     );
     expect(await recordReaderEncounters(text, 'open-1', [n1, n2, n1], T + MIN)).toBe(2);
     expect(await recordReaderEncounters(text, 'open-1', [n1, n2], T + 2 * MIN)).toBe(0);
-    expect(await recordReaderEncounters(text, 'open-2', [n1], T + 3 * MIN)).toBe(1);
+    // Opening the same text again counts nothing: "metinde" counts texts, not openings.
+    expect(await recordReaderEncounters(text, 'open-2', [n1], T + 3 * MIN)).toBe(0);
+    const other = await saveText({ kind: 'paste', title: 'B', body: 'I cope.' }, T);
+    expect(await recordReaderEncounters(other, 'open-3', [n1], T + 4 * MIN)).toBe(1);
     expect(await getEncounterSummary(n1)).toEqual({ cards: 0, texts: 2, total: 2 });
     expect(await getEncounterSummary(n2)).toEqual({ cards: 0, texts: 1, total: 1 });
     expect(await db.encounters.count()).toBe(2); // one row per note, day, source and device
@@ -244,13 +247,13 @@ describe('encounters', () => {
     });
     await onDevice(a2, async () => {
       await recordReaderEncounters(text, 'open-a1', [note], T + 3 * MIN);
-      await recordReaderEncounters(text, 'open-a2', [note], T + 5 * MIN);
+      await recordReaderEncounters(text, 'open-a2', [note], T + 5 * MIN); // same text: not again
       await sync(server, T + 20 * MIN);
-      expect(await getEncounterSummary(note)).toEqual({ cards: 0, texts: 3, total: 3 });
+      expect(await getEncounterSummary(note)).toEqual({ cards: 0, texts: 2, total: 2 });
     });
     await onDevice(b2, async () => {
       await sync(server, T + 21 * MIN);
-      expect(await getEncounterSummary(note)).toEqual({ cards: 0, texts: 3, total: 3 });
+      expect(await getEncounterSummary(note)).toEqual({ cards: 0, texts: 2, total: 2 });
     });
     expect(
       server

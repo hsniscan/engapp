@@ -10,12 +10,15 @@
 //   İçe aktar                    Anki, CSV, a backup file
 //
 // Ready-made decks and the word bank live in Keşfet and Kelimelerim, not here.
+import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { db } from '@/data';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { LIMITS } from '@/domain/limits';
 import { MineMeanings, SenseChoices } from '@/features/quick/QuickSheet';
 import { useTermLookup } from '@/features/quick/useTermLookup';
+import { SignInNeeded } from './SignInNeeded';
 import { Badge, Button, cn, Dialog, Icon, Skeleton, type IconName } from '@/ui';
 import {
   quickAddHref,
@@ -134,6 +137,7 @@ export function AddSheetView({
             ))}
           </ul>
           <p className="px-1 text-sm text-fg-muted">{t('addSheet.text.body')}</p>
+          <JobsLink onNavigate={close} />
         </Group>
 
         <Group
@@ -306,6 +310,27 @@ function WordAdd({
   );
 }
 
+/** "2 kelime çıkarma sürüyor" → every extraction job in one place (B2). */
+function JobsLink({ onNavigate }: { onNavigate: () => void }) {
+  const { t } = useTranslation();
+  const open = useLiveQuery(
+    () => db.import_jobs.where('status').anyOf('queued', 'processing', 'ready', 'failed').count(),
+    [],
+  );
+  if (!open) return null;
+  return (
+    <Link
+      to="/import"
+      onClick={onNavigate}
+      data-testid="add-jobs-link"
+      className="inline-flex min-h-11 items-center gap-1.5 self-start px-1 text-[0.9375rem] font-medium text-accent-text underline-offset-4 hover:underline"
+    >
+      <Icon name="sync-pending" size={16} />
+      {t('importer.jobs.link', { count: open })}
+    </Link>
+  );
+}
+
 function WordResult({
   term,
   onNavigate,
@@ -330,7 +355,8 @@ function WordResult({
       data-testid="add-word-manual"
     >
       <Icon name="pencil" size={16} />
-      {t('addSheet.word.edit')}
+      {/* Nothing found: there is nothing to edit, so it stays "Elle ekle" (B4). */}
+      {senses.length === 0 && mine.length === 0 ? t('addSheet.word.manual') : t('addSheet.word.edit')}
     </Link>
   );
 
@@ -384,7 +410,10 @@ function WordResult({
         </div>
       ) : senses.length > 0 ? (
         <SenseChoices senses={senses} picked={picked} onToggle={toggle} />
-      ) : mine.length > 0 ? null : (
+      ) : mine.length > 0 ? null : lookup === 'signin' ? (
+        // A guest gets the Google button right here, not only a sentence (B4).
+        <SignInNeeded title={t('addSheet.word.signIn')} testId="add-word-signin" />
+      ) : (
         <p
           role={lookup === 'failed' ? 'alert' : 'status'}
           className={cn(
@@ -395,11 +424,9 @@ function WordResult({
           {t(
             lookup === 'offline'
               ? 'addSheet.word.offline'
-              : lookup === 'signin'
-                ? 'addSheet.word.signIn'
-                : lookup === 'failed'
-                  ? 'quick.failed'
-                  : 'addSheet.word.notFound',
+              : lookup === 'failed'
+                ? 'quick.failed'
+                : 'addSheet.word.notFound',
           )}
         </p>
       )}

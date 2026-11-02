@@ -83,7 +83,7 @@ for (const width of [360, 1280]) {
       await editor.getByRole('textbox', { name: 'Adı' }).fill('İş · zorlandıklarım');
       await editor.getByRole('button', { name: /#iş/ }).click();
       await editor.getByRole('button', { name: 'Zorlandıklarım' }).click();
-      await editor.getByRole('button', { name: 'Öğreniliyor' }).click();
+      await editor.getByRole('button', { name: 'Öğreniyor' }).click();
       await expect(editor.getByText(/Şu an \d+ kelime bu desteye giriyor\./)).toBeVisible();
       await check(page, 'editor', tag);
       await editor.getByRole('button', { name: 'Oluştur' }).click();
@@ -118,12 +118,12 @@ for (const width of [360, 1280]) {
       await expect(page.getByRole('link', { name: 'Desteyi aç' })).toBeVisible();
       await check(page, 'library-deck', tag);
       await page.goto('/library');
-      const boxes = page.getByRole('list', { name: 'Notlar' }).getByRole('checkbox');
+      const boxes = page.getByRole('list', { name: 'Kelimeler' }).getByRole('checkbox');
       for (let i = 0; i < 3; i++) await boxes.nth(i).click();
-      await expect(page.getByRole('region', { name: 'Seçili notlar için işlemler' })).toBeVisible();
+      await expect(page.getByRole('region', { name: 'Seçili kelimeler için işlemler' })).toBeVisible();
       await check(page, 'library-bulk', tag);
       await page
-        .getByRole('region', { name: 'Seçili notlar için işlemler' })
+        .getByRole('region', { name: 'Seçili kelimeler için işlemler' })
         .getByRole('button', { name: 'Etiket' })
         .click();
       const sheet = page.getByRole('dialog', { name: 'Etiketler' });

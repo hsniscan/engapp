@@ -1,7 +1,9 @@
 // Pure filtering for the library list (no React, no Dexie): easy to test, fast on 1,000+ notes.
 import { CEFR, levelSortKey, type WordLevel } from '@/domain/level';
+import { noteStage } from '@/domain/deckFilter';
+import { hasTag } from '@/domain/tags';
+import { WORD_STAGES, type WordStage } from '@/domain/stages';
 import type { Card, CardType, CefrLevel, Note, Sense } from '@/domain/types';
-import { STATE_KEYS, type StateKey } from './labels';
 
 export interface LibraryRow {
   note: Note;
@@ -24,7 +26,8 @@ export type LevelFilter = CefrLevel | 'none' | 'all';
 export interface LibraryFilters {
   q: string;
   type: CardType | 'all';
-  state: StateKey | 'all';
+  /** The word stage shown on the rows (Yeni … Kalıcı); not the raw FSRS state. */
+  state: WordStage | 'all';
   suspended: SuspendedFilter;
   tag: string; // '' = any
   dup: boolean;
@@ -126,20 +129,25 @@ export function activeFilterCount(f: LibraryFilters): number {
 }
 
 /** Notes matching the search and filters. Card-level filters match when any one card meets all of them. */
+/** The word stage of a row, the same as its pill and the smart decks (null: no active card). */
+export function rowStage(r: Pick<LibraryRow, 'cards'>): WordStage | null {
+  return noteStage(r);
+}
+
 export function filterRows(rows: LibraryRow[], f: LibraryFilters): LibraryRow[] {
   const q = foldForSearch(f.q);
-  const stateValue = f.state === 'all' ? null : STATE_KEYS.indexOf(f.state);
-  const cardLevel = f.type !== 'all' || stateValue !== null || f.suspended !== 'all';
+  const cardLevel = f.type !== 'all' || f.suspended !== 'all';
   const out = rows.filter((r) => {
     if (q && !r.haystack.includes(q)) return false;
-    if (f.tag && !r.note.tags.includes(f.tag)) return false;
+    // Tags compare case-insensitively everywhere ("İş" = "iş").
+    if (f.tag && !hasTag(r.note.tags, f.tag)) return false;
+    if (f.state !== 'all' && rowStage(r) !== f.state) return false;
     if (f.dup && !r.note.possible_duplicate) return false;
     if (f.level !== 'all' && (r.level?.cefr ?? 'none') !== f.level) return false;
     if (!cardLevel) return true;
     return r.cards.some(
       (c) =>
         (f.type === 'all' || c.card_type === f.type) &&
-        (stateValue === null || c.state === stateValue) &&
         (f.suspended === 'all' || c.suspended === (f.suspended === 'suspended')),
     );
   });
@@ -172,6 +180,13 @@ const SUSP: SuspendedFilter[] = ['all', 'active', 'suspended'];
 const LEVEL_FILTERS: string[] = [...CEFR, 'none'];
 const SORTS: SortOrder[] = ['new', 'az', 'level', 'level_desc'];
 
+/** A stage key, or an old raw-FSRS value from a v0.5.1 link (relearning → learning). */
+function stateFromParam(v: string | null): WordStage | 'all' {
+  if ((WORD_STAGES as readonly string[]).includes(v ?? '')) return v as WordStage;
+  if (v === 'relearning') return 'learning';
+  return 'all';
+}
+
 /** Filters <-> URL search params, so a filtered view survives reloads and can be linked. */
 export function filtersFromParams(p: URLSearchParams): LibraryFilters {
   const type = p.get('type');
@@ -180,7 +195,7 @@ export function filtersFromParams(p: URLSearchParams): LibraryFilters {
   return {
     q: p.get('q') ?? '',
     type: TYPES.includes(type as CardType) ? (type as CardType) : 'all',
-    state: (STATE_KEYS as readonly string[]).includes(state ?? '') ? (state as StateKey) : 'all',
+    state: stateFromParam(state),
     suspended: SUSP.includes(susp as SuspendedFilter) ? (susp as SuspendedFilter) : 'all',
     tag: p.get('tag') ?? '',
     dup: p.get('dup') === '1',

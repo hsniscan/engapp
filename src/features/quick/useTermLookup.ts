@@ -16,6 +16,7 @@ import {
 import { startAuth, useAuth } from '@/features/auth/session';
 import { lookupLexicon, type LexiconSuggestion } from '@/features/import/lexicon';
 import { useOnline } from '@/lib/online';
+import { fetchWordBank } from '@/features/wordbank/fetcher';
 import type { LookupState } from './QuickSheet';
 import { lookupForms } from './route';
 
@@ -71,6 +72,11 @@ export function useTermLookup(term: string): TermLookup {
   // nothing (an offline word-bank hit never touches the backend).
   useEffect(() => {
     if (missing && online) startAuth();
+  }, [missing, online]);
+  // A device that never opened Kelime Bankası has no copy of it: fetch it now, so a guest finds
+  // "house" too (the live query above picks the rows up as they land; B4).
+  useEffect(() => {
+    if (missing && online) void fetchWordBank();
   }, [missing, online]);
   const signedIn = auth.status === 'signed_in';
   const shouldAsk = missing && online && signedIn && mine === null;

@@ -4,7 +4,8 @@
 // new tags are capped at MAX_TAG_LENGTH so chips and deck filters stay readable.
 import { LIMITS } from './limits';
 
-export const MAX_TAG_LENGTH = 40;
+/** The same as MAX_DECK_NAME: a hand-picked deck's name is its tag (v0.5.2, B8). */
+export const MAX_TAG_LENGTH = 60;
 
 /** Trimmed, single-spaced, NFC, without a leading "#", at most MAX_TAG_LENGTH code points. */
 export function cleanTag(raw: string): string {

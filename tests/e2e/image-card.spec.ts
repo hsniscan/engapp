@@ -166,7 +166,7 @@ test.describe('picture recall card', () => {
 
     // Hiding the picture takes the card away; showing it again brings it back.
     await page.goto('/library');
-    await page.getByRole('list', { name: 'Notlar' }).getByText('apple', { exact: true }).click();
+    await page.getByRole('list', { name: 'Kelimeler' }).getByText('apple', { exact: true }).click();
     const sheet = page.getByRole('dialog');
     await sheet.getByRole('button', { name: 'Görseli gizle' }).click();
     await expect.poll(() => pictureCards(page)).toBe(0);

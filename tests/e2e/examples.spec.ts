@@ -104,7 +104,7 @@ test('signed in: shipped sentences arrive with a new card and are controlled on 
 
     // Word detail: the same section, always open.
     await page.goto('/library');
-    await page.getByRole('list', { name: 'Notlar' }).getByText('reluctant', { exact: true }).click();
+    await page.getByRole('list', { name: 'Kelimeler' }).getByText('reluctant', { exact: true }).click();
     const sheet = page.getByRole('dialog');
     await expect(sheet.getByRole('heading', { name: 'Örnek cümleler' })).toBeVisible();
     await expect(sheet.getByText(/Our manager was|My brother was/).first()).toBeVisible();

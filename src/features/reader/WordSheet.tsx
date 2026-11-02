@@ -12,8 +12,11 @@ import {
   addNoteWithSenses,
   logError,
   lookupReaderWord,
+  markManyKnown,
   type ReaderMeaning,
   type ReaderWordInfo,
+  type TextGloss,
+  unmarkKnownKeys,
 } from '@/data';
 import type { WordStage } from '@/domain/stages';
 import type { Id } from '@/domain/types';
@@ -47,11 +50,15 @@ export interface WordPick {
 
 interface Props {
   pick: WordPick | null;
+  /** The text's own glosses (library texts, stories). */
+  glosses?: readonly TextGloss[];
   voice: VoicePref;
   /** "Hep tahmin ettir": ask for a guess even for the user's own words. */
   alwaysGuess?: boolean;
   onClose: () => void;
   onExtend: (side: 'before' | 'after') => void;
+  /** "Buradan dinle": listen-along from this sentence. */
+  onListenHere?: () => void;
 }
 
 type Lookup =
@@ -62,7 +69,7 @@ type Lookup =
 const isOnline = () => typeof navigator === 'undefined' || navigator.onLine !== false;
 
 /** The meanings of a pick: device first, then (online, signed in) the shared lexicon. */
-function useWordLookup(pick: WordPick | null): Lookup {
+function useWordLookup(pick: WordPick | null, glosses?: readonly TextGloss[]): Lookup {
   const auth = useAuth();
   const signedIn = auth.status === 'signed_in';
   const lemma = pick?.lemma ?? '';
@@ -78,7 +85,7 @@ function useWordLookup(pick: WordPick | null): Lookup {
     const done = (lookup: Lookup) => live && setState({ key, lookup });
     void (async () => {
       try {
-        const info = await lookupReaderWord(lemma, written);
+        const info = await lookupReaderWord(lemma, written, glosses);
         if (info.source) return done({ status: 'ready', info, online: false });
         if (!isOnline()) return done({ status: 'none', reason: 'offline' });
         if (!signedIn) return done({ status: 'none', reason: 'signIn' });
@@ -116,11 +123,19 @@ function useWordLookup(pick: WordPick | null): Lookup {
       live = false;
     };
     // `key` identifies the pick; the rest of it never changes for the same key.
-  }, [key, lemma, written, signedIn]);
+  }, [key, lemma, written, signedIn, glosses]);
   return state.key === key ? state.lookup : { status: 'loading' };
 }
 
-export function WordSheet({ pick, voice, alwaysGuess = false, onClose, onExtend }: Props) {
+export function WordSheet({
+  pick,
+  glosses,
+  voice,
+  alwaysGuess = false,
+  onClose,
+  onExtend,
+  onListenHere,
+}: Props) {
   const { t } = useTranslation();
   return (
     <Dialog
@@ -140,9 +155,12 @@ export function WordSheet({ pick, voice, alwaysGuess = false, onClose, onExtend 
         <SheetBody
           key={`${pick.lemma}|${pick.written}|${pick.sentence}`}
           pick={pick}
+          glosses={glosses}
           voice={voice}
           guessFirst={alwaysGuess || pick.noteId === null}
           onExtend={onExtend}
+          onListenHere={onListenHere}
+          onDone={onClose}
         />
       )}
     </Dialog>
@@ -151,17 +169,23 @@ export function WordSheet({ pick, voice, alwaysGuess = false, onClose, onExtend 
 
 function SheetBody({
   pick,
+  glosses,
   voice,
   guessFirst,
   onExtend,
+  onListenHere,
+  onDone,
 }: {
   pick: WordPick;
+  glosses?: readonly TextGloss[];
   voice: VoicePref;
   guessFirst: boolean;
   onExtend: Props['onExtend'];
+  onListenHere?: () => void;
+  onDone: () => void;
 }) {
   const { t } = useTranslation();
-  const lookup = useWordLookup(pick);
+  const lookup = useWordLookup(pick, glosses);
   const [revealed, setRevealed] = useState(!guessFirst);
   const [showTr, setShowTr] = useState(false);
   const [chosen, setChosen] = useState(0);
@@ -170,6 +194,26 @@ function SheetBody({
   const speaker = usePronunciationBusy();
   const listId = useId();
   const noteId = pick.noteId ?? addedId ?? (lookup.status === 'ready' ? lookup.info.noteId : null);
+
+  // "Biliyorum, işaretleme" (v0.5.2): a word the user knows, or a name, leaves the marks and
+  // the coverage counts it as known. No card is made; "Geri al" takes it back.
+  const markKnownWord = async () => {
+    try {
+      const added = await markManyKnown([pick.lemma]);
+      onDone();
+      toast({
+        title: t('reader.word.knownMarked', { term: pick.lemma }),
+        tone: 'success',
+        action: {
+          label: t('library.undo'),
+          onClick: () => void unmarkKnownKeys(added).catch((e: unknown) => logError(e, 'reader.knownUndo')),
+        },
+      });
+    } catch (e) {
+      void logError(e, 'reader.markKnown');
+      toast({ title: t('reader.word.knownFailed'), tone: 'danger' });
+    }
+  };
 
   const add = async () => {
     if (lookup.status !== 'ready') return;
@@ -216,7 +260,8 @@ function SheetBody({
           className={speaker.busy ? 'animate-pulse' : undefined}
           onClick={() =>
             speaker.run(
-              () => void playPronunciation(pick.phrase ? pick.written : pick.lemma, voice),
+              // The form the user tapped ("went"), as the title shows it, not the lemma (B12).
+              () => void playPronunciation(pick.written, voice),
             )
           }
         />
@@ -233,6 +278,26 @@ function SheetBody({
           )}
         </div>
       </div>
+
+      {(onListenHere || !noteId) && (
+        <div className="-mt-2 flex flex-wrap gap-1">
+          {onListenHere && (
+            <Button variant="ghost" size="sm" onClick={onListenHere} data-testid="reader-listen-here">
+              {t('reader.word.listenHere')}
+            </Button>
+          )}
+          {!noteId && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => void markKnownWord()}
+              data-testid="reader-mark-known"
+            >
+              {t('reader.word.markKnown')}
+            </Button>
+          )}
+        </div>
+      )}
 
       <blockquote
         lang="en"

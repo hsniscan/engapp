@@ -5,7 +5,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Navigate } from 'react-router';
-import { addFromWordBank, logError, type BankAddResult } from '@/data';
+import { addFromWordBank, logError, markManyKnown, unmarkKnownKeys, type BankAddResult } from '@/data';
 import { CEFR } from '@/domain/level';
 import { CONTENT_POS, type ContentPos, type SuggestedSpec } from '@/domain/suggestedDecks';
 import type { CefrLevel } from '@/domain/types';
@@ -39,7 +39,7 @@ const isContent = (pos: string): pos is ContentPos => (CONTENT_POS as readonly s
 
 export function WordBankPanel() {
   const { t } = useTranslation();
-  const { download, retry } = useWordBankDownload();
+  const { download, retry, rows, complete } = useWordBankDownload();
   const data = useBankData();
 
   const [level, setLevel] = useState<CefrLevel | null | undefined>(undefined);
@@ -135,6 +135,33 @@ export function WordBankPanel() {
     }
   };
 
+  // "Biliyorum": the words go to Bildiğim kelimeler (hidden here while "Bildiklerimi gizle" is on).
+  const markKnown = async (entries: WordBankEntry[]) => {
+    if (entries.length === 0 || busy) return;
+    setBusy(true);
+    try {
+      const added = await markManyKnown(entries.map((e) => e.lemma));
+      setSelected((sel) => {
+        const next = new Set(sel);
+        for (const e of entries) next.delete(e.id);
+        return next;
+      });
+      toast({
+        title: t('wordBank.knownMarked', { count: added.length }),
+        tone: 'success',
+        action: {
+          label: t('library.undo'),
+          onClick: () => void unmarkKnownKeys(added).catch((e) => logError(e, 'wordBank.knownUndo')),
+        },
+      });
+    } catch (err) {
+      void logError(err, 'wordBank.known');
+      toast({ title: t('wordBank.failed'), tone: 'danger' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const toggle = (id: string, on: boolean) =>
     setSelected((sel) => {
       const next = new Set(sel);
@@ -158,6 +185,23 @@ export function WordBankPanel() {
 
   return (
     <div className="flex flex-col gap-3.5 pb-24">
+      {download === 'running' && complete === false ? (
+        <p role="status" className="rounded-control bg-surface-sunken px-3 py-2.5 text-sm text-fg-muted">
+          {t('deckHub.bank.downloading', { count: nf.format(rows ?? data.entries.length) })}
+        </p>
+      ) : (
+        complete === false &&
+        download !== 'running' && (
+          <div role="status" className="flex flex-wrap items-center gap-2 rounded-control bg-warn-soft px-3 py-2.5 text-sm text-warn-text">
+            <span className="flex-1">
+              {t('deckHub.bank.partial', { count: nf.format(data.entries.length) })}
+            </span>
+            <Button size="sm" variant="secondary" onClick={retry}>
+              {t('common.retry')}
+            </Button>
+          </div>
+        )
+      )}
       <TextField
         label={t('deckHub.bank.search', { count: nf.format(data.entries.length) })}
         hideLabel
@@ -289,6 +333,7 @@ export function WordBankPanel() {
               selected={selected.has(item.entry.id)}
               onSelect={(on) => toggle(item.entry.id, on)}
               onAdd={(senses) => void add([{ entry: item.entry, senses }])}
+              onKnown={() => void markKnown([item.entry])}
               busy={busy}
             />
           ))}
@@ -341,6 +386,19 @@ export function WordBankPanel() {
               type="button"
               disabled={busy}
               onClick={() =>
+                void markKnown([...selected].flatMap((id) => {
+                  const entry = byId.get(id);
+                  return entry ? [entry] : [];
+                }))
+              }
+              className="h-11 rounded-xl px-3 text-sm font-semibold hover:bg-white/10 disabled:opacity-50"
+            >
+              {t('wordBank.markKnown')}
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() =>
                 void add(
                   [...selected].flatMap((id) => {
                     const entry = byId.get(id);
@@ -365,6 +423,7 @@ function BankRow({
   selected,
   onSelect,
   onAdd,
+  onKnown,
   busy,
 }: {
   item: BankItem;
@@ -372,6 +431,7 @@ function BankRow({
   selected: boolean;
   onSelect: (on: boolean) => void;
   onAdd: (senses: number[]) => void;
+  onKnown: () => void;
   busy: boolean;
 }) {
   const { t } = useTranslation();
@@ -467,6 +527,19 @@ function BankRow({
               {t('wordBank.add')}
             </Button>
           ) : null}
+          {!owned && (
+            <Button
+              size="sm"
+              variant="ghost"
+              leadingIcon="check"
+              aria-label={t('wordBank.markKnownLabel', { term: entry.lemma })}
+              disabled={busy}
+              onClick={onKnown}
+              className="-ml-2 self-start"
+            >
+              {t('wordBank.markKnown')}
+            </Button>
+          )}
         </div>
       )}
     </li>

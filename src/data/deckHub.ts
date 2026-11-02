@@ -212,6 +212,7 @@ export async function findTagDeck(tag: string): Promise<Deck | null> {
       f.tags?.length === 1 &&
       hasTag(f.tags, tag) &&
       !f.states?.length &&
+      !f.stages?.length &&
       !f.levels?.length &&
       !f.topics?.length &&
       !f.addedWithinDays;

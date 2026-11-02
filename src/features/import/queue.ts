@@ -8,6 +8,7 @@ import {
   getCachedChunk,
   listPendingImportJobs,
   logError,
+  parkImportJobUntilTomorrow,
   recordChunkResult,
   updateImportJob,
   type ChunkResult,
@@ -253,12 +254,16 @@ async function processJob(
         continue;
       }
       if (code === 'unknown') void logError(e, 'import.extract');
+      if (code === 'daily_limit') {
+        // Not a failure: the job waits and resumes after the server's day rolls over (B3).
+        await parkImportJobUntilTomorrow(job.id, deps.now());
+        return 'daily_limit';
+      }
       await updateImportJob(
         job.id,
         { status: 'failed', error_code: code, error: e instanceof Error ? e.message : String(e) },
         deps.now(),
       );
-      if (code === 'daily_limit') return 'daily_limit';
       return null; // next job
     }
   }

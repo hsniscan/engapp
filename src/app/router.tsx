@@ -183,6 +183,15 @@ const children: RouteObject[] = [
     }),
   },
   {
+    // Every extraction job in one place (v0.5.2).
+    path: 'import',
+    handle: ADD_SECTION,
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/import/ImportJobsPage')).ImportJobsPage,
+    }),
+  },
+  {
     path: 'import/:jobId',
     handle: ADD_SECTION,
     HydrateFallback: () => null,

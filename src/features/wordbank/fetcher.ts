@@ -54,11 +54,48 @@ export type WordBankFetchOutcome =
   | { status: 'done'; stored: number; removed: number }
   | { status: 'failed'; error: string };
 
-/** One download run. Never throws. */
-export async function fetchWordBank(
+export interface WordBankFetchOptions {
+  force?: boolean;
+  /** Rows on the device so far, after each page (the first download is ~10 pages). */
+  onProgress?: (rows: number) => void;
+}
+
+let inflight: Promise<WordBankFetchOutcome> | null = null;
+const progressListeners = new Set<(rows: number) => void>();
+
+/**
+ * One download run. Never throws. A run already going is joined, not doubled (the bank tab
+ * and the add sheet can both start one); its progress reaches every caller.
+ */
+export function fetchWordBank(
   deps: WordBankFetchDeps = defaultWordBankDeps,
-  opts: { force?: boolean } = {},
+  opts: WordBankFetchOptions = {},
 ): Promise<WordBankFetchOutcome> {
+  const listener = opts.onProgress;
+  if (listener) progressListeners.add(listener);
+  const run =
+    inflight ??
+    (inflight = runFetch(deps, opts.force ?? false, (n) => {
+      for (const l of [...progressListeners]) l(n);
+    }).finally(() => {
+      inflight = null;
+    }));
+  return run.finally(() => {
+    if (listener) progressListeners.delete(listener);
+  });
+}
+
+/** The first full download finished (a partial copy left by a dropped connection is not). */
+export async function isWordBankComplete(): Promise<boolean> {
+  return (await getWordBankSyncedAt()) !== null;
+}
+
+async function runFetch(
+  deps: WordBankFetchDeps,
+  force: boolean,
+  onProgress: (rows: number) => void,
+): Promise<WordBankFetchOutcome> {
+  const opts = { force };
   try {
     if (!deps.fetchPage) return { status: 'no_backend' };
     if (!deps.isOnline()) return { status: 'offline' };
@@ -74,6 +111,7 @@ export async function fetchWordBank(
       const r = await applyWordBankPage(rows);
       stored += r.stored;
       removed += r.removed;
+      onProgress(await countWordBank());
       if (rows.length < WORDBANK_PAGE || r.cursor <= cursor) break;
       cursor = r.cursor;
     }

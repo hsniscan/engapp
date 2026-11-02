@@ -49,7 +49,7 @@ test('signed in: paste text → saved text + preview (edit, deselect) → cards 
   await page.getByRole('button', { name: `${n} kelimeyi ekle` }).click();
   await expect(page).toHaveURL(/\/library/);
   await expect(page.getByText(`${n} kelime eklendi`, { exact: true })).toBeVisible();
-  const list = page.getByRole('list', { name: 'Notlar' });
+  const list = page.getByRole('list', { name: 'Kelimeler' });
   await expect(list.getByRole('listitem')).toHaveCount(n);
   await expect(list.getByText('gönülsüz')).toBeVisible();
   await expect(list.getByText('put off', { exact: true })).toHaveCount(0);

@@ -2,6 +2,7 @@
 // filter itself is evaluated on the device (domain/deckFilter.ts) over the live notes.
 import {
   cleanDeckName,
+  criteriaCount,
   type DeckContext,
   deckNoteIds,
   type DeckNoteFacts,
@@ -187,6 +188,19 @@ export async function countDeckFilter(
   return ids ? ids.size : null;
 }
 
+/** A deck made with "Elle seç": its only criterion is one tag spelled like its name. */
+function isHandPicked(f: DeckFilter, name: string): boolean {
+  return (
+    f.tags?.length === 1 &&
+    criteriaCount(f) === 1 &&
+    sameTag(f.tags[0]!, cleanTag(name))
+  );
+}
+
+function sameFilter(a: DeckFilter, b: DeckFilter | null): boolean {
+  return b !== null && JSON.stringify(a) === JSON.stringify(normalizeDeckFilter(b));
+}
+
 function checkName(raw: string): string {
   const name = cleanDeckName(raw);
   if (!name) throw new ActionError('invalid_input', 'Empty deck name');
@@ -218,12 +232,23 @@ export async function updateDeck(
   patch: { name?: string; filter?: DeckFilter },
   now: Millis = Date.now(),
 ): Promise<Deck> {
-  return writeTx([db.decks], now, async (w) => {
+  return writeTx([db.decks, db.notes], now, async (w) => {
     const deck = await db.decks.get(id);
     if (!deck || deck.deleted_at !== null) throw new ActionError('not_found');
     const next: Deck = { ...deck };
     if (patch.name !== undefined) next.name = checkName(patch.name);
     if (patch.filter !== undefined) next.filter = { ...normalizeDeckFilter(patch.filter) };
+    // A hand-picked deck is a tag of its own name: renaming it renames the tag on its words
+    // too, so "Elle seç" with the old name is free again (B11).
+    const old = parseDeckFilter(deck.filter);
+    const oldTag = old.ok && isHandPicked(old.filter, deck.name) ? old.filter.tags![0]! : null;
+    const kept = patch.filter === undefined || sameFilter(normalizeDeckFilter(patch.filter), old.ok ? old.filter : null);
+    const newTag = cleanTag(next.name);
+    if (oldTag && kept && newTag && !sameTag(oldTag, newTag)) {
+      for (const note of await db.notes.filter((x) => x.deleted_at === null && hasTag(x.tags, oldTag)).toArray())
+        await w.put('notes', { ...note, tags: renamedTags(note.tags, oldTag, newTag) });
+      next.filter = { ...normalizeDeckFilter({ ...(old.ok ? old.filter : {}), tags: [newTag] }) };
+    }
     return w.put('decks', next);
   });
 }

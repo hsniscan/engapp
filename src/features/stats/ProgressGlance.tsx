@@ -4,16 +4,27 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { getHeatmap, getStreakSummary } from '@/data';
+import { db, getHeatmap, getStreakSummary } from '@/data';
+import { activityBasics, progressUnlocks } from '@/domain/progressView';
 import { cn, Icon, Skeleton } from '@/ui';
 import { formatNumber, formatPercent } from './format';
 
 export function ProgressGlance() {
   const { t } = useTranslation();
   const data = useLiveQuery(async () => {
-    const [streak, weeks] = await Promise.all([getStreakSummary(), getHeatmap(Date.now(), 2)]);
+    const [streak, weeks, activity] = await Promise.all([
+      getStreakSummary(),
+      getHeatmap(Date.now(), 2),
+      db.daily_activity.toArray(),
+    ]);
     const days = weeks.flat().filter((c) => !c.future).slice(-7);
-    return { streak, days };
+    // Recall shows from the same number of answers as on İlerleme (B8).
+    const basics = activityBasics(activity, streak.today);
+    const recallOpen =
+      progressUnlocks({ ...basics, recognitionAnswers: 0, productionAnswers: 0, hasReport: false }).find(
+        (u) => u.key === 'recall',
+      )?.open ?? false;
+    return { streak, days, recallOpen };
   }, []);
   const active = data?.days.filter((d) => d.reviews > 0).length ?? 0;
 
@@ -56,7 +67,11 @@ export function ProgressGlance() {
             />
             <Stat
               label={t('progressGlance.retention')}
-              value={data.streak.retentionRate === null ? '—' : formatPercent(data.streak.retentionRate)}
+              value={
+                !data.recallOpen || data.streak.retentionRate === null
+                  ? '—'
+                  : formatPercent(data.streak.retentionRate)
+              }
             />
           </dl>
           <div className="flex items-center justify-between gap-3 border-t border-border pt-3">

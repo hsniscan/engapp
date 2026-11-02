@@ -62,10 +62,29 @@ export interface ScoreOptions {
   interests?: ReadonlySet<string>;
   /** Library topic → the profile interests it suits (graded-contract.ts topicInterests). */
   topicInterests?: (topic: string) => readonly string[];
+  /**
+   * The reader's lemmatizer: profile keys go through it like the reader's tokens do, so the
+   * list's "%N anlaşılır" and the reader's number agree for the same text (v0.5.2, B10).
+   */
+  lemmatize?: (word: string) => string;
+}
+
+/** A text's lemma profile with its keys passed through `lemmatize` (counts of merged keys add up). */
+export function profileCounts(
+  profile: Readonly<Record<string, number>>,
+  lemmatize?: (word: string) => string,
+): Map<string, number> {
+  if (!lemmatize) return new Map(Object.entries(profile));
+  const out = new Map<string, number>();
+  for (const [key, n] of Object.entries(profile)) {
+    const lemma = lemmatize(key) || key;
+    out.set(lemma, (out.get(lemma) ?? 0) + n);
+  }
+  return out;
 }
 
 export function scoreGradedText(entry: GradedCatalogEntry, opts: ScoreOptions): ScoredGradedText {
-  const counts = new Map(Object.entries(entry.lemma_profile));
+  const counts = profileCounts(entry.lemma_profile, opts.lemmatize);
   const { unknownRate } = measureCoverage(counts, opts.pKnown);
   const interest =
     !!opts.interests &&
@@ -112,6 +131,28 @@ export function suggestTexts(
       (a, b) =>
         Number(finished.has(a.entry.id)) - Number(finished.has(b.entry.id)) ||
         b.unknownRate - a.unknownRate ||
+        a.entry.id.localeCompare(b.entry.id),
+    )
+    .slice(0, limit);
+}
+
+/**
+ * Keşfet's fallback when suggestTexts has nothing (every text is harder than the band, e.g. a
+ * beginner on "Rahat"): the closest harder texts, unfinished first, easiest first, so the feed
+ * still has something to read. Shown with an honest "biraz zorlayıcı" line (v0.5.2, B7).
+ */
+export function stretchTexts(
+  scored: readonly ScoredGradedText[],
+  limit: number,
+  finished: ReadonlySet<string> = new Set(),
+): ScoredGradedText[] {
+  if (limit <= 0) return [];
+  return scored
+    .filter((s) => s.fit === 1)
+    .sort(
+      (a, b) =>
+        Number(finished.has(a.entry.id)) - Number(finished.has(b.entry.id)) ||
+        a.unknownRate - b.unknownRate ||
         a.entry.id.localeCompare(b.entry.id),
     )
     .slice(0, limit);

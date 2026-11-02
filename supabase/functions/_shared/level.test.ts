@@ -153,8 +153,9 @@ describe('resolveLevel', () => {
   });
 
   it('2. a phrase is the guess or its hardest word, whichever is higher', () => {
-    expect(resolveLevel(q('give up', { cefr_guess: 'A2' }), lookup)).toMatchObject({ cefr: 'A2', source: 'ai' });
-    expect(resolveLevel(q('give up'), lookup)).toMatchObject({ cefr: 'A1', source: 'words' });
+    // An idiom is one band above its hardest word, at least B1 (ADR 0063).
+    expect(resolveLevel(q('give up'), lookup)).toMatchObject({ cefr: 'B1', source: 'words' });
+    expect(resolveLevel(q('give up', { cefr_guess: 'A2' }), lookup)).toMatchObject({ cefr: 'B1', source: 'words' });
     // "cut corners": the guess (B2) is above the words (A2).
     expect(resolveLevel(q('cut corners', { cefr_guess: 'B2' }), lookup)).toMatchObject({ cefr: 'B2', source: 'ai' });
     // A guess below the hardest word is raised to it.
@@ -162,7 +163,7 @@ describe('resolveLevel', () => {
       resolveLevel(q('take advantage of sth', { cefr_guess: 'A1', term_type: 'pattern' }), lookup),
     ).toMatchObject({ cefr: 'B1', source: 'words' });
     // Unknown words count as rare when the frequency data covers Zipf >= 3.
-    expect(resolveLevel(q('zorbly frob'), lookup, FULL)).toMatchObject({ cefr: 'C1', source: 'words' });
+    expect(resolveLevel(q('zorbly frob'), lookup, FULL)).toMatchObject({ cefr: 'C2', source: 'words' });
     expect(resolveLevel(q('zorbly frob'), lookup)).toBeNull();
     expect(resolveLevel(q('zorbly frob', { cefr_guess: 'C1' }), lookup)).toMatchObject({ cefr: 'C1', source: 'ai' });
   });

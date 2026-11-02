@@ -131,6 +131,9 @@ describe('Add sheet (v0.5.1): four groups', () => {
       'href',
       '/add?term=zyzzyva',
     );
+    // A real Google button, and "Elle ekle" when nothing was found (B4).
+    expect(within(sheet()).getByRole('button', { name: /Google ile giriş yap/ })).toBeInTheDocument();
+    expect(within(sheet()).getByTestId('add-word-manual')).toHaveTextContent('Elle ekle');
   });
 
   it('a word already on the user’s cards shows its meaning, no sign-in line', async () => {

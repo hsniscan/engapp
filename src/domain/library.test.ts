@@ -7,6 +7,8 @@ import {
   gradedReaderBody,
   readingMinutes,
   scoreGradedText,
+  profileCounts,
+  stretchTexts,
   suggestTexts,
   understoodPercent,
   type GradedCatalogEntry,
@@ -70,6 +72,35 @@ describe('compareSuggestions and suggestTexts', () => {
     expect(suggestTexts([easy1, easy2, hard], 'dengeli', 5).map((s) => s.entry.id)).toEqual(['e2', 'e1']);
     expect(suggestTexts([hard], 'dengeli', 5)).toEqual([]);
     expect(suggestTexts([easy1], 'dengeli', 0)).toEqual([]);
+  });
+});
+
+describe('stretchTexts (B7)', () => {
+  it('when nothing fits, offers the closest harder texts, unfinished first', () => {
+    const h1 = score(entry('h1', {}, 9));
+    const h2 = score(entry('h2', {}, 7));
+    const h3 = score(entry('h3', {}, 30));
+    const ok = score(entry('ok', {}, 4));
+    expect(stretchTexts([h1, h2, h3, ok], 2).map((s) => s.entry.id)).toEqual(['h2', 'h1']);
+    expect(stretchTexts([h1, h2], 2, new Set(['h2'])).map((s) => s.entry.id)).toEqual(['h1', 'h2']);
+    expect(stretchTexts([h1], 0)).toEqual([]);
+  });
+});
+
+describe('profileCounts (B10)', () => {
+  it('passes profile keys through the reader lemmatizer and adds merged counts', () => {
+    const lem = (w: string) => (w === 'went' ? 'go' : w);
+    expect(profileCounts({ went: 2, go: 1, cat: 3 }, lem)).toEqual(new Map([['go', 3], ['cat', 3]]));
+    expect(profileCounts({ went: 2 })).toEqual(new Map([['went', 2]]));
+  });
+
+  it('scores a text the same way the reader would', () => {
+    const e = entry('x', { lemma_profile: { known: 96, went: 4 } });
+    const pk = (l: string) => (l === 'known' || l === 'go' ? 1 : 0);
+    const plain = scoreGradedText(e, { pKnown: pk, difficulty: 'dengeli' });
+    const lemmatized = scoreGradedText(e, { pKnown: pk, difficulty: 'dengeli', lemmatize: (w) => (w === 'went' ? 'go' : w) });
+    expect(plain.unknownRate).toBeCloseTo(0.04);
+    expect(lemmatized.unknownRate).toBe(0);
   });
 });
 

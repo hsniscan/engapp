@@ -7,6 +7,8 @@ import { useTranslation } from 'react-i18next';
 import { isLowConfidence, ocrQuality, rebuildText, type ReviewLine } from '@/domain/ocr';
 import { Badge, Button, Icon, IconButton, Page, cn } from '@/ui';
 import { countWords } from '@/features/share/route';
+import { ExtractSignIn } from '@/features/add/CaptureActions';
+import { useAuth } from '@/features/auth/session';
 
 /** A printed line is far shorter; the cap only stops a runaway paste. */
 const MAX_LINE_CHARS = 500;
@@ -143,6 +145,7 @@ export function OcrReview({
   onRetake,
 }: OcrReviewProps) {
   const { t } = useTranslation();
+  const auth = useAuth();
   const [lines, setLines] = useState(initialLines);
   const [editing, setEditing] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -269,9 +272,23 @@ export function OcrReview({
           >
             {t('capture.extract')}
           </Button>
-        ) : (
-          <p className="text-sm text-fg-muted sm:self-center" data-testid="ocr-extract-signin">
-            {t('capture.extractSignIn')}
+        ) : auth.status === 'guest' ? (
+          // The same sign-in line with its Google button as the other capture screens (B10).
+          <div data-testid="ocr-extract-signin">
+            <ExtractSignIn />
+          </div>
+        ) : auth.status === 'unavailable' ? (
+          <p className="text-sm text-fg-muted sm:self-center" data-testid="ocr-extract-off">
+            {t('capture.extractUnavailable')}
+          </p>
+        ) : null}
+        {onExtract && (
+          <p className="flex items-start gap-1.5 text-sm text-fg-muted sm:self-center">
+            <Icon name="info" size={16} className="mt-0.5 shrink-0" />
+            <span>
+              <strong className="font-medium text-fg">{t('importer.privacy')}</strong>{' '}
+              {t('importer.privacyWhy')}
+            </span>
           </p>
         )}
         <Button size="lg" variant="ghost" leadingIcon="camera" onClick={onRetake}>

@@ -27,6 +27,8 @@ interface Props {
   targets?: ReadonlySet<number>;
   /** A library text's Turkish, one per paragraph, shown under it (null = none). */
   translations?: readonly (string | null)[] | null;
+  /** Text size ("Yazı boyutu"): scale of the 19 px body, 1 = normal. */
+  fontScale?: number;
 }
 
 export function ReaderBody({
@@ -39,6 +41,7 @@ export function ReaderBody({
   onWord,
   targets,
   translations,
+  fontScale = 1,
 }: Props) {
   const pick = (e: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>) => {
     const el = (e.target as HTMLElement).closest<HTMLElement>('[data-t]');
@@ -50,6 +53,7 @@ export function ReaderBody({
     <div
       className="flex flex-col gap-[1.1em] font-serif text-[1.1875rem] leading-[1.8] text-fg [overflow-wrap:anywhere]"
       lang="en"
+      style={fontScale === 1 ? undefined : { fontSize: `${1.1875 * fontScale}rem` }}
       data-testid="reader-text"
       onClick={pick}
       onKeyDown={(e) => {

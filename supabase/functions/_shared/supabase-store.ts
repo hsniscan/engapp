@@ -163,6 +163,10 @@ export class SupabaseAiStore implements AiStore {
     ) as UsageResult;
   }
 
+  async refundAi(userId: string): Promise<void> {
+    check(await this.db.rpc('ai_refund', { p_user: userId }), 'ai_refund');
+  }
+
   async findTerms(norms: string[]): Promise<LexTerm[]> {
     if (norms.length === 0) return [];
     return check(

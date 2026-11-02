@@ -632,7 +632,7 @@
       "saveFailed": "Couldn’t save. Try again."
     },
     "stats": {
-      "title": "Tricky cards",
+      "title": "Often forgotten",
       "lead_one": "Cards you have forgotten at least {{count}} time. Try looking at them another way.",
       "lead_other": "Cards you have forgotten at least {{count}} times. Try looking at them another way.",
       "empty_one": "No card forgotten {{count}} time yet. When there is one, it shows up here.",
@@ -648,7 +648,7 @@
     }
   },
   "add": {
-    "title": "Add a card",
+    "title": "Add word",
     "wordTitle": "Add a word",
     "wordLead": "Type the word; its meaning comes from your cards, the Word Bank or the dictionary. Write your own and add an example if you like.",
     "textTitle": "Add a text",
@@ -656,17 +656,16 @@
     "otherWays": "Or from somewhere else"
   },
   "library": {
-    "title": "Cards",
     "searchPlaceholder": "Search a word or meaning",
-    "empty": "No cards yet",
-    "emptyHint": "Add your first word; the review schedule sets itself up.",
-    "summary": "{{notes}} notes · {{cards}} cards",
-    "listLabel": "Notes",
+    "empty": "No words yet",
+    "emptyHint": "Add your first word or pick from the Word bank and ready-made decks; the review schedule sets itself up.",
+    "summary": "{{notes}} words · {{cards}} cards",
+    "listLabel": "Words",
     "selectAll": "Select all",
     "selectNote": "Select “{{term}}”",
-    "showing": "{{shown}} notes",
+    "showing": "{{shown}} words",
     "clearFilters": "Clear filters",
-    "noMatch": "No matching notes",
+    "noMatch": "No matching words",
     "noMatchHint": "Shorten the search or clear the filters.",
     "showMore": "Show more ({{count}})",
     "noSenses": "No meanings",
@@ -676,8 +675,8 @@
       "short": "Filter",
       "type": "Card type",
       "allTypes": "All types",
-      "state": "State",
-      "allStates": "All states",
+      "state": "Stage",
+      "allStates": "All stages",
       "suspended": "Suspension",
       "suspendedAll": "All",
       "suspendedActive": "Not suspended",
@@ -688,7 +687,7 @@
       "sortNew": "Newest first",
       "sortAz": "A to Z",
       "dupOnly": "Possible duplicates only",
-      "dupHint": "Notes that arrived with the same term in an account merge.",
+      "dupHint": "Words that came with the same term when accounts were merged.",
       "reset": "Reset filters",
       "activeSr": "{{count}} filters active",
       "level": "Level",
@@ -698,21 +697,26 @@
       "sortLevelDesc": "Level: hard to easy"
     },
     "bulk": {
-      "label": "Actions for selected notes",
+      "label": "Actions for selected words",
       "count": "{{count}} selected",
       "clear": "Clear selection",
       "unsuspend": "Unsuspend",
-      "delete": "Delete {{count}} notes",
-      "confirmTitle": "Delete {{count}} notes?",
-      "suspended": "{{count}} notes suspended",
-      "unsuspended": "{{count}} notes unsuspended",
-      "deleted": "{{count}} notes deleted",
+      "delete": "Delete {{count}} words",
+      "confirmTitle": "Delete {{count}} words?",
+      "suspended": "{{count}} words suspended",
+      "unsuspended": "{{count}} words unsuspended",
+      "deleted": "{{count}} words deleted",
       "failed": "Could not finish. Try again.",
-      "tag": "Tag"
+      "tag": "Tag",
+      "known": "{{count}} words moved to Known words",
+      "markKnown": "I know these",
+      "progress": "Working… {{done}} / {{total}}",
+      "hidden": "{{count}} selected words hidden by the filter are left alone.",
+      "export": "Download CSV"
     },
     "detail": {
       "meta": "{{cards}} cards · added {{date}}",
-      "duplicateHint": "Possible duplicate: a note with the same term came from another device. Delete one or keep both.",
+      "duplicateHint": "Possible duplicate: a word with the same term came from another device. Delete one or keep both.",
       "lexiconMeaning": "Dictionary meaning: {{meaning}}",
       "newSense": "New meaning",
       "deleteSense": "Delete meaning {{n}}",
@@ -721,16 +725,27 @@
       "locked": "Locked",
       "dueNow": "Due",
       "due": "Next: {{when}}",
-      "suspendNote": "Suspend this note",
+      "suspendNote": "Suspend this word",
       "suspendHint": "Suspended cards are not reviewed; their history is kept.",
-      "deleteNote": "Delete note",
+      "deleteNote": "Delete word",
       "deleteNoteTitle": "Delete “{{term}}”?",
       "deleteSenseTitle": "Delete the meaning “{{meaning}}”?",
       "deleteSenseBody": "Its production and cloze cards are deleted. Review history is kept.",
       "saved": "Changes saved",
       "saveFailed": "Could not save. Try again.",
-      "duplicateTerm": "Another note already has this term.",
-      "noteDeleted": "“{{term}}” deleted"
+      "duplicateTerm": "Another word already has this term.",
+      "noteDeleted": "“{{term}}” deleted",
+      "markKnown": "I know this",
+      "markKnownHint": "The word moves to Known words and its cards leave study. Its history is kept.",
+      "knownDone": "“{{term}}” moved to Known words",
+      "reset": "Reset progress",
+      "resetTitle": "Start “{{term}}” over?",
+      "resetBody": "Its cards start again as new. Your review history is not deleted.",
+      "resetDone": "“{{term}}” starts over",
+      "discardTitle": "Changes not saved",
+      "discardBody": "If you close without saving, your changes are lost.",
+      "discard": "Close without saving",
+      "keepEditing": "Keep editing"
     },
     "cardCount": "{{count}} cards",
     "decks": {
@@ -742,25 +757,35 @@
     },
     "tagSheet": {
       "title": "Tags",
-      "desc_one": "{{count}} note selected. Tick the tags to add or remove.",
-      "desc_other": "{{count}} notes selected. Tick the tags to add or remove.",
+      "desc_one": "{{count}} word selected. Tick the tags to add or remove.",
+      "desc_other": "{{count}} words selected. Tick the tags to add or remove.",
       "search": "Search tags or type a new one",
       "create": "Add tag “{{tag}}”",
       "none": "No tags yet. Type above and press Enter to create your first tag.",
       "noMatch": "No tag with this name.",
-      "mixed_one": "On {{count}} of the selected notes",
-      "mixed_other": "On {{count}} of the selected notes",
+      "mixed_one": "On {{count}} of the selected words",
+      "mixed_other": "On {{count}} of the selected words",
       "willAdd": "Will be added",
       "willRemove": "Will be removed",
       "apply": "Apply",
-      "applied_one": "Tags updated on {{count}} note",
-      "applied_other": "Tags updated on {{count}} notes",
+      "applied_one": "Tags updated on {{count}} word",
+      "applied_other": "Tags updated on {{count}} words",
       "unchanged": "No changes",
-      "full_one": "{{count}} note already has 50 tags and was not changed.",
-      "full_other": "{{count}} notes already have 50 tags and were not changed.",
+      "full_one": "{{count}} word already has 50 tags and was left unchanged.",
+      "full_other": "{{count}} words already have 50 tags and were left unchanged.",
       "failed": "Could not save the tags. Try again.",
-      "tooLong": "A tag can be at most 40 characters."
-    }
+      "tooLong": "A tag can be at most 60 characters."
+    },
+    "emptyBank": "Open the Word bank",
+    "undo": "Undo",
+    "stage": {
+      "new": "New",
+      "learning": "Learning",
+      "consolidating": "Consolidating",
+      "learned": "Learned",
+      "mastered": "Mastered"
+    },
+    "title": "My words"
   },
   "stats": {
     "title": "Stats",
@@ -1266,7 +1291,11 @@
     "guestTitle": "Guest",
     "guestHint": "Your data lives only on this device. Sign in to sync across devices and pull cards out of texts with AI.",
     "signIn": "Sign in",
-    "or": "or"
+    "or": "or",
+    "signOutWipe": "Also delete the data on this device",
+    "signOutWipeHint": "Useful on a shared device: your words and history stay in your account, this device starts empty.",
+    "signOutPendingWipe_one": "{{count}} change has not reached your account yet. If you sign out and delete this device's data now, it is lost.",
+    "signOutPendingWipe_other": "{{count}} changes have not reached your account yet. If you sign out and delete this device's data now, they are lost."
   },
   "notFound": {
     "title": "Page not found",
@@ -1503,7 +1532,7 @@
       "termType": "Type",
       "exists": "This word already exists; add a new meaning",
       "existsHas": "Saved meanings:",
-      "openInLibrary": "Open in cards",
+      "openInLibrary": "Open in My words",
       "senses": "Meanings",
       "newSenses": "New meaning",
       "senseN": "meaning",
@@ -1565,13 +1594,13 @@
     "button": "Restore",
     "title": "Restore backup",
     "fileInfo": "{{file}} · {{date}}",
-    "summary": "{{notes}} notes, {{cards}} cards, {{reviews}} reviews",
+    "summary": "{{notes}} words, {{cards}} cards, {{reviews}} reviews",
     "merge": "Merge",
     "mergeHint": "Records from the backup are added; where both sides have a record, the newest wins. Nothing on this device is deleted.",
     "overwrite": "Overwrite",
     "overwriteHint": "Notes and cards on this device go back to the backup; anything not in it is deleted. Review history is always kept.",
     "backupFirst": "Back up your current data first",
-    "backupFirstHint": "If something goes wrong, you can go back to this file.",
+    "backupFirstHint": "If you back up your current data first, you can go back to that file if something goes wrong.",
     "backedUp": "Backed up",
     "done": "Restore finished",
     "doneDetail": "{{added}} records added, {{updated}} updated, {{logs}} reviews added.",
@@ -1582,7 +1611,11 @@
       "invalid_format": "This is not an Engapp backup, or it is incomplete.",
       "unsupported_version": "This backup comes from a newer version. Update the app first.",
       "checksum_mismatch": "The backup file is damaged or was edited (checksum mismatch)."
-    }
+    },
+    "foreign": "This backup belongs to another account. Study history never moves between accounts: its words are added as new cards, without review history, settings or reports. To restore it with its history, sign in to the account it belongs to first.",
+    "cardsOnly": "Take the words only",
+    "cardsDone_one": "{{count}} word added as new cards",
+    "cardsDone_other": "{{count}} words added as new cards"
   },
   "csv": {
     "title": "Export CSV",
@@ -1766,8 +1799,8 @@
     "discardLocal": "Discard this device's",
     "discardLocalHint": "Cards and history on this device are deleted and your account's are downloaded.",
     "discardAccount": "Discard the account's",
-    "discardAccountHint": "Cards in your account are deleted and this device's are uploaded to it.",
-    "irreversible": "This can't be undone. If you're not sure, make a backup first or choose “Merge”.",
+    "discardAccountHint": "Your account's cards are deleted on all your devices; the ones on this device are uploaded to it.",
+    "irreversible": "This can't be undone. A backup taken on this device holds this device's cards, not the account's. If you're not sure, choose “Merge”.",
     "apply": "Continue",
     "applying": "Applying…",
     "errorTitle": "Couldn't connect your account",
@@ -1775,7 +1808,8 @@
     "continueAsGuest": "Continue as guest",
     "done": "Connected to your account",
     "doneCopied": "{{count}} words were copied as new cards.",
-    "doneDuplicates": "{{count}} words were marked “possible duplicate”; you can review them in Kelimelerim (My words)."
+    "doneDuplicates": "{{count}} words were marked “possible duplicate”; you can review them in Kelimelerim (My words).",
+    "discardAccountConfirm": "I understand: my account's cards will be deleted on all my devices."
   },
   "accountDelete": {
     "rowTitle": "Delete my account and data",
@@ -1866,8 +1900,13 @@
     "unavailableIndicatorFull": "Your data is safe on this device."
   },
   "importer": {
-    "privacy": "Don't upload confidential work documents.",
+    "privacy": "Do not send confidential work documents; the text goes to the server to find the words.",
     "privacyWhy": "On the free AI tier, Google may read submitted text and use it to improve its models.",
+    "signInTitle": "Sign in to pull cards out with AI",
+    "signInBody": "Word and phrase suggestions come from AI on the server, so you need to sign in with Google. Adding cards by hand works as a guest too.",
+    "signInCta": "Sign in with Google",
+    "unavailableTitle": "AI is off in this version",
+    "unavailableBody": "The AI server is not set up. Add words with “Add by hand”.",
     "paste": {
       "label": "English text",
       "placeholder": "Paste an article, email or book chapter…",
@@ -1876,7 +1915,7 @@
       "statsEmpty": "Paste whole sentences; long texts are split into parts.",
       "titleLabel": "Title",
       "titlePlaceholder": "e.g. The Guardian — climate piece",
-      "tooShort": "Paste at least one full sentence.",
+      "tooShort": "Paste at least one sentence of three words.",
       "tooLong": "The text is too long (at most {{max}} characters). Split it and upload the parts separately."
     },
     "pdf": {
@@ -1899,23 +1938,27 @@
     "job": {
       "queuedOffline": "Queued — starts on its own when you're back online",
       "queued": "Queued",
-      "processing": "Processing part {{done}}/{{total}}…",
-      "progress": "{{done}}/{{total}} parts",
-      "cacheHits_one": "{{count}} part came from the cache; no AI call.",
-      "cacheHits_other": "{{count}} parts came from the cache; no AI calls.",
+      "processing": "Working… {{pct}}%",
+      "progress": "{{pct}}%",
+      "cacheHits_one": "Part of the text was processed before and was not sent again.",
+      "cacheHits_other": "{{count}} parts of the text were processed before and were not sent again.",
       "ready": "Candidates ready",
       "readyBody_one": "{{count}} candidate found.",
       "readyBody_other": "{{count}} candidates found.",
       "readyEmpty": "No new words to suggest in this text.",
       "open": "Open preview",
-      "failed": "Import stopped",
+      "failed": "Word extraction stopped",
       "retry": "Try again",
       "discard": "Dismiss",
-      "done": "Added to cards",
-      "recent": "Recent imports"
+      "done": "Added to your words",
+      "recent": "Recent word extractions",
+      "all": "See all ({{count}})",
+      "tomorrow": "Today's AI limit is reached. It continues by itself tomorrow where it stopped.",
+      "partialBody": "You can look at the words found so far now; the rest of the text is not processed.",
+      "partialOpen": "See what was found"
     },
     "errors": {
-      "daily_limit": "You've reached today's AI limit. You can continue tomorrow where you left off; processed parts aren't lost.",
+      "daily_limit": "You reached today's AI limit. It continues by itself tomorrow; the words found so far are kept.",
       "quota_exceeded": "The AI is very busy right now. Try again in a few minutes; processed parts aren't lost.",
       "ai_failed": "The AI couldn't process this part. Try again.",
       "unreachable": "Couldn't reach the server. Check your connection and try again.",
@@ -1929,10 +1972,10 @@
     "preview": {
       "title": "Preview",
       "loading": "Loading candidates…",
-      "notFound": "Import not found",
+      "notFound": "This word extraction was not found",
       "notFoundBody": "It may have been deleted or made on another device.",
       "notReady": "Candidates aren't ready yet",
-      "backToAdd": "Back to Add card",
+      "backToAdd": "Back to Add word",
       "summary": "{{selected}}/{{total}} selected",
       "filter": "Filter by type",
       "all": "All",
@@ -1959,15 +2002,15 @@
       "confirming": "Adding…",
       "added": "{{notes}} words added",
       "addedBody": "{{senses}} meanings, {{cards}} cards. They'll come up for review in turn.",
-      "confirmFailed": "Couldn't add the cards. Try again.",
-      "discard": "Delete this import",
-      "discardTitle": "Delete this import?",
+      "confirmFailed": "Could not add the words. Try again.",
+      "discard": "Delete this word extraction",
+      "discardTitle": "Delete the word extraction?",
       "discardBody": "The candidates are deleted; cards you've added aren't affected.",
-      "discarded": "Import deleted",
+      "discarded": "Word extraction deleted",
       "emptyFilter": "No candidates of this type.",
-      "alreadyDone": "This import is complete",
+      "alreadyDone": "This word extraction is finished",
       "alreadyDoneBody": "The candidates you chose were added to your cards.",
-      "toLibrary": "Go to cards",
+      "toLibrary": "Go to my words",
       "pos": "Part of speech",
       "addedSenses_one": "{{count}} meaning added",
       "addedSenses_other": "{{count}} meanings added",
@@ -1998,6 +2041,16 @@
       "signIn": "Sign in to fill this in with AI.",
       "noSenses": "No meanings found for this word in the dictionary or from AI.",
       "noMore": "No other common meanings found."
+    },
+    "jobs": {
+      "title": "Word extractions",
+      "body": "Word extractions you started from pasted text, a PDF, a photo, a link or subtitles.",
+      "empty": "No word extractions yet",
+      "emptyBody": "Add a text and choose “Extract the words in this text”; it shows up here.",
+      "finished": "Finished",
+      "readyToast": "Words ready",
+      "link_one": "{{count}} word extraction in progress",
+      "link_other": "{{count}} word extractions in progress"
     }
   },
   "more": {
@@ -2103,7 +2156,8 @@
     "forecastLoading": "Calculating the forecast…",
     "forecastNote": "The forecast uses how likely you are to remember each card and your daily new-card limit.",
     "forecastToday": "Today",
-    "forecastChartLabel": "Expected reviews for the next 30 days, with the capacity line"
+    "forecastChartLabel": "Expected reviews for the next 30 days, with the capacity line",
+    "vacationStartPast": "A holiday cannot start before today. Pick today or a later day."
   },
   "practice": {
     "title": "Practice",
@@ -2142,7 +2196,7 @@
       "octanove": "The word has this level in the advanced Octanove C1/C2 list.",
       "ai": "Not in the lists. The AI estimated the level, bounded by how common the word is.",
       "freq": "Not in the lists. The level comes from how common the word is in English.",
-      "words": "Not in the lists. The level of the hardest word in the expression.",
+      "words": "Not in the lists. Idioms and phrasal verbs count one level above their hardest word (at least B1).",
       "user": "You chose this level; it applies only to you."
     },
     "correction": "{{list}}: {{from}} → {{to}} for Turkish learners",
@@ -2414,7 +2468,7 @@
       "settings": "Settings",
       "levelLabel": "Level",
       "unmeasured": "Not measured yet",
-      "unmeasuredHint": "Find your level with a 2-minute test.",
+      "unmeasuredHint": "Find your level with a 5-minute test (at most 70 questions).",
       "vocabLabel": "Estimated vocabulary",
       "vocabNone": "No estimate yet",
       "vocabFloor_one": "at least {{value}} word",
@@ -2439,7 +2493,9 @@
       "knownWords": "Words I know",
       "sync": "Sync",
       "settingsHint": "Study, reminders, appearance, backup",
-      "goalLevel": "Target level {{level}}"
+      "goalLevel": "Target level {{level}}",
+      "unreliableHint": "Your last test did not give a reliable result. Take it again to measure your level.",
+      "levelSection": "Level and vocabulary"
     }
   },
   "onboarding": {
@@ -2450,15 +2506,18 @@
     "welcome": {
       "title": "Let's start learning words for good",
       "body": "Engapp asks you a few words every day and brings each back just before you forget it. Three short steps, then your first study session:",
-      "step1": "Measure your level: a word test of about 2 minutes (skip it if you like).",
+      "step1": "Measure your level: a 5-minute word test, at most 70 questions (skip it if you like).",
       "step2": "Pick your interests: example sentences come from these topics.",
       "step3": "Pick a ready deck, such as “The 500 most used words”.",
       "step4": "Do your first session: a few minutes, a few new words.",
-      "start": "Let's begin"
+      "start": "Let's begin",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "signInFailed": "Could not sign in. Try again."
     },
     "level": {
       "title": "Let's measure your level",
-      "body": "You see a word and say whether you know it. It takes about 2 minutes. Suggestions then fit your level.",
+      "body": "You see a word and say whether you know it. It takes 5 minutes, at most 70 questions. Suggestions then fit your level.",
       "start": "Start the test",
       "skip": "Not now, skip"
     },
@@ -2480,14 +2539,17 @@
         "top100_one": "A light start · {{value}} word",
         "top100_other": "A light start · {{value}} words",
         "verbs_one": "Verbs for your level · {{value}} word",
-        "verbs_other": "Verbs for your level · {{value}} words"
+        "verbs_other": "Verbs for your level · {{value}} words",
+        "verbsLevel_one": "Intermediate verbs ({{level}}) · {{value}} word",
+        "verbsLevel_other": "Intermediate verbs ({{level}}) · {{value}} words"
       },
       "pace": "They don't all come at once: a few new words each day. Words you know are left out.",
       "start": "Start my first session with this deck",
       "adding": "Adding… {{done}} / {{total}}",
       "loading": "Loading ready decks",
       "offline": "Ready decks need the internet. Try again once you're online, or add words yourself.",
-      "retry": "Try again"
+      "retry": "Try again",
+      "skipOffline": "Skip for now and open the app"
     }
   },
   "decks": {
@@ -2522,10 +2584,10 @@
       "name": "Name",
       "namePlaceholder": "e.g. Work · struggling",
       "nameRequired": "Give the deck a name.",
-      "states": "Status",
-      "statesHint": "With several, any one is enough. Struggling: words you often forget or missed in the last two weeks.",
+      "states": "Stage",
+      "statesHint": "Pick several and any one is enough. Struggling: words you often forget or missed in the last two weeks.",
       "tags": "Tags",
-      "tagsNone": "No tags yet. Select notes on the Cards screen and use “Tag”.",
+      "tagsNone": "No tags yet. Select words in All my words and use “Tag”.",
       "tagMode": "Tag rule",
       "tagAny": "Any",
       "tagAll": "All",
@@ -2546,7 +2608,7 @@
     "tags": {
       "title": "Tags",
       "body": "Tap a tag to see its words.",
-      "empty": "No tags yet. Select notes on the Cards screen and use the “Tag” button.",
+      "empty": "No tags yet. Select words in All my words and use the “Tag” button.",
       "listLabel": "Tags",
       "actions": "Actions for “{{tag}}”",
       "rename": "Rename",
@@ -2556,8 +2618,8 @@
       "renamed": "Tag renamed",
       "delete": "Delete tag",
       "deleteTitle": "Delete tag “{{tag}}”?",
-      "deleteBody_one": "The tag is removed from {{count}} note. The note is not deleted.",
-      "deleteBody_other": "The tag is removed from {{count}} notes. The notes are not deleted.",
+      "deleteBody_one": "The tag is removed from {{count}} word. Words are not deleted.",
+      "deleteBody_other": "The tag is removed from {{count}} words. Words are not deleted.",
       "deleted": "Tag deleted"
     },
     "themes": {
@@ -2762,7 +2824,8 @@
     },
     "pastTitle": "Earlier reports",
     "pastEmpty": "No earlier reports yet.",
-    "pastSummary": "{{days}} days · {{reviews}} reviews · {{learned}} new words"
+    "pastSummary": "{{days}} days · {{reviews}} reviews · {{learned}} new words",
+    "commentGuest": "The comment is added once you sign in with Google. The numbers are ready now."
   },
   "goals": {
     "title": "Your goals",
@@ -2925,7 +2988,10 @@
     "retry": "Try again",
     "credit": "Word lists: CEFR-J Wordlist 1.5 (© Tono Laboratory, TUFS) and Octanove Vocabulary Profile C1/C2 (Octanove Labs, CC BY-SA 4.0). Meanings and example sentences were generated once with AI.",
     "creditLink": "Sources",
-    "entryLink": "Open the word bank"
+    "entryLink": "Open the word bank",
+    "markKnown": "I know it",
+    "markKnownLabel": "I know “{{term}}”",
+    "knownMarked": "{{count}} words added to Known words"
   },
   "discover": {
     "title": "Discover",
@@ -2951,7 +3017,8 @@
     "suggestions": {
       "eyebrow": "Texts for you",
       "body": "{{difficulty}} difficulty, chosen by the words you know",
-      "label": "Texts for you"
+      "label": "Texts for you",
+      "stretch": "Nothing at {{difficulty}} difficulty yet; these are the closest, a little challenging"
     },
     "createText": {
       "eyebrow": "A text of your own",
@@ -3032,9 +3099,9 @@
     "study": "Study",
     "studyAnyway": "Study anyway",
     "studyLabel": "Study “{{name}}”",
-    "dueToday_one": "{{count}} today",
-    "dueToday_other": "{{count}} today",
-    "dueNone": "none today",
+    "dueToday_one": "{{count}} card today",
+    "dueToday_other": "{{count}} cards today",
+    "dueNone": "no cards today",
     "words_one": "{{formatted}} word",
     "words_other": "{{formatted}} words",
     "wordsCards": "{{words}} words · {{cards}} cards",
@@ -3050,7 +3117,7 @@
       "empty": "No decks yet. Add a ready-made deck from Discover or create one below.",
       "fromSuggestion": "Added from a suggestion",
       "kindSmart": "Smart deck",
-      "kindTag": "Tag",
+      "kindTag": "Hand-picked",
       "progress": "{{learned}} learned, {{studying}} learning, {{fresh}} new",
       "needsUpdate": "This deck was made in a newer version of the app.",
       "newTitle": "New deck",
@@ -3227,7 +3294,13 @@
       "fAll": "All {{count}}",
       "fStudying": "Learning {{count}}",
       "fLearned": "Learned {{count}}",
-      "fNew": "New {{count}}"
+      "fNew": "New {{count}}",
+      "up": "Move up",
+      "down": "Move down",
+      "export": "Download as CSV",
+      "exported": "{{count}} words downloaded",
+      "deleted": "“{{name}}” deleted",
+      "handPicked": "Hand-picked deck"
     },
     "picker": {
       "title": "Add words to “{{name}}”",
@@ -3243,7 +3316,7 @@
     },
     "library": {
       "title": "All my words",
-      "parent": "Decks",
+      "parent": "My words",
       "deckLine": "Words in “{{name}}”",
       "deckOpen": "Open the deck"
     },
@@ -3266,8 +3339,11 @@
       "carded": "Added",
       "selectedBody": "Will be added to All my words",
       "showing": "Showing {{shown}} / {{total}}",
-      "quick": "A mix of {{count}} words from your level"
-    }
+      "quick": "A mix of {{count}} words from your level",
+      "downloading": "Downloading the Word bank… {{count}} words so far",
+      "partial": "The Word bank download stopped part-way ({{count}} words). Finish it when you are online."
+    },
+    "start": "Start"
   },
   "gradedLibrary": {
     "forYou": "For you",
@@ -3482,9 +3558,11 @@
       "again": "Read again"
     },
     "summary": {
-      "line_one": "You met {{count}} new word in this text · added {{added}}",
-      "line_other": "You met {{count}} new words in this text · added {{added}}",
-      "cta": "New words in this text"
+      "line_one": "You met {{count}} new word in this text · you added {{added}}",
+      "line_other": "You met {{count}} new words in this text · you added {{added}}",
+      "cta": "New words in this text",
+      "lineNone_one": "You met {{count}} new word in this text · none added yet",
+      "lineNone_other": "You met {{count}} new words in this text · none added yet"
     },
     "newWords": {
       "title": "New words in this text",
@@ -3525,7 +3603,11 @@
         "offline": "You are offline and this word is not in the dictionary on this device.",
         "signIn": "This word is not in the dictionary on this device. Sign in with Google to look it up in the shared dictionary.",
         "notFound": "No meaning was found for this word."
-      }
+      },
+      "markKnown": "I know it, don't mark it",
+      "knownMarked": "\"{{term}}\" added to the words you know",
+      "knownFailed": "Could not be saved. Try again.",
+      "listenHere": "Listen from here"
     },
     "stage": {
       "new": "New card",
@@ -3551,8 +3633,12 @@
     },
     "encounters": {
       "none": "You have not met this word in a card or a text yet.",
-      "line_one": "You have seen this word {{count}} time: {{cards}} in cards, {{texts}} in texts",
-      "line_other": "You have seen this word {{count}} times: {{cards}} in cards, {{texts}} in texts"
+      "line_one": "You have seen this word {{count}} time: {{cards}} in cards, in {{texts}} texts",
+      "line_other": "You have seen this word {{count}} times: {{cards}} in cards, in {{texts}} texts",
+      "cardsOnly_one": "You have seen this word {{count}} time in cards",
+      "cardsOnly_other": "You have seen this word {{count}} times in cards",
+      "textsOnly_one": "You have seen this word in {{count}} text",
+      "textsOnly_other": "You have seen this word in {{count}} texts"
     },
     "difficulty": {
       "label": "Reading difficulty",
@@ -3579,7 +3665,9 @@
       "ocr": "Photo",
       "subtitle": "Subtitles",
       "graded": "Library",
-      "story": "Today's story"
+      "story": "Today's story",
+      "picked": "Text from my words",
+      "pastStory": "Story · {{date}}"
     },
     "list": {
       "title": "My texts",
@@ -3608,6 +3696,18 @@
     },
     "open": {
       "defaultTitle": "My text"
+    },
+    "speed": {
+      "label": "Listening speed",
+      "r075": "Slow",
+      "r1": "Normal",
+      "r125": "Fast"
+    },
+    "textSize": {
+      "label": "Text size",
+      "s": "Small",
+      "m": "Medium",
+      "l": "Large"
     }
   },
   "story": {
@@ -3696,7 +3796,8 @@
       "budget": "This month's text budget is used up. It reopens at the start of the month.",
       "notEnough": "Pick at least 3 words.",
       "generic": "The text could not be written right now. Try again a bit later."
-    }
+    },
+    "limitReached": "Today's limit is used · renews tomorrow"
   },
   "wordList": {
     "title": "CSV or word list",

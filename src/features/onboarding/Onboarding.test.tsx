@@ -6,7 +6,8 @@ import { OFFER_DISMISSED_KEY } from '@/features/leveltest/levelText';
 import { HomeScreen } from '@/features/home/HomeScreen';
 import { resetDb } from '@/test/db';
 import { renderRoute } from '@/test/ui';
-import { finishOnboarding } from './state';
+import { setAuthStateForTesting } from '@/features/auth/session';
+import { finishOnboarding, setOnboardingStep } from './state';
 
 beforeEach(async () => {
   await resetDb();
@@ -42,6 +43,28 @@ describe('first-run onboarding on Bugün', () => {
     // The interests question is answered, yet the flow goes on to the deck step.
     expect(await screen.findByTestId('onboarding-deck')).toBeInTheDocument();
     expect(screen.getByTestId('onboarding-step')).toHaveTextContent('Adım 3 / 3');
+  });
+
+  it('"Zaten hesabın var mı? Giriş yap" on the welcome for a guest (B3)', async () => {
+    setAuthStateForTesting({ status: 'guest', user: null });
+    try {
+      renderRoute(<HomeScreen />);
+      const welcome = await screen.findByTestId('onboarding-welcome');
+      expect(within(welcome).getByTestId('onboarding-signin')).toHaveTextContent('Giriş yap');
+      expect(within(welcome).getByText(/Zaten hesabın var mı/)).toBeInTheDocument();
+    } finally {
+      setAuthStateForTesting({ status: 'unavailable', user: null });
+    }
+  });
+
+  it('offline at the deck step, "Şimdilik atla" opens the app', async () => {
+    const user = userEvent.setup();
+    await db.settings.update('settings', { interests: [] });
+    setOnboardingStep('deck');
+    renderRoute(<HomeScreen />);
+    const offline = await screen.findByTestId('onboarding-deck-offline', {}, { timeout: 10_000 });
+    await user.click(within(offline).getByTestId('onboarding-skip-offline'));
+    await waitFor(() => expect(screen.queryByTestId('onboarding-deck')).toBeNull());
   });
 
   it('an existing user never sees it', async () => {

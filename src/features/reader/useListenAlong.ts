@@ -10,32 +10,39 @@ import {
   playPronunciation,
   prefetchPregenerated,
   pronunciationReady,
+  stopPronunciation,
 } from '@/features/review/pronunciation';
 import type { VoicePref } from '@/features/review/useSpeech';
+import { isNativeApp } from '@/native/platform';
 import { playGradedClip, prefetchGradedClips, stopGradedClip } from './gradedAudio';
 
 export interface ListenAlongDeps {
   ready: (text: string, voice: VoicePref) => boolean;
-  playReady: (text: string, voice: VoicePref, onDone: () => void) => boolean;
-  device: (text: string, voice: VoicePref, onDone: () => void) => boolean;
+  /** `rate`: listening speed, 1 = normal ("Dinleme hızı", v0.5.2). */
+  playReady: (text: string, voice: VoicePref, onDone: () => void, rate?: number) => boolean;
+  device: (text: string, voice: VoicePref, onDone: () => void, rate?: number) => boolean;
   prefetch: (texts: readonly string[], voice: VoicePref) => void;
   /** A recorded sentence; `fallback` (the device voice) when it cannot be played. */
-  playClip: (key: string, onDone: () => void, fallback: () => boolean) => boolean;
+  playClip: (key: string, onDone: () => void, fallback: () => boolean, rate?: number) => boolean;
   prefetchClips: (keys: readonly (string | null)[]) => void;
   cancel: () => void;
 }
 
 const defaultDeps: ListenAlongDeps = {
   ready: pronunciationReady,
-  playReady: (text, voice, onDone) => playPronunciation(text, voice, { onDone }),
-  device: (text, voice, onDone) => deviceVoice(text, voice, onDone),
+  playReady: (text, voice, onDone, rate) =>
+    playPronunciation(text, voice, rate === undefined ? { onDone } : { onDone, rate }),
+  device: (text, voice, onDone, rate) => deviceVoice(text, voice, onDone, isNativeApp(), rate),
   prefetch: (texts, voice) => void prefetchPregenerated(texts, voice),
-  playClip: playGradedClip,
+  playClip: (key, onDone, fallback, rate) => playGradedClip(key, onDone, fallback, undefined, rate),
   prefetchClips: prefetchGradedClips,
   cancel: () => {
     stopGradedClip();
+    stopPronunciation();
     if (typeof window !== 'undefined' && 'speechSynthesis' in window)
       window.speechSynthesis.cancel();
+    // The Android app speaks with the phone's TextToSpeech, not speechSynthesis (B2).
+    if (isNativeApp()) void import('@/native/tts').then((m) => m.stopNative()).catch(() => {});
   },
 };
 
@@ -58,12 +65,14 @@ export function useListenAlong(
   pregenerated: boolean,
   deps: ListenAlongDeps = defaultDeps,
   clips: readonly (string | null)[] | null = null,
+  /** Listening speed, 1 = normal; a change applies from the next sentence. */
+  rate = 1,
 ): ListenAlong {
   const [current, setCurrent] = useState<number | null>(null);
   const run = useRef(0);
-  const live = useRef({ sentences, voice, pregenerated, deps, clips });
+  const live = useRef({ sentences, voice, pregenerated, deps, clips, rate });
   useEffect(() => {
-    live.current = { sentences, voice, pregenerated, deps, clips };
+    live.current = { sentences, voice, pregenerated, deps, clips, rate };
   });
 
   const stop = useCallback(() => {
@@ -74,7 +83,8 @@ export function useListenAlong(
 
   const step = useCallback(function step(i: number, id: number): boolean {
     if (id !== run.current) return false;
-    const { sentences: list, voice: v, pregenerated: pre, deps: d, clips: recorded } = live.current;
+    const { sentences: list, voice: v, pregenerated: pre, deps: d, clips: recorded, rate } = live.current;
+    const r = rate === 1 ? undefined : rate;
     // Skip sentences with nothing to say (a lone number, a dash).
     let k = i;
     while (k < list.length && !/\p{L}/u.test(list[k]!)) k++;
@@ -91,10 +101,10 @@ export function useListenAlong(
     let ok: boolean;
     if (clip) {
       d.prefetchClips(recorded!.slice(k + 1, k + 3));
-      ok = d.playClip(clip, onDone, () => id === run.current && d.device(text, v, onDone));
+      ok = d.playClip(clip, onDone, () => id === run.current && d.device(text, v, onDone, r), r);
     } else {
       if (pre) d.prefetch(list.slice(k + 1, k + 3), v);
-      ok = d.ready(text, v) ? d.playReady(text, v, onDone) : d.device(text, v, onDone);
+      ok = d.ready(text, v) ? d.playReady(text, v, onDone, r) : d.device(text, v, onDone, r);
     }
     if (!ok) {
       run.current++;
