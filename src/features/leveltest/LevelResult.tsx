@@ -9,7 +9,7 @@ import { LEVELS, levelIndex, type TestResult } from '@/domain/levelTest';
 import type { CefrLevel } from '@/domain/types';
 import { formatDuration, formatNumber, formatPercent } from '@/features/stats/format';
 import { requestSync } from '@/sync';
-import { Button, buttonClasses, cn, Icon, Surface, toast } from '@/ui';
+import { Button, buttonClasses, Card, cn, Icon, toast } from '@/ui';
 import { levelDative, pct } from './levelText';
 import { LevelLadder } from './VocabTile';
 
@@ -129,7 +129,7 @@ export function LevelResult({ outcome }: { outcome: LevelTestOutcome }) {
       )}
 
       {(result.reliable || applied) && (
-        <Surface padding="none" className="flex flex-col gap-5 p-5 sm:p-6">
+        <Card className="flex flex-col gap-5">
           <div className="flex flex-col gap-1">
             <span className="text-meta text-fg-muted">{t('levelTest.vocab')}</span>
             <span
@@ -143,7 +143,7 @@ export function LevelResult({ outcome }: { outcome: LevelTestOutcome }) {
             <span className="text-meta text-fg-muted">{t('levelTest.ladder')}</span>
             <LevelLadder level={result.level} ratios={result.ratios} />
           </div>
-        </Surface>
+        </Card>
       )}
 
       {result.reliable && outcome.marked > 0 && (

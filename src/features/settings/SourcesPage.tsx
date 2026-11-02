@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { Card, Icon, Page } from '@/ui';
+import { Card, PageFrame } from '@/ui';
 
 const SOURCES = [
   { key: 'cefrj', url: 'https://github.com/openlanguageprofiles/olp-en-cefrj' },
@@ -16,15 +16,13 @@ const SOURCES = [
 export function SourcesPage() {
   const { t } = useTranslation();
   return (
-    <Page title={t('sources.title')} description={t('sources.intro')}>
+    <PageFrame
+      width="reading"
+      title={t('sources.title')}
+      description={t('sources.intro')}
+      back={{ to: '/settings/hakkinda', label: t('sources.back') }}
+    >
       <div className="flex flex-col gap-4">
-        <Link
-          to="/settings/hakkinda"
-          className="-mt-2 inline-flex min-h-11 items-center gap-1 self-start text-meta font-medium text-accent-text underline-offset-4 hover:underline"
-        >
-          <Icon name="chevron-left" size={16} />
-          {t('sources.back')}
-        </Link>
         <ul className="flex flex-col gap-3" aria-label={t('sources.title')}>
           {SOURCES.map(({ key, url }) => (
             <li key={key}>
@@ -84,6 +82,6 @@ export function SourcesPage() {
           </Link>
         </section>
       </div>
-    </Page>
+    </PageFrame>
   );
 }

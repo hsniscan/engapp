@@ -1,11 +1,11 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { EmptyState, Page, buttonClasses } from '@/ui';
+import { EmptyState, PageFrame, buttonClasses } from '@/ui';
 
 export function NotFoundPage() {
   const { t } = useTranslation();
   return (
-    <Page title={t('notFound.title')} hideTitle>
+    <PageFrame width="reading" title={t('notFound.title')} hideTitle>
       <EmptyState
         icon="search"
         title={t('notFound.title')}
@@ -16,6 +16,6 @@ export function NotFoundPage() {
           </Link>
         }
       />
-    </Page>
+    </PageFrame>
   );
 }
