@@ -324,7 +324,7 @@ export function DataSection() {
         }
       />
       <SettingsRow label={t('resetHistory.title')} description={t('resetHistory.hint')}>
-        <Button variant="danger" onClick={() => setConfirmReset(true)}>
+        <Button variant="secondary" className="text-danger-text" onClick={() => setConfirmReset(true)}>
           {t('resetHistory.button')}
         </Button>
       </SettingsRow>

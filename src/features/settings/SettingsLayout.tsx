@@ -31,7 +31,7 @@ export function SettingsSection({
         </h2>
         {description && <p className="text-meta text-fg-muted">{description}</p>}
       </div>
-      <div className="divide-y divide-border rounded-card border border-border bg-surface">
+      <div className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
         {children}
       </div>
     </section>
