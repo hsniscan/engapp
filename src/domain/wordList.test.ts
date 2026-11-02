@@ -64,3 +64,24 @@ describe('parseWordList', () => {
     expect(r.truncated).toBe(true);
   });
 });
+
+describe('v0.5.2 fixes (B5)', () => {
+  it('a three-word Turkish meaning stays a meaning, not an example sentence', () => {
+    const r = parseWordList('put up with, katlanmak, tahammül etmek zorunda kalmak\nbank, kıyı, nehir kenarı kıyısı');
+    expect(r.rows).toEqual([
+      { term: 'put up with', meaning: 'katlanmak, tahammül etmek zorunda kalmak', sentence: null },
+      { term: 'bank', meaning: 'kıyı, nehir kenarı kıyısı', sentence: null },
+    ]);
+  });
+
+  it('an English sentence with the term is still the example', () => {
+    const r = parseWordList('bank;kıyı;We sat on the bank of the river');
+    expect(r.rows[0]).toEqual({ term: 'bank', meaning: 'kıyı', sentence: 'We sat on the bank of the river' });
+  });
+
+  it('a Turkish header row (İngilizce, Türkçe) is skipped', () => {
+    const r = parseWordList('İngilizce,Türkçe\nbank,kıyı');
+    expect(r.rows).toEqual([{ term: 'bank', meaning: 'kıyı', sentence: null }]);
+    expect(r.skipped).toBe(0);
+  });
+});

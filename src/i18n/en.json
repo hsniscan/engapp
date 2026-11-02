@@ -645,7 +645,7 @@
     }
   },
   "add": {
-    "title": "Add a card",
+    "title": "Add word",
     "wordTitle": "Add a word",
     "wordLead": "Type the word; its meaning comes from your cards, the Word Bank or the dictionary. Write your own and add an example if you like.",
     "textTitle": "Add a text",
@@ -1773,13 +1773,13 @@
     "unavailableIndicatorFull": "Your data is safe on this device."
   },
   "importer": {
-    "privacy": "Don't upload confidential work documents.",
+    "privacy": "Do not send confidential work documents; the text goes to the server to find the words.",
     "privacyWhy": "On the free AI tier, Google may read submitted text and use it to improve its models.",
     "signInTitle": "Sign in to pull cards out with AI",
     "signInBody": "Word and phrase suggestions come from AI on the server, so you need to sign in with Google. Adding cards by hand works as a guest too.",
     "signInCta": "Sign in with Google",
     "unavailableTitle": "AI is off in this version",
-    "unavailableBody": "No AI server is configured. You can add cards from the “Manual” tab.",
+    "unavailableBody": "The AI server is not set up. Add words with “Add by hand”.",
     "paste": {
       "label": "English text",
       "placeholder": "Paste an article, email or book chapter…",
@@ -1789,7 +1789,7 @@
       "statsEmpty": "Paste whole sentences; long texts are split into parts.",
       "titleLabel": "Title",
       "titlePlaceholder": "e.g. The Guardian — climate piece",
-      "tooShort": "Paste at least one full sentence.",
+      "tooShort": "Paste at least one sentence of three words.",
       "tooLong": "The text is too long (at most {{max}} characters). Split it and upload the parts separately."
     },
     "pdf": {
@@ -1812,23 +1812,27 @@
     "job": {
       "queuedOffline": "Queued — starts on its own when you're back online",
       "queued": "Queued",
-      "processing": "Processing part {{done}}/{{total}}…",
-      "progress": "{{done}}/{{total}} parts",
-      "cacheHits_one": "{{count}} part came from the cache; no AI call.",
-      "cacheHits_other": "{{count}} parts came from the cache; no AI calls.",
+      "processing": "Working… {{pct}}%",
+      "progress": "{{pct}}%",
+      "cacheHits_one": "Part of the text was processed before and was not sent again.",
+      "cacheHits_other": "{{count}} parts of the text were processed before and were not sent again.",
       "ready": "Candidates ready",
       "readyBody_one": "{{count}} candidate found.",
       "readyBody_other": "{{count}} candidates found.",
       "readyEmpty": "No new words to suggest in this text.",
       "open": "Open preview",
-      "failed": "Import stopped",
+      "failed": "Word extraction stopped",
       "retry": "Try again",
       "discard": "Dismiss",
-      "done": "Added to cards",
-      "recent": "Recent imports"
+      "done": "Added to your words",
+      "recent": "Recent word extractions",
+      "all": "See all ({{count}})",
+      "tomorrow": "Today's AI limit is reached. It continues by itself tomorrow where it stopped.",
+      "partialBody": "You can look at the words found so far now; the rest of the text is not processed.",
+      "partialOpen": "See what was found"
     },
     "errors": {
-      "daily_limit": "You've reached today's AI limit. You can continue tomorrow where you left off; processed parts aren't lost.",
+      "daily_limit": "You reached today's AI limit. It continues by itself tomorrow; the words found so far are kept.",
       "quota_exceeded": "The AI is very busy right now. Try again in a few minutes; processed parts aren't lost.",
       "ai_failed": "The AI couldn't process this part. Try again.",
       "unreachable": "Couldn't reach the server. Check your connection and try again.",
@@ -1842,10 +1846,10 @@
     "preview": {
       "title": "Preview",
       "loading": "Loading candidates…",
-      "notFound": "Import not found",
+      "notFound": "This word extraction was not found",
       "notFoundBody": "It may have been deleted or made on another device.",
       "notReady": "Candidates aren't ready yet",
-      "backToAdd": "Back to Add card",
+      "backToAdd": "Back to Add word",
       "summary": "{{selected}}/{{total}} selected",
       "filter": "Filter by type",
       "all": "All",
@@ -1872,15 +1876,15 @@
       "confirming": "Adding…",
       "added": "{{notes}} words added",
       "addedBody": "{{senses}} meanings, {{cards}} cards. They'll come up for review in turn.",
-      "confirmFailed": "Couldn't add the cards. Try again.",
-      "discard": "Delete this import",
-      "discardTitle": "Delete this import?",
+      "confirmFailed": "Could not add the words. Try again.",
+      "discard": "Delete this word extraction",
+      "discardTitle": "Delete the word extraction?",
       "discardBody": "The candidates are deleted; cards you've added aren't affected.",
-      "discarded": "Import deleted",
+      "discarded": "Word extraction deleted",
       "emptyFilter": "No candidates of this type.",
-      "alreadyDone": "This import is complete",
+      "alreadyDone": "This word extraction is finished",
       "alreadyDoneBody": "The candidates you chose were added to your cards.",
-      "toLibrary": "Go to cards",
+      "toLibrary": "Go to my words",
       "pos": "Part of speech",
       "addedSenses_one": "{{count}} meaning added",
       "addedSenses_other": "{{count}} meanings added",
@@ -1911,6 +1915,16 @@
       "signIn": "Sign in to fill this in with AI.",
       "noSenses": "No meanings found for this word in the dictionary or from AI.",
       "noMore": "No other common meanings found."
+    },
+    "jobs": {
+      "title": "Word extractions",
+      "body": "Word extractions you started from pasted text, a PDF, a photo, a link or subtitles.",
+      "empty": "No word extractions yet",
+      "emptyBody": "Add a text and choose “Extract the words in this text”; it shows up here.",
+      "finished": "Finished",
+      "readyToast": "Words ready",
+      "link_one": "{{count}} word extraction in progress",
+      "link_other": "{{count}} word extractions in progress"
     }
   },
   "more": {
@@ -3655,7 +3669,8 @@
       "budget": "This month's text budget is used up. It reopens at the start of the month.",
       "notEnough": "Pick at least 3 words.",
       "generic": "The text could not be written right now. Try again a bit later."
-    }
+    },
+    "limitReached": "Today's limit is used · renews tomorrow"
   },
   "wordList": {
     "title": "CSV or word list",

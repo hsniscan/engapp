@@ -76,7 +76,7 @@ describe('import panels', () => {
       { path: '/import/:jobId', element: <p>job page</p> },
     ]);
     // The privacy note sits next to the extraction choice.
-    expect(screen.getByText('Gizli iş belgelerini yükleme.')).toBeInTheDocument();
+    expect(screen.getByText('Gizli iş belgelerini gönderme; metin kelimeleri bulmak için sunucuya gider.')).toBeInTheDocument();
     const area = screen.getByRole('textbox', { name: 'İngilizce metin' });
     await user.click(area);
     await user.paste(
@@ -249,8 +249,30 @@ describe('ImportPreviewPage', () => {
     );
   });
 
+  it('a word marked known elsewhere while the preview is open is unselected (B1)', async () => {
+    const known = new Set<string>();
+    setKnownTermsProvider({
+      getKnownTermKeys: () => Promise.resolve(new Set(known)),
+      markKnown: () => Promise.resolve(),
+    });
+    const jobId = await seedReadyJob(40);
+    renderAt(`/import/${jobId}`, [{ path: '/import/:jobId', element: <ImportPreviewPage /> }]);
+    const forYou = await screen.findByRole('list', { name: 'Senin için' });
+    const selected = within(forYou)
+      .getAllByRole('listitem')
+      .find((li) => within(li).getByRole('checkbox').getAttribute('aria-checked') === 'true')!;
+    const term = selected.querySelector('span[lang="en"]')!.textContent!;
+    expect(screen.getByText('16/36 seçili', { selector: 'span[aria-live]' })).toBeInTheDocument();
+    known.add(term.toLowerCase());
+    const { refreshKnownCandidates } = await import('@/data/smartExtract');
+    await refreshKnownCandidates(jobId);
+    await waitFor(() =>
+      expect(screen.getByText('15/36 seçili', { selector: 'span[aria-live]' })).toBeInTheDocument(),
+    );
+  });
+
   it('shows a friendly page for an unknown job', async () => {
     renderAt('/import/nope', [{ path: '/import/:jobId', element: <ImportPreviewPage /> }]);
-    expect(await screen.findByText('Bu içe aktarma bulunamadı')).toBeInTheDocument();
+    expect(await screen.findByText('Bu kelime çıkarma bulunamadı')).toBeInTheDocument();
   });
 });

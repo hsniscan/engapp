@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
-import { db, deleteImportJob, retryImportJob, type ImportJobRecord } from '@/data';
+import { Link, useNavigate } from 'react-router';
+import { db, deleteImportJob, previewPartialImportJob, retryImportJob, type ImportJobRecord } from '@/data';
 import { getText } from '@/data/texts';
 import { readerPath } from '@/domain/texts';
 import type { Id, Source } from '@/domain/types';
@@ -46,10 +46,15 @@ export function JobCard({ job, className }: { job: ImportJobRecord; className?: 
   const pct = job.chunk_total ? job.chunk_done / job.chunk_total : 0;
   const waiting = job.status === 'queued';
   const working =
-    job.status === 'processing' || (waiting && online && job.error_code !== 'not_signed_in');
+    job.status === 'processing' ||
+    (waiting && online && job.error_code !== 'not_signed_in' && job.error_code !== 'daily_limit');
   const failed = job.status === 'failed';
   const ready = job.status === 'ready';
   const done = job.status === 'done';
+  // Stopped by the daily AI limit: waits and resumes by itself after the server's day ends.
+  const tomorrow = waiting && job.error_code === 'daily_limit';
+  const navigate = useNavigate();
+  const partial = (failed || tomorrow) && job.chunk_done > 0;
 
   const statusText = failed
     ? t('importer.job.failed')
@@ -57,16 +62,15 @@ export function JobCard({ job, className }: { job: ImportJobRecord; className?: 
       ? t('importer.job.ready')
       : done
         ? t('importer.job.done')
-        : waiting && job.error_code === 'not_signed_in'
+        : tomorrow
+          ? t('importer.job.tomorrow')
+          : waiting && job.error_code === 'not_signed_in'
           ? importErrorMessage('not_signed_in')
           : waiting && !online
             ? t('importer.job.queuedOffline')
             : job.chunk_done === 0 && waiting
               ? t('importer.job.queued')
-              : t('importer.job.processing', {
-                  done: Math.min(job.chunk_done + 1, job.chunk_total),
-                  total: job.chunk_total,
-                });
+              : t('importer.job.processing', { pct: Math.round(pct * 100) });
 
   const icon = failed
     ? 'alert'
@@ -104,7 +108,7 @@ export function JobCard({ job, className }: { job: ImportJobRecord; className?: 
           </p>
         </div>
         <span className="tabular shrink-0 pt-0.5 text-sm text-fg-muted">
-          {t('importer.job.progress', { done: job.chunk_done, total: job.chunk_total })}
+          {t('importer.job.progress', { pct: Math.round(pct * 100) })}
         </span>
       </div>
 
@@ -113,7 +117,7 @@ export function JobCard({ job, className }: { job: ImportJobRecord; className?: 
           value={job.chunk_done}
           max={job.chunk_total}
           label={t('a11y.progress')}
-          valueText={t('importer.job.progress', { done: job.chunk_done, total: job.chunk_total })}
+          valueText={t('importer.job.progress', { pct: Math.round(pct * 100) })}
           className={cn(pct === 0 && working && 'opacity-60')}
         />
       )}
@@ -154,6 +158,28 @@ export function JobCard({ job, className }: { job: ImportJobRecord; className?: 
         </div>
       )}
 
+      {partial && (
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-fg-muted">{t('importer.job.partialBody')}</p>
+          <Button
+            variant="secondary"
+            onClick={async () => {
+              if (await previewPartialImportJob(job.id)) void navigate(`/import/${job.id}`);
+            }}
+          >
+            {t('importer.job.partialOpen')}
+          </Button>
+        </div>
+      )}
+
+      {tomorrow && (
+        <div className="flex justify-end">
+          <Button variant="ghost" onClick={() => void deleteImportJob(job.id)}>
+            {t('importer.job.discard')}
+          </Button>
+        </div>
+      )}
+
       {failed && (
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button variant="ghost" onClick={() => void deleteImportJob(job.id)}>
@@ -175,24 +201,35 @@ export function JobCard({ job, className }: { job: ImportJobRecord; className?: 
   );
 }
 
-/** Jobs of one kind that are not finished yet (newest first). */
-export function ActiveJobs({ kind }: { kind: Source['kind'] }) {
+/**
+ * Extraction jobs that are not finished yet, from every source (paste, PDF, photo, link,
+ * subtitle, share, quick sheet), newest first (B2). `kind` narrows the list.
+ */
+export function ActiveJobs({ kind, limit = 5 }: { kind?: Source['kind']; limit?: number }) {
   const { t } = useTranslation();
   const jobs =
     useLiveQuery(
       async () =>
         (await db.import_jobs.orderBy('created_at').reverse().toArray()).filter(
-          (j) => (j as ImportJobRecord).kind === kind && j.status !== 'done',
+          (j) => (!kind || (j as ImportJobRecord).kind === kind) && j.status !== 'done',
         ) as ImportJobRecord[],
       [kind],
     ) ?? [];
   if (jobs.length === 0) return null;
+  const id = `jobs-${kind ?? 'all'}`;
   return (
-    <section aria-labelledby={`jobs-${kind}`} className="mt-8 flex flex-col gap-3">
-      <h2 id={`jobs-${kind}`} className="text-sm font-medium text-fg-muted">
-        {t('importer.job.recent')}
-      </h2>
-      {jobs.slice(0, 5).map((j) => (
+    <section aria-labelledby={id} className="mt-8 flex flex-col gap-3">
+      <div className="flex items-baseline justify-between gap-2">
+        <h2 id={id} className="text-sm font-medium text-fg-muted">
+          {t('importer.job.recent')}
+        </h2>
+        {jobs.length > limit && (
+          <Link to="/import" className="text-sm font-medium text-accent-text underline-offset-4 hover:underline">
+            {t('importer.job.all', { count: jobs.length })}
+          </Link>
+        )}
+      </div>
+      {jobs.slice(0, limit).map((j) => (
         <JobCard key={j.id} job={j} />
       ))}
     </section>

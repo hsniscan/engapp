@@ -109,11 +109,15 @@ async function makePicked(input: PickedStoryInput, deps: CreateStoryDeps): Promi
   );
 }
 
-/** Picked texts made on this device today (the screen's "bugün n/5"; the server decides). */
+const utcDay = (ms: Millis) => new Date(ms).toISOString().slice(0, 10);
+
+/**
+ * Picked texts made on this device in the server's day (the screen's "bugün n/5"). The server
+ * counts per account per UTC day, so this does too (B8); deleted texts still count, as they
+ * did on the server.
+ */
 export async function pickedTextsToday(now: Millis = Date.now()): Promise<number> {
-  const day = dayKeyOf(now, dayConfig(await getSettings(now)));
+  const day = utcDay(now);
   const rows = await db.texts.where('kind').equals('story').toArray();
-  return rows.filter(
-    (r) => r.deleted_at === null && r.story?.day === day && r.story.source === 'picked',
-  ).length;
+  return rows.filter((r) => r.story?.source === 'picked' && utcDay(r.created_at) === day).length;
 }

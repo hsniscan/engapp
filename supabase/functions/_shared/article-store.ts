@@ -15,4 +15,9 @@ export class SupabaseArticleStore implements ArticleStore {
     if (r.error) throw new Error(`article_consume: ${r.error.message}`);
     return r.data as { allowed: boolean; used: number; limit: number };
   }
+
+  async refund(userId: string) {
+    const r = await this.db.rpc('article_refund', { p_user: userId });
+    if (r.error) throw new Error(`article_refund: ${r.error.message}`);
+  }
 }

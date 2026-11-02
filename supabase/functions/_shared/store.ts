@@ -98,6 +98,11 @@ export interface AiStore {
   ): Promise<void>;
   /** Takes one call from the user's daily budget (atomic). */
   consumeAi(userId: string, limit: number): Promise<UsageResult>;
+  /**
+   * Gives one call back when the model returned nothing (v0.5.2, ADR 0063; ai_refund from
+   * migration 20261103002000). Optional: a store without it keeps the call counted.
+   */
+  refundAi?(userId: string): Promise<void>;
   /** Terms whose lemma_norm is in `norms`, with their senses. */
   findTerms(norms: string[]): Promise<LexTerm[]>;
   /** Insert-or-get, in input order. */

@@ -802,6 +802,11 @@ export async function runExtract(body: unknown, deps: ExtractDeps): Promise<Extr
       timeoutMs: EXTRACT_TIMEOUT_MS,
     });
   } catch (e) {
+    // No result: the call goes back to the day's budget, so the client's retries of a busy
+    // model do not use up three calls for one chunk (B9).
+    await deps.store.refundAi?.(deps.userId).catch((err: unknown) =>
+      deps.log?.('ai-extract refund failed', { error: String(err) }),
+    );
     if (e instanceof AiError) throw new ApiError(e.code, e.message, e.retryAfterS);
     throw e;
   }

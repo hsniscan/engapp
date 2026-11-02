@@ -645,7 +645,7 @@
     }
   },
   "add": {
-    "title": "Kart ekle",
+    "title": "Kelime ekle",
     "wordTitle": "Kelime ekle",
     "wordLead": "Kelimeyi yaz; anlamı kartlarından, Kelime Bankası'ndan ya da sözlükten gelir. İstersen kendin yaz, örnek cümle ekle.",
     "textTitle": "Metin ekle",
@@ -1773,13 +1773,13 @@
     "unavailableIndicatorFull": "Verilerin bu cihazda güvende."
   },
   "importer": {
-    "privacy": "Gizli iş belgelerini yükleme.",
+    "privacy": "Gizli iş belgelerini gönderme; metin kelimeleri bulmak için sunucuya gider.",
     "privacyWhy": "Ücretsiz yapay zekâ hizmetinde gönderilen metinleri Google okuyabilir ve modellerini geliştirmek için kullanabilir.",
     "signInTitle": "Yapay zekâyla kart çıkarmak için giriş yap",
     "signInBody": "Kelime ve kalıp önerileri sunucudaki yapay zekâyla hazırlanır, bu yüzden Google hesabıyla giriş gerekir. Elle kart eklemek misafir olarak da çalışır.",
     "signInCta": "Google ile giriş yap",
     "unavailableTitle": "Yapay zekâ bu sürümde kapalı",
-    "unavailableBody": "Yapay zekâ sunucusu ayarlanmamış. Kartları “Elle” sekmesinden ekleyebilirsin.",
+    "unavailableBody": "Yapay zekâ sunucusu ayarlanmamış. Kelimeleri “Elle ekle” ile ekleyebilirsin.",
     "paste": {
       "label": "İngilizce metin",
       "placeholder": "Bir makale, e-posta ya da kitap bölümü yapıştır…",
@@ -1789,7 +1789,7 @@
       "statsEmpty": "Cümleleri bölmeden yapıştır; uzun metinler parçalara ayrılır.",
       "titleLabel": "Başlık",
       "titlePlaceholder": "Örn. The Guardian — iklim yazısı",
-      "tooShort": "En az bir tam cümle yapıştır.",
+      "tooShort": "En az üç kelimelik bir cümle yapıştır.",
       "tooLong": "Metin çok uzun (en fazla {{max}} karakter). Bölüp ayrı ayrı yükle."
     },
     "pdf": {
@@ -1812,23 +1812,27 @@
     "job": {
       "queuedOffline": "Sırada — bağlantı gelince kendiliğinden başlayacak",
       "queued": "Sırada",
-      "processing": "Parça {{done}}/{{total}} işleniyor…",
-      "progress": "{{done}}/{{total}} parça",
-      "cacheHits_one": "{{count}} parça daha önce işlenmişti; yeniden gönderilmedi.",
-      "cacheHits_other": "{{count}} parça daha önce işlenmişti; yeniden gönderilmedi.",
+      "processing": "İşleniyor… %{{pct}}",
+      "progress": "%{{pct}}",
+      "cacheHits_one": "Metnin bir bölümü daha önce işlenmişti; yeniden gönderilmedi.",
+      "cacheHits_other": "Metnin {{count}} bölümü daha önce işlenmişti; yeniden gönderilmedi.",
       "ready": "Adaylar hazır",
       "readyBody_one": "{{count}} aday bulundu.",
       "readyBody_other": "{{count}} aday bulundu.",
       "readyEmpty": "Bu metinde önerilecek yeni kelime bulunamadı.",
       "open": "Önizlemeyi aç",
-      "failed": "İçe aktarma durdu",
+      "failed": "Kelime çıkarma durdu",
       "retry": "Tekrar dene",
       "discard": "Vazgeç",
-      "done": "Kartlara eklendi",
-      "recent": "Son içe aktarmalar"
+      "done": "Kelimelerine eklendi",
+      "recent": "Son kelime çıkarmaları",
+      "all": "Hepsini gör ({{count}})",
+      "tomorrow": "Günlük yapay zekâ sınırı doldu. Yarın kendiliğinden kaldığı yerden devam eder.",
+      "partialBody": "Şimdiye kadar bulunan kelimelere hemen bakabilirsin; metnin kalanı işlenmez.",
+      "partialOpen": "Bulunanları şimdi gör"
     },
     "errors": {
-      "daily_limit": "Bugünkü yapay zekâ kullanım sınırına ulaştın. Yarın kaldığın yerden devam edebilirsin; işlenen parçalar kaybolmadı.",
+      "daily_limit": "Bugünkü yapay zekâ kullanım sınırına ulaştın. Yarın kendiliğinden devam eder; bulunan kelimeler kaybolmaz.",
       "quota_exceeded": "Yapay zekâ şu an çok yoğun. Birkaç dakika sonra tekrar dene; işlenen parçalar kaybolmadı.",
       "ai_failed": "Yapay zekâ bu parçayı işleyemedi. Tekrar dene.",
       "unreachable": "Sunucuya ulaşılamadı. Bağlantını kontrol edip tekrar dene; sorun sürerse biraz sonra yeniden dene.",
@@ -1842,10 +1846,10 @@
     "preview": {
       "title": "Önizleme",
       "loading": "Adaylar yükleniyor…",
-      "notFound": "Bu içe aktarma bulunamadı",
+      "notFound": "Bu kelime çıkarma bulunamadı",
       "notFoundBody": "Silinmiş ya da başka bir cihazda yapılmış olabilir.",
       "notReady": "Adaylar henüz hazır değil",
-      "backToAdd": "Kart ekle'ye dön",
+      "backToAdd": "Kelime ekle'ye dön",
       "summary": "{{selected}}/{{total}} seçili",
       "filter": "Türe göre süz",
       "all": "Tümü",
@@ -1872,15 +1876,15 @@
       "confirming": "Ekleniyor…",
       "added": "{{notes}} kelime eklendi",
       "addedBody": "{{senses}} anlam, {{cards}} kart. Kartlar sırayla çalışmana gelecek.",
-      "confirmFailed": "Kartlar eklenemedi. Tekrar dene.",
-      "discard": "Bu içe aktarmayı sil",
-      "discardTitle": "İçe aktarma silinsin mi?",
+      "confirmFailed": "Kelimeler eklenemedi. Tekrar dene.",
+      "discard": "Bu kelime çıkarmayı sil",
+      "discardTitle": "Kelime çıkarma silinsin mi?",
       "discardBody": "Adaylar silinir; eklediğin kartlar etkilenmez.",
-      "discarded": "İçe aktarma silindi",
+      "discarded": "Kelime çıkarma silindi",
       "emptyFilter": "Bu türde aday yok.",
-      "alreadyDone": "Bu içe aktarma tamamlandı",
+      "alreadyDone": "Bu kelime çıkarma tamamlandı",
       "alreadyDoneBody": "Seçtiğin adaylar kartlarına eklendi.",
-      "toLibrary": "Kartlara git",
+      "toLibrary": "Kelimelerime git",
       "pos": "Sözcük türü",
       "addedSenses_one": "{{count}} anlam eklendi",
       "addedSenses_other": "{{count}} anlam eklendi",
@@ -1911,6 +1915,16 @@
       "signIn": "Yapay zekâyla doldurmak için giriş yap.",
       "noSenses": "Bu kelime için sözlükte ya da yapay zekâda anlam bulunamadı.",
       "noMore": "Başka yaygın anlam bulunamadı."
+    },
+    "jobs": {
+      "title": "Kelime çıkarmaları",
+      "body": "Yapıştırdığın metin, PDF, fotoğraf, bağlantı ya da altyazıdan başlattığın kelime çıkarmaları.",
+      "empty": "Henüz kelime çıkarma yok",
+      "emptyBody": "Bir metin ekleyip “Bu metindeki kelimeleri çıkar”ı seçince burada görünür.",
+      "finished": "Tamamlananlar",
+      "readyToast": "Kelimeler hazır",
+      "link_one": "{{count}} kelime çıkarma sürüyor",
+      "link_other": "{{count}} kelime çıkarma sürüyor"
     }
   },
   "more": {
@@ -3655,7 +3669,8 @@
       "budget": "Bu ayın metin hakkı doldu. Ay başında yeniden açılır.",
       "notEnough": "En az 3 kelime seç.",
       "generic": "Metin şu an hazırlanamadı. Biraz sonra yeniden dene."
-    }
+    },
+    "limitReached": "Bugünkü hakkın doldu · yarın yenilenir"
   },
   "wordList": {
     "title": "CSV ya da kelime listesi",

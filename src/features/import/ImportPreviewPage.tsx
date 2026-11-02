@@ -126,11 +126,19 @@ function CandidateReview({ job }: { job: ImportJobRecord }) {
   // Words marked known since the job ran (another device, the level test, another preview)
   // leave "Senin için" before the user reads the list.
   const confirmed = job.status === 'done';
+  // The list is built only after the refresh, so its selection starts from the moved rows (B1).
+  const [refreshed, setRefreshed] = useState<string | null>(confirmed ? job.id : null);
   useEffect(() => {
     if (confirmed) return;
-    refreshKnownCandidates(job.id).catch((e: unknown) => void logError(e, 'import.knownRefresh'));
+    let live = true;
+    refreshKnownCandidates(job.id)
+      .catch((e: unknown) => void logError(e, 'import.knownRefresh'))
+      .finally(() => live && setRefreshed(job.id));
+    return () => {
+      live = false;
+    };
   }, [job.id, confirmed]);
-  if (!rows) {
+  if (!rows || (!confirmed && refreshed !== job.id)) {
     return (
       <Page title={t('importer.preview.title')} width="wide">
         <div aria-busy="true" className="flex flex-col gap-3">
@@ -164,6 +172,27 @@ function CandidateList({ job, rows }: { job: ImportJobRecord; rows: ImportCandid
         rows.map((r) => [r.id, { selected: r.selected, edit: r.meaning_tr_edit }]),
       ),
   );
+  // A row that moves to "Biliyorsun" later (marked known in another preview, the level test,
+  // sync) is unselected here too: known words are never added without a tick (B1).
+  const [seenRows, setSeenRows] = useState(rows);
+  if (seenRows !== rows) {
+    const before = new Map(seenRows.map((r) => [r.id, bucketOf(r)]));
+    setSeenRows(rows);
+    const moved = rows.filter((r) => bucketOf(r) === 'known' && before.get(r.id) !== 'known');
+    if (moved.length)
+      setState((cur) => {
+        const next = new Map(cur);
+        for (const r of moved) next.set(r.id, { ...(next.get(r.id) ?? { edit: r.meaning_tr_edit }), selected: false });
+        return next;
+      });
+    const added = rows.filter((r) => !before.has(r.id));
+    if (added.length)
+      setState((cur) => {
+        const next = new Map(cur);
+        for (const r of added) if (!next.has(r.id)) next.set(r.id, { selected: r.selected, edit: r.meaning_tr_edit });
+        return next;
+      });
+  }
   const [filter, setFilter] = useState<Filter>('all');
   const [busy, setBusy] = useState(false);
   const [discardOpen, setDiscardOpen] = useState(false);
@@ -302,7 +331,7 @@ function CandidateList({ job, rows }: { job: ImportJobRecord; rows: ImportCandid
   return (
     <Page
       title={t('importer.preview.title')}
-      description={t('importer.preview.source', { title: job.title, count: counts.all })}
+      description={t('importer.preview.source', { title: job.title, count: rows.length })}
       width="wide"
       actions={
         <Dialog

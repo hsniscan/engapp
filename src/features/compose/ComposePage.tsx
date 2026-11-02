@@ -471,6 +471,7 @@ function OptionsStep({
   const auth = useAuth();
   const navigate = useNavigate();
   const today = useLiveQuery(() => pickedTextsToday(), []) ?? 0;
+  // At the day's limit (counted here, or the server said so): no button that cannot work (B8).
   const [run, setRun] = useState<Run>({ status: 'idle' });
   const live = useRef(true);
   useEffect(() => {
@@ -516,6 +517,7 @@ function OptionsStep({
       </div>
     );
 
+  const atLimit = today >= DAILY || (run.status === 'error' && run.error === 'used');
   const toggleTopic = (k: string) =>
     setTopics(topics.includes(k) ? topics.filter((x) => x !== k) : [...topics, k].slice(0, 3));
 
@@ -604,11 +606,11 @@ function OptionsStep({
                 size="lg"
                 className="flex-1"
                 leadingIcon="pencil"
-                disabled={!validPick(picks.length)}
+                disabled={!validPick(picks.length) || atLimit}
                 onClick={() => void make()}
                 data-testid="compose-make"
               >
-                {run.status === 'error' ? t('compose.retry') : t('compose.make')}
+                {atLimit ? t('compose.limitReached') : run.status === 'error' ? t('compose.retry') : t('compose.make')}
               </Button>
             </div>
             <p className="text-center text-xs text-fg-muted">
