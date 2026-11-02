@@ -77,8 +77,10 @@ async function reviewDueTomorrow(noteId: string): Promise<Card> {
   const s = schedulerFor(settings);
   const tomorrow = addDays(dayKeyOf(T, cfg), 1);
   const card = await recognition(noteId);
-  for (let back = 2; back <= 30; back++) {
-    for (const late of [0, 2, 5, 9]) {
+  // The interval fuzz is seeded by the (random) card id, so search widely: a narrow search
+  // missed tomorrow for about 1 id in 100 (step-1 intervals of 11–13 days).
+  for (let back = 2; back <= 60; back++) {
+    for (let late = 0; late < 24; late++) {
       const at = T - back * DAY;
       let f = emptyFsrs(card.created_at);
       f = applyRating(s, { id: card.id, ...f }, Rating.Good, at);
