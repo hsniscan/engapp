@@ -15,6 +15,7 @@ import {
   type WorkloadView,
 } from '@/data';
 import { formatDayLong } from '@/features/stats/format';
+import { HomeNote } from '@/features/home/HomeNote';
 import { Button, buttonClasses, cn, Icon, type IconName, toast } from '@/ui';
 import { useWorkload } from './useWorkload';
 
@@ -25,7 +26,6 @@ function Note({
   children,
   actions,
   tone = 'accent',
-  className,
 }: {
   id: string;
   icon: IconName;
@@ -33,33 +33,18 @@ function Note({
   children?: ReactNode;
   actions?: ReactNode;
   tone?: 'accent' | 'warn';
-  className?: string;
 }) {
   return (
-    <section
-      aria-labelledby={id}
+    <HomeNote
+      titleId={`${id}-title`}
       data-testid={id}
-      className={cn(
-        'flex flex-col gap-4 rounded-card border p-5 sm:p-6',
-        tone === 'warn' ? 'border-warn/40 bg-warn-soft' : 'border-accent/30 bg-accent-soft',
-        className,
-      )}
+      icon={icon}
+      title={title}
+      actions={actions}
+      tone={tone === 'warn' ? 'warn' : 'calm'}
     >
-      <div className="flex gap-3">
-        <Icon
-          name={icon}
-          size={20}
-          className={cn('mt-1 shrink-0', tone === 'warn' ? 'text-warn-text' : 'text-accent-text')}
-        />
-        <div className="flex min-w-0 flex-col gap-1">
-          <h2 id={id} className="font-serif text-lg font-semibold text-fg">
-            {title}
-          </h2>
-          <div className="flex flex-col gap-1 text-[0.9375rem] text-fg-muted">{children}</div>
-        </div>
-      </div>
-      {actions && <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">{actions}</div>}
-    </section>
+      {children}
+    </HomeNote>
   );
 }
 
@@ -185,7 +170,9 @@ function LoadWarningNote({ view }: { view: WorkloadView }) {
             {t('load.warningDismiss')}
           </Button>
           {to !== null ? (
-            <Button onClick={apply}>{t('load.warningApply', { to })}</Button>
+            <Button variant="tonal" onClick={apply}>
+              {t('load.warningApply', { to })}
+            </Button>
           ) : (
             <Link to="/settings/yuk" className={buttonClasses({ variant: 'secondary' })}>
               {t('load.warningSettings')}

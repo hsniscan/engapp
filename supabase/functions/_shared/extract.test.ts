@@ -256,11 +256,14 @@ describe('runExtract', () => {
     expect(res.model).toBe('m');
   });
 
-  it('maps a generic AiError to ai_failed', async () => {
+  it('maps a generic AiError to ai_failed and gives the call back (B9)', async () => {
     const { provider } = scripted(new AiError('ai_failed', 'boom'));
-    await expect(
-      runExtract(await body(), deps(new MemoryAiStore(), provider)),
-    ).rejects.toMatchObject({ code: 'ai_failed', status: 502 });
+    const store = new MemoryAiStore();
+    await expect(runExtract(await body(), deps(store, provider))).rejects.toMatchObject({
+      code: 'ai_failed',
+      status: 502,
+    });
+    expect(store.calls).toContain('refundAi');
   });
 
   it('rejects a chunk_hash that does not match the text', async () => {

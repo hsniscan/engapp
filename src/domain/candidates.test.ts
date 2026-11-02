@@ -7,7 +7,7 @@ import {
   occurrenceCounter,
   planCandidates,
   selectionQuota,
-  targetLevel,
+  offerCeiling,
   type CandidateFacts,
 } from './candidates';
 import { CEFR, levelRank } from './level';
@@ -68,15 +68,15 @@ function build(raw: Raw[]): { items: CandidateFacts[]; known: Set<string> } {
   return { items, known };
 }
 
-describe('levelBand / targetLevel', () => {
+describe('levelBand / offerCeiling', () => {
   it('places levels relative to the learner; unknown counts as the next level', () => {
     expect(levelBand('B1', 'B1')).toBe('same');
     expect(levelBand('B2', 'B1')).toBe('next');
     expect(levelBand('C1', 'B1')).toBe('above');
     expect(levelBand('A1', 'B1')).toBe('lower');
     expect(levelBand(null, 'B1')).toBe('next');
-    expect(targetLevel('B1')).toBe('B2');
-    expect(targetLevel('C2')).toBe('C2');
+    expect(offerCeiling('B1')).toBe('B2');
+    expect(offerCeiling('C2')).toBe('C2');
   });
 });
 

@@ -53,15 +53,15 @@ describe('Keşfet', () => {
     open('/kesfet');
 
     expect(screen.getByRole('heading', { level: 1, name: 'Keşfet' })).toBeInTheDocument();
-    const chips = screen.getByRole('navigation', { name: 'Keşfet süzgeci' });
-    expect(within(chips).getAllByRole('link').map((l) => l.textContent)).toEqual([
+    const chips = screen.getByRole('group', { name: 'Keşfet süzgeci' });
+    expect(within(chips).getAllByRole('button').map((l) => l.textContent)).toEqual([
       'Hepsi',
       'Okuma',
       'Desteler',
       'Kelimeler',
     ]);
-    expect(within(chips).getByRole('link', { name: 'Hepsi' })).toHaveAttribute('aria-current', 'page');
-    expect(within(chips).getByRole('link', { name: 'Okuma' })).toHaveAttribute('href', '/kesfet?f=okuma');
+    expect(within(chips).getByRole('button', { name: 'Hepsi' })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(chips).getByRole('button', { name: 'Okuma' })).toHaveAttribute('aria-pressed', 'false');
 
     const cont = await screen.findByTestId('kesfet-continue');
     expect(within(cont).getByText('A walk in the park')).toBeInTheDocument();
@@ -73,7 +73,7 @@ describe('Keşfet', () => {
     const regions = screen.getAllByRole('region');
     expect(regions[0]).toBe(cont);
 
-    expect(await screen.findByRole('region', { name: 'A2 fiiller' })).toBeInTheDocument();
+    expect(await screen.findByTestId('kesfet-featured-deck')).toHaveTextContent('A2 fiiller');
     const word = await screen.findByTestId('kesfet-word');
     expect(within(word).getByRole('heading', { name: /Günün kelimesi/ })).toBeInTheDocument();
     expect(await screen.findByRole('region', { name: /Günün yanıltıcı benzeri/ })).toBeInTheDocument();
@@ -92,7 +92,7 @@ describe('Keşfet', () => {
     expect(within(word).getByText(lemma)).toBeInTheDocument();
     await waitFor(async () => expect((await db.notes.toArray()).map((n) => n.term)).toContain(lemma));
     // Only word cards under this filter.
-    expect(screen.queryByRole('region', { name: 'A2 fiiller' })).toBeNull();
+    expect(screen.queryByTestId('kesfet-featured-deck')).toBeNull();
     expect(screen.getByRole('list', { name: 'Yeni kelimeler' })).toBeInTheDocument();
   });
 

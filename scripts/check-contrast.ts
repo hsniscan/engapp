@@ -79,6 +79,19 @@ const pairs: [fg: string, bg: string, kind: Kind, note: string][] = [
   ['hero-ring', 'accent', 'ui', 'home hero: progress ring, week dots'],
   ['stage-learned', 'surface', 'ui', 'stage bar: Öğrenildi'],
   ['stage-mastered', 'surface', 'ui', 'stage bar: Kalıcı'],
+  ['stage-consolidating', 'stage-mastered', 'ui', 'stage bar: Pekişiyor vs Kalıcı'],
+  ['accent-text', 'surface-raised', 'text', 'links in dialogs'],
+  ['accent-text', 'surface-sunken', 'text', 'selected segment / chip text'],
+  ['fg-muted', 'surface-raised', 'text', 'secondary text in sheets'],
+  ['fg-muted', 'accent-soft', 'text', 'meta on tonal chip'],
+  ['accent-fg', 'accent', 'text', 'İyi: filled answer button (bg-accent)'],
+  ['rating-again-text', 'rating-again-soft', 'text', 'Tekrar on its tinted button'],
+  ['chart-bar', 'surface', 'ui', 'chart bars'],
+  ['heat-completed', 'surface', 'ui', 'studied day on cards'],
+  ['border-strong', 'surface-raised', 'ui', 'input border in sheets'],
+  ['success-text', 'surface', 'text', 'success text'],
+  ['warn-text', 'surface', 'text', 'warning text'],
+  ['accent-on-inverse', 'fg', 'text', 'toast action (Geri al)'],
 ];
 
 const md = process.argv.includes('--md');

@@ -109,8 +109,9 @@ describe('weekly report tab', () => {
     await db.report_drafts.put(draft);
     await updateSettings({ daily_new_limit: 10 });
     renderRoute(<ReportPanel onOpen={noop} />);
+    // A guest's comment needs the account, not a connection (B9).
     expect(await screen.findByTestId('report-comment-missing')).toHaveTextContent(
-      'Yorum, internete bağlanınca eklenecek.',
+      'Yorum, Google ile giriş yapınca eklenir.',
     );
     await userEvent.click(await screen.findByRole('button', { name: 'Sınırı 6 yap' }));
     await waitFor(async () => expect((await db.settings.get('settings'))?.daily_new_limit).toBe(6));
@@ -173,10 +174,10 @@ describe('goals', () => {
       }),
     );
     expect(
-      await screen.findByRole('img', { name: 'Bu hafta çalıştığın gün: 0 / 4 gün' }),
+      await screen.findByRole('progressbar', { name: 'Bu hafta çalıştığın gün: 0 / 4 gün' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('img', { name: 'Bu hafta çalışma süresi: 0 / 90 dk' }),
+      screen.getByRole('progressbar', { name: 'Bu hafta çalışma süresi: 0 / 90 dk' }),
     ).toBeInTheDocument();
   });
 
@@ -208,7 +209,7 @@ describe('goals', () => {
     );
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(
-      await screen.findByRole('img', { name: 'Bu hafta çalışma süresi: 0 / 90 dk' }),
+      await screen.findByRole('progressbar', { name: 'Bu hafta çalışma süresi: 0 / 90 dk' }),
     ).toBeInTheDocument();
 
     // Daily minutes follow the same validation; the levels offered are those above B1.

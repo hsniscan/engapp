@@ -170,7 +170,7 @@ describe('extra new cards ("+5 yeni kart")', () => {
 describe("review ahead (tomorrow's cards)", () => {
   const TOMORROW_END = DAY_END + 86_400_000;
 
-  it('shows reviews due before the end of tomorrow, oldest due first, and no new cards', () => {
+  it('shows reviews due tomorrow, oldest due first, and no new cards (today is the normal queue)', () => {
     const cards = [
       review('today', NOW - MIN),
       review('t2', DAY_END + 5 * MIN),
@@ -180,7 +180,6 @@ describe("review ahead (tomorrow's cards)", () => {
     ];
     const q = buildQueue(cards, ctx({ mode: 'ahead', aheadEnd: TOMORROW_END }));
     expect(q.items.map((i) => [i.card_id, i.kind])).toEqual([
-      ['today', 'review'],
       ['t1', 'review'],
       ['t2', 'review'],
     ]);
@@ -205,6 +204,17 @@ describe("review ahead (tomorrow's cards)", () => {
       ['t1', 'review'],
       ['l', 'learning'],
     ]);
+  });
+
+  it('leaves out cards learnt today and cards waiting for the next-day test (v0.5.2)', () => {
+    const justLearnt = { ...review('new', DAY_END + MIN), last_review: NOW - 12 * MIN, ramp_step: 0 };
+    const answered = review('ans', DAY_END + 2 * MIN);
+    const proven = { ...review('ok', DAY_END + 3 * MIN), last_review: NOW - 3 * 86_400_000, ramp_step: 1 };
+    const q = buildQueue(
+      [justLearnt, answered, proven],
+      ctx({ mode: 'ahead', aheadEnd: TOMORROW_END, reviewedTodayCardIds: new Set(['ans']) }),
+    );
+    expect(q.items.map((i) => i.card_id)).toEqual(['ok']);
   });
 
   it('does not change what counts as a completed day', () => {

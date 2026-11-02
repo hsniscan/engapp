@@ -169,6 +169,8 @@ test('stats: 30-day forecast with the capacity line and a text summary', async (
   await expect(section.getByRole('img', { name: /beklenen tekrar sayısı/ })).toBeVisible();
   await expect(section.getByText(/günde ortalama \d+ tekrar bekleniyor/)).toBeVisible();
   await expect(section.getByText(/Kapasite: günde \d+ kart/)).toBeVisible();
-  await section.getByText('Günlere göre liste').click();
-  await expect(section.getByRole('row')).toHaveCount(31);
+  await section.getByRole('button', { name: 'Günlere göre liste' }).click();
+  await expect(
+    section.getByRole('table', { name: 'Günlere göre liste' }).getByRole('row'),
+  ).toHaveCount(31);
 });

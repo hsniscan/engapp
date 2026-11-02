@@ -5,7 +5,8 @@ import { Link } from 'react-router';
 import { db, getCurrentUserId } from '@/data';
 import { syncNow } from '@/sync';
 import { useSyncStatus } from '@/sync/status';
-import { Button, Dialog, DialogClose, Icon, Skeleton, buttonClasses, toast } from '@/ui';
+import { reloadTo, wipeThisDevice } from '@/features/account/deletion';
+import { Button, Checkbox, Dialog, DialogClose, Icon, Skeleton, buttonClasses, toast } from '@/ui';
 import { Avatar } from './Avatar';
 import { useAuth } from './session';
 import { formatSince } from './time';
@@ -25,6 +26,8 @@ export function AccountPanel() {
   const [busy, setBusy] = useState(false);
   /** Changes still in the outbox after the pre-sign-out sync (null: not checked yet). */
   const [unsynced, setUnsynced] = useState<number | null>(null);
+  /** "Bu cihazdaki verileri de sil" (v0.5.2): for a shared device. */
+  const [wipe, setWipe] = useState(false);
 
   if (auth.status === 'loading') {
     return (
@@ -54,6 +57,12 @@ export function AccountPanel() {
           }
         }
         await auth.signOut();
+        if (wipe) {
+          // The account keeps everything on the server; this device starts empty.
+          await wipeThisDevice();
+          reloadTo('/');
+          return;
+        }
         toast({ title: t('auth.signedOut') });
         setConfirmOpen(false);
       } catch {
@@ -69,9 +78,9 @@ export function AccountPanel() {
           <div className="flex min-w-0 flex-col">
             <p className="truncate font-medium text-fg">{name}</p>
             {u.email && u.email !== name && (
-              <p className="truncate text-sm text-fg-muted">{u.email}</p>
+              <p className="truncate text-meta text-fg-muted">{u.email}</p>
             )}
-            <p className="mt-0.5 flex items-center gap-1.5 text-sm text-fg-muted">
+            <p className="mt-0.5 flex items-center gap-1.5 text-meta text-fg-muted">
               <Icon name={sync.state === 'error' ? 'sync-error' : 'sync-synced'} size={16} />
               <span className="tabular">
                 {sync.lastSyncAt
@@ -109,12 +118,18 @@ export function AccountPanel() {
             </>
           }
         >
+          <Checkbox
+            label={t('auth.signOutWipe')}
+            description={t('auth.signOutWipeHint')}
+            checked={wipe}
+            onCheckedChange={(v) => setWipe(v === true)}
+          />
           {unsynced ? (
             <p
               role="alert"
-              className="rounded-control bg-warn-soft px-3 py-2.5 text-sm text-warn-text"
+              className="mt-3 rounded-control bg-warn-soft px-3 py-2.5 text-meta text-warn-text"
             >
-              {t('auth.signOutPending', { count: unsynced })}
+              {t(wipe ? 'auth.signOutPendingWipe' : 'auth.signOutPending', { count: unsynced })}
             </p>
           ) : null}
         </Dialog>
@@ -134,7 +149,7 @@ export function AccountPanel() {
           <p className="font-medium text-fg">
             {signedOut ? t('auth.signedOutLocal') : t('auth.guestTitle')}
           </p>
-          <p className="text-sm text-fg-muted">
+          <p className="text-meta text-fg-muted">
             {!auth.available
               ? t('auth.unavailableBody')
               : signedOut

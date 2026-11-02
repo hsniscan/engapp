@@ -241,8 +241,3 @@ export function pickRotation<T>(list: readonly T[], reps: number): T | null {
   if (list.length === 0) return null;
   return list[((reps % list.length) + list.length) % list.length]!;
 }
-
-/** Contexts of `wanted` that have no visible sentence yet (what the queue should prepare). */
-export function missingContexts(examples: SenseExamples | null, wanted: readonly string[]): string[] {
-  return wanted.filter((c) => !(examples?.byContext.get(c)?.length));
-}

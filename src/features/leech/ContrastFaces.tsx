@@ -23,11 +23,11 @@ function sidesOf(view: Pick<CardView, 'note' | 'senses'>): { term: string; sense
 function Marked({ sentence, span, term }: { sentence: string; span: [number, number] | null; term: string }) {
   const at = span && isValidSpan(sentence, span) ? span : findSpan(sentence, term);
   return (
-    <p lang="en" className="font-serif text-[1.0625rem] leading-relaxed text-fg italic">
+    <p lang="en" className="font-serif text-lead text-fg italic">
       {at ? (
         <>
           {sentence.slice(0, at[0])}
-          <mark className="rounded-[3px] bg-accent-soft px-0.5 font-semibold text-fg not-italic">{sentence.slice(at[0], at[1])}</mark>
+          <mark className="rounded-xs bg-accent-soft px-0.5 font-semibold text-fg not-italic">{sentence.slice(at[0], at[1])}</mark>
           {sentence.slice(at[1])}
         </>
       ) : (
@@ -42,7 +42,7 @@ export function ContrastFront({ view }: { view: CardView }) {
   const sides = sidesOf(view);
   return (
     <div className="flex w-full max-w-md flex-col gap-4" data-testid="contrast-front">
-      <p lang="en" className="font-serif text-3xl leading-tight font-semibold text-balance break-words text-fg sm:text-4xl">
+      <p lang="en" className="font-serif text-display leading-tight font-semibold text-balance break-words text-fg">
         {sides.map((s) => s.term).join(' ↔ ') || view.note.term}
       </p>
       {sides.some((s) => s.sense.source_sentence) && (
@@ -55,7 +55,7 @@ export function ContrastFront({ view }: { view: CardView }) {
           )}
         </div>
       )}
-      <p className="text-sm text-fg-muted">{t('leech.contrast.frontHint')}</p>
+      <p className="text-meta text-fg-muted">{t('leech.contrast.frontHint')}</p>
     </div>
   );
 }
@@ -70,12 +70,12 @@ export function ContrastBack({ view }: { view: CardView }) {
       <div className="grid grid-cols-1 gap-2 text-left min-[400px]:grid-cols-2">
         {sides.map((s) => (
           <div key={s.sense.id} className="flex min-w-0 flex-col gap-1 rounded-control bg-surface-sunken px-3 py-2.5">
-            <p lang="en" className="font-serif text-xl font-semibold break-words text-fg">
+            <p lang="en" className="font-serif text-title font-semibold break-words text-fg">
               {s.term}
             </p>
-            <p className="font-serif text-lg text-fg">{s.sense.meaning_tr_override ?? s.sense.meaning_tr}</p>
+            <p className="text-lead font-medium text-fg">{s.sense.meaning_tr_override ?? s.sense.meaning_tr}</p>
             {s.sense.source_sentence_tr && (
-              <p lang="tr" className="text-sm leading-snug text-fg-muted">
+              <p lang="tr" className="text-meta text-fg-muted">
                 {s.sense.source_sentence_tr}
               </p>
             )}
@@ -84,7 +84,7 @@ export function ContrastBack({ view }: { view: CardView }) {
       </div>
       {card?.difference && (
         <div className="flex flex-col items-center gap-1 border-t border-border pt-3">
-          <p lang="tr" className="text-[0.9375rem] leading-relaxed text-fg">
+          <p lang="tr" className="text-ui text-fg">
             {card.difference}
           </p>
           <Button

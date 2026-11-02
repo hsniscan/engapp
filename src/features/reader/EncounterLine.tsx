@@ -10,10 +10,14 @@ export function EncounterLine({ noteId }: { noteId: Id }) {
   const s = useLiveQuery(() => getEncounterSummary(noteId), [noteId]);
   if (!s) return null;
   return (
-    <p className="text-sm text-fg-muted" data-testid="encounter-line">
+    <p className="text-meta text-fg-muted" data-testid="encounter-line">
       {s.total === 0
         ? t('reader.encounters.none')
-        : t('reader.encounters.line', { count: s.total, cards: s.cards, texts: s.texts })}
+        : s.texts === 0
+          ? t('reader.encounters.cardsOnly', { count: s.cards })
+          : s.cards === 0
+            ? t('reader.encounters.textsOnly', { count: s.texts })
+            : t('reader.encounters.line', { count: s.total, cards: s.cards, texts: s.texts })}
     </p>
   );
 }

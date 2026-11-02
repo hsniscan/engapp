@@ -4,8 +4,9 @@ import { useId, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router';
 import { SignInNeeded } from '@/features/add/SignInNeeded';
+import { AddFlowPage } from '@/features/add/ui';
 import { useAuth } from '@/features/auth/session';
-import { Button, Page, TextField, buttonClasses } from '@/ui';
+import { Button, TextField, buttonClasses } from '@/ui';
 import { ArticleFetch } from './ArticleFetch';
 import { normaliseArticleUrl } from './useArticle';
 
@@ -29,7 +30,7 @@ export function ArticlePage() {
   // Guests: fetching an article goes through the server, so say that before anything else.
   if (auth.status === 'guest' || auth.status === 'unavailable')
     return (
-      <Page title={t('article.pageTitle')} description={t('article.pageLead')}>
+      <AddFlowPage title={t('article.pageTitle')} description={t('article.pageLead')}>
         <SignInNeeded
           title={
             auth.status === 'guest' ? t('article.errors.not_signed_in') : t('article.unavailable')
@@ -41,10 +42,10 @@ export function ArticlePage() {
             {t('article.pasteCta')}
           </Link>
         </SignInNeeded>
-      </Page>
+      </AddFlowPage>
     );
   return (
-    <Page title={t('article.pageTitle')} description={t('article.pageLead')}>
+    <AddFlowPage title={t('article.pageTitle')} description={t('article.pageLead')}>
       <form id={formId} onSubmit={submit} className="mb-6 flex flex-col gap-3" noValidate>
         <TextField
           label={t('article.urlLabel')}
@@ -65,13 +66,19 @@ export function ArticlePage() {
           data-testid="article-url"
         />
         <div>
-          <Button type="submit" size="lg" leadingIcon="arrow-right" data-testid="article-submit">
+          <Button
+            type="submit"
+            size="lg"
+            variant={url ? 'secondary' : 'primary'}
+            leadingIcon="arrow-right"
+            data-testid="article-submit"
+          >
             {t('article.fetch')}
           </Button>
         </div>
-        <p className="text-sm text-fg-muted">{t('article.privacy')}</p>
+        <p className="text-meta text-fg-muted">{t('article.privacy')}</p>
       </form>
       {url && auth.status === 'signed_in' && <ArticleFetch key={url} url={url} />}
-    </Page>
+    </AddFlowPage>
   );
 }

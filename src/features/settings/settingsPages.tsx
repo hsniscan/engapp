@@ -1,4 +1,4 @@
-// The settings sub-pages (redesign: Profil → ⚙ → Ayarlar → /settings/:section). Every group
+// The settings sub-pages (Profil → Ayarlar → /settings/:section). Every group
 // of the old single long page lives on exactly one sub-page; nothing was dropped. The old
 // anchors (/settings#veri) and slugs (/settings/profile) resolve through LEGACY below.
 import type { ComponentType } from 'react';
@@ -12,7 +12,7 @@ import { AdvancedSection } from './AdvancedSection';
 import { AppSection } from './AppSection';
 import { DataSection, ImportSection } from './DataSection';
 import { ExamplesSettingsSection } from './ExamplesSettings';
-import type { GlyphName, GlyphTone } from './SettingsGlyph';
+import type { IconName } from '@/ui';
 import { AccountGroup, SyncGroup } from './AccountGroups';
 import { AppearanceSection, StudySection, VoiceSection } from './StudySections';
 
@@ -34,36 +34,39 @@ export type SettingsPageId = (typeof SETTINGS_PAGES)[number];
 export const isSettingsPage = (s: string | undefined): s is SettingsPageId =>
   !!s && (SETTINGS_PAGES as readonly string[]).includes(s);
 
-/** Index groups, in board order. `titled: false`: a group without a heading. */
+/** Index groups, in board order (design 4.16): every group has a caps label. */
 export const SETTINGS_GROUPS: {
   key: 'learning' | 'cards' | 'account' | 'app';
-  titled: boolean;
   pages: SettingsPageId[];
 }[] = [
-  { key: 'learning', titled: true, pages: ['calisma', 'yuk', 'bildirim', 'seviye'] },
-  { key: 'cards', titled: true, pages: ['kartlar', 'gorunum'] },
-  { key: 'account', titled: true, pages: ['hesap', 'veri'] },
-  { key: 'app', titled: false, pages: ['hakkinda'] },
+  { key: 'learning', pages: ['calisma', 'yuk', 'bildirim', 'seviye'] },
+  { key: 'cards', pages: ['kartlar', 'gorunum'] },
+  { key: 'account', pages: ['hesap', 'veri'] },
+  { key: 'app', pages: ['hakkinda', 'gelismis'] },
 ];
 
-export const PAGE_GLYPH: Record<SettingsPageId, { name: GlyphName; tone: GlyphTone }> = {
-  calisma: { name: 'study', tone: 'accent' },
-  yuk: { name: 'load', tone: 'accent' },
-  bildirim: { name: 'bell', tone: 'warn' },
-  seviye: { name: 'level', tone: 'success' },
-  kartlar: { name: 'cards', tone: 'accent' },
-  gorunum: { name: 'appearance', tone: 'neutral' },
-  hesap: { name: 'account', tone: 'accent' },
-  veri: { name: 'data', tone: 'success' },
-  hakkinda: { name: 'about', tone: 'neutral' },
-  gelismis: { name: 'advanced', tone: 'neutral' },
-  'ilgi-alanlari': { name: 'interests', tone: 'accent' },
+/** The row icon of each page: one icon set (src/ui), all on a neutral tile. */
+export const PAGE_ICON: Record<SettingsPageId, IconName> = {
+  calisma: 'loop',
+  yuk: 'clock',
+  bildirim: 'bell',
+  seviye: 'chart',
+  kartlar: 'layers',
+  gorunum: 'sun',
+  hesap: 'user',
+  veri: 'database',
+  hakkinda: 'info',
+  gelismis: 'code',
+  'ilgi-alanlari': 'heart',
 };
 
 /**
  * What each sub-page shows. `solo`: one group, so its heading would only repeat the page title.
  */
-export const PAGE_CONTENT: Record<SettingsPageId, { parts: ComponentType[]; solo?: boolean }> = {
+export const PAGE_CONTENT: Record<
+  SettingsPageId,
+  { parts: ComponentType[]; solo?: boolean; noSavedNote?: boolean }
+> = {
   calisma: { parts: [StudySection, ReadingSettingsSection] },
   yuk: { parts: [LoadSettingsSection], solo: true },
   bildirim: { parts: [NotifySection], solo: true },
@@ -72,11 +75,12 @@ export const PAGE_CONTENT: Record<SettingsPageId, { parts: ComponentType[]; solo
   // heading inside Ayarlar (v0.5.1).
   kartlar: { parts: [VoiceSection, ExamplesSettingsSection] },
   gorunum: { parts: [AppearanceSection], solo: true },
-  hesap: { parts: [AccountGroup, SyncGroup] },
-  veri: { parts: [DataSection, ImportSection] },
-  hakkinda: { parts: [AboutSection, AppSection] },
-  gelismis: { parts: [AdvancedSection], solo: true },
-  'ilgi-alanlari': { parts: [InterestsBody] },
+  // "Değişiklikler hemen kaydedilir…" only where a synced setting lives (review d3).
+  hesap: { parts: [AccountGroup, SyncGroup], noSavedNote: true },
+  veri: { parts: [DataSection, ImportSection], noSavedNote: true },
+  hakkinda: { parts: [AboutSection, AppSection], noSavedNote: true },
+  gelismis: { parts: [AdvancedSection], solo: true, noSavedNote: true },
+  'ilgi-alanlari': { parts: [InterestsBody], noSavedNote: true },
 };
 
 /**

@@ -62,10 +62,29 @@ export interface ScoreOptions {
   interests?: ReadonlySet<string>;
   /** Library topic → the profile interests it suits (graded-contract.ts topicInterests). */
   topicInterests?: (topic: string) => readonly string[];
+  /**
+   * The reader's lemmatizer: profile keys go through it like the reader's tokens do, so the
+   * list's "%N anlaşılır" and the reader's number agree for the same text (v0.5.2, B10).
+   */
+  lemmatize?: (word: string) => string;
+}
+
+/** A text's lemma profile with its keys passed through `lemmatize` (counts of merged keys add up). */
+export function profileCounts(
+  profile: Readonly<Record<string, number>>,
+  lemmatize?: (word: string) => string,
+): Map<string, number> {
+  if (!lemmatize) return new Map(Object.entries(profile));
+  const out = new Map<string, number>();
+  for (const [key, n] of Object.entries(profile)) {
+    const lemma = lemmatize(key) || key;
+    out.set(lemma, (out.get(lemma) ?? 0) + n);
+  }
+  return out;
 }
 
 export function scoreGradedText(entry: GradedCatalogEntry, opts: ScoreOptions): ScoredGradedText {
-  const counts = new Map(Object.entries(entry.lemma_profile));
+  const counts = profileCounts(entry.lemma_profile, opts.lemmatize);
   const { unknownRate } = measureCoverage(counts, opts.pKnown);
   const interest =
     !!opts.interests &&
@@ -117,9 +136,58 @@ export function suggestTexts(
     .slice(0, limit);
 }
 
+/**
+ * Keşfet's fallback when suggestTexts has nothing (every text is harder than the band, e.g. a
+ * beginner on "Rahat"): the closest harder texts, unfinished first, easiest first, so the feed
+ * still has something to read. Shown with an honest "biraz zorlayıcı" line (v0.5.2, B7).
+ */
+export function stretchTexts(
+  scored: readonly ScoredGradedText[],
+  limit: number,
+  finished: ReadonlySet<string> = new Set(),
+): ScoredGradedText[] {
+  if (limit <= 0) return [];
+  return scored
+    .filter((s) => s.fit === 1)
+    .sort(
+      (a, b) =>
+        Number(finished.has(a.entry.id)) - Number(finished.has(b.entry.id)) ||
+        a.unknownRate - b.unknownRate ||
+        a.entry.id.localeCompare(b.entry.id),
+    )
+    .slice(0, limit);
+}
+
 export interface LibraryFilter {
   level: string | null;
   topic: string | null;
+  /** Free-text search over the title and the topic's name (v0.5.2); empty = everything. */
+  query?: string;
+  /** The topic's name as the user sees it ("Günlük yaşam"), so a search finds it. */
+  topicLabel?: (topic: string) => string;
+}
+
+/** Lower case without accents, Turkish dotted/dotless i folded, for a forgiving search. */
+export function foldSearch(s: string): string {
+  return s
+    .replace(/[İIı]/g, 'i')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** Whether every word of the query appears in the text's title or its topic's name. */
+export function matchesLibraryQuery(
+  entry: Pick<GradedCatalogEntry, 'title' | 'topic'>,
+  query: string,
+  topicLabel: (topic: string) => string = (k) => k,
+): boolean {
+  const words = foldSearch(query).split(' ').filter(Boolean);
+  if (words.length === 0) return true;
+  const hay = foldSearch(`${entry.title} ${topicLabel(entry.topic)} ${entry.topic}`);
+  return words.every((w) => hay.includes(w));
 }
 
 const LEVEL_ORDER = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
@@ -127,7 +195,12 @@ const LEVEL_ORDER = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 /** The list under the suggestions: filtered, by level, then easiest for this user first. */
 export function filterLibrary(scored: readonly ScoredGradedText[], f: LibraryFilter): ScoredGradedText[] {
   return scored
-    .filter((s) => (f.level === null || s.entry.level === f.level) && (f.topic === null || s.entry.topic === f.topic))
+    .filter(
+      (s) =>
+        (f.level === null || s.entry.level === f.level) &&
+        (f.topic === null || s.entry.topic === f.topic) &&
+        (!f.query || matchesLibraryQuery(s.entry, f.query, f.topicLabel)),
+    )
     .sort(
       (a, b) =>
         LEVEL_ORDER.indexOf(a.entry.level) - LEVEL_ORDER.indexOf(b.entry.level) ||

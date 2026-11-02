@@ -16,7 +16,7 @@ import {
   feedEntry,
   type FeedFilter,
 } from '@/domain/discoverFeed';
-import { suggestTexts, type ScoredGradedText } from '@/domain/library';
+import { stretchTexts, suggestTexts, type ScoredGradedText } from '@/domain/library';
 import type { FalseFriendNote } from '@/domain/pairNotes';
 import { MIN_STORY_TARGETS } from '@/domain/story';
 import { deckWordStatus } from '@/domain/suggestedDecks';
@@ -45,7 +45,13 @@ const WORDS_AT_LEVEL = 5;
 export type FeedItem =
   | (FeedEntry & { kind: 'continue'; text: ReaderText })
   | (FeedEntry & { kind: 'story' })
-  | (FeedEntry & { kind: 'textSuggestions'; texts: ScoredGradedText[]; difficulty: string })
+  | (FeedEntry & {
+      kind: 'textSuggestions';
+      texts: ScoredGradedText[];
+      difficulty: string;
+      /** Nothing fits the band: the closest harder texts (B7). */
+      stretch?: boolean;
+    })
   | (FeedEntry & { kind: 'createText' })
   | (FeedEntry & { kind: 'newTexts'; texts: ScoredGradedText[] })
   | (FeedEntry & { kind: 'myTexts'; texts: ReaderText[]; total: number })
@@ -140,9 +146,15 @@ export function useDiscoverFeed(filter: FeedFilter): DiscoverData {
     if (story) out.push({ ...feedEntry('story') });
     if (wordCount >= CREATE_TEXT_MIN_WORDS) out.push({ ...feedEntry('createText') });
     if (lib && lib.texts.length > 0) {
-      const sugg = suggestTexts(lib.texts, lib.difficulty, SUGGESTIONS, lib.finished);
+      let sugg = suggestTexts(lib.texts, lib.difficulty, SUGGESTIONS, lib.finished);
       if (sugg.length > 0)
         out.push({ ...feedEntry('textSuggestions'), texts: sugg, difficulty: lib.difficulty });
+      else {
+        // Every text is harder than the band: still offer the closest ones, honestly labelled.
+        sugg = stretchTexts(lib.texts, SUGGESTIONS, lib.finished);
+        if (sugg.length > 0)
+          out.push({ ...feedEntry('textSuggestions'), texts: sugg, difficulty: lib.difficulty, stretch: true });
+      }
       const shown = new Set(sugg.map((s) => s.entry.id));
       const fresh = [...lib.texts]
         .filter((s) => !shown.has(s.entry.id) && !lib.finished.has(s.entry.id) && s.fit !== 1)

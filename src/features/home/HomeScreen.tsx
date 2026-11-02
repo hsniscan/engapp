@@ -1,11 +1,12 @@
-// Bugün, the home screen of the redesign (boards Main, HomeDone, HomeDark): the whole day's
-// study on top (every mode, ADR 0055), at most one note, goals, the words learned under the
-// stricter rule, shortcuts and decks that suit the user. One column on phones, two from 1024 px.
+// Bugün (v0.5.2 "Çam", docs/design.md §4.1, ADR 0066): the date and a greeting, the Today card
+// with the whole day (every mode, ADR 0055/0062), "Biraz daha çalış" once the day is done, at
+// most one note, the reading of the day, then "Kelimelerin" and "Kısayollar". One column on
+// phones; from 1024 px a main column and a 20rem side column, both starting at the top.
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getGoalsView, logError, setMeta } from '@/data';
-import { SyncIndicator } from '@/app/SyncIndicator';
+import { Link } from 'react-router';
+import { logError, setMeta } from '@/data';
 import { openAddSheet } from '@/features/add/addSheetStore';
 import { useAuth } from '@/features/auth/session';
 import { FsrsOptOffer } from '@/features/fsrs/FsrsOptOffer';
@@ -13,15 +14,27 @@ import { LevelChangeLine, LevelTestOffer } from '@/features/leveltest/LevelHomeN
 import { LoadNotes } from '@/features/load/LoadNotes';
 import { FirstRunGate } from '@/features/onboarding/FirstRunGate';
 import { InterestsPrompt } from '@/features/profile/InterestsPrompt';
+import { TodayReadingCard } from '@/features/reader/TodayReadingCard';
 import { StreakFreezeNote } from '@/features/smart/StreakFreezeNote';
 import { useNow } from '@/features/settings/useNow';
+import { formatNumber } from '@/features/stats/format';
 import { useTodayStudy } from '@/features/review/studyModes';
+import { useStudyTick } from '@/features/review/studyClock';
 import { useWordStages } from '@/features/stats/useWordStages';
-import { Button, cn, Icon, IconButton, Logo, Skeleton, Surface } from '@/ui';
-import { DecksForYou } from './DecksForYou';
+import {
+  Button,
+  buttonClasses,
+  Card,
+  ListGroup,
+  ListRow,
+  PageFrame,
+  SectionHeader,
+  Skeleton,
+} from '@/ui';
+import { GoalPrompt } from './GoalPrompt';
 import { greetingKey, homeDate } from './greeting';
-import { GoalsCard } from './GoalsCard';
-import { HomeIcon } from './homeIcons';
+import { HomeNote } from './HomeNote';
+import { hasMoreStudy } from '@/features/extra/links';
 import { MoreStudy } from './MoreStudy';
 import { getHomeCore, type HomeCore } from './queries';
 import { Shortcuts } from './Shortcuts';
@@ -33,16 +46,21 @@ import {
   getMoreOverview,
   getReportShortcut,
   getTodayActivity,
+  HOME_FREQ_SIZE,
   type HomeDeck,
   STAGE_RULE_NOTE_KEY,
   stageRuleNoteVisible,
 } from './todayQueries';
 import { useSettled } from './settle';
 import { WordsCard } from './WordsCard';
-import { TodayReadingCard } from '@/features/reader/TodayReadingCard';
+
+/** Keşfet filtered to decks. */
+export const DISCOVER_DECKS_HREF = '/kesfet?f=desteler';
 
 export function HomeScreen() {
-  const core = useLiveQuery(() => getHomeCore(), []);
+  // Time-dependent (streak day, "what comes next"): recomputed at the day change and on resume.
+  const tick = useStudyTick();
+  const core = useLiveQuery(() => getHomeCore(), [tick]);
   // A brand-new user gets the guided first run (features/onboarding, v0.5.1).
   if (core && !core.hasCards)
     return (
@@ -66,7 +84,7 @@ function HomeFrame({
   timezone: string | undefined;
   /** Replaces the greeting (the welcome screen says "Hoş geldin"). */
   title?: string;
-  children: ReactNode;
+  children: React.ReactNode;
 }) {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -74,42 +92,34 @@ function HomeFrame({
   const first = user?.name?.split(/\s+/)[0] ?? null;
   const greeting = t(greetingKey(at, timezone));
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 pt-3.5 pb-8 md:pt-8 lg:max-w-5xl">
-      <header className="flex items-center justify-between gap-3 px-1 pb-3 md:pb-5">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <Logo size={34} wordmark={false} className="md:hidden" />
-          <div className="flex min-w-0 flex-col">
-            <span className="text-[0.8125rem] text-fg-muted">{homeDate(at, timezone)}</span>
-            <h1 className="truncate font-serif text-xl font-semibold md:text-3xl">
-              {title ?? (first ? t('today.greetingName', { greeting, name: first }) : greeting)}
-            </h1>
-          </div>
-        </div>
-        <div className="md:hidden">
-          <SyncIndicator compact />
-        </div>
-      </header>
+    <PageFrame
+      eyebrow={homeDate(at, timezone)}
+      title={title ?? (first ? t('today.greetingName', { greeting, name: first }) : greeting)}
+    >
       {children}
-    </div>
+    </PageFrame>
   );
 }
 
+/** Two columns from 1024 px (main | 20rem side), one column below. */
+const gridClass =
+  'flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-10';
+
 function Dashboard({ core }: { core: HomeCore }) {
   const study = useTodayStudy();
-  const activity = useLiveQuery(() => getTodayActivity(), []);
+  const tick = useStudyTick();
+  const activity = useLiveQuery(() => getTodayActivity(), [tick]);
   // The heavy, secondary reads (whole-history goals, extra-study queues, the weekly report and
-  // the notes below the hero) start once the hero has its numbers: on a large collection they
-  // otherwise share IndexedDB with the hero's queries and delay "Devam et" by seconds
-  // (10,000-card profile, decision 0053). Once true it stays true (live queries keep values).
-  // v0.5.1 (decision 0059): they wait until the hero has painted and the page is idle for a
-  // moment, so a tap on "Çalışmaya başla" right away opens the session without them reading
-  // the whole history in the background (10,000 cards: 2 s → under 1 s).
+  // the notes below the card) start once the Today card has painted and the page is idle for a
+  // moment (decisions 0053, 0059), so a tap on "Çalışmaya başla" right away opens the session.
   const heroReady = useSettled(study !== undefined && activity !== undefined);
   const goals = useLiveQuery(() => (heroReady ? getHomeGoals() : undefined), [heroReady]);
-  const goalsView = useLiveQuery(() => (heroReady ? getGoalsView() : undefined), [heroReady]);
   const stages = useWordStages(heroReady);
   const totalWords = useLiveQuery(() => (heroReady ? countWords() : undefined), [heroReady]);
-  const moreResult = useLiveQuery(() => (heroReady ? getMoreOverview() : undefined), [heroReady]);
+  const moreResult = useLiveQuery(
+    () => (heroReady ? getMoreOverview() : undefined),
+    [heroReady, tick],
+  );
   const more = moreResult?.ok ? moreResult.more : null;
   const moreError = moreResult && !moreResult.ok ? moreResult.error : null;
   useEffect(() => {
@@ -117,17 +127,19 @@ function Dashboard({ core }: { core: HomeCore }) {
   }, [moreError]);
   const report = useLiveQuery(() => (heroReady ? getReportShortcut() : undefined), [heroReady]);
   const shortcuts = moreResult && report !== undefined ? { more, report } : undefined;
-  const decks = useHomeDecks(heroReady);
 
   const ready = study && activity;
-  // "Biraz daha çalış" only once every mode is done for today (not just Kelime).
+  // "Biraz daha çalış" only once every mode is done for today (not just Kelime), the learning
+  // steps that come back later today included (v0.5.2, review B1).
   const allDone = study ? study.left === 0 : false;
+  const moreBelow = allDone && !!more && hasMoreStudy(more);
 
   return (
-    <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5">
-      <div className="flex flex-col gap-4 lg:gap-5">
+    <div className={gridClass}>
+      <div className="flex min-w-0 flex-col gap-8">
         {ready ? (
           <TodayHero
+            moreBelow={moreBelow}
             data={{
               study,
               activity,
@@ -138,21 +150,14 @@ function Dashboard({ core }: { core: HomeCore }) {
             }}
           />
         ) : (
-          <HeroSkeleton />
+          <TodaySkeleton />
         )}
         {allDone && more && <MoreStudy more={more} />}
-        {heroReady && <TodayReadingCard />}
         {heroReady && <Notes />}
+        {heroReady && goals && goals.dayTarget === null && <GoalPrompt />}
+        {heroReady && <TodayReadingCard />}
       </div>
-      <div className="flex flex-col gap-4 lg:gap-5">
-        {goals && activity && (
-          <GoalsCard
-            goals={goals}
-            view={goalsView}
-            todayMinutes={activity.minutes}
-            weekMinutes={activity.weekMinutes}
-          />
-        )}
+      <div className="flex min-w-0 flex-col gap-8">
         {stages && totalWords !== undefined && goals && (
           <WordsCard
             stages={stages}
@@ -161,8 +166,14 @@ function Dashboard({ core }: { core: HomeCore }) {
             retentionGoal={goals.retentionGoal}
           />
         )}
-        {shortcuts && <Shortcuts data={shortcuts} showHard={!allDone} />}
-        {decks && <DecksForYou decks={decks} />}
+        {shortcuts && activity && (
+          <Shortcuts
+            data={shortcuts}
+            showHard={!allDone}
+            goals={goals}
+            todayMinutes={activity.minutes}
+          />
+        )}
       </div>
     </div>
   );
@@ -213,58 +224,84 @@ function StageRuleNote() {
   const visible = useLiveQuery(() => stageRuleNoteVisible(), []);
   if (!visible) return null;
   return (
-    <aside
-      aria-labelledby="stage-rule-title"
-      className="flex items-start gap-3 rounded-[18px] border border-border bg-surface py-3 pr-1.5 pl-4"
+    <HomeNote
+      titleId="stage-rule-title"
+      icon="info"
+      title={t('today.ruleTitle')}
       data-testid="stage-rule-note"
+      onClose={() =>
+        void setMeta(STAGE_RULE_NOTE_KEY, true).catch(
+          (e: unknown) => void logError(e, 'home.ruleNote'),
+        )
+      }
     >
-      <HomeIcon name="info" size={20} strokeWidth={1.8} className="mt-0.5 text-accent-text" />
-      <div className="flex min-w-0 flex-1 flex-col gap-1 py-0.5">
-        <h2 id="stage-rule-title" className="text-[0.9375rem] font-semibold">
-          {t('today.ruleTitle')}
-        </h2>
-        <p className="text-sm text-fg-muted">{t('today.ruleBody')}</p>
-      </div>
-      <IconButton
-        icon="x"
-        label={t('common.close')}
-        tooltip={false}
-        className="-mt-1"
-        onClick={() =>
-          void setMeta(STAGE_RULE_NOTE_KEY, true).catch(
-            (e: unknown) => void logError(e, 'home.ruleNote'),
-          )
-        }
-      />
-    </aside>
+      <p>{t('today.ruleBody')}</p>
+    </HomeNote>
   );
 }
 
-function HeroSkeleton() {
+/** Mirrors the Today card: ring + two lines, a chip row, the button, the week strip. */
+function TodaySkeleton() {
   return (
-    <div aria-busy="true" className="flex flex-col gap-4 rounded-[20px] bg-surface p-5">
-      <div className="flex items-center gap-5">
-        <Skeleton className="size-23 rounded-full" />
-        <Skeleton lines={3} className="flex-1" />
+    <Card padding="lg" aria-busy="true" className="flex flex-col gap-5">
+      <div className="flex items-center gap-4">
+        <Skeleton className="size-19 rounded-full" />
+        <Skeleton lines={2} className="flex-1" />
       </div>
-      <Skeleton className="h-13 rounded-[14px]" />
-    </div>
+      <Skeleton className="h-9 w-3/4 rounded-full" />
+      <Skeleton className="h-13 rounded-control" />
+      <Skeleton className="h-2.5 w-36 rounded-full" />
+    </Card>
   );
 }
 
 function DashboardSkeleton() {
   return (
-    <div aria-busy="true" className="flex flex-col gap-4">
-      <HeroSkeleton />
-      <div className="grid grid-cols-3 gap-2.5">
-        {[0, 1, 2].map((i) => (
-          <Skeleton key={i} className="h-37 rounded-[18px]" />
-        ))}
-      </div>
-      <Surface padding="lg">
+    <div aria-busy="true" className={gridClass}>
+      <TodaySkeleton />
+      <Card>
         <Skeleton lines={3} />
-      </Surface>
+      </Card>
     </div>
+  );
+}
+
+/** "Senin için desteler": ready-made decks that suit a new user (Keşfet owns the full list). */
+function DecksForYou({ decks }: { decks: HomeDeck[] }) {
+  const { t } = useTranslation();
+  if (decks.length === 0) return null;
+  return (
+    <section aria-labelledby="decks-for-you-title">
+      <SectionHeader
+        id="decks-for-you-title"
+        title={t('today.decksTitle')}
+        action={
+          <Link to={DISCOVER_DECKS_HREF} className={buttonClasses({ variant: 'ghost', size: 'sm' })}>
+            {t('today.decksDiscover')}
+          </Link>
+        }
+      />
+      <ListGroup>
+        {decks.map((d) => (
+          <ListRow
+            key={d.key}
+            to={`/decks/suggested/${d.key}`}
+            leadingIcon="layers"
+            leadingTone="accent"
+            title={
+              d.kind === 'freq'
+                ? t('today.deckFreq', { count: HOME_FREQ_SIZE })
+                : t('today.deckLevelVerbs', { level: d.level })
+            }
+            description={
+              d.have !== null && d.size !== null
+                ? t('today.deckHave', { have: formatNumber(d.have), size: formatNumber(d.size) })
+                : t('today.deckReady')
+            }
+          />
+        ))}
+      </ListGroup>
+    </section>
   );
 }
 
@@ -281,32 +318,36 @@ function HomeWelcome() {
   const steps = [t('home.emptyStep1'), t('home.emptyStep2'), t('home.emptyStep3')];
   return (
     <HomeFrame timezone={undefined} title={t('home.emptyTitle')}>
-      <div className="flex flex-col gap-4">
-        <Surface padding="lg" className="flex flex-col gap-6 rounded-[20px]">
-          <p className="text-[0.9375rem] text-fg-muted">{t('home.emptyBody')}</p>
-          <ol className="flex flex-col gap-5">
-            {steps.map((s, i) => (
-              <li key={s} className="flex items-start gap-4">
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    'flex size-9 shrink-0 items-center justify-center rounded-full font-serif text-lg font-semibold',
-                    i === 0 ? 'bg-accent text-accent-fg' : 'border border-border text-fg-muted',
-                  )}
-                >
-                  {i + 1}
-                </span>
-                <p className="pt-1.5 text-[0.9375rem] text-fg">{s}</p>
-              </li>
-            ))}
-          </ol>
-          <Button size="lg" fullWidth onClick={openAddSheet} aria-haspopup="dialog">
-            <Icon name="plus" size={20} />
-            {t('home.emptyAction')}
-          </Button>
-        </Surface>
-        <LevelTestOffer />
-        {decks && <DecksForYou decks={decks} />}
+      <div className={gridClass}>
+        <div className="flex min-w-0 flex-col gap-8">
+          <Card padding="lg" className="flex flex-col gap-6">
+            <p className="text-lead text-fg-muted">{t('home.emptyBody')}</p>
+            <ol className="flex flex-col gap-4">
+              {steps.map((s, i) => (
+                <li key={s} className="flex items-start gap-4">
+                  <span
+                    aria-hidden="true"
+                    className="tabular flex size-8 shrink-0 items-center justify-center rounded-full bg-accent-soft text-ui font-semibold text-accent-text"
+                  >
+                    {i + 1}
+                  </span>
+                  <p className="pt-1 text-ui text-fg">{s}</p>
+                </li>
+              ))}
+            </ol>
+            <Button
+              size="lg"
+              fullWidth
+              leadingIcon="plus"
+              onClick={openAddSheet}
+              aria-haspopup="dialog"
+            >
+              {t('home.emptyAction')}
+            </Button>
+          </Card>
+          <LevelTestOffer />
+        </div>
+        <div className="flex min-w-0 flex-col gap-8">{decks && <DecksForYou decks={decks} />}</div>
       </div>
     </HomeFrame>
   );

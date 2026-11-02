@@ -10,6 +10,8 @@ export interface ConfirmDialogProps {
   confirmLabel: string;
   onConfirm: () => void | Promise<void>;
   busy?: boolean;
+  /** Label of the safe choice; default "Vazgeç". */
+  cancelLabel?: string;
 }
 
 /**
@@ -24,6 +26,7 @@ export function ConfirmDialog({
   confirmLabel,
   onConfirm,
   busy,
+  cancelLabel,
 }: ConfirmDialogProps) {
   const { t } = useTranslation();
   return (
@@ -39,7 +42,7 @@ export function ConfirmDialog({
           <DialogClose asChild>
             {/* oxlint-disable-next-line jsx-a11y/no-autofocus -- safe default for a destructive dialog */}
             <Button variant="secondary" autoFocus>
-              {t('common.cancel')}
+              {cancelLabel ?? t('common.cancel')}
             </Button>
           </DialogClose>
           <Button variant="danger" loading={busy} onClick={() => void onConfirm()}>

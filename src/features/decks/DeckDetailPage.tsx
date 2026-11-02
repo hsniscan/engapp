@@ -1,58 +1,59 @@
-// One of the user's decks (/decks/:id): its words by stage, "Çalış", edit / delete, and for a
-// hand-picked (tag) deck "Kelime ekle". A deck made from a suggestion links back to it so the
-// rest of the set can be added later.
+// One of the user's decks (/decks/:id, docs/design.md §4.9): numbers and the five-stage bar,
+// "Bu desteyi çalış", its words, and a menu (edit, move, CSV, delete with "Geri al"). A
+// hand-picked (tag) deck has "Kelime ekle"; a deck made from a suggestion links back to it so
+// the rest of the set can be added later.
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
-import { db, deleteDeck, logError, setNoteTags } from '@/data';
-import { type DeckWordRow, getDeckWords } from '@/data/deckHub';
+import { db, deleteDeck, listDecks, logError, moveDeck, restoreDeck, setNoteTags } from '@/data';
+import { getDeckWords } from '@/data/deckHub';
 import { foldForSearch } from '@/features/cards/libraryFilter';
-import { STAGE_LABEL_TR, type WordStage } from '@/domain/stages';
+import type { WordStage } from '@/domain/stages';
 import { hasTag } from '@/domain/tags';
 import {
+  Badge,
   Button,
+  Card,
   Checkbox,
+  Chip,
+  ChipRow,
   Dialog,
   DialogClose,
   DropdownMenu,
   EmptyState,
   IconButton,
+  ListGroup,
+  ListRow,
+  PageFrame,
+  SectionHeader,
   Skeleton,
-  Surface,
+  StageBar,
+  StagePill,
+  StatTile,
   TextField,
+  buttonClasses,
   toast,
+  type MenuItem,
 } from '@/ui';
-import { ConfirmDialog } from '@/features/cards/ConfirmDialog';
-import { posLabel } from '@/features/cards/labels';
 import { useLevelData } from '@/features/levels/useLevelData';
 import { DeckEditorDialog } from './DeckEditorDialog';
 import { describeDeckFilter } from './describe';
-import { deckStudyHref, MARK, pct, soleTag } from './deckUi';
-import {
-  BackBar,
-  FilterChip,
-  LegendRow,
-  type PillTone,
-  Ring,
-  StatusPill,
-} from './parts';
+import { deckStudyHref, nf, soleTag } from './deckUi';
+import { ChipCount } from './parts';
 import { specHref, titleIndex } from './suggested';
+import { exportWordsCsv } from './exportWords';
 import { scanWhere } from '@/data/scan';
 
 const PAGE = 60;
 type Group = 'all' | 'studying' | 'learned' | 'new';
 
 const groupOf = (s: WordStage | null): Exclude<Group, 'all'> =>
-  s === 'learned' || s === 'mastered' ? 'learned' : s === 'learning' || s === 'consolidating' ? 'studying' : 'new';
-
-const STAGE_TONE: Record<WordStage, PillTone> = {
-  new: 'outline',
-  learning: 'warn',
-  consolidating: 'accent',
-  learned: 'success',
-  mastered: 'success',
-};
+  s === 'learned' || s === 'mastered'
+    ? 'learned'
+    : s === 'learning' || s === 'consolidating'
+      ? 'studying'
+      : 'new';
 
 export function DeckDetailPage() {
   const { t } = useTranslation();
@@ -61,10 +62,9 @@ export function DeckDetailPage() {
   const navigate = useNavigate();
   const levelData = useLevelData();
   const data = useLiveQuery(async () => (await getDeckWords(id)) ?? null, [id, levelData]);
+  const order = useLiveQuery(async () => (await listDecks()).map((d) => d.id), []);
   const titles = useMemo(() => titleIndex(t), [t]);
   const [editing, setEditing] = useState(false);
-  const [confirm, setConfirm] = useState(false);
-  const [busy, setBusy] = useState(false);
   const [group, setGroup] = useState<Group>('all');
   const [shown, setShown] = useState(PAGE);
   const picking = params.get('pick') === '1';
@@ -77,246 +77,261 @@ export function DeckDetailPage() {
       },
       { replace: true },
     );
+  const back = { to: '/decks', label: t('deckHub.library.parent') };
 
   if (data === undefined)
     return (
-      <div className="pb-10">
-        <BackBar to="/decks" parent={t('deckHub.detail.parent')} />
-        <div className="mx-auto max-w-2xl px-4 pt-4">
-          <Skeleton lines={6} />
+      <PageFrame back={back} title={t('deckHub.detail.loading')} hideTitle>
+        <div aria-busy="true" className="flex flex-col gap-4">
+          <Skeleton className="h-9 w-2/3" />
+          <Skeleton className="h-48" />
+          <Skeleton lines={5} />
         </div>
-      </div>
+      </PageFrame>
     );
   if (data === null)
     return (
-      <div className="pb-10">
-        <BackBar to="/decks" parent={t('deckHub.detail.parent')} />
-        <div className="mx-auto max-w-2xl px-4 pt-6">
-          <Surface>
-            <EmptyState
-              icon="layers"
-              title={t('deckHub.detail.notFound')}
-              description={t('deckHub.detail.notFoundBody')}
-              action={
-                <Link to="/decks" className="font-medium text-accent-text hover:underline">
-                  {t('deckHub.detail.toMine')}
-                </Link>
-              }
-            />
-          </Surface>
-        </div>
-      </div>
+      <PageFrame back={back} title={t('deckHub.detail.notFound')} hideTitle>
+        <EmptyState
+          tone="card"
+          icon="layers"
+          title={t('deckHub.detail.notFound')}
+          description={t('deckHub.detail.notFoundBody')}
+          action={
+            <Link to="/decks" className={buttonClasses({ variant: 'secondary' })}>
+              {t('deckHub.detail.toMine')}
+            </Link>
+          }
+        />
+      </PageFrame>
     );
 
   const { deck, filter, words } = data;
   const tag = soleTag(filter);
   const suggested = tag ? titles.get(tag.toLocaleLowerCase('tr')) : undefined;
   const counts = { studying: 0, learned: 0, new: 0 };
-  for (const w of words) counts[groupOf(w.stage)]++;
+  const byStage: Record<WordStage, number> = {
+    new: 0,
+    learning: 0,
+    consolidating: 0,
+    learned: 0,
+    mastered: 0,
+  };
+  let due = 0;
+  for (const w of words) {
+    counts[groupOf(w.stage)]++;
+    byStage[w.stage ?? 'new']++;
+    due += w.dueToday;
+  }
   const list = words.filter((w) => group === 'all' || groupOf(w.stage) === group);
   const studied = counts.learned + counts.studying;
+  const pos = order?.indexOf(deck.id) ?? -1;
+  const move = (dir: -1 | 1) =>
+    void moveDeck(deck.id, dir).catch((e) => {
+      void logError(e, 'DeckDetail.move');
+      toast({ title: t('decks.failed'), tone: 'danger' });
+    });
+  // Deleting a deck never touches its words, and it can be undone: no question first.
+  const remove = async () => {
+    try {
+      await deleteDeck(deck.id);
+      const deckId = deck.id;
+      toast.undo({
+        title: t('deckHub.detail.deleted', { name: deck.name }),
+        undoLabel: t('ui.undo'),
+        onUndo: () => void restoreDeck(deckId).catch((e) => logError(e, 'DeckDetail.undo')),
+      });
+      void navigate('/decks', { replace: true });
+    } catch (e) {
+      void logError(e, 'DeckDetail.delete');
+      toast({ title: t('decks.failed'), tone: 'danger' });
+    }
+  };
+
+  const menu: MenuItem[] = [
+    { label: t('deckHub.detail.edit'), icon: 'pencil', onSelect: () => setEditing(true) },
+    ...(pos > 0
+      ? [{ label: t('deckHub.detail.up'), icon: 'chevron-up' as const, onSelect: () => move(-1) }]
+      : []),
+    ...(pos >= 0 && order && pos < order.length - 1
+      ? [
+          {
+            label: t('deckHub.detail.down'),
+            icon: 'chevron-down' as const,
+            onSelect: () => move(1),
+          },
+        ]
+      : []),
+    ...(words.length > 0
+      ? [
+          {
+            label: t('deckHub.detail.export'),
+            icon: 'file' as const,
+            onSelect: () =>
+              void exportWordsCsv(
+                t,
+                words.map((w) => w.note.id),
+                deck.name,
+              ),
+          },
+        ]
+      : []),
+    { kind: 'separator' },
+    {
+      label: t('deckHub.detail.delete'),
+      icon: 'trash',
+      danger: true,
+      onSelect: () => void remove(),
+    },
+  ];
 
   return (
-    <div className="pb-10">
-      <BackBar
-        to="/decks"
-        parent={t('deckHub.detail.parent')}
-        actions={
-          <DropdownMenu
-            label={t('deckHub.detail.actions')}
-            trigger={<IconButton icon="more" label={t('deckHub.detail.actions')} />}
-            items={[
-              { label: t('deckHub.detail.edit'), icon: 'pencil', onSelect: () => setEditing(true) },
-              { kind: 'separator' },
-              {
-                label: t('deckHub.detail.delete'),
-                icon: 'trash',
-                danger: true,
-                onSelect: () => setConfirm(true),
-              },
-            ]}
-          />
-        }
-      />
-      <div className="mx-auto flex max-w-2xl flex-col gap-4 px-4 pt-2">
-        <div className="flex flex-col gap-2 px-1">
-          {suggested && (
-            <span className="self-start rounded-md bg-accent-soft px-2 py-0.5 text-xs font-semibold text-accent-text">
-              {t('deckHub.mine.fromSuggestion')}
-            </span>
+    <PageFrame
+      back={back}
+      eyebrow={
+        suggested
+          ? t('deckHub.mine.fromSuggestion')
+          : tag
+            ? t('deckHub.mine.kindTag')
+            : t('deckHub.mine.kindSmart')
+      }
+      title={<span className="break-words">{deck.name}</span>}
+      description={
+        // The eyebrow already says the kind; the line says what is in it ("#iş", "Zorlandıklarım").
+        !filter ? t('deckHub.detail.unsupported') : describeDeckFilter(t, filter)
+      }
+      actions={
+        <DropdownMenu
+          label={t('deckHub.detail.actions')}
+          trigger={<IconButton icon="more" label={t('deckHub.detail.actions')} />}
+          items={menu}
+        />
+      }
+    >
+      <div className="flex flex-col gap-8">
+        <Card padding="lg" className="flex flex-col gap-6" aria-label={t('deckHub.detail.status')}>
+          {filter && words.length > 0 && (
+            <>
+              <div className="grid grid-cols-3 divide-x divide-border [&>*]:px-3 [&>*:first-child]:pl-0">
+                <StatTile
+                  bare
+                  value={nf.format(words.length)}
+                  label={t('deckHub.detail.statWords')}
+                />
+                <StatTile bare value={nf.format(due)} label={t('deckHub.detail.statDue')} />
+                <StatTile
+                  bare
+                  value={nf.format(counts.learned)}
+                  label={t('deckHub.detail.statLearned')}
+                />
+              </div>
+              <StageBar counts={byStage} />
+            </>
           )}
-          <h1 className="font-serif text-[30px] leading-[1.12] font-semibold break-words text-fg">
-            {deck.name}
-          </h1>
-          <p className="text-[15px] text-fg-muted">
-            {filter ? describeDeckFilter(t, filter) : t('deckHub.detail.unsupported')}
-          </p>
-        </div>
-
-        {filter && words.length > 0 && (
-          <section
-            aria-label={t('deckHub.detail.status')}
-            className="flex items-center gap-5 rounded-[20px] border border-border bg-surface p-[18px]"
-          >
-            <Ring
-              total={words.length}
-              segments={[
-                { value: counts.learned, color: MARK.learned },
-                { value: counts.studying, color: MARK.studying },
-              ]}
-              center={`%${pct(counts.learned, words.length)}`}
-              caption={t('deckHub.detail.learnedPct')}
-            />
-            <ul className="flex flex-1 flex-col gap-3">
-              <LegendRow color={MARK.learned} value={counts.learned} label={t('deckHub.detail.learned')} />
-              <LegendRow color={MARK.studying} value={counts.studying} label={t('deckHub.detail.studying')} />
-              <LegendRow color={MARK.faint} value={counts.new} label={t('deckHub.detail.fresh')} />
-            </ul>
-          </section>
-        )}
-
-        <div className="flex flex-col gap-2.5">
-          {studied > 0 && (
-            <Link
-              to={deckStudyHref(deck.id)}
-              className="flex h-[54px] items-center justify-center rounded-[14px] bg-accent text-[17px] font-semibold text-accent-fg hover:bg-accent-hover"
-            >
-              {t('deckHub.study')}
-            </Link>
-          )}
-          {tag && !suggested && (
-            <Button variant="secondary" size="lg" leadingIcon="plus" fullWidth onClick={() => setPicking(true)}>
-              {t('deckHub.detail.addWords')}
-            </Button>
-          )}
-          {suggested && (
-            <Link
-              to={specHref(suggested)}
-              className="flex h-[52px] items-center justify-center rounded-[14px] border border-border bg-surface text-[15px] font-semibold text-fg hover:border-border-strong"
-            >
-              {t('deckHub.detail.suggestedOpen')}
-            </Link>
-          )}
-        </div>
+          <div className="flex flex-col gap-2">
+            {words.length > 0 && (
+              <Link
+                to={deckStudyHref(deck.id)}
+                className={buttonClasses({ size: 'lg', fullWidth: true })}
+              >
+                {studied > 0 ? t('deckHub.detail.studyDeck') : t('deckHub.detail.startDeck')}
+              </Link>
+            )}
+            {tag && !suggested && (
+              <Button
+                variant={words.length > 0 ? 'secondary' : 'primary'}
+                size="lg"
+                leadingIcon="plus"
+                fullWidth
+                onClick={() => setPicking(true)}
+              >
+                {t('deckHub.detail.addWords')}
+              </Button>
+            )}
+            {suggested && (
+              <Link
+                to={specHref(suggested)}
+                className={buttonClasses({ variant: 'secondary', size: 'lg', fullWidth: true })}
+              >
+                {t('deckHub.detail.suggestedOpen')}
+              </Link>
+            )}
+          </div>
+        </Card>
 
         {filter && (
-          <section aria-labelledby="dd-words" className="flex flex-col gap-2.5">
-            <div className="flex items-baseline justify-between px-1 pt-1">
-              <h2 id="dd-words" className="font-serif text-[19px] font-semibold text-fg">
-                {t('deckHub.detail.words')}
-              </h2>
-              <span className="text-[13px] text-fg-muted">{t('deckHub.detail.newest')}</span>
-            </div>
+          <section aria-labelledby="dd-words" className="flex flex-col">
+            <SectionHeader
+              id="dd-words"
+              title={t('deckHub.detail.wordsTitle')}
+              description={words.length > 0 ? t('deckHub.detail.newest') : undefined}
+            />
             {words.length === 0 ? (
-              <p className="rounded-[20px] border border-border bg-surface p-4 text-[15px] text-fg-muted">
-                {tag && !suggested ? t('deckHub.detail.emptyTag') : t('deckHub.detail.empty')}
-              </p>
+              <EmptyState
+                tone="placeholder"
+                compact
+                icon="cards"
+                title={t('deckHub.detail.emptyTitle')}
+                description={
+                  tag && !suggested ? t('deckHub.detail.emptyTag') : t('deckHub.detail.empty')
+                }
+              />
             ) : (
-              <>
-                <div
-                  role="group"
-                  aria-label={t('deckHub.detail.filter')}
-                  className="-mr-4 flex gap-2 overflow-x-auto pr-4 [scrollbar-width:none]"
-                >
+              <div className="flex flex-col gap-3">
+                <ChipRow label={t('deckHub.detail.filter')}>
                   {(
                     [
-                      ['all', t('deckHub.detail.fAll', { count: words.length })],
-                      ['studying', t('deckHub.detail.fStudying', { count: counts.studying })],
-                      ['learned', t('deckHub.detail.fLearned', { count: counts.learned })],
-                      ['new', t('deckHub.detail.fNew', { count: counts.new })],
-                    ] as [Group, string][]
-                  ).map(([g, label]) => (
-                    <FilterChip
+                      ['all', t('deckHub.detail.fAll'), words.length],
+                      ['studying', t('deckHub.detail.fStudying'), counts.studying],
+                      ['learned', t('deckHub.detail.fLearned'), counts.learned],
+                      ['new', t('deckHub.detail.fNew'), counts.new],
+                    ] as [Group, string, number][]
+                  ).map(([g, label, n]) => (
+                    <Chip
                       key={g}
-                      pressed={group === g}
+                      selected={group === g}
                       onClick={() => {
                         setGroup(g);
                         setShown(PAGE);
                       }}
                     >
-                      {label}
-                    </FilterChip>
+                      <ChipCount label={label} count={n} selected={group === g} />
+                    </Chip>
                   ))}
-                </div>
-                <ul
-                  aria-label={t('deckHub.detail.words')}
-                  className="flex flex-col overflow-hidden rounded-[20px] border border-border bg-surface"
-                >
+                </ChipRow>
+                <ListGroup aria-label={t('deckHub.detail.words')}>
                   {list.slice(0, shown).map((w) => (
-                    <WordRow key={w.note.id} row={w} />
+                    <ListRow
+                      key={w.note.id}
+                      to={`/library?note=${encodeURIComponent(w.note.id)}`}
+                      term
+                      title={w.note.term}
+                      description={w.meaning ?? t('deckHub.detail.noMeaning')}
+                      trailing={<StagePill stage={w.stage ?? 'new'} />}
+                    />
                   ))}
-                </ul>
+                </ListGroup>
                 {list.length > shown && (
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    className="self-center"
                     onClick={() => setShown((n) => n + PAGE)}
-                    className="flex h-12 items-center justify-center text-[15px] font-semibold text-accent-text hover:underline"
                   >
                     {t('deckHub.suggested.more', { count: Math.min(PAGE, list.length - shown) })}
-                  </button>
+                  </Button>
                 )}
-              </>
+              </div>
             )}
           </section>
         )}
+        {!filter && <Badge tone="warn">{t('deckHub.mine.needsUpdate')}</Badge>}
       </div>
 
       <DeckEditorDialog open={editing} onOpenChange={setEditing} deck={deck} />
-      <ConfirmDialog
-        open={confirm}
-        onOpenChange={setConfirm}
-        title={t('decks.deleteTitle', { name: deck.name })}
-        description={t('decks.deleteBody')}
-        confirmLabel={t('common.delete')}
-        busy={busy}
-        onConfirm={async () => {
-          setBusy(true);
-          try {
-            await deleteDeck(deck.id);
-            toast({ title: t('decks.deleted'), tone: 'success' });
-            void navigate('/decks', { replace: true });
-          } catch (e) {
-            void logError(e, 'DeckDetail.delete');
-            toast({ title: t('decks.failed'), tone: 'danger' });
-          } finally {
-            setBusy(false);
-            setConfirm(false);
-          }
-        }}
-      />
       {tag && (
-        <WordPicker
-          open={picking}
-          onOpenChange={setPicking}
-          deckName={deck.name}
-          tag={tag}
-        />
+        <WordPicker open={picking} onOpenChange={setPicking} deckName={deck.name} tag={tag} />
       )}
-    </div>
-  );
-}
-
-function WordRow({ row }: { row: DeckWordRow }) {
-  const { t } = useTranslation();
-  const stage: WordStage = row.stage ?? 'new';
-  return (
-    <li className="border-b border-surface-sunken last:border-b-0">
-      <Link
-        to={`/library?note=${encodeURIComponent(row.note.id)}`}
-        className="flex min-h-[58px] items-center gap-2.5 px-4 py-2.5 hover:bg-hover"
-      >
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="flex items-baseline gap-2">
-            <span lang="en" className="truncate font-serif text-lg font-semibold text-fg">
-              {row.note.term}
-            </span>
-            {row.pos && <span className="text-xs text-fg-muted">{posLabel(t, row.pos)}</span>}
-          </span>
-          <span className="truncate text-sm text-fg-muted">{row.meaning ?? t('deckHub.detail.noMeaning')}</span>
-        </span>
-        <StatusPill tone={STAGE_TONE[stage]}>{STAGE_LABEL_TR[stage]}</StatusPill>
-      </Link>
-    </li>
+    </PageFrame>
   );
 }
 
@@ -398,11 +413,18 @@ function WordPicker({
         ) : list.length === 0 ? (
           <p className="text-[15px] text-fg-muted">{t('deckHub.picker.none')}</p>
         ) : (
-          <ul aria-label={t('deckHub.picker.list')} className="-mx-1 flex max-h-[50dvh] flex-col overflow-y-auto">
+          <ul
+            aria-label={t('deckHub.picker.list')}
+            className="-mx-1 flex max-h-[50dvh] flex-col overflow-y-auto"
+          >
             {list.map((n) => (
               <li key={n.id} className="px-1">
                 <Checkbox
-                  label={<span lang="en" className="font-serif text-base font-semibold">{n.term}</span>}
+                  label={
+                    <span lang="en" className="font-serif text-base font-semibold">
+                      {n.term}
+                    </span>
+                  }
                   checked={picked.has(n.id)}
                   onCheckedChange={(v) =>
                     setPicked((s) => {

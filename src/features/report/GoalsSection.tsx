@@ -18,7 +18,17 @@ import {
 } from '@/domain/goals';
 import type { CefrLevel } from '@/domain/types';
 import { formatNumber } from '@/features/stats/format';
-import { Button, Dialog, Select, Surface, TextField, toast } from '@/ui';
+import {
+  Button,
+  Card,
+  Dialog,
+  Icon,
+  ProgressRing,
+  SectionHeader,
+  Select,
+  TextField,
+  toast,
+} from '@/ui';
 
 /**
  * The one place goals are set (v0.5.1: Profil and Bugün link here; /progress?edit=goals opens
@@ -42,26 +52,36 @@ export function GoalsSection() {
   const level = view.goals.target_level ?? null;
   const hasGoals = view.progress.length > 0 || day !== null || level !== null;
   return (
-    <Surface as="section" aria-labelledby="goals-title" padding="lg" data-testid="goals">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="goals-title" className="font-serif text-xl font-semibold">
-          {t('goals.title')}
-        </h2>
-        <Button variant={hasGoals ? 'secondary' : 'primary'} onClick={() => setOpen(true)}>
-          {hasGoals ? t('goals.change') : t('goals.set')}
-        </Button>
-      </div>
+    <section aria-labelledby="goals-title" data-testid="goals">
+      <SectionHeader
+        id="goals-title"
+        title={t('goals.title')}
+        action={
+          <Button
+            variant={hasGoals ? 'ghost' : 'tonal'}
+            size="sm"
+            leadingIcon={hasGoals ? 'pencil' : 'target'}
+            onClick={() => setOpen(true)}
+          >
+            {hasGoals ? t('goals.change') : t('goals.set')}
+          </Button>
+        }
+      />
+      <Card>
       {hasGoals ? (
         <>
           {view.progress.length > 0 && (
-            <ul className="mt-5 grid grid-cols-1 gap-5 min-[400px]:grid-cols-3">
+            <ul className="grid grid-cols-1 gap-4 min-[400px]:grid-cols-3">
               {view.progress.map((p) => (
                 <GoalRing key={p.key} progress={p} />
               ))}
             </ul>
           )}
           {(day !== null || level !== null) && (
-            <p className="mt-4 text-sm text-fg-muted" data-testid="goals-day-level">
+            <p
+              className="mt-4 border-t border-border pt-3 text-meta text-fg-muted first:mt-0 first:border-0 first:pt-0"
+              data-testid="goals-day-level"
+            >
               {[
                 day !== null ? t('goals.dayLine', { count: day }) : null,
                 level !== null ? t('profile.home.goalLevel', { level }) : null,
@@ -72,15 +92,13 @@ export function GoalsSection() {
           )}
         </>
       ) : (
-        <p className="mt-3 text-[0.9375rem] text-fg-muted">{t('goals.intro')}</p>
+        <p className="text-ui text-fg-muted">{t('goals.intro')}</p>
       )}
+      </Card>
       {open ? <GoalsDialog view={view} onClose={close} /> : null}
-    </Surface>
+    </section>
   );
 }
-
-const R = 26;
-const CIRC = 2 * Math.PI * R;
 
 function GoalRing({ progress: p }: { progress: GoalProgress }) {
   const { t } = useTranslation();
@@ -89,28 +107,24 @@ function GoalRing({ progress: p }: { progress: GoalProgress }) {
   const target = t(`goals.unit.${p.key}`, { count: p.target });
   return (
     <li className="flex items-center gap-3 min-[400px]:flex-col min-[400px]:text-center">
-      <svg
-        viewBox="0 0 64 64"
-        className="size-16 shrink-0 -rotate-90"
-        role="img"
-        aria-label={t('goals.ringLabel', { label, value: formatNumber(p.value), target })}
+      <ProgressRing
+        value={Math.min(1, p.ratio)}
+        max={1}
+        size={64}
+        label={t('goals.ringLabel', { label, value: formatNumber(p.value), target })}
+        valueText={`${value} / ${target}`}
       >
-        <circle cx="32" cy="32" r={R} fill="none" strokeWidth="7" className="stroke-border" />
-        <circle
-          cx="32"
-          cy="32"
-          r={R}
-          fill="none"
-          strokeWidth="7"
-          strokeLinecap="round"
-          strokeDasharray={CIRC}
-          strokeDashoffset={CIRC * (1 - p.ratio)}
-          className={p.ratio > 0 ? 'stroke-accent-text' : 'stroke-transparent'}
-        />
-      </svg>
+        {p.met ? (
+          <Icon name="check" size={22} className="text-accent-text" />
+        ) : (
+          <span className="tabular text-meta font-semibold text-fg">
+            {Math.round(Math.min(1, p.ratio) * 100)}%
+          </span>
+        )}
+      </ProgressRing>
       <div className="flex min-w-0 flex-col">
-        <span className="text-sm text-fg-muted">{label}</span>
-        <span className="tabular text-[0.9375rem] font-medium text-fg">
+        <span className="text-meta text-fg-muted">{label}</span>
+        <span className="tabular text-ui font-medium text-fg">
           {value} / {target}
           {p.met ? <span className="ml-1.5 text-accent-text">· {t('goals.met')}</span> : null}
         </span>

@@ -41,7 +41,7 @@ export function Checkbox({ label, description, className, hideLabel, ...rest }: 
         </RadixCheckbox.Indicator>
       </RadixCheckbox.Root>
       <label htmlFor={id} className={cn('flex flex-col py-2.5', hideLabel && 'sr-only')}>
-        <span className="text-[0.9375rem] text-fg">{label}</span>
+        <span className="text-ui text-fg">{label}</span>
         {description && <span className="text-sm text-fg-muted">{description}</span>}
       </label>
     </div>

@@ -60,18 +60,23 @@ Only the types marked collected are ticked in the form; everything else is **not
   chunks to the `ai-extract` function; `ai_chunk_cache` keeps candidates and their sentences
   for 90 days; `sources` keeps title, file name and page count only.
 - **App interactions:** `review_logs`, `practice_logs`, `level_tests`, `known_terms`,
-  `weekly_reports`, card scheduling state in `cards`; `ai_usage` and `tts_usage` count calls per
-  day to enforce the daily limits (that is the "fraud prevention" purpose: abuse limits, not
+  `weekly_reports`, card scheduling state in `cards`; `ai_usage`, `ai_feature_usage`, `tts_usage`
+  and `sync_usage` count calls per day and `text_budget_users` the estimated AI spend per month
+  to enforce the limits (that is the "fraud prevention" purpose: abuse limits, not
   profiling). Personalization: the level and interests choose which candidates are suggested.
 - **Other user-generated content:** `notes` (with tags), `senses`, `user_content` (own example
-  sentences and memory hints), `content_feedback` (liked or hidden AI content), `decks` and the
-  pasted text sent to `ai-extract`.
+  sentences and memory hints), `content_feedback` (liked or hidden AI content), `decks`, the
+  pasted text sent to `ai-extract`, and `user_texts`: every reading text the user saves (pasted,
+  PDF, article from a link, subtitle, text from a photo, the daily story) with its full body,
+  title, source URL and reading state, synced like the cards (v0.5.2, ADR 0060). `user_encounters`
+  counts per day how often the user met each word (App interactions).
 - **Device or other IDs:** `device_id` in the review logs (a random id made at install,
   `src/data/meta.ts`), not the advertising ID or any hardware id; `push_subscriptions`
   (endpoint, keys, `user_agent`) when web reminders are on.
 
 - **ML Kit (Android app, "Fotoğraftan metin", ADR 0045):** the bundled text recognition model
-  runs on the phone; the photo and the recognised text never leave it. Google's ML Kit SDK
+  runs on the phone; the photo never leaves it, and the recognised text leaves it only when
+  the user saves it as a reading text (then it syncs as `user_texts` above). Google's ML Kit SDK
   itself sends usage and performance metrics to Google (device model and OS version, app
   package and version, a per-installation identifier, latency, error codes, API settings).
   That is what the Diagnostics / Other performance data rows and the ML Kit part of Device

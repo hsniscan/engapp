@@ -8,6 +8,9 @@
 #                             in this run: installs, guest mode works, Google sign-in does NOT
 #   engapp-debug-apk          debug APK (debug key of this runner)
 #   engapp-aab                release bundle for Play (signed only with the upload key)
+#   engapp-lint-report        Android lint report of the release variant (advisory)
+#
+# The release build is shrunk with R8 and must pass the 16 KB page-size check (ADR 0064).
 #
 # versionCode = this workflow's run number (always increases, so a newer APK installs over the
 # older one and keeps its data); versionName = package.json "version".
@@ -22,6 +25,7 @@ on:
       - 'index.html'
       - 'capacitor.config.ts'
       - 'vite.config.ts'
+      - 'scripts/check-16kb.sh'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - '.github/workflows/android.yml'
@@ -57,18 +61,18 @@ jobs:
     env:
       VERSION_CODE: ${{ github.run_number }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: pnpm
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
         with:
           distribution: temurin
           java-version: '21'
           cache: gradle
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
         with:
           # The default list asks for the retired 'tools' package, which no longer exists. Gradle
           # fetches the platform and build tools it needs (licences are accepted by this step).
@@ -151,6 +155,31 @@ jobs:
           ENGAPP_KEY_ALIAS: ${{ env.UPLOAD_KEY_ALIAS || 'engapp-test' }}
         run: ./gradlew --no-daemon -PversionCode="$VERSION_CODE" assembleRelease
 
+      - name: Android lint (release)
+        # Advisory until the first report is clean (docs/decisions/0064): the report is uploaded
+        # as engapp-lint-report and a failure shows as a warning, not a red build.
+        id: lint
+        continue-on-error: true
+        working-directory: android
+        run: ./gradlew --no-daemon -PversionCode="$VERSION_CODE" :app:lintRelease
+      - if: steps.lint.outcome == 'failure'
+        run: echo "::warning::Android lint found errors; see the engapp-lint-report artifact (lint-results-release.html)."
+      - if: always() && steps.lint.outcome != 'skipped'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: engapp-lint-report
+          path: android/app/build/reports/lint-results-release.html
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: 16 KB page-size check (Google Play, Android 15+)
+        # Blocking: Play rejects a bundle whose 64-bit native libraries (ML Kit) are not
+        # 16 KB-aligned. scripts/check-16kb.sh checks the ELF segments and the zip alignment.
+        run: |
+          set -euo pipefail
+          bt="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          bash scripts/check-16kb.sh android/app/build/outputs/apk/release/app-release.apk "$bt/zipalign"
+
       - name: Name and check the outputs
         id: out
         run: |
@@ -178,24 +207,24 @@ jobs:
 
       - name: Upload APK (upload key)
         if: steps.key.outputs.kind == 'upload'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: engapp-apk
           path: out/${{ steps.out.outputs.name }}.apk
           retention-days: 30
       - name: Upload APK (throwaway key, test only)
         if: steps.key.outputs.kind != 'upload'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: engapp-apk-unsigned-test
           path: out/${{ steps.out.outputs.name }}.apk
           retention-days: 14
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: engapp-debug-apk
           path: out/${{ steps.out.outputs.name }}-debug.apk
           retention-days: 14
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: engapp-aab
           path: out/${{ steps.out.outputs.name }}.aab
@@ -224,12 +253,14 @@ jobs:
             echo "go=true" >> "$GITHUB_OUTPUT"
           fi
       - if: steps.pre.outputs.go == 'true'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: engapp-aab
           path: aab
       - if: steps.pre.outputs.go == 'true'
-        uses: r0adkll/upload-google-play@v1
+        # Third-party action that receives the Play service account: pinned to a reviewed commit
+        # (v1.1.5), never a moving tag. Update deliberately: check the diff, then the SHA.
+        uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1.1.5
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: io.github.hsniscan.engapp

@@ -21,18 +21,20 @@ import { posLabel } from '@/features/cards/labels';
 import { LevelBadge } from '@/features/levels/LevelBadge';
 import { useAppSettings } from '@/features/settings/useAppSettings';
 import { requestSync } from '@/sync';
+import { AddFlowPage, Notice, StickyBar } from '@/features/add/ui';
 import {
   Badge,
   Button,
   Checkbox,
+  Chip,
+  ChipRow,
   Dialog,
   DialogClose,
   EmptyState,
   Icon,
   IconButton,
-  Page,
-  SegmentedControl,
   Skeleton,
+  Term,
   buttonClasses,
   cn,
   toast,
@@ -55,19 +57,16 @@ export function ImportPreviewPage() {
 
   if (job === undefined) {
     return (
-      <Page title={t('importer.preview.title')} width="wide">
-        <div aria-busy="true" className="flex flex-col gap-3">
-          <Skeleton className="h-10 w-72" />
-          <Skeleton className="h-36" />
-          <Skeleton className="h-36" />
-        </div>
-      </Page>
+      <AddFlowPage title={t('importer.preview.title')} back={jobsBack(t)}>
+        <PreviewSkeleton />
+      </AddFlowPage>
     );
   }
   if (job === null) {
     return (
-      <Page title={t('importer.preview.title')}>
+      <AddFlowPage title={t('importer.preview.title')} back={jobsBack(t)}>
         <EmptyState
+          tone="card"
           icon="file"
           title={t('importer.preview.notFound')}
           description={t('importer.preview.notFoundBody')}
@@ -77,13 +76,14 @@ export function ImportPreviewPage() {
             </Link>
           }
         />
-      </Page>
+      </AddFlowPage>
     );
   }
   if (job.status === 'done') {
     return (
-      <Page title={t('importer.preview.title')}>
+      <AddFlowPage title={t('importer.preview.title')} back={jobsBack(t)}>
         <EmptyState
+          tone="card"
           icon="check"
           title={t('importer.preview.alreadyDone')}
           description={t('importer.preview.alreadyDoneBody')}
@@ -93,14 +93,18 @@ export function ImportPreviewPage() {
             </Link>
           }
         />
-      </Page>
+      </AddFlowPage>
     );
   }
   if (job.status !== 'ready') {
     return (
-      <Page title={t('importer.preview.title')} description={t('importer.preview.notReady')}>
+      <AddFlowPage
+        title={t('importer.preview.title')}
+        description={t('importer.preview.notReady')}
+        back={jobsBack(t)}
+      >
         <JobCard job={job} />
-      </Page>
+      </AddFlowPage>
     );
   }
   return <CandidateReview job={job} />;
@@ -109,6 +113,24 @@ export function ImportPreviewPage() {
 interface RowState {
   selected: boolean;
   edit: string | null;
+}
+
+/** "‹ Kelime çıkarmaları": a preview's parent is the jobs list. */
+const jobsBack = (t: (k: 'importer.jobs.title') => string) => ({
+  to: '/import',
+  label: t('importer.jobs.title'),
+});
+
+/** Loading: the summary line, the filter chips and two rows. */
+function PreviewSkeleton() {
+  return (
+    <div aria-busy="true" className="flex flex-col gap-3">
+      <Skeleton lines={2} />
+      <Skeleton className="h-9 w-64 rounded-full" />
+      <Skeleton className="h-36 rounded-card" />
+      <Skeleton className="h-36 rounded-card" />
+    </div>
+  );
 }
 
 function CandidateReview({ job }: { job: ImportJobRecord }) {
@@ -126,19 +148,23 @@ function CandidateReview({ job }: { job: ImportJobRecord }) {
   // Words marked known since the job ran (another device, the level test, another preview)
   // leave "Senin için" before the user reads the list.
   const confirmed = job.status === 'done';
+  // The list is built only after the refresh, so its selection starts from the moved rows (B1).
+  const [refreshed, setRefreshed] = useState<string | null>(confirmed ? job.id : null);
   useEffect(() => {
     if (confirmed) return;
-    refreshKnownCandidates(job.id).catch((e: unknown) => void logError(e, 'import.knownRefresh'));
+    let live = true;
+    refreshKnownCandidates(job.id)
+      .catch((e: unknown) => void logError(e, 'import.knownRefresh'))
+      .finally(() => live && setRefreshed(job.id));
+    return () => {
+      live = false;
+    };
   }, [job.id, confirmed]);
-  if (!rows) {
+  if (!rows || (!confirmed && refreshed !== job.id)) {
     return (
-      <Page title={t('importer.preview.title')} width="wide">
-        <div aria-busy="true" className="flex flex-col gap-3">
-          <Skeleton className="h-10 w-72" />
-          <Skeleton className="h-36" />
-          <Skeleton className="h-36" />
-        </div>
-      </Page>
+      <AddFlowPage title={t('importer.preview.title')} back={jobsBack(t)}>
+        <PreviewSkeleton />
+      </AddFlowPage>
     );
   }
   return <CandidateList job={job} rows={rows} />;
@@ -164,6 +190,29 @@ function CandidateList({ job, rows }: { job: ImportJobRecord; rows: ImportCandid
         rows.map((r) => [r.id, { selected: r.selected, edit: r.meaning_tr_edit }]),
       ),
   );
+  // A row that moves to "Biliyorsun" later (marked known in another preview, the level test,
+  // sync) is unselected here too: known words are never added without a tick (B1).
+  const [seenRows, setSeenRows] = useState(rows);
+  if (seenRows !== rows) {
+    const before = new Map(seenRows.map((r) => [r.id, bucketOf(r)]));
+    setSeenRows(rows);
+    const moved = rows.filter((r) => bucketOf(r) === 'known' && before.get(r.id) !== 'known');
+    if (moved.length)
+      setState((cur) => {
+        const next = new Map(cur);
+        for (const r of moved)
+          next.set(r.id, { ...(next.get(r.id) ?? { edit: r.meaning_tr_edit }), selected: false });
+        return next;
+      });
+    const added = rows.filter((r) => !before.has(r.id));
+    if (added.length)
+      setState((cur) => {
+        const next = new Map(cur);
+        for (const r of added)
+          if (!next.has(r.id)) next.set(r.id, { selected: r.selected, edit: r.meaning_tr_edit });
+        return next;
+      });
+  }
   const [filter, setFilter] = useState<Filter>('all');
   const [busy, setBusy] = useState(false);
   const [discardOpen, setDiscardOpen] = useState(false);
@@ -292,18 +341,18 @@ function CandidateList({ job, rows }: { job: ImportJobRecord; rows: ImportCandid
     void navigate('/add', { replace: true });
   };
 
-  const filterOptions = (['all', 'word', 'phrase', 'pattern'] as const)
-    .filter((f) => f === 'all' || counts[f] > 0)
-    .map((f) => ({ value: f, label: `${t(`importer.preview.${f}`)} ${counts[f]}` }));
+  const filterOptions = (['all', 'word', 'phrase', 'pattern'] as const).filter(
+    (f) => f === 'all' || counts[f] > 0,
+  );
 
   const hiddenHard = sections.too_hard.filter((r) => !r.from_list).length;
   const shownSections = BUCKETS.filter((s) => s === 'for_you' || sections[s].some(isShown));
 
   return (
-    <Page
+    <AddFlowPage
       title={t('importer.preview.title')}
-      description={t('importer.preview.source', { title: job.title, count: counts.all })}
-      width="wide"
+      description={t('importer.preview.source', { title: job.title, count: rows.length })}
+      back={jobsBack(t)}
       actions={
         <Dialog
           open={discardOpen}
@@ -325,7 +374,7 @@ function CandidateList({ job, rows }: { job: ImportJobRecord; rows: ImportCandid
       }
     >
       <ReadTextLink textId={job.text_id} className="-mt-2 mb-2" />
-      <p className="text-[0.9375rem] text-fg-muted" data-testid="smart-summary">
+      <p className="text-ui text-fg-muted" data-testid="smart-summary">
         {t('importer.preview.smartSummary', {
           level: job.level,
           total: counts.all + hiddenHard,
@@ -336,25 +385,17 @@ function CandidateList({ job, rows }: { job: ImportJobRecord; rows: ImportCandid
         {hiddenHard > 0 && <> {t('importer.preview.tooHardHidden', { count: hiddenHard })}</>}
       </p>
 
-      <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        {filterOptions.length > 2 ? (
-          <SegmentedControl<Filter>
-            legend={t('importer.preview.filter')}
-            hideLegend
-            options={filterOptions}
-            value={filter}
-            onValueChange={setFilter}
-            className="md:max-w-md md:flex-1 [&_label]:whitespace-nowrap max-sm:[&_label]:px-1.5"
-          />
-        ) : (
-          <span />
-        )}
-        <span className="tabular text-sm text-fg-muted md:text-right" aria-live="polite">
-          {t('importer.preview.summary', { selected: selectedCount, total: counts.all })}
-        </span>
-      </div>
+      {filterOptions.length > 2 && (
+        <ChipRow label={t('importer.preview.filter')} className="mt-4">
+          {filterOptions.map((f) => (
+            <Chip key={f} selected={filter === f} count={counts[f]} onClick={() => setFilter(f)}>
+              {t(`importer.preview.${f}`)}
+            </Chip>
+          ))}
+        </ChipRow>
+      )}
 
-      <div className="mt-5 flex flex-col gap-6">
+      <div className="mt-6 flex flex-col gap-8">
         {shownSections.map((s) => {
           const visible = visibleIn(s);
           const total = sections[s].filter(isShown).length;
@@ -365,12 +406,12 @@ function CandidateList({ job, rows }: { job: ImportJobRecord; rows: ImportCandid
           const bodyId = `section-${s}-body`;
           return (
             <section key={s} aria-labelledby={headingId} className="flex flex-col gap-3">
-              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-border pb-2">
-                <h2 id={headingId} className="m-0 text-base font-semibold text-fg">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                <h2 id={headingId} className="m-0 text-title font-semibold text-fg">
                   {s === 'for_you' ? (
                     <span className="inline-flex items-baseline gap-2">
                       {t(`importer.preview.sections.${s}`)}{' '}
-                      <span className="tabular text-sm font-normal text-fg-muted">{total}</span>
+                      <span className="tabular text-ui font-normal text-fg-muted">{total}</span>
                     </span>
                   ) : (
                     <button
@@ -389,7 +430,7 @@ function CandidateList({ job, rows }: { job: ImportJobRecord; rows: ImportCandid
                         )}
                       />
                       {t(`importer.preview.sections.${s}`)}{' '}
-                      <span className="tabular text-sm font-normal text-fg-muted">{total}</span>
+                      <span className="tabular text-ui font-normal text-fg-muted">{total}</span>
                     </button>
                   )}
                 </h2>
@@ -422,23 +463,21 @@ function CandidateList({ job, rows }: { job: ImportJobRecord; rows: ImportCandid
               </div>
               {expanded && (
                 <div id={bodyId} className="flex flex-col gap-3">
-                  <p className="-mt-1 text-sm text-fg-muted">
+                  <p className="-mt-1 text-meta text-fg-muted">
                     {t(`importer.preview.sectionHints.${s}`, { level: job.level })}
                   </p>
                   {s === 'for_you' && !sections.for_you.some((r) => r.cefr === job.level) && (
-                    <p className="rounded-card border border-border bg-surface-sunken/60 px-4 py-3 text-[0.9375rem] text-fg">
-                      {t('importer.preview.forYouEmpty', { level: job.level })}
-                    </p>
+                    <Notice>{t('importer.preview.forYouEmpty', { level: job.level })}</Notice>
                   )}
                   {visible.length === 0 ? (
                     total > 0 && (
-                      <p className="py-4 text-center text-fg-muted">
+                      <p className="py-4 text-center text-ui text-fg-muted">
                         {t('importer.preview.emptyFilter')}
                       </p>
                     )
                   ) : (
                     <ul
-                      className="flex flex-col gap-3"
+                      className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface"
                       aria-label={t(`importer.preview.sections.${s}`)}
                     >
                       {visible.map((r) => {
@@ -465,9 +504,9 @@ function CandidateList({ job, rows }: { job: ImportJobRecord; rows: ImportCandid
         })}
       </div>
 
-      <div className="sticky bottom-[calc(var(--nav-height)+var(--nav-fab-rise)+env(safe-area-inset-bottom))] z-10 -mx-4 mt-6 border-t border-border bg-canvas/95 px-4 py-3 backdrop-blur-sm sm:-mx-6 sm:px-6 md:bottom-0">
+      <StickyBar>
         <div className="flex items-center justify-between gap-3">
-          <span className="tabular hidden text-sm text-fg-muted sm:inline">
+          <span className="tabular shrink-0 text-meta text-fg-muted" aria-live="polite">
             {t('importer.preview.summary', { selected: selectedCount, total: counts.all })}
           </span>
           <Button
@@ -475,7 +514,7 @@ function CandidateList({ job, rows }: { job: ImportJobRecord; rows: ImportCandid
             loading={busy}
             disabled={selectedCount === 0}
             onClick={() => void confirm()}
-            className="w-full sm:w-auto sm:min-w-56"
+            className="min-w-0 flex-1 sm:flex-none sm:min-w-56"
           >
             {busy
               ? t('importer.preview.confirming')
@@ -484,8 +523,8 @@ function CandidateList({ job, rows }: { job: ImportJobRecord; rows: ImportCandid
                 : t('importer.preview.confirm', { count: selectedCount })}
           </Button>
         </div>
-      </div>
-    </Page>
+      </StickyBar>
+    </AddFlowPage>
   );
 }
 
@@ -521,7 +560,7 @@ export function HighlightedSentence({
   return (
     <>
       {sentence.slice(0, a)}
-      <mark className="rounded-[3px] bg-accent-soft px-0.5 font-semibold text-fg not-italic">
+      <mark className="rounded-xs bg-accent-soft px-0.5 font-semibold text-fg not-italic">
         {sentence.slice(a, b)}
       </mark>
       {sentence.slice(b)}
@@ -572,11 +611,11 @@ const CandidateRow = memo(function CandidateRow({
   return (
     <li
       className={cn(
-        'flex gap-3 rounded-card border bg-surface py-3 pr-4 pl-3 transition-[border-color,background-color,opacity] duration-(--duration-micro) sm:gap-4 sm:py-4 sm:pr-5 sm:pl-4',
+        'flex gap-3 py-3 pr-4 pl-3 transition-colors duration-(--duration-micro) sm:gap-4 sm:py-4 sm:pr-5 sm:pl-4',
         '[contain-intrinsic-size:auto_168px] [content-visibility:auto]',
-        selected ? 'border-border-strong/60' : 'border-border',
-        low && 'border-l-[3px] border-l-warn',
+        !selected && 'bg-canvas/40',
       )}
+      data-testid="candidate-row"
     >
       <Checkbox
         label={t('importer.preview.select', { term: c.term })}
@@ -587,15 +626,13 @@ const CandidateRow = memo(function CandidateRow({
       />
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-          <span lang="en" className="font-serif text-xl leading-snug font-semibold text-fg">
-            {c.term}
-          </span>
+          <Term className="font-semibold text-fg">{c.term}</Term>
           {c.ipa && (
-            <span lang="en" className="text-sm text-fg-muted">
+            <span lang="en" className="font-serif text-meta text-fg-muted">
               {c.ipa}
             </span>
           )}
-          {c.pos && <span className="text-sm text-fg-muted italic">{posLabel(t, c.pos)}</span>}
+          {c.pos && <span className="text-meta text-fg-muted">{posLabel(t, c.pos)}</span>}
           <span className="flex flex-wrap items-center gap-1.5 self-center sm:ml-auto">
             {c.cefr && (
               <LevelBadge
@@ -622,11 +659,11 @@ const CandidateRow = memo(function CandidateRow({
           </span>
         </div>
 
-        <p lang="en" className="font-serif text-[1.0625rem] leading-relaxed text-fg-muted italic">
+        <p lang="en" className="font-serif text-body text-fg-muted italic">
           <HighlightedSentence sentence={c.source_sentence} span={c.span} surface={c.surface} />
         </p>
         {c.source_sentence_tr && (
-          <p lang="tr" className="-mt-1 text-[0.9375rem] leading-relaxed text-fg-muted">
+          <p lang="tr" className="-mt-1 text-meta text-fg-muted">
             {c.source_sentence_tr}
           </p>
         )}
@@ -645,13 +682,13 @@ const CandidateRow = memo(function CandidateRow({
               if (e.key === 'Enter') e.currentTarget.blur();
             }}
             className={cn(
-              'h-10 w-full rounded-control border border-transparent bg-surface-sunken/70 px-3 font-serif text-[1.0625rem] text-fg sm:max-w-sm',
+              'h-11 w-full rounded-control border border-transparent bg-surface-sunken px-3 text-ui font-medium text-fg sm:max-w-sm',
               'transition-[border-color,background-color] duration-(--duration-micro) hover:border-border-strong/60',
               'focus-visible:border-accent focus-visible:bg-surface focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus/30',
             )}
           />
           {c.gloss_en && (
-            <span lang="en" className="min-w-0 text-sm text-fg-muted">
+            <span lang="en" className="min-w-0 text-meta text-fg-muted">
               {c.gloss_en}
             </span>
           )}
@@ -670,12 +707,12 @@ const CandidateRow = memo(function CandidateRow({
           </div>
         )}
         {edited && (
-          <p className="flex items-center gap-2 text-xs text-fg-muted">
+          <p className="flex items-center gap-2 text-meta text-fg-muted">
             <Icon name="pencil" size={14} />
             {t('importer.preview.meaningEdited')}
             <button
               type="button"
-              className="rounded-sm text-accent-text underline-offset-2 hover:underline"
+              className="hit-44 relative rounded-xs font-semibold text-accent-text underline-offset-2 hover:underline"
               onClick={() => {
                 onEdit(c.id, null);
                 lastCommitted.current = null;

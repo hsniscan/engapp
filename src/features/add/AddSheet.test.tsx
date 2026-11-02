@@ -68,10 +68,10 @@ function renderShell(url = '/') {
   return router;
 }
 
-const sheet = () => screen.getByRole('dialog', { name: 'Ne eklemek istersin?' });
+const sheet = () => screen.getByRole('dialog', { name: 'Ekle' });
 
-describe('Add sheet (v0.5.1): four groups', () => {
-  it('opens from the raised (+): Kelime ekle · Metin ekle · Kelimelerimle metin · İçe aktar', () => {
+describe('Add sheet (v0.5.2): three groups', () => {
+  it('opens from the (+): Kelime ekle · Metin ekle (incl. Kelimelerimle metin) · İçe aktar', () => {
     renderShell();
     const plus = screen.getByTestId('nav-add');
     expect(plus).toHaveAccessibleName('Ekle');
@@ -81,7 +81,7 @@ describe('Add sheet (v0.5.1): four groups', () => {
       within(s)
         .getAllByRole('heading', { level: 3 })
         .map((h) => h.textContent),
-    ).toEqual(['Kelime ekle', 'Metin ekle', 'Kelimelerimle metin', 'İçe aktar']);
+    ).toEqual(['Kelime ekle', 'Metin ekle', 'İçe aktar']);
     const href = (id: string) => within(s).getByTestId(id).getAttribute('href');
     expect(href('add-way-word')).toBe('/add');
     expect(href('add-way-text')).toBe('/add?tab=paste');
@@ -131,6 +131,9 @@ describe('Add sheet (v0.5.1): four groups', () => {
       'href',
       '/add?term=zyzzyva',
     );
+    // A real Google button, and "Elle ekle" when nothing was found (B4).
+    expect(within(sheet()).getByRole('button', { name: /Google ile giriş yap/ })).toBeInTheDocument();
+    expect(within(sheet()).getByTestId('add-word-manual')).toHaveTextContent('Elle ekle');
   });
 
   it('a word already on the user’s cards shows its meaning, no sign-in line', async () => {

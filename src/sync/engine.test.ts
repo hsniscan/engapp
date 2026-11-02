@@ -16,6 +16,7 @@ import {
 import { pickFsrs } from '@/domain/fsrs';
 import { Rating, type Card, type LexiconSense } from '@/domain/types';
 import { resetDb } from '@/test/db';
+import { SyncApiError } from './api';
 import { FULL_RESYNC_KEY, runSync, SyncEngine } from './engine';
 import { deriveSyncState } from './status';
 import { FakeServer, loadDevice, onDevice, saveDevice, type DeviceImage } from './testing/fakeServer';
@@ -108,6 +109,27 @@ describe('push', () => {
     await sync(server, T + 2 * MIN);
     expect(await db.outbox.count()).toBe(0);
     expect(server.rowsOf('notes')).toHaveLength(40);
+  });
+
+  it('a refused sync quota (53400) keeps rows waiting without counting attempts (ADR 0070)', async () => {
+    await newDevice('dev-a');
+    await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] }, T);
+    const orig = server.pushBatch.bind(server);
+    let refuse = true;
+    server.pushBatch = async (items) => {
+      if (refuse) throw new SyncApiError('server', '53400 sync quota exceeded: rows_per_day');
+      return orig(items);
+    };
+    await expect(sync(server, T + MIN)).rejects.toMatchObject({ kind: 'quota' });
+    const rows = await db.outbox.toArray();
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every((r) => r.attempts === 0)).toBe(true);
+    const e = new SyncEngine({ transport: server, getSessionUserId: async () => USER, isOnline: () => true, now: () => T + 2 * MIN });
+    expect(await e.sync()).toMatchObject({ ok: false, reason: 'error', error: 'quota' });
+    expect(e.getSnapshot().error).toBe('quota');
+    refuse = false;
+    await sync(server, T + DAY);
+    expect(await db.outbox.count()).toBe(0);
   });
 
   it('rejected rows back off exponentially and are reported as stuck after 10 attempts', async () => {
@@ -498,5 +520,27 @@ describe('review regressions', () => {
     await sync(server, T + MIN, true);
     const rows = await db.outbox.where('[table+row_id]').equals(['notes', bad.note.id]).toArray();
     expect(rows.every((r) => r.attempts === 1)).toBe(true);
+  });
+});
+
+describe('idle backoff and slim text pushes (decision 0060)', () => {
+  it('polls every minute after a change, doubling while idle up to 10 minutes', async () => {
+    const { nextPollDelayMs, isIdleOutcome } = await import('./engine');
+    expect([0, 1, 2, 3, 4, 50].map(nextPollDelayMs)).toEqual([60_000, 120_000, 240_000, 480_000, 600_000, 600_000]);
+    const report = { pushed: 0, stale: 0, rejected: 0, pulled: 0, fullResync: false, removed: 0, lexicon: 0 };
+    expect(isIdleOutcome({ ok: true, report })).toBe(true);
+    expect(isIdleOutcome({ ok: true, report: { ...report, pulled: 1 } })).toBe(false);
+    expect(isIdleOutcome({ ok: false, reason: 'busy' })).toBe(true);
+    expect(isIdleOutcome({ ok: false, reason: 'error', error: 'network', message: 'x', report })).toBe(false);
+  });
+
+  it('leaves the body out of text updates and deletes only', async () => {
+    const { slimTextPayload } = await import('./engine');
+    const row = { id: 't', body: 'long', created_at: 1, updated_at: 1 };
+    expect(slimTextPayload({ table: 'texts', op: 'upsert', payload: row })).toBe(row);
+    expect(slimTextPayload({ table: 'texts', op: 'upsert', payload: { ...row, updated_at: 2 } })).toEqual({ id: 't', created_at: 1, updated_at: 2 });
+    expect(slimTextPayload({ table: 'texts', op: 'delete', payload: row })).toEqual({ id: 't', created_at: 1, updated_at: 1 });
+    const note = { id: 'n', body: 'x', created_at: 1, updated_at: 2 };
+    expect(slimTextPayload({ table: 'notes', op: 'upsert', payload: note })).toBe(note);
   });
 });

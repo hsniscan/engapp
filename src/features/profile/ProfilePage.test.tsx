@@ -28,7 +28,10 @@ describe('profile page', { timeout: 20_000 }, () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Hasan' })).toBeInTheDocument();
     expect(screen.getByText('Google hesabıyla giriş yapıldı')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Ayarlar' })).toHaveAttribute('href', '/settings');
+    // One way into Ayarlar: the row in the list (no settings icon in the header).
+    const settings = screen.getAllByRole('link', { name: /^Ayarlar/ });
+    expect(settings).toHaveLength(1);
+    expect(settings[0]).toHaveAttribute('href', '/settings');
     expect(await screen.findByTestId('profile-level')).toHaveTextContent('B1');
     expect(screen.getByText('Tahmini kelime hazinen')).toBeInTheDocument();
     const chips = screen.getByRole('list', { name: 'Seçili ilgi alanları' });
@@ -49,11 +52,11 @@ describe('profile page', { timeout: 20_000 }, () => {
     renderRoute(<ProfilePage />, { path: '/profile' });
     const all = await screen.findByRole('link', { name: /Tüm kelimelerim/ });
     expect(all).toHaveAttribute('href', '/library');
-    await waitFor(() => expect(all).toHaveTextContent('Tüm kelimelerim · 1'), { timeout: 8000 });
+    await waitFor(() => expect(all).toHaveTextContent(/^Tüm kelimelerim1$/), { timeout: 8000 });
     const nav = screen.getByRole('navigation', { name: 'Kısayollar' });
     const known = within(nav).getByRole('link', { name: /Bildiğim kelimeler/ });
     expect(known).toHaveAttribute('href', '/settings/bilinen-kelimeler');
-    expect(known).toHaveTextContent('Bildiğim kelimeler · 1');
+    expect(known).toHaveTextContent(/^Bildiğim kelimeler1$/);
     expect(screen.getByRole('heading', { level: 1, name: 'Misafir' })).toBeInTheDocument();
   });
 
@@ -67,6 +70,33 @@ describe('profile page', { timeout: 20_000 }, () => {
       '/level-test',
     );
     expect(screen.getByTestId('profile-vocab')).toHaveTextContent('Henüz tahmin yok');
+  });
+
+  it('after an unreliable test the level stays unmeasured, with its own hint (B4)', async () => {
+    await db.level_tests.add({
+      id: 't1',
+      user_id: null,
+      taken_at: Date.UTC(2026, 9, 1),
+      result_level: 'C2',
+      vocab_estimate: 9000,
+      reliable: false,
+      false_alarm_rate: 0.6,
+      ratios: { A1: 1, A2: 1, B1: 1, B2: 1, C1: 1, C2: 1 },
+      items: [],
+      bank_version: 'v1',
+      applied: false,
+      duration_ms: 60_000,
+      device_id: 'd1',
+      hlc: '0',
+    } as never);
+    renderRoute(<ProfilePage />, { path: '/profile' });
+    const level = await screen.findByTestId('profile-level');
+    await waitFor(() => expect(screen.getByRole('link', { name: /Testi yeniden çöz/ })).toBeInTheDocument());
+    expect(level).toHaveTextContent('Henüz ölçülmedi');
+    expect(level).not.toHaveTextContent('B1');
+    expect(screen.getByText(/güvenilir bir sonuç vermedi/)).toBeInTheDocument();
+    // One heading, not "Seviye, Seviye" for a screen reader (B11).
+    expect(screen.getByRole('heading', { name: 'Seviye ve kelime hazinen' })).toBeInTheDocument();
   });
 
   it('a long-time user without a test sees a floor, not "no estimate"', async () => {

@@ -1,5 +1,7 @@
 # 0031 — Pictures in the app: cache, card faces, word detail
 
+> **v0.5.2:** "Görsel üret" / "Yeniden üret", the variant picker and the Evet / Hayır question were removed; the word detail displays the picture and can hide it. See [0061](0061-remove-on-demand-ai-content.md).
+
 ## Context
 
 v0.4 İP3. Every lexicon sense that can be drawn gets small flat SVG pictures (style B, owner's

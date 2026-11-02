@@ -1,27 +1,26 @@
-// Üretim (Türkçe → İngilizce, redesign boards ProductionCard / ProductionResult): the Turkish
+// Üretim (Türkçe → İngilizce; v0.5.2 "Çam" card, ADR 0066): the Turkish
 // meaning (or the picture, for a picture card) and the sentence with a blank; the user types the
 // English, or asks for the first letter, or gives up. The result shows a letter-by-letter diff
 // and suggests a button; any button can still be chosen.
-import { useEffect, useId, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CardView } from '@/data';
 import { type AnswerCheck, checkAnswer, diffLetters, suggestRating } from '@/domain/answerCheck';
 import { posLabel } from '@/features/cards/labels';
 import { CardPicture } from '@/features/images';
 import { LeechHint } from '@/features/leech';
-import { Button, cn, Icon } from '@/ui';
+import { Button, cn, Eyebrow, Icon, type IconName } from '@/ui';
 import { useProductionAnswerMode } from './answerMode';
 import { Ipa } from './CardFaces';
 import type { KindProps } from './kinds';
 import { RatingBar } from './RatingBar';
 import {
   BackExtras,
+  BackPicture,
   BackRegion,
-  BulbIcon,
   CardHeader,
   CardSurface,
   MeaningBlock,
-  PrimarySpeak,
   SentencePanel,
 } from './StudyCards';
 import { blankSpan, useModeLabel } from './study';
@@ -49,7 +48,7 @@ export function AnswerInput({
   }, [autoFocus]);
   return (
     <form
-      className="flex gap-2.5"
+      className="flex gap-2"
       onSubmit={(e) => {
         e.preventDefault();
         if (value.trim()) onSubmit();
@@ -73,15 +72,11 @@ export function AnswerInput({
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
         data-testid="answer-input"
-        className="h-[52px] min-w-0 flex-1 rounded-[14px] border-2 border-accent bg-surface-raised px-3.5 font-serif text-xl text-fg outline-none placeholder:font-sans placeholder:text-base placeholder:text-fg-muted focus:ring-4 focus:ring-accent-soft"
+        className="h-13 min-w-0 flex-1 rounded-control border border-border-strong bg-surface-raised px-4 font-serif text-lead text-fg transition-[border-color,box-shadow] duration-(--duration-micro) placeholder:font-sans placeholder:text-ui placeholder:text-fg-subtle focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
       />
-      <button
-        type="submit"
-        disabled={!value.trim()}
-        className="h-[52px] shrink-0 rounded-[14px] bg-accent px-4 text-base font-semibold text-accent-fg transition-colors hover:bg-accent-hover disabled:opacity-50"
-      >
+      <Button type="submit" size="lg" disabled={!value.trim()} className="shrink-0">
         {t('study.check')}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -105,7 +100,7 @@ export function BlankedSentence({
   return (
     <p
       lang="en"
-      className={cn('font-serif text-[1.1875rem] leading-relaxed text-fg italic', className)}
+      className={cn('font-serif text-lead text-fg italic', className)}
     >
       {s.text.slice(0, span[0])}
       {fill ? (
@@ -140,10 +135,10 @@ export function LetterDiff({ check }: { check: AnswerCheck }) {
     <div className="grid grid-cols-[auto_1fr] items-baseline gap-x-4 gap-y-2">
       {check.typed && (
         <>
-          <span className="text-[0.8125rem] text-fg-muted">{t('study.result.yours')}</span>
+          <span className="text-meta text-fg-muted">{t('study.result.yours')}</span>
           <span
             lang="en"
-            className="font-serif text-[1.375rem] tracking-[0.02em] break-words text-fg"
+            className="font-serif text-title font-normal tracking-[0.02em] break-words text-fg"
           >
             <span className="sr-only">{check.typed}</span>
             <span aria-hidden="true">
@@ -159,7 +154,7 @@ export function LetterDiff({ check }: { check: AnswerCheck }) {
                     <span
                       key={i}
                       data-diff="wrong"
-                      className="rounded-[3px] bg-danger-soft px-px text-danger-text line-through decoration-2"
+                      className="rounded-xs bg-danger-soft px-px text-danger-text line-through decoration-2"
                     >
                       {o.typed}
                     </span>
@@ -170,14 +165,14 @@ export function LetterDiff({ check }: { check: AnswerCheck }) {
           </span>
         </>
       )}
-      <span className="text-[0.8125rem] text-fg-muted">
+      <span className="text-meta text-fg-muted">
         {check.verdict === 'synonym' ? t('modes.typed.synonymNote') : t('study.result.right')}
       </span>
       <span
         lang="en"
         data-testid="right-answer"
         data-answer={check.expected}
-        className="font-serif text-[1.875rem] leading-tight font-semibold tracking-[0.02em] break-words text-fg"
+        className="font-serif text-heading font-semibold tracking-[0.02em] break-words text-fg"
       >
         <span className="sr-only">{check.expected}</span>
         <span aria-hidden="true">
@@ -190,7 +185,7 @@ export function LetterDiff({ check }: { check: AnswerCheck }) {
                   <span
                     key={i}
                     data-diff="right"
-                    className="rounded-[3px] bg-success-soft px-px text-success-text underline underline-offset-4"
+                    className="rounded-xs bg-success-soft px-px text-success-text underline underline-offset-4"
                   >
                     {o.expected}
                   </span>
@@ -202,35 +197,27 @@ export function LetterDiff({ check }: { check: AnswerCheck }) {
   );
 }
 
-const verdictLook = {
-  correct: {
-    box: 'border-[color-mix(in_oklab,var(--success-text)_30%,transparent)] bg-success-soft',
-    text: 'text-success-text',
-    icon: 'check',
-  },
-  synonym: {
-    box: 'border-[color-mix(in_oklab,var(--success-text)_30%,transparent)] bg-success-soft',
-    text: 'text-success-text',
-    icon: 'check',
-  },
-  close: {
-    box: 'border-[color-mix(in_oklab,var(--warn-text)_30%,transparent)] bg-warn-soft',
-    text: 'text-warn-text',
-    icon: 'minus',
-  },
-  wrong: {
-    box: 'border-[color-mix(in_oklab,var(--danger-text)_30%,transparent)] bg-danger-soft',
-    text: 'text-danger-text',
-    icon: 'x',
-  },
-  skipped: { box: 'border-border bg-canvas', text: 'text-fg', icon: 'info' },
-} as const;
+const verdictLook: Record<
+  AnswerCheck['verdict'],
+  { box: string; text: string; icon: IconName }
+> = {
+  correct: { box: 'bg-success-soft', text: 'text-success-text', icon: 'check' },
+  synonym: { box: 'bg-success-soft', text: 'text-success-text', icon: 'check' },
+  close: { box: 'bg-warn-soft', text: 'text-warn-text', icon: 'minus-circle' },
+  wrong: { box: 'bg-danger-soft', text: 'text-danger-text', icon: 'x' },
+  skipped: { box: 'bg-surface-sunken', text: 'text-fg', icon: 'info' },
+};
 
-export function VerdictLine({ check }: { check: Pick<AnswerCheck, 'verdict' | 'distance'> }) {
+export function VerdictLine({
+  check,
+}: {
+  check: Pick<AnswerCheck, 'verdict' | 'distance'> & Partial<Pick<AnswerCheck, 'otherWord'>>;
+}) {
   const { t } = useTranslation();
   const look = verdictLook[check.verdict];
-  const text =
-    check.verdict === 'close'
+  const text = check.otherWord
+    ? t('study.result.otherWord', { word: check.otherWord })
+    : check.verdict === 'close'
       ? t('study.result.close', { count: check.distance })
       : check.verdict === 'synonym'
         ? t('modes.typed.synonym')
@@ -239,32 +226,53 @@ export function VerdictLine({ check }: { check: Pick<AnswerCheck, 'verdict' | 'd
     <span
       role="status"
       data-verdict={check.verdict}
-      className={cn('flex items-center gap-2 text-sm font-semibold', look.text)}
+      className={cn('flex items-center gap-2 text-ui font-semibold', look.text)}
     >
-      {look.icon === 'minus' ? (
-        <svg
-          aria-hidden="true"
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-        >
-          <circle cx="12" cy="12" r="9" />
-          <path d="M8 12h8" />
-        </svg>
-      ) : (
-        <Icon name={look.icon} size={18} />
-      )}
+      <Icon name={look.icon} size={18} strokeWidth={2} />
       {text}
     </span>
   );
 }
 
+/** The tinted well of a typed answer's result (verdict, letter diff, IPA). */
 function verdictBox(verdict: AnswerCheck['verdict']): string {
-  return verdictLook[verdict].box;
+  return cn('rounded-inner p-4', verdictLook[verdict].box);
+}
+
+/** "İlk harfi göster" / "Bilmiyorum" / "Türkçesini göster": a quiet text button on the card. */
+export function CardTextButton({
+  children,
+  onClick,
+  disabled,
+  icon,
+  tone = 'accent',
+  testId,
+}: {
+  children: ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+  icon?: IconName;
+  tone?: 'accent' | 'muted';
+  testId?: string;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      data-testid={testId}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      className={cn(
+        'flex min-h-11 items-center gap-1.5 rounded-control px-2 text-meta font-semibold transition-colors duration-(--duration-micro) hover:bg-hover disabled:opacity-45',
+        tone === 'accent' ? 'text-accent-text' : 'text-fg-muted hover:text-fg',
+      )}
+    >
+      {icon && <Icon name={icon} size={18} />}
+      {children}
+    </button>
+  );
 }
 
 export function ProductionStudy({
@@ -300,21 +308,24 @@ export function ProductionStudy({
 
   if (!revealed) {
     return frame(
-      <CardSurface className="min-h-full flex-1 gap-4" testId="study-front">
-        <CardHeader view={view} label={label} />
-        <div className="flex flex-1 flex-col justify-center gap-4">
+      <CardSurface className="min-h-full flex-1" testId="study-front">
+        <CardHeader view={view} speak={false} />
+        <div className="flex flex-1 flex-col justify-center gap-5 py-6">
+          <Eyebrow>{label}</Eyebrow>
           {picture ? (
             <div className="flex flex-col items-center gap-2">
-              <CardPicture image={picture} showNew={false} className="size-44 sm:size-56" />
-              <p className="text-[0.9375rem] text-fg-muted">{t('review.promptImage')}</p>
+              <CardPicture
+                image={picture}
+                showNew={false}
+                className="size-44 overflow-hidden rounded-inner sm:size-56"
+              />
+              <p className="text-ui text-fg-muted">{t('review.promptImage')}</p>
               {sense?.pos && (
-                <p className="text-[0.9375rem] text-fg-muted">
+                <p className="text-ui text-fg-muted">
                   <span className="sr-only">
                     {t('imageCard.pos', { pos: posLabel(t, sense.pos) })}
                   </span>
-                  <span aria-hidden="true" className="font-serif italic">
-                    {posLabel(t, sense.pos)}
-                  </span>
+                  <span aria-hidden="true">{posLabel(t, sense.pos)}</span>
                 </p>
               )}
             </div>
@@ -323,52 +334,50 @@ export function ProductionStudy({
           )}
           {!picture && view.sentence && <BlankedSentenceBox view={view} />}
           {hintShown && view.hint && (
-            <p
-              className="font-serif text-2xl tracking-[0.18em] text-fg-muted"
-              data-testid="first-letter"
-            >
+            <p className="font-serif text-heading tracking-[0.18em] text-fg-muted" data-testid="first-letter">
               <span className="sr-only">{t('review.firstLetter')} </span>
               <span lang="en">{view.hint}</span>
             </p>
           )}
           <LeechHint view={view} />
         </div>
-        <div className="-mx-2 flex items-center justify-between">
-          <button
-            type="button"
+        <div className="-mx-2 flex flex-wrap items-center justify-between gap-1">
+          <CardTextButton
+            icon="bulb"
             disabled={hintShown || !view.hint}
             onClick={() => setHintShown(true)}
-            className="flex min-h-11 items-center gap-1.5 rounded-control px-2 text-sm text-accent-text disabled:opacity-50"
           >
-            <BulbIcon />
             {t('study.firstLetter')}
-          </button>
+          </CardTextButton>
           {!flip && (
-            <button
-              type="button"
-              onClick={() => submit('')}
-              className="flex min-h-11 items-center rounded-control px-2 text-sm text-fg-muted hover:text-fg"
-            >
+            <CardTextButton tone="muted" onClick={() => submit('')}>
               {t('study.dontKnow')}
-            </button>
+            </CardTextButton>
           )}
         </div>
-        <button
-          type="button"
-          data-testid="answer-mode-toggle"
-          onClick={() => setMode(flip ? 'type' : 'flip')}
-          className="flex min-h-11 items-center gap-1.5 self-center rounded-control px-2 text-sm text-fg-muted hover:text-fg"
-        >
-          <Icon name={flip ? 'pencil' : 'cards'} size={18} />
-          {flip ? t('modes.typed.typeInstead') : t('modes.typed.flipInstead')}
-        </button>
+        <div className="flex justify-center border-t border-border pt-2">
+          <CardTextButton
+            tone="muted"
+            icon={flip ? 'pencil' : 'cards'}
+            testId="answer-mode-toggle"
+            onClick={() => setMode(flip ? 'type' : 'flip')}
+          >
+            {flip ? t('modes.typed.typeInstead') : t('modes.typed.flipInstead')}
+          </CardTextButton>
+        </div>
       </CardSurface>,
       flip ? (
         <div className="flex flex-col items-center gap-2">
-          <Button ref={showRef} size="lg" fullWidth onClick={(e) => onReveal(e.detail === 0)}>
+          <Button
+            ref={showRef}
+            variant="secondary"
+            size="lg"
+            fullWidth
+            onClick={(e) => onReveal(e.detail === 0)}
+          >
             {t('review.showAnswer')}
           </Button>
-          <p className="text-[0.8125rem] text-fg-muted">{t('modes.typed.flipHint')}</p>
+          <p className="text-meta text-fg-muted">{t('modes.typed.flipHint')}</p>
         </div>
       ) : (
         <AnswerInput
@@ -389,49 +398,34 @@ export function ProductionStudy({
   const suggested = unchecked ? null : suggestRating(result.verdict, hintShown);
   return frame(
     <BackRegion>
-      <CardSurface className="gap-4" testId="study-back">
-        <CardHeader view={view} label={label} />
-        {view.image ? (
-          <div data-testid="meaning-with-picture" className="flex items-center gap-4">
-            <CardPicture
-              image={view.image}
-              showNew={!picture}
-              className="size-[76px] overflow-hidden rounded-[12px] bg-surface-sunken"
-            />
-            <div className="min-w-0 flex-1">
-              <MeaningBlock view={view} size="md" />
-            </div>
-          </div>
-        ) : (
-          <MeaningBlock view={view} size="md" />
-        )}
+      <CardSurface className="min-h-full flex-1" testId="study-back">
+        <CardHeader view={view} speech={speech} />
         <div
-          className={cn(
-            'flex flex-col gap-3 rounded-[16px] border px-4 py-3.5',
-            unchecked ? 'border-border bg-canvas' : verdictBox(result.verdict),
-          )}
+          className="flex flex-1 flex-col justify-center gap-5 pt-4"
+          data-testid={view.image ? 'meaning-with-picture' : undefined}
         >
-          {unchecked ? (
-            <p
-              lang="en"
-              data-testid="right-answer"
-              data-answer={result.expected}
-              className="font-serif text-[1.875rem] leading-tight font-semibold tracking-[0.02em] break-words text-fg"
-            >
-              {result.expected}
-            </p>
-          ) : (
-            <>
-              <VerdictLine check={result} />
-              <LetterDiff check={result} />
-            </>
-          )}
-          <div className="flex items-center gap-2">
+          <MeaningBlock view={view} size="md" />
+          <div className={cn('flex flex-col gap-3', unchecked ? 'rounded-inner bg-surface-sunken p-4' : verdictBox(result.verdict))}>
+            {unchecked ? (
+              <p
+                lang="en"
+                data-testid="right-answer"
+                data-answer={result.expected}
+                className="font-serif text-heading font-semibold tracking-[0.02em] break-words text-fg"
+              >
+                {result.expected}
+              </p>
+            ) : (
+              <>
+                <VerdictLine check={result} />
+                <LetterDiff check={result} />
+              </>
+            )}
             <Ipa ipa={note.ipa} />
-            {note.term_type !== 'affix' && <PrimarySpeak speech={speech} />}
           </div>
+          <SentencePanel view={view} speech={speech} />
+          <BackPicture view={view} showNew={!picture} />
         </div>
-        <SentencePanel view={view} speech={speech} />
       </CardSurface>
       <BackExtras view={view} speech={speech} />
     </BackRegion>,
@@ -444,10 +438,10 @@ function BlankedSentenceBox({ view }: { view: CardView }) {
   const tr = view.sentence?.tr;
   if (!blankSpan(view)) return null;
   return (
-    <div className="flex flex-col gap-1.5 rounded-[14px] bg-canvas px-3.5 py-3">
+    <div className="flex flex-col gap-1.5 rounded-inner bg-surface-sunken px-4 py-3">
       <BlankedSentence view={view} />
       {tr && (
-        <p lang="tr" className="text-[0.9375rem] text-fg-muted">
+        <p lang="tr" className="text-ui text-fg-muted">
           {tr}
         </p>
       )}

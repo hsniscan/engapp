@@ -162,11 +162,13 @@ describe('sync api', () => {
     expect(res.rows).toEqual([{ table: 'notes', seq: 5, row: { ...note, level_override: null } }]);
   });
 
-  it('with a start cursor pulls through sync_pull_v3 and falls back to v2, then sync_pull, on an older backend', async () => {
+  it('with a start cursor pulls through sync_pull_v4 and falls back to v3, v2, then sync_pull, on an older backend', async () => {
     const page = { rows: [], next_seq: 9, has_more: false, full_resync: false };
-    const v3 = fakeClient({ data: page });
-    expect((await pullChanges(9, 500, v3.client, 0)).version).toBe(3);
-    expect(v3.calls).toEqual([{ fn: 'sync_pull_v3', args: { p_since: 9, p_limit: 500, p_from: 0 } }]);
+    const v4 = fakeClient({ data: page });
+    expect((await pullChanges(9, 500, v4.client, 0)).version).toBe(3);
+    expect(v4.calls).toEqual([
+      { fn: 'sync_pull_v4', args: { p_since: 9, p_limit: 500, p_from: 0, p_max_bytes: 1_048_576 } },
+    ]);
 
     const backend = (missing: string[]) => {
       const calls: string[] = [];
@@ -180,15 +182,19 @@ describe('sync api', () => {
       } as unknown as SupabaseClient;
       return { calls, client };
     };
-    const v2 = backend(['sync_pull_v3']);
-    expect((await pullChanges(9, 500, v2.client, 0)).version).toBe(2);
-    expect(v2.calls).toEqual(['sync_pull_v3', 'sync_pull_v2']);
+    const v3 = backend(['sync_pull_v4']);
+    expect((await pullChanges(9, 500, v3.client, 0)).version).toBe(3);
+    expect(v3.calls).toEqual(['sync_pull_v4', 'sync_pull_v3']);
 
-    const old = backend(['sync_pull_v3', 'sync_pull_v2']);
+    const v2 = backend(['sync_pull_v4', 'sync_pull_v3']);
+    expect((await pullChanges(9, 500, v2.client, 0)).version).toBe(2);
+    expect(v2.calls).toEqual(['sync_pull_v4', 'sync_pull_v3', 'sync_pull_v2']);
+
+    const old = backend(['sync_pull_v4', 'sync_pull_v3', 'sync_pull_v2']);
     const res = await pullChanges(9, 500, old.client, 0);
     expect(res.next_seq).toBe(9);
     expect(res.version).toBe(1);
-    expect(old.calls).toEqual(['sync_pull_v3', 'sync_pull_v2', 'sync_pull']);
+    expect(old.calls).toEqual(['sync_pull_v4', 'sync_pull_v3', 'sync_pull_v2', 'sync_pull']);
   });
 
   it('validates practice_logs rows from sync_pull_v3', async () => {
@@ -206,5 +212,45 @@ describe('sync api', () => {
     const res = await pullChanges(0, 500, fakeClient({ data: page }).client, 0);
     expect(res.rows).toEqual([{ table: 'practice_logs', seq: 1, row: log }]);
     expect(res.invalid.map((i) => i.id)).toEqual(['p2']);
+  });
+
+  it('fills a left-out text body from the device, or from the server when the device has none', async () => {
+    const text = (id: string) => ({
+      id, user_id: 'u', kind: 'paste', title: 'T', source_url: null, graded_id: null,
+      progress_offset: 3, read_ms: 10, finished_at: null, feedback: null,
+      created_at: 1, updated_at: 2, deleted_at: null, hlc: '000000000000002:00000:d',
+    });
+    const page = {
+      rows: [
+        // the device has this body (5 UTF-8 bytes: "çay!")
+        { table: 'user_texts', seq: 1, row: { ...text('t1'), body_bytes: 5 } },
+        // the device has an older copy of another length: fetched
+        { table: 'user_texts', seq: 2, row: { ...text('t2'), body_bytes: 3 } },
+        // the device has none: fetched
+        { table: 'user_texts', seq: 3, row: { ...text('t3'), body_bytes: 4 } },
+      ],
+      next_seq: 3, has_more: false, full_resync: false,
+    };
+    const selects: unknown[] = [];
+    const client = {
+      rpc: async () => ({ data: page, error: null }),
+      from: (table: string) => ({
+        select: () => ({
+          in: async (_col: string, ids: string[]) => {
+            selects.push({ table, ids });
+            return { data: ids.map((id) => ({ id, body: id === 't2' ? 'abc' : 'body' })), error: null };
+          },
+        }),
+      }),
+    } as unknown as SupabaseClient;
+    const local = async (ids: string[]) => {
+      expect(ids).toEqual(['t1', 't2', 't3']);
+      return new Map([['t1', 'çay!'], ['t2', 'old body']]);
+    };
+    const res = await pullChanges(0, 500, client, 7, local);
+    expect(res.invalid).toEqual([]);
+    expect(res.rows.map((r) => (r.row as { body: string }).body)).toEqual(['çay!', 'abc', 'body']);
+    expect(res.rows.every((r) => !('body_bytes' in r.row))).toBe(true);
+    expect(selects).toEqual([{ table: 'user_texts', ids: ['t2', 't3'] }]);
   });
 });

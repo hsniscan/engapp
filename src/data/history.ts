@@ -45,12 +45,16 @@ export interface TodayFacts {
   reviewedNoteIds: Set<Id>;
   /** Cards whose first non-undone answer is today. */
   newIntroducedToday: number;
+  /** Those cards. */
+  introducedCardIds: Set<Id>;
   /** Notes of those cards, in the order they were introduced (smart new-card order). */
   introducedNoteIds: Id[];
   /** newIntroducedToday by card type (each study mode has its own first-time counter). */
   introducedByType: Record<CardType, number>;
   /** Notes whose recognition card was answered today (study-mode burying). */
   recognitionNoteIds: Set<Id>;
+  /** Card type of each live card answered today. */
+  typeOf: Map<Id, CardType>;
   timeMs: number;
 }
 
@@ -91,9 +95,11 @@ export async function loadTodayFacts(cfg: DayConfig, now: Millis): Promise<Today
     reviewedCardIds,
     reviewedNoteIds,
     newIntroducedToday,
+    introducedCardIds: new Set(introduced.map((l) => l.card_id)),
     introducedNoteIds,
     introducedByType,
     recognitionNoteIds,
+    typeOf,
     timeMs: answers.reduce((a, l) => a + l.duration_ms, 0),
   };
 }

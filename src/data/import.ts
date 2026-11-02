@@ -180,11 +180,6 @@ export async function listPendingImportJobs(): Promise<ImportJobRecord[]> {
   return rows.sort((a, b) => a.created_at - b.created_at);
 }
 
-/** Recent jobs (newest first), for "devam eden içe aktarmalar". */
-export async function listRecentImportJobs(limit = 5): Promise<ImportJobRecord[]> {
-  return jobs().orderBy('created_at').reverse().limit(limit).toArray();
-}
-
 export async function updateImportJob(id: Id, patch: Partial<ImportJobRecord>, now: Millis = Date.now()): Promise<void> {
   await jobs().update(id, { ...patch, updated_at: now });
 }
@@ -192,6 +187,53 @@ export async function updateImportJob(id: Id, patch: Partial<ImportJobRecord>, n
 /** Retry a failed job from the chunk where it stopped. */
 export async function retryImportJob(id: Id, now: Millis = Date.now()): Promise<void> {
   await jobs().update(id, { status: 'queued', error: null, error_code: null, next_attempt_at: null, updated_at: now });
+}
+
+/** The next UTC midnight after `now`: when the server's daily AI limit starts again. */
+export function nextUtcDay(now: Millis): Millis {
+  const d = new Date(now);
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1);
+}
+
+/**
+ * The daily limit stopped the job: it waits in the queue (not "failed") and resumes by itself
+ * after the next UTC midnight, from the chunk where it stopped (B3).
+ */
+export async function parkImportJobUntilTomorrow(id: Id, now: Millis = Date.now()): Promise<void> {
+  await jobs().update(id, {
+    status: 'queued',
+    error_code: 'daily_limit',
+    error: null,
+    // A few minutes past midnight so the server's new day has surely started.
+    next_attempt_at: nextUtcDay(now) + 5 * 60_000,
+    updated_at: now,
+  });
+}
+
+/**
+ * "Bulunanları şimdi gör": end a stopped or waiting job with the chunks it already has and
+ * open its preview; the rest of the text is not processed. Returns false when nothing was
+ * processed yet.
+ */
+export async function previewPartialImportJob(id: Id, now: Millis = Date.now()): Promise<boolean> {
+  const smart = await loadSmartContext();
+  const tables = [db.import_jobs, db.import_candidates, db.lexicon_cache, db.lexicon_pair_notes, db.notes, db.senses];
+  return db.transaction('rw', tables, async () => {
+    const job = await jobs().get(id);
+    if (!job || job.chunk_done === 0 || job.status === 'ready' || job.status === 'done') return false;
+    const cut = { ...job, chunk_total: job.chunk_done, chunks: job.chunks.slice(0, job.chunk_done) };
+    await classifyJobCandidates(cut, smart);
+    await jobs().update(id, {
+      chunk_total: cut.chunk_total,
+      chunks: cut.chunks,
+      status: 'ready',
+      error: null,
+      error_code: null,
+      next_attempt_at: null,
+      updated_at: now,
+    });
+    return true;
+  });
 }
 
 // ------------------------------------------------------------------ chunk cache
@@ -389,12 +431,6 @@ export async function listImportCandidates(jobId: Id): Promise<ImportCandidateRe
 /** Persist the user's selection / in-place meaning edit for a candidate. */
 export async function updateImportCandidate(id: Id, patch: Partial<Pick<ImportCandidate, 'selected' | 'meaning_tr_edit'>>): Promise<void> {
   await candidates().update(id, patch);
-}
-
-export async function setImportCandidatesSelected(ids: Id[], selected: boolean): Promise<void> {
-  await db.transaction('rw', db.import_candidates, async () => {
-    for (const id of ids) await candidates().update(id, { selected });
-  });
 }
 
 /** The preview's current state of a candidate (applied inside the confirm transaction). */

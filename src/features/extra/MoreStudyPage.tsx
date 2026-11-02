@@ -10,13 +10,13 @@ import { PRACTICE_SIZES, type PracticeSize, type PracticeSource } from '@/domain
 import {
   Button,
   buttonClasses,
+  Card,
   cn,
   Icon,
-  Page,
+  PageFrame,
   SegmentedControl,
   Select,
   Skeleton,
-  Surface,
   toast,
 } from '@/ui';
 import { ListenSection } from '@/features/practice/ListenSection';
@@ -36,24 +36,29 @@ export function MoreStudyPage() {
       : t('more.descDone');
 
   return (
-    <Page title={t('more.title')} description={description}>
+    <PageFrame
+      width="reading"
+      back={{ to: '/', label: t('nav.home') }}
+      title={t('more.title')}
+      description={description}
+    >
       {!data || !today ? (
-        <div aria-busy="true" className="flex flex-col gap-4">
+        <div aria-busy="true" className="flex flex-col gap-6">
           {[0, 1, 2].map((i) => (
-            <Surface key={i} padding="lg">
+            <Card key={i} padding="lg">
               <Skeleton lines={3} />
-            </Surface>
+            </Card>
           ))}
         </div>
       ) : (
-        <div className="flex flex-col gap-4">
-          {today.next && (
+        <div className="flex flex-col gap-6">
+          {today.nextReady && (
             <Link
-              to={`/study?mode=${today.next}`}
+              to={`/study?mode=${today.nextReady}`}
               data-testid="more-start"
               className={buttonClasses({ size: 'lg', fullWidth: true })}
             >
-              {startLabel(t, today.next)}
+              {startLabel(t, today.nextReady)}
               <Icon name="chevron-right" size={20} />
             </Link>
           )}
@@ -63,7 +68,7 @@ export function MoreStudyPage() {
           <AheadSection data={data} />
         </div>
       )}
-    </Page>
+    </PageFrame>
   );
 }
 
@@ -79,13 +84,13 @@ function Section({
   children?: ReactNode;
 }) {
   return (
-    <Surface as="section" aria-labelledby={id} padding="none" className="p-5 sm:p-6">
-      <h2 id={id} className="font-serif text-xl font-semibold text-fg">
+    <Card as="section" aria-labelledby={id} padding="lg">
+      <h2 id={id} className="text-title font-semibold text-fg">
         {title}
       </h2>
-      <div className="mt-1 text-[0.9375rem] text-fg-muted">{body}</div>
+      <div className="mt-1 text-ui text-fg-muted">{body}</div>
       {children && <div className="mt-5">{children}</div>}
-    </Surface>
+    </Card>
   );
 }
 
@@ -93,13 +98,16 @@ function NewCardsSection({ data }: { data: MoreStudyOverview }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [busy, setBusy] = useState<number | null>(null);
-  const steps = extraNewSteps(data.newWaiting);
+  // The mode with first-time cards waiting (v0.5.2, review B6); none while new cards are paused.
+  const mode = data.newPaused ? null : data.extraMode;
+  const steps = mode ? extraNewSteps(data.newWaitingByMode[mode]) : [];
 
   const add = async (n: number) => {
     setBusy(n);
     try {
-      await addExtraNew(n);
-      await navigate('/study?mode=word');
+      if (!mode) return;
+      await addExtraNew(n, mode);
+      await navigate(`/study?mode=${mode}`);
     } catch (e) {
       void logError(e, 'more:addExtraNew');
       toast({ title: t('more.addFailed'), tone: 'danger' });
@@ -115,9 +123,14 @@ function NewCardsSection({ data }: { data: MoreStudyOverview }) {
         <>
           <p>{t('more.newBody')}</p>
           <p className="mt-2 text-fg">
-            {data.newWaiting > 0
-              ? t('more.newWaiting', { count: data.newWaiting })
-              : t('more.newNone')}
+            {data.newPaused
+              ? t('more.newPaused')
+              : mode
+                ? t('more.newWaitingMode', {
+                    count: data.newWaitingByMode[mode],
+                    mode: t(`today.mode.${mode}`),
+                  })
+                : t('more.newNone')}
             {data.extraNewToday > 0 && (
               <span className="text-fg-muted">
                 {' · '}
@@ -226,7 +239,7 @@ function PracticeSection({ data }: { data: MoreStudyOverview }) {
       body={<p>{t('more.practiceBody')}</p>}
     >
       {nothing ? (
-        <p className="text-[0.9375rem] text-fg">{t('more.practiceNone')}</p>
+        <p className="text-ui text-fg">{t('more.practiceNone')}</p>
       ) : (
         <form
           className="flex flex-col gap-5"
@@ -243,7 +256,7 @@ function PracticeSection({ data }: { data: MoreStudyOverview }) {
           }}
         >
           <fieldset className="flex flex-col gap-2">
-            <legend className="mb-2 text-sm font-medium text-fg">{t('more.sourceLegend')}</legend>
+            <legend className="mb-2 text-ui font-semibold text-fg">{t('more.sourceLegend')}</legend>
             {options.map((o) => {
               const selected = o.value === source;
               const disabled = o.count === 0;
@@ -251,13 +264,13 @@ function PracticeSection({ data }: { data: MoreStudyOverview }) {
                 <label
                   key={o.value}
                   className={cn(
-                    'flex items-center gap-3 rounded-control border px-4 py-3',
+                    'flex min-h-14 items-center gap-3 rounded-control border px-4 py-3',
                     'transition-[background-color,border-color] duration-(--duration-micro) ease-standard',
                     'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus',
                     disabled
                       ? 'cursor-not-allowed border-border opacity-45'
                       : selected
-                        ? 'cursor-pointer border-accent bg-accent-soft/60'
+                        ? 'cursor-pointer border-accent bg-accent-soft'
                         : 'cursor-pointer border-border hover:border-border-strong',
                   )}
                 >
@@ -271,11 +284,11 @@ function PracticeSection({ data }: { data: MoreStudyOverview }) {
                     className="size-4 shrink-0 accent-(--accent)"
                   />
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className="font-medium text-fg">{o.label}</span>
-                    <span className="text-sm text-fg-muted">{o.hint}</span>
+                    <span className="text-ui font-medium text-fg">{o.label}</span>
+                    <span className="text-meta text-fg-muted">{o.hint}</span>
                   </span>
                   {o.value !== 'tag' && o.value !== 'deck' && (
-                    <span className="tabular shrink-0 text-sm text-fg-muted">
+                    <span className="tabular shrink-0 text-meta text-fg-muted">
                       {t('more.sourceCount', { count: o.count })}
                     </span>
                   )}
@@ -318,7 +331,7 @@ function PracticeSection({ data }: { data: MoreStudyOverview }) {
             onValueChange={(v) => setSize(Number(v) as PracticeSize)}
           />
 
-          <Button type="submit" variant="secondary" fullWidth>
+          <Button type="submit" variant="tonal" fullWidth>
             {t('more.practiceStart')}
           </Button>
         </form>
@@ -338,7 +351,7 @@ function AheadSection({ data }: { data: MoreStudyOverview }) {
         n > 0 ? (
           <>
             <p className="text-fg">{t('more.aheadBody', { count: n })}</p>
-            <p className="mt-1 text-sm">{t('more.aheadNote')}</p>
+            <p className="mt-1 text-meta">{t('more.aheadNote')}</p>
           </>
         ) : (
           <p>{t('more.aheadNone')}</p>

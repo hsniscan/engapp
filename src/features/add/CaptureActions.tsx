@@ -7,9 +7,10 @@ import { useNavigate } from 'react-router';
 import { logError } from '@/data';
 import { readerPath } from '@/domain/texts';
 import { useAuth } from '@/features/auth/session';
-import { Button, cn, Icon, Spinner, type IconName } from '@/ui';
+import { Button, Card, cn, Icon } from '@/ui';
 import { closeAddSheet } from './addSheetStore';
 import { extractCapture, saveCapture, type CaptureInput } from './capture';
+import { ChoiceButton } from './ui';
 
 export interface CaptureActionsProps {
   /** The capture, read when a button is pressed; null when there is nothing to save yet. */
@@ -61,7 +62,7 @@ export function CaptureActions({
 
   const off = disabled || busy !== null;
   return (
-    <div className={cn('flex flex-col gap-2.5', className)} data-testid="capture-actions">
+    <div className={cn('flex flex-col gap-3', className)} data-testid="capture-actions">
       <ChoiceButton
         primary
         icon="file"
@@ -83,7 +84,7 @@ export function CaptureActions({
             onClick={() => void run('extract')}
             testId={extractTestId}
           />
-          <p className="flex items-start gap-1.5 px-1 text-sm text-fg-muted">
+          <p className="flex items-start gap-1.5 px-1 text-meta text-fg-muted">
             <Icon name="info" size={16} className="mt-0.5 shrink-0" />
             <span>
               <strong className="font-medium text-fg">{t('importer.privacy')}</strong>{' '}
@@ -94,10 +95,10 @@ export function CaptureActions({
       ) : auth.status === 'guest' ? (
         <ExtractSignIn />
       ) : auth.status === 'unavailable' ? (
-        <p className="px-1 text-sm text-fg-muted">{t('capture.extractUnavailable')}</p>
+        <p className="px-1 text-meta text-fg-muted">{t('capture.extractUnavailable')}</p>
       ) : null}
       {failed && (
-        <p role="alert" className="px-1 text-sm text-danger-text">
+        <p role="alert" className="px-1 text-meta text-danger-text">
           {failed === 'reader' ? t('article.saveFailed') : t('article.extractFailed')}
         </p>
       )}
@@ -106,7 +107,7 @@ export function CaptureActions({
 }
 
 /** Guests: extraction is the only part that needs an account, and the line says so. */
-function ExtractSignIn() {
+export function ExtractSignIn() {
   const { t } = useTranslation();
   const auth = useAuth();
   const [busy, setBusy] = useState(false);
@@ -121,11 +122,13 @@ function ExtractSignIn() {
     }
   };
   return (
-    <div
-      className="flex flex-col gap-3 rounded-[16px] border border-dashed border-border px-4 py-3"
+    <Card
+      tone="placeholder"
+      inset
+      className="flex flex-col gap-3"
       data-testid="capture-extract-signin"
     >
-      <p className="text-sm text-fg-muted">{t('capture.extractSignIn')}</p>
+      <p className="text-meta text-fg-muted">{t('capture.extractSignIn')}</p>
       <Button
         variant="secondary"
         leadingIcon="google"
@@ -135,59 +138,6 @@ function ExtractSignIn() {
       >
         {t('capture.signInCta')}
       </Button>
-    </div>
-  );
-}
-
-/** A large choice: icon, title and one line of hint (the quick sheet's style). */
-export function ChoiceButton({
-  primary,
-  icon,
-  title,
-  hint,
-  loading,
-  disabled,
-  onClick,
-  testId,
-}: {
-  primary?: boolean;
-  icon: IconName;
-  title: string;
-  hint?: string;
-  loading?: boolean;
-  disabled?: boolean;
-  onClick?: () => void;
-  testId?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-busy={loading || undefined}
-      data-testid={testId}
-      className={cn(
-        'flex min-h-16 w-full items-center gap-3.5 rounded-[16px] px-4 py-3 text-left',
-        'transition-colors duration-(--duration-micro) disabled:opacity-60',
-        primary
-          ? 'bg-accent text-accent-fg hover:bg-accent-hover'
-          : 'border border-border bg-surface text-fg hover:border-border-strong',
-      )}
-    >
-      {loading ? (
-        <Spinner size={20} className="shrink-0" />
-      ) : (
-        <Icon name={icon} size={22} strokeWidth={1.8} className="shrink-0" />
-      )}
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="text-base font-semibold">{title}</span>
-        {hint && (
-          <span className={cn('text-sm', primary ? 'text-accent-fg' : 'text-fg-muted')}>
-            {hint}
-          </span>
-        )}
-      </span>
-      <Icon name="chevron-right" size={18} className="shrink-0 opacity-70" />
-    </button>
+    </Card>
   );
 }

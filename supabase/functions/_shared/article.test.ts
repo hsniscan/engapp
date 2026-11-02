@@ -232,13 +232,16 @@ function harness(
         used++;
         return { allowed: true, used, limit };
       },
+      async refund() {
+        used = Math.max(0, used - 1);
+      },
     },
     resolve: async (h) => dnsTable[h] ?? ['93.184.216.34'],
     fetch: fakeFetch,
     dailyLimit: opts.limit ?? 30,
     timeoutMs: opts.timeoutMs,
   };
-  return { deps, requested, consumed };
+  return { deps, requested, consumed, used: () => used };
 }
 
 const html = (name: string): Route => ({
@@ -444,6 +447,15 @@ describe('runFetchArticle', () => {
       const h = harness({ 'https://p.example/a': route });
       expect(await code(runFetchArticle({ url: 'https://p.example/a' }, h.deps))).toBe(want);
     }
+  });
+
+  it('gives the day\'s fetch back when no article comes out (B9)', async () => {
+    const h = harness({ 'https://p.example/a': { status: 404, headers: { 'content-type': 'text/html' }, body: '' } });
+    expect(await code(runFetchArticle({ url: 'https://p.example/a' }, h.deps))).toBe('fetch_failed');
+    expect(h.used()).toBe(0);
+    const ok = harness({ 'https://d.example/a': html('01-news.html') });
+    await runFetchArticle({ url: 'https://d.example/a' }, ok.deps);
+    expect(ok.used()).toBe(1);
   });
 
   it('rejects an invalid body', async () => {

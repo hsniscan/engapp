@@ -43,7 +43,7 @@ export function DropdownMenu({ trigger, items, align = 'end', label }: DropdownM
                 disabled={item.disabled}
                 onSelect={item.onSelect}
                 className={cn(
-                  'flex min-h-11 cursor-pointer items-center gap-3 rounded-[6px] px-3 text-[0.9375rem] outline-none select-none',
+                  'flex min-h-11 cursor-pointer items-center gap-3 rounded-sm px-3 text-ui outline-none select-none',
                   'data-[disabled]:pointer-events-none data-[disabled]:opacity-45',
                   item.danger
                     ? 'text-danger-text data-[highlighted]:bg-danger-soft'

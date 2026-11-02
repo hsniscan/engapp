@@ -57,8 +57,25 @@ describe('deck filter schema', () => {
     });
     expect(r).toEqual({
       ok: true,
-      filter: { v: 1, states: ['new', 'suspended'], tags: ['İş', 'seyahat'], tagMode: 'all' },
+      filter: { v: 1, stages: ['new'], states: ['suspended'], tags: ['İş', 'seyahat'], tagMode: 'all' },
     });
+  });
+
+  it('turns old raw-FSRS states into the five word stages (ADR 0063)', () => {
+    expect(normalizeDeckFilter({ states: ['learned', 'learning'] })).toEqual({
+      v: 1,
+      stages: ['learning', 'consolidating', 'learned', 'mastered'],
+    });
+  });
+
+  it('matches a note by its word stage, like the list rows', () => {
+    const f = (raw: object) => normalizeDeckFilter(raw);
+    const learned = card({ state: CardState.Review, ramp_step: 3, stability: 30 });
+    const consolidating = card({ state: CardState.Review, ramp_step: 1, stability: 5 });
+    const deck = f({ stages: ['learned'] });
+    expect(matchesDeck(deck, facts({ cards: [learned] }), ctx)).toBe(true);
+    expect(matchesDeck(deck, facts({ cards: [consolidating] }), ctx)).toBe(false);
+    expect(matchesDeck(f({ stages: ['consolidating'] }), facts({ cards: [consolidating] }), ctx)).toBe(true);
   });
 
   it('drops empty criteria and tagMode with fewer than two tags', () => {

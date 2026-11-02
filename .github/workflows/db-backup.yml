@@ -1,0 +1,76 @@
+# Nightly encrypted backup of the production database to Cloudflare R2 (decision 0060).
+# Keeps 14 daily and 8 weekly (Sunday) copies. Restore: docs/runbook-backup-restore.md.
+#
+# Repository secrets (Settings > Secrets and variables > Actions > Secrets):
+#   SUPABASE_DB_PASSWORD          the database password (already used by deploy-supabase.yml)
+#   BACKUP_PASSPHRASE             NEW, required: a long random passphrase. Keep a copy outside
+#                                 GitHub (password manager / paper): without it no backup opens.
+#   R2_ACCOUNT_ID                 already set for the audio (decision 0053)
+#   R2_BACKUP_BUCKET, R2_BACKUP_ACCESS_KEY_ID, R2_BACKUP_SECRET_ACCESS_KEY
+#                                 recommended: a private bucket and a token only for it. Without
+#                                 them the encrypted file goes to the audio bucket (R2_BUCKET).
+#   SUPABASE_ACCESS_TOKEN         optional: only to look up the exact pooler host.
+# A failed run makes GitHub e-mail the repository owner (Settings > Notifications > Actions).
+name: Database backup
+
+on:
+  schedule:
+    - cron: '45 2 * * *' # 02:45 UTC, before the purge jobs at 03:17
+  workflow_dispatch:
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  SUPABASE_PROJECT_REF: bikcjlomrjaxymifxogi
+  SUPABASE_REGION: eu-west-1
+  SUPABASE_CLI_VERSION: 2.121.0
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb # v1.7.3
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+
+      - name: Find the database
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: scripts/supabase-db-url.sh
+
+      - name: Dump, encrypt, upload, prune
+        env:
+          DB_URL_FILE: ${{ runner.temp }}/db-url
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BACKUP_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
+          R2_BACKUP_ACCESS_KEY_ID: ${{ secrets.R2_BACKUP_ACCESS_KEY_ID }}
+          R2_BACKUP_SECRET_ACCESS_KEY: ${{ secrets.R2_BACKUP_SECRET_ACCESS_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::error::Repository secret BACKUP_PASSPHRASE is not set: no backup was taken (docs/runbook-backup-restore.md)"
+            exit 1
+          fi
+          scripts/db-backup.sh daily
+
+      - name: Health check (budgets, jobs, database size)
+        # Fails the run (and so e-mails the owner) when ops_health() reports a problem.
+        run: scripts/ops-health.sh
+        env:
+          DB_URL_FILE: ${{ runner.temp }}/db-url
+
+      - name: Forget the database URL
+        if: always()
+        run: rm -f "$RUNNER_TEMP/db-url"

@@ -1,10 +1,10 @@
 // "Örnek cümleler" (v0.2 İP5): context tabs, one sentence at a time, and the user's
-// controls over it (beğen, atla, yenisini üret, düzenle, reddet). Used on the back of a
-// card (collapsible) and in the word detail sheet (open). Reads only local data; preparing
-// sentences goes through the background queue or an explicit request.
+// controls over it (beğen, atla, düzenle, reddet). Used on the back of a card (collapsible)
+// and in the word detail sheet (open). Reads only local data: the sentences are written once
+// in bulk and shipped with the lexicon (on-demand generation removed in v0.5.2, ADR 0061).
 import * as RadixTabs from '@radix-ui/react-tabs';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
+import { useId, useMemo, useState } from 'react';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import {
@@ -14,17 +14,13 @@ import {
   removeExampleEdit,
   saveExampleEdit,
   setExampleVerdict,
-  type SenseExamplesView,
 } from '@/data';
-import { EXAMPLE_CONTEXT_KEYS, type ExampleItem } from '@/domain/examples';
+import type { ExampleItem } from '@/domain/examples';
 import { findSpan, isValidSpan } from '@/domain/recognition';
 import type { Id, Sense } from '@/domain/types';
-import { useAuth } from '@/features/auth/session';
-import { useOnline } from '@/features/import/shared';
 import { usePronunciationBusy } from '@/features/review/pronunciation';
 import { flags } from '@/features/settings/platform';
 import { Badge, Button, cn, Dialog, DropdownMenu, Icon, IconButton, TextArea, toast } from '@/ui';
-import { prioritizeExamples, requestExamples, type ExampleRequestError } from './queue';
 
 export interface ExamplesSpeech {
   available: boolean;
@@ -100,7 +96,7 @@ export function ExamplesSection(props: ExamplesProps & { headingId?: string }) {
   const headingId = props.headingId ?? `${id}-h`;
   return (
     <section aria-labelledby={headingId} aria-live="off" className="flex flex-col gap-2">
-      <h3 id={headingId} className="font-serif text-lg font-semibold text-fg">
+      <h3 id={headingId} className="text-ui font-semibold text-fg">
         {t('examples.title')}
       </h3>
       <ExamplesBody {...props} />
@@ -109,23 +105,6 @@ export function ExamplesSection(props: ExamplesProps & { headingId?: string }) {
 }
 
 type Note = { kind: 'info' | 'warn'; text: string } | null;
-
-function errorText(t: TFunction, e: ExampleRequestError): string {
-  switch (e) {
-    case 'offline':
-      return t('examples.waitingOffline');
-    case 'signed_out':
-      return t('examples.guest');
-    case 'daily_limit':
-      return t('examples.dailyLimit');
-    case 'busy':
-      return t('examples.busy');
-    case 'no_lexicon':
-      return t('examples.noLexicon');
-    default:
-      return t('examples.failed');
-  }
-}
 
 export function ExamplesBody({ term, senses, initialSenseId, speech }: ExamplesProps) {
   const { t } = useTranslation();
@@ -182,53 +161,27 @@ function SenseExamplesPanel({
   speech?: ExamplesSpeech;
 }) {
   const { t } = useTranslation();
-  const auth = useAuth();
-  const online = useOnline();
   const view = useLiveQuery(() => getSenseExamples(lexiconSenseId), [lexiconSenseId]);
-  const signedIn = auth.status === 'signed_in';
   const [context, setContext] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
-  const [busy, setBusy] = useState<null | 'fresh' | 'context'>(null);
-  const [note, setNote] = useState<Note>(null);
 
-  useEffect(() => {
-    if (signedIn) void prioritizeExamples(lexiconSenseId).catch((e: unknown) => logError(e, 'examples.prioritize'));
-  }, [lexiconSenseId, signedIn]);
-
-  const active = useMemo(() => (view ? pickContext(view, context) : null), [view, context]);
-  if (!view || !active) return <p className="text-sm text-fg-muted">{t('common.loading')}</p>;
+  // Only contexts that have sentences get a tab: nothing is generated on request any more.
+  const tabs = useMemo(
+    () => (view ? view.examples.contexts.filter((c) => (view.examples.byContext.get(c)?.length ?? 0) > 0) : []),
+    [view],
+  );
+  const active = useMemo(() => (view ? pickContext(tabs, context) : null), [view, tabs, context]);
+  if (!view) return <p className="text-sm text-fg-muted">{t('common.loading')}</p>;
+  if (!active) return <StatusLine note={{ kind: 'info', text: t('examples.none') }} />;
 
   const items = view.examples.byContext.get(active) ?? [];
   const at = Math.min(index, Math.max(0, items.length - 1));
   const item = items[at] ?? null;
-  const others = EXAMPLE_CONTEXT_KEYS.filter((c) => !view.examples.contexts.includes(c));
 
   const choose = (c: string) => {
     setContext(c);
     setIndex(0);
-    setNote(null);
     flags.set(CONTEXT_FLAG, c);
-  };
-
-  const ask = async (c: string, fresh: boolean) => {
-    setBusy(fresh ? 'fresh' : 'context');
-    setNote({ kind: 'info', text: t('examples.generating') });
-    const res = await requestExamples({ lexiconSenseId, band: view.band, context: c, fresh });
-    setBusy(null);
-    if (!res.ok) {
-      setNote({ kind: 'warn', text: errorText(t, res.error) });
-      return;
-    }
-    if (res.newIds.length === 0) {
-      setNote({ kind: 'info', text: t(fresh ? 'examples.noneNew' : 'examples.emptyAsked') });
-      return;
-    }
-    setNote({ kind: 'info', text: t('examples.added') });
-    // Show the new sentence (it is sorted with the other unrated ones).
-    const fresh1 = await getSenseExamples(lexiconSenseId);
-    const list = fresh1.examples.byContext.get(c) ?? [];
-    const pos = list.findIndex((x) => res.newIds.includes(x.id));
-    if (pos >= 0) setIndex(pos);
   };
 
   return (
@@ -238,7 +191,7 @@ function SenseExamplesPanel({
           aria-label={t('examples.contextsLabel')}
           className="-mb-px flex min-w-0 flex-1 overflow-x-auto [scrollbar-width:none]"
         >
-          {view.examples.contexts.map((c) => (
+          {tabs.map((c) => (
             <RadixTabs.Trigger
               key={c}
               value={c}
@@ -255,52 +208,23 @@ function SenseExamplesPanel({
             </RadixTabs.Trigger>
           ))}
         </RadixTabs.List>
-        {others.length > 0 && (
-          <DropdownMenu
-            label={t('examples.addContextTitle')}
-            trigger={
-              <IconButton icon="plus" size="sm" label={t('examples.addContext')} disabled={busy !== null} className="mb-0.5" />
-            }
-            items={others.map((c) => ({
-              label: contextLabel(t, c),
-              onSelect: () => {
-                choose(c);
-                void ask(c, false);
-              },
-            }))}
-          />
-        )}
       </div>
-      {view.examples.contexts.map((c) => (
+      {tabs.map((c) => (
         <RadixTabs.Content key={c} value={c} className="flex flex-col gap-3 focus-visible:outline-offset-4">
-          {c === active &&
-            (item ? (
-              <SentenceCard
-                key={item.id}
-                item={item}
-                term={term}
-                senseId={senseId}
-                position={{ n: at + 1, total: items.length }}
-                onMove={(d) => setIndex((at + d + items.length) % items.length)}
-                trVisible={view.trVisible}
-                speech={speech}
-                busy={busy}
-                canGenerate={signedIn}
-                onRegenerate={() => void ask(c, true)}
-              />
-            ) : (
-              <EmptyContext
-                view={view}
-                context={c}
-                signedIn={signedIn}
-                online={online}
-                busy={busy !== null}
-                onAsk={() => void ask(c, false)}
-              />
-            ))}
+          {c === active && item && (
+            <SentenceCard
+              key={item.id}
+              item={item}
+              term={term}
+              senseId={senseId}
+              position={{ n: at + 1, total: items.length }}
+              onMove={(d) => setIndex((at + d + items.length) % items.length)}
+              trVisible={view.trVisible}
+              speech={speech}
+            />
+          )}
         </RadixTabs.Content>
       ))}
-      <StatusLine note={note} />
     </RadixTabs.Root>
   );
 }
@@ -310,61 +234,12 @@ function contextLabel(t: TFunction, key: string): string {
   return t(`examples.contexts.${key}` as 'examples.contexts.daily', { defaultValue: key });
 }
 
-/** The tab to open: the user's choice, else the last used one with sentences, else the first with sentences. */
-function pickContext(view: SenseExamplesView, chosen: string | null): string | null {
-  const tabs = view.examples.contexts;
+/** The tab to open: the user's choice, else the last used one, else the first. */
+function pickContext(tabs: readonly string[], chosen: string | null): string | null {
   if (chosen && tabs.includes(chosen)) return chosen;
-  const has = (c: string) => (view.examples.byContext.get(c)?.length ?? 0) > 0;
   const last = flags.get(CONTEXT_FLAG);
-  if (last && tabs.includes(last) && has(last)) return last;
-  return tabs.find(has) ?? tabs[0] ?? null;
-}
-
-function EmptyContext({
-  view,
-  context,
-  signedIn,
-  online,
-  busy,
-  onAsk,
-}: {
-  view: SenseExamplesView;
-  context: string;
-  signedIn: boolean;
-  online: boolean;
-  busy: boolean;
-  onAsk: () => void;
-}) {
-  const { t } = useTranslation();
-  const job = view.job;
-  const asked = job?.status === 'done' && job.contexts.includes(context);
-  let text: string;
-  let action: ReactNode = null;
-  if (!signedIn) text = t('examples.guest');
-  else if (!online) text = t('examples.waitingOffline');
-  else if (job?.status === 'queued' && job.contexts.includes(context)) {
-    text = job.error === 'daily_limit' ? t('examples.dailyLimit') : t('examples.preparing');
-  } else if (asked || job?.status === 'failed') {
-    text = asked ? t('examples.emptyAsked') : t('examples.failed');
-    action = (
-      <Button size="sm" variant="secondary" leadingIcon="refresh" onClick={onAsk} loading={busy}>
-        {t('common.retry')}
-      </Button>
-    );
-  } else {
-    text = t('examples.empty');
-    action = (
-      <Button size="sm" variant="secondary" leadingIcon="refresh" onClick={onAsk} loading={busy}>
-        {t('examples.regenerate')}
-      </Button>
-    );
-  }
-  return (
-    <div className="flex flex-col items-start gap-2 rounded-control bg-surface-sunken px-3 py-3">
-      <p className="text-sm text-fg-muted">{text}</p>
-      {action}
-    </div>
-  );
+  if (last && tabs.includes(last)) return last;
+  return tabs[0] ?? null;
 }
 
 function StatusLine({ note }: { note: Note }) {
@@ -383,9 +258,6 @@ function SentenceCard({
   onMove,
   trVisible,
   speech,
-  busy,
-  canGenerate,
-  onRegenerate,
 }: {
   item: ExampleItem;
   term: string;
@@ -394,9 +266,6 @@ function SentenceCard({
   onMove: (delta: number) => void;
   trVisible: boolean;
   speech?: ExamplesSpeech;
-  busy: null | 'fresh' | 'context';
-  canGenerate: boolean;
-  onRegenerate: () => void;
 }) {
   const { t } = useTranslation();
   const speaking = usePronunciationBusy();
@@ -497,11 +366,6 @@ function SentenceCard({
           <Icon name="arrow-right" size={16} />
           {t('examples.skip')}
         </Button>
-        {canGenerate && (
-          <Button size="sm" variant="ghost" leadingIcon="refresh" loading={busy === 'fresh'} disabled={busy !== null} onClick={onRegenerate} className="px-2.5">
-            {t('examples.regenerate')}
-          </Button>
-        )}
         <span className="flex-1" />
         <DropdownMenu
           label={t('examples.actions')}

@@ -25,17 +25,17 @@ test('phone: bulk tag two words, make a deck of them, filter Cards and practise 
 
   // Bulk tag: select two notes, "Etiket", create "iş", apply.
   await page.goto('/library');
-  await page.getByRole('checkbox', { name: '“deadline” notunu seç' }).click();
-  await page.getByRole('checkbox', { name: '“colleague” notunu seç' }).click();
-  const bar = page.getByRole('region', { name: 'Seçili notlar için işlemler' });
-  await expect(bar.getByText('2 not seçili')).toBeVisible();
+  await page.getByRole('checkbox', { name: '“deadline” kelimesini seç' }).click();
+  await page.getByRole('checkbox', { name: '“colleague” kelimesini seç' }).click();
+  const bar = page.getByRole('region', { name: 'Seçili kelimeler için işlemler' });
+  await expect(bar.getByText('2 kelime seçili')).toBeVisible();
   await bar.getByRole('button', { name: 'Etiket' }).click();
   const sheet = page.getByRole('dialog', { name: 'Etiketler' });
   await sheet.getByRole('textbox', { name: 'Etiket ara ya da yeni etiket yaz' }).fill('iş');
   await sheet.getByRole('textbox', { name: 'Etiket ara ya da yeni etiket yaz' }).press('Enter');
   await expect(sheet.getByRole('checkbox', { name: /#iş/ })).toBeChecked();
   await sheet.getByRole('button', { name: 'Uygula' }).click();
-  await expect(page.getByText('2 notun etiketleri güncellendi', { exact: true })).toBeVisible();
+  await expect(page.getByText('2 kelimenin etiketleri güncellendi', { exact: true })).toBeVisible();
   const { notes } = await dumpTables(page, ['notes']);
   const tagged = (notes as { term: string; tags: string[] }[])
     .filter((n) => n.tags.includes('iş'))
@@ -67,20 +67,20 @@ test('phone: bulk tag two words, make a deck of them, filter Cards and practise 
 
   // Destelerim lists it; "Tüm kelimelerim" filtered to the deck shows the same two words.
   await page.goto('/decks');
-  await expect(page.getByRole('link', { name: 'İş kelimeleri', exact: true })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: /^İş kelimeleri/ })).toHaveAttribute(
     'href',
     new URL(deckUrl).pathname,
   );
   await page.goto(`/library?deck=${new URL(deckUrl).pathname.split('/').pop()}`);
-  const list = page.getByRole('list', { name: 'Notlar' });
+  const list = page.getByRole('list', { name: 'Kelimeler' });
   await expect(list.getByRole('listitem')).toHaveCount(2);
   await expect(page.getByRole('link', { name: 'Desteyi aç' })).toBeVisible();
 
-  // "Çalış" on the deck's page is today's word study of the deck only: both words were studied
+  // "Bu desteyi çalış" on the deck's page is today's word study of the deck only: both words were studied
   // today, and a new word outside the deck does not come up there (it does in word study).
   await addWord(page, { term: 'harsh', meaning: 'sert' });
   await page.goto(deckUrl);
-  await page.getByRole('link', { name: 'Çalış' }).click();
+  await page.getByRole('link', { name: 'Bu desteyi çalış' }).click();
   await expect(page).toHaveURL(/\/study\?mode=word&deck=[^&]+$/);
   await expect(
     page.getByRole('heading', { name: '“İş kelimeleri” destesinde bugünlük kart kalmadı' }),

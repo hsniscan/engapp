@@ -194,6 +194,22 @@ export const settingsSchema: z.ZodType<Settings> = z.object({
   reader_highlight: z.boolean().nullish().catch(null),
   // v0.5.1 "Hep tahmin ettir" (decision 0054); absent = off.
   reader_always_guess: z.boolean().nullish().catch(null),
+  // v0.5.2 study options (decision 0062); absent = defaults. A malformed value reads as unset.
+  study_options: z
+    .object({
+      mode_new_limits: z
+        .object({
+          production: z.number().int().min(0).max(999).nullish().catch(null),
+          cloze: z.number().int().min(0).max(999).nullish().catch(null),
+          dictation: z.number().int().min(0).max(999).nullish().catch(null),
+        })
+        .nullish()
+        .catch(null),
+      session_cards: z.number().int().min(5).max(200).nullish().catch(null),
+      leech_auto_suspend: z.boolean().nullish().catch(null),
+    })
+    .nullish()
+    .catch(null),
   // v0.5 İP10 streak protections (absent = none). A malformed list reads as none.
   streak_freezes: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).max(MAX_FREEZE_DAYS).nullish().catch(null),
   // v0.3 İP3 load management; absent in older rows and backups (= the defaults). Malformed

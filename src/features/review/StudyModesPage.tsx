@@ -1,8 +1,8 @@
-// "Çalış" (redesign board StudyModes): the study types with what each has left today, a
-// "Karışık çalış" switch, and a button that starts the next one. "Dikte" (v0.5 İP9) is the
-// fourth type; its cards open with the word's spoken example sentences, and it is listed only
-// when this device can read them. The totals are the same as on Bugün (ADR 0055). A new user
-// with no words gets a real empty state instead of a start button with nothing to study.
+// "Çalış" (v0.5.2 "Çam", docs/design.md §4.2, ADR 0066): the study modes as one list — icon,
+// name, what it asks, what is left today (the same numbers as Bugün, ADR 0055) — the
+// "Karışık çalış" switch, and one sticky button that starts the next mode. "Dikte" (v0.5 İP9)
+// is listed only when this device can read the example sentences. A new user with no words
+// gets a real empty state instead of a start button with nothing to study.
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -10,9 +10,22 @@ import { Link } from 'react-router';
 import { db } from '@/data';
 import type { StudyMode } from '@/domain/studyMode';
 import { openAddSheet } from '@/features/add/addSheetStore';
-import { DISCOVER_DECKS_HREF } from '@/features/home/DecksForYou';
+import { DISCOVER_DECKS_HREF } from '@/features/decks/deckUi';
 import { flags } from '@/features/settings/platform';
-import { buttonClasses, cn, EmptyState, Icon, Skeleton, Switch } from '@/ui';
+import {
+  Badge,
+  Button,
+  buttonClasses,
+  Card,
+  EmptyState,
+  Icon,
+  IconTile,
+  type IconName,
+  ListGroup,
+  PageFrame,
+  Skeleton,
+  Switch,
+} from '@/ui';
 import { reconcileDictationCards } from '@/data/dictation';
 import { mixedHint, modeText, startLabel } from './modeText';
 import { type StudyModeCount, useTodayStudy } from './studyModes';
@@ -21,128 +34,42 @@ const MIXED_FLAG = 'study.mixed';
 
 const left = (c: StudyModeCount) => c.due + c.newCount;
 
-function ModeIcon({ mode }: { mode: StudyMode }) {
-  const common = {
-    'aria-hidden': true,
-    width: 22,
-    height: 22,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 1.7,
-    strokeLinecap: 'round' as const,
-    strokeLinejoin: 'round' as const,
-  };
-  if (mode === 'word')
-    return (
-      <svg {...common}>
-        <rect x="3" y="5" width="18" height="14" rx="2.5" />
-        <path d="M7 10h6M7 14h10" />
-      </svg>
-    );
-  if (mode === 'dictation')
-    return (
-      <svg {...common}>
-        <path d="M4 14v-2a8 8 0 0 1 16 0v2" />
-        <rect x="3" y="14" width="4" height="6" rx="1.5" />
-        <rect x="17" y="14" width="4" height="6" rx="1.5" />
-      </svg>
-    );
-  if (mode === 'production')
-    return (
-      <svg {...common}>
-        <path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z" />
-        <path d="M13.5 6.5l4 4" />
-      </svg>
-    );
-  return (
-    <svg {...common}>
-      <path d="M3 12h3M18 12h3" />
-      <rect x="8" y="9" width="8" height="6" rx="1.5" strokeDasharray="2 2" />
-    </svg>
-  );
-}
+const MODE_ICON: Record<StudyMode, IconName> = {
+  word: 'cards',
+  production: 'pen',
+  cloze: 'cloze',
+  dictation: 'speaker',
+};
 
-function ClockIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="15"
-      height="15"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-    >
-      <circle cx="12" cy="12" r="8.5" />
-      <path d="M12 7.5V12l3 2" />
-    </svg>
-  );
-}
-
-function ModeCard({
-  mode,
-  count,
-  main,
-}: {
-  mode: StudyMode;
-  count: StudyModeCount;
-  main: boolean;
-}) {
+function ModeRow({ mode, count, main }: { mode: StudyMode; count: StudyModeCount; main: boolean }) {
   const { t } = useTranslation();
   const n = left(count);
-  const note =
-    mode === 'word'
-      ? t('study.split', { due: count.due, new: count.newCount })
-      : mode === 'production' || mode === 'dictation'
-        ? n > 0
-          ? t('study.split', { due: count.due, new: count.newCount })
-          : modeText(t, mode, 'note')
-        : modeText(t, mode, 'note');
+  // Every mode with cards shows the same split, and learning steps are not called "tekrar"
+  // (ADR 0055). A mode with nothing today says why instead.
+  const split =
+    t('study.split', { due: count.left.review, new: count.newCount }) +
+    (count.left.learning > 0 ? ` · ${t('today.splitSteps', { count: count.left.learning })}` : '') +
+    (count.estMinutes > 0 ? ` · ${t('study.minutes', { count: count.estMinutes })}` : '');
+  const status = n > 0 ? split : modeText(t, mode, 'note');
   return (
     <Link
       to={`/study?mode=${mode}`}
       data-testid={`study-mode-${mode}`}
-      className={cn(
-        'flex flex-col gap-2.5 rounded-[20px] bg-surface px-4 py-3.5 text-fg no-underline transition-colors hover:bg-surface-hover',
-        main ? 'border-[1.5px] border-accent' : 'border border-border',
-      )}
+      className="flex min-h-14 w-full items-start gap-3 px-4 py-4 text-left transition-colors duration-(--duration-micro) hover:bg-hover focus-visible:outline-offset-[-2px]"
     >
-      <span className="flex items-start gap-3.5">
-        <span
-          className={cn(
-            'flex size-11 shrink-0 items-center justify-center rounded-[12px]',
-            main ? 'bg-accent-soft text-accent-text' : 'bg-surface-sunken text-fg-muted',
-          )}
-        >
-          <ModeIcon mode={mode} />
+      <IconTile icon={MODE_ICON[mode]} tone={main ? 'accent' : 'neutral'} />
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="text-ui font-semibold text-fg">{modeText(t, mode, 'name')}</span>
+          <span className="text-meta text-fg-muted">{modeText(t, mode, 'dir')}</span>
+          {mode === 'word' && <Badge tone="accent">{t('study.mainBadge')}</Badge>}
         </span>
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="flex items-center gap-2">
-            <span className="font-serif text-xl font-semibold">{modeText(t, mode, 'name')}</span>
-            {mode === 'word' && (
-              <span className="rounded-[6px] bg-accent-soft px-1.5 py-0.5 text-xs font-semibold text-accent-text">
-                {t('study.mainBadge')}
-              </span>
-            )}
-          </span>
-          <span className="text-[0.8125rem] text-fg-muted">{modeText(t, mode, 'dir')}</span>
-        </span>
-        <span className="flex flex-col items-end">
-          <span className="tabular font-serif text-[1.625rem] leading-none font-semibold">{n}</span>
-          <span className="text-xs text-fg-muted">{t('study.cardsUnit')}</span>
-        </span>
+        <span className="text-meta text-fg-muted">{modeText(t, mode, 'desc')}</span>
+        {status && <span className="text-meta font-medium text-fg">{status}</span>}
       </span>
-      <span className="text-[0.9375rem] leading-snug">{modeText(t, mode, 'desc')}</span>
-      <span className="flex items-center justify-between gap-2.5 text-[0.8125rem] text-fg-muted">
-        <span>{note}</span>
-        {count.estMinutes > 0 && (
-          <span className="flex shrink-0 items-center gap-1">
-            <ClockIcon />
-            {t('study.minutes', { count: count.estMinutes })}
-          </span>
-        )}
+      <span className="flex shrink-0 flex-col items-end pt-0.5">
+        <span className="tabular text-title font-semibold text-fg">{n}</span>
+        <span className="text-caption text-fg-muted">{t('study.cardsUnit')}</span>
       </span>
     </Link>
   );
@@ -166,73 +93,85 @@ export function StudyModesPage() {
   const counts = study?.counts;
   const total = study?.left ?? 0;
   const minutes = study?.minutes ?? 0;
-  const main: StudyMode = study?.next ?? 'word';
+  const main: StudyMode = study?.nextReady ?? study?.next ?? 'word';
   const startTo = mixed ? '/study?mode=mixed' : `/study?mode=${main}`;
   const done = !!study && total === 0;
 
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] w-full max-w-xl flex-col gap-3.5 px-4 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6">
-      <div className="flex flex-col gap-1 px-1">
-        <h1 className="font-serif text-[1.75rem] leading-tight font-semibold">
-          {t('study.pickerTitle')}
-        </h1>
-        <p className="text-sm text-fg-muted" aria-live="polite">
+    <PageFrame
+      width="reading"
+      back={{ to: '/', label: t('nav.home') }}
+      title={t('study.pickerTitle')}
+      description={
+        <span aria-live="polite">
           {!counts
             ? ' '
             : total > 0
               ? t('study.leftToday', { count: total, min: minutes })
               : t('study.allDone')}
-        </p>
-      </div>
+        </span>
+      }
+      frameClassName="flex min-h-[calc(100dvh-var(--nav-height)-1.5rem)] flex-col pb-0 md:min-h-dvh"
+    >
+      <div className="flex flex-1 flex-col gap-6">
+        {study && counts ? (
+          <ListGroup aria-label={t('study.empty.pickMode')}>
+            {study.modes.map((m) => (
+              <ModeRow key={m} mode={m} count={counts[m]} main={m === main && !mixed} />
+            ))}
+          </ListGroup>
+        ) : (
+          <Card aria-busy="true" padding="none" className="flex flex-col divide-y divide-border">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="flex items-start gap-3 p-4">
+                <Skeleton className="size-10 rounded-control" />
+                <Skeleton lines={2} className="flex-1" />
+              </div>
+            ))}
+          </Card>
+        )}
 
-      {study && counts ? (
-        study.modes.map((m) => (
-          <ModeCard key={m} mode={m} count={counts[m]} main={m === main && !mixed} />
-        ))
-      ) : (
-        <>
-          <Skeleton className="h-36 w-full rounded-[20px]" />
-          <Skeleton className="h-36 w-full rounded-[20px]" />
-          <Skeleton className="h-36 w-full rounded-[20px]" />
-          <Skeleton className="h-36 w-full rounded-[20px]" />
-        </>
-      )}
+        <Card padding="none" className="px-4 py-1">
+          <Switch
+            label={t('study.mixed')}
+            description={study ? mixedHint(t, study.modes) : t('study.mixedHint')}
+            checked={mixed}
+            onCheckedChange={(v) => {
+              setMixed(v);
+              flags.set(MIXED_FLAG, v ? '1' : '0');
+            }}
+          />
+        </Card>
 
-      <Switch
-        className="px-1 pt-1"
-        label={<span className="font-semibold">{t('study.mixed')}</span>}
-        description={study ? mixedHint(t, study.modes) : t('study.mixedHint')}
-        checked={mixed}
-        onCheckedChange={(v) => {
-          setMixed(v);
-          flags.set(MIXED_FLAG, v ? '1' : '0');
-        }}
-      />
-
-      {done ? (
-        <Link
-          to="/study/more"
-          data-testid="study-more"
-          className="mt-auto flex h-14 items-center justify-center gap-2 rounded-[14px] border border-border bg-surface text-[1.0625rem] font-semibold text-accent-text no-underline transition-colors hover:bg-surface-hover"
-        >
-          {t('review.moreStudy')}
-          <Icon name="arrow-right" size={20} />
-        </Link>
-      ) : (
-        <Link
-          to={startTo}
-          data-testid="study-start"
-          aria-disabled={!study || undefined}
-          className={cn(
-            'mt-auto flex h-14 items-center justify-center gap-2 rounded-[14px] bg-accent text-[1.0625rem] font-semibold text-accent-fg no-underline transition-colors hover:bg-accent-hover',
-            !study && 'pointer-events-none opacity-60',
+        {/* Above the tab bar on phones (AppShell pads the page for it), 16 px clear of it. */}
+        <div className="sticky bottom-[calc(var(--nav-height)+env(safe-area-inset-bottom))] -mx-4 mt-auto bg-canvas px-4 pt-3 pb-4 sm:-mx-6 sm:px-6 md:bottom-0 md:pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+          {done ? (
+            <Link
+              to="/study/more"
+              data-testid="study-more"
+              className={buttonClasses({ variant: 'secondary', size: 'lg', fullWidth: true })}
+            >
+              {t('review.moreStudy')}
+              <Icon name="arrow-right" size={20} />
+            </Link>
+          ) : (
+            <Link
+              to={startTo}
+              data-testid="study-start"
+              aria-disabled={!study || undefined}
+              className={buttonClasses({
+                size: 'lg',
+                fullWidth: true,
+                className: !study ? 'pointer-events-none opacity-45' : undefined,
+              })}
+            >
+              {startLabel(t, mixed ? 'mixed' : main)}
+              <Icon name="arrow-right" size={20} />
+            </Link>
           )}
-        >
-          {startLabel(t, mixed ? 'mixed' : main)}
-          <Icon name="arrow-right" size={20} />
-        </Link>
-      )}
-    </div>
+        </div>
+      </div>
+    </PageFrame>
   );
 }
 
@@ -240,36 +179,25 @@ export function StudyModesPage() {
 function StudyWelcome() {
   const { t } = useTranslation();
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col gap-3.5 px-4 pt-3 pb-8 sm:px-6">
-      <h1 className="px-1 font-serif text-[1.75rem] leading-tight font-semibold">
-        {t('study.pickerTitle')}
-      </h1>
+    <PageFrame width="reading" back={{ to: '/', label: t('nav.home') }} title={t('study.pickerTitle')}>
       <div data-testid="study-welcome">
         <EmptyState
+          tone="card"
           icon="cards"
           title={t('study.welcomeTitle')}
           description={t('study.welcomeBody')}
           action={
             <>
-              <button
-                type="button"
-                onClick={() => openAddSheet()}
-                aria-haspopup="dialog"
-                className={buttonClasses({ size: 'lg', className: 'min-w-60' })}
-              >
-                <Icon name="plus" size={20} />
+              <Button size="lg" leadingIcon="plus" onClick={() => openAddSheet()} aria-haspopup="dialog">
                 {t('home.emptyAction')}
-              </button>
-              <Link
-                to={DISCOVER_DECKS_HREF}
-                className={buttonClasses({ variant: 'secondary', className: 'min-w-60' })}
-              >
+              </Button>
+              <Link to={DISCOVER_DECKS_HREF} className={buttonClasses({ variant: 'secondary' })}>
                 {t('study.welcomeDecks')}
               </Link>
             </>
           }
         />
       </div>
-    </div>
+    </PageFrame>
   );
 }

@@ -5,7 +5,7 @@ import { PULL_BACKFILL_KEY } from './backfill';
 import { EngDb, STAGE_RULE_NOTICE_KEY } from './db';
 
 /** The current schema version; bump with every new Dexie version. */
-const LATEST = 36;
+const LATEST = 38;
 
 /** A re-pull list after the later upgrades: v29 (reader) adds settings, texts and encounters; v33 (dictation) cards; v34 settings. */
 const withLater = (list: readonly string[] | undefined) =>
@@ -17,7 +17,7 @@ describe('Dexie schema', () => {
     await d.open();
     expect(d.verno).toBe(LATEST);
     expect(d.tables.map((t) => t.name).sort()).toEqual(
-      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'example_jobs', 'decks', 'theme_previews', 'level_tests', 'known_terms', 'anki_imports', 'lexicon_pair_notes', 'weekly_reports', 'report_drafts', 'images', 'word_bank', 'texts', 'encounters', 'graded_catalog', 'graded_bodies'].sort(),
+      ['cards', 'chunk_cache', 'daily_activity', 'error_log', 'import_candidates', 'import_jobs', 'lexicon_cache', 'meta', 'notes', 'outbox', 'practice_logs', 'ref_cache', 'review_logs', 'senses', 'settings', 'sources', 'lexicon_examples', 'content_feedback', 'user_content', 'decks', 'theme_previews', 'level_tests', 'known_terms', 'anki_imports', 'lexicon_pair_notes', 'weekly_reports', 'report_drafts', 'images', 'word_bank', 'texts', 'encounters', 'graded_catalog', 'graded_bodies'].sort(),
     );
     const idx = (table: string) => d.table(table).schema.indexes.map((i) => i.name);
     expect(idx('decks')).toEqual(expect.arrayContaining(['sort', 'deleted_at']));
@@ -128,7 +128,7 @@ describe('Dexie schema', () => {
     expect(idx('lexicon_examples')).toEqual(expect.arrayContaining(['sense_id', '[sense_id+level_band]']));
     expect(idx('content_feedback')).toEqual(expect.arrayContaining(['[target_kind+target_id]']));
     expect(idx('user_content')).toEqual(expect.arrayContaining(['replaces_id', 'lexicon_sense_id', 'kind']));
-    expect(idx('example_jobs')).toEqual(expect.arrayContaining(['status', 'next_attempt_at']));
+    expect(d.tables.map((t) => t.name)).not.toContain('example_jobs');
     d.close();
     await d.delete();
   });
@@ -753,6 +753,32 @@ describe('Dexie schema', () => {
     }
   });
 
+  it('v38 upgrade keeps settings and re-pulls them once for study_options', async () => {
+    for (const [name, cursor, expected] of [
+      ['upgrade-v38-synced', 40, ['settings']],
+      ['upgrade-v38-fresh', 0, undefined],
+    ] as const) {
+      // A database as v0.5.1 left it (version 36), with every earlier backfill done.
+      const old = new Dexie(name);
+      old.version(1).stores({ settings: 'id', meta: 'key' });
+      old.version(36).stores({ graded_catalog: 'id, level, topic, server_seq', graded_bodies: 'id, fetched_at' });
+      await old.open();
+      await old.table('settings').add({ id: 'settings', theme: 'dark', daily_new_limit: 15 });
+      await old.table('meta').put({ key: 'sync_cursor', value: cursor });
+      old.close();
+
+      const d = new EngDb(name);
+      await d.open();
+      expect(d.verno).toBe(LATEST);
+      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
+      // No study_options key means the defaults; the row is untouched and nothing is queued.
+      expect(await d.settings.get('settings')).toEqual({ id: 'settings', theme: 'dark', daily_new_limit: 15 });
+      expect(await d.outbox.count()).toBe(0);
+      d.close();
+      await d.delete();
+    }
+  });
+
   it('v34 upgrade keeps settings and re-pulls them once for streak_freezes', async () => {
     for (const [name, cursor, expected] of [
       ['upgrade-v34-synced', 40, ['cards', 'settings']],
@@ -803,5 +829,45 @@ describe('Dexie schema', () => {
       d.close();
       await d.delete();
     }
+  });
+
+  it('v37 upgrade drops the example preparation queue and its meta keys, and keeps the sentences', async () => {
+    // A database as v0.5.1 left it (version 36): a queued job, its meta keys and a shared sentence.
+    const old = new Dexie('upgrade-v37');
+    old.version(1).stores({ cards: 'id, note_id, sense_id, [state+due], due, card_type, deleted_at', meta: 'key' });
+    old.version(5).stores({
+      lexicon_examples: 'id, sense_id, [sense_id+level_band], updated_at',
+      content_feedback: 'id, [target_kind+target_id], deleted_at',
+      user_content: 'id, kind, lexicon_sense_id, replaces_id, deleted_at',
+      example_jobs: 'key, status, next_attempt_at',
+    });
+    await old.open();
+    await old.table('example_jobs').add({ key: 'ls1|B1', sense_id: 'ls1', status: 'queued', next_attempt_at: 0 });
+    await old.table('lexicon_examples').add({ id: 'e1', sense_id: 'ls1', level_band: 'B1', context: 'daily', text_en: 'Hi.', updated_at: 1 });
+    await old.table('content_feedback').add({ id: 'f1', target_kind: 'example', target_id: 'e1', verdict: 'like', deleted_at: null });
+    await old.table('meta').bulkPut([
+      { key: 'examples_since', value: 1 },
+      { key: 'examples_backfill', value: true },
+      { key: 'example_calls:2026-11-01', value: 3 },
+      { key: 'example_calls:2026-10-31', value: 50 },
+      { key: 'sync_cursor', value: 9 },
+      { key: 'lexicon_examples_cursor', value: 4 },
+    ]);
+    old.close();
+
+    const d = new EngDb('upgrade-v37');
+    await d.open();
+    expect(d.verno).toBe(LATEST);
+    expect(d.tables.map((t) => t.name)).not.toContain('example_jobs');
+    expect(await d.lexicon_examples.get('e1')).toMatchObject({ text_en: 'Hi.' });
+    expect(await d.content_feedback.get('f1')).toMatchObject({ verdict: 'like' });
+    expect((await d.meta.toArray()).map((m) => m.key).sort()).toEqual(
+      expect.arrayContaining(['lexicon_examples_cursor', 'sync_cursor']),
+    );
+    const keys = (await d.meta.toArray()).map((m) => m.key);
+    expect(keys.filter((k) => k.startsWith('example'))).toEqual([]);
+    expect(await d.outbox.count()).toBe(0);
+    d.close();
+    await d.delete();
   });
 });

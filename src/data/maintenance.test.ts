@@ -11,6 +11,8 @@ import {
   applyRemoteRows,
   exportBackup,
   exportCsv,
+  importForeignBackupCards,
+  isForeignBackup,
   recomputeAllCards,
   repairIntegrity,
   restoreBackup,
@@ -18,6 +20,7 @@ import {
 } from './maintenance';
 import { getSettings, updateSettings } from './settings';
 import { META, setMeta } from './meta';
+import { createDeck } from './decks';
 
 const T = Date.UTC(2026, 9, 21, 9);
 const MIN = 60_000;
@@ -180,6 +183,83 @@ describe('backup and restore', () => {
     await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] }, T);
     const csv = await exportCsv({ term: 'terim', meaning: 'anlam', ipa: 'IPA', sentence: 'cümle', tags: 'etiketler', created: 'eklenme tarihi' }, T);
     expect(csv).toBe('﻿terim;anlam;IPA;cümle;etiketler;eklenme tarihi\r\nbank;banka;;;;2026-10-21\r\n');
+  });
+});
+
+describe('restore and accounts (v0.5.2, ADR 0063)', () => {
+  async function accountBackup(userId: string) {
+    await setMeta(META.userId, userId);
+    const a = await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] }, T);
+    await answerCard({ card_id: (await recognition(a.note.id)).id, rating: Rating.Good, duration_ms: 1 }, T + MIN);
+    const backup = await exportBackup(T + 2 * MIN);
+    await resetDb();
+    await updateSettings({ timezone: 'Europe/Istanbul' }, T);
+    return backup;
+  }
+
+  it('a new backup names its account', async () => {
+    await setMeta(META.userId, 'user-a');
+    expect((await exportBackup(T)).account_id).toBe('user-a');
+  });
+
+  it("another account's backup never restores with its history; its words can come as new cards", async () => {
+    const backup = await accountBackup('user-a');
+    expect(await isForeignBackup(backup)).toBe(true);
+    await expect(restoreBackup(backup, 'merge', T + 3 * MIN)).rejects.toMatchObject({ code: 'foreign_backup' });
+    expect(await db.notes.count()).toBe(0);
+    expect(await importForeignBackupCards(backup, T + 4 * MIN)).toBe(1);
+    const notes = await db.notes.toArray();
+    expect(notes.map((n) => [n.term, n.user_id])).toEqual([['bank', null]]);
+    expect(notes[0]!.id).not.toBe(backup.tables.notes[0]!.id);
+    expect(await db.review_logs.count()).toBe(0);
+    expect((await db.cards.toArray()).every((c) => c.reps === 0)).toBe(true);
+  });
+
+  it('a file from before v0.5.2 (no account_id) is judged by its rows', async () => {
+    const backup = await accountBackup('user-a');
+    const { account_id: _, ...old } = backup;
+    expect(await isForeignBackup(old as typeof backup)).toBe(true);
+    await setMeta(META.userId, 'user-a');
+    expect(await isForeignBackup(old as typeof backup)).toBe(false);
+  });
+
+  it('restoring my own backup keeps the history; a guest backup restored signed in takes my account and is queued', async () => {
+    const mine = await accountBackup('user-a');
+    await setMeta(META.userId, 'user-a');
+    await restoreBackup(mine, 'merge', T + 3 * MIN);
+    expect(await db.review_logs.count()).toBe(1);
+
+    await resetDb();
+    await updateSettings({ timezone: 'Europe/Istanbul' }, T);
+    await addNoteWithSenses({ term: 'shore', senses: [{ meaning_tr: 'kıyı' }] }, T);
+    const guest = await exportBackup(T + MIN);
+    expect(guest.account_id).toBeNull();
+    await resetDb();
+    await setMeta(META.userId, 'user-b');
+    await restoreBackup(guest, 'merge', T + 2 * MIN);
+    expect((await db.notes.toArray()).every((n) => n.user_id === 'user-b')).toBe(true);
+    expect((await db.cards.toArray()).every((c) => c.user_id === 'user-b')).toBe(true);
+    expect(await db.outbox.where('table').equals('cards').count()).toBeGreaterThan(0);
+  });
+
+  it('a guest backup restored as a guest is pushed at the first sign-in', async () => {
+    await addNoteWithSenses({ term: 'shore', senses: [{ meaning_tr: 'kıyı' }] }, T);
+    const guest = await exportBackup(T + MIN);
+    await resetDb();
+    await restoreBackup(guest, 'merge', T + 2 * MIN);
+    await db.outbox.clear();
+    await adoptGuestData('user-c', T + 3 * MIN);
+    expect((await db.cards.toArray()).every((c) => c.user_id === 'user-c')).toBe(true);
+    expect(await db.outbox.where('table').equals('cards').count()).toBe(2);
+  });
+
+  it('overwrite replaces a row that differs only inside a nested field (sameRow)', async () => {
+    const d = await createDeck({ name: 'İş', filter: { v: 1, tags: ['iş'] } }, T);
+    const backup = await exportBackup(T + 1);
+    await db.decks.update(d.id, { filter: { v: 1, tags: ['ev'] } });
+    const res = await restoreBackup(backup, 'overwrite', T + 2);
+    expect(res.replaced).toBeGreaterThan(0);
+    expect((await db.decks.get(d.id))!.filter).toEqual({ v: 1, tags: ['iş'] });
   });
 });
 

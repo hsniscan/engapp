@@ -176,13 +176,13 @@ function WebNotifySection({ env: envProp }: { env?: PushEnv } = {}) {
             onCheckedChange={(v) => void toggle(v)}
           />
           {perm === 'denied' && !on && (
-            <p className="text-sm text-fg">{t('settings.notify.denied')}</p>
+            <p className="text-meta text-fg">{t('settings.notify.denied')}</p>
           )}
           {pref?.enabled && here === false && perm !== 'denied' && (
-            <p className="text-sm text-fg-muted">{t('settings.notify.otherDevice')}</p>
+            <p className="text-meta text-fg-muted">{t('settings.notify.otherDevice')}</p>
           )}
           {isAndroid(env) && !installed && !env.standalone && (
-            <p className="text-sm text-fg-muted">
+            <p className="text-meta text-fg-muted">
               {t('settings.notify.androidInstall')}{' '}
               <Link
                 to="/settings/hakkinda#uygulama"
@@ -206,7 +206,7 @@ function WebNotifySection({ env: envProp }: { env?: PushEnv } = {}) {
                 onValueChange={(mode) => void save({ mode })}
               />
               {pref.mode === 'auto' ? (
-                <p className="text-sm text-fg-muted" aria-live="polite">
+                <p className="text-meta text-fg-muted" aria-live="polite">
                   {t('settings.notify.autoHint', {
                     time: hourLabel(pref.hour ?? DEFAULT_NOTIFY_HOUR),
                   })}

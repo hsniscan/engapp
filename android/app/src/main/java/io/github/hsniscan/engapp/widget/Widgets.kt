@@ -36,15 +36,15 @@ import java.util.Locale
 
 /**
  * The app palette (src/ui/tokens/tokens.css), day and night: Glance picks by the system's dark
- * mode, so the widget follows the phone like the app's "Sistem" theme. Warm paper / warm
- * charcoal, ink-blue accent; text pairs meet WCAG AA on the surface.
+ * mode, so the widget follows the phone like the app's "Sistem" theme. v0.5.2 "Çam": porcelain /
+ * slate surfaces, pine accent; text pairs meet WCAG AA on the surface (docs/design.md §6).
  */
 private object Palette {
-    val surface = ColorProvider(day = Color(0xFFFDFCF9), night = Color(0xFF22201D))
-    val fg = ColorProvider(day = Color(0xFF1F1D1A), night = Color(0xFFECE6DC))
-    val muted = ColorProvider(day = Color(0xFF5E5850), night = Color(0xFFA79F93))
-    val accentText = ColorProvider(day = Color(0xFF2A5A8C), night = Color(0xFF9DBDE3))
-    val accentSoft = ColorProvider(day = Color(0xFFE6EDF5), night = Color(0xFF253244))
+    val surface = ColorProvider(day = Color(0xFFFAFBF9), night = Color(0xFF171B1A))
+    val fg = ColorProvider(day = Color(0xFF141A17), night = Color(0xFFE6EBE8))
+    val muted = ColorProvider(day = Color(0xFF4B544E), night = Color(0xFFA3ACA7))
+    val accentText = ColorProvider(day = Color(0xFF1F5C4F), night = Color(0xFF88CDB9))
+    val accentSoft = ColorProvider(day = Color(0xFFE0ECE7), night = Color(0xFF19302A))
 }
 
 private fun card(): GlanceModifier =

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AiClientError, enrichTerm, extractChunk, toCandidateFields } from './client';
+import { AiClientError, aiRequestError, enrichTerm, extractChunk, toCandidateFields } from './client';
 import { sha256Hex } from '../../supabase/functions/_shared/extract';
 import { hashChunk } from '@/domain/chunking';
 
@@ -136,5 +136,19 @@ describe('ai client', () => {
     ).catch((x: unknown) => x);
     expect((e as AiClientError).code).toBe('offline');
     expect((e as AiClientError).transient).toBe(true);
+  });
+});
+
+describe('aiRequestError (one mapping for every user-started AI request)', () => {
+  it('maps client errors to what the user can do, anything else to failed', () => {
+    const e = (code: ConstructorParameters<typeof AiClientError>[0]) => aiRequestError(new AiClientError(code, 'x'));
+    expect(e('offline')).toBe('offline');
+    expect(e('not_signed_in')).toBe('signed_out');
+    expect(e('unauthorized')).toBe('signed_out');
+    expect(e('not_configured')).toBe('signed_out');
+    expect(e('daily_limit')).toBe('daily_limit');
+    expect(e('quota_exceeded')).toBe('busy');
+    expect(e('ai_failed')).toBe('failed');
+    expect(aiRequestError(new Error('boom'))).toBe('failed');
   });
 });

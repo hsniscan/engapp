@@ -26,6 +26,7 @@ import {
   setTextFeedback,
   setTextFinished,
   type ReaderKnowledge,
+  type TextGloss,
 } from '@/data';
 import {
   getGradedBody,
@@ -44,14 +45,35 @@ import {
 } from '@/domain/readerTokens';
 import { readerPath, type ReaderText, type TextFeedback } from '@/domain/texts';
 import type { Id } from '@/domain/types';
-import { storyEncounterNotes } from '@/domain/story';
+import { storyCoverage, storyEncounterNotes } from '@/domain/story';
+import { possessiveAccusativeSuffix } from '@/domain/trSuffix';
 import { useAppSettings } from '@/features/settings/useAppSettings';
 import { StoryEnd, StoryGlossary } from '@/features/story/StoryParts';
-import { Button, cn, Dialog, EmptyState, Icon, IconButton, Skeleton, toast } from '@/ui';
+import {
+  Button,
+  buttonClasses,
+  Card,
+  cn,
+  EmptyState,
+  Eyebrow,
+  IconButton,
+  Sheet,
+  Skeleton,
+  ThemeSwitcher,
+  toast,
+} from '@/ui';
+import { useTextKindLabel } from './kindLabel';
 import { MARK_CLASS } from './marks';
 import { NewWordsSheet, type NewWordItem } from './NewWordsSheet';
 import { ReaderBody, type Selection } from './ReaderBody';
-import { AlwaysGuessSwitch, DifficultyPicker, HighlightSwitch } from './ReadingSettings';
+import {
+  AlwaysGuessSwitch,
+  DifficultyPicker,
+  HighlightSwitch,
+  ListenSpeedPicker,
+  TextSizePicker,
+} from './ReadingSettings';
+import { TEXT_SCALE, useReaderPrefs } from './readerPrefs';
 import { useListenAlong } from './useListenAlong';
 import { WordSheet, type WordPick } from './WordSheet';
 
@@ -80,25 +102,55 @@ export function ReaderPage() {
  * library text, made when needed, replaces the address. Otherwise "Metin bulunamadı".
  */
 function LibraryRedirect({ id }: { id: string }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
-  const [missing, setMissing] = useState(false);
+  const [state, setState] = useState<'opening' | 'missing' | 'offline'>('opening');
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let live = true;
     openGradedById(id)
       .then((rowId) => {
         if (!live) return;
         if (rowId) void navigate(readerPath(rowId), { replace: true });
-        else setMissing(true);
+        else setState('missing');
       })
       .catch((e: unknown) => {
-        void logError(e, 'reader.openLibrary');
-        if (live) setMissing(true);
+        if (!live) return;
+        // Not on this device yet and no internet: say so (no reading row is made, B5).
+        if (e instanceof GradedUnavailableError && e.reason === 'offline') return setState('offline');
+        if (!(e instanceof GradedUnavailableError)) void logError(e, 'reader.openLibrary');
+        setState('missing');
       });
     return () => {
       live = false;
     };
-  }, [id, navigate]);
-  return missing ? <NotFound /> : <ReaderSkeleton />;
+  }, [id, navigate, attempt]);
+  if (state === 'missing') return <NotFound />;
+  if (state === 'opening') return <ReaderSkeleton />;
+  return (
+    <>
+      <TopBar title="" />
+      <div className="mx-auto max-w-(--page-reading) px-4 pt-10 sm:px-6">
+        <EmptyState
+          tone="card"
+          icon="sync-offline"
+          title={t('reader.graded.unavailableTitle')}
+          description={t('reader.graded.offline')}
+          action={
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setState('opening');
+                setAttempt((n) => n + 1);
+              }}
+            >
+              {t('reader.graded.retry')}
+            </Button>
+          }
+        />
+      </div>
+    </>
+  );
 }
 
 /** The knowledge model, reloaded when a card, an answer or a "Biliyorum" word changes it. */
@@ -128,24 +180,30 @@ function TopBar({ title, children }: { title: string; children?: React.ReactNode
     else void navigate(READER_EXIT);
   };
   return (
-    <header className="safe-top sticky top-0 z-20 border-b border-border bg-canvas/95 backdrop-blur-sm">
-      <div className="mx-auto flex h-14 max-w-3xl items-center gap-1 px-2 sm:px-4">
-        <IconButton icon="x" label={t('reader.close')} onClick={close} />
-        <p className="min-w-0 flex-1 truncate px-1 text-[0.9375rem] font-medium text-fg-muted">
+    <header className="safe-top sticky top-0 z-20 border-b border-border bg-canvas/95 backdrop-blur-md">
+      <div className="mx-auto flex h-14 max-w-(--page-reading) items-center gap-1 px-2">
+        <IconButton icon="arrow-left" label={t('reader.close')} onClick={close} />
+        <p
+          lang="en"
+          className="min-w-0 flex-1 truncate px-1 text-center text-ui font-semibold text-fg"
+        >
           {title}
         </p>
-        {children}
+        {children ?? <span aria-hidden="true" className="size-11 shrink-0" />}
       </div>
     </header>
   );
 }
 
 function ReaderSkeleton({ title = '' }: { title?: string }) {
+  const { t } = useTranslation();
   return (
     <>
       <TopBar title={title} />
-      <div className="mx-auto max-w-[40rem] px-5 pt-8" aria-busy="true">
-        <Skeleton className="mb-6 h-7 w-2/3" />
+      <div className="mx-auto max-w-(--page-reading) px-5 pt-8" aria-busy="true">
+        <span className="sr-only">{t('reader.loading')}</span>
+        <Skeleton className="mb-3 h-3 w-40" />
+        <Skeleton className="mb-8 h-7 w-2/3" />
         <Skeleton lines={10} />
       </div>
     </>
@@ -157,16 +215,13 @@ function NotFound() {
   return (
     <>
       <TopBar title="" />
-      <div className="mx-auto max-w-xl px-5 pt-10">
+      <div className="mx-auto max-w-(--page-reading) px-4 pt-10 sm:px-6">
         <EmptyState
-          icon="info"
+          icon="file"
           title={t('reader.notFound.title')}
           description={t('reader.notFound.body')}
           action={
-            <Link
-              to={READER_EXIT}
-              className="font-medium text-accent-text underline underline-offset-4"
-            >
+            <Link to={READER_EXIT} className={buttonClasses({ variant: 'secondary' })}>
               {t('reader.notFound.cta')}
             </Link>
           }
@@ -182,6 +237,8 @@ function NotFound() {
 interface GradedExtras {
   spans: GradedSpan[];
   sentences: GradedSentenceRow[];
+  /** The text's own glosses (graded_bodies.glosses): the word sheet's meaning for them. */
+  glosses: TextGloss[];
 }
 
 type BodyState =
@@ -203,7 +260,7 @@ function GradedReader({ text }: { text: ReaderText }) {
         setState({
           status: 'ready',
           body: built.body,
-          extras: { spans: built.spans, sentences: b.sentences },
+          extras: { spans: built.spans, sentences: b.sentences, glosses: b.glosses ?? [] },
         });
       })
       .catch((e: unknown) => {
@@ -236,9 +293,10 @@ function GradedReader({ text }: { text: ReaderText }) {
   return (
     <>
       <TopBar title={text.title} />
-      <div className="mx-auto max-w-xl px-5 pt-10">
+      <div className="mx-auto max-w-(--page-reading) px-4 pt-10 sm:px-6">
         <EmptyState
-          icon="info"
+          tone="card"
+          icon={state.reason === 'offline' ? 'sync-offline' : 'file'}
           title={t('reader.graded.unavailableTitle')}
           description={t(`reader.graded.${state.reason === 'offline' ? 'offline' : 'missing'}`)}
           action={
@@ -269,10 +327,16 @@ function GradedReader({ text }: { text: ReaderText }) {
 function visibleOffset(tokens: TokenizedText): number | null {
   const els = document.querySelectorAll<HTMLElement>('[data-s]');
   if (els.length === 0) return null;
-  for (const el of els) {
-    const r = el.getBoundingClientRect();
-    if (r.bottom > TOP_BAR) return tokens.sentences[Number(el.dataset.s)]?.start ?? 0;
+  // Sentences are in reading order, so their bottoms only grow: a binary search measures ~15
+  // of them instead of every one above the screen (long texts on slow phones, B19).
+  let lo = 0;
+  let hi = els.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (els[mid]!.getBoundingClientRect().bottom > TOP_BAR) hi = mid;
+    else lo = mid + 1;
   }
+  if (lo < els.length) return tokens.sentences[Number(els[lo]!.dataset.s)]?.start ?? 0;
   return tokens.sentences.at(-1)?.start ?? 0;
 }
 
@@ -290,6 +354,17 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
     [text.body, graded],
   );
   const view = useMemo(() => (k ? buildReaderView(tokens, k, k.noteTerms) : null), [tokens, k]);
+  // Meanings the text itself carries: a library text's glosses, a story's glossed words. The
+  // word sheet shows them offline and for guests too (B1).
+  const textGlosses = useMemo<TextGloss[]>(() => {
+    if (graded) return graded.glosses;
+    const s = text.story;
+    if (!s) return [];
+    return [
+      ...s.glossed.map((g) => ({ word: g.lemma, tr: g.gloss_tr })),
+      ...s.targets.flatMap((g) => (g.gloss_tr ? [{ word: g.lemma, tr: g.gloss_tr }] : [])),
+    ];
+  }, [graded, text.story]);
   const sentences = useMemo(
     () => tokens.sentences.map((s) => text.body.slice(s.start, s.end)),
     [tokens, text.body],
@@ -305,12 +380,15 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
     [sentenceRows],
   );
   const voice = settings?.voice ?? 'en-US';
+  const [prefs, setPrefs] = useReaderPrefs();
   const listen = useListenAlong(
     sentences,
     voice,
-    text.kind === 'graded' || text.kind === 'story',
+    // Only a library text can have shared recorded audio; a story is the user's own (B17).
+    text.kind === 'graded',
     undefined,
     clips,
+    Number(prefs.rate),
   );
   const highlight = settings?.reader_highlight !== false;
   const alwaysGuess = settings?.reader_always_guess === true;
@@ -353,19 +431,33 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
   // ---- position: followed while the text is on screen (scrolling, resuming, listening), so
   // leaving saves where the user was, not what a screen being taken down happens to show.
   const offset = useRef(text.progress_offset);
+  // After resuming, the position stays the resumed sentence until the user scrolls: the
+  // programmatic scroll would otherwise record the sentence half under the top bar, and each
+  // opening would move the resume point back (B9).
+  const pinned = useRef(false);
   useEffect(() => {
     let frame = 0;
     const measure = () => {
       frame = 0;
+      if (pinned.current) return;
       const at = visibleOffset(tokens);
       if (at !== null) offset.current = at;
     };
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(measure);
     };
+    const unpin = () => {
+      pinned.current = false;
+    };
     window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('wheel', unpin, { passive: true });
+    window.addEventListener('touchstart', unpin, { passive: true });
+    window.addEventListener('keydown', unpin);
     return () => {
       window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('wheel', unpin);
+      window.removeEventListener('touchstart', unpin);
+      window.removeEventListener('keydown', unpin);
       if (frame) cancelAnimationFrame(frame);
     };
   }, [tokens]);
@@ -435,23 +527,51 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
     document.getElementById(`reader-s-${s}`)?.scrollIntoView({ block: 'start' });
     window.scrollBy(0, -80);
     offset.current = tokens.sentences[s]?.start ?? resumeAt;
+    pinned.current = true;
   }, [resumed, resumeAt, tokens]);
 
-  // ---- listen-along follows the sentence.
+  // ---- listen-along follows the sentence (and is where the user is).
   useEffect(() => {
     if (speaking === null) return;
+    pinned.current = false;
     document
       .getElementById(`reader-s-${speaking}`)
       ?.scrollIntoView({ block: 'center', behavior: 'smooth' });
   }, [speaking]);
 
-  // ---- word selection.
+  // ---- word selection. The word sheet is non-modal: a press on another word must not close
+  // it (the sheet would otherwise take the "outside" press as a dismissal), it moves it; a
+  // press on the same word closes it.
+  const pressedWord = useRef(0);
+  useEffect(() => {
+    const onDown = (e: PointerEvent) => {
+      if ((e.target as Element | null)?.closest?.('[data-testid="reader-text"] [data-t]'))
+        pressedWord.current = Date.now();
+    };
+    // A key (Escape) always closes.
+    const onKey = () => {
+      pressedWord.current = 0;
+    };
+    document.addEventListener('pointerdown', onDown, true);
+    document.addEventListener('keydown', onKey, true);
+    return () => {
+      document.removeEventListener('pointerdown', onDown, true);
+      document.removeEventListener('keydown', onKey, true);
+    };
+  }, []);
+  const closeSheet = useCallback(() => {
+    if (Date.now() - pressedWord.current < 600) return;
+    setSelection(null);
+  }, []);
   const onWord = useCallback(
     (i: number) => {
       const tok = tokens.tokens[i];
       if (!tok || !/\p{L}/u.test(tok.text)) return;
       const ph = view?.phrases.find((p) => i >= p.first && i < p.end);
-      setSelection(ph ? { first: ph.first, end: ph.end } : { first: i, end: i + 1 });
+      const next = ph ? { first: ph.first, end: ph.end } : { first: i, end: i + 1 };
+      setSelection((cur) =>
+        cur && cur.first === next.first && cur.end === next.end ? null : next,
+      );
     },
     [tokens, view],
   );
@@ -526,9 +646,30 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
     [k, newWords, sentences],
   );
 
-  const coverage = view ? knownPercent(view.coverage) : null;
+  // A daily story is measured as it was accepted: without its target words, the lesson (B8).
+  const storyTargets = text.story?.targets;
+  const coverage = useMemo(() => {
+    if (!view || !k) return null;
+    if (storyTargets?.length)
+      return knownPercent(storyCoverage(tokens, k, storyTargets.map((x) => x.lemma)));
+    return knownPercent(view.coverage);
+  }, [view, k, tokens, storyTargets]);
   const words = useMemo(() => wordCount(tokens), [tokens]);
   const minutes = Math.round(text.read_ms / 60_000);
+  const kindLabel = useTextKindLabel();
+
+  // The tapped word stays in sight above its sheet (the sheet covers the lower part).
+  useEffect(() => {
+    if (!selection) return;
+    const id = requestAnimationFrame(() => {
+      const el = document.querySelector<HTMLElement>(`[data-t="${selection.first}"]`);
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      if (r.bottom > window.innerHeight * 0.42)
+        window.scrollBy({ top: r.top - Math.max(TOP_BAR + 16, window.innerHeight * 0.22) });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [selection]);
 
   const toggleListen = () => {
     if (listen.current !== null) return listen.stop();
@@ -558,21 +699,24 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
     }
   };
 
+  const listening = listen.current !== null;
+  const meta = [
+    kindLabel(text),
+    t('reader.words', { count: words }),
+    minutes > 0 ? t('reader.readMinutes', { count: minutes }) : null,
+  ].filter(Boolean);
+
   return (
     <>
       <TopBar title={text.title}>
-        <Button
-          variant={listen.current !== null ? 'secondary' : 'ghost'}
-          size="sm"
+        <IconButton
+          icon={listening ? 'pause' : 'play'}
+          variant={listening ? 'tonal' : 'ghost'}
+          label={listening ? t('reader.listen.stop') : t('reader.listen.start')}
           onClick={toggleListen}
-          aria-pressed={listen.current !== null}
+          aria-pressed={listening}
           data-testid="reader-listen"
-        >
-          {listen.current !== null ? <Icon name="pause" size={18} /> : <PlayGlyph />}
-          <span className="max-sm:sr-only">
-            {listen.current !== null ? t('reader.listen.stop') : t('reader.listen.start')}
-          </span>
-        </Button>
+        />
         <IconButton
           icon="settings"
           label={t('reader.options.open')}
@@ -580,35 +724,42 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
         />
       </TopBar>
 
-      <article className="mx-auto max-w-[40rem] px-5 pt-6 pb-[max(3rem,env(safe-area-inset-bottom))] sm:px-6 sm:pt-10">
-        <h1
-          lang="en"
-          className="font-serif text-[1.75rem] leading-tight font-semibold text-fg sm:text-[2rem]"
-        >
+      <article
+        className={cn(
+          'mx-auto max-w-(--page-reading) px-5 pt-8 sm:px-6 sm:pt-10',
+          selection ? 'pb-[60dvh]' : 'pb-[max(3rem,env(safe-area-inset-bottom))]',
+        )}
+      >
+        <Eyebrow>{meta.join(' · ')}</Eyebrow>
+        <h1 lang="en" className="mt-2 font-serif text-heading font-semibold text-fg">
           {text.title}
         </h1>
-        <div className="mt-3 mb-7 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-fg-muted">
+        <div className="mt-3 mb-8 flex flex-wrap items-center gap-x-3 gap-y-1">
           {coverage !== null ? (
-            <span
-              className="inline-flex h-7 items-center rounded-full bg-surface-sunken px-3 font-medium text-fg"
-              data-testid="reader-coverage"
-            >
-              {t('reader.coverage', { pct: coverage })}
-            </span>
+            <p className="text-ui text-fg-muted" data-testid="reader-coverage">
+              {t(storyTargets?.length ? 'reader.coverageStory' : 'reader.coverage', {
+                pct: coverage,
+                suffix: possessiveAccusativeSuffix(coverage),
+              })}
+            </p>
           ) : (
-            <Skeleton className="h-7 w-48 rounded-full" />
+            <Skeleton className="h-5 w-48" />
           )}
-          <span>{t('reader.words', { count: words })}</span>
-          {minutes > 0 && <span>{t('reader.readMinutes', { count: minutes })}</span>}
-          {resumed && <span>{t('reader.resumed')}</span>}
+          {resumed && (
+            <span className="flex items-center gap-3 text-ui text-fg-muted">
+              <span aria-hidden="true">·</span>
+              <span>{t('reader.resumed')}</span>
+            </span>
+          )}
           {sentenceRows && (
             <Button
               variant="ghost"
               size="sm"
+              leadingIcon="globe"
               aria-expanded={showTr}
               onClick={() => setShowTr((v) => !v)}
               data-testid="reader-translate"
-              className="-ml-2"
+              className="-ml-3"
             >
               {showTr ? t('reader.translation.hide') : t('reader.translation.show')}
             </Button>
@@ -627,28 +778,40 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
             highlight={highlight}
             selection={selection}
             speaking={listen.current}
+            fontScale={TEXT_SCALE[prefs.size]}
             onWord={onWord}
             targets={targets}
             translations={translations}
           />
         ) : (
-          <p className="text-fg-muted">{t('reader.emptyBody')}</p>
+          <p className="text-body text-fg-muted">{t('reader.emptyBody')}</p>
         )}
 
         {text.story && <StoryEnd story={text.story} />}
 
         {newWords && newWords.length > 0 && (
-          <section
+          <Card
+            as="section"
+            tone="accent"
             aria-labelledby="reader-summary"
-            className="mt-12 flex flex-col gap-3 rounded-card border border-border bg-surface px-4 py-4"
+            className="mt-12 flex flex-col gap-4"
             data-testid="reader-summary"
           >
-            <h2 id="reader-summary" className="text-[0.9375rem] font-medium text-fg">
-              {t('reader.summary.line', { count: newWords.length, added: addedCount })}
-            </h2>
-            {toAdd.length > 0 && (
+            <div className="flex flex-col gap-1">
+              <Eyebrow>{t('reader.summary.eyebrow')}</Eyebrow>
+              <h2 id="reader-summary" className="text-title font-semibold text-fg">
+                {addedCount > 0
+                  ? t('reader.summary.line', {
+                      count: newWords.length,
+                      added: addedCount,
+                      suffix: possessiveAccusativeSuffix(addedCount),
+                    })
+                  : t('reader.summary.lineNone', { count: newWords.length })}
+              </h2>
+            </div>
+            {toAdd.length > 0 ? (
               <Button
-                variant="secondary"
+                variant={finished ? 'primary' : 'secondary'}
                 leadingIcon="plus"
                 className="self-start"
                 onClick={() => setNewWordsOpen(true)}
@@ -656,23 +819,37 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
               >
                 {t('reader.summary.cta')}
               </Button>
+            ) : (
+              <Link
+                to="/study"
+                className={buttonClasses({
+                  variant: finished ? 'primary' : 'secondary',
+                  className: 'self-start',
+                })}
+                data-testid="reader-study-new"
+              >
+                {t('reader.summary.study')}
+              </Link>
             )}
-          </section>
+          </Card>
         )}
 
         <footer className="mt-12 flex flex-col items-center gap-4 border-t border-border pt-8 text-center">
           {finished ? (
             <>
-              <p className="font-serif text-xl font-semibold text-fg">
-                {t('reader.finished.title')}
-              </p>
-              <p className="text-sm text-fg-muted">{t('reader.feedback.question')}</p>
-              <div className="flex gap-2" role="group" aria-label={t('reader.feedback.question')}>
+              <p className="text-title font-semibold text-fg">{t('reader.finished.title')}</p>
+              <p className="text-ui text-fg-muted">{t('reader.feedback.question')}</p>
+              <div
+                className="grid w-full max-w-sm grid-cols-2 gap-2"
+                role="group"
+                aria-label={t('reader.feedback.question')}
+              >
                 {(['hard', 'easy'] as const).map((f) => (
                   <Button
                     key={f}
-                    variant={text.feedback === f ? 'primary' : 'secondary'}
+                    variant={text.feedback === f ? 'tonal' : 'secondary'}
                     aria-pressed={text.feedback === f}
+                    leadingIcon={text.feedback === f ? 'check' : undefined}
                     onClick={() => void feedback(f)}
                   >
                     {t(`reader.feedback.${f}`)}
@@ -680,14 +857,22 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
                 ))}
               </div>
               {text.feedback && (
-                <p className="text-sm text-fg-muted">{t('reader.feedback.thanks')}</p>
+                <p role="status" className="text-meta text-fg-muted">
+                  {t('reader.feedback.thanks')}
+                </p>
               )}
-              <Button variant="ghost" onClick={() => void finish(false)}>
+              <Button variant="ghost" leadingIcon="refresh" onClick={() => void finish(false)}>
                 {t('reader.finished.again')}
               </Button>
             </>
           ) : (
-            <Button size="lg" onClick={() => void finish(true)} data-testid="reader-finish">
+            <Button
+              size="lg"
+              fullWidth
+              className="max-w-sm"
+              onClick={() => void finish(true)}
+              data-testid="reader-finish"
+            >
               {t('reader.finished.cta')}
             </Button>
           )}
@@ -696,34 +881,54 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
 
       <WordSheet
         pick={pick}
+        glosses={textGlosses}
         voice={voice}
         alwaysGuess={alwaysGuess}
-        onClose={() => setSelection(null)}
+        onClose={closeSheet}
         onExtend={extend}
+        onListenHere={() => {
+          if (!selection) return;
+          const from = tokens.tokens[selection.first]!.sentence;
+          setSelection(null);
+          if (!listen.start(from)) toast({ title: t('reader.listen.noVoice'), tone: 'danger' });
+        }}
       />
 
-      <NewWordsSheet open={newWordsOpen} onOpenChange={setNewWordsOpen} words={toAdd} />
+      <NewWordsSheet
+        open={newWordsOpen}
+        onOpenChange={setNewWordsOpen}
+        words={toAdd}
+        glosses={textGlosses}
+      />
 
-      <Dialog
-        open={optionsOpen}
-        onOpenChange={setOptionsOpen}
-        variant="sheet"
-        title={t('reader.options.title')}
-      >
-        <div className="flex flex-col gap-5 pb-1">
-          <HighlightSwitch />
-          <Legend highlight={highlight} />
-          <AlwaysGuessSwitch />
-          <DifficultyPicker />
+      <Sheet open={optionsOpen} onOpenChange={setOptionsOpen} title={t('reader.options.title')}>
+        <div className="flex flex-col gap-6 pb-1">
+          <div className="flex flex-col gap-5">
+            <TextSizePicker value={prefs.size} onChange={(size) => setPrefs({ size })} />
+            <ThemeSwitcher />
+            <ListenSpeedPicker value={prefs.rate} onChange={(rate) => setPrefs({ rate })} />
+          </div>
+          <div className="flex flex-col gap-4 border-t border-border pt-5">
+            <HighlightSwitch />
+            {highlight && (
+              <Card tone="sunken" padding="sm" className="px-4">
+                <Legend />
+              </Card>
+            )}
+            <AlwaysGuessSwitch />
+          </div>
+          <div className="border-t border-border pt-5">
+            <DifficultyPicker />
+          </div>
         </div>
-      </Dialog>
+      </Sheet>
     </>
   );
 }
 
 /**
  * The colour legend, once (the first time a coloured text opens on this device); it can be
- * closed, and stays in ⚙ Okuma ayarları.
+ * closed, and stays in Okuma ayarları.
  */
 function FirstLegend() {
   const { t } = useTranslation();
@@ -738,32 +943,32 @@ function FirstLegend() {
   }, [unseen]);
   if (!unseen || closed) return null;
   return (
-    <section
+    <Card
+      as="section"
       aria-labelledby="reader-legend"
-      className="mb-7 flex flex-col gap-3 rounded-card border border-border bg-surface px-4 py-4"
+      className="mb-8 flex flex-col gap-3"
       data-testid="reader-legend"
     >
-      <div className="flex items-start justify-between gap-2">
-        <h2 id="reader-legend" className="pt-1 text-[0.9375rem] font-medium text-fg">
+      <div className="-mt-1 -mr-2 flex items-center justify-between gap-2">
+        <h2 id="reader-legend" className="text-ui font-semibold text-fg">
           {t('reader.legend.title')}
         </h2>
         <IconButton
           icon="x"
           size="sm"
-          variant="ghost"
           label={t('reader.legend.close')}
+          tooltip={false}
           onClick={() => setClosed(true)}
         />
       </div>
-      <Legend highlight />
-      <p className="text-[0.8125rem] text-fg-muted">{t('reader.legend.later')}</p>
-    </section>
+      <Legend />
+      <p className="text-meta text-fg-muted">{t('reader.legend.later')}</p>
+    </Card>
   );
 }
 
-function Legend({ highlight }: { highlight: boolean }) {
+function Legend() {
   const { t } = useTranslation();
-  if (!highlight) return null;
   const items = [
     ['new', MARK_CLASS.new],
     ['learning', MARK_CLASS.learning],
@@ -771,23 +976,17 @@ function Legend({ highlight }: { highlight: boolean }) {
     ['known', MARK_CLASS.plain],
   ] as const;
   return (
-    <ul className="flex flex-col gap-2 text-sm text-fg-muted">
+    <ul className="flex flex-col gap-2.5">
       {items.map(([key, cls]) => (
-        <li key={key} className="flex items-center gap-3">
-          <span lang="en" className={cn('w-16 font-serif text-base text-fg', cls)}>
-            {t('reader.legend.sample')}
+        <li key={key} className="flex items-center gap-3 text-meta text-fg-muted">
+          <span className="w-16 shrink-0">
+            <span lang="en" className={cn('rounded-xs font-serif text-body text-fg', cls)}>
+              {t('reader.legend.sample')}
+            </span>
           </span>
           {t(`reader.legend.${key}`)}
         </li>
       ))}
     </ul>
-  );
-}
-
-function PlayGlyph() {
-  return (
-    <svg viewBox="0 0 24 24" width={18} height={18} aria-hidden="true" fill="currentColor">
-      <path d="M8 5.5v13a.75.75 0 0 0 1.14.64l10.4-6.5a.75.75 0 0 0 0-1.28L9.14 4.86A.75.75 0 0 0 8 5.5z" />
-    </svg>
   );
 }

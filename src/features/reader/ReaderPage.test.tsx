@@ -78,14 +78,14 @@ const word = (text: string) =>
   within(screen.getByTestId('reader-text')).getAllByText(text, { selector: '[data-t]' }).at(0)!;
 
 describe('ReaderPage', () => {
-  it('colours the text, shows the coverage and counts the encounters once per opening', async () => {
+  it('colours the text, shows the coverage and counts the encounters once per text', async () => {
     const cope = await addNoteWithSenses({ term: 'cope', senses: [{ meaning_tr: 'başa çıkmak' }] });
     const id = await saveText({ kind: 'paste', title: 'A walk', body: BODY });
     const first = openReader(id);
     expect(await screen.findByRole('heading', { name: 'A walk' })).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.getByTestId('reader-coverage')).toHaveTextContent(
-        /Bu metnin %\d+'sını biliyorsun/,
+        /Bu metnin %\d+'(ını|ini|sini|ünü|sını|unu|ü|i) biliyorsun/,
       ),
     );
     await waitFor(() => expect(word('serendipity')).toHaveAttribute('data-mark', 'new'));
@@ -95,7 +95,7 @@ describe('ReaderPage', () => {
       expect(await db.encounters.where('note_id').equals(cope.note.id).count()).toBe(1),
     );
     first.unmount();
-    // Same opening rendered again: nothing more is counted.
+    // The same text opened again: nothing more is counted ("metinde" counts texts).
     openReader(id);
     await screen.findByTestId('reader-coverage');
     await new Promise((r) => setTimeout(r, 50));
@@ -310,7 +310,7 @@ describe('own words, the colour legend and the new words (v0.5.1)', () => {
     const id = await saveText({ kind: 'paste', title: 'A walk', body: BODY });
     openReader(id);
     const summary = await screen.findByTestId('reader-summary');
-    expect(summary).toHaveTextContent(/Bu metinde \d+ yeni kelime gördün · 0 tanesini ekledin/);
+    expect(summary).toHaveTextContent(/Bu metinde \d+ yeni kelime gördün · henüz eklemedin/);
     await user.click(within(summary).getByTestId('reader-new-words-open'));
     const sheet = await screen.findByRole('dialog', { name: 'Bu metindeki yeni kelimeler' });
     const list = await within(sheet).findByTestId('reader-new-words');
@@ -324,7 +324,7 @@ describe('own words, the colour legend and the new words (v0.5.1)', () => {
       meaning_tr: 'mutlu tesadüf',
       source_sentence: 'One day I found serendipity in the park.',
     });
-    await waitFor(() => expect(summary).toHaveTextContent(/· 1 tanesini ekledin/));
+    await waitFor(() => expect(summary).toHaveTextContent(/· 1'ini ekledin/));
   });
 });
 
@@ -355,6 +355,30 @@ describe('useListenAlong', () => {
     expect(played).toEqual(['tts:A one.', 'mp3:B two.', 'tts:C three.']);
     expect(result.current.current).toBeNull();
     expect(deps.prefetch).toHaveBeenCalled();
+  });
+});
+
+describe('useListenAlong speed (v0.5.2)', () => {
+  it('passes the listening speed to every voice, normal speed as no rate', () => {
+    const rates: (number | undefined)[] = [];
+    const done: (() => void)[] = [];
+    const deps: ListenAlongDeps = {
+      ready: () => false,
+      playReady: () => false,
+      device: (_t, _v, onDone, rate) => (rates.push(rate), done.push(onDone), true),
+      prefetch: vi.fn(),
+      playClip: (_k, onDone, _f, rate) => (rates.push(rate), done.push(onDone), true),
+      prefetchClips: vi.fn(),
+      cancel: vi.fn(),
+    };
+    const { result, rerender } = renderHook(({ rate }: { rate: number }) =>
+      useListenAlong(['One.', 'Two.', 'Three.'], 'en-US', false, deps, ['a.mp3', null, null], rate),
+    { initialProps: { rate: 0.75 } });
+    act(() => void result.current.start(0));
+    act(() => done.shift()!());
+    rerender({ rate: 1 });
+    act(() => done.shift()!());
+    expect(rates).toEqual([0.75, 0.75, undefined]);
   });
 });
 
@@ -404,14 +428,34 @@ describe('Okuma tab and Bugünün okuması', () => {
       'href',
       `/oku/${a}`,
     );
-    expect(within(list).getByText('Bitti')).toBeInTheDocument();
+    expect(within(list).getByRole('link', { name: /Book/ })).toHaveTextContent('PDF · Bitti');
+    expect(within(list).getByRole('link', { name: /First text/ })).toHaveTextContent('Okunmadı');
+    // Reversible, so no confirm: it goes at once, with "Geri al" in a toast.
     await user.click(within(list).getByRole('button', { name: '“First text” metnini sil' }));
-    await user.click(await screen.findByRole('button', { name: 'Sil' }));
     await waitFor(() => expect(screen.queryByRole('link', { name: /First text/ })).toBeNull());
     expect((await db.texts.get(a))!.deleted_at).not.toBeNull();
   });
 
-  it('a library text I opened is listed once, as "Okunuyor %x · Devam et"', async () => {
+  it('labels a picked text and an earlier daily story by what they are (B6)', async () => {
+    const story = (day: string, source?: 'daily' | 'picked') => ({
+      day,
+      ...(source ? { source } : {}),
+      prompt_version: 'story-v1',
+      targets: [],
+      questions: [],
+      glossed: [],
+      unknown_rate: 0.03,
+    });
+    await saveText({ kind: 'story', title: 'Mine', body: BODY, story: story('2026-10-20', 'picked') }, 1000);
+    await saveText({ kind: 'story', title: 'Old story', body: BODY, story: story('2026-10-20') }, 2000);
+    renderRoute(<ReadingTab />);
+    const list = await screen.findByTestId('my-texts');
+    expect(within(list).getByRole('link', { name: /Mine/ })).toHaveTextContent('Kelimelerimle metin');
+    expect(within(list).getByRole('link', { name: /Old story/ })).toHaveTextContent(/Hikâye · 20 Eki/);
+    expect(within(list).queryByText('Bugünün hikâyesi')).toBeNull();
+  });
+
+  it('a library text I opened is listed once, as "%x okundu"', async () => {
     await seedGraded();
     const id = await saveText({
       kind: 'graded',
@@ -423,8 +467,7 @@ describe('Okuma tab and Bugünün okuması', () => {
     renderRoute(<ReadingTab />);
     const mine = await screen.findByTestId('my-texts');
     const link = within(mine).getByRole('link', { name: /The Late Train/ });
-    expect(link).toHaveTextContent(/Okunuyor %\d+/);
-    expect(link).toHaveTextContent('Devam et');
+    expect(link).toHaveTextContent(/Kitaplık · %\d+ okundu/);
     const library = await screen.findByRole('list', { name: 'Metinler' });
     await waitFor(() => expect(within(library).getAllByRole('listitem')).toHaveLength(1));
     expect(library).toHaveTextContent('Another Day');

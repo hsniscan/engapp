@@ -1,6 +1,6 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { addNoteWithSenses, db, ensureSettings } from '@/data';
+import { addNoteWithSenses, db, ensureSettings, updateSettings } from '@/data';
 import { resetDb } from '@/test/db';
 import { renderRoute } from '@/test/ui';
 import { ReviewScreen } from './ReviewScreen';
@@ -88,9 +88,9 @@ describe('review session', () => {
     // Words, not answers; recall counts reviews only, and new words' first answers are not
     // recall (ADR 0055).
     expect(screen.getByTestId('summary-words')).toHaveTextContent('2 kelime çalıştın');
-    const words = screen.getByText('Kelime').nextElementSibling;
+    const words = screen.getByText('Kelime').previousElementSibling;
     expect(words).toHaveTextContent('2');
-    expect(screen.getByText('Hatırlama').nextElementSibling).toHaveTextContent('—');
+    expect(screen.getByText('Hatırlama').previousElementSibling).toHaveTextContent('—');
     expect(await screen.findByText('Günlük seri')).toBeInTheDocument();
     expect(screen.getByText('Bugün serine eklendi.')).toBeInTheDocument();
   }, 20_000);
@@ -115,6 +115,14 @@ describe('review session', () => {
       expect(screen.getByTestId('study-progress')).toHaveTextContent('2 / 2+1 tekrar'),
     );
   }, 20_000);
+
+  it('"Oturum uzunluğu" caps the session at that many cards (v0.5.2)', async () => {
+    for (const w of ['apple', 'river', 'stone', 'cloud', 'grass']) await addNoteWithSenses({ term: w, senses: [{ meaning_tr: w }] });
+    await updateSettings({ study_options: { session_cards: 5 } });
+    renderRoute(<ReviewScreen studyMode="word" />, { path: '/study' });
+    await term('bank');
+    expect(screen.getByTestId('study-progress')).toHaveTextContent('0 / 5');
+  });
 
   it('shows a calm empty state when nothing is due', async () => {
     await db.cards.toCollection().modify({ suspended: true });

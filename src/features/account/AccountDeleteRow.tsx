@@ -30,7 +30,12 @@ export function AccountDeleteRow({ deps }: { deps?: DeleteDialogProps['deps'] })
         label={signedIn ? t('accountDelete.rowTitle') : t('accountDelete.deviceRowTitle')}
         description={hint}
       >
-        <Button variant="danger" leadingIcon="trash" className="shrink-0" onClick={() => setOpen(true)}>
+        <Button
+          variant="secondary"
+          leadingIcon="trash"
+          className="shrink-0 text-danger-text"
+          onClick={() => setOpen(true)}
+        >
           {signedIn ? t('accountDelete.rowButton') : t('accountDelete.deviceRowButton')}
         </Button>
       </SettingsRow>

@@ -5,8 +5,8 @@ import { CONTACT_FALLBACK_URL } from '@/legal/contact';
 /**
  * Renders the small inline markup of the legal texts (src/legal/types.ts): **bold**,
  * [label](href) and {{email}}. Internal paths use the router; mailto/https are plain links.
- * Without a contact e-mail, {{email}} becomes a link to the public feedback page labelled
- * `missingEmail`.
+ * Without a contact e-mail, {{email}} becomes a link to the account deletion page labelled
+ * `missingEmail` (the texts mostly avoid that case with [[noemail]] variants).
  */
 export function LegalText({
   text,

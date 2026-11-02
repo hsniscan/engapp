@@ -22,9 +22,6 @@ function moved(search: string, drop: string, set: Record<string, string>): URLSe
   return p;
 }
 
-/** Keşfet's filters (/kesfet?f=…); "hepsi" is the plain address. */
-export const DISCOVER_FILTERS = ['okuma', 'desteler', 'kelimeler'] as const;
-
 /**
  * Where an old path goes now, keeping its query string; null for a path that is not old.
  * `search` is location.search ("?a=b" or "").

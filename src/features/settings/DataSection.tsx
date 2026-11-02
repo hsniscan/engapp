@@ -1,9 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { exportCsv, logError, resetStudyHistory, restoreBackup, type RestoreMode } from '@/data';
+import {
+  exportCsv,
+  importForeignBackupCards,
+  isForeignBackup,
+  logError,
+  resetStudyHistory,
+  restoreBackup,
+  type RestoreMode,
+} from '@/data';
 import { verifyBackup, type BackupError, type BackupSummary } from '@/domain/backup';
 import { ConfirmDialog } from '@/features/cards/ConfirmDialog';
 import { Link } from 'react-router';
+import { isNativeApp } from '@/native/platform';
 import { Badge, Button, buttonClasses, Dialog, DialogClose, Icon, toast } from '@/ui';
 import { downloadBackup, saveFileWithToast } from './backupActions';
 import { csvFileName, formatBytes, relativeDays } from './download';
@@ -17,6 +26,8 @@ interface PendingRestore {
   json: string;
   summary: BackupSummary;
   exportedAt: number;
+  /** Another account's backup: only its words may come along (v0.5.2, ADR 0063). */
+  foreign: boolean;
 }
 
 const nf = new Intl.NumberFormat('tr-TR');
@@ -42,9 +53,10 @@ export function DataSection() {
   const { settings } = useAppSettings();
   const userId = useUserId();
   const storage = useStorageInfo();
+  const native = isNativeApp();
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<
-    'backup' | 'csv' | 'read' | RestoreMode | 'persist' | 'reset' | null
+    'backup' | 'csv' | 'read' | RestoreMode | 'cards' | 'persist' | 'reset' | null
   >(null);
   const [pending, setPending] = useState<PendingRestore | null>(null);
   const [backedUp, setBackedUp] = useState(false);
@@ -107,6 +119,7 @@ export function DataSection() {
         json,
         summary: res.summary,
         exportedAt: res.backup.exported_at,
+        foreign: await isForeignBackup(res.backup),
       });
     } catch (e) {
       void logError(e, 'restore.read');
@@ -141,6 +154,21 @@ export function DataSection() {
       });
     } catch (e) {
       void logError(e, 'restore.apply');
+      toast({ title: t('restore.failed'), tone: 'danger' });
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const importCards = async () => {
+    if (!pending) return;
+    setBusy('cards');
+    try {
+      const n = await importForeignBackupCards(pending.json);
+      setPending(null);
+      toast({ title: t('restore.cardsDone', { count: n }), tone: 'success', duration: 8000 });
+    } catch (e) {
+      void logError(e, 'restore.cards');
       toast({ title: t('restore.failed'), tone: 'danger' });
     } finally {
       setBusy(null);
@@ -230,49 +258,58 @@ export function DataSection() {
           {t('csv.button')}
         </Button>
       </SettingsRow>
-      <SettingsRow
-        label={
-          <span className="flex flex-wrap items-center gap-2">
-            {t('storage.persistTitle')}
-            {storage.persisted === true && <Badge tone="success">{t('storage.on')}</Badge>}
-            {storage.persisted === false && (
-              <Badge tone={guest ? 'warn' : 'neutral'}>{t('storage.off')}</Badge>
-            )}
-          </span>
-        }
-        description={
-          !storage.supported
-            ? t('storage.unsupported')
-            : storage.persisted
-              ? t('storage.onHint')
-              : guest
-                ? t('storage.deniedGuest')
-                : t('storage.offHint')
-        }
-      >
-        {storage.supported && storage.persisted === false && (
-          <Button
-            variant="secondary"
-            loading={busy === 'persist'}
-            onClick={async () => {
-              setBusy('persist');
-              const granted = await requestPersistence();
-              setBusy(null);
-              toast(
-                granted
-                  ? { title: t('storage.granted'), tone: 'success' }
-                  : {
-                      title: t('storage.deniedTitle'),
-                      description: t('storage.deniedHelp'),
-                      tone: 'warn',
-                    },
-              );
-            }}
-          >
-            {t('storage.request')}
-          </Button>
-        )}
-      </SettingsRow>
+      {native ? (
+        // Android app (ADR 0064): app storage is not evicted like a browser's; only uninstalling
+        // or clearing the app's data removes it.
+        <SettingsRow
+          label={t('storage.appTitle')}
+          description={guest ? t('storage.appGuest') : t('storage.appSignedIn')}
+        />
+      ) : (
+        <SettingsRow
+          label={
+            <span className="flex flex-wrap items-center gap-2">
+              {t('storage.persistTitle')}
+              {storage.persisted === true && <Badge tone="success">{t('storage.on')}</Badge>}
+              {storage.persisted === false && (
+                <Badge tone={guest ? 'warn' : 'neutral'}>{t('storage.off')}</Badge>
+              )}
+            </span>
+          }
+          description={
+            !storage.supported
+              ? t('storage.unsupported')
+              : storage.persisted
+                ? t('storage.onHint')
+                : guest
+                  ? t('storage.deniedGuest')
+                  : t('storage.offHint')
+          }
+        >
+          {storage.supported && storage.persisted === false && (
+            <Button
+              variant="secondary"
+              loading={busy === 'persist'}
+              onClick={async () => {
+                setBusy('persist');
+                const granted = await requestPersistence();
+                setBusy(null);
+                toast(
+                  granted
+                    ? { title: t('storage.granted'), tone: 'success' }
+                    : {
+                        title: t('storage.deniedTitle'),
+                        description: t('storage.deniedHelp'),
+                        tone: 'warn',
+                      },
+                );
+              }}
+            >
+              {t('storage.request')}
+            </Button>
+          )}
+        </SettingsRow>
+      )}
       <SettingsRow
         label={t('storage.usedTitle')}
         description={
@@ -287,7 +324,7 @@ export function DataSection() {
         }
       />
       <SettingsRow label={t('resetHistory.title')} description={t('resetHistory.hint')}>
-        <Button variant="danger" onClick={() => setConfirmReset(true)}>
+        <Button variant="secondary" className="text-danger-text" onClick={() => setConfirmReset(true)}>
           {t('resetHistory.button')}
         </Button>
       </SettingsRow>
@@ -316,28 +353,36 @@ export function DataSection() {
                 {t('common.cancel')}
               </Button>
             </DialogClose>
-            <Button
-              variant="danger"
-              loading={busy === 'overwrite'}
-              disabled={busy === 'merge'}
-              onClick={() => void restore('overwrite')}
-            >
-              {t('restore.overwrite')}
-            </Button>
-            <Button
-              loading={busy === 'merge'}
-              disabled={busy === 'overwrite'}
-              onClick={() => void restore('merge')}
-            >
-              {t('restore.merge')}
-            </Button>
+            {pending?.foreign ? (
+              <Button loading={busy === 'cards'} onClick={() => void importCards()} data-testid="restore-cards">
+                {t('restore.cardsOnly')}
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="danger"
+                  loading={busy === 'overwrite'}
+                  disabled={busy === 'merge'}
+                  onClick={() => void restore('overwrite')}
+                >
+                  {t('restore.overwrite')}
+                </Button>
+                <Button
+                  loading={busy === 'merge'}
+                  disabled={busy === 'overwrite'}
+                  onClick={() => void restore('merge')}
+                >
+                  {t('restore.merge')}
+                </Button>
+              </>
+            )}
           </>
         }
       >
         {pending && (
           <div className="flex flex-col gap-4">
             <p
-              className="rounded-control bg-surface-sunken px-4 py-3 font-serif text-lg text-fg"
+              className="rounded-control bg-surface-sunken px-4 py-3 text-lead text-fg"
               data-testid="restore-summary"
             >
               {t('restore.summary', {
@@ -346,7 +391,12 @@ export function DataSection() {
                 reviews: nf.format(pending.summary.reviews),
               })}
             </p>
-            <div className="flex flex-col gap-2 rounded-control border border-border px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+            {pending.foreign && (
+              <p className="rounded-control border border-border px-4 py-3 text-meta text-fg" data-testid="restore-foreign">
+                {t('restore.foreign')}
+              </p>
+            )}
+            <div className="flex flex-col gap-2 rounded-control border border-border px-4 py-3 text-meta sm:flex-row sm:items-center sm:justify-between">
               <p className="text-fg-muted">{t('restore.backupFirstHint')}</p>
               {backedUp ? (
                 <Badge tone="success">{t('restore.backedUp')}</Badge>
@@ -369,7 +419,7 @@ export function DataSection() {
                 </Button>
               )}
             </div>
-            <dl className="flex flex-col gap-3 text-sm">
+            {!pending.foreign && <dl className="flex flex-col gap-3 text-meta">
               <div className="flex gap-3">
                 <Icon name="check" size={18} className="mt-0.5 shrink-0 text-success-text" />
                 <div>
@@ -384,7 +434,7 @@ export function DataSection() {
                   <dd className="text-fg-muted">{t('restore.overwriteHint')}</dd>
                 </div>
               </div>
-            </dl>
+            </dl>}
           </div>
         )}
       </Dialog>

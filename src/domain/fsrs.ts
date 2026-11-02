@@ -313,8 +313,8 @@ export interface IntervalPreview {
   rating: RatingValue;
   due: Millis;
   interval_ms: number;
-  /** Button label (formatNextInterval): "10 dk", "yarın", "3 gün", "2 hafta", "1 ay". */
-  label: string;
+  /** Button label as parts (nextIntervalParts), rendered through i18n: "10 dk", "yarın", "3 gün". */
+  label: IntervalLabel;
   state: CardStateValue;
   /** The card's stage after this answer (compare with cardStage(card) for the arrow line). */
   stageAfter: WordStage;
@@ -334,7 +334,7 @@ export function previewIntervals(
       rating,
       due: next.due,
       interval_ms: interval,
-      label: formatNextInterval(interval),
+      label: nextIntervalParts(interval),
       state: next.state,
       stageAfter: cardStage(next),
     };
@@ -342,20 +342,29 @@ export function previewIntervals(
   return out;
 }
 
-function trNumber(n: number): string {
-  // One decimal at most, Turkish decimal comma, no trailing ",0".
-  const rounded = Math.round(n * 10) / 10;
-  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1).replace('.', ',');
+// Interval labels (v0.5.2, review I-5): the domain decides the unit and the rounding; the words
+// ("dk", "yarın", "hafta", "1,5 ay") come from i18n (features/review/intervalText.ts), so the
+// English UI no longer shows Turkish under the answer buttons.
+
+/** minute/hour/day/week/month/year with a value (halves allowed for month/year), or tomorrow. */
+export type IntervalUnit = 'minute' | 'hour' | 'tomorrow' | 'day' | 'week' | 'month' | 'year';
+export interface IntervalLabel {
+  unit: IntervalUnit;
+  value: number;
+  /** Short form ("3 g" rather than "3 gün"): formatInterval's compact labels. */
+  short?: boolean;
 }
 
-/** Short Turkish interval label: "1 dk", "10 dk", "5 sa", "3 g", "2 ay", "1,5 yıl". */
-export function formatInterval(ms: number): string {
-  if (ms < HOUR) return `${Math.max(1, Math.round(ms / MINUTE))} dk`;
-  if (ms < DAY) return `${Math.round(ms / HOUR)} sa`;
+const oneDecimal = (n: number): number => Math.round(n * 10) / 10;
+
+/** Compact interval ("1 dk", "10 dk", "5 sa", "3 g", "2 ay", "1,5 yıl"). */
+export function intervalParts(ms: number): IntervalLabel {
+  if (ms < HOUR) return { unit: 'minute', value: Math.max(1, Math.round(ms / MINUTE)), short: true };
+  if (ms < DAY) return { unit: 'hour', value: Math.round(ms / HOUR), short: true };
   const days = ms / DAY;
-  if (days < 30) return `${Math.round(days)} g`;
-  if (days < 365) return `${trNumber(days / 30)} ay`;
-  return `${trNumber(days / 365)} yıl`;
+  if (days < 30) return { unit: 'day', value: Math.round(days), short: true };
+  if (days < 365) return { unit: 'month', value: oneDecimal(days / 30), short: true };
+  return { unit: 'year', value: oneDecimal(days / 365), short: true };
 }
 
 /**
@@ -364,35 +373,37 @@ export function formatInterval(ms: number): string {
  * "1 hafta"…"4 hafta", other days "13 gün"; 30 days to 3 months in half months ("1 ay",
  * "1,5 ay"); 3 months to a year in whole months ("4 ay"); a year and more in half years.
  */
-export function formatNextInterval(ms: number): string {
-  if (ms < HOUR) return `${Math.max(1, Math.round(ms / MINUTE))} dk`;
-  if (ms < DAY) return `${Math.min(23, Math.round(ms / HOUR))} sa`;
+export function nextIntervalParts(ms: number): IntervalLabel {
+  if (ms < HOUR) return { unit: 'minute', value: Math.max(1, Math.round(ms / MINUTE)) };
+  if (ms < DAY) return { unit: 'hour', value: Math.min(23, Math.round(ms / HOUR)) };
   const days = Math.round(ms / DAY);
-  if (days <= 1) return 'yarın';
-  if (days < 7) return `${days} gün`;
-  if (days < 30) return days % 7 === 0 ? `${days / 7} hafta` : `${days} gün`;
-  if (days < 90) return `${trNumber(Math.round((days / 30) * 2) / 2)} ay`;
+  if (days <= 1) return { unit: 'tomorrow', value: 1 };
+  if (days < 7) return { unit: 'day', value: days };
+  if (days < 30) return days % 7 === 0 ? { unit: 'week', value: days / 7 } : { unit: 'day', value: days };
+  if (days < 90) return { unit: 'month', value: oneDecimal(Math.round((days / 30) * 2) / 2) };
   const months = Math.round(days / 30);
-  if (days < 365 && months < 12) return `${months} ay`;
-  return `${trNumber(Math.max(1, Math.round((days / 365) * 2) / 2))} yıl`;
+  if (days < 365 && months < 12) return { unit: 'month', value: months };
+  return { unit: 'year', value: oneDecimal(Math.max(1, Math.round((days / 365) * 2) / 2)) };
 }
+
+const sameLabel = (a: IntervalLabel, b: IntervalLabel) => a.unit === b.unit && a.value === b.value;
 
 /**
  * Labels for the four buttons in order (Again … Easy). Rounding can give two different
  * intervals one label ("2 ay" under Zor and İyi); those neighbours fall back to whole days
  * ("58 gün", "62 gün") so the buttons never look the same.
  */
-export function distinctIntervalLabels(intervals: readonly number[]): string[] {
-  const labels = intervals.map(formatNextInterval);
+export function distinctIntervalParts(intervals: readonly number[]): IntervalLabel[] {
+  const labels = intervals.map(nextIntervalParts);
   for (let i = 1; i < labels.length; i++) {
     const a = intervals[i - 1]!;
     const b = intervals[i]!;
-    if (labels[i] !== labels[i - 1] || a === b || a < 2 * DAY) continue;
+    if (!sameLabel(labels[i]!, labels[i - 1]!) || a === b || a < 2 * DAY) continue;
     const da = Math.round(a / DAY);
     const db = Math.round(b / DAY);
     if (da === db) continue;
-    labels[i - 1] = `${da} gün`;
-    labels[i] = `${db} gün`;
+    labels[i - 1] = { unit: 'day', value: da };
+    labels[i] = { unit: 'day', value: db };
   }
   return labels;
 }

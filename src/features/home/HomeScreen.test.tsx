@@ -53,19 +53,23 @@ describe('Bugün', () => {
     renderRoute(<HomeScreen />);
 
     const hero = await screen.findByTestId('today-hero');
-    expect(within(hero).getByRole('heading', { name: '2 kart kaldı' })).toBeInTheDocument();
-    expect(within(hero).getByText(/0 tekrar · 2 yeni/)).toBeInTheDocument();
-    expect(within(hero).getByRole('img', { name: 'Bugün 0 / 2 kart' })).toBeInTheDocument();
-    expect(within(hero).getByRole('link', { name: /Başla/ })).toHaveAttribute(
+    expect(within(hero).getByRole('heading', { name: 'Bugünün çalışması' })).toBeInTheDocument();
+    expect(within(hero).getByTestId('today-split')).toHaveTextContent('2 kart kaldı · 0 tekrar · 2 yeni');
+    expect(within(hero).getByRole('progressbar', { name: 'Bugünün çalışması' })).toHaveAttribute(
+      'aria-valuetext',
+      'Bugün 0 / 2 kart',
+    );
+    expect(within(hero).getByRole('link', { name: /Çalışmaya başla/ })).toHaveAttribute(
       'href',
       '/study?mode=word',
     );
-    // One chip per mode in the hero: the whole day at a glance (ADR 0055).
-    expect(within(hero).getByTestId('study-type-word')).toHaveAttribute('href', '/study?mode=word');
+    // One chip per mode on the Today card: the whole day at a glance (ADR 0055).
     expect(within(hero).getByTestId('study-type-word')).toHaveAccessibleName(/^Kelime\s*2 kart$/);
+    // A new user's Üretim has no card open yet: the card says when it opens (v0.5.2).
     expect(within(hero).getByTestId('study-type-production')).toHaveAccessibleName(
-      /^Üretim\s*Bugün yok$/,
+      /^Üretim\s*henüz açılmadı$/,
     );
+    expect(within(hero).getByTestId('today-locked-hint')).toHaveTextContent('Pekişiyor');
     expect(await screen.findByTestId('home-words')).toHaveTextContent('/ 2 kelimenden');
 
     // Answer every word card (Easy graduates them): the calm "done" state takes over.
@@ -73,9 +77,10 @@ describe('Bugün', () => {
       await answerCard({ card_id: item.card_id, rating: 4, duration_ms: 5000 });
     const done = await screen.findByTestId('today-hero-done');
     expect(within(done).getByRole('heading', { name: 'Bugünlük tamam' })).toBeInTheDocument();
-    expect(within(done).getByText('0 tekrar · 2 yeni kelime')).toBeInTheDocument();
+    expect(within(done).getByText('0 tekrar · 2 yeni kart')).toBeInTheDocument();
+    expect(done).toHaveTextContent('2 / 2');
     expect(within(done).getByRole('status')).toHaveTextContent(/Sıradaki çalışma|Yarın/);
-    expect(screen.queryByRole('link', { name: /Devam et|Başla/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Devam et|başla/ })).toBeNull();
     expect(await db.daily_activity.count()).toBe(1);
   });
 
@@ -87,28 +92,20 @@ describe('Bugün', () => {
     renderRoute(<HomeScreen />);
     const hero = await screen.findByTestId('today-hero');
     expect(screen.queryByTestId('today-hero-done')).toBeNull();
-    expect(within(hero).getByRole('heading', { name: '1 kart kaldı' })).toBeInTheDocument();
+    expect(within(hero).getByTestId('today-split')).toHaveTextContent('1 kart kaldı');
     expect(within(hero).getByTestId('start-study')).toHaveTextContent('Üretime geç (1)');
     expect(within(hero).getByTestId('start-study')).toHaveAttribute('href', '/study?mode=production');
     expect(screen.queryByTestId('more-study')).toBeNull();
   });
 
-  it('offers daily-goal presets instead of empty rings when no goal is set', async () => {
+  it('offers daily-goal presets when no goal is set, then shows the goal under Kısayollar', async () => {
     await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] });
     renderRoute(<HomeScreen />);
     const goals = await screen.findByTestId('home-goals');
-    expect(within(goals).queryByTestId('goal-day')).toBeNull();
+    expect(screen.queryByTestId('goal-day')).toBeNull();
     fireEvent.click(within(goals).getByRole('button', { name: '15 dk' }));
-    expect(await within(goals).findByTestId('goal-day')).toHaveTextContent('0/15 dk');
-  });
-
-  it('an unmeasured level is not shown as B1', async () => {
-    await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] });
-    renderRoute(<HomeScreen />);
-    const goals = await screen.findByTestId('home-goals');
-    expect(within(goals).getByText('Seviye henüz ölçülmedi')).toBeInTheDocument();
-    expect(within(goals).queryByText(/B1/)).toBeNull();
-    expect(within(goals).getByRole('link', { name: /Seviyeni ölç/ })).toHaveAttribute('href', '/level-test');
+    expect(await screen.findByTestId('goal-day')).toHaveTextContent('0/15 dk');
+    expect(screen.queryByTestId('home-goals')).toBeNull();
   });
 
   it('opens the streak sheet from the streak line', async () => {
@@ -123,21 +120,19 @@ describe('Bugün', () => {
     expect(sheet).toHaveTextContent('seriye sayılmaz');
   });
 
-  it('shows goals with their targets and the level path', async () => {
+  it('links the goals row to the goal editor', async () => {
     await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] });
     await updateGoals({ day_minutes: 15, week_minutes: 60, target_level: 'C1' });
-    await db.settings.update('settings', { level_source: 'manual' });
     renderRoute(<HomeScreen />);
-    const goals = await screen.findByTestId('home-goals');
-    expect(within(goals).getByTestId('goal-day')).toHaveTextContent('0/15 dk');
-    expect(await within(goals).findByText(/0\/60/)).toBeInTheDocument();
-    expect(within(goals).getByText('Seviye tahmini: B1')).toBeInTheDocument();
-    expect(
-      within(goals).getByRole('list', { name: 'Seviye yolu: şimdi B1, sıradaki hedef C1' }),
-    ).toBeInTheDocument();
-    expect(within(goals).getByRole('link', { name: 'Hedefleri düzenle' })).toHaveAttribute(
+    const shortcuts = await screen.findByTestId('home-shortcuts');
+    expect(within(shortcuts).getByTestId('goal-day')).toHaveTextContent('0/15 dk');
+    expect(within(shortcuts).getByRole('link', { name: /Hedeflerin/ })).toHaveAttribute(
       'href',
       '/progress?edit=goals',
+    );
+    expect(within(shortcuts).getByRole('link', { name: /Kelime Bankası/ })).toHaveAttribute(
+      'href',
+      '/decks?tab=bank',
     );
   });
 

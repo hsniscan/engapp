@@ -111,3 +111,17 @@ describe('storyWireBody', () => {
     });
   });
 });
+
+describe('pickedTextsToday (B8)', () => {
+  it('counts by the server\'s UTC day, deleted texts included', async () => {
+    const { saveText, deleteText } = await import('./texts');
+    const story = { source: 'picked' } as never;
+    // 01:30 in Istanbul on 22 Oct is still 21 Oct in UTC.
+    const lateNight = Date.UTC(2026, 9, 21, 22, 30);
+    const a = await saveText({ kind: 'story', title: 'a', body: 'x', story }, lateNight);
+    await saveText({ kind: 'story', title: 'b', body: 'x', story }, Date.UTC(2026, 9, 21, 10));
+    await deleteText(a, lateNight + 1);
+    expect(await pickedTextsToday(Date.UTC(2026, 9, 21, 23))).toBe(2);
+    expect(await pickedTextsToday(Date.UTC(2026, 9, 22, 1))).toBe(0);
+  });
+});

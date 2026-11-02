@@ -5,6 +5,7 @@ import { addNoteWithSenses, db } from '@/data';
 import { CardState } from '@/domain/types';
 import { resetDb } from '@/test/db';
 import { renderRoute } from '@/test/ui';
+import { getToasts } from '@/ui/toast-store';
 import { LibraryPage } from './LibraryPage';
 
 beforeEach(async () => {
@@ -28,7 +29,7 @@ beforeEach(async () => {
 });
 
 const rowTerms = () =>
-  within(screen.getByRole('list', { name: 'Notlar' }))
+  within(screen.getByRole('list', { name: 'Kelimeler' }))
     .getAllByRole('listitem')
     .map((li) => li.querySelector('[lang="en"]')?.textContent);
 
@@ -37,13 +38,13 @@ describe('library', () => {
     renderRoute(<LibraryPage />, { path: '/library' });
     await waitFor(() => expect(rowTerms()).toEqual(['tide', 'give up', 'bank']));
     expect(screen.getByText(/1\. banka\s+·\s+2\. kıyı/)).toBeInTheDocument();
-    expect(screen.getByText('3 not · 8 kart')).toBeInTheDocument();
+    expect(screen.getByText('3 kelime · 8 kart')).toBeInTheDocument();
   });
 
   it('searches terms and Turkish meanings, ignoring case and Turkish letters', async () => {
     const user = userEvent.setup();
     renderRoute(<LibraryPage />, { path: '/library' });
-    await screen.findByRole('list', { name: 'Notlar' });
+    await screen.findByRole('list', { name: 'Kelimeler' });
     await user.type(screen.getByRole('searchbox'), 'KIYI');
     await waitFor(() => expect(rowTerms()).toEqual(['bank']));
     await user.clear(screen.getByRole('searchbox'));
@@ -51,7 +52,7 @@ describe('library', () => {
     await waitFor(() => expect(rowTerms()).toEqual(['give up']));
     await user.clear(screen.getByRole('searchbox'));
     await user.type(screen.getByRole('searchbox'), 'zzz');
-    expect(await screen.findByText('Eşleşen not yok')).toBeInTheDocument();
+    expect(await screen.findByText('Eşleşen kelime yok')).toBeInTheDocument();
   });
 
   it('filters by state, card type, suspension and tag from the URL', async () => {
@@ -61,11 +62,11 @@ describe('library', () => {
       .equals(tide.id)
       .filter((c) => c.card_type === 'recognition')
       .first())!;
-    await db.cards.update(rec.id, { state: CardState.Review });
+    await db.cards.update(rec.id, { state: CardState.Review, ramp_step: 1, stability: 3 });
     const bank = (await db.notes.where('term_norm').equals('bank').first())!;
     await db.cards.where('note_id').equals(bank.id).modify({ suspended: true });
 
-    const r1 = renderRoute(<LibraryPage />, { path: '/library', url: '/library?state=review' });
+    const r1 = renderRoute(<LibraryPage />, { path: '/library', url: '/library?state=consolidating' });
     await waitFor(() => expect(rowTerms()).toEqual(['tide']));
     r1.unmount();
 
@@ -78,7 +79,7 @@ describe('library', () => {
       url: '/library?suspended=suspended',
     });
     await waitFor(() => expect(rowTerms()).toEqual(['bank']));
-    expect(screen.getByText('Askıda')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Askıda/, pressed: true })).toBeInTheDocument();
     r3.unmount();
 
     renderRoute(<LibraryPage />, {
@@ -91,21 +92,25 @@ describe('library', () => {
   it('bulk-suspends the selected notes', async () => {
     const user = userEvent.setup();
     renderRoute(<LibraryPage />, { path: '/library' });
-    await screen.findByRole('list', { name: 'Notlar' });
-    await user.click(screen.getByRole('checkbox', { name: '“tide” notunu seç' }));
-    await user.click(screen.getByRole('checkbox', { name: '“bank” notunu seç' }));
-    const bar = screen.getByRole('region', { name: 'Seçili notlar için işlemler' });
-    expect(within(bar).getByText('2 not seçili')).toBeInTheDocument();
+    await screen.findByRole('list', { name: 'Kelimeler' });
+    await user.click(screen.getByRole('checkbox', { name: '“tide” kelimesini seç' }));
+    await user.click(screen.getByRole('checkbox', { name: '“bank” kelimesini seç' }));
+    const bar = screen.getByRole('region', { name: 'Seçili kelimeler için işlemler' });
+    expect(within(bar).getByText('2 kelime seçili')).toBeInTheDocument();
     await user.click(within(bar).getByRole('button', { name: 'Askıya al' }));
     await waitFor(async () => expect(await db.cards.filter((c) => c.suspended).count()).toBe(6));
   });
 
-  it('opens the detail sheet, edits a meaning and confirms deleting with focus on Vazgeç', async () => {
+  it('opens the word in a read view, edits a meaning, and deletes with Geri al', async () => {
     const user = userEvent.setup();
     renderRoute(<LibraryPage />, { path: '/library' });
-    await screen.findByRole('list', { name: 'Notlar' });
+    await screen.findByRole('list', { name: 'Kelimeler' });
     await user.click(screen.getByRole('button', { name: /^tide/ }));
     const dialog = await screen.findByRole('dialog', { name: 'tide' });
+    // Read view first: the meaning as text, no form fields.
+    expect(within(dialog).getByText('gelgit')).toBeInTheDocument();
+    expect(within(dialog).queryByLabelText('Türkçe anlamı')).toBeNull();
+    await user.click(within(dialog).getByRole('button', { name: 'Düzenle' }));
     const meaning = within(dialog).getByLabelText('Türkçe anlamı');
     await user.clear(meaning);
     await user.type(meaning, 'gelgit, met-cezir');
@@ -113,25 +118,47 @@ describe('library', () => {
     await waitFor(async () =>
       expect(await db.senses.filter((s) => s.meaning_tr === 'gelgit, met-cezir').count()).toBe(1),
     );
+    // Saving goes back to the read view with the new meaning.
+    expect(await within(dialog).findByText('gelgit, met-cezir')).toBeInTheDocument();
+    await user.keyboard('{Escape}');
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await user.click(screen.getByRole('button', { name: /^bank/ }));
     const sheet = await screen.findByRole('dialog', { name: 'bank' });
-    await user.click(within(sheet).getByRole('button', { name: 'Notu sil' }));
-    const confirm = await screen.findByRole('dialog', { name: '“bank” silinsin mi?' });
-    expect(within(confirm).getByRole('button', { name: 'Vazgeç' })).toHaveFocus();
-    await user.click(within(confirm).getByRole('button', { name: 'Sil' }));
+    // Deleting is undoable, so it happens at once and the toast offers "Geri al".
+    await user.click(within(sheet).getByRole('button', { name: 'Kelimeyi sil' }));
     await waitFor(async () =>
       expect((await db.notes.where('term_norm').equals('bank').first())?.deleted_at).not.toBeNull(),
+    );
+    const undo = getToasts().at(-1)!;
+    expect(undo.action?.label).toBe('Geri al');
+    undo.action!.onClick();
+    await waitFor(async () =>
+      expect((await db.notes.where('term_norm').equals('bank').first())?.deleted_at).toBeNull(),
+    );
+  });
+
+  it('the row menu suspends a word at once', async () => {
+    const user = userEvent.setup();
+    renderRoute(<LibraryPage />, { path: '/library' });
+    await screen.findByRole('list', { name: 'Kelimeler' });
+    await user.click(screen.getByRole('button', { name: '“tide” için işlemler' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Askıya al' }));
+    const tide = (await db.notes.where('term_norm').equals('tide').first())!;
+    await waitFor(async () =>
+      expect((await db.cards.where('note_id').equals(tide.id).toArray()).every((c) => c.suspended)).toBe(
+        true,
+      ),
     );
   });
 
   it('edits the sentence translation in the detail sheet', async () => {
     const user = userEvent.setup();
     renderRoute(<LibraryPage />, { path: '/library' });
-    await screen.findByRole('list', { name: 'Notlar' });
+    await screen.findByRole('list', { name: 'Kelimeler' });
     await user.click(screen.getByRole('button', { name: /^bank/ }));
     const dialog = await screen.findByRole('dialog', { name: 'bank' });
+    await user.click(within(dialog).getByRole('button', { name: 'Düzenle' }));
     // Only the sense with a sentence offers a translation field.
     const fields = within(dialog).getAllByLabelText(/Türkçe çevirisi/);
     expect(fields).toHaveLength(1);
@@ -142,5 +169,38 @@ describe('library', () => {
         'Kıyıda oturduk.',
       ),
     );
+  });
+
+  it('bulk delete never touches selected words the filter hides (B6)', async () => {
+    const user = userEvent.setup();
+    const { router } = renderRoute(<LibraryPage />, { path: '/library' });
+    await screen.findByRole('list', { name: 'Kelimeler' });
+    await user.click(screen.getByRole('checkbox', { name: '“tide” kelimesini seç' }));
+    await user.click(screen.getByRole('checkbox', { name: '“bank” kelimesini seç' }));
+    await router.navigate('/library?tag=su');
+    await waitFor(() => expect(rowTerms()).toEqual(['bank']));
+    const bar = screen.getByRole('region', { name: 'Seçili kelimeler için işlemler' });
+    expect(within(bar).getByText('1 kelime seçili')).toBeInTheDocument();
+    await user.click(within(bar).getByRole('button', { name: '1 kelimeyi sil' }));
+    const confirm = await screen.findByRole('dialog', { name: '1 kelime silinsin mi?' });
+    await user.click(within(confirm).getByRole('button', { name: 'Sil' }));
+    await waitFor(async () =>
+      expect((await db.notes.where('term_norm').equals('bank').first())?.deleted_at).not.toBeNull(),
+    );
+    expect((await db.notes.where('term_norm').equals('tide').first())?.deleted_at).toBeNull();
+  });
+
+  it('asks before throwing away unsaved edits (B4)', async () => {
+    const user = userEvent.setup();
+    renderRoute(<LibraryPage />, { path: '/library' });
+    await screen.findByRole('list', { name: 'Kelimeler' });
+    await user.click(screen.getByRole('button', { name: /^tide/ }));
+    const dialog = await screen.findByRole('dialog', { name: 'tide' });
+    await user.click(within(dialog).getByRole('button', { name: 'Düzenle' }));
+    await user.type(within(dialog).getByLabelText('Türkçe anlamı'), ' x');
+    await user.keyboard('{Escape}');
+    const ask = await screen.findByRole('dialog', { name: 'Değişiklikler kaydedilmedi' });
+    await user.click(within(ask).getByRole('button', { name: 'Düzenlemeye dön' }));
+    expect(screen.getByRole('dialog', { name: 'tide' })).toBeInTheDocument();
   });
 });

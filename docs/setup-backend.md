@@ -87,7 +87,9 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 | `SUPABASE_ACCESS_TOKEN`     | `https://supabase.com/dashboard/account/tokens` → **Generate new token** → name `github-actions` → copy (starts with `sbp_`)                                                                                                        |
 | `SUPABASE_DB_PASSWORD`      | the database password from step 3.6                                                                                                                                                                                                 |
 | `GEMINI_API_KEY`            | the key from step 1                                                                                                                                                                                                                 |
-| `SUPABASE_SERVICE_ROLE_KEY` | optional, for the level job (step 9): **Project Settings → API Keys** → the `service_role` key or a secret key (`sb_secret_…`). Without it the job reads the key with `SUPABASE_ACCESS_TOKEN`, which then needs API key read access |
+| `SUPABASE_SERVICE_ROLE_KEY` | recommended, for every scheduled job (steps 9, 12, 14–16, 19): **Project Settings → API Keys** → the `service_role` key or a secret key (`sb_secret_…`). Without it the job reads the key with `SUPABASE_ACCESS_TOKEN`, which then needs API key read access |
+| `BACKUP_PASSPHRASE`         | **required since v0.5.2** (step 20): a long random passphrase (e.g. `openssl rand -base64 32`). Every database backup is encrypted with it. **Keep a copy outside GitHub** (password manager or paper): without it no backup can be read. The deploy refuses to migrate without it |
+| `R2_BACKUP_BUCKET`, `R2_BACKUP_ACCESS_KEY_ID`, `R2_BACKUP_SECRET_ACCESS_KEY` | recommended (step 20): a **private** R2 bucket and an API token limited to it, only for backups. Without them the backups go to the audio bucket under `backups/` (still encrypted) |
 | `ANTHROPIC_API_KEY`         | optional, for pictures (step 12) and the text AI fallback (step 16): `https://console.anthropic.com/settings/keys` → **Create Key** → copy (starts with `sk-ant-`)                                                                  |
 
 **Variables** tab → **New repository variable** (all optional; defaults in brackets):
@@ -95,13 +97,16 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 | Name                        | Value                                                                                                     |
 | --------------------------- | --------------------------------------------------------------------------------------------------------- |
 | `ALLOWED_ORIGINS`           | `<APP_URL>,http://localhost:5173` [default: only `http://localhost:5173`, so **set this** for production] |
-| `GEMINI_MODEL`              | [`gemini-3.8-flash`]                                                                                      |
-| `GEMINI_FALLBACK_MODEL`     | [`gemini-3.5-flash-lite`]                                                                                 |
-| `AI_DAILY_LIMIT`            | AI calls per user per UTC day [`200`]                                                                     |
+| `GEMINI_MODEL`              | [`supabase/functions/_shared/model-defaults.ts`; every model variable below falls back to that file]      |
+| `GEMINI_FALLBACK_MODEL`     | [`model-defaults.ts`]                                                                                     |
+| `AI_DAILY_LIMIT`            | AI calls per user per UTC day, all text AI features together [`120`]                                      |
+| `AI_DAILY_LIMIT_EXTRACT`, `_ENRICH`, `_THEMES`, `_MNEMONIC`, `_CONTRAST`, `_REPORT` | calls per user per UTC day of one feature [`60`, `60`, `10`, `20`, `20`, `4`] |
+| `AI_USER_MONTHLY_USD`       | most one user may spend of the shared Claude text budget per month [`1`]                                  |
+| `AI_USER_MAX_SHARE`         | most one user may spend as a share of that budget (the smaller of the two applies) [`0.1`]                 |
+| `SKIP_PRE_MIGRATION_BACKUP` | `true`: deploy without the backup before migrating (only if the backup itself is broken) [off]            |
 | `AI_SYSTEM_DAILY_LIMIT`     | model calls per UTC day for system jobs (the level job), separate from users' budgets [`100`]             |
 | `CLAUDE_MONTHLY_CREDIT_USD` | the monthly Claude credit in USD; pictures may use 80 % of it [`100`]                                     |
 | `APP_ADMIN_USER_ID`         | your Supabase user id (step 12): who may open the picture review screen [none]                            |
-| `IMAGE_DAILY_LIMIT`         | pictures a user may ask for per UTC day [`10`]                                                            |
 | `CLAUDE_IMAGE_MODEL`        | model that draws pictures [`claude-sonnet-5-5`]                                                           |
 | `CLAUDE_CHECK_MODEL`        | model that scores and checks pictures [`claude-haiku-5-5`]                                                |
 | `CLAUDE_WORDBANK_MODEL`     | model of the word bank job (step 14) [`CLAUDE_CHECK_MODEL`]                                               |
@@ -112,7 +117,7 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 | `CLAUDE_GRADED_MODEL`       | model that writes library texts [`claude-sonnet-5-5`]                                                     |
 | `GRADED_PER_CELL`           | library texts per level and core topic [`9`]                                                              |
 | `GRADED_EXTENDED_PER_CELL`  | library texts per level and extended topic [`0`]                                                          |
-| `ARTICLE_DAILY_LIMIT`       | articles a user may import from links per UTC day (step 17) [`30`]                                        |
+| `ARTICLE_DAILY_LIMIT`       | articles a user may import from links per UTC day (step 17) [`20`]                                        |
 | `CLAUDE_TEXT_MODEL`         | model of the text AI fallback when Gemini runs out of quota (step 17) [`claude-haiku-5-5`]                |
 | `AI_CLAUDE_FALLBACK`        | `off`: never use Claude for the text AI tasks (step 17) [`on`]                                            |
 | `STORY_DAILY_LIMIT`         | daily stories per user per UTC day, each may be regenerated once (step 18) [`1`]                          |
@@ -131,13 +136,17 @@ call AI unless added here. The deploy workflow always appends the production Pag
 2. The `test` job runs the Deno type check and the SQL security tests on a temporary
    local database; `deploy` then:
    - `supabase link --project-ref bikcjlomrjaxymifxogi`
-   - `supabase db push --linked --yes` (applies `supabase/migrations/*.sql` once each)
+   - finds the database (`scripts/supabase-db-url.sh`), takes an encrypted backup to R2
+     (`scripts/db-backup.sh pre-migration`, step 20), then `supabase db push` (applies
+     `supabase/migrations/*.sql` once each). Without `BACKUP_PASSPHRASE` it stops here.
    - `supabase secrets set` for `GEMINI_API_KEY`, `GEMINI_MODEL`,
      `GEMINI_FALLBACK_MODEL`, `AI_PROVIDER=gemini`, `AI_DAILY_LIMIT`, `ALLOWED_ORIGINS`
    - on the first run only: a Web Push (VAPID) key pair, stored as the function secrets
      `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` (see step 10; nothing to do)
-   - `supabase functions deploy` (`ai-extract`, `ai-enrich`, `ai-examples`, `ai-themes`, `ai-mnemonic`, `ai-report`, `ai-contrast`, `push-send`, `tts`, `account-delete`, `fetch-article`; JWT is verified inside the
+   - `supabase functions deploy` (`ai-extract`, `ai-enrich`, `ai-themes`, `ai-mnemonic`, `ai-report`, `ai-contrast`, `push-send`, `tts`, `account-delete`, `fetch-article`; JWT is verified inside the
      functions, so `verify_jwt = false` from `supabase/config.toml` is expected)
+   - `supabase functions delete ai-image` / `ai-examples`: the on-demand picture and sentence
+     functions removed in v0.5.2 (decision 0061); skipped when already gone
    - `select public.push_configure(<push-send URL>)`, which turns on the 15-minute reminder job
 3. Both jobs must end green. If "Check secrets" fails, a secret from step 4 is missing.
 
@@ -149,7 +158,8 @@ dashboard auth settings from step 3 with the local-development `config.toml`).
 1. **Table Editor**: tables `profiles`, `notes`, `senses`, `cards`, `review_logs`,
    `sources`, `settings`, `lexicon_terms`, `lexicon_senses`, `ai_usage`,
    `ai_chunk_cache`, `sync_horizon`; none shows "RLS disabled".
-2. **Edge Functions**: `ai-extract`, `ai-enrich`, `ai-examples` and `ai-themes` are listed. **Secrets**
+2. **Edge Functions**: `ai-extract`, `ai-enrich` and `ai-themes` are listed (not `ai-image` or
+   `ai-examples`: removed in v0.5.2). **Secrets**
    (Edge Functions → Secrets) lists the variables from step 5.2.
 3. **Integrations → Cron** (or **Database → Cron Jobs**): job
    `engapp-purge-tombstones`, schedule `17 3 * * *`. If it is missing (pg_cron was not
@@ -262,14 +272,15 @@ the normal deploy (step 5). It needs no secret beyond the service role key every
 
 ## 12. Pictures (v0.4)
 
-Pictures are drawn by Claude (docs/ai-image.md, decisions 0029 and 0030). Nothing breaks
-without them: until the key is set, the picture workflow ends with a notice and the "draw now"
-button answers that pictures are not available.
+Pictures are drawn by Claude, only in bulk by the nightly job, and shipped to every user
+(docs/ai-image.md, decisions 0029, 0030 and 0061: there is no "draw now" in the app any more).
+Nothing breaks without them: until the key is set, the picture workflow ends with a notice.
 
 1. **Key.** Create an API key in the Anthropic Console
    (`https://console.anthropic.com/settings/keys`) and add it as the repository secret
-   `ANTHROPIC_API_KEY` (step 4). The deploy workflow copies it into the function secrets (never
-   printed); the picture workflow reads it directly.
+   `ANTHROPIC_API_KEY` (step 4). The picture workflow reads it directly; the deploy workflow
+   copies it into the function secrets for the Claude text fallback and the daily story (never
+   printed).
 2. **Credit.** Set the repository variable `CLAUDE_MONTHLY_CREDIT_USD` to the monthly amount you
    want to spend on Claude (default 100). Pictures stop for the month at 80 % of it; every call
    is reserved before it is sent, so the cap holds even with many users at once. Also set a
@@ -278,7 +289,7 @@ button answers that pictures are not available.
    address, column UID) and set it as the repository variable `APP_ADMIN_USER_ID`. The next
    deploy adds it to `public.app_admins`. Without GitHub, run once in **SQL Editor**:
    `insert into public.app_admins (user_id) values ('<your user id>') on conflict do nothing;`
-4. **Deploy** (step 5) so the migration, the `ai-image` function and the secrets are in place.
+4. **Deploy** (step 5) so the migration and the secrets are in place.
 5. **Pilot.** **Actions → Picture jobs → Run workflow**, job `pilot`: draws 50 random concrete
    words now and stores them for review. The log lists each picture with its cost and the total;
    the report is kept as the run's `pilot-report` artifact. Judge them in the app's review
@@ -294,16 +305,15 @@ button answers that pictures are not available.
    cards, then in other users' cards, then words within your level ±1 (your level in
    **Ayarlar → Seviye**) most frequent first, then the rest of the 5,000 most frequent words.
    Only meanings scored 1 to 3 for "can be drawn" are queued (`VISUAL_AUTO_MIN`; the model may
-   still decline); a user request and a redraw from the review screen always come first. Up to
+   still decline); a redraw from the review screen always comes first. Up to
    2,000 pictures a night (`count` / `--max`), always inside the monthly cap (decision 0037).
    `node scripts/img-report.ts` (job `report`) prints the counts that size the redraw: senses
    by visualizability, requests by state, pictures by prompt version and status.
 
-Optional variables: `IMAGE_DAILY_LIMIT` (pictures per user per day, default 10),
-`CLAUDE_IMAGE_MODEL`, `CLAUDE_CHECK_MODEL` (defaults in `_shared/image-models.ts`). The picture
+Optional variables: `CLAUDE_IMAGE_MODEL`, `CLAUDE_CHECK_MODEL` (defaults in `_shared/image-models.ts`). The picture
 workflow also needs the service-role key, exactly like the level job (step 9).
 
-Check: **Edge Functions** lists `ai-image`; in **SQL Editor**,
+Check: in **SQL Editor**,
 `select * from public.image_budget_status();` shows this month's cap and spending, and
 `select status, count(*) from public.lexicon_images group by 1;` grows after each night.
 
@@ -457,7 +467,7 @@ deploys `fetch-article`. Optional variables (step 4): `ARTICLE_DAILY_LIMIT`,
 - **Article import** needs no key: the server downloads the page itself (user agent
   `EngappReader/1.0`), returns plain text and stores nothing (decision 0044).
 - **Claude fallback**: when Gemini answers "quota exhausted" on both models, ai-extract,
-  ai-enrich, ai-examples, ai-themes, ai-mnemonic, ai-report and ai-contrast retry the same
+  ai-enrich, ai-themes, ai-mnemonic, ai-report and ai-contrast retry the same
   request on Claude Haiku. It uses the `ANTHROPIC_API_KEY` secret that pictures already use;
   without it the old `quota_exceeded` error remains. Each Claude call is logged as
   `text spend` in the function logs (USD and tokens) until the text budget lands.
@@ -570,6 +580,25 @@ You only click in two dashboards (Cloudflare and GitHub); the copying is done by
 then uses Supabase only, as before. Files made while R2 was on are made again on Supabase by
 the next audio job run (step 15), which sees them missing there.
 
+## 20. Backups, limits and the nightly health check (v0.5.2)
+
+Decision 0060; restore steps: `docs/runbook-backup-restore.md`.
+
+1. Add the secret `BACKUP_PASSPHRASE` (step 4) and keep a copy outside GitHub.
+2. Recommended: Cloudflare → **R2 → Create bucket** `engapp-backups` (no public access) →
+   **Manage R2 API Tokens → Create API token** → *Object Read & Write*, only that bucket →
+   secrets `R2_BACKUP_BUCKET`, `R2_BACKUP_ACCESS_KEY_ID`, `R2_BACKUP_SECRET_ACCESS_KEY`.
+   `R2_ACCOUNT_ID` is the one from step 19.
+3. GitHub → **Actions → DB backup → Run workflow** once and check that it ends green.
+   It then runs every night (02:45 UTC): daily copies kept 14, weekly (Sunday) copies 8,
+   pre-migration copies 10, none older than 56 days.
+4. The same workflow runs `public.ops_health()` (budgets, refusals, stale holds, job
+   heartbeats, failed pg_cron runs, database size, lexicon terms to review). A `fail` row fails
+   the run. Turn on e-mail for failed runs: GitHub → your avatar → **Settings →
+   Notifications → Actions → "Send notifications for failed workflows only"**.
+5. Sync quotas (per user): `select * from public.sync_limits;` — change one with
+   `update public.sync_limits set value = … where name = '…';` (no deploy needed).
+
 ## Manual deploy without GitHub (alternative)
 
 From the repository root, with the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started)
@@ -590,7 +619,8 @@ supabase functions deploy --use-api
 - Model: change the GitHub variable `GEMINI_MODEL` / `GEMINI_FALLBACK_MODEL` and re-run
   the workflow (or `supabase secrets set GEMINI_MODEL=...`). No code change. Secrets
   take effect on the next function invocation.
-- Daily limit: `AI_DAILY_LIMIT`.
+- Daily limits: `AI_DAILY_LIMIT`, `AI_DAILY_LIMIT_<FEATURE>`; monthly share: `AI_USER_MONTHLY_USD`,
+  `AI_USER_MAX_SHARE`. Sync quotas live in the table `public.sync_limits` (step 20).
 - New app domain: add it to Google (step 2.5 origins), Supabase redirect URLs (3.3) and
   `ALLOWED_ORIGINS` (4).
 - Schema: add a new file under `supabase/migrations/` (never edit an applied one) and push.

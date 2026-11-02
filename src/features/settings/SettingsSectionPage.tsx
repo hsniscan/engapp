@@ -38,7 +38,7 @@ export function SettingsSectionPage() {
     const target = section ? legacyTarget(section) : null;
     return <Navigate to={target ?? '/settings'} replace />;
   }
-  const { parts, solo } = PAGE_CONTENT[section];
+  const { parts, solo, noSavedNote } = PAGE_CONTENT[section];
   const fromProfile = section === 'ilgi-alanlari';
   return (
     <SettingsFrame
@@ -51,14 +51,14 @@ export function SettingsSectionPage() {
       }
     >
       <SoloSectionContext.Provider value={!!solo}>
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-8">
           {parts.map((Part, i) => (
             <Part key={i} />
           ))}
         </div>
       </SoloSectionContext.Provider>
-      {!fromProfile && (
-        <p className="mt-5 px-1.5 text-center text-[0.8125rem] text-fg-muted">
+      {!noSavedNote && (
+        <p className="mt-6 px-1 text-center text-meta text-fg-muted">
           {t('settings.index.savedNote')}
         </p>
       )}

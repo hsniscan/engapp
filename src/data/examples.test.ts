@@ -2,32 +2,18 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { addNoteWithSenses } from './actions';
 import { copyCardsFromOtherAccount } from './account';
 import { db } from './db';
-import {
-  dueExampleJobs,
-  EXAMPLES_SINCE_KEY,
-  finishExampleJobs,
-  getExamplePrepStatus,
-  getSenseExamples,
-  JOB_PRIORITY,
-  queueExampleJob,
-  reconcileExampleJobs,
-  removeExampleEdit,
-  saveExampleEdit,
-  setExampleVerdict,
-  startExampleBackfill,
-  storeExamples,
-} from './examples';
+import { getSenseExamples, removeExampleEdit, saveExampleEdit, setExampleVerdict } from './examples';
 import { exportBackup, restoreBackup } from './maintenance';
 import { META, setMeta } from './meta';
 import { getTopicProfile, loadFeedbackSignals, setInterest } from './profile';
 import { getCardView } from './queries';
+import { applyLexiconExamples as storeExamples } from './sync';
 import { updateSettings } from './settings';
 import { backupChecksum } from '../domain/backup';
 import type { LexiconExample } from '../domain/types';
 import { resetDb } from '../test/db';
 
 const T = Date.UTC(2026, 9, 22, 9);
-const DAY = 86_400_000;
 
 const ex = (p: Partial<LexiconExample> & { id: string; context: string }): LexiconExample => ({
   sense_id: 'ls-cope',
@@ -192,55 +178,6 @@ describe('getCardView rotation', () => {
     const view = (await getCardView(cloze!.id, T))!;
     expect(view.sentence?.exampleId).toBe('e1');
     expect(view.cloze).toMatchObject({ before: 'We had to ', answer: 'cope', after: ' with the delay.' });
-  });
-});
-
-describe('preparation queue', () => {
-  it('queues senses of new cards; older ones wait for "prepare all"', async () => {
-    await cope(T - 30 * DAY);
-    await addNoteWithSenses({ term: 'thrive', senses: [{ meaning_tr: 'gelişmek', lexicon_sense_id: 'ls-thrive' }] }, T);
-    await addNoteWithSenses({ term: 'manual', senses: [{ meaning_tr: 'el ile' }] }, T);
-    expect(await reconcileExampleJobs(T)).toBe(1);
-    expect((await dueExampleJobs(T)).map((j) => j.sense_id)).toEqual(['ls-thrive']);
-    expect((await dueExampleJobs(T))[0]).toMatchObject({ level_band: 'B1', contexts: ['daily', 'conversation', 'work', 'formal'] });
-
-    await startExampleBackfill(T);
-    const due = await dueExampleJobs(T);
-    expect(due.map((j) => [j.sense_id, j.priority])).toEqual([
-      ['ls-thrive', JOB_PRIORITY.recent],
-      ['ls-cope', JOB_PRIORITY.backfill],
-    ]);
-    expect(await getExamplePrepStatus(T)).toMatchObject({ senses: 2, ready: 0, queued: 2, backfill: true });
-  });
-
-  it('asks only for contexts without sentences, and not again after a finished job', async () => {
-    await db.transaction('rw', db.meta, () => setMeta(EXAMPLES_SINCE_KEY, 0));
-    await cope();
-    await storeExamples([ex({ id: 'e1', context: 'daily' }), ex({ id: 'e2', context: 'work' })]);
-    await reconcileExampleJobs(T);
-    const [job] = await dueExampleJobs(T);
-    expect(job!.contexts).toEqual(['conversation', 'formal']);
-
-    // The model had nothing natural for "formal": the job is done, it is not queued again.
-    await finishExampleJobs([job!.key], { status: 'done' }, T);
-    await storeExamples([ex({ id: 'e3', context: 'conversation' })]);
-    expect(await reconcileExampleJobs(T + 1)).toBe(0);
-    expect(await getExamplePrepStatus(T)).toMatchObject({ ready: 1 });
-
-    // A newly selected context is asked for.
-    await updateSettings({ example_contexts: ['daily', 'travel'] }, T + 2);
-    expect(await reconcileExampleJobs(T + 2)).toBe(1);
-    expect((await dueExampleJobs(T + 2))[0]!.contexts).toEqual(['travel']);
-  });
-
-  it('a sense opened on screen jumps the queue', async () => {
-    await db.transaction('rw', db.meta, () => setMeta(EXAMPLES_SINCE_KEY, 0));
-    await cope();
-    await addNoteWithSenses({ term: 'thrive', senses: [{ meaning_tr: 'gelişmek', lexicon_sense_id: 'ls-thrive' }] }, T + 1);
-    await reconcileExampleJobs(T + 2);
-    expect((await dueExampleJobs(T + 2)).map((j) => j.sense_id)).toEqual(['ls-cope', 'ls-thrive']);
-    await queueExampleJob('ls-thrive', { priority: JOB_PRIORITY.open }, T + 3);
-    expect((await dueExampleJobs(T + 3))[0]).toMatchObject({ sense_id: 'ls-thrive', priority: JOB_PRIORITY.open });
   });
 });
 

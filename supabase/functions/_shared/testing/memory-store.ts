@@ -85,6 +85,11 @@ export class MemoryAiStore implements AiStore {
     return { allowed: true, used: used + 1, limit };
   }
 
+  async refundAi(userId: string): Promise<void> {
+    this.calls.push('refundAi');
+    this.usage.set(userId, Math.max(0, (this.usage.get(userId) ?? 0) - 1));
+  }
+
   async findTerms(norms: string[]): Promise<LexTerm[]> {
     this.calls.push('findTerms');
     const set = new Set(norms);

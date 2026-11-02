@@ -131,3 +131,26 @@ export interface CoverageResult {
 }
 
 export const readerPath = (id: Id): string => `/oku/${id}`;
+
+/**
+ * Where the user is in a text, one wording everywhere (v0.5.2, B14): unread, started (with the
+ * percent read, which can be 0 when the first screen was read without scrolling) or finished.
+ * A text counts as started once it has a resume point or any reading time, the same rule the
+ * library list uses.
+ */
+export interface ReadingProgress {
+  state: 'unread' | 'started' | 'finished';
+  /** Share of the body before the resume point, 0..100 (100 when finished, ≤ 99 otherwise). */
+  pct: number;
+}
+
+export function readingProgress(
+  t: Pick<ReaderText, 'finished_at' | 'progress_offset' | 'read_ms' | 'body'>,
+): ReadingProgress {
+  if (t.finished_at !== null) return { state: 'finished', pct: 100 };
+  const pct = t.body.length
+    ? Math.max(0, Math.min(99, Math.round((t.progress_offset / t.body.length) * 100)))
+    : 0;
+  if (t.progress_offset > 0 || t.read_ms > 0) return { state: 'started', pct };
+  return { state: 'unread', pct: 0 };
+}

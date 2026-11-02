@@ -1,25 +1,20 @@
-// Settings → "Örnek cümleler" (v0.2 İP5): contexts prepared in the background, whether the
-// Turkish translation shows without a tap, and the one-time "prepare all my cards".
-import { useLiveQuery } from 'dexie-react-hooks';
+// Settings → "Örnek cümleler" (v0.2 İP5): the contexts a card's front takes its sentences
+// from, and whether the Turkish translation shows without a tap. ("Tüm kartlarım için
+// hazırla" went with the on-demand generation in v0.5.2, ADR 0061.)
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getExamplePrepStatus, logError, startExampleBackfill } from '@/data';
 import { EXAMPLE_CONTEXT_KEYS, selectedContexts } from '@/domain/examples';
-import { kickExampleQueue } from '@/features/examples/queue';
-import { Button, cn, Icon, Skeleton, Switch, toast } from '@/ui';
+import { cn, Icon, Skeleton, Switch } from '@/ui';
 import {
   MAX_EXAMPLE_CONTEXTS,
   MIN_SELECTED_CONTEXTS,
 } from '../../../supabase/functions/_shared/examples-contracts';
 import { SettingsRow, SettingsSection } from './SettingsLayout';
-import { useAppSettings, useUserId } from './useAppSettings';
+import { useAppSettings } from './useAppSettings';
 
 export function ExamplesSettingsSection() {
   const { t } = useTranslation();
   const { settings, update } = useAppSettings();
-  const userId = useUserId();
-  const status = useLiveQuery(() => getExamplePrepStatus(), []);
-  const [starting, setStarting] = useState(false);
   const saved = settings ? selectedContexts(settings) : [];
   // The choice shows at once; quick taps build on it, not on the not-yet-saved row.
   const [draft, setDraft] = useState<string[] | null>(null);
@@ -34,20 +29,6 @@ export function ExamplesSettingsSection() {
     const next = on ? chosen.filter((c) => c !== key) : [...chosen, key];
     setDraft(next);
     void update({ example_contexts: next });
-  };
-
-  const prepareAll = async () => {
-    setStarting(true);
-    try {
-      await startExampleBackfill();
-      kickExampleQueue();
-      toast({ title: t('settings.examples.prepareStarted'), tone: 'success' });
-    } catch (e) {
-      void logError(e, 'examples.backfill');
-      toast({ title: t('settings.saveFailed'), tone: 'danger' });
-    } finally {
-      setStarting(false);
-    }
   };
 
   return (
@@ -76,7 +57,7 @@ export function ExamplesSettingsSection() {
                     title={locked ? t('settings.examples.contextsLimit', { min: MIN_SELECTED_CONTEXTS, max: MAX_EXAMPLE_CONTEXTS }) : undefined}
                     onClick={() => toggle(key)}
                     className={cn(
-                      'inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3.5 text-sm transition-colors duration-(--duration-micro)',
+                      'inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3.5 text-meta transition-colors duration-(--duration-micro)',
                       on
                         ? 'border-accent bg-accent-soft text-accent-text'
                         : 'border-border text-fg-muted hover:border-border-strong hover:text-fg',
@@ -98,32 +79,6 @@ export function ExamplesSettingsSection() {
               checked={settings.example_tr_visible === true}
               onCheckedChange={(v) => void update({ example_tr_visible: v })}
             />
-          </SettingsRow>
-          <SettingsRow
-            label={t('settings.examples.prepareAll')}
-            description={
-              <>
-                {t('settings.examples.prepareAllHint')}
-                {userId === null && <span className="mt-1 block">{t('settings.examples.guest')}</span>}
-                {userId && status && status.senses > 0 && (
-                  <span className="tabular mt-1 block text-fg" aria-live="polite">
-                    {t('settings.examples.status', { ready: status.ready, total: status.senses })}
-                    {status.queued > 0 && ` · ${t('settings.examples.statusQueued', { count: status.queued })}`}
-                  </span>
-                )}
-              </>
-            }
-          >
-            <Button
-              variant="secondary"
-              leadingIcon="refresh"
-              loading={starting}
-              disabled={!userId || (status?.backfill === true && status.queued > 0)}
-              onClick={() => void prepareAll()}
-              className="shrink-0"
-            >
-              {t('settings.examples.prepareAll')}
-            </Button>
           </SettingsRow>
         </>
       )}

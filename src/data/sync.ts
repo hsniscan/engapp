@@ -123,12 +123,6 @@ export async function stuckOutboxCount(): Promise<number> {
   return new Set(rows.map((r) => rowKey(r.table, r.row_id))).size;
 }
 
-/** Earliest next_attempt_at among waiting rows (to schedule the next run), or null. */
-export async function nextOutboxAttemptAt(): Promise<Millis | null> {
-  const first = await db.outbox.orderBy('next_attempt_at').first();
-  return first ? first.next_attempt_at : null;
-}
-
 /** Ids currently waiting in the outbox, per table (full resync keeps them). */
 export async function outboxRowIds(): Promise<Set<string>> {
   const rows = await db.outbox.toArray();
@@ -225,7 +219,7 @@ export async function missingLexiconSenseIds(): Promise<Id[]> {
 // ------------------------------------------------------------------ example sentence cache
 
 /**
- * Store a lexicon_examples_pull page (or rows returned by ai-examples) in the local cache.
+ * Store a lexicon_examples_pull page in the local cache.
  * Retired rows are removed: a sentence taken out of the shared table is never shown again.
  * With `nextSeq` the examples cursor is stored in the same transaction.
  */

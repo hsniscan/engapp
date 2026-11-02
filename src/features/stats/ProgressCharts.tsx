@@ -56,7 +56,7 @@ function ChartFrame({ label, series, ticks, readout, children, overlay }: FrameP
   return (
     <div className="flex flex-col gap-2">
       <div className="grid grid-cols-[2.75rem_minmax(0,1fr)] gap-x-2">
-        <div aria-hidden="true" className="relative h-32 text-xs text-fg-muted tabular">
+        <div aria-hidden="true" className="relative h-32 text-caption text-fg-muted tabular">
           {ticks.map(([y, text]) => (
             <span
               key={text}
@@ -104,7 +104,7 @@ function ChartFrame({ label, series, ticks, readout, children, overlay }: FrameP
           </div>
         </div>
         <span />
-        <div aria-hidden="true" className="mt-1.5 grid text-xs text-fg-muted" style={cols}>
+        <div aria-hidden="true" className="mt-1.5 grid text-caption text-fg-muted" style={cols}>
           {series.map((p, i) => (
             <span key={p.week} className="overflow-visible text-center whitespace-nowrap">
               {(n - 1 - i) % 3 === 0 ? formatDayMonthShort(p.week) : ''}
@@ -112,7 +112,7 @@ function ChartFrame({ label, series, ticks, readout, children, overlay }: FrameP
           ))}
         </div>
       </div>
-      <p aria-hidden="true" className="tabular min-h-5 text-sm text-fg">
+      <p aria-hidden="true" className="tabular min-h-5 text-meta text-fg">
         {shown && readout(shown)}
       </p>
     </div>
@@ -229,7 +229,7 @@ export function RetentionLineChart({ series }: { series: WeekPoint[] }) {
 export function SeriesTable({ series }: { series: WeekPoint[] }) {
   const { t } = useTranslation();
   return (
-    <details className="text-sm">
+    <details className="text-meta">
       <summary className="cursor-pointer text-accent-text">
         {t('progress.series.showTable')}
       </summary>

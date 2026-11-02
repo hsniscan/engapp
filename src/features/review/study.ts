@@ -3,7 +3,9 @@
 import { useTranslation } from 'react-i18next';
 import { type CardView, getChoiceCandidates, logError } from '@/data';
 import type { ChoiceCandidate } from '@/domain/clozeChoices';
-import { distinctIntervalLabels, type IntervalPreview } from '@/domain/fsrs';
+import type { TFunction } from 'i18next';
+import { distinctIntervalParts, type IntervalPreview } from '@/domain/fsrs';
+import { intervalText } from './intervalText';
 import { findSpan, isValidSpan } from '@/domain/recognition';
 import {
   cardStage,
@@ -39,24 +41,30 @@ export function stageAfterOf(p: IntervalPreview): WordStage | null {
 export function ratingLines(
   view: CardView,
   rating: RatingValue,
+  t: TFunction,
 ): { interval: string; change: string | null } {
   const p = view.previews[rating];
   const after = stageAfterOf(p);
   const order = [R.Again, R.Hard, R.Good, R.Easy] as const;
-  const labels = distinctIntervalLabels(order.map((r) => view.previews[r].interval_ms));
+  const labels = distinctIntervalParts(order.map((r) => view.previews[r].interval_ms));
+  const label = labels[order.indexOf(rating as (typeof order)[number])];
   return {
-    interval: labels[order.indexOf(rating as (typeof order)[number])] ?? '',
+    interval: label ? intervalText(t, label) : '',
     change: after ? stageChangeLabel(cardStage(view.card), after) : null,
   };
 }
 
-/** "Yeni kelime", "Öğreniyor", "Yeniden öğreniyor", "Pekişiyor · 1/3", "Öğrenildi", "Kalıcı". */
+/**
+ * "Yeni kelime", "Öğreniyor", "Yeniden öğreniyor", "Pekişiyor · 1/3", "Öğrenildi", "Kalıcı".
+ * A first-time Üretim / Boşluk / Dikte / picture card says "Yeni kart": its word is not new
+ * (it opened at Pekişiyor; v0.5.2, review copy 1).
+ */
 export function stageChipLabel(
   card: Card,
-  t: (k: 'study.stage.newWord' | 'study.stage.relearning') => string,
+  t: (k: 'study.stage.newWord' | 'study.stage.newCard' | 'study.stage.relearning') => string,
 ): string {
   const stage = cardStage(card);
-  if (stage === 'new') return t('study.stage.newWord');
+  if (stage === 'new') return t(card.card_type === 'recognition' ? 'study.stage.newWord' : 'study.stage.newCard');
   if (stage === 'learning' && isRelearning(card)) return t('study.stage.relearning');
   if (stage === 'consolidating') {
     const p = stageProgress(card);
@@ -127,6 +135,41 @@ export function sessionFacts(answers: readonly SessionAnswer[]): {
     }
   }
   return { words: words.size, consolidated: up.size, reviews, recalled };
+}
+
+const STAGE_RANK: Record<WordStage, number> = {
+  new: 0,
+  learning: 1,
+  consolidating: 2,
+  learned: 3,
+  mastered: 4,
+};
+
+export interface StageChange {
+  noteId: Id;
+  term: string;
+  /** The word's stage before its first answer in this session. */
+  from: WordStage;
+  /** The stage after its last answer in this session. */
+  to: WordStage;
+}
+
+/**
+ * Words whose stage went up in this session ("Aşama değişenler" on the summary). The word's
+ * stage is its recognition card's (ADR 0041), so only those answers count; a word that went up
+ * and came back down is left out. Order: first answered first.
+ */
+export function stageChanges(answers: readonly SessionAnswer[]): StageChange[] {
+  const byNote = new Map<Id, StageChange>();
+  for (const a of answers) {
+    if (a.view.card.card_type !== 'recognition') continue;
+    const before = cardStage(a.view.card);
+    const after = stageAfterOf(a.view.previews[a.rating]) ?? before;
+    const seen = byNote.get(a.view.note.id);
+    if (!seen) byNote.set(a.view.note.id, { noteId: a.view.note.id, term: a.view.note.term, from: before, to: after });
+    else seen.to = after;
+  }
+  return [...byNote.values()].filter((c) => STAGE_RANK[c.to] > STAGE_RANK[c.from]);
 }
 
 // ------------------------------------------------------------------ cloze choices

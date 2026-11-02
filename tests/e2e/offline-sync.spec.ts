@@ -36,9 +36,9 @@ test('offline: review, add a card and open stats; back online the outbox is push
   expect(reviewed).toBeGreaterThan(0);
   await expect(page.getByRole('heading', { name: 'Oturum tamamlandı' })).toBeVisible();
 
-  await page.getByRole('link', { name: 'Ana ekrana dön' }).click();
+  await page.getByRole('link', { name: 'Bitir', exact: true }).click();
   await page.getByRole('button', { name: 'Ekle', exact: true }).first().click();
-  await page.getByRole('dialog', { name: 'Ne eklemek istersin?' }).getByTestId('add-way-word').click();
+  await page.getByRole('dialog', { name: 'Ekle' }).getByTestId('add-way-word').click();
   await expect(page).toHaveURL(/\/add$/);
   await addWord(page, WORDS[2]!);
 

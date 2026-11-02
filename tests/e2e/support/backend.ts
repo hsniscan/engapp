@@ -14,9 +14,12 @@
  *    fake corpus in src/features/import/testing/fakeSpecs.ts. So the client sees exactly what
  *    the deployed function would send, and the test can count model calls.
  *
- *  - Example sentences: /functions/v1/ai-examples runs the real `runExamples` (cache first,
- *    validation, insert-or-skip) on an in-memory example store with a scripted model;
- *    rpc lexicon_examples_pull pages that store for the senses the user has synced.
+ *  - Example sentences (shipped content since v0.5.2, ADR 0061): `shipExamples()` puts the
+ *    sentences of EXAMPLE_SENTENCES into an in-memory lexicon_examples for the lexicon senses
+ *    the store knows; rpc lexicon_examples_pull pages that store for the senses the user has
+ *    synced, and rpc lexicon_examples_find answers by sense id (senses added below the cursor).
+ *    With `autoShipExamples` > 0 every pull ships first, as if the bulk job had
+ *    already written sentences for every word.
  *
  *  - Mnemonics: /functions/v1/ai-mnemonic runs the real `runMnemonic` (shared table first,
  *    validation, insert-or-skip) on an in-memory pair-note store with a scripted model.
@@ -33,8 +36,7 @@
 import type { BrowserContext, Route } from '@playwright/test';
 import { runExtract } from '../../../supabase/functions/_shared/extract.ts';
 import { runEnrich } from '../../../supabase/functions/_shared/enrich.ts';
-import { runExamples } from '../../../supabase/functions/_shared/examples.ts';
-import { MemoryExampleStore } from '../../../supabase/functions/_shared/testing/memory-example-store.ts';
+import { MemoryExampleStore } from './example-store.ts';
 import { runMnemonic } from '../../../supabase/functions/_shared/mnemonic.ts';
 import { runReport } from '../../../supabase/functions/_shared/report.ts';
 import { runContrast } from '../../../supabase/functions/_shared/contrast.ts';
@@ -47,7 +49,7 @@ import { FAKE_SPECS } from '../../../src/features/import/testing/fakeSpecs.ts';
 import { readFileSync } from 'node:fs';
 import { parseClientLevels } from '../../../src/domain/level.ts';
 import { lemmasNeeded } from '../../../supabase/functions/_shared/level.ts';
-import type { AiImageResponse, LexiconImageRow } from '../../../supabase/functions/_shared/image-contract.ts';
+import type { LexiconImageRow } from '../../../supabase/functions/_shared/image-contract.ts';
 
 /** One row of image_review_queue (v0.4 İP4). */
 export interface ImageReviewQueueRow {
@@ -219,44 +221,6 @@ const EXAMPLE_SENTENCES: Record<string, Record<string, [string, string][]>> = {
   },
 };
 
-/** Scripted examples model: one sentence per requested (ref, context), a new one per call. */
-function fakeExamplesModel(counter: { calls: number }): AiProvider {
-  return {
-    name: 'fake',
-    async generateJson(req) {
-      counter.calls++;
-      const avoid = new Set(
-        req.user
-          .slice(req.user.indexOf('AVOID:'))
-          .split('\n')
-          .map((l) => l.split(' | ')[2])
-          .filter((x): x is string => !!x),
-      );
-      const examples: Record<string, string>[] = [];
-      for (const line of req.user.split('\n')) {
-        const m = /^(r\d+) \| (.+?) \| (.+?) \| (.+?) \| contexts: (.+)$/.exec(line);
-        if (!m) continue;
-        const [, ref, lemma] = m as unknown as [string, string, string];
-        for (const context of m[5]!.split(', ')) {
-          const pool = EXAMPLE_SENTENCES[lemma]?.[context] ?? [];
-          const pick = pool.find(([en]) => !avoid.has(en));
-          const [text_en, text_tr] = pick ?? [
-            `People often say ${lemma} in this ${context} situation number ${counter.calls}.`,
-            `İnsanlar bu durumda sık sık bunu söyler ${counter.calls}.`,
-          ];
-          examples.push({ ref, context, text_en, surface: lemma, text_tr });
-        }
-      }
-      return {
-        data: { examples },
-        model: 'fake-model',
-        attempts: 1,
-        usage: { input_tokens: 500, output_tokens: 200, thinking_tokens: 0 },
-      };
-    },
-  };
-}
-
 /** ai-mnemonic's model: one story per call that names TERM (numbered, so "Başka öner" differs). */
 function fakeMnemonicModel(counter: { calls: number }): AiProvider {
   return {
@@ -394,7 +358,8 @@ export class FakeBackend {
   readonly store = new MemoryAiStore();
   readonly model = { calls: 0 };
   readonly examples = new MemoryExampleStore();
-  readonly examplesModel = { calls: 0 };
+  /** Ship sentences (this many per context) for the user's lexicon senses before every lexicon_examples_pull; 0 = off. */
+  autoShipExamples = 0;
   readonly pairNotes = new MemoryPairNoteStore();
   readonly mnemonicModel = { calls: 0 };
   readonly reportModel = { calls: 0 };
@@ -407,14 +372,13 @@ export class FakeBackend {
   readonly brokenRpcs = new Set<string>();
   /**
    * v0.4 pictures: public.lexicon_images (read through PostgREST with `in.(…)` filters), the
-   * admin flag and review queue (is_app_admin, image_review_queue, image_review_decide) and
-   * the answers ai-image gives, in order (the last one repeats).
+   * admin flag and review queue of the nightly pictures (is_app_admin, image_review_queue,
+   * image_review_decide).
    */
   readonly images: LexiconImageRow[] = [];
   imageAdmin = false;
   readonly reviewQueue: ImageReviewQueueRow[] = [];
   readonly reviewDecisions: { id: string; decision: string; reason: string | null }[] = [];
-  readonly imageAnswers: AiImageResponse[] = [];
   /**
    * v0.5 graded library: public.graded_texts rows (catalogue columns plus sentences), read
    * through PostgREST with `server_seq=gt.N` (catalogue pages) or `id=eq.X` (one body).
@@ -424,6 +388,41 @@ export class FakeBackend {
   constructor(opts: BackendOptions = {}) {
     this.opts = opts;
     loadLevelRefs(this.store);
+  }
+
+  /**
+   * Ships the bulk-written sentences of EXAMPLE_SENTENCES (or, for other words, one plain
+   * sentence per default context) for every lexicon sense the store knows. `perContext` limits
+   * the sentences per context (default: one, as the bulk job writes). Idempotent.
+   */
+  shipExamples(opts: { perContext?: number; band?: 'A2' | 'B1' | 'B2' | 'C1' } = {}): void {
+    const per = opts.perContext ?? 1;
+    const band = opts.band ?? 'B1';
+    for (const sense of this.store.senses.values()) {
+      const lemma = this.store.terms.get(sense.term_id)?.lemma;
+      if (!lemma) continue;
+      const pools = EXAMPLE_SENTENCES[lemma] ?? {
+        daily: [[`People often say ${lemma} at home.`, 'İnsanlar evde bunu sık sık söyler.']],
+        conversation: [[`My friend said ${lemma} on the phone.`, 'Arkadaşım telefonda bunu söyledi.']],
+        work: [[`We used ${lemma} in the meeting.`, 'Toplantıda bunu kullandık.']],
+        formal: [[`The report mentions ${lemma} twice.`, 'Rapor bundan iki kez söz ediyor.']],
+      };
+      this.examples.add(
+        Object.entries(pools).flatMap(([context, list]) =>
+          list.slice(0, per).map(([text_en, tr]) => {
+            const at = Math.max(0, text_en.toLowerCase().indexOf(lemma.toLowerCase()));
+            return {
+              sense_id: sense.id,
+              context,
+              level_band: band,
+              text_en,
+              span: [at, at + lemma.length] as [number, number],
+              translations: { tr },
+            };
+          }),
+        ),
+      );
+    }
   }
 
   count(name: string): number {
@@ -494,33 +493,8 @@ export class FakeBackend {
     }
     if (path === '/rest/v1/lexicon_images') return this.lexiconImages(route, new URL(req.url()));
     if (path === '/rest/v1/graded_texts') return this.gradedTexts(route, new URL(req.url()));
-    if (path === '/functions/v1/ai-image') {
-      const answer = this.imageAnswers.length > 1 ? this.imageAnswers.shift()! : this.imageAnswers[0];
-      if (!answer) return this.json(route, 200, { ok: false, reason: 'failed' });
-      if (answer.ok) this.images.push(answer.image);
-      return this.json(route, 200, answer);
-    }
     if (path.startsWith('/rest/v1/rpc/'))
       return this.rpc(route, name, body as Record<string, unknown>);
-    if (path === '/functions/v1/ai-examples') {
-      const deps = {
-        userId: TEST_USER.id,
-        store: this.store,
-        examples: this.examples,
-        provider: () => fakeExamplesModel(this.examplesModel),
-        dailyLimit: 200,
-      };
-      try {
-        return this.json(route, 200, await runExamples(body, deps));
-      } catch (e) {
-        if (e instanceof ApiError) {
-          return this.json(route, e.status, {
-            error: { code: e.code, message: e.message, retry_after_s: e.retryAfterS },
-          });
-        }
-        return this.json(route, 500, { error: { code: 'internal', message: String(e) } });
-      }
-    }
     if (path === '/functions/v1/ai-mnemonic') {
       const deps = {
         userId: TEST_USER.id,
@@ -718,8 +692,14 @@ export class FakeBackend {
             .filter((r) => r.table === 'senses' && r.row.lexicon_sense_id)
             .map((r) => String(r.row.lexicon_sense_id)),
         );
+        if (this.autoShipExamples > 0) this.shipExamples({ perContext: this.autoShipExamples });
         const page = this.examples.pull(Number(args.p_since ?? 0), Number(args.p_limit ?? 500));
         return this.json(route, 200, { ...page, rows: page.rows.filter((r) => mine.has(r.sense_id)) });
+      }
+      case 'lexicon_examples_find': {
+        if (this.autoShipExamples > 0) this.shipExamples({ perContext: this.autoShipExamples });
+        const ids = Array.isArray(args.p_sense_ids) ? (args.p_sense_ids as string[]) : [];
+        return this.json(route, 200, this.examples.find(ids));
       }
       case 'is_app_admin':
         return this.json(route, 200, this.imageAdmin);

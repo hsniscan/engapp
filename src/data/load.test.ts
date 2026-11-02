@@ -101,11 +101,11 @@ describe('catch-up queue', () => {
     expect((await getStudyQueue({}, T)).counts.review).toBe(200);
   });
 
-  it('does not cap "Yarının kartları"', async () => {
+  it('keeps "Yarının kartları" to tomorrow: the capped backlog is not pulled in (v0.5.2)', async () => {
     await seed(200);
     const q = await getStudyQueue({ mode: 'ahead' }, T);
     expect(q.load).toBeNull();
-    expect(q.counts.review).toBe(200);
+    expect(q.counts.review).toBe(0);
   });
 });
 
@@ -164,6 +164,15 @@ describe('vacation', () => {
     // Replacing it later keeps the lived days in the history.
     await setVacation({ start: '2026-12-01', end: '2026-12-02' }, T + DAY);
     expect((await getSettings(T)).vacation_history).toEqual([{ start: '2026-10-18', end: '2026-10-20' }]);
+  });
+
+  it('cannot start in the past, so a broken streak cannot be repaired after the fact (B5)', async () => {
+    await expect(setVacation({ start: '2026-10-10', end: '2026-11-05' }, T)).rejects.toMatchObject({ code: 'invalid_input' });
+    expect((await getSettings(T)).vacation ?? null).toBeNull();
+    // The holiday under way can still be extended with its own start.
+    await setVacation({ start: '2026-10-21', end: '2026-10-25' }, T);
+    await setVacation({ start: '2026-10-21', end: '2026-10-28' }, T + 2 * DAY);
+    expect((await getSettings(T)).vacation).toEqual({ start: '2026-10-21', end: '2026-10-28' });
   });
 
   it('survives a backup round trip', async () => {

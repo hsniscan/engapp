@@ -20,10 +20,13 @@ export function TextImportPanel(_props: ImportPanelProps) {
   return (
     <>
       <TextImportForm />
-      <ActiveJobs kind="text" />
+      <ActiveJobs />
     </>
   );
 }
+
+/** The shortest text the paste box accepts (B6). */
+export const MIN_CAPTURE_WORDS = 3;
 
 const countWords = (s: string) => s.split(/\s+/).filter((w) => /\p{L}/u.test(w)).length;
 
@@ -40,7 +43,8 @@ function TextImportForm() {
 
   /** The capture, or null (with the reason shown) when the text cannot be used. */
   const input = (): CaptureInput | null => {
-    if (!/\p{L}{2,}/u.test(trimmed)) {
+    // At least three words: "ok" is no text to read and not worth an extraction call (B6).
+    if (countWords(trimmed) < MIN_CAPTURE_WORDS) {
       setError(t('importer.paste.tooShort'));
       return null;
     }
@@ -73,7 +77,7 @@ function TextImportForm() {
               })
             : t('importer.paste.statsEmpty')
         }
-        className="min-h-56 font-serif text-[1.0625rem]"
+        className="min-h-56 font-serif text-lead"
       />
       <TextField
         label={t('importer.paste.titleLabel')}

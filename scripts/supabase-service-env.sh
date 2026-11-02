@@ -1,30 +1,15 @@
-# Sourced by GitHub workflow steps (tts-pregen.yml): exports SUPABASE_URL and
-# SUPABASE_SERVICE_ROLE_KEY for the project in $SUPABASE_PROJECT_REF, the same way the word
-# bank job does. The key comes from SERVICE_KEY_SECRET (the SUPABASE_SERVICE_ROLE_KEY secret),
-# or else is read through the Management API with SUPABASE_ACCESS_TOKEN. It is masked in the
-# log and never printed; the API answer goes to a private temp file that is deleted at once.
+# Sourced by GitHub workflow steps: exports SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY for the
+# project in $SUPABASE_PROJECT_REF. The key was put in "$RUNNER_TEMP/supabase-service-key" by an
+# earlier step that ran scripts/resolve-service-key.sh (decision 0060: the account-wide
+# SUPABASE_ACCESS_TOKEN never reaches a step that runs npm code). It is already masked.
 # shellcheck shell=bash
 
-_tts_key="${SERVICE_KEY_SECRET:-}"
-if [ -z "$_tts_key" ]; then
-  if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ]; then
-    echo "::error::Set SUPABASE_SERVICE_ROLE_KEY, or SUPABASE_ACCESS_TOKEN with API key read access (docs/setup-backend.md)"
-    exit 1
-  fi
-  _tts_f="$(umask 077 && mktemp)"
-  _tts_status=$(curl -sS -o "$_tts_f" -w '%{http_code}' \
-    -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
-    "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/api-keys?reveal=true")
-  if [ "$_tts_status" != "200" ]; then
-    rm -f "$_tts_f"
-    echo "::error::Could not read the project's API keys (HTTP $_tts_status). Set the SUPABASE_SERVICE_ROLE_KEY secret instead."
-    exit 1
-  fi
-  _tts_key=$(jq -r '([.[] | select(.type == "secret")] + [.[] | select(.name == "service_role")])[0].api_key // empty' "$_tts_f")
-  rm -f "$_tts_f"
-  if [ -z "$_tts_key" ]; then echo "::error::No secret or service_role key found"; exit 1; fi
+_svc_f="${RUNNER_TEMP:-/nonexistent}/supabase-service-key"
+if [ ! -s "$_svc_f" ]; then
+  echo "::error::No service key: run scripts/resolve-service-key.sh in an earlier step of this job"
+  exit 1
 fi
-echo "::add-mask::$_tts_key"
 export SUPABASE_URL="https://$SUPABASE_PROJECT_REF.supabase.co"
-export SUPABASE_SERVICE_ROLE_KEY="$_tts_key"
-unset _tts_key _tts_f _tts_status
+SUPABASE_SERVICE_ROLE_KEY="$(cat "$_svc_f")"
+export SUPABASE_SERVICE_ROLE_KEY
+unset _svc_f

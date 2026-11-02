@@ -5,7 +5,7 @@ import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { logError } from '@/data';
 import { useAuth } from '@/features/auth/session';
-import { Button, Surface } from '@/ui';
+import { Button, Card } from '@/ui';
 
 export function SignInNeeded({
   title,
@@ -33,16 +33,11 @@ export function SignInNeeded({
     }
   };
   return (
-    <Surface
-      tone="sunken"
-      padding="md"
-      className="flex flex-col items-start gap-3"
-      data-testid={testId}
-    >
-      <p className="font-semibold text-fg" data-testid="signin-needed-title">
+    <Card tone="sunken" inset className="flex flex-col items-start gap-3" data-testid={testId}>
+      <p className="text-ui font-semibold text-fg" data-testid="signin-needed-title">
         {title}
       </p>
-      {body && <p className="text-sm text-fg-muted">{body}</p>}
+      {body && <p className="text-meta text-fg-muted">{body}</p>}
       <div className="flex flex-col gap-2 sm:flex-row">
         <Button
           variant="secondary"
@@ -54,6 +49,6 @@ export function SignInNeeded({
         </Button>
         {children}
       </div>
-    </Surface>
+    </Card>
   );
 }

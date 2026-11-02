@@ -56,7 +56,7 @@ and no review_logs.
 8. **Storage:** Dexie **v33** with no index change and a `cards` re-pull backfill, so an older
    device that dropped unknown card types picks them up again. Migration
    `20261101000900_dictation_cards.sql` widens the `cards.card_type` check constraint (pgTAP
-   `51_dictation_cards.test.sql`). Counts appear in `useStudyModeCounts`, in `/study` (a fourth
+   `51_dictation_cards.test.sql`). Counts appear in `useTodayStudy` (was `useStudyModeCounts`, removed in v0.5.2), in `/study` (a fourth
    tile), `/study?mode=dictation` and `/study/more` ("Dinleyerek çalış"). The home tiles stay
    at three.
 

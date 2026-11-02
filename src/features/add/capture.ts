@@ -4,7 +4,7 @@
 // word extraction on it and links the job to the text (import_jobs.text_id), so the preview can
 // open the text again and nothing the user brought in is lost.
 import { createImportJob, getImportJob, getSettings } from '@/data';
-import { getText, saveText } from '@/data/texts';
+import { getText, renameText, saveText } from '@/data/texts';
 import { chunkText } from '@/domain/chunking';
 import { MAX_TEXT_CHARS, type TextKind } from '@/domain/texts';
 import type { Id } from '@/domain/types';
@@ -54,7 +54,11 @@ export function saveCapture(input: CaptureInput, fallbackTitle = ''): Promise<Id
     // The text may have been deleted since (Metinlerim): then it is saved again.
     if (prev) {
       const id = await prev.catch(() => null);
-      if (id && (await getText(id))) return id;
+      const text = id ? await getText(id) : null;
+      // Same body, new title: the saved text takes the new title (B7).
+      const title = input.title.trim();
+      if (text && title && text.title !== title) await renameText(text.id, title).catch(() => undefined);
+      if (text) return text.id;
     }
     return saveText({
       kind: input.kind,
@@ -78,7 +82,9 @@ export function extractCapture(input: CaptureInput, fallbackTitle = ''): Promise
   const p = (async () => {
     if (prev) {
       const id = await prev.catch(() => null);
-      if (id && (await getImportJob(id))) return id;
+      const job = id ? await getImportJob(id) : null;
+      // A finished or failed job is not reopened: extracting again starts a fresh one (B7).
+      if (job && job.status !== 'done' && job.status !== 'failed') return job.id;
     }
     const textId = await saveCapture(input, fallbackTitle);
     const settings = await getSettings();

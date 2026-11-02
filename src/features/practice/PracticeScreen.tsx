@@ -108,8 +108,9 @@ export function PracticeScreen() {
 
   if (state.phase === 'empty') {
     return (
-      <Frame className="pt-10 md:pt-16">
+      <Frame className="pt-6 md:pt-12">
         <EmptyState
+          tone="card"
           icon="cards"
           title={t('practice.empty')}
           action={
@@ -150,7 +151,7 @@ export function PracticeScreen() {
     <Frame>
       <div className="mb-3 flex items-center justify-between gap-2">
         <Badge tone="accent">{t('practice.badge')}</Badge>
-        {state.repeat && <span className="text-sm text-fg-muted">{t('practice.repeat')}</span>}
+        {state.repeat && <span className="text-meta text-fg-muted">{t('practice.repeat')}</span>}
       </div>
       <div className="mb-4 flex items-center gap-2">
         <ProgressBar
@@ -159,7 +160,7 @@ export function PracticeScreen() {
           label={t('a11y.progress')}
           valueText={t('review.progress', { done: answered, total })}
         />
-        <span aria-hidden="true" className="tabular shrink-0 pl-1 text-sm text-fg-muted">
+        <span aria-hidden="true" className="tabular shrink-0 pl-1 text-meta font-semibold text-fg-muted">
           {answered} / {total}
         </span>
       </div>
@@ -178,7 +179,7 @@ export function PracticeScreen() {
         />
       </div>
 
-      <div className="mt-auto pt-6 md:mt-0 md:pt-8">
+      <div className="mt-auto pt-4 md:mt-0 md:pt-6">
         {state.flipped ? (
           <div
             ref={groupRef}
@@ -204,6 +205,7 @@ export function PracticeScreen() {
           <div className="flex flex-col items-center gap-3">
             <Button
               ref={showRef}
+              variant="secondary"
               size="lg"
               fullWidth
               onClick={(e) => {
@@ -213,7 +215,7 @@ export function PracticeScreen() {
             >
               {t('review.showAnswer')}
             </Button>
-            <p className="text-sm text-fg-muted">
+            <p className="text-meta text-fg-muted">
               <span className="pointer-fine:hidden">{t('review.tapToFlip')}</span>
               <span className="hidden pointer-fine:inline">{t('review.spaceToFlip')}</span>
             </p>
@@ -229,7 +231,7 @@ function Frame({ children, className }: { children: ReactNode; className?: strin
   return (
     <div
       className={
-        'mx-auto flex min-h-[calc(100dvh-3.5rem)] w-full max-w-xl flex-col px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:pt-5 ' +
+        'mx-auto flex min-h-[calc(100dvh-3.5rem)] w-full max-w-(--page-reading) flex-col px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:pt-5 ' +
         (className ?? '')
       }
     >

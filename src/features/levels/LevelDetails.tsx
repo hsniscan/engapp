@@ -12,7 +12,7 @@ export function LevelExplanation({ level }: { level: WordLevel }) {
   const correction = useCorrectionLine(level.source === 'user' ? null : level);
   const autoCorrection = useCorrectionLine(level.source === 'user' ? auto : null);
   return (
-    <div className="flex flex-col gap-2 text-[0.9375rem] text-fg-muted" data-testid="level-explanation">
+    <div className="flex flex-col gap-2 text-ui text-fg-muted" data-testid="level-explanation">
       <p>
         <span className="font-medium text-fg">{t(`wordLevel.source.${level.source}`)}</span>
         {' · '}
@@ -50,7 +50,7 @@ export function LevelDialogButton({ level, term }: { level: WordLevel; term: str
     >
       <div className="flex flex-col gap-4 pt-1">
         <LevelExplanation level={level} />
-        <p className="text-sm text-fg-muted">
+        <p className="text-meta text-fg-muted">
           {t('wordLevel.changeHint')}{' '}
           <Link to="/settings/kaynaklar" className="font-medium text-accent-text underline-offset-4 hover:underline">
             {t('wordLevel.sourcesLink')}

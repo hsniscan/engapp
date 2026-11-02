@@ -16,7 +16,7 @@ import {
 } from '@/data';
 import type { LexiconExample } from '@/domain/types';
 import { resetDb } from '@/test/db';
-import { REGISTRY_RECHECK_MS, runSync } from './engine';
+import { EXAMPLES_CHECKED_KEY, REGISTRY_RECHECK_MS, runSync } from './engine';
 import { FakeServer, onDevice, saveDevice, type DeviceImage } from './testing/fakeServer';
 
 const T = Date.UTC(2026, 9, 22, 9);
@@ -165,5 +165,31 @@ describe('example sentences and sync', () => {
     const report = await runSync(legacy, { now: () => T + MIN });
     expect(report.pushed).toBeGreaterThan(0);
     expect(server.calls.examplesPull).toBe(0);
+  });
+
+  it('fills a sense added after its sentences were shipped (below the cursor), asking once', async () => {
+    const server = new FakeServer();
+    server.addExample(ex({ id: 'early', sense_id: 'ls-delay', text_en: 'The delay was long.' }));
+    server.addExample(ex({ id: 'e1' }));
+    await newDevice('A');
+    await addNoteWithSenses({ term: 'cope', senses: [{ meaning_tr: 'başa çıkmak', lexicon_sense_id: 'ls-cope' }] }, T);
+    await sync(server, T + MIN);
+    expect(await getMeta<number>(META.lexiconExamplesCursor)).toBe(2);
+    expect((await db.lexicon_examples.toArray()).map((e) => e.id)).toEqual(['e1']);
+
+    await addNoteWithSenses({ term: 'delay', senses: [{ meaning_tr: 'gecikme', lexicon_sense_id: 'ls-delay' }] }, T + 2 * MIN);
+    await addNoteWithSenses({ term: 'rare', senses: [{ meaning_tr: 'nadir', lexicon_sense_id: 'ls-rare' }] }, T + 2 * MIN);
+    await sync(server, T + 3 * MIN);
+    expect((await db.lexicon_examples.toArray()).map((e) => e.id).sort()).toEqual(['e1', 'early']);
+    expect(await getMeta<number>(META.lexiconExamplesCursor)).toBe(2);
+    expect(await getMeta<string[]>(EXAMPLES_CHECKED_KEY)).toEqual(['ls-rare']);
+
+    const asked = server.calls.examplesFind;
+    await sync(server, T + 4 * MIN);
+    expect(server.calls.examplesFind).toBe(asked); // nothing left to ask
+    // A sentence shipped later for the empty sense comes down the cursor.
+    server.addExample(ex({ id: 'late', sense_id: 'ls-rare', text_en: 'Snow is rare here.' }));
+    await sync(server, T + 5 * MIN);
+    expect((await db.lexicon_examples.where('sense_id').equals('ls-rare').toArray()).map((e) => e.id)).toEqual(['late']);
   });
 });

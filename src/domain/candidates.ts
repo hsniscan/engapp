@@ -25,11 +25,6 @@ export type { CandidateBucket };
 /** Display order of the preview's sections. */
 export const BUCKETS: readonly CandidateBucket[] = ['for_you', 'easy', 'known', 'too_hard'];
 
-/** Share of the pre-selected set that must be at the learner's level (at least). */
-export const SAME_LEVEL_MIN = 0.55;
-/** Share of the pre-selected set that may be one level above (at most). */
-export const NEXT_LEVEL_MAX = 0.1;
-
 export interface CandidateFacts {
   id: string;
   /** Normalised term (notes.term_norm / known-term key). */
@@ -70,8 +65,8 @@ export function levelBand(cefr: CefrLevel | null, level: CefrLevel): LevelBand {
   return d < 0 ? 'lower' : d === 0 ? 'same' : d === 1 ? 'next' : 'above';
 }
 
-/** The highest level a learner at `level` is offered (L+1, C2 at most). */
-export function targetLevel(level: CefrLevel): CefrLevel {
+/** The highest level a learner at `level` is offered (L+1, C2 at most). Not domain/goals targetLevel, which honours a goal. */
+export function offerCeiling(level: CefrLevel): CefrLevel {
   return CEFR[Math.min(CEFR.length - 1, levelRank(level) + 1)]!;
 }
 

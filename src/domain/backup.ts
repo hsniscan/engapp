@@ -66,6 +66,7 @@ export const BACKUP_FORMAT = 'engapp-backup';
 //    counter), and the optional settings reading_difficulty / reading_offset /
 //    reader_highlight. Older files have none (restored as none; overwrite keeps the local ones).
 //    v0.5.1 adds the optional settings.reader_always_guess the same way (absent = off).
+//    v0.5.2 adds the optional settings.study_options the same way (absent = defaults).
 export const BACKUP_SCHEMA_VERSION = 11;
 
 export interface BackupTables {
@@ -116,6 +117,11 @@ export const backupSchema = z.object({
   schema_version: z.number().int().min(1),
   exported_at: z.number().int(),
   device_id: z.string().nullable(),
+  /**
+   * The account the rows belong to, null for a guest (v0.5.2, ADR 0063). Absent in older
+   * files: backupAccountId then reads it from the rows. Not covered by the checksum.
+   */
+  account_id: z.string().nullable().optional(),
   tables: backupTablesSchema,
   /** SHA-256 hex of canonicalJson(tables). */
   checksum: z.string().regex(/^[0-9a-f]{64}$/),
@@ -163,7 +169,7 @@ export function backupChecksum(tables: BackupTables): Promise<string> {
 
 export async function buildBackup(
   tables: BackupTables,
-  meta: { exported_at: Millis; device_id: string | null },
+  meta: { exported_at: Millis; device_id: string | null; account_id?: string | null },
 ): Promise<BackupFile> {
   const sorted = sortTables({
     ...tables,
@@ -182,9 +188,22 @@ export async function buildBackup(
     schema_version: BACKUP_SCHEMA_VERSION,
     exported_at: meta.exported_at,
     device_id: meta.device_id,
+    account_id: meta.account_id ?? null,
     tables: sorted,
     checksum: await backupChecksum(sorted),
   };
+}
+
+/**
+ * The account a backup belongs to: the header's account_id, or (files before v0.5.2) the
+ * first user_id found on its rows. Null for a guest's backup.
+ */
+export function backupAccountId(backup: Pick<BackupFile, 'account_id' | 'tables'>): string | null {
+  if (backup.account_id !== undefined) return backup.account_id;
+  const t = backup.tables;
+  const groups: readonly { user_id: string | null }[][] = [t.notes, t.cards, t.senses, t.review_logs, t.settings, t.decks ?? []];
+  for (const rows of groups) for (const r of rows) if (r.user_id) return r.user_id;
+  return null;
 }
 
 export interface BackupSummary {

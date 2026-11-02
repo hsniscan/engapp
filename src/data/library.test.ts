@@ -174,10 +174,26 @@ describe('opening a library text', () => {
     expect(await db.texts.count()).toBe(1);
   });
 
-  it('opens offline too (the reader fetches the body later)', async () => {
+  it('offline before the first open: no empty row (it would hide the text and say "Devam et")', async () => {
     vi.stubGlobal('navigator', { onLine: false });
-    const id = await openGradedText({ id: ID(2), title: 'Text 2' }, T);
-    expect(await db.texts.get(id)).toMatchObject({ graded_id: ID(2), body: '' });
+    await expect(openGradedText({ id: ID(2), title: 'Text 2' }, T)).rejects.toBeInstanceOf(GradedUnavailableError);
+    expect(await db.texts.count()).toBe(0);
+  });
+
+  it('offline, a text read before still opens from its row', async () => {
+    const id = await saveText({ kind: 'graded', graded_id: ID(2), title: 'Text 2', body: 'Old body.' }, T);
+    vi.stubGlobal('navigator', { onLine: false });
+    expect(await openGradedText({ id: ID(2), title: 'Text 2' }, T + 1)).toBe(id);
+  });
+
+  it('a double tap makes one row', async () => {
+    remote.bodies.set(ID(1), body(1));
+    const [a, b] = await Promise.all([
+      openGradedText({ id: ID(1), title: 'Text 1' }, T),
+      openGradedText({ id: ID(1), title: 'Text 1' }, T),
+    ]);
+    expect(a).toBe(b);
+    expect(await db.texts.count()).toBe(1);
   });
 
   it('keeps a resume point and fills the body of a row made before v0.5.1', async () => {
@@ -236,11 +252,16 @@ describe('suggestions', () => {
     expect((await suggestedGradedTexts('dengeli', 5)).map((x) => x.title)).toEqual(['Balanced B', 'Balanced A']);
   });
 
-  it('puts finished texts last', async () => {
+  it('leaves finished texts out while an unfinished one fits (B15)', async () => {
     remote.bodies.set(ID(2), body(2));
+    remote.bodies.set(ID(3), body(3));
     const id = await openGradedText({ id: ID(2), title: 'Balanced A' }, T);
     await db.texts.update(id, { finished_at: T });
-    expect((await suggestedGradedTexts('dengeli', 5)).map((x) => x.title)).toEqual(['Balanced B', 'Balanced A']);
+    expect((await suggestedGradedTexts('dengeli', 5)).map((x) => x.title)).toEqual(['Balanced B']);
+    // Every text in the band read: an unread easier text comes before a finished one.
+    const id3 = await openGradedText({ id: ID(3), title: 'Balanced B' }, T);
+    await db.texts.update(id3, { finished_at: T });
+    expect((await suggestedGradedTexts('dengeli', 5)).map((x) => x.title)).toEqual(['Easy']);
   });
 
   it('falls back to the closest easier texts when none is in the band', async () => {

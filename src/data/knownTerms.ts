@@ -83,3 +83,39 @@ export async function unmarkKnown(term: string, now: Millis = Date.now()): Promi
     return n;
   });
 }
+
+/**
+ * "Biliyorum" for many words in ONE transaction (Kelime Bankası selection, v0.5.2). Returns the
+ * keys this call newly marked, so "Geri al" removes only those (unmarkKnownKeys).
+ */
+export async function markManyKnown(
+  terms: readonly string[],
+  source: 'manual' | 'preview' = 'manual',
+  now: Millis = Date.now(),
+): Promise<string[]> {
+  const keys = [...new Set(terms.map(normalizeTerm).filter(Boolean))];
+  return writeTx([db.known_terms], now, async (w) => {
+    const added: string[] = [];
+    for (const key of keys) {
+      const live = (await db.known_terms.where('term_norm').equals(key).toArray()).some((r) => r.deleted_at === null);
+      if (live) continue;
+      await markKnownIn(w, key, source);
+      added.push(key);
+    }
+    return added;
+  });
+}
+
+/** Undo markManyKnown: remove the live rows of these keys. */
+export async function unmarkKnownKeys(keys: readonly string[], now: Millis = Date.now()): Promise<number> {
+  return writeTx([db.known_terms], now, async (w) => {
+    let n = 0;
+    for (const key of keys)
+      for (const r of await db.known_terms.where('term_norm').equals(key).toArray()) {
+        if (r.deleted_at !== null) continue;
+        await w.put('known_terms', { ...r, deleted_at: now });
+        n++;
+      }
+    return n;
+  });
+}

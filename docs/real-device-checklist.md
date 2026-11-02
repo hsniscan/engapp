@@ -87,7 +87,7 @@ Google hesabı** hazır olsun (son bölümde silinecek; kendi hesabını kullanm
 | [ ] | Görselli bir karta bak | Görsel koyu zeminde de net | |
 | [ ] | Telefonun üst çubuğu (saat, pil) | Tema rengine uyar, yazılar okunur | |
 | [ ] | Tema → Sistem, telefonu koyu moda al | Uygulama da koyu olur | |
-| [ ] | Telefonun geri tuşu her ekranda | Bir önceki ekrana döner; ana sayfada uygulamadan çıkar | |
+| [ ] | Telefonun geri tuşu her ekranda | Bir önceki ekrana döner; ana sayfada uygulama arka plana geçer. Simgeye dokununca hemen kaldığın yerde açılır (açılış ekranı yok) | |
 
 ## 9. Hesap silme (yalnızca deneme hesabıyla)
 
@@ -102,10 +102,15 @@ Google hesabı** hazır olsun (son bölümde silinecek; kendi hesabını kullanm
 
 | ✓ | Ne yap | Ne olmalı | Not |
 |---|---|---|---|
-| [ ] | Uçak modunu aç. (+) → Fotoğraftan metin → Fotoğraf çek → bir kitap sayfası çek | Kamera izni sorulmaz; metin 3 saniye içinde gelir | |
+| [ ] | Uçak modunu aç. (+) → Fotoğraftan metin → Fotoğraf çek → bir kitap sayfası çek | **Kamera** açılır (galeri değil); kamera izni sorulmaz; metin 3 saniye içinde gelir | |
+| [ ] | Galeride bir kitap sayfası fotoğrafını ya da ekran görüntüsünü aç → Paylaş → Engapp | Engapp "Fotoğraftan metin" ekranında açılır ve fotoğrafı hemen okur | |
 | [ ] | 10 farklı kitap sayfasıyla dene, yanlış okunan kelimeleri say | Kelimelerin en az %95'i doğru | |
 | [ ] | Bir satıra dokun, kalemle bir kelimeyi düzelt → Okuyucuda aç | Çıkardığın satır yok, düzeltme var; satır sonunda bölünmüş kelime birleşik | |
 | [ ] | Galeriden seç → loş ışıkta çekilmiş bir fotoğraf | "Bazı yerler net okunamadı" uyarısı, emin olunmayan satırlar işaretli | |
+
+Not: belleği az olan telefonlarda sistem, kamera açıkken Engapp'i kapatabilir; o zaman çekilen
+fotoğraf kaybolur (Android WebView'in bilinen sınırı). Bu olursa "Galeriden seç" ile aynı
+fotoğrafı seç.
 
 ## 11. Ana ekran widget'ı (v0.5)
 

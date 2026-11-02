@@ -60,7 +60,7 @@ export function LoadSettingsSection() {
           onValueChange={setCapacity}
           format={(v) => t('load.capacityValue', { min: v })}
         />
-        <p className="-mt-1 text-sm text-fg-muted" aria-live="polite">
+        <p className="-mt-1 text-meta text-fg-muted" aria-live="polite">
           {t('load.capacityHint', { cards: cardsForMinutes(value, status.secPerCard), sec })}
         </p>
       </SettingsRow>
@@ -103,6 +103,7 @@ function VacationEditor({
     if (!start || !end) return setError(t('load.vacationMissing'));
     if (end < start) return setError(t('load.vacationInvalid'));
     if (end < today) return setError(t('load.vacationPast'));
+    if (start < today) return setError(t('load.vacationStartPast'));
     if (diffDays(start, end) >= MAX_VACATION_DAYS) return setError(t('load.vacationTooLong'));
     setError(null);
     setVacation({ start, end })
@@ -126,13 +127,13 @@ function VacationEditor({
 
   return (
     <fieldset className="flex flex-col gap-3">
-      <legend className="mb-1 text-[0.9375rem] font-medium text-fg">
+      <legend className="mb-1 text-ui font-medium text-fg">
         {t('load.vacationTitle')}
       </legend>
-      <p className="text-sm text-fg-muted">{t('load.vacationHint')}</p>
+      <p className="text-meta text-fg-muted">{t('load.vacationHint')}</p>
       {current && (
         <div className="flex flex-col gap-2 rounded-md bg-surface-sunken p-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-medium text-fg" data-testid="vacation-current">
+          <p className="text-meta font-medium text-fg" data-testid="vacation-current">
             {t('load.vacationCurrent', {
               start: formatDayLong(current.start),
               end: formatDayLong(current.end),
@@ -160,7 +161,7 @@ function VacationEditor({
         />
       </div>
       {error && (
-        <p role="alert" className="text-sm text-danger-text">
+        <p role="alert" className="text-meta text-danger-text">
           {error}
         </p>
       )}

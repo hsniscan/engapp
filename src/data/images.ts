@@ -3,7 +3,9 @@
 // the user's own choice, hide flag and verdicts. The user's rows are user_content (kind
 // 'image_choice', one per sense of the user; kind 'image_feedback', the reason of a "Hayır")
 // and content_feedback (target_kind 'image'); they sync to the user's account only and are
-// never copied to another account. Nothing here writes to a shared table.
+// never copied to another account. Nothing here writes to a shared table. Since v0.5.2 (ADR
+// 0061) the app writes only the hide flag; picks and Evet / Hayır answers from older versions
+// are still read.
 import {
   choiceOf,
   IMAGE_CHOICE_KIND,
@@ -11,7 +13,6 @@ import {
   IMAGE_TARGET,
   imageBytes,
   imageChoiceRowId,
-  imageReasonRowId,
   orderImages,
   pickImage,
   planEviction,
@@ -26,7 +27,6 @@ import {
 import type { ContentFeedback, Id, Millis, Sense, UserContent } from '../domain/types';
 import { db } from './db';
 import { ActionError } from './errors';
-import { feedbackRowId } from '../domain/examples';
 import { imageCardPicture } from '../domain/imageCards';
 import { reconcileImageCards } from './imageCards';
 import { writeTx } from './writer';
@@ -140,6 +140,12 @@ export async function listImageSenseIds(): Promise<Id[]> {
   return [...ids].sort();
 }
 
+/** Does the device hold a picture of any of these lexicon senses? */
+export async function hasCachedImages(lexiconSenseIds: readonly Id[]): Promise<boolean> {
+  if (lexiconSenseIds.length === 0) return false;
+  return (await db.images.where('sense_id').anyOf([...lexiconSenseIds]).count()) > 0;
+}
+
 /** Cached pictures without their SVG (a fetch compares them with the server's listing). */
 export async function listCachedImageKeys(): Promise<Pick<CachedImage, 'id' | 'sense_id' | 'status'>[]> {
   const out: Pick<CachedImage, 'id' | 'sense_id' | 'status'>[] = [];
@@ -211,7 +217,7 @@ export async function applyImageFetch(
   });
 }
 
-/** A picture drawn on request ("Görsel üret" / "Yeniden üret"), or one the fetch missed. */
+/** Puts one picture into the cache (tests and tools; the background fetch uses applyImageFetch). */
 export async function storeImage(row: CachedImage): Promise<void> {
   await db.images.put(row);
 }
@@ -254,20 +260,6 @@ async function putChoice(
   });
 }
 
-/** "Bunu kullan": this sense shows `imageId` (and the picture is no longer hidden). */
-export async function chooseImage(senseId: Id, imageId: Id, now: Millis = Date.now()): Promise<void> {
-  const sense = await liveSense(senseId);
-  const image = await db.images.get(imageId);
-  if (!image || image.sense_id !== sense.lexicon_sense_id) throw new ActionError('not_found', 'image');
-  // Choosing a picture the user had said "Hayır" to takes that answer back.
-  const fbId = await feedbackRowId(IMAGE_TARGET, imageId);
-  const reasonId = await imageReasonRowId(imageId);
-  const fb = await db.content_feedback.get(fbId);
-  if (fb && fb.deleted_at === null && fb.verdict === 'reject') await writeVerdict(sense, imageId, null, null, fbId, reasonId, now);
-  await putChoice(sense, await imageChoiceRowId(senseId), { imageId, hidden: false }, now);
-  await reconcileImageCards({ senseIds: [senseId] }, now);
-}
-
 /** "Görseli gizle" (true) / "Görseli göster" (false). The picked picture is remembered. */
 export async function setImageHidden(senseId: Id, hidden: boolean, now: Millis = Date.now()): Promise<void> {
   const sense = await liveSense(senseId);
@@ -281,89 +273,6 @@ export async function setImageHidden(senseId: Id, hidden: boolean, now: Millis =
   );
   // v0.4 İP8: a hidden picture takes its picture card away; showing it again brings it back.
   await reconcileImageCards({ senseIds: [senseId] }, now);
-}
-
-async function writeVerdict(
-  sense: Sense,
-  imageId: Id,
-  verdict: 'like' | 'reject' | null,
-  reason: ImageRejectReason | null,
-  fbId: Id,
-  reasonId: Id,
-  now: Millis,
-): Promise<void> {
-  await writeTx([db.content_feedback, db.user_content], now, async (w) => {
-    const fb = await db.content_feedback.get(fbId);
-    if (verdict === null) {
-      if (fb && fb.deleted_at === null) await w.put('content_feedback', { ...fb, deleted_at: now });
-    } else if (!(fb && fb.deleted_at === null && fb.verdict === verdict)) {
-      await w.put('content_feedback', {
-        ...(fb ?? w.base(fbId)),
-        user_id: fb?.user_id ?? w.userId,
-        target_kind: IMAGE_TARGET,
-        target_id: imageId,
-        verdict,
-        deleted_at: null,
-      });
-    }
-    const r = await db.user_content.get(reasonId);
-    if (verdict === 'reject' && reason) {
-      if (!(r && r.deleted_at === null && r.context === reason)) {
-        await w.put('user_content', {
-          ...(r ?? w.base(reasonId)),
-          user_id: r?.user_id ?? w.userId,
-          kind: IMAGE_REASON_KIND,
-          lexicon_sense_id: sense.lexicon_sense_id ?? null,
-          sense_id: sense.id,
-          context: reason,
-          replaces_id: imageId,
-          text: reason,
-          translations: null,
-          span: null,
-          selected: false,
-          deleted_at: null,
-        });
-      }
-    } else if (r && r.deleted_at === null) {
-      await w.put('user_content', { ...r, deleted_at: now });
-    }
-  });
-}
-
-/**
- * "Bu görsel anlamı anlatıyor mu?": Evet ('like'), Hayır ('reject', with a reason), or null to
- * take the answer back. A "Hayır" for the picked picture drops the pick, so the card falls back
- * to the next picture. Returns whether it did (for "Geri al").
- */
-export async function setImageVerdict(
-  senseId: Id,
-  imageId: Id,
-  verdict: 'like' | 'reject' | null,
-  reason: ImageRejectReason | null = null,
-  now: Millis = Date.now(),
-): Promise<{ clearedChoice: boolean }> {
-  const sense = await liveSense(senseId);
-  const choiceId = await imageChoiceRowId(senseId);
-  const fbId = await feedbackRowId(IMAGE_TARGET, imageId);
-  const reasonId = await imageReasonRowId(imageId);
-  await writeVerdict(sense, imageId, verdict, verdict === 'reject' ? reason : null, fbId, reasonId, now);
-  const choice = choiceOf(await db.user_content.get(choiceId));
-  const clearedChoice = verdict === 'reject' && choice.imageId === imageId;
-  if (clearedChoice) await putChoice(sense, choiceId, choice.hidden ? { imageId: null, hidden: true } : null, now);
-  // v0.4 İP8: a "Hayır" for the last usable picture takes the picture card away (and undo back).
-  await reconcileImageCards({ senseIds: [senseId] }, now);
-  return { clearedChoice };
-}
-
-/** "Geri al" after a "Hayır": the answer goes, and the pick comes back if it was dropped. */
-export async function undoImageReject(
-  senseId: Id,
-  imageId: Id,
-  opts: { restoreChoice: boolean },
-  now: Millis = Date.now(),
-): Promise<void> {
-  await setImageVerdict(senseId, imageId, null, null, now);
-  if (opts.restoreChoice) await chooseImage(senseId, imageId, now);
 }
 
 export type { CachedImage, CachedImageStatus };

@@ -4,16 +4,14 @@
 
 type Env = (key: string) => string | undefined;
 
-// Sonnet since 2026-10-24 (owner's choice): same style B quality in the samples, lower price.
-export const DEFAULT_IMAGE_MODEL = 'claude-sonnet-5-5';
-export const DEFAULT_CHECK_MODEL = 'claude-haiku-5-5';
-/**
- * Reviews the Kelime Bankası rows (decision 0040, CLAUDE_WORDBANK_REVIEW_MODEL): a stronger
- * model than the one that wrote them, still about $1-2 for the whole bank at batch price.
- */
-export const DEFAULT_WORDBANK_REVIEW_MODEL = 'claude-sonnet-5-5';
-/** Writes the graded library's texts (graded-v1, decision 0047, CLAUDE_GRADED_MODEL). */
-export const DEFAULT_GRADED_MODEL = 'claude-sonnet-5-5';
+// The default ids live in model-defaults.ts (decision 0060); re-exported for existing imports.
+import { DEFAULT_CHECK_MODEL, DEFAULT_IMAGE_MODEL } from './model-defaults.ts';
+export {
+  DEFAULT_CHECK_MODEL,
+  DEFAULT_GRADED_MODEL,
+  DEFAULT_IMAGE_MODEL,
+  DEFAULT_WORDBANK_REVIEW_MODEL,
+} from './model-defaults.ts';
 
 export interface ImageModels {
   /** Draws the pictures (image-v1). */

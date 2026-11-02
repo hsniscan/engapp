@@ -1,7 +1,8 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { addNoteWithSenses, db, ensureSettings, getCardView, setInterest, storeExamples, type CardView } from '@/data';
+import { addNoteWithSenses, db, ensureSettings, getCardView, setInterest, type CardView } from '@/data';
+import { applyLexiconExamples as storeExamples } from '@/data/sync';
 import type { LexiconExample } from '@/domain/types';
 import { CardBack } from '@/features/review/CardFaces';
 import { resetDb } from '@/test/db';
@@ -56,7 +57,9 @@ describe('example sentences on the back of a card', () => {
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
 
     const tabs = await screen.findByRole('tablist', { name: 'Bağlamlar' });
-    expect(within(tabs).getAllByRole('tab').map((t) => t.textContent)).toEqual(['Günlük2', 'Sohbet0', 'İş1', 'Resmi0']);
+    // Only contexts that have sentences get a tab (nothing is generated on request).
+    expect(within(tabs).getAllByRole('tab').map((t) => t.textContent)).toEqual(['Günlük2', 'İş1']);
+    expect(screen.queryByRole('button', { name: 'Yenisini üret' })).not.toBeInTheDocument();
     expect(screen.getByText(/We had to/)).toBeInTheDocument();
     expect(screen.queryByText('Gecikmeyle başa çıkmak zorunda kaldık.')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Türkçesini göster' }));
@@ -74,10 +77,10 @@ describe('example sentences on the back of a card', () => {
     localStorage.setItem('engapp.examples.open', '1');
     renderRoute(<CardBack view={await view()} isNew={false} speech={speech} />);
     const tabs = await screen.findByRole('tablist', { name: 'Bağlamlar' });
-    expect(within(tabs).getAllByRole('tab').map((t) => t.textContent)).toEqual(['Günlük2', 'Sohbet0', 'İş1', 'Resmi0']);
+    expect(within(tabs).getAllByRole('tab').map((t) => t.textContent)).toEqual(['Günlük2', 'İş1']);
     await setInterest('business', true, T);
     await waitFor(() =>
-      expect(within(tabs).getAllByRole('tab').map((t) => t.textContent)).toEqual(['İş1', 'Günlük2', 'Sohbet0', 'Resmi0']),
+      expect(within(tabs).getAllByRole('tab').map((t) => t.textContent)).toEqual(['İş1', 'Günlük2']),
     );
   });
 
@@ -114,12 +117,12 @@ describe('example sentences on the back of a card', () => {
     expect((await db.lexicon_examples.get('e1'))!.text_en).toBe('We had to cope with the delay.');
   });
 
-  it('without an account an empty context says how to get sentences, with no AI button', async () => {
-    const user = userEvent.setup();
+  it('a sense without shipped sentences says so, with no AI button', async () => {
+    await db.lexicon_examples.clear();
     localStorage.setItem('engapp.examples.open', '1');
     renderRoute(<CardBack view={await view()} isNew={false} speech={speech} />);
-    await user.click(await screen.findByRole('tab', { name: /Resmi/ }));
-    expect(await screen.findByText('Örnek cümleler için Google ile giriş yap.')).toBeInTheDocument();
+    expect(await screen.findByText('Bu anlam için henüz örnek cümle yok.')).toBeInTheDocument();
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Yenisini üret' })).not.toBeInTheDocument();
   });
 

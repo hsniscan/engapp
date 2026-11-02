@@ -29,7 +29,7 @@ import { posLabel } from '@/features/cards/labels';
 import { CardPicture } from '@/features/images/CardPicture';
 import { preloadPicture } from '@/features/images/picture';
 import { useIsAdmin } from '@/features/images/useIsAdmin';
-import { useOnline } from '@/features/import/shared';
+import { useOnline } from '@/lib/online';
 import { Button, cn, Icon, Kbd, Spinner, toast } from '@/ui';
 
 export interface ReviewApi {

@@ -10,8 +10,8 @@ describe('decideBack', () => {
   });
 
   it('leaves the app only from the home screen', () => {
-    expect(decideBack({ overlayOpen: false, path: '/', canGoBack: true })).toBe('exit');
-    expect(decideBack({ overlayOpen: false, path: '/', canGoBack: false })).toBe('exit');
+    expect(decideBack({ overlayOpen: false, path: '/', canGoBack: true })).toBe('minimize');
+    expect(decideBack({ overlayOpen: false, path: '/', canGoBack: false })).toBe('minimize');
   });
 
   it('goes back in the history on other screens', () => {

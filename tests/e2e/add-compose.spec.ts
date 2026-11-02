@@ -75,11 +75,10 @@ test('Add sheet: four groups; a typed word is looked up and becomes a card in th
 
   await page.goto('/');
   await page.getByTestId('nav-add').click();
-  const sheet = page.getByRole('dialog', { name: 'Ne eklemek istersin?' });
+  const sheet = page.getByRole('dialog', { name: 'Ekle' });
   await expect(sheet.getByRole('heading', { level: 3 })).toHaveText([
     'Kelime ekle',
     'Metin ekle',
-    'Kelimelerimle metin',
     'İçe aktar',
   ]);
   await noSideScroll(page);

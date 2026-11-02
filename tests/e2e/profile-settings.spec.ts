@@ -1,4 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { expect, test } from './support/app.ts';
+
+const APP_VERSION = (JSON.parse(readFileSync('package.json', 'utf8')) as { version: string }).version;
 
 // v0.5.1 "Toparlama", İlerleme / Profil / Ayarlar: what a brand-new guest sees on each screen
 // the review found wrong (docs/decisions/0058).
@@ -7,14 +10,17 @@ test('privacy and account deletion never show a missing-address placeholder', as
   await page.goto('/gizlilik');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await expect(page.getByText('iletişim adresi henüz eklenmedi')).toHaveCount(0);
-  await expect(
-    page.getByRole('link', { name: 'github.com/hsniscan/engapp/issues' }).first(),
-  ).toHaveAttribute('href', 'https://github.com/hsniscan/engapp/issues');
+  await expect(page.getByRole('link', { name: /github/ })).toHaveCount(0);
+  await expect(page.getByText(/Henüz ayrı bir iletişim adresi yayımlanmadı/)).toBeVisible();
+  await expect(page.getByRole('link', { name: 'hesap silme sayfası' }).first()).toHaveAttribute(
+    'href',
+    '/hesap-sil',
+  );
 
   await page.goto('/hesap-sil');
   await expect(page.getByText('iletişim adresi henüz eklenmedi')).toHaveCount(0);
   await expect(
-    page.getByText(/Profil → ⚙ Ayarlar → Hesap ve eşitleme → Hesabımı ve verilerimi sil/),
+    page.getByText(/Profil → Ayarlar → Hesap ve eşitleme → Hesabımı ve verilerimi sil/),
   ).toBeVisible();
 });
 
@@ -56,13 +62,13 @@ test('Profil: an unmeasured level is not shown as B1; stats live on İlerleme', 
   await expect(page.getByText('Senkron')).toHaveCount(0);
 });
 
-test('Ayarlar: plain words and the 0.5.1 version', async ({ page }) => {
+test('Ayarlar: plain words and the app version', async ({ page }) => {
   await page.goto('/settings/veri');
   await expect(page.getByText('Verileri tarayıcıda koru')).toBeVisible();
   await expect(page.getByText('Kalıcı depolama')).toHaveCount(0);
   await page.goto('/settings/gelismis');
   await expect(page.getByText('Veri denetimi')).toBeVisible();
-  await expect(page.getByText('0.5.1')).toBeVisible();
+  await expect(page.getByText(APP_VERSION)).toBeVisible();
   await page.goto('/settings/kartlar');
   await expect(page.getByRole('heading', { name: 'Profil' })).toHaveCount(0);
 });

@@ -59,7 +59,7 @@ settings) produced every interval and stage table in it.
    (`backfillLearningModel`, meta `learning_model_backfill_v1`). Due dates do not move. The
    one-time Bugün note is meta `stage_rule_v1_seen` (false = still to show;
    `stageRuleNoticePending` / `markStageRuleNoticeSeen`).
-8. **Button labels.** `formatNextInterval(ms)` returns "10 dk", "3 sa", "yarın", "3 gün",
+8. **Button labels.** `formatNextInterval(ms)` (v0.5.2: `nextIntervalParts`, the words from i18n, ADR 0062) returns "10 dk", "3 sa", "yarın", "3 gün",
    "1 hafta", "13 gün", "1,5 ay", "6 ay", "1,5 yıl". Each `previewIntervals` entry gains
    `stageAfter`. The UI draws the arrow line with `stageChangeLabel(cardStage(card), stageAfter)`.
 9. **The forecast** (`src/domain/forecast.ts`) walks each branch's ramp counter and applies the

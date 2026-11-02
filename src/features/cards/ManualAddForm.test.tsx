@@ -84,7 +84,7 @@ describe('manual add (Elle)', () => {
   it('/add?tab=paste is the text page: paste and the other ways, no word form', () => {
     renderRoute(<AddPage />, { path: '/add', url: '/add?tab=paste' });
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Metin ekle');
-    expect(screen.getByRole('tab', { name: 'Yapıştır' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Metin yapıştır' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.queryByLabelText('İngilizce kelime ya da kalıp')).toBeNull();
     expect(screen.getByRole('link', { name: 'Bağlantı' })).toHaveAttribute('href', '/makale');
     expect(screen.queryAllByRole('complementary')).toHaveLength(0);

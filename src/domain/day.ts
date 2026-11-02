@@ -57,7 +57,8 @@ export interface WallClock {
   second: number;
 }
 
-export function wallClock(ms: Millis, tz: string): WallClock {
+/** Wall clock straight from Intl (slow: formatToParts allocates and parses every call). */
+function intlWallClock(ms: Millis, tz: string): WallClock {
   const parts = formatter(tz).formatToParts(new Date(ms));
   const get = (type: Intl.DateTimeFormatPartTypes): number => {
     const p = parts.find((x) => x.type === type);
@@ -73,11 +74,46 @@ export function wallClock(ms: Millis, tz: string): WallClock {
   };
 }
 
-/** Offset of `tz` at instant `ms` (local wall clock minus UTC), in ms. */
-export function tzOffsetMs(ms: Millis, tz: string): number {
-  const w = wallClock(ms, tz);
+function intlOffsetMs(ms: Millis, tz: string): number {
+  const w = intlWallClock(ms, tz);
   const asUtc = Date.UTC(w.year, w.month - 1, w.day, w.hour, w.minute, w.second);
   return asUtc - (ms - (((ms % 1000) + 1000) % 1000));
+}
+
+const HOUR_MS = 3_600_000;
+/**
+ * Offset per (zone, UTC hour). formatToParts was the top JS cost of opening Bugün on a large
+ * collection (thousands of timestamps, review v0.5.2 Y3). An hour is cached only when the
+ * offset is the same at both of its ends, so an hour holding a DST change is computed per call.
+ */
+const offsetCache = new Map<string, number>();
+const OFFSET_CACHE_MAX = 4096;
+
+/** Offset of `tz` at instant `ms` (local wall clock minus UTC), in ms. */
+export function tzOffsetMs(ms: Millis, tz: string): number {
+  const hour = Math.floor(ms / HOUR_MS);
+  const key = `${tz}|${hour}`;
+  const hit = offsetCache.get(key);
+  if (hit !== undefined) return hit;
+  const start = intlOffsetMs(hour * HOUR_MS, tz);
+  const end = intlOffsetMs(hour * HOUR_MS + HOUR_MS - 1000, tz);
+  if (start !== end) return intlOffsetMs(ms, tz);
+  if (offsetCache.size >= OFFSET_CACHE_MAX) offsetCache.clear();
+  offsetCache.set(key, start);
+  return start;
+}
+
+export function wallClock(ms: Millis, tz: string): WallClock {
+  formatter(tz); // throws for an unknown zone, as Intl does
+  const d = new Date(ms + tzOffsetMs(ms, tz));
+  return {
+    year: d.getUTCFullYear(),
+    month: d.getUTCMonth() + 1,
+    day: d.getUTCDate(),
+    hour: d.getUTCHours(),
+    minute: d.getUTCMinutes(),
+    second: d.getUTCSeconds(),
+  };
 }
 
 function pad(n: number, width = 2): string {

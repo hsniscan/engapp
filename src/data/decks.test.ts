@@ -335,3 +335,20 @@ describe('deck-scoped study (/study?mode=word&deck=<id>)', () => {
     expect((await getStudyQueue({ studyMode: 'word', deckId: 'nope' }, T)).items).toEqual([]);
   });
 });
+
+describe('hand-picked decks (v0.5.2)', () => {
+  it('renaming a hand-picked deck renames its tag on the words (B11)', async () => {
+    const id = await word('apple', ['Toplantı']);
+    const d = await createDeck({ name: 'Toplantı', filter: { v: 1, tags: ['Toplantı'] } }, T);
+    await updateDeck(d.id, { name: 'Sunum' }, T + 1);
+    expect((await db.notes.get(id))!.tags).toEqual(['Sunum']);
+    expect((await db.decks.get(d.id))!.filter).toEqual({ v: 1, tags: ['Sunum'] });
+  });
+
+  it('keeps a 60-character deck name whole as its tag (B8)', async () => {
+    const name = 'Toplantı kelimeleri için çok uzun bir deste adı yazıyorum ki';
+    expect([...name].length).toBeLessThanOrEqual(60);
+    const { cleanTag } = await import('../domain/tags');
+    expect(cleanTag(name)).toBe(name);
+  });
+});

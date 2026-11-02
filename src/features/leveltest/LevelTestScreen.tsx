@@ -203,28 +203,28 @@ function Intro({
   ];
   return (
     <div className="flex flex-1 flex-col pt-6 md:pt-12">
-      <p className="text-sm font-medium tracking-wide text-accent-text uppercase">
+      <p className="text-caption font-semibold tracking-[0.08em] text-fg-muted uppercase">
         {t('levelTest.title')}
       </p>
-      <h2 className="mt-2 font-serif text-3xl leading-tight font-semibold text-fg md:text-4xl">
+      <h2 className="mt-2 text-page font-semibold text-fg md:text-page-lg">
         {t('levelTest.introTitle')}
       </h2>
-      <p className="mt-3 text-[0.9375rem] text-fg-muted">{t('levelTest.introBody')}</p>
+      <p className="mt-3 text-lead text-fg-muted">{t('levelTest.introBody')}</p>
       <ol className="mt-8 flex flex-col gap-5">
         {points.map((p, i) => (
           <li key={p} className="flex items-start gap-4">
             <span
               aria-hidden="true"
-              className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border font-serif text-base font-semibold text-fg-muted"
+              className="tabular flex size-8 shrink-0 items-center justify-center rounded-full bg-accent-soft text-meta font-semibold text-accent-text"
             >
               {i + 1}
             </span>
-            <p className="pt-1 text-[0.9375rem] text-fg">{p}</p>
+            <p className="pt-1 text-ui text-fg">{p}</p>
           </li>
         ))}
       </ol>
       {failed && (
-        <p role="alert" className="mt-6 text-[0.9375rem] text-danger-text">
+        <p role="alert" className="mt-6 text-ui text-danger-text">
           {t('levelTest.loadFailed')}
         </p>
       )}
@@ -314,7 +314,7 @@ function TestView({
         />
         <span
           aria-hidden="true"
-          className="tabular min-w-8 shrink-0 pl-1 text-right text-sm text-fg-muted"
+          className="tabular min-w-8 shrink-0 pl-1 text-right text-meta text-fg-muted"
         >
           {done}
         </span>
@@ -322,17 +322,17 @@ function TestView({
 
       <div
         key={step}
-        className="flex min-h-[min(40dvh,20rem)] flex-1 flex-col items-center justify-center gap-3 px-2 text-center motion-safe:animate-fade-in"
+        className="flex min-h-[min(40dvh,20rem)] flex-1 flex-col items-center justify-center gap-3 rounded-card border border-border bg-surface-raised px-6 py-8 text-center shadow-raised motion-safe:animate-fade-in"
         data-testid="level-question"
         data-kind={q.kind}
         data-step={step}
       >
-        <p className="text-sm text-fg-muted">
+        <p className="text-meta text-fg-muted">
           {q.kind === 'word' ? t('levelTest.question') : t('levelTest.meaningQuestion')}
         </p>
         <p
           lang="en"
-          className="font-serif text-[2.75rem] leading-tight font-semibold tracking-[-0.01em] break-words text-fg sm:text-6xl"
+          className="font-serif text-display font-semibold break-words text-fg sm:text-numeral"
           data-testid="level-word"
         >
           {q.w}
@@ -368,7 +368,7 @@ function TestView({
                 key={o}
                 type="button"
                 onClick={() => onAnswer({ kind: 'meaning', choice: i })}
-                className="relative flex min-h-14 items-center gap-3 rounded-control border border-border bg-surface px-4 text-left text-base text-fg transition-[background-color,transform] duration-(--duration-micro) ease-standard hover:border-border-strong hover:bg-surface-hover motion-safe:active:scale-[0.98]"
+                className="relative flex min-h-14 items-center gap-3 rounded-inner border border-border bg-surface px-4 text-left text-body text-fg transition-[background-color,border-color,transform] duration-(--duration-micro) ease-standard hover:border-border-strong/60 hover:bg-surface-hover motion-safe:active:scale-[0.99]"
               >
                 <span aria-hidden="true" className="hidden md:pointer-fine:inline-flex">
                   <Kbd size="sm">{i + 1}</Kbd>
@@ -390,7 +390,7 @@ function TestView({
             <Icon name="undo" size={16} />
             {t('levelTest.undo')}
           </Button>
-          <p className="hidden text-xs text-fg-subtle md:pointer-fine:block">
+          <p className="hidden text-caption text-fg-subtle md:pointer-fine:block">
             {q.kind === 'word' ? t('levelTest.keysWord') : t('levelTest.keysMeaning')}
           </p>
         </div>
@@ -415,11 +415,11 @@ function AnswerButton({
       type="button"
       onClick={onClick}
       className={cn(
-        'relative flex min-h-20 items-center justify-center rounded-card px-3 text-lg font-semibold select-none',
+        'relative flex min-h-16 items-center justify-center rounded-control px-3 text-ui font-semibold select-none',
         'transition-[background-color,border-color,transform] duration-(--duration-micro) ease-standard motion-safe:active:scale-[0.97]',
         tone === 'yes'
           ? 'bg-accent text-accent-fg hover:bg-accent-hover'
-          : 'border border-border-strong/70 bg-surface text-fg hover:bg-surface-hover',
+          : 'border border-border-strong bg-surface text-fg hover:bg-surface-hover',
       )}
     >
       {children}

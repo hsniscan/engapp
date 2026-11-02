@@ -13,7 +13,7 @@ import { getHandsFreeItems } from '@/data/handsFree';
 import { type HandsFreeItem, revealedAt } from '@/domain/handsFree';
 import { uuidv7 } from '@/domain/ids';
 import { parsePracticeParams } from '@/features/extra/links';
-import { buttonClasses, cn, EmptyState, ProgressBar, Skeleton } from '@/ui';
+import { Button, buttonClasses, Card, cn, EmptyState, Icon, ProgressBar, Skeleton } from '@/ui';
 import { handsFreeVoice, type HandsFreeVoice } from './handsFreeVoice';
 import { type HandsFreeTimers, useHandsFree } from './useHandsFree';
 
@@ -24,51 +24,13 @@ function Frame({ children, className }: { children: ReactNode; className?: strin
   return (
     <div
       className={cn(
-        'mx-auto flex min-h-[calc(100dvh-3.5rem)] w-full max-w-xl flex-col gap-4 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:pt-5',
+        'mx-auto flex min-h-[calc(100dvh-3.5rem)] w-full max-w-(--page-reading) flex-col gap-4 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:pt-5',
         className,
       )}
     >
       <h1 className="sr-only">{t('modes.handsFree.title')}</h1>
       {children}
     </div>
-  );
-}
-
-const svg = {
-  'aria-hidden': true,
-  width: 28,
-  height: 28,
-  viewBox: '0 0 24 24',
-  fill: 'currentColor',
-} as const;
-
-function PauseIcon() {
-  return (
-    <svg {...svg}>
-      <rect x="6" y="5" width="4" height="14" rx="1" />
-      <rect x="14" y="5" width="4" height="14" rx="1" />
-    </svg>
-  );
-}
-function PlayIcon() {
-  return (
-    <svg {...svg}>
-      <path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z" />
-    </svg>
-  );
-}
-function NextIcon() {
-  return (
-    <svg {...svg}>
-      <path d="M5 6.5v11a1 1 0 0 0 1.5.86L15 13v4.5a1 1 0 0 0 2 0v-11a1 1 0 0 0-2 0V11L6.5 5.64A1 1 0 0 0 5 6.5z" />
-    </svg>
-  );
-}
-function StopIcon() {
-  return (
-    <svg {...svg}>
-      <rect x="6" y="6" width="12" height="12" rx="2" />
-    </svg>
   );
 }
 
@@ -205,7 +167,7 @@ export function HandsFreeScreen({
           {t('common.loading')}
         </p>
         <Skeleton className="h-1 w-full" />
-        <div className="flex min-h-[min(52dvh,26rem)] flex-col items-center justify-center gap-4 rounded-[20px] border border-border bg-surface">
+        <div className="flex min-h-[min(52dvh,26rem)] flex-col items-center justify-center gap-4 rounded-card border border-border bg-surface-raised shadow-raised">
           <Skeleton className="h-9 w-40" />
           <Skeleton className="w-56" />
         </div>
@@ -215,8 +177,9 @@ export function HandsFreeScreen({
 
   if (items.length === 0) {
     return (
-      <Frame className="pt-10 md:pt-16">
+      <Frame className="pt-6 md:pt-12">
         <EmptyState
+          tone="card"
           icon="cards"
           title={t('modes.handsFree.empty')}
           action={
@@ -232,20 +195,21 @@ export function HandsFreeScreen({
   if (state.status === 'ready') {
     return (
       <Frame className="justify-center">
-        <div className="flex flex-col gap-3 rounded-[20px] border border-border bg-surface px-5 py-6">
-          <h2 className="font-serif text-[1.75rem] leading-tight font-semibold">{t('modes.handsFree.title')}</h2>
-          <p className="text-[0.9375rem] leading-relaxed text-fg">{t('modes.handsFree.intro', { count: items.length })}</p>
-          <p className="text-sm text-fg-muted">{t('modes.handsFree.practiceNote')}</p>
-        </div>
-        <button
-          type="button"
+        <Card padding="lg" className="flex flex-col gap-3">
+          <h2 className="text-page font-semibold text-fg">{t('modes.handsFree.title')}</h2>
+          <p className="text-body text-fg">{t('modes.handsFree.intro', { count: items.length })}</p>
+          <p className="text-meta text-fg-muted">{t('modes.handsFree.practiceNote')}</p>
+        </Card>
+        <Button
+          size="lg"
+          fullWidth
+          leadingIcon="play-solid"
           data-testid="hands-free-start"
           onClick={actions.start}
-          className="flex h-20 w-full items-center justify-center gap-3 rounded-[20px] bg-accent text-xl font-semibold text-accent-fg transition-colors hover:bg-accent-hover"
+          className="h-16 text-lead"
         >
-          <PlayIcon />
           {t('modes.handsFree.start')}
-        </button>
+        </Button>
         <Link to="/study/more" className={buttonClasses({ variant: 'ghost', fullWidth: true })}>
           {t('common.cancel')}
         </Link>
@@ -258,6 +222,7 @@ export function HandsFreeScreen({
     return (
       <Frame className="justify-center">
         <EmptyState
+          tone="card"
           icon="check"
           title={t('modes.handsFree.doneTitle')}
           description={`${t('modes.handsFree.doneBody', { count: heard })} ${t('modes.handsFree.practiceNote')}`}
@@ -281,7 +246,9 @@ export function HandsFreeScreen({
   }
 
   const shown = revealedAt(steps, state.step);
-  const big = 'flex min-h-20 flex-1 flex-col items-center justify-center gap-1 rounded-[20px] text-base font-semibold transition-colors';
+  // Large controls (80 px) for walking or driving.
+  const big =
+    'flex min-h-20 flex-1 flex-col items-center justify-center gap-1 rounded-card text-ui font-semibold transition-colors duration-(--duration-micro) motion-safe:active:scale-[0.98]';
   return (
     <Frame>
       <div className="flex items-center gap-3 pt-1">
@@ -292,7 +259,7 @@ export function HandsFreeScreen({
           label={t('modes.handsFree.title')}
           valueText={t('modes.handsFree.progress', { n: state.index + 1, total: items.length })}
         />
-        <span className="tabular shrink-0 text-sm text-fg-muted" aria-hidden="true">
+        <span className="tabular shrink-0 text-meta font-semibold text-fg-muted" aria-hidden="true">
           {state.index + 1} / {items.length}
         </span>
       </div>
@@ -300,14 +267,14 @@ export function HandsFreeScreen({
       <section
         aria-live="polite"
         data-testid="hands-free-card"
-        className="flex min-h-[min(46dvh,22rem)] flex-1 flex-col justify-center gap-4 rounded-[20px] border border-border bg-surface px-5 py-6 text-center"
+        className="flex min-h-[min(46dvh,22rem)] flex-1 flex-col justify-center gap-4 rounded-card border border-border bg-surface-raised px-5 py-6 text-center shadow-raised"
       >
-        <p lang="en" className="font-serif text-[2.25rem] leading-tight font-semibold break-words text-fg">
+        <p lang="en" className="font-serif text-display leading-tight font-semibold break-words text-fg">
           {item?.term}
         </p>
         <p
           data-testid="hands-free-meaning"
-          className={cn('text-xl text-fg transition-opacity', shown.meaning ? 'opacity-100' : 'opacity-0')}
+          className={cn('text-heading font-semibold text-fg transition-opacity', shown.meaning ? 'opacity-100' : 'opacity-0')}
           aria-hidden={!shown.meaning}
         >
           {item?.meaning}
@@ -316,7 +283,7 @@ export function HandsFreeScreen({
           <p
             lang="en"
             className={cn(
-              'font-serif text-lg leading-relaxed text-fg-muted italic transition-opacity',
+              'font-serif text-lead text-fg-muted italic transition-opacity',
               shown.sentence ? 'opacity-100' : 'opacity-0',
             )}
             aria-hidden={!shown.sentence}
@@ -324,44 +291,44 @@ export function HandsFreeScreen({
             {item.sentence.text}
           </p>
         )}
-        <p className="text-[0.8125rem] text-fg-muted">
+        <p className="text-meta text-fg-muted">
           {playing ? t('modes.handsFree.playing') : t('modes.handsFree.paused')}
         </p>
       </section>
 
-      <div className="flex gap-2.5" role="group" aria-label={t('modes.handsFree.controls')}>
+      <div className="flex gap-2" role="group" aria-label={t('modes.handsFree.controls')}>
         <button
           type="button"
           data-testid="hands-free-toggle"
           onClick={playing ? actions.pause : actions.resume}
           className={cn(big, 'flex-[1.4] bg-accent text-accent-fg hover:bg-accent-hover')}
         >
-          {playing ? <PauseIcon /> : <PlayIcon />}
+          <Icon name={playing ? 'pause' : 'play-solid'} size={26} />
           {playing ? t('modes.handsFree.pause') : t('modes.handsFree.resume')}
         </button>
         <button
           type="button"
           data-testid="hands-free-next"
           onClick={actions.next}
-          className={cn(big, 'border border-border bg-surface-raised text-fg hover:bg-surface-hover')}
+          className={cn(big, 'border border-border bg-surface text-fg hover:bg-surface-hover')}
         >
-          <NextIcon />
+          <Icon name="skip-next" size={26} />
           {t('modes.handsFree.next')}
         </button>
         <button
           type="button"
           data-testid="hands-free-stop"
           onClick={actions.stop}
-          className={cn(big, 'border border-border bg-surface-raised text-fg hover:bg-surface-hover')}
+          className={cn(big, 'border border-border bg-surface text-fg hover:bg-surface-hover')}
         >
-          <StopIcon />
+          <Icon name="stop" size={26} />
           {t('modes.handsFree.stop')}
         </button>
       </div>
       <button
         type="button"
         onClick={() => setDimmed(true)}
-        className="min-h-11 self-center rounded-control px-3 text-sm text-fg-muted hover:text-fg"
+        className="min-h-11 self-center rounded-control px-3 text-meta font-semibold text-fg-muted hover:bg-hover hover:text-fg"
       >
         {t('modes.handsFree.dim')}
       </button>
@@ -371,7 +338,9 @@ export function HandsFreeScreen({
           type="button"
           data-testid="hands-free-dimmed"
           onClick={() => setDimmed(false)}
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black pb-[max(2rem,env(safe-area-inset-bottom))] text-sm text-[#8a8a8a]"
+          className="fixed inset-0 z-50 flex items-end justify-center pb-[max(2rem,env(safe-area-inset-bottom))] text-meta"
+          // A true black screen (OLED off) in both themes; the grey hint is readable on it (5.9:1).
+          style={{ background: '#000', color: '#8a8a8a' }}
         >
           {t('modes.handsFree.undim')}
         </button>

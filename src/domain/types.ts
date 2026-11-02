@@ -431,6 +431,24 @@ export interface Settings extends SyncedRow {
    * domain/streakFreeze.ts). Absent/null = none. Never carried to another account.
    */
   streak_freezes?: string[] | null;
+  /**
+   * v0.5.2 (ADR 0062): study options. Absent/null = the defaults (no per-mode new-card limit,
+   * whole-mode sessions, leeches only flagged).
+   */
+  study_options?: StudyOptions | null;
+}
+
+/** settings.study_options (v0.5.2, ADR 0062). Every field optional; absent/null = default. */
+export interface StudyOptions {
+  /**
+   * Per-mode daily limit of first-time cards for Üretim, Boşluk doldurma and Dikte, inside
+   * the shared "Günlük yeni kart" budget. Absent/null = no own limit (the mode shares the budget).
+   */
+  mode_new_limits?: { production?: number | null; cloze?: number | null; dictation?: number | null } | null;
+  /** Most cards in one study session ("Oturum uzunluğu"); absent/null = the whole mode. */
+  session_cards?: number | null;
+  /** Suspend a card automatically when it becomes a leech (absent/null/false = only flag it). */
+  leech_auto_suspend?: boolean | null;
 }
 
 /** "Yeni kelime sırası": smart (level, frequency, own signals, interference) or as added. */
@@ -538,24 +556,6 @@ export interface UserContent extends SyncedRow {
   selected: boolean | null;
 }
 
-/** Background preparation of example sentences for one lexicon sense (device-local queue). */
-export interface ExampleJob {
-  /** `${sense_id}|${level_band}` */
-  key: string;
-  sense_id: Id;
-  level_band: LevelBand;
-  /** Contexts asked for in the last attempt. */
-  contexts: string[];
-  status: 'queued' | 'done' | 'failed';
-  /** Higher runs first (opened on screen > new note > older note). */
-  priority: number;
-  attempts: number;
-  next_attempt_at: Millis;
-  created_at: Millis;
-  updated_at: Millis;
-  error: string | null;
-}
-
 export type ImportJobStatus = 'queued' | 'processing' | 'ready' | 'failed' | 'done';
 
 export interface ImportJob {
@@ -640,7 +640,6 @@ export const INSERT_ONLY_TABLES = [
   'level_tests',
   'weekly_reports',
 ] as const satisfies readonly OutboxTable[];
-export type InsertOnlyTable = (typeof INSERT_ONLY_TABLES)[number];
 
 export interface OutboxRow {
   seq?: number; // auto-increment key

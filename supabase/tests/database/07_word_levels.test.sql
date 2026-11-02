@@ -98,11 +98,14 @@ insert into auth.users (id, email, aud, role)
 values ('77777777-7777-4777-8777-777777777777', 'g@test.local', 'authenticated', 'authenticated');
 set local request.jwt.claims to '{"sub":"77777777-7777-4777-8777-777777777777","role":"authenticated"}';
 set local request.jwt.claim.sub to '77777777-7777-4777-8777-777777777777';
+create temporary table cope as select id from public.lexicon_entries where lemma_norm = 'pgtapcope';
+grant select on cope to authenticated;
 set local role authenticated;
 
-select is((select cefr || '/' || cefr_source || '/' || cefr_list || '/' || cefr_reason_tr || '/' || zipf
-             from public.lexicon_entries where lemma_norm = 'pgtapcope'),
-  'B1/cefrj/A2/Türkçede yaygın değil/4.1', 'lexicon_entries carries the level columns');
+-- Decision 0060: clients read senses by id (lexicon_get), not the view itself.
+select is((select e ->> 'cefr' || '/' || (e ->> 'cefr_source') || '/' || (e ->> 'cefr_list') || '/' || (e ->> 'cefr_reason_tr') || '/' || (e ->> 'zipf')
+             from jsonb_array_elements(public.lexicon_get(array(select id from cope))) e),
+  'B1/cefrj/A2/Türkçede yaygın değil/4.1', 'lexicon entries carry the level columns');
 select ok((select count(*) from public.ref_word_levels) > 0, 'signed-in users can read the reference data');
 select throws_ok($$ insert into public.ref_word_freq values ('pgtapword', 3.5) $$, '42501', null,
   'clients cannot write reference data');

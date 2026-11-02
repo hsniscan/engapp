@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import {
   getConfusables,
   getContrastCard,
+  hasCachedImages,
   hideConfusablePair,
   logError,
   resetCard,
@@ -24,7 +25,7 @@ import { FamilySection } from '@/features/family/FamilySection';
 import { useMorphology, useUserWords } from '@/features/family/hooks';
 import { ImageSection } from '@/features/images/ImageSection';
 import { MnemonicSection } from '@/features/mnemonics';
-import { Button, cn, Dialog, Icon, TextArea, toast, type IconName } from '@/ui';
+import { Button, cn, Dialog, Icon, type IconName, IconTile, TextArea, toast } from '@/ui';
 import { ConfusionPicker, ReportedNote } from './ConfusionPicker';
 import { ContrastEditor } from './ContrastEditor';
 import { familyIdOf, useLeechSheet } from './hooks';
@@ -84,7 +85,7 @@ export function LeechSheet({ cardId, onOpenChange, startWith = 'paths', onCardSu
       <div className="flex flex-col gap-3" data-testid="leech-sheet">
         {back}
         {data === undefined ? null : data === null ? (
-          <p className="text-sm text-fg-muted">{t('leech.gone')}</p>
+          <p className="text-meta text-fg-muted">{t('leech.gone')}</p>
         ) : view.kind === 'paths' ? (
           <Paths
             data={data}
@@ -140,20 +141,25 @@ function Path({ id, icon, title, body, open, onToggle, children }: PathProps) {
           aria-expanded={open}
           aria-controls={panel}
           onClick={onToggle}
-          className="flex min-h-14 w-full items-start gap-3 rounded-card px-3 py-3 text-left hover:bg-surface-sunken"
+          className="flex min-h-14 w-full items-center gap-3 rounded-card px-4 py-3 text-left transition-colors duration-(--duration-micro) hover:bg-hover"
         >
-          <Icon name={icon} className="mt-0.5 shrink-0 text-accent-text" />
+          <IconTile icon={icon} tone="accent" />
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="font-medium text-fg">{title}</span>
-            <span className="text-sm text-fg-muted">{body}</span>
+            <span className="text-ui font-medium text-fg">{title}</span>
+            <span className="text-meta text-fg-muted">{body}</span>
           </span>
-          <span aria-hidden="true" className={cn('mt-0.5 text-fg-muted transition-transform', open && 'rotate-180')}>
-            ▾
-          </span>
+          <Icon
+            name="chevron-down"
+            size={18}
+            className={cn(
+              'shrink-0 text-fg-subtle transition-transform duration-(--duration-micro) motion-reduce:transition-none',
+              open && 'rotate-180',
+            )}
+          />
         </button>
       </h3>
       {open && (
-        <div id={panel} className="flex flex-col gap-3 border-t border-border px-3 pt-3 pb-4">
+        <div id={panel} className="flex flex-col gap-3 border-t border-border px-4 pt-3 pb-4">
           {children}
         </div>
       )}
@@ -181,6 +187,10 @@ function Paths({
   const { note, card, cardSenses } = data;
   const index = useMorphology();
   const words = useUserWords();
+  // v0.5.2: pictures are shipped, not drawn on request, so the path shows only with one.
+  const lexIds = cardSenses.flatMap((s) => (s.lexicon_sense_id ? [s.lexicon_sense_id] : []));
+  const lexKey = lexIds.join(',');
+  const hasPicture = useLiveQuery(() => hasCachedImages(lexKey ? lexKey.split(',') : []), [lexKey]) ?? false;
   const type = note.term_type;
   const isContrast = type === 'contrast';
   const hasFamily =
@@ -214,8 +224,8 @@ function Paths({
       children: <MnemonicSection termNorm={note.term_norm} senses={cardSenses} />,
     });
   }
-  if (!isContrast && type !== 'affix' && cardSenses.some((s) => s.lexicon_sense_id)) {
-    // v0.4 İP3: the picture of the sense, or "Görsel üret" when it has none.
+  if (!isContrast && type !== 'affix' && hasPicture) {
+    // v0.4 İP3: the picture of the sense (only when the device has one).
     paths.push({
       id: 'image',
       icon: 'image',
@@ -287,7 +297,7 @@ function Paths({
           <Path key={p.id} {...p} />
         ))}
       </ul>
-      <p className="flex items-start gap-2 text-sm text-fg-muted">
+      <p className="flex items-start gap-2 text-meta text-fg-muted">
         <Icon name="info" size={16} className="mt-0.5 shrink-0" />
         <span>{t('leech.safeNote')}</span>
       </p>
@@ -335,10 +345,10 @@ export function PairList({
       {pairs.map((p) => (
         <li key={p.key} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2.5">
           <span className="flex min-w-0 flex-1 flex-col">
-            <span lang="en" className="font-serif text-lg font-semibold break-words text-fg">
+            <span lang="en" className="font-serif text-lead font-semibold break-words text-fg">
               {p.a.term} <span className="text-fg-muted">↔</span> {p.b.term}
             </span>
-            <span className="text-sm text-fg-muted">{t(`leech.contrast.reason.${p.reason}`)}</span>
+            <span className="text-meta text-fg-muted">{t(`leech.contrast.reason.${p.reason}`)}</span>
           </span>
           <span className="flex items-center gap-1">
             <Button size="sm" variant="secondary" onClick={() => onContrast(p)}>
@@ -476,7 +486,7 @@ function RestartPath({
     return (
       <div className="flex flex-col gap-3 rounded-control bg-surface-sunken p-3" role="group" aria-label={t('leech.resetConfirmTitle')}>
         <p className="font-medium text-fg">{t('leech.resetConfirmTitle')}</p>
-        <p className="text-sm text-fg-muted">{t('leech.resetConfirmBody')}</p>
+        <p className="text-meta text-fg-muted">{t('leech.resetConfirmBody')}</p>
         <div className="flex flex-col gap-2 sm:flex-row-reverse sm:justify-start">
           <Button variant="danger" loading={busy} onClick={reset}>
             {t('leech.reset')}

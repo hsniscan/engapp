@@ -4,9 +4,13 @@ import { describe, expect, it } from 'vitest';
 import {
   compareSuggestions,
   filterLibrary,
+  foldSearch,
   gradedReaderBody,
+  matchesLibraryQuery,
   readingMinutes,
   scoreGradedText,
+  profileCounts,
+  stretchTexts,
   suggestTexts,
   understoodPercent,
   type GradedCatalogEntry,
@@ -73,6 +77,35 @@ describe('compareSuggestions and suggestTexts', () => {
   });
 });
 
+describe('stretchTexts (B7)', () => {
+  it('when nothing fits, offers the closest harder texts, unfinished first', () => {
+    const h1 = score(entry('h1', {}, 9));
+    const h2 = score(entry('h2', {}, 7));
+    const h3 = score(entry('h3', {}, 30));
+    const ok = score(entry('ok', {}, 4));
+    expect(stretchTexts([h1, h2, h3, ok], 2).map((s) => s.entry.id)).toEqual(['h2', 'h1']);
+    expect(stretchTexts([h1, h2], 2, new Set(['h2'])).map((s) => s.entry.id)).toEqual(['h1', 'h2']);
+    expect(stretchTexts([h1], 0)).toEqual([]);
+  });
+});
+
+describe('profileCounts (B10)', () => {
+  it('passes profile keys through the reader lemmatizer and adds merged counts', () => {
+    const lem = (w: string) => (w === 'went' ? 'go' : w);
+    expect(profileCounts({ went: 2, go: 1, cat: 3 }, lem)).toEqual(new Map([['go', 3], ['cat', 3]]));
+    expect(profileCounts({ went: 2 })).toEqual(new Map([['went', 2]]));
+  });
+
+  it('scores a text the same way the reader would', () => {
+    const e = entry('x', { lemma_profile: { known: 96, went: 4 } });
+    const pk = (l: string) => (l === 'known' || l === 'go' ? 1 : 0);
+    const plain = scoreGradedText(e, { pKnown: pk, difficulty: 'dengeli' });
+    const lemmatized = scoreGradedText(e, { pKnown: pk, difficulty: 'dengeli', lemmatize: (w) => (w === 'went' ? 'go' : w) });
+    expect(plain.unknownRate).toBeCloseTo(0.04);
+    expect(lemmatized.unknownRate).toBe(0);
+  });
+});
+
 describe('filterLibrary', () => {
   const texts = [
     score(entry('c1', { level: 'C1', topic: 'science' }, 2)),
@@ -126,5 +159,36 @@ describe('gradedReaderBody (decision 0054)', () => {
 
   it('an empty text is an empty body', () => {
     expect(gradedReaderBody([])).toEqual({ body: '', spans: [] });
+  });
+});
+
+describe('library search (v0.5.2)', () => {
+  const list = [
+    score(entry('a', { title: 'A Day at the Bakery', topic: 'food' })),
+    score(entry('b', { title: 'The Island Train', topic: 'travel' })),
+    score(entry('c', { title: 'Inside a Hospital', topic: 'health' })),
+  ];
+  const label = (k: string) =>
+    ({ food: 'Yemek', travel: 'Seyahat', health: 'Sağlık' })[k] ?? k;
+  const titles = (q: string) =>
+    filterLibrary(list, { level: null, topic: null, query: q, topicLabel: label }).map(
+      (x) => x.entry.title,
+    );
+
+  it('folds case, accents and the Turkish i', () => {
+    expect(foldSearch('  İstanbul   ŞEHİR ')).toBe('istanbul sehir');
+    expect(foldSearch('ISLAND')).toBe('island');
+  });
+
+  it('finds titles and topic names; every word must match', () => {
+    expect(titles('bakery')).toEqual(['A Day at the Bakery']);
+    expect(titles('saglik')).toEqual(['Inside a Hospital']);
+    expect(titles('seyahat train')).toEqual(['The Island Train']);
+    expect(titles('seyahat bakery')).toEqual([]);
+    expect(titles('   ')).toHaveLength(3);
+  });
+
+  it('works without a topic label', () => {
+    expect(matchesLibraryQuery({ title: 'X', topic: 'travel' }, 'trav')).toBe(true);
   });
 });

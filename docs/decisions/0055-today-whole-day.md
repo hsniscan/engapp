@@ -1,6 +1,6 @@
 # 0055 — Bugün shows the whole day; one count; honest study sessions (v0.5.1)
 
-Status: accepted (v0.5.1 "Toparlama", report items 3, 7, 8, 9, 10 and Bugün/Çalışma notes)
+Status: accepted (v0.5.1 "Toparlama", report items 3, 7, 8, 9, 10 and Bugün/Çalışma notes); §1–3 amended by 0062
 
 ## Context
 
@@ -23,7 +23,7 @@ learning step (0/15 → 15/30), an evening learner lost a ramp step to the 12-ho
    one button to the next mode ("Üretime geç (29)"). The separate tiles are gone. "Biraz daha
    çalış" shows only when every mode is done.
 3. **Catch-up is one budget for the day**, shared by the modes in the same order
-   (`shareReviewCap`). Before, every mode got the whole cap.
+   (`shareReviewCap`). Before, every mode got the whole cap. (v0.5.2: a fair split instead, ADR 0062.)
 4. **Karışık çalış = the four modes' own queues** (`getMixedStudyQueue`): due learning steps
    first, the modes' cards in turn, later steps last. Same limits as the modes; Dikte included
    when this device can read its sentences. Its title is "Karışık çalışma", never "Tekrar".

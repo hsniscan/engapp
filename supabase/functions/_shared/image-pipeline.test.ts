@@ -2,9 +2,7 @@
 import type Anthropic from '@anthropic-ai/sdk';
 import fc from 'fast-check';
 import { describe, expect, it, vi } from 'vitest';
-import { ApiError } from './errors.ts';
-import { aiImageResponse, type ImageRequestInput } from './image-contract.ts';
-import { runAiImage } from './image-instant.ts';
+import type { ImageRequestInput } from './image-contract.ts';
 import { callCostUsd } from './image-models.ts';
 import {
   drawSense,
@@ -17,7 +15,6 @@ import { BAD_SVG, DECLINED, drawing, PALE, REFUSAL, verdict } from './testing/im
 import { BudgetLedger, MemoryImageStore } from './testing/memory-image-store.ts';
 
 const SENSE = '33333333-3333-4333-8333-333333333333';
-const USER = '44444444-4444-4444-8444-444444444444';
 const INPUT: ImageRequestInput = {
   sense_id: SENSE,
   lemma: 'umbrella',
@@ -188,37 +185,12 @@ describe('drawSense', () => {
   });
 });
 
-describe('ai-image (runAiImage)', () => {
-  function setup(answers: (CalledMessage | Error)[], o: { cap?: number; limit?: number } = {}) {
+describe('privacy', () => {
+  it('the model gets only the fixed system prompt and the four meaning fields', async () => {
     const store = new MemoryImageStore();
-    store.senses.set(SENSE, INPUT);
-    store.cards.set(USER, new Set([SENSE]));
-    const s = scripted(...answers);
-    const run = (body: unknown = { sense_id: SENSE }) =>
-      runAiImage(body, {
-        userId: USER,
-        store,
-        claude: () => s.fn,
-        models: MODELS,
-        capUsd: o.cap ?? 80,
-        dailyLimit: o.limit ?? 10,
-      });
-    return { store, run, calls: s.calls };
-  }
-
-  it('draws now and answers per the contract', async () => {
-    const { store, run, calls } = setup([drawing()]);
-    const res = await run();
-    expect(aiImageResponse.parse(res)).toEqual(res);
-    expect(res).toMatchObject({ ok: true, image: { sense_id: SENSE, status: 'review' } });
-    expect(res.ok && 'cost_usd' in res.image).toBe(false);
-    expect(store.requests.get(SENSE)).toMatchObject({ state: 'done' });
-    expect(calls[0]!.fallback).toBe(true);
-  });
-
-  it('privacy: the model gets only the fixed system prompt and the four meaning fields', async () => {
-    const { run, calls } = setup([BAD_SVG, drawing()]);
-    await run();
+    const { fn, calls } = scripted(BAD_SVG, drawing());
+    await drawSense(INPUT, deps(store, fn));
+    expect(calls.length).toBeGreaterThan(0);
     for (const c of calls) {
       expect(c.params.system).toEqual([
         {
@@ -231,63 +203,8 @@ describe('ai-image (runAiImage)', () => {
       const keys = Object.keys(JSON.parse(userText(c) as string) as object);
       expect(keys.slice(0, 4)).toEqual(['lemma', 'pos', 'gloss_tr', 'visual_hint']);
       expect(keys.slice(4).every((k) => k === 'previous_problem')).toBe(true);
-      expect(JSON.stringify(c.params)).not.toContain(USER);
       expect(JSON.stringify(c.params)).not.toContain(SENSE);
     }
-  });
-
-  it('daily limit, budget, not visual, failed', async () => {
-    const a = setup([drawing()], { limit: 1 });
-    await a.run();
-    expect(await a.run()).toEqual({ ok: false, reason: 'daily_limit' });
-
-    const b = setup([], { cap: 0.01 });
-    expect(await b.run()).toEqual({ ok: false, reason: 'budget' });
-    expect(b.store.daily.get(USER)).toBeUndefined(); // a spent budget does not use a daily picture
-
-    const c = setup([DECLINED]);
-    expect(await c.run()).toEqual({ ok: false, reason: 'not_visual' });
-    expect(c.store.requests.get(SENSE)).toMatchObject({ state: 'skipped' });
-
-    const d = setup([PALE, PALE]);
-    expect(await d.run()).toEqual({ ok: false, reason: 'failed' });
-  });
-
-  it('without an API key: ai_failed, and no daily picture is used', async () => {
-    const store = new MemoryImageStore();
-    store.senses.set(SENSE, INPUT);
-    store.cards.set(USER, new Set([SENSE]));
-    await expect(
-      runAiImage(
-        { sense_id: SENSE },
-        {
-          userId: USER,
-          store,
-          claude: () => {
-            throw new Error('ANTHROPIC_API_KEY is not set');
-          },
-          models: MODELS,
-          capUsd: 80,
-          dailyLimit: 10,
-        },
-      ),
-    ).rejects.toMatchObject({ code: 'ai_failed' });
-    expect(store.daily.get(USER)).toBeUndefined();
-    expect(store.ledger.reserved).toBe(0);
-  });
-
-  it("refuses bad input and senses outside the user's cards", async () => {
-    const { run, store } = setup([]);
-    await expect(run({ sense_id: 'nope' })).rejects.toBeInstanceOf(ApiError);
-    await expect(run({ sense_id: '55555555-5555-4555-8555-555555555555' })).rejects.toMatchObject({
-      code: 'invalid_input',
-    });
-    expect(store.ledger.holds.size).toBe(0);
-  });
-
-  it('a provider error is ai_failed', async () => {
-    const { run } = setup([new Error('boom')]);
-    await expect(run()).rejects.toMatchObject({ code: 'ai_failed' });
   });
 });
 

@@ -6,11 +6,11 @@
 #   SUPABASE_ACCESS_TOKEN   personal access token from supabase.com/dashboard/account/tokens
 #   SUPABASE_DB_PASSWORD    the database password of the project
 #   GEMINI_API_KEY          Google AI Studio API key
-#   ANTHROPIC_API_KEY       optional: Claude API key for pictures (ai-image). Without it the
-#                           function answers an error and pictures come only from the nightly job.
+#   ANTHROPIC_API_KEY       optional: Claude API key for the Claude fallback of the text tasks and
+#                           the daily story (decisions 0044, 0050). Pictures are drawn only by the
+#                           nightly job (images.yml), which reads its own copy of the secret.
 # Repository variables (same page > Variables), all optional:
 #   GEMINI_MODEL, GEMINI_FALLBACK_MODEL, AI_DAILY_LIMIT, ALLOWED_ORIGINS, VAPID_SUBJECT,
-#   CLAUDE_IMAGE_MODEL, CLAUDE_CHECK_MODEL, CLAUDE_MONTHLY_CREDIT_USD, IMAGE_DAILY_LIMIT,
 #   APP_ADMIN_USER_ID (the owner's auth user id: may use the picture review screen),
 #   ARTICLE_DAILY_LIMIT, CLAUDE_TEXT_MODEL, AI_CLAUDE_FALLBACK (decision 0044),
 #   STORY_DAILY_LIMIT, CLAUDE_STORY_MODEL, CLAUDE_TEXT_MONTHLY_USD (decision 0050)
@@ -51,17 +51,17 @@ jobs:
       SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID: ci-placeholder
       SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET: ci-placeholder
     steps:
-      - uses: actions/checkout@v4
-      - uses: supabase/setup-cli@v1
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb # v1.7.3
         with:
           version: ${{ env.SUPABASE_CLI_VERSION }}
-      - uses: denoland/setup-deno@v2
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
         with:
           deno-version: v2.x
       - name: Type-check edge functions (Deno)
         working-directory: supabase/functions
         run: |
-          for fn in ai-extract ai-enrich ai-examples ai-themes ai-mnemonic ai-report ai-contrast ai-image push-send tts account-delete fetch-article ai-story; do (cd "$fn" && deno check index.ts); done
+          for fn in ai-extract ai-enrich ai-themes ai-mnemonic ai-report ai-contrast push-send tts account-delete fetch-article ai-story; do (cd "$fn" && deno check index.ts); done
       - name: Start local database
         # Only Postgres + Auth are needed for the SQL tests.
         run: supabase start -x studio,imgproxy,vector,logflare,storage-api,realtime,supavisor,mailpit,postgres-meta,edge-runtime,kong,postgrest
@@ -80,8 +80,8 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: supabase/setup-cli@v1
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb # v1.7.3
         with:
           version: ${{ env.SUPABASE_CLI_VERSION }}
 
@@ -98,58 +98,75 @@ jobs:
       - name: Link project
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
 
-      # GitHub runners have no IPv6 and the direct database host is IPv6-only,
-      # so migrations go through the project's IPv4 session pooler.
-      - name: Apply database migrations
+      # GitHub runners have no IPv6 and the direct database host is IPv6-only, so the URL
+      # (kept in $RUNNER_TEMP/db-url for the steps below) points at the IPv4 session pooler.
+      - name: Find the database
+        run: scripts/supabase-db-url.sh
+
+      # Decision 0060: a migration that goes wrong must never be the end of users' data. The
+      # dump is taken before every push once BACKUP_PASSPHRASE is set; a failed backup stops the deploy.
+      - name: Back up before migrating
+        env:
+          DB_URL_FILE: ${{ runner.temp }}/db-url
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BACKUP_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
+          R2_BACKUP_ACCESS_KEY_ID: ${{ secrets.R2_BACKUP_ACCESS_KEY_ID }}
+          R2_BACKUP_SECRET_ACCESS_KEY: ${{ secrets.R2_BACKUP_SECRET_ACCESS_KEY }}
+          SKIP_BACKUP: ${{ vars.SKIP_PRE_MIGRATION_BACKUP }}
         run: |
           set -euo pipefail
-          umask 077 # the working database URL is kept in $RUNNER_TEMP for the push step below
-          pass=$(jq -rn --arg p "$SUPABASE_DB_PASSWORD" '$p|@uri')
-          echo "::add-mask::$pass"
-          status=$(curl -sS -o pooler.json -w '%{http_code}' \
-            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
-            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/config/database/pooler")
-          if [ "$status" = "200" ]; then
-            host=$(jq -r '[.[] | select(.database_type == "PRIMARY")][0].db_host' pooler.json)
-            user=$(jq -r '[.[] | select(.database_type == "PRIMARY")][0].db_user' pooler.json)
-            name=$(jq -r '[.[] | select(.database_type == "PRIMARY")][0].db_name' pooler.json)
-            supabase db push --db-url "postgresql://$user:$pass@$host:5432/$name" --yes
-            echo "postgresql://$user:$pass@$host:5432/$name" > "$RUNNER_TEMP/db-url"
+          if [ "$SKIP_BACKUP" = "true" ]; then
+            echo "::warning::SKIP_PRE_MIGRATION_BACKUP=true: migrating WITHOUT a fresh backup."
             exit 0
           fi
-          # Token without 'Connection Pooling: Read': try the regional pooler hosts directly.
-          echo "::warning::Pooler config not readable (HTTP $status); trying regional pooler hosts."
-          for host in aws-0-$SUPABASE_REGION.pooler.supabase.com aws-1-$SUPABASE_REGION.pooler.supabase.com; do
-            if supabase db push --db-url "postgresql://postgres.$SUPABASE_PROJECT_REF:$pass@$host:5432/postgres" --yes; then
-              echo "postgresql://postgres.$SUPABASE_PROJECT_REF:$pass@$host:5432/postgres" > "$RUNNER_TEMP/db-url"
-              exit 0
-            fi
-          done
-          echo "::error::Could not reach the database pooler. Give the SUPABASE_ACCESS_TOKEN the 'Connection Pooling: Read' permission."
-          exit 1
+          if [ -z "$BACKUP_PASSPHRASE" ] || [ -z "$R2_ACCOUNT_ID" ]; then
+            # Until the owner adds BACKUP_PASSPHRASE (2026-11-02: he chose to ship v0.5.2 first
+            # and set the secret later), a missing passphrase skips the backup with a warning.
+            # The nightly db-backup.yml keeps failing (and e-mailing) until the secret exists.
+            # Once it is set, a failed backup still stops the deploy below.
+            echo "::warning::BACKUP_PASSPHRASE / R2_ACCOUNT_ID is not set: migrating WITHOUT a fresh backup (docs/runbook-backup-restore.md)."
+            exit 0
+          fi
+          scripts/db-backup.sh pre-migration
+
+      - name: Apply database migrations
+        run: supabase db push --db-url "$(cat "$RUNNER_TEMP/db-url")" --yes
 
       - name: Set function secrets
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.8-flash' }}
-          GEMINI_FALLBACK_MODEL: ${{ vars.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite' }}
+          # Model ids only when a variable sets one; otherwise the code's defaults apply
+          # (supabase/functions/_shared/model-defaults.ts, decision 0060).
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          GEMINI_FALLBACK_MODEL: ${{ vars.GEMINI_FALLBACK_MODEL }}
           # Pronunciation audio (tts function, docs/decisions/0028-server-tts.md); optional variables.
-          GEMINI_TTS_MODEL: ${{ vars.GEMINI_TTS_MODEL || 'gemini-3.8-flash-tts' }}
-          GEMINI_TTS_FALLBACK_MODEL: ${{ vars.GEMINI_TTS_FALLBACK_MODEL || 'gemini-3.8-flash-lite-tts' }}
+          GEMINI_TTS_MODEL: ${{ vars.GEMINI_TTS_MODEL }}
+          GEMINI_TTS_FALLBACK_MODEL: ${{ vars.GEMINI_TTS_FALLBACK_MODEL }}
           TTS_DAILY_LIMIT: ${{ vars.TTS_DAILY_LIMIT || '150' }}
-          AI_DAILY_LIMIT: ${{ vars.AI_DAILY_LIMIT || '200' }}
+          # Daily AI limits (decision 0060): all text features together, and optional per-feature
+          # overrides AI_DAILY_LIMIT_EXTRACT, _ENRICH, _THEMES, _MNEMONIC, _CONTRAST, _REPORT.
+          AI_DAILY_LIMIT: ${{ vars.AI_DAILY_LIMIT || '120' }}
+          AI_DAILY_LIMIT_EXTRACT: ${{ vars.AI_DAILY_LIMIT_EXTRACT }}
+          AI_DAILY_LIMIT_ENRICH: ${{ vars.AI_DAILY_LIMIT_ENRICH }}
+          AI_DAILY_LIMIT_THEMES: ${{ vars.AI_DAILY_LIMIT_THEMES }}
+          AI_DAILY_LIMIT_MNEMONIC: ${{ vars.AI_DAILY_LIMIT_MNEMONIC }}
+          AI_DAILY_LIMIT_CONTRAST: ${{ vars.AI_DAILY_LIMIT_CONTRAST }}
+          AI_DAILY_LIMIT_REPORT: ${{ vars.AI_DAILY_LIMIT_REPORT }}
+          # One user's monthly share of the text budget (decision 0060): USD, and the largest
+          # fraction of CLAUDE_TEXT_MONTHLY_USD one user may take.
+          AI_USER_MONTHLY_USD: ${{ vars.AI_USER_MONTHLY_USD || '1' }}
+          AI_USER_MAX_SHARE: ${{ vars.AI_USER_MAX_SHARE || '0.1' }}
           # https://localhost = the Android app (Capacitor), docs/decisions/0033-android-capacitor.md.
           ALLOWED_ORIGINS: ${{ format('{0},https://engapp-65y.pages.dev,http://localhost:5173,https://localhost', vars.ALLOWED_ORIGINS) }}
           VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT || 'https://engapp-65y.pages.dev' }}
-          # Pictures (ai-image, docs/decisions/0030-image-pipeline.md); all optional.
+          # Claude (text fallback, daily story); optional.
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          # Model ids: only when set; otherwise the defaults in _shared/image-models.ts apply.
-          CLAUDE_IMAGE_MODEL: ${{ vars.CLAUDE_IMAGE_MODEL }}
-          CLAUDE_CHECK_MODEL: ${{ vars.CLAUDE_CHECK_MODEL }}
-          CLAUDE_MONTHLY_CREDIT_USD: ${{ vars.CLAUDE_MONTHLY_CREDIT_USD || '100' }}
-          IMAGE_DAILY_LIMIT: ${{ vars.IMAGE_DAILY_LIMIT || '10' }}
           # Article import and the Claude fallback of the text AI tasks (decision 0044); optional.
-          ARTICLE_DAILY_LIMIT: ${{ vars.ARTICLE_DAILY_LIMIT || '30' }}
+          ARTICLE_DAILY_LIMIT: ${{ vars.ARTICLE_DAILY_LIMIT || '20' }}
           CLAUDE_TEXT_MODEL: ${{ vars.CLAUDE_TEXT_MODEL }}
           AI_CLAUDE_FALLBACK: ${{ vars.AI_CLAUDE_FALLBACK || 'on' }}
           # The daily story (decision 0050); optional. The text budget is shared with graded.yml.
@@ -170,19 +187,18 @@ jobs:
           trap 'rm -f "$f"' EXIT # also when `secrets set` fails
           {
             echo "GEMINI_API_KEY=$GEMINI_API_KEY"
-            echo "GEMINI_MODEL=$GEMINI_MODEL"
-            echo "GEMINI_FALLBACK_MODEL=$GEMINI_FALLBACK_MODEL"
-            echo "GEMINI_TTS_MODEL=$GEMINI_TTS_MODEL"
-            echo "GEMINI_TTS_FALLBACK_MODEL=$GEMINI_TTS_FALLBACK_MODEL"
+            for v in GEMINI_MODEL GEMINI_FALLBACK_MODEL GEMINI_TTS_MODEL GEMINI_TTS_FALLBACK_MODEL \
+                     AI_DAILY_LIMIT_EXTRACT AI_DAILY_LIMIT_ENRICH AI_DAILY_LIMIT_THEMES \
+                     AI_DAILY_LIMIT_MNEMONIC AI_DAILY_LIMIT_CONTRAST AI_DAILY_LIMIT_REPORT; do
+              if [ -n "${!v}" ]; then echo "$v=${!v}"; fi
+            done
             echo "TTS_DAILY_LIMIT=$TTS_DAILY_LIMIT"
             echo "AI_PROVIDER=gemini"
             echo "AI_DAILY_LIMIT=$AI_DAILY_LIMIT"
+            echo "AI_USER_MONTHLY_USD=$AI_USER_MONTHLY_USD"
+            echo "AI_USER_MAX_SHARE=$AI_USER_MAX_SHARE"
             echo "ALLOWED_ORIGINS=$ALLOWED_ORIGINS"
             echo "VAPID_SUBJECT=$VAPID_SUBJECT"
-            if [ -n "$CLAUDE_IMAGE_MODEL" ]; then echo "CLAUDE_IMAGE_MODEL=$CLAUDE_IMAGE_MODEL"; fi
-            if [ -n "$CLAUDE_CHECK_MODEL" ]; then echo "CLAUDE_CHECK_MODEL=$CLAUDE_CHECK_MODEL"; fi
-            echo "CLAUDE_MONTHLY_CREDIT_USD=$CLAUDE_MONTHLY_CREDIT_USD"
-            echo "IMAGE_DAILY_LIMIT=$IMAGE_DAILY_LIMIT"
             echo "ARTICLE_DAILY_LIMIT=$ARTICLE_DAILY_LIMIT"
             echo "AI_CLAUDE_FALLBACK=$AI_CLAUDE_FALLBACK"
             if [ -n "$CLAUDE_TEXT_MODEL" ]; then echo "CLAUDE_TEXT_MODEL=$CLAUDE_TEXT_MODEL"; fi
@@ -196,9 +212,22 @@ jobs:
             done
           } > "$f"
           if [ -z "$ANTHROPIC_API_KEY" ]; then
-            echo "::notice::ANTHROPIC_API_KEY is not set: ai-image cannot draw pictures (docs/setup-backend.md)."
+            echo "::notice::ANTHROPIC_API_KEY is not set: the Claude fallback and the daily story are off (docs/setup-backend.md)."
           fi
           supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" --env-file "$f"
+          # A model variable that was removed must not leave its old value behind as a secret:
+          # the code's default (model-defaults.ts) applies only when the secret is absent.
+          unset_names=()
+          for v in GEMINI_MODEL GEMINI_FALLBACK_MODEL GEMINI_TTS_MODEL GEMINI_TTS_FALLBACK_MODEL \
+                   CLAUDE_IMAGE_MODEL CLAUDE_CHECK_MODEL CLAUDE_TEXT_MODEL CLAUDE_STORY_MODEL; do
+            if [ -z "${!v}" ]; then unset_names+=("$v"); fi
+          done
+          existing="$(supabase secrets list --project-ref "$SUPABASE_PROJECT_REF")"
+          for v in "${unset_names[@]}"; do
+            if grep -qw "$v" <<<"$existing"; then
+              supabase secrets unset --project-ref "$SUPABASE_PROJECT_REF" "$v" --yes || echo "::warning::Could not unset $v"
+            fi
+          done
 
       - name: Web Push keys (generated once)
         # VAPID keys identify this server to the browsers' push services. They are created on
@@ -228,6 +257,17 @@ jobs:
       - name: Deploy edge functions
         # verify_jwt = false comes from supabase/config.toml; the functions verify the JWT themselves.
         run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF" --use-api
+
+      - name: Remove retired edge functions
+        # `functions deploy` never deletes a function whose folder is gone. ai-image and
+        # ai-examples (on-demand pictures and sentences) were removed in v0.5.2 (ADR 0061);
+        # deleting them stops old app versions from spending the AI budget. Idempotent: a
+        # function that is already gone is skipped.
+        run: |
+          for fn in ai-image ai-examples; do
+            supabase functions delete "$fn" --project-ref "$SUPABASE_PROJECT_REF" \
+              || echo "::notice::$fn was not deployed (already removed)."
+          done
 
       - name: Schedule push reminders
         # pg_cron (migration 20261023000600_push.sql) calls push-send every 15 minutes once the
@@ -260,3 +300,7 @@ jobs:
             select id from auth.users where id = :'uid'::uuid on conflict do nothing;
           select 'picture admins: ' || count(*) from public.app_admins;
           SQL
+
+      - name: Forget the database URL
+        if: always()
+        run: rm -f "$RUNNER_TEMP/db-url"

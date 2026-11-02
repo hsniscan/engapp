@@ -57,6 +57,30 @@ export function toast(options: ToastOptions | string): string {
 
 toast.dismiss = dismiss;
 
+export interface UndoToastOptions {
+  title: string;
+  description?: string;
+  /** Called when the user taps the action. The toast closes itself. */
+  onUndo: () => void;
+  /** Action label; pass t('ui.undo') ("Geri al"). */
+  undoLabel: string;
+  /** ms; default 6000 (long enough to read and reach the button). */
+  duration?: number;
+}
+
+/**
+ * The one pattern for reversible actions (delete a word, suspend, mark known): do it at once,
+ * then offer "Geri al" — instead of a confirmation dialog (docs/design.md → Toast).
+ */
+toast.undo = function undo({ title, description, onUndo, undoLabel, duration }: UndoToastOptions) {
+  return toast({
+    title,
+    description,
+    duration: duration ?? 6000,
+    action: { label: undoLabel, onClick: onUndo, altText: `${undoLabel}: ${title}` },
+  });
+};
+
 /** Empties the queue at once (tests: a toast left open by one test must not leak into the next). */
 export function resetToasts(): void {
   toasts = [];

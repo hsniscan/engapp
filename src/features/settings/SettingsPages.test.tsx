@@ -98,7 +98,7 @@ describe('settings', () => {
 
     const dialog = await screen.findByRole('dialog', { name: 'Yedeği geri yükle' });
     expect(within(dialog).getByTestId('restore-summary')).toHaveTextContent(
-      '2 not, 5 kart, 1 tekrar',
+      '2 kelime, 5 kart, 1 tekrar',
     );
     await user.click(within(dialog).getByRole('button', { name: 'Birleştir' }));
     // The restore writes in chunks (decision 0025): check once it has finished.

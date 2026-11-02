@@ -1,5 +1,7 @@
 # 0013 — Example sentences: shared cache, open context list, private feedback
 
+> **v0.5.2:** the on-demand generation (`ai-examples`, the background queue, "Yenisini üret", "Bağlam ekle", "Tüm kartlarım için hazırla") was removed; sentences are shipped content. See [0061](0061-remove-on-demand-ai-content.md).
+
 ## Context
 
 v0.2 İP5 (`plan/v0.2-plan.md`) adds example sentences in several contexts to every card:

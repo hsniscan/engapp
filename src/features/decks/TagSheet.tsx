@@ -9,6 +9,7 @@ import { cleanTag, hasTag, MAX_TAG_LENGTH, tagKey } from '@/domain/tags';
 import type { Note } from '@/domain/types';
 import { Button, Checkbox, Dialog, DialogClose, Icon, TextField, toast } from '@/ui';
 import { foldForSearch } from '@/features/cards/libraryFilter';
+import { SheetActions } from '@/features/cards/SheetActions';
 
 type TagState = 'on' | 'off' | 'mixed';
 
@@ -152,7 +153,7 @@ function TagSheetBody({
         <button
           type="button"
           onClick={createDraft}
-          className="flex min-h-11 items-center gap-2 rounded-control px-3 text-left text-[0.9375rem] font-medium text-accent-text hover:bg-hover"
+          className="flex min-h-11 items-center gap-2 rounded-control px-3 text-left text-ui font-medium text-accent-text hover:bg-hover"
         >
           <Icon name="plus" size={18} />
           {t('library.tagSheet.create', { tag: draft })}
@@ -160,9 +161,9 @@ function TagSheetBody({
       )}
 
       {rows.length === 0 && !draft ? (
-        <p className="py-2 text-[0.9375rem] text-fg-muted">{t('library.tagSheet.none')}</p>
+        <p className="py-2 text-ui text-fg-muted">{t('library.tagSheet.none')}</p>
       ) : visible.length === 0 && !draft ? (
-        <p className="py-2 text-[0.9375rem] text-fg-muted">{t('library.tagSheet.noMatch')}</p>
+        <p className="py-2 text-ui text-fg-muted">{t('library.tagSheet.noMatch')}</p>
       ) : (
         <ul className="-mx-1 flex flex-col">
           {visible.map((r) => {
@@ -193,14 +194,14 @@ function TagSheetBody({
         </ul>
       )}
 
-      <div className="sticky bottom-[calc(-1*max(1.25rem,env(safe-area-inset-bottom)))] z-10 -mx-5 mt-2 grid grid-cols-2 gap-2 border-t border-border bg-surface-raised px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:bottom-[-1.5rem] sm:-mx-6 sm:flex sm:justify-end sm:px-6 sm:pb-6">
+      <SheetActions>
         <DialogClose asChild>
           <Button variant="secondary">{t('common.cancel')}</Button>
         </DialogClose>
         <Button onClick={() => void apply()} loading={busy} disabled={!dirty || busy}>
           {t('library.tagSheet.apply')}
         </Button>
-      </div>
+      </SheetActions>
     </div>
   );
 }

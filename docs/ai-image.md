@@ -11,14 +11,13 @@ Code (all under `supabase/functions/_shared/` unless noted):
 
 | File | What |
 |---|---|
-| `image-contract.ts` | shared contract with the client (palette, row shape, `ai-image` request/response, `IMAGE_RPC`) |
+| `image-contract.ts` | shared contract with the client (palette, row shape, `IMAGE_RPC`) |
 | `image-prompt.ts` | `image-v2`: system prompt, schema, `buildImageRequest`, `parseImageResponse`, redraw sentences |
 | `visual-prompt.ts` | `visual-v1`: visualizability score and drawing hint |
 | `image-check.ts` | contrast check, pixel coverage, `imagecheck-v2` (vision) |
-| `svg-sanitize.ts` | allowlist sanitizer (also used by the client: `src/domain/svgSanitize.ts`) |
+| `svg-sanitize.ts` | allowlist sanitizer (the client imports it directly) |
 | `image-models.ts` | model ids from the environment, the one price map, cost and reservation math |
 | `image-pipeline.ts` | `evaluateDrawing` (every check of one answer), `drawSense` (synchronous drawing) |
-| `image-instant.ts`, `ai-image/index.ts` | the `ai-image` edge function |
 | `image-store.ts` | database access (service role) |
 | `scripts/lib/image-jobs.ts` | nightly jobs and the pilot; CLIs `scripts/img-batch.ts`, `scripts/img-pilot.ts` |
 | `scripts/lib/image-render.ts` | PNG render with `@resvg/resvg-wasm` (Node only) |
@@ -30,8 +29,7 @@ Code (all under `supabase/functions/_shared/` unless noted):
 visual-v1 (nightly, Haiku) ──► lexicon_senses.visualizability / visual_hint
         │ score >= 2, no picture yet
         ▼
-image_requests (queue) ◄── image_request(sense) RPC from the app ("Resim iste")
-        │                ◄── image_review_decide(..., 'redraw')
+image_requests (queue) ◄── image_review_decide(..., 'redraw')
         ▼
 submit (nightly): Message Batch of image-v2 requests (half price)
         ▼
@@ -44,40 +42,24 @@ lexicon_images 'review'        stored 'rejected',          stored 'rejected', do
 review screen (app_admins): approve → 'approved' (every user) / reject / redraw
 ```
 
-`ai-image` (a user taps "draw now") takes the same path synchronously, without the render: the
-edge runtime cannot rasterise SVG, so the picture is stored as `review` with
-`checks.vision = "pending"` and the next nightly `collect` runs the vision check on it.
+Pictures are made **only in bulk**, once, and shipped as shared content: the app never asks for
+one. The on-demand `ai-image` edge function ("Görsel üret" / "Yeniden üret", 10 a day per user)
+was removed in v0.5.2 at the owner's request (decision 0061). Its tables stay
+(`image_usage` counted its daily pictures; `image_request_users` who asked) because account
+deletion and the 90-day purge still clean them; nothing new is written there.
 A `review` picture is visible only to users who have that sense in their cards, and to the
-review screen.
-
-## `ai-image`
-
-`POST /functions/v1/ai-image` with the session token, body `{"sense_id": "<lexicon_senses.id>"}`
-(`aiImageRequest`). Steps:
-
-1. The sense must be in the caller's own cards (otherwise `invalid_input`).
-2. Budget probe: the call's upper bound must fit in this month's budget, else
-   `{"ok": false, "reason": "budget"}` — checked first, so a spent month does not use up a
-   daily picture.
-3. `image_consume`: at most `IMAGE_DAILY_LIMIT` (default 10) per user per UTC day, else
-   `daily_limit`.
-4. `drawSense`: `image-v2` on `CLAUDE_IMAGE_MODEL` with the server-side refusal fallback,
-   sanitize, contrast; one redraw after a failed check. The model declining or a refusal (after
-   the fallback) → `not_visual`; two failures → `failed`.
-5. Success: `{"ok": true, "image": LexiconImageRow}` with status `review`.
-
-Model or network errors → `ai_failed` (HTTP 502), like the other AI functions.
+review screen; the review screen is the bulk pipeline's quality gate and stays.
 
 ## Budget
 
-Every Claude call (drawing, vision check, visual score; instant, batch and pilot) reserves an
+Every Claude call (drawing, vision check, visual score; batch and pilot) reserves an
 upper bound of its cost in `image_budget` before it is sent and settles the real cost from
 `usage` afterwards (`image_budget_reserve` / `image_budget_settle`). A reservation is refused
 when `spent + reserved + amount > cap`, in one locking SQL statement, so parallel callers can
 never pass the cap together. Cap: `0.8 × CLAUDE_MONTHLY_CREDIT_USD` (default 100 → 80 USD per
 calendar month, UTC). Upper bound of one call: input counted at the 1-hour cache-write price
-(2× input), all of `max_tokens` as output, and for an instant drawing with the fallback one more
-full attempt at the highest listed price. Prices: `MODEL_PRICES` in `image-models.ts` (USD per
+(2× input), all of `max_tokens` as output, and for a synchronous drawing with the fallback (the pilot)
+one more full attempt at the highest listed price. Prices: `MODEL_PRICES` in `image-models.ts` (USD per
 million tokens); an unknown model is priced at the highest listed price. Batch calls cost half.
 A failed request is settled at 0. Holds older than an hour (a crashed run) count as spent,
 except batch holds, which `collect` settles.
@@ -136,7 +118,7 @@ order.
 
 | Prompt | Model (env) | Thinking | Effort | `max_tokens` | Cache | Fallback |
 |---|---|---|---|---|---|---|
-| `image-v2` | `CLAUDE_IMAGE_MODEL` (default `claude-sonnet-5-5`) | adaptive | medium | 8000 | system, 1 h | server-side (instant and pilot; not batches) |
+| `image-v2` | `CLAUDE_IMAGE_MODEL` (default `claude-sonnet-5-5`) | adaptive | medium | 8000 | system, 1 h | server-side (pilot; not batches) |
 | `visual-v1` | `CLAUDE_CHECK_MODEL` (default `claude-haiku-5-5`) | adaptive | low | 8000 | system, 5 min | none |
 | `imagecheck-v2` | `CLAUDE_CHECK_MODEL` | adaptive | low | 4000 | system, 5 min | none |
 
@@ -418,8 +400,8 @@ No test calls Claude; responses are fixtures (`_shared/testing/image-fixtures.ts
   variants pass, 47 malicious files in `tests/fixtures/svg/malicious/` are refused, fuzzing.
 - `_shared/image-prompt.test.ts`: request shape, privacy snapshot, parsing, prices and the
   reservation bound (property test).
-- `_shared/image-pipeline.test.ts`: `drawSense` and `ai-image` (limits, budget, redraw,
-  declines), and that concurrent callers never pass the cap (property test).
+- `_shared/image-pipeline.test.ts`: `drawSense` (privacy, redraw, declines), and that
+  concurrent callers never pass the cap (property test).
 - `scripts/lib/image-jobs.test.ts`: submit, collect, visualize and the pilot against a fake
   store and Batches API; `scripts/lib/image-render.test.ts`: the renderer.
 - `supabase/tests/database/22_images.test.sql`: RLS, queue, budget, review functions.

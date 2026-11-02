@@ -17,8 +17,3 @@ export async function fetchArticle(url: string, deps: AiClientDeps = {}): Promis
     ...deps,
   });
 }
-
-/** The article as a ReaderText body: paragraphs separated by a blank line. */
-export function articleBody(a: Pick<ArticleResponse, 'paragraphs'>): string {
-  return a.paragraphs.join('\n\n');
-}

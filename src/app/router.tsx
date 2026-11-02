@@ -183,6 +183,15 @@ const children: RouteObject[] = [
     }),
   },
   {
+    // Every extraction job in one place (v0.5.2).
+    path: 'import',
+    handle: ADD_SECTION,
+    HydrateFallback: () => null,
+    lazy: async () => ({
+      Component: (await import('@/features/import/ImportJobsPage')).ImportJobsPage,
+    }),
+  },
+  {
     path: 'import/:jobId',
     handle: ADD_SECTION,
     HydrateFallback: () => null,
@@ -327,6 +336,14 @@ if (import.meta.env.DEV) {
     lazy: async () => ({
       Component: (await import('@/features/import/DevImportPage')).DevImportPage,
     }),
+  });
+  routes.unshift({
+    path: '/dev/preview',
+    HydrateFallback: () => null,
+    lazy: async () => {
+      const { DesignPreview } = await import('./dev/DesignPreview');
+      return { Component: DesignPreview };
+    },
   });
   routes.unshift({
     path: '/dev/ui',

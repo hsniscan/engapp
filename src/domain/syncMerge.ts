@@ -57,6 +57,8 @@ const LATE_COLUMNS: Readonly<Record<string, Readonly<Record<string, unknown>>>> 
     reader_always_guess: null,
     // v0.5 İP10 streak protections (decision 0052)
     streak_freezes: null,
+    // v0.5.2 study options (decision 0062): absent/null = defaults.
+    study_options: null,
   },
 };
 

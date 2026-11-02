@@ -1,5 +1,5 @@
-// Client of the shared picture surface (v0.4, docs/decisions/0031 and 0032):
-//   - `ai-image` edge function: draw one picture now (signed-in users, 10 a day, budget);
+// Client of the shared picture surface (v0.4, docs/decisions/0031 and 0032). Pictures are drawn
+// only by the nightly bulk job (the on-demand ai-image function was removed in v0.5.2, ADR 0061):
 //   - public.lexicon_images, read through PostgREST (RLS: approved rows, plus 'review' rows of
 //     senses in the reader's own cards);
 //   - the admin review functions (is_app_admin, image_review_queue, image_review_decide).
@@ -7,60 +7,15 @@
 import { z } from 'zod';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
-  aiImageRequest,
-  aiImageResponse,
   IMAGE_RPC,
   lexiconImageRow,
-  type AiImageResponse,
   type ImageRejectReason,
   type LexiconImageRow,
 } from '../../supabase/functions/_shared/image-contract';
-import { errorBody } from '../../supabase/functions/_shared/contracts';
 import type { ImageManifestRow } from '@/domain/images';
-import { backendConfig, getAccessToken, loadSupabase } from '@/lib/supabase';
-import { AiClientError, type AiClientDeps } from './client';
+import { loadSupabase } from '@/lib/supabase';
 
-export type { AiImageResponse, LexiconImageRow };
-
-/** Draws a picture for a lexicon sense now. Timeout 90 s (the plan: under a minute). */
-export async function requestImage(senseId: string, deps: AiClientDeps = {}): Promise<AiImageResponse> {
-  const body = aiImageRequest.parse({ sense_id: senseId });
-  const config = deps.config === undefined ? backendConfig : deps.config;
-  if (!config) throw new AiClientError('not_configured', 'Supabase is not configured');
-  const token = await (deps.getAccessToken ?? getAccessToken)();
-  if (!token) throw new AiClientError('not_signed_in', 'Sign in to draw a picture');
-
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), deps.timeoutMs ?? 90_000);
-  let res: Response;
-  let json: unknown;
-  try {
-    res = await (deps.fetch ?? fetch)(`${config.url}/functions/v1/ai-image`, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        authorization: `Bearer ${token}`,
-        apikey: config.key,
-      },
-      body: JSON.stringify(body),
-      signal: ctrl.signal,
-    });
-    json = await res.json().catch(() => null);
-  } catch (e) {
-    throw new AiClientError('offline', e instanceof Error ? e.message : String(e));
-  } finally {
-    clearTimeout(timer);
-  }
-  if (!res.ok) {
-    const err = errorBody.safeParse(json);
-    throw err.success
-      ? new AiClientError(err.data.error.code, err.data.error.message, res.status)
-      : new AiClientError(res.status === 401 ? 'unauthorized' : 'internal', `HTTP ${res.status}`, res.status);
-  }
-  const ok = aiImageResponse.safeParse(json);
-  if (!ok.success) throw new AiClientError('bad_response', 'invalid ai-image response', res.status);
-  return ok.data;
-}
+export type { LexiconImageRow };
 
 // ------------------------------------------------------------------ table reads
 

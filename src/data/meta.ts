@@ -26,10 +26,6 @@ export const META = {
 export const EXTRA_NEW_PREFIX = 'extra_new:';
 export const extraNewKey = (day: string): string => `${EXTRA_NEW_PREFIX}${day}`;
 
-/** Meta key counting a day's background ai-examples calls (soft cap). Device-local. */
-export const EXAMPLE_CALLS_PREFIX = 'example_calls:';
-export const exampleCallsKey = (day: string): string => `${EXAMPLE_CALLS_PREFIX}${day}`;
-
 export async function getMeta<T>(key: string): Promise<T | undefined> {
   return (await db.meta.get(key))?.value as T | undefined;
 }

@@ -14,6 +14,9 @@
 //   close     "neredeyse": a small typo by Damerau–Levenshtein (a swap of two neighbours is
 //             one edit): 1 letter for words of 3–7 letters, 2 from 8 letters on, none for
 //             one- and two-letter words
+//             (v0.5.2) never when the typed word is another real English word: "then" for
+//             "than", "quiet" for "quite", "lose" for "loose" are a different word, not a typo
+//             (CONFUSABLE_WORDS below, plus the words the data layer knows: CheckOptions)
 //   wrong     anything else; skipped: nothing typed ("Bilmiyorum")
 // The verdict only pre-selects a rating button; the user's tap is the rating.
 import { damerauLevenshtein } from './confusables';
@@ -181,6 +184,8 @@ export type AnswerVerdict = 'correct' | 'synonym' | 'close' | 'wrong' | 'skipped
 
 export interface AnswerCheck {
   verdict: AnswerVerdict;
+  /** v0.5.2: the answer is another real English word, one typo away ("then" for "than"). */
+  otherWord?: string;
   /** Typing edits from the closest accepted form (0 when correct or a synonym). */
   distance: number;
   /** The answer to show as "Doğrusu" (the term as stored, or "go" for "to go"). */
@@ -196,12 +201,43 @@ export function closeLimit(term: string): number {
   return n >= 8 ? 2 : 1;
 }
 
+/**
+ * Real English words often typed for each other, one edit apart (v0.5.2, review B11). A typed
+ * answer that is one of them, and is not the term, is a different word, never "neredeyse".
+ */
+export const CONFUSABLE_WORDS: ReadonlySet<string> = new Set(
+  (
+    'then than quite quiet lose loose affect effect advise advice accept except desert dessert ' +
+    'later latter breath breathe cloth clothe bath bathe teeth teethe angel angle diary dairy ' +
+    'form from wonder wander costume custom device devise prophecy prophesy choose chose ' +
+    'lie lay rise raise sit set lead led dose doze since sense through thorough though tough ' +
+    'week weak peace piece hear here bear bare meat meet hole whole plane plain sail sale ' +
+    'tail tale fair fare pair pare pear cite site sight right write rite road rode role roll ' +
+    'their there were where wear ware weather whether whose ' +
+    'personal personnel moral morale casual causal sever severe trail trial stake steak ' +
+    'brake break steal steel hire higher flour flower fourth forth wait weight waist waste ' +
+    'cloths clothes dear deer find fine mind mine kind king live life leave leaf lose lost ' +
+    'loss boss bad bed bag big beg pen pin ten tin fan fun gun sun son run ran man men hat ' +
+    'hot hut cut cat cap cup map mop top tip lip lap pat pet pit pot put but bet bit bat ' +
+    'sheep ship sleep slip feel fill heel hill steal still seat sit leak lick beat bit ' +
+    'full fool pull pool look luck walk work word world ward warm worm farm firm fast first ' +
+    'any many hard heard hart heart hurt heat hate hit hut card cord board bored'
+  )
+    .split(/\s+/)
+    .filter(Boolean),
+);
+
 export interface CheckOptions {
   /**
    * Other English words for the same meaning (data/synonyms.ts). A typed answer equal to one of
    * them (folded, spelling variants included) is a 'synonym'.
    */
   synonyms?: readonly string[];
+  /**
+   * v0.5.2: other real English words the data layer found (the word bank, the dictionary cache,
+   * the user's notes). A "close" answer equal to one of them is 'wrong' with `otherWord`.
+   */
+  otherWords?: readonly string[];
 }
 
 /** Is the typed answer one of these words (folded, with "to"/"the" and spelling variants)? */
@@ -232,9 +268,20 @@ export function checkAnswer(typed: string, term: string, opts: CheckOptions = {}
   if (opts.synonyms?.length && matchesAny(typed, opts.synonyms.filter((w) => foldAnswer(w) !== full)))
     return { ...base, verdict: 'synonym', distance: 0, expected: shown };
   const longest = Math.max(...mine.map((t) => [...t.replace(/ /g, '')].length));
-  const verdict: AnswerVerdict =
-    best.distance <= closeLimit(best.form) && longest > 1 ? 'close' : 'wrong';
-  return { ...base, verdict, distance: best.distance };
+  const close = best.distance <= closeLimit(best.form) && longest > 1;
+  if (close) {
+    const other = otherRealWord(typed, term, opts.otherWords);
+    if (other) return { ...base, verdict: 'wrong', distance: best.distance, otherWord: other };
+  }
+  return { ...base, verdict: close ? 'close' : 'wrong', distance: best.distance };
+}
+
+/** The typed answer is a real English word that is not the term ("then" for "than"). */
+function otherRealWord(typed: string, term: string, known: readonly string[] = []): string | null {
+  const t = foldAnswer(typed);
+  if (!t || acceptedForms(term).includes(t)) return null;
+  if (CONFUSABLE_WORDS.has(t)) return typed.trim();
+  return matchesAny(typed, known.filter((w) => foldAnswer(w) !== foldAnswer(term))) ? typed.trim() : null;
 }
 
 /**

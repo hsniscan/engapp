@@ -7,5 +7,4 @@ import { indexFalseFriends, parseFalseFriendTable } from '@/domain/pairNotes';
 const parsed = parseFalseFriendTable(md);
 
 export const FALSE_FRIENDS = parsed.notes;
-export const FALSE_FRIEND_ERRORS = parsed.errors;
 export const FALSE_FRIEND_INDEX = indexFalseFriends(parsed.notes);

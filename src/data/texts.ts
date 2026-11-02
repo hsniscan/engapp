@@ -101,9 +101,28 @@ export function setTextFinished(
   );
 }
 
+/** A new title for a saved text (capture saved again with a changed title, v0.5.2). */
+export function renameText(id: Id, title: string, now: Millis = Date.now()): Promise<ReaderText> {
+  const clean = title.trim().slice(0, MAX_TITLE_CHARS);
+  return change(id, now, (t) => (clean && clean !== t.title ? { ...t, title: clean } : null));
+}
+
 /** "Metni sil": a tombstone (synced), like every other deletion. */
 export function deleteText(id: Id, now: Millis = Date.now()): Promise<ReaderText> {
   return change(id, now, (t) => ({ ...t, deleted_at: now }));
+}
+
+/**
+ * "Geri al" after "Metni sil" (v0.5.2): brings the text back only when it is still the deletion
+ * `deletedAt` made (a later delete or a newer row from another device is left alone).
+ */
+export function restoreText(id: Id, deletedAt: Millis, now: Millis = Date.now()): Promise<boolean> {
+  return writeTx([db.texts], now, async (w) => {
+    const row = await db.texts.get(id);
+    if (!row || row.deleted_at !== deletedAt) return false;
+    await w.put('texts', { ...row, deleted_at: null });
+    return true;
+  });
 }
 
 /**

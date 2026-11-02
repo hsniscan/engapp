@@ -5,8 +5,9 @@
 //
 //   1. The word (with its part of speech) is in the CEFR-J or Octanove list: the list level,
 //      moved by the Turkish-learner correction when there is one (at most one step).
-//   2. A multi-word expression that is not in the list: the AI guess or the level of its
-//      hardest word, whichever is higher.
+//   2. A multi-word expression that is not in the list: the AI guess or the level from its
+//      words, whichever is higher. From its words: an idiom or phrasal verb is one band above
+//      its hardest word and at least B1; a pattern is its hardest word.
 //   3. Otherwise the AI guess, bounded by frequency: Zipf >= 5 at most B1, Zipf < 3 at least
 //      C1, and never more than two bands away from the frequency band.
 //   4. No guess: the frequency band (ZIPF_THRESHOLDS).
@@ -286,6 +287,9 @@ export function boundGuess(guess: Cefr, zipf: number | null): Cefr {
   return g;
 }
 
+/** The lowest level a multi-word idiom gets from its words alone. */
+export const PHRASE_MIN: Cefr = 'B1';
+
 /** Level of one word inside an expression: its list level, else its frequency band. */
 function wordLevel(word: string, lookup: RefLookup, coverage: FreqCoverage): Cefr | null {
   for (const f of lemmaForms(word)) {
@@ -325,6 +329,10 @@ export function resolveLevel(
       const l = wordLevel(w, lookup, coverage);
       if (l) parts = parts ? maxLevel(parts, l) : l;
     }
+    // An idiom or phrasal verb means more than its words ("cut corners", "by and large"):
+    // one band above its hardest word and at least B1 (v0.5.2, ADR 0063). A pattern
+    // ("take advantage of sth") stays at its hardest word.
+    if (parts && q.term_type !== 'pattern') parts = maxLevel(at(levelRank(parts) + 1), PHRASE_MIN);
     if (guess && (!parts || levelRank(guess) >= levelRank(parts)))
       return { cefr: guess, source: 'ai', list_cefr: null, reason_tr: null };
     if (parts) return { cefr: parts, source: 'words', list_cefr: null, reason_tr: null };

@@ -7,7 +7,6 @@ import type {
   DailyActivity,
   Deck,
   ErrorLogRow,
-  ExampleJob,
   ImportCandidate,
   ImportJob,
   LexiconExample,
@@ -70,7 +69,6 @@ export class EngDb extends Dexie {
   lexicon_examples!: EntityTable<LexiconExample, 'id'>;
   content_feedback!: EntityTable<ContentFeedback, 'id'>;
   user_content!: EntityTable<UserContent, 'id'>;
-  example_jobs!: EntityTable<ExampleJob, 'key'>;
   ref_cache!: EntityTable<RefCacheRow, 'key'>;
   anki_imports!: EntityTable<AnkiImportRecord, 'id'>;
   lexicon_pair_notes!: EntityTable<LexiconPairNote, 'id'>;
@@ -409,7 +407,47 @@ export class EngDb extends Dexie {
     this.version(36)
       .stores({})
       .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
+    // v37 (v0.5.2, ADR 0061; 38–45 belong to the other v0.5.2 packages): the on-demand example
+    // sentence generation is gone, so its device-local queue `example_jobs` (never synced, never
+    // backed up) is dropped, with the meta keys only that queue used (examples_since,
+    // examples_backfill and the per-day example_calls:<day> counters). Shared sentences
+    // (lexicon_examples) and the user's verdicts and edits stay.
+    this.version(37)
+      .stores({ example_jobs: null })
+      .upgrade(async (tx) => {
+        const meta = tx.table('meta');
+        await meta.bulkDelete(['examples_since', 'examples_backfill']);
+        await meta.where('key').startsWith('example_calls:').delete();
+      });
+    // v38 (v0.5.2 study, decision 0062; 37 and 39–45 belong to the other v0.5.2 packages): the
+    // settings row gains study_options (per-mode new-card limits, session length, leech
+    // auto-suspend; optional, absent = defaults). A device that pulled settings while it ran an
+    // older version dropped it: re-pull settings once. No new table or index.
+    this.version(38)
+      .stores({})
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
   }
 }
 
 export const db = new EngDb();
+
+/**
+ * Another tab, or the installed PWA, opened a newer schema (v0.5.2, ADR 0064). Dexie's default
+ * closes this connection and silently reopens it on the next query, so old code would keep
+ * running against tables it does not know. Instead the connection stays closed and the page is
+ * asked to reload (`onReplaced`, wired in src/app/pwa.ts). A delete from another tab is treated
+ * the same way. Only the app calls this; tests that open several connections are unaffected.
+ */
+export function watchDbReplaced(onReplaced: () => void, target: Dexie = db): void {
+  let fired = false;
+  // Dexie runs the newest subscriber first; returning false skips its default handler (which
+  // would close with auto-reopen enabled).
+  target.on('versionchange', () => {
+    target.close({ disableAutoOpen: true });
+    if (!fired) {
+      fired = true;
+      onReplaced();
+    }
+    return false;
+  });
+}

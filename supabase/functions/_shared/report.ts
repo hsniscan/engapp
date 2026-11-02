@@ -13,7 +13,7 @@
 
 import { AiError } from './ai-provider.ts';
 import { ApiError } from './errors.ts';
-import { cleanExampleText, isCleanSentence } from './examples.ts';
+import { cleanExampleText, isCleanSentence } from './sentences.ts';
 import type { PipelineDeps } from './extract.ts';
 import { isTurkishText } from './mnemonic.ts';
 import {

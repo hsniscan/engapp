@@ -3,12 +3,13 @@
 // visible behind the scrim; on the web it sits on the plain canvas. Presentational: QuickPage
 // supplies the data and the actions.
 import * as RadixDialog from '@radix-ui/react-dialog';
-import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { QuickAddResult, QuickMine, QuickPreview, QuickSense } from '@/data/quick';
 import { posLabel } from '@/features/cards/labels';
 import { CardPicture } from '@/features/images/CardPicture';
-import { Badge, Button, cn, Icon, IconButton, Skeleton } from '@/ui';
+import { SignInNeeded } from '@/features/add/SignInNeeded';
+import { ChoiceButton, Notice } from '@/features/add/ui';
+import { Badge, Button, cn, Eyebrow, Icon, IconButton, Skeleton } from '@/ui';
 import type { QuickRoute } from './route';
 
 export type LookupState = 'idle' | 'searching' | 'offline' | 'signin' | 'notfound' | 'failed';
@@ -54,19 +55,17 @@ export function QuickSheet(props: QuickSheetProps) {
           onOpenAutoFocus={(e) => e.preventDefault()}
           className={cn(
             'fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[88dvh] w-full max-w-xl flex-col',
-            'rounded-t-[22px] border-t border-border bg-surface-raised text-fg shadow-overlay sm:border-x',
-            'pb-[max(1rem,env(safe-area-inset-bottom))] data-[state=open]:animate-sheet-in',
+            'rounded-t-sheet border-t border-border bg-surface-raised text-fg shadow-overlay sm:border-x',
+            'pb-[max(1.25rem,env(safe-area-inset-bottom))] data-[state=open]:animate-sheet-in',
             'focus-visible:outline-none',
           )}
         >
           <div
             aria-hidden="true"
-            className="mx-auto mt-2.5 mb-1 h-1 w-9 shrink-0 rounded-full bg-border-strong/40"
+            className="mx-auto mt-3 mb-1 h-1 w-10 shrink-0 rounded-full bg-border-strong/40"
           />
           <div className="flex items-center justify-between gap-3 px-5 pt-1">
-            <span className="text-xs font-semibold tracking-[0.08em] text-fg-subtle uppercase">
-              Engapp
-            </span>
+            <Eyebrow as="span">Engapp</Eyebrow>
             <RadixDialog.Close asChild>
               <IconButton icon="x" label={t('quick.close')} tooltip={false} className="-mr-2" />
             </RadixDialog.Close>
@@ -108,25 +107,11 @@ function Empty() {
   const { t } = useTranslation();
   return (
     <div className="flex flex-col gap-1.5 pt-2 pb-4">
-      <RadixDialog.Title className="font-serif text-xl font-semibold text-fg">
+      <RadixDialog.Title className="text-title font-semibold text-fg">
         {t('quick.emptyTitle')}
       </RadixDialog.Title>
-      <p className="text-[0.9375rem] text-fg-muted">{t('quick.emptyBody')}</p>
+      <p className="text-ui text-fg-muted">{t('quick.emptyBody')}</p>
     </div>
-  );
-}
-
-function Notice({ children, tone = 'muted' }: { children: ReactNode; tone?: 'muted' | 'danger' }) {
-  return (
-    <p
-      role={tone === 'danger' ? 'alert' : 'status'}
-      className={cn(
-        'rounded-[14px] bg-surface-sunken px-4 py-3 text-[0.9375rem]',
-        tone === 'danger' ? 'text-danger-text' : 'text-fg-muted',
-      )}
-    >
-      {children}
-    </p>
   );
 }
 
@@ -157,19 +142,19 @@ function TermBody({
           aria-hidden="true"
           className={cn(
             'flex size-12 shrink-0 items-center justify-center rounded-full',
-            nothing ? 'bg-surface-sunken text-fg-muted' : 'bg-success-soft text-success-text',
+            nothing ? 'bg-surface-sunken text-fg-muted' : 'bg-accent-soft text-accent-text',
           )}
         >
           <Icon name={nothing ? 'info' : 'check'} size={24} strokeWidth={2.2} />
         </span>
         <span className="flex min-w-0 flex-col">
-          <RadixDialog.Title className="text-base font-semibold text-fg">
+          <RadixDialog.Title className="text-lead font-semibold text-fg">
             {nothing
               ? t('quick.nothingNew', { term: saved.term })
               : t('quick.saved', { term: saved.term })}
           </RadixDialog.Title>
           {!nothing && (
-            <span className="text-sm text-fg-muted">
+            <span className="text-meta text-fg-muted">
               {t('quick.savedCards', { count: saved.cards })}
             </span>
           )}
@@ -190,7 +175,7 @@ function TermBody({
             <RadixDialog.Title
               lang="en"
               data-testid="quick-term"
-              className="min-w-0 font-serif text-[2rem] leading-tight font-semibold break-words text-fg"
+              className="min-w-0 font-serif text-page font-semibold break-words text-fg"
             >
               {shown}
             </RadixDialog.Title>
@@ -204,7 +189,7 @@ function TermBody({
               />
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-fg-muted">
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-meta text-fg-muted">
             {preview?.ipa && (
               <span lang="en" className="font-serif">
                 /{preview.ipa.replace(/^\/|\/$/g, '')}/
@@ -223,7 +208,7 @@ function TermBody({
           <CardPicture
             image={preview.picture}
             showNew={false}
-            className="size-22 overflow-hidden rounded-[16px] bg-surface-sunken"
+            className="size-22 overflow-hidden rounded-inner bg-surface-sunken"
           />
         )}
       </div>
@@ -237,21 +222,22 @@ function TermBody({
               {t('quick.searching')}
             </p>
           )}
-          <Skeleton className="h-14 w-full rounded-[14px]" />
-          <Skeleton className="h-14 w-full rounded-[14px]" />
+          <Skeleton className="h-14 w-full rounded-inner" />
+          <Skeleton className="h-14 w-full rounded-inner" />
         </div>
       ) : senses.length > 0 ? (
         <SenseChoices senses={senses} picked={picked} onToggle={onToggleSense} />
-      ) : mine.length > 0 ? null : (
+      ) : mine.length > 0 ? null : lookup === 'signin' ? (
+        // A guest gets the Google button right here, not only a sentence (B4).
+        <SignInNeeded title={t('quick.signIn')} testId="quick-signin" />
+      ) : (
         <Notice tone={lookup === 'failed' ? 'danger' : 'muted'}>
           {t(
             lookup === 'offline'
               ? 'quick.offline'
-              : lookup === 'signin'
-                ? 'quick.signIn'
-                : lookup === 'failed'
-                  ? 'quick.failed'
-                  : 'quick.notFound',
+              : lookup === 'failed'
+                ? 'quick.failed'
+                : 'quick.notFound',
           )}
         </Notice>
       )}
@@ -296,13 +282,13 @@ export function MineMeanings({ mine }: { mine: readonly QuickMine[] }) {
   return (
     <section
       aria-label={t('quick.mine')}
-      className="flex flex-col gap-1 rounded-[14px] bg-accent-soft px-4 py-3"
+      className="flex flex-col gap-1 rounded-inner bg-accent-soft px-4 py-3"
       data-testid="quick-mine"
     >
-      <span className="text-sm text-accent-text">{t('quick.mine')}</span>
+      <span className="text-meta font-semibold text-accent-text">{t('quick.mine')}</span>
       <ul className="flex flex-col gap-0.5">
         {mine.map((m, i) => (
-          <li key={i} className="text-[1.0625rem] font-medium text-fg">
+          <li key={i} className="text-lead font-medium text-fg">
             {m.meaning_tr}
           </li>
         ))}
@@ -324,7 +310,7 @@ export function SenseChoices({
   const { t } = useTranslation();
   return (
     <section aria-label={t('quick.meanings')} className="flex flex-col gap-2">
-      {senses.length > 1 && <p className="text-sm text-fg-muted">{t('quick.pickHint')}</p>}
+      {senses.length > 1 && <p className="text-meta text-fg-muted">{t('quick.pickHint')}</p>}
       <ul className="flex flex-col gap-2">
         {senses.map((s) => {
           const on = picked?.has(s.key) ?? false;
@@ -336,11 +322,11 @@ export function SenseChoices({
                 onClick={() => onToggle?.(s.key)}
                 data-testid="quick-sense"
                 className={cn(
-                  'flex w-full items-start gap-3 rounded-[14px] border px-4 py-3 text-left',
+                  'flex min-h-14 w-full items-start gap-3 rounded-inner border px-4 py-3 text-left',
                   'transition-colors duration-(--duration-micro)',
                   on
                     ? 'border-accent bg-accent-soft'
-                    : 'border-border bg-surface hover:border-border-strong',
+                    : 'border-border bg-surface hover:border-border-strong/60 hover:bg-surface-hover',
                 )}
               >
                 <span
@@ -350,19 +336,19 @@ export function SenseChoices({
                     on ? 'border-accent bg-accent text-accent-fg' : 'border-border-strong',
                   )}
                 >
-                  {on && <Icon name="check" size={13} strokeWidth={3} />}
+                  {on && <Icon name="check" size={14} strokeWidth={2.4} />}
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="text-[1.0625rem] font-medium text-fg">{s.meaning_tr}</span>
+                  <span className="text-lead font-medium text-fg">{s.meaning_tr}</span>
                   {(s.pos || s.gloss_en) && (
-                    <span className="text-sm text-fg-muted">
+                    <span className="text-meta text-fg-muted">
                       {s.pos && posLabel(t, s.pos)}
                       {s.pos && s.gloss_en && ' · '}
                       {s.gloss_en && <span lang="en">{s.gloss_en}</span>}
                     </span>
                   )}
                   {s.example_en && (
-                    <span lang="en" className="font-serif text-sm text-fg-muted italic">
+                    <span lang="en" className="font-serif text-meta text-fg-muted italic">
                       {s.example_en}
                     </span>
                   )}
@@ -388,21 +374,21 @@ function TextBody({
   return (
     <div className="flex flex-col gap-4 pt-1 pb-1">
       <div className="flex flex-col gap-1">
-        <RadixDialog.Title className="font-serif text-xl font-semibold text-fg">
+        <RadixDialog.Title className="text-title font-semibold text-fg">
           {t('quick.textTitle')}
         </RadixDialog.Title>
-        <span className="text-sm text-fg-muted">{t('quick.textWords', { count: words })}</span>
+        <span className="text-meta text-fg-muted">{t('quick.textWords', { count: words })}</span>
       </div>
       <blockquote
         lang="en"
         data-testid="quick-text"
-        className="line-clamp-5 border-l-2 border-accent/50 pl-4 font-serif text-[1.0625rem] leading-relaxed whitespace-pre-line text-fg"
+        className="line-clamp-5 border-l-2 border-accent pl-4 font-serif text-lead whitespace-pre-line text-fg"
       >
         {text}
       </blockquote>
       {error && <Notice tone="danger">{error}</Notice>}
-      <div className="flex flex-col gap-2.5">
-        <Choice
+      <div className="flex flex-col gap-3">
+        <ChoiceButton
           primary
           icon="file"
           title={t('quick.openReader')}
@@ -412,7 +398,7 @@ function TextBody({
           onClick={onOpenReader}
           testId="quick-reader"
         />
-        <Choice
+        <ChoiceButton
           icon="search"
           title={t('quick.extract')}
           hint={t('quick.extractHint')}
@@ -430,10 +416,10 @@ function LinkBody({ url, onOpenLink, busy, error }: QuickSheetProps & { url: str
   const { t } = useTranslation();
   return (
     <div className="flex flex-col gap-4 pt-1 pb-1">
-      <RadixDialog.Title className="font-serif text-xl font-semibold text-fg">
+      <RadixDialog.Title className="text-title font-semibold text-fg">
         {t('quick.linkTitle')}
       </RadixDialog.Title>
-      <p className="text-sm break-all text-fg-muted" data-testid="quick-url">
+      <p className="text-meta break-all text-fg-muted" data-testid="quick-url">
         {url}
       </p>
       {error && <Notice tone="danger">{error}</Notice>}
@@ -441,49 +427,5 @@ function LinkBody({ url, onOpenLink, busy, error }: QuickSheetProps & { url: str
         {t('quick.openLink')}
       </Button>
     </div>
-  );
-}
-
-function Choice({
-  primary,
-  icon,
-  title,
-  hint,
-  loading,
-  disabled,
-  onClick,
-  testId,
-}: {
-  primary?: boolean;
-  icon: 'file' | 'search';
-  title: string;
-  hint: string;
-  loading?: boolean;
-  disabled?: boolean;
-  onClick?: () => void;
-  testId: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-busy={loading || undefined}
-      data-testid={testId}
-      className={cn(
-        'flex min-h-16 w-full items-center gap-3.5 rounded-[16px] px-4 py-3 text-left',
-        'transition-colors duration-(--duration-micro) disabled:opacity-60',
-        primary
-          ? 'bg-accent text-accent-fg hover:bg-accent-hover'
-          : 'border border-border bg-surface text-fg hover:border-border-strong',
-      )}
-    >
-      <Icon name={icon} size={22} strokeWidth={1.8} className="shrink-0" />
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="text-base font-semibold">{title}</span>
-        <span className={cn('text-sm', primary ? 'text-accent-fg' : 'text-fg-muted')}>{hint}</span>
-      </span>
-      <Icon name="chevron-right" size={18} className="shrink-0 opacity-70" />
-    </button>
   );
 }

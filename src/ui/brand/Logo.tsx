@@ -16,14 +16,14 @@ export function Logo({ size = 28, wordmark = true, className }: LogoProps) {
   return (
     <span className={cn('inline-flex items-center gap-2.5', className)}>
       <svg width={size} height={size} viewBox="0 0 512 512" aria-hidden="true" className="shrink-0">
-        <rect width="512" height="512" rx="112" fill="var(--fg)" />
+        <rect width="512" height="512" rx="128" fill="var(--accent)" />
         <g transform={glyphTransform()}>
           <path fill="var(--logo-tick)" transform="translate(0 -40)" d={TICK_PATH} />
-          <path fill="var(--canvas)" transform="translate(176 0)" d={E_PATH} />
+          <path fill="var(--accent-fg)" transform="translate(176 0)" d={E_PATH} />
         </g>
       </svg>
       {wordmark ? (
-        <span className="font-serif text-[1.3125rem] leading-none font-semibold tracking-[-0.01em] text-fg">
+        <span className="text-[1.3125rem] leading-none font-semibold tracking-[-0.025em] text-fg">
           {t('app.name')}
         </span>
       ) : (

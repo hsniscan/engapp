@@ -1,5 +1,5 @@
 // Public data API for the UI. Screens import from '@/data' only.
-export { db } from './db';
+export { db, watchDbReplaced } from './db';
 export { wipeLocalDatabase } from './wipe';
 export { loadLevelData, levelDataNow } from './levelData';
 export * from './actions';
@@ -99,6 +99,8 @@ export {
   recordBackup,
   exportCsv,
   restoreBackup,
+  isForeignBackup,
+  importForeignBackupCards,
   RESTORE_CHUNK,
   runIntegrityCheck,
   repairIntegrity,
@@ -119,6 +121,7 @@ export { getSettings, ensureSettings, updateSettings, defaultSettings, DEFAULT_S
 export { readingDifficultyOf } from './settings';
 export {
   deleteText,
+  restoreText,
   getText,
   lastUnfinishedText,
   listTexts,
@@ -137,7 +140,7 @@ export {
   type Knowledge,
   type ReaderKnowledge,
 } from './knowledge';
-export { lookupReaderWord, type ReaderMeaning, type ReaderWordInfo } from './readerLookup';
+export { glossFor, lookupReaderWord, type ReaderMeaning, type ReaderWordInfo, type TextGloss } from './readerLookup';
 export { rebuildDailyActivity, listDailyActivity } from './dailyActivity';
 export {
   adoptFsrsParams,
@@ -194,7 +197,7 @@ export {
   type AnkiImportProgress,
   type AnkiImportResult,
 } from './anki';
-export { getKnownTermKeys, listKnownTerms, markKnown, unmarkKnown } from './knownTerms';
+export { getKnownTermKeys, listKnownTerms, markKnown, markManyKnown, unmarkKnown, unmarkKnownKeys } from './knownTerms';
 export {
   addFromWordBank,
   applyWordBankPage,
@@ -224,3 +227,17 @@ export {
 export { getChoiceCandidates } from './clozeChoices';
 export * from './smart';
 export * from './streakFreeze';
+export {
+  bulkSetSuspended,
+  bulkSoftDeleteNotes,
+  markNotesKnown,
+  resetNoteProgress,
+  restoreDeck,
+  restoreNotes,
+  undoMarkNotesKnown,
+  undoNoteReset,
+  type BulkDeleteResult,
+  type MarkKnownResult,
+  type Progress,
+  type ResetResult,
+} from './wordActions';

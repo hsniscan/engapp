@@ -3,7 +3,6 @@ import {
   addNoteWithSenses,
   answerCard,
   cardImageOf,
-  chooseImage,
   createSource,
   db,
   ensureSettings,
@@ -17,13 +16,13 @@ import {
   reconcileImageCards,
   setGoals,
   setImageHidden,
-  setImageVerdict,
   setMeta,
   storeImage,
   updateSettings,
 } from '@/data';
 import { IMAGE_CHOICE_KIND, IMAGE_REASON_KIND, IMAGE_TARGET } from '@/domain/images';
 import { SAMPLE_PICTURES } from '@/test/imageSamples';
+import { putLegacyChoice, putLegacyVerdict } from '@/test/legacyImageRows';
 import { SyncEngine } from '@/sync/engine';
 import { FakeServer, loadDevice, saveDevice } from '@/sync/testing/fakeServer';
 import { CardState, Rating } from '@/domain/types';
@@ -394,9 +393,9 @@ describe('account linking', () => {
     for (const p of [pic(P0, LEX, 0), pic(P1, LEX, 1), pic(P2, LEX2, 0)]) await storeImage(p);
     const appleSense = (await db.senses.where('note_id').equals(apple.note.id).toArray())[0]!;
     const bridgeSense = (await db.senses.where('note_id').equals(bridge.note.id).toArray())[0]!;
-    await chooseImage(appleSense.id, P1, T);
-    await setImageVerdict(appleSense.id, P0, 'reject', 'wrong_meaning', T);
-    await setImageVerdict(appleSense.id, P1, 'like', null, T);
+    await putLegacyChoice(appleSense, P1, T);
+    await putLegacyVerdict(appleSense, P0, 'reject', 'wrong_meaning', T);
+    await putLegacyVerdict(appleSense, P1, 'like', null, T);
     await setImageHidden(bridgeSense.id, true, T);
     expect(await db.user_content.count()).toBe(3);
     expect(await db.content_feedback.count()).toBe(2);

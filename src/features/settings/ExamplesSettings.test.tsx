@@ -15,7 +15,7 @@ describe('Settings → Örnek cümleler', () => {
   it('chooses 2–4 contexts and the translation default', async () => {
     const user = userEvent.setup();
     renderRoute(<ExamplesSettingsSection />);
-    const group = await screen.findByRole('group', { name: 'Hazırlanacak bağlamlar' });
+    const group = await screen.findByRole('group', { name: 'Kartta dönen bağlamlar' });
     const chip = (name: string) => within(group).getByRole('button', { name });
     expect(chip('Günlük')).toHaveAttribute('aria-pressed', 'true');
     expect(chip('Seyahat')).toHaveAttribute('aria-pressed', 'false');
@@ -40,9 +40,9 @@ describe('Settings → Örnek cümleler', () => {
     await waitFor(async () => expect((await getSettings()).example_tr_visible).toBe(true), { timeout: 5000 });
   });
 
-  it('"prepare all" needs an account', async () => {
+  it('has no "prepare all" any more (sentences are shipped, ADR 0061)', async () => {
     renderRoute(<ExamplesSettingsSection />);
-    expect(await screen.findByRole('button', { name: 'Tüm kartlarım için hazırla' })).toBeDisabled();
-    expect(screen.getByText('Örnek cümleler Google hesabıyla çalışır.')).toBeInTheDocument();
+    await screen.findByRole('group', { name: 'Kartta dönen bağlamlar' });
+    expect(screen.queryByRole('button', { name: 'Tüm kartlarım için hazırla' })).not.toBeInTheDocument();
   });
 });

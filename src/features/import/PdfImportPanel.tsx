@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { logError } from '@/data';
 import { chunkText } from '@/domain/chunking';
 import { CaptureActions } from '@/features/add/CaptureActions';
-import { Button, Icon, ProgressBar, Spinner, TextField, cn } from '@/ui';
+import { Button, Icon, IconTile, ProgressBar, Spinner, TextField, cn } from '@/ui';
 import { ActiveJobs } from './JobCard';
 import { MAX_PDF_BYTES, PdfError, extractPdfText, type PdfErrorCode } from './pdf';
 import { MAX_IMPORT_CHARS } from './shared';
@@ -25,7 +25,7 @@ export function PdfImportPanel(_props: ImportPanelProps) {
   return (
     <>
       <PdfImportForm />
-      <ActiveJobs kind="pdf" />
+      <ActiveJobs />
     </>
   );
 }
@@ -120,24 +120,27 @@ function PdfImportForm() {
           onDragLeave={() => setDragging(false)}
           onDrop={onDrop}
           className={cn(
-            'flex flex-col items-center rounded-card border-2 border-dashed px-6 py-10 text-center transition-colors duration-(--duration-micro)',
-            dragging ? 'border-accent bg-accent-soft/50' : 'border-border-strong/50 bg-surface',
+            'flex flex-col items-center rounded-card border border-dashed px-6 py-10 text-center transition-colors duration-(--duration-micro)',
+            dragging ? 'border-accent bg-accent-soft' : 'border-border-strong/60 bg-surface',
           )}
         >
-          <span className="mb-4 flex size-12 items-center justify-center rounded-full border border-border text-fg-muted">
-            <Icon name="upload" size={22} />
+          <span
+            aria-hidden="true"
+            className="mb-4 flex size-14 items-center justify-center rounded-full bg-accent-soft text-accent-text"
+          >
+            <Icon name="upload" size={24} />
           </span>
-          <p className="hidden font-serif text-lg font-semibold text-fg pointer-fine:block">
+          <p className="hidden text-title font-semibold text-fg pointer-fine:block">
             {t('importer.pdf.drop')}
           </p>
-          <p className="mt-1 mb-4 hidden text-sm text-fg-muted pointer-fine:block">
+          <p className="mt-1 mb-4 hidden text-meta text-fg-muted pointer-fine:block">
             {t('importer.pdf.or')}
           </p>
           {fileInput}
-          <Button variant="secondary" leadingIcon="file" onClick={() => inputRef.current?.click()}>
+          <Button size="lg" leadingIcon="file" onClick={() => inputRef.current?.click()}>
             {t('importer.pdf.pick')}
           </Button>
-          <p className="mt-4 max-w-xs text-sm text-fg-muted">
+          <p className="mt-4 max-w-xs text-meta text-fg-muted">
             {t('importer.pdf.hint', { mb: MB })}
           </p>
         </div>
@@ -145,12 +148,12 @@ function PdfImportForm() {
           (state.code === 'no_text' ? (
             <div
               role="alert"
-              className="flex items-start gap-3 rounded-control border border-border bg-surface px-4 py-3"
+              className="flex items-start gap-3 rounded-inner bg-surface-sunken px-4 py-3"
             >
               <Icon name="info" size={20} className="mt-0.5 shrink-0 text-fg-muted" />
               <div className="flex flex-col gap-0.5">
-                <p className="font-medium text-fg">{t('importer.pdf.noText')}</p>
-                <p className="text-sm text-fg-muted">
+                <p className="text-ui font-medium text-fg">{t('importer.pdf.noText')}</p>
+                <p className="text-meta text-fg-muted">
                   <span className="font-medium text-fg">{state.name}</span> —{' '}
                   {t('importer.pdf.noTextBody')}
                 </p>
@@ -159,7 +162,7 @@ function PdfImportForm() {
           ) : (
             <p
               role="alert"
-              className="flex items-start gap-2 rounded-control bg-danger-soft px-3 py-2.5 text-sm text-danger-text"
+              className="flex items-start gap-2 rounded-inner bg-danger-soft px-4 py-3 text-meta text-danger-text"
             >
               <Icon name="alert" size={18} className="mt-px shrink-0" />
               <span>
@@ -179,11 +182,12 @@ function PdfImportForm() {
       >
         <div className="flex items-center gap-3">
           <Spinner size={20} />
-          <p className="min-w-0 flex-1 truncate font-medium text-fg">{state.name}</p>
+          <p className="min-w-0 flex-1 truncate text-ui font-medium text-fg">{state.name}</p>
         </div>
         <ProgressBar
           value={state.done}
           max={Math.max(1, state.total)}
+          size="md"
           label={t('a11y.progress')}
           valueText={
             state.total
@@ -191,7 +195,7 @@ function PdfImportForm() {
               : t('importer.pdf.readingStart')
           }
         />
-        <p className="tabular text-sm text-fg-muted">
+        <p className="tabular text-meta text-fg-muted">
           {state.total
             ? t('importer.pdf.reading', { done: state.done, total: state.total })
             : t('importer.pdf.readingStart')}
@@ -203,12 +207,10 @@ function PdfImportForm() {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-start gap-x-3 gap-y-1 rounded-card border border-border bg-surface px-4 py-4 sm:px-5">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-control bg-accent-soft text-accent-text">
-          <Icon name="file" size={20} />
-        </span>
+        <IconTile icon="file" tone="accent" />
         <div className="flex min-w-40 flex-1 basis-40 flex-col gap-0.5">
-          <p className="truncate font-medium text-fg">{state.name}</p>
-          <p className="tabular text-sm text-fg-muted">
+          <p className="truncate text-ui font-medium text-fg">{state.name}</p>
+          <p className="tabular text-meta text-fg-muted">
             {t('importer.pdf.summary', {
               pages: state.pages,
               chars: state.text.length.toLocaleString('tr'),

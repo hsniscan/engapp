@@ -360,6 +360,11 @@ export async function setVacation(range: VacationRange, now: Millis = Date.now()
   const settings = await getSettings(now);
   const today = dayKeyOf(now, dayConfig(settings));
   if (range.end < today) throw new ActionError('invalid_input', 'Vacation is over');
+  // A holiday cannot begin in the past: missed days would turn neutral after the fact and a
+  // broken streak would come back (v0.5.2, B5). The holiday already under way keeps its start.
+  const running = settings.vacation && settings.vacation.start <= today ? settings.vacation.start : null;
+  if (range.start < today && range.start !== running)
+    throw new ActionError('invalid_input', 'Vacation starts in the past');
   return updateSettings(withVacation(settings, range, today), now);
 }
 

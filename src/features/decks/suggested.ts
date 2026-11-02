@@ -18,7 +18,7 @@ import {
 import { CEFR } from '@/domain/level';
 import type { CefrLevel } from '@/domain/types';
 import type { WordBankEntry } from '@/domain/wordBank';
-import { fetchWordBank, type WordBankFetchOutcome } from '@/features/wordbank/fetcher';
+import { fetchWordBank, isWordBankComplete, type WordBankFetchOutcome } from '@/features/wordbank/fetcher';
 
 export type Download = 'running' | WordBankFetchOutcome['status'];
 
@@ -76,11 +76,26 @@ export function titleIndex(t: TFunction): Map<string, SuggestedSpec> {
 
 export { parseSuggestedKey };
 
-/** Starts (or refreshes) the word bank download once per mount; `retry` forces a new run. */
-export function useWordBankDownload(): { download: Download; retry: () => void } {
+/**
+ * Starts (or refreshes) the word bank download once per mount; `retry` forces a new run.
+ * `rows`: words on the device while a run goes; `complete`: the first full download finished,
+ * so a copy cut short by a dropped connection can say so and offer "Tekrar dene" (B7).
+ */
+export function useWordBankDownload(): {
+  download: Download;
+  retry: () => void;
+  rows: number | null;
+  complete: boolean | undefined;
+} {
   const [download, setDownload] = useState<Download>('running');
+  const [rows, setRows] = useState<number | null>(null);
+  const complete = useLiveQuery(() => isWordBankComplete(), [download]);
   const run = useCallback(
-    (force: boolean) => fetchWordBank(undefined, { force }).then((r) => setDownload(r.status)),
+    (force: boolean) =>
+      fetchWordBank(undefined, { force, onProgress: setRows }).then((r) => {
+        setDownload(r.status);
+        setRows(null);
+      }),
     [],
   );
   useEffect(() => {
@@ -90,7 +105,7 @@ export function useWordBankDownload(): { download: Download; retry: () => void }
     setDownload('running');
     void run(true);
   }, [run]);
-  return { download, retry };
+  return { download, retry, rows, complete };
 }
 
 export interface BankData {

@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next';
-import { formatInterval } from '@/domain/fsrs';
+import { durationText } from '@/features/review/intervalText';
 import { formatClock, formatDayLong } from '@/features/stats/format';
 import type { NextDue } from './queries';
 
@@ -8,7 +8,7 @@ export function nextDueText(t: TFunction, next: NextDue, now: number, timeZone?:
   switch (next.kind) {
     case 'later':
       return t('home.nextLater', {
-        time: formatInterval(Math.max(60_000, next.at - now)),
+        time: durationText(t, Math.max(60_000, next.at - now)),
         clock: formatClock(next.at, timeZone),
       });
     case 'tomorrow':

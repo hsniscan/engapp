@@ -1,6 +1,6 @@
-// The cards of the Keşfet feed (v0.5.1, ADR 0057), one per feed kind. Calm and in the app's
-// language: warm surfaces, one small eyebrow line per card, English terms in the serif, a
-// single clear action. A card links to the filter that lists everything of its kind.
+// The cards of the Keşfet feed (v0.5.1, ADR 0057; Çam look v0.5.2, docs/design.md §4.12), one
+// per feed kind, built only from src/ui: a Card with one Eyebrow line (and "Tümünü gör" where
+// a filter lists everything of its kind), English in Literata (<Term>), one clear action.
 import { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
@@ -8,48 +8,49 @@ import { addFromWordBank, logError } from '@/data';
 import { openGradedText } from '@/data/library';
 import { readingMinutes, type ScoredGradedText, understoodPercent } from '@/domain/library';
 import type { FeedFilter } from '@/domain/discoverFeed';
-import { readerPath, type ReaderText } from '@/domain/texts';
+import { readerPath, readingProgress, type ReaderText } from '@/domain/texts';
 import type { CefrLevel } from '@/domain/types';
 import type { WordBankEntry } from '@/domain/wordBank';
-import { CREATE_TEXT_HREF, filterHref } from './links';
 import { posLabel } from '@/features/cards/labels';
-import { Featured, ForYouRow } from '@/features/decks/DeckCatalog';
-import { nf } from '@/features/decks/deckUi';
-import { LevelPill } from '@/features/decks/parts';
+import type { DeckCard } from '@/features/decks/deckView';
 import { specHref, specTitle } from '@/features/decks/suggested';
+import { progressLabel } from '@/features/reader/progressLabel';
+import { useTextKindLabel } from '@/features/reader/kindLabel';
 import { TodayStoryRow } from '@/features/story/TodayStoryRow';
-import { Button, buttonClasses, cn, Icon, type IconName, IconButton, toast } from '@/ui';
+import {
+  Badge,
+  Button,
+  buttonClasses,
+  Card,
+  Chip,
+  ChipRow,
+  EmptyState,
+  Eyebrow,
+  Icon,
+  IconButton,
+  IconTile,
+  type IconName,
+  ProgressBar,
+  Term,
+  toast,
+} from '@/ui';
+import { CREATE_TEXT_HREF, filterHref } from './links';
 import type { FeedItem } from './useDiscoverFeed';
 
+const nf = new Intl.NumberFormat('tr-TR');
 
-const shell = 'flex flex-col gap-3 rounded-[20px] border border-border bg-surface p-[18px]';
-
-/** The small line on top of a card: an icon, what the card is, and "Tümünü gör". */
-function Eyebrow({
-  id,
-  icon,
-  children,
-  more,
-}: {
-  id: string;
-  icon: IconName;
-  children: ReactNode;
-  more?: FeedFilter;
-}) {
+/** A card's top line: what it is (an h2 eyebrow) and, optionally, "Tümünü gör". */
+function CardHead({ id, children, more }: { id: string; children: ReactNode; more?: FeedFilter }) {
   const { t } = useTranslation();
   return (
     <div className="flex min-h-6 items-center justify-between gap-3">
-      <h2
-        id={id}
-        className="flex items-center gap-2 text-[0.8125rem] font-semibold tracking-[0.04em] text-fg-muted uppercase"
-      >
-        <Icon name={icon} size={16} strokeWidth={1.8} className="text-accent-text" />
-        {children}
-      </h2>
+      <Eyebrow as="h2">
+        <span id={id}>{children}</span>
+      </Eyebrow>
       {more && (
         <Link
           to={filterHref(more)}
-          className="-my-2.5 -mr-2 inline-flex min-h-11 shrink-0 items-center gap-0.5 rounded-control px-2 text-sm font-medium whitespace-nowrap text-accent-text hover:bg-hover"
+          className={buttonClasses({ variant: 'ghost', size: 'sm', className: '-my-2 -mr-3' })}
         >
           {t('discover.seeAll')}
           <Icon name="chevron-right" size={16} />
@@ -59,49 +60,49 @@ function Eyebrow({
   );
 }
 
-const textPct = (x: ReaderText) =>
-  x.finished_at !== null ? 100 : x.body.length ? Math.min(99, Math.round((x.progress_offset / x.body.length) * 100)) : 0;
-
-function ContinueCard({ text }: { text: ReaderText }) {
-  const { t } = useTranslation();
-  const pct = textPct(text);
+/** Rows inside a card, edge to edge, with hairlines between them. */
+function CardRows({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <section aria-labelledby="kf-continue" className={shell} data-testid="kesfet-continue">
-      <Eyebrow id="kf-continue" icon="book">
-        {t('discover.continue.eyebrow')}
-      </Eyebrow>
-      <p lang="en" className="font-serif text-[1.375rem] leading-snug font-semibold text-fg">
-        {text.title}
-      </p>
-      <div className="flex flex-col gap-1.5">
-        <span aria-hidden="true" className="h-1.5 overflow-hidden rounded-full bg-surface-sunken">
-          <span className="block h-full rounded-full bg-accent" style={{ width: `${Math.max(pct, 2)}%` }} />
-        </span>
-        <span className="text-[0.8125rem] text-fg-muted">
-          {t(`reader.kind.${text.kind}`)} ·{' '}
-          {pct > 0 ? t('discover.continue.pct', { pct }) : t('discover.continue.start')}
-        </span>
-      </div>
-      <Link to={readerPath(text.id)} className={buttonClasses({ fullWidth: true })}>
-        {t('discover.continue.action')}
-        <Icon name="arrow-right" size={18} />
-      </Link>
-    </section>
+    <ul aria-label={label} className="-mx-4 divide-y divide-border border-t border-border sm:-mx-5">
+      {children}
+    </ul>
   );
 }
 
-function StoryCard() {
+const rowClass =
+  'flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-(--duration-micro) hover:bg-hover focus-visible:outline-offset-[-2px] sm:px-5';
+
+function ContinueCard({ text }: { text: ReaderText }) {
   const { t } = useTranslation();
+  const kindLabel = useTextKindLabel();
+  const p = readingProgress(text);
   return (
-    <section aria-labelledby="kf-story" className={shell}>
-      <Eyebrow id="kf-story" icon="book">
-        {t('discover.story.eyebrow')}
-      </Eyebrow>
-      {/* The row draws its own divider for the Bugün card; here it is the card's body. */}
-      <div className="[&>div]:mt-0 [&>div]:border-t-0 [&>div]:pt-0">
-        <TodayStoryRow />
+    <Card
+      as="section"
+      aria-labelledby="kf-continue"
+      className="flex flex-col gap-4"
+      data-testid="kesfet-continue"
+    >
+      <CardHead id="kf-continue">{t('discover.continue.eyebrow')}</CardHead>
+      <div className="flex flex-col gap-2">
+        <Term as="p" size="title" className="text-fg">
+          {text.title}
+        </Term>
+        <p className="text-meta text-fg-muted">
+          {kindLabel(text)} · {p.state === 'unread' ? t('discover.continue.start') : progressLabel(t, text)}
+        </p>
+        {p.pct > 0 && (
+          <ProgressBar value={p.pct} label={t('discover.continue.eyebrow')} valueText={progressLabel(t, text)} />
+        )}
       </div>
-    </section>
+      <Link
+        to={readerPath(text.id)}
+        className={buttonClasses({ fullWidth: true, size: 'lg' })}
+      >
+        {t('discover.continue.action')}
+        <Icon name="arrow-right" size={20} />
+      </Link>
+    </Card>
   );
 }
 
@@ -130,20 +131,18 @@ function GradedRows({ texts, label }: { texts: ScoredGradedText[]; label: string
   const { t } = useTranslation();
   const { open, busy } = useOpenGraded();
   return (
-    <ul aria-label={label} className="-mx-1.5 flex flex-col">
+    <CardRows label={label}>
       {texts.map((s) => (
         <li key={s.entry.id}>
           <button
             type="button"
             onClick={() => void open(s)}
             aria-busy={busy === s.entry.id || undefined}
-            className="flex min-h-14 w-full items-center gap-3 rounded-[14px] px-1.5 py-2.5 text-left hover:bg-hover"
+            className={rowClass}
           >
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span lang="en" className="truncate font-serif text-[1.0625rem] font-semibold text-fg">
-                {s.entry.title}
-              </span>
-              <span className="truncate text-[0.8125rem] text-fg-muted">
+              <Term className="text-fg">{s.entry.title}</Term>
+              <span className="text-meta text-fg-muted">
                 {t('gradedLibrary.meta', {
                   level: s.entry.level,
                   topic: t(`gradedLibrary.topics.${s.entry.topic}`, { defaultValue: s.entry.topic }),
@@ -156,161 +155,240 @@ function GradedRows({ texts, label }: { texts: ScoredGradedText[]; label: string
           </button>
         </li>
       ))}
-    </ul>
+    </CardRows>
   );
 }
 
-function SuggestionsCard({ texts, difficulty }: { texts: ScoredGradedText[]; difficulty: string }) {
+function SuggestionsCard({
+  texts,
+  difficulty,
+  stretch = false,
+}: {
+  texts: ScoredGradedText[];
+  difficulty: string;
+  stretch?: boolean;
+}) {
   const { t } = useTranslation();
   return (
-    <section aria-labelledby="kf-suggest" className={shell}>
-      <Eyebrow id="kf-suggest" icon="book" more="okuma">
+    <Card as="section" aria-labelledby="kf-suggest" className="flex flex-col gap-3 pb-0 sm:pb-0">
+      <CardHead id="kf-suggest" more="okuma">
         {t('discover.suggestions.eyebrow')}
-      </Eyebrow>
-      <p className="-mt-1 text-[0.8125rem] text-fg-muted">
-        {t('discover.suggestions.body', {
-          difficulty: t(`gradedLibrary.difficulty.${difficulty as 'dengeli'}`, { defaultValue: difficulty }),
+      </CardHead>
+      <p className="text-meta text-fg-muted">
+        {t(stretch ? 'discover.suggestions.stretch' : 'discover.suggestions.body', {
+          difficulty: t(`gradedLibrary.difficulty.${difficulty as 'dengeli'}`, {
+            defaultValue: difficulty,
+          }),
         })}
       </p>
       <GradedRows texts={texts} label={t('discover.suggestions.label')} />
-    </section>
+    </Card>
   );
 }
 
 function NewTextsCard({ texts }: { texts: ScoredGradedText[] }) {
   const { t } = useTranslation();
   return (
-    <section aria-labelledby="kf-new" className={shell}>
-      <Eyebrow id="kf-new" icon="layers" more="okuma">
+    <Card as="section" aria-labelledby="kf-new" className="flex flex-col gap-3 pb-0 sm:pb-0">
+      <CardHead id="kf-new" more="okuma">
         {t('discover.newTexts.eyebrow')}
-      </Eyebrow>
+      </CardHead>
       <GradedRows texts={texts} label={t('discover.newTexts.label')} />
-    </section>
+    </Card>
   );
 }
 
 function CreateTextCard() {
   const { t } = useTranslation();
   return (
-    <section
-      aria-labelledby="kf-create"
-      className="flex flex-col gap-3 rounded-[20px] border border-accent/25 bg-accent-soft p-[18px]"
-    >
-      <span className="flex items-center gap-2 text-[0.8125rem] font-semibold tracking-[0.04em] text-accent-text uppercase">
-        <Icon name="pencil" size={16} strokeWidth={1.8} />
-        {t('discover.createText.eyebrow')}
-      </span>
-      <h2 id="kf-create" className="font-serif text-[1.375rem] leading-snug font-semibold text-fg">
-        {t('discover.createText.title')}
-      </h2>
-      <p className="text-[0.9375rem] text-fg-muted">{t('discover.createText.body')}</p>
-      <Link to={CREATE_TEXT_HREF} className={buttonClasses({ variant: 'secondary', className: 'self-start' })}>
+    <Card as="section" tone="accent" aria-labelledby="kf-create" className="flex flex-col gap-3">
+      <div className="flex items-start gap-3">
+        <IconTile icon="pen" tone="accent" className="bg-surface" />
+        <div className="flex min-w-0 flex-col gap-1">
+          <Eyebrow>{t('discover.createText.eyebrow')}</Eyebrow>
+          <h2 id="kf-create" className="text-title font-semibold text-fg">
+            {t('discover.createText.title')}
+          </h2>
+        </div>
+      </div>
+      <p className="text-ui text-fg-muted">{t('discover.createText.body')}</p>
+      <Link
+        to={CREATE_TEXT_HREF}
+        className={buttonClasses({ variant: 'secondary', className: 'self-start' })}
+      >
         {t('discover.createText.action')}
         <Icon name="arrow-right" size={18} />
       </Link>
-    </section>
+    </Card>
   );
 }
 
 function MyTextsCard({ texts, total }: { texts: ReaderText[]; total: number }) {
   const { t } = useTranslation();
+  const kindLabel = useTextKindLabel();
   return (
-    <section aria-labelledby="kf-mine" className={shell}>
-      <Eyebrow id="kf-mine" icon="file" more="okuma">
-        {t('discover.myTexts.eyebrow')}
-        <span className="font-normal tracking-normal normal-case">· {t('discover.myTexts.count', { count: total })}</span>
-      </Eyebrow>
-      <ul aria-label={t('discover.myTexts.label')} className="-mx-1.5 flex flex-col">
-        {texts.map((x) => {
-          const pct = textPct(x);
-          return (
-            <li key={x.id}>
-              <Link
-                to={readerPath(x.id)}
-                className="flex min-h-14 items-center gap-3 rounded-[14px] px-1.5 py-2.5 hover:bg-hover"
-              >
-                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span lang="en" className="truncate font-serif text-[1.0625rem] font-semibold text-fg">
-                    {x.title}
-                  </span>
-                  <span className="text-[0.8125rem] text-fg-muted">
-                    {t(`reader.kind.${x.kind}`)} ·{' '}
-                    {x.finished_at !== null
-                      ? t('reader.list.finished')
-                      : pct > 0
-                        ? t('reader.list.progress', { pct })
-                        : t('reader.list.unread')}
-                  </span>
+    <Card as="section" aria-labelledby="kf-mine" className="flex flex-col gap-3 pb-0 sm:pb-0">
+      <CardHead id="kf-mine" more="okuma">
+        {t('discover.myTexts.eyebrow')} · {t('discover.myTexts.count', { count: total })}
+      </CardHead>
+      <CardRows label={t('discover.myTexts.label')}>
+        {texts.map((x) => (
+          <li key={x.id}>
+            <Link to={readerPath(x.id)} className={rowClass}>
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <Term className="truncate text-fg">{x.title}</Term>
+                <span className="text-meta text-fg-muted">
+                  {kindLabel(x)} · {progressLabel(t, x)}
                 </span>
-                <Icon name="chevron-right" size={18} className="shrink-0 text-fg-subtle" />
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
+              </span>
+              <Icon name="chevron-right" size={18} className="shrink-0 text-fg-subtle" />
+            </Link>
+          </li>
+        ))}
+      </CardRows>
+    </Card>
+  );
+}
+
+const knownPct = (d: DeckCard) =>
+  d.progress.total ? Math.round(((d.progress.learned + d.progress.known) / d.progress.total) * 100) : 0;
+
+/** One suggested deck as a row: accent tile, name, count, badges. */
+function DeckRow({ deck, badge }: { deck: DeckCard; badge?: ReactNode }) {
+  const { t } = useTranslation();
+  return (
+    <li>
+      <Link to={specHref(deck.spec)} className={rowClass}>
+        <IconTile icon="cards" tone="accent" />
+        <span className="flex min-w-0 flex-1 flex-col gap-1">
+          <span className="text-ui font-semibold text-fg">{specTitle(t, deck.spec)}</span>
+          <span className="flex flex-wrap items-center gap-1.5">
+            <span className="tabular text-meta text-fg-muted">
+              {t('deckHub.words', { count: deck.progress.total, formatted: nf.format(deck.progress.total) })}
+            </span>
+            {badge}
+            {knownPct(deck) > 0 && (
+              <Badge tone="neutral">{t('discover.decks.known', { pct: knownPct(deck) })}</Badge>
+            )}
+          </span>
+        </span>
+        <Icon name="chevron-right" size={18} className="shrink-0 text-fg-subtle" />
+      </Link>
+    </li>
+  );
+}
+
+function FeaturedDeckCard({ deck, level }: { deck: DeckCard; level: CefrLevel }) {
+  const { t } = useTranslation();
+  const spec = deck.spec;
+  const pos = spec.kind === 'levelPos' ? spec.pos : 'verb';
+  const sample = deck.words.slice(0, 5);
+  return (
+    <Card
+      as={Link}
+      to={specHref(spec)}
+      interactive
+      className="flex flex-col gap-3"
+      data-testid="kesfet-featured-deck"
+    >
+      <Eyebrow>{t('deckHub.discover.featured')}</Eyebrow>
+      <div className="flex items-start gap-3">
+        <IconTile icon="cards" tone="accent" />
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <h2 className="text-title font-semibold text-fg">{specTitle(t, spec)}</h2>
+          <p className="text-meta text-fg-muted">
+            {t(`deckHub.discover.featuredBody.${pos as 'verb'}`, { defaultValue: '' })}
+          </p>
+        </div>
+        <Icon name="chevron-right" size={18} className="mt-2.5 shrink-0 text-fg-subtle" />
+      </div>
+      {sample.length > 0 && (
+        <Term as="p" italic className="text-fg-muted">
+          {sample.map((w) => w.lemma).join(' · ')}
+        </Term>
+      )}
+      <div className="flex flex-wrap gap-1.5">
+        <Badge tone="accent">{level}</Badge>
+        <Badge tone="neutral">
+          {t('deckHub.words', { count: deck.progress.total, formatted: nf.format(deck.progress.total) })}
+        </Badge>
+        {knownPct(deck) > 0 && (
+          <Badge tone="neutral">{t('discover.decks.known', { pct: knownPct(deck) })}</Badge>
+        )}
+      </div>
+    </Card>
   );
 }
 
 function ForYouCard({ item, level }: { item: Extract<FeedItem, { kind: 'forYouDecks' }>; level: CefrLevel }) {
   const { t } = useTranslation();
   return (
-    <section aria-labelledby="kf-foryou" className="flex flex-col gap-3">
-      <div className="px-1">
-        <Eyebrow id="kf-foryou" icon="cards" more="desteler">
-          {t('discover.forYou.eyebrow')}
-        </Eyebrow>
-        <p className="mt-0.5 text-[0.8125rem] text-fg-muted">{t('discover.forYou.body', { level })}</p>
-      </div>
-      <ForYouRow decks={item.decks} level={level} />
-    </section>
+    <Card as="section" aria-labelledby="kf-foryou" className="flex flex-col gap-3 pb-0 sm:pb-0">
+      <CardHead id="kf-foryou" more="desteler">
+        {t('discover.forYou.eyebrow')}
+      </CardHead>
+      <p className="text-meta text-fg-muted">{t('discover.forYou.body', { level })}</p>
+      <CardRows label={t('discover.forYou.eyebrow')}>
+        {item.decks.map((d) => (
+          <DeckRow
+            key={specHref(d.spec)}
+            deck={d}
+            badge={
+              d.upLevel ? <Badge tone="success">{t('deckHub.discover.upLevel')}</Badge> : undefined
+            }
+          />
+        ))}
+      </CardRows>
+    </Card>
   );
 }
 
 function ShelfCard({ item, level }: { item: Extract<FeedItem, { kind: 'deckShelf' }>; level: CefrLevel }) {
   const { t } = useTranslation();
-  const chip =
-    'flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 text-sm whitespace-nowrap text-fg hover:border-border-strong';
+  const navigate = useNavigate();
   return (
-    <section aria-labelledby="kf-shelf" className={shell}>
-      <Eyebrow id="kf-shelf" icon="cards" more="desteler">
+    <Card as="section" aria-labelledby="kf-shelf" className="flex flex-col gap-4">
+      <CardHead id="kf-shelf" more="desteler">
         {t('discover.shelf.eyebrow')}
-      </Eyebrow>
+      </CardHead>
       <div className="flex flex-col gap-2">
-        <h3 className="text-sm font-semibold text-fg">{t('discover.shelf.levels')}</h3>
-        <ul className="-mr-[18px] flex gap-2 overflow-x-auto pr-[18px] pb-1 [scrollbar-width:none]">
-          {item.levels.filter((d) => d.progress.total > 0).map((d) => {
-            const lv = (d.spec as { level: CefrLevel }).level;
-            return (
-              <li key={lv}>
-                <Link
-                  to={specHref(d.spec)}
-                  className={cn(chip, lv === level && 'border-accent bg-accent-soft font-semibold text-accent-text')}
+        <h3 className="text-ui font-semibold text-fg">{t('discover.shelf.levels')}</h3>
+        <ChipRow label={t('discover.shelf.levels')} bleed={false}>
+          {item.levels
+            .filter((d) => d.progress.total > 0)
+            .map((d) => {
+              const lv = (d.spec as { level: CefrLevel }).level;
+              return (
+                <Chip
+                  key={lv}
+                  count={d.progress.total}
+                  selected={lv === level || undefined}
+                  aria-pressed={undefined}
+                  onClick={() => void navigate(specHref(d.spec))}
                 >
-                  <span className="font-serif text-base font-semibold">{lv}</span>
-                  <span className="tabular text-fg-muted">
-                    {t('deckHub.words', { count: d.progress.total, formatted: nf.format(d.progress.total) })}
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+                  {lv}
+                </Chip>
+              );
+            })}
+        </ChipRow>
       </div>
       <div className="flex flex-col gap-2">
-        <h3 className="text-sm font-semibold text-fg">{t('discover.shelf.pos')}</h3>
-        <ul className="-mr-[18px] flex gap-2 overflow-x-auto pr-[18px] pb-1 [scrollbar-width:none]">
-          {item.levelPos.filter((d) => d.progress.total > 0).map((d) => (
-            <li key={specHref(d.spec)}>
-              <Link to={specHref(d.spec)} className={chip}>
-                <span className="font-semibold">{specTitle(t, d.spec)}</span>
-                <span className="tabular text-fg-muted">{nf.format(d.progress.total)}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <h3 className="text-ui font-semibold text-fg">{t('discover.shelf.pos')}</h3>
+        <ChipRow label={t('discover.shelf.pos')} bleed={false}>
+          {item.levelPos
+            .filter((d) => d.progress.total > 0)
+            .map((d) => (
+              <Chip
+                key={specHref(d.spec)}
+                count={d.progress.total}
+                onClick={() => void navigate(specHref(d.spec))}
+              >
+                {specTitle(t, d.spec)}
+              </Chip>
+            ))}
+        </ChipRow>
       </div>
-    </section>
+    </Card>
   );
 }
 
@@ -336,40 +414,48 @@ function WordOfDayCard({ entry }: { entry: WordBankEntry }) {
     }
   };
   return (
-    <section aria-labelledby="kf-word" className={shell} data-testid="kesfet-word">
-      <Eyebrow id="kf-word" icon="sun" more="kelimeler">
+    <Card as="section" aria-labelledby="kf-word" className="flex flex-col gap-3" data-testid="kesfet-word">
+      <CardHead id="kf-word" more="kelimeler">
         {t('discover.word.eyebrow')}
-      </Eyebrow>
-      <div className="flex items-baseline gap-2.5">
-        <p lang="en" className="font-serif text-[2rem] leading-none font-semibold text-fg">
+      </CardHead>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        <Term as="p" size="title" className="text-fg">
           {word.lemma}
-        </p>
-        <span className="text-sm text-fg-muted">{posLabel(t, word.pos)}</span>
-        <LevelPill level={word.cefr} className="ml-auto" />
+        </Term>
+        <Badge tone="outline">{posLabel(t, word.pos)}</Badge>
+        <Badge tone="accent">{word.cefr}</Badge>
       </div>
       {sense && (
         <>
-          <p className="text-[1.0625rem] text-fg">{sense.meaning_tr}</p>
-          <figure className="flex flex-col gap-1 rounded-[14px] bg-canvas px-3.5 py-3">
-            <figcaption className="sr-only">{t('discover.word.example')}</figcaption>
-            <p lang="en" className="font-serif text-[1.0625rem] text-fg italic">
-              {sense.example_en}
-            </p>
-            <p className="text-sm text-fg-muted">{sense.example_tr}</p>
-          </figure>
+          <p className="text-lead font-medium text-fg">{sense.meaning_tr}</p>
+          {sense.example_en && (
+            <Card tone="sunken" inset padding="sm" className="flex flex-col gap-1 px-4">
+              <span className="sr-only">{t('discover.word.example')}</span>
+              <Term as="p" italic className="font-normal text-fg">
+                {sense.example_en}
+              </Term>
+              {sense.example_tr && <p className="text-ui text-fg-muted">{sense.example_tr}</p>}
+            </Card>
+          )}
         </>
       )}
       {added ? (
-        <p role="status" className="flex min-h-11 items-center gap-2 text-[0.9375rem] font-medium text-success-text">
+        <p role="status" className="flex min-h-11 items-center gap-2 text-ui font-medium text-success-text">
           <Icon name="check" size={18} />
           {t('discover.word.added')}
         </p>
       ) : (
-        <Button variant="secondary" leadingIcon="plus" loading={busy} onClick={() => void add()} className="self-start">
+        <Button
+          variant="tonal"
+          leadingIcon="plus"
+          loading={busy}
+          onClick={() => void add()}
+          className="self-start"
+        >
           {t('discover.word.add')}
         </Button>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -389,19 +475,17 @@ function WordsAtLevelCard({ entries, level }: { entries: WordBankEntry[]; level:
     }
   };
   return (
-    <section aria-labelledby="kf-words" className={shell}>
-      <Eyebrow id="kf-words" icon="plus" more="kelimeler">
+    <Card as="section" aria-labelledby="kf-words" className="flex flex-col gap-3">
+      <CardHead id="kf-words" more="kelimeler">
         {t('discover.wordsAtLevel.eyebrow')}
-      </Eyebrow>
-      <p className="-mt-1 text-[0.8125rem] text-fg-muted">{t('discover.wordsAtLevel.body', { level })}</p>
-      <ul aria-label={t('discover.wordsAtLevel.label')} className="flex flex-col divide-y divide-border">
+      </CardHead>
+      <p className="text-meta text-fg-muted">{t('discover.wordsAtLevel.body', { level })}</p>
+      <CardRows label={t('discover.wordsAtLevel.label')}>
         {shown.map((e) => (
-          <li key={e.id} className="flex min-h-14 items-center gap-3 py-1.5">
-            <span className="flex min-w-0 flex-1 flex-col">
-              <span lang="en" className="font-serif text-[1.0625rem] font-semibold text-fg">
-                {e.lemma}
-              </span>
-              <span className="truncate text-[0.8125rem] text-fg-muted">{e.senses[0]?.meaning_tr}</span>
+          <li key={e.id} className="flex min-h-14 items-center gap-3 px-4 py-2 sm:px-5">
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <Term className="text-fg">{e.lemma}</Term>
+              <span className="truncate text-meta text-fg-muted">{e.senses[0]?.meaning_tr}</span>
             </span>
             {added.has(e.id) ? (
               <span className="flex size-11 items-center justify-center text-success-text">
@@ -411,7 +495,7 @@ function WordsAtLevelCard({ entries, level }: { entries: WordBankEntry[]; level:
             ) : (
               <IconButton
                 icon="plus"
-                variant="secondary"
+                variant="tonal"
                 label={t('discover.wordsAtLevel.add', { word: e.lemma })}
                 tooltip={false}
                 onClick={() => void add(e)}
@@ -419,15 +503,15 @@ function WordsAtLevelCard({ entries, level }: { entries: WordBankEntry[]; level:
             )}
           </li>
         ))}
-      </ul>
+      </CardRows>
       <Link
         to="/decks?tab=bank"
-        className="inline-flex min-h-11 items-center gap-1 self-start text-sm font-medium text-accent-text hover:underline"
+        className={buttonClasses({ variant: 'ghost', size: 'sm', className: '-ml-3 self-start' })}
       >
         {t('discover.wordsAtLevel.bank')}
         <Icon name="chevron-right" size={16} />
       </Link>
-    </section>
+    </Card>
   );
 }
 
@@ -435,48 +519,60 @@ function FalseFriendCard({ item }: { item: Extract<FeedItem, { kind: 'falseFrien
   const { t } = useTranslation();
   const n = item.note;
   return (
-    <section aria-labelledby="kf-ff" className={shell}>
-      <Eyebrow id="kf-ff" icon="alert">
-        {t('discover.falseFriend.eyebrow')}
-      </Eyebrow>
-      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2.5 rounded-[14px] bg-canvas p-3.5">
+    <Card as="section" aria-labelledby="kf-ff" className="flex flex-col gap-3">
+      <CardHead id="kf-ff">{t('discover.falseFriend.eyebrow')}</CardHead>
+      <Card
+        tone="sunken"
+        inset
+        padding="sm"
+        className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 px-4"
+      >
         <span className="flex flex-col gap-0.5">
-          <span lang="en" className="font-serif text-[1.375rem] font-semibold text-fg">
-            {n.term}
-          </span>
-          <span className="text-[0.8125rem] text-fg-muted">{n.content.en_meaning_tr}</span>
+          <Term className="text-heading font-semibold text-fg">{n.term}</Term>
+          <span className="text-meta text-fg-muted">{n.content.en_meaning_tr}</span>
         </span>
-        <span aria-label={t('deckHub.discover.notEqual')} className="font-serif text-2xl text-danger-text">
+        <span role="img" aria-label={t('deckHub.discover.notEqual')} className="text-title text-danger-text">
           ≠
         </span>
         <span className="flex flex-col gap-0.5 text-right">
-          <span lang="tr" className="font-serif text-[1.375rem] text-fg italic">
+          <span lang="tr" className="text-heading font-semibold text-fg">
             {n.content.tr_word}
           </span>
-          <span className="text-[0.8125rem] text-fg-muted">{n.content.tr_meaning_tr}</span>
+          <span className="text-meta text-fg-muted">{n.content.tr_meaning_tr}</span>
         </span>
-      </div>
-      {n.content.note_tr && <p className="text-sm text-fg-muted">{n.content.note_tr}</p>}
+      </Card>
+      {n.content.note_tr && <p className="text-ui text-fg-muted">{n.content.note_tr}</p>}
       <Link
         to={specHref({ kind: 'falseFriends' })}
-        className="inline-flex min-h-11 items-center gap-1 self-start text-sm font-medium text-accent-text hover:underline"
+        className={buttonClasses({ variant: 'ghost', size: 'sm', className: '-ml-3 self-start' })}
       >
         {t('discover.falseFriend.deck', { count: item.pairs })}
         <Icon name="chevron-right" size={16} />
       </Link>
-    </section>
+    </Card>
   );
 }
 
-/** One feed card. `level` is the learner's level (deck and word cards show it). */
-export function FeedCard({ item, level, idx }: { item: FeedItem; level: CefrLevel; idx?: Parameters<typeof Featured>[0]['idx'] }) {
+/**
+ * One feed card. `level` is the learner's level (deck and word cards show it); `continueId` is
+ * the text of the "Devam et" card, so the story card never repeats it (B11).
+ */
+export function FeedCard({
+  item,
+  level,
+  continueId = null,
+}: {
+  item: FeedItem;
+  level: CefrLevel;
+  continueId?: string | null;
+}) {
   switch (item.kind) {
     case 'continue':
       return <ContinueCard text={item.text} />;
     case 'story':
-      return <StoryCard />;
+      return <TodayStoryRow variant="card" hideTextId={continueId} />;
     case 'textSuggestions':
-      return <SuggestionsCard texts={item.texts} difficulty={item.difficulty} />;
+      return <SuggestionsCard texts={item.texts} difficulty={item.difficulty} stretch={item.stretch} />;
     case 'createText':
       return <CreateTextCard />;
     case 'newTexts':
@@ -484,7 +580,7 @@ export function FeedCard({ item, level, idx }: { item: FeedItem; level: CefrLeve
     case 'myTexts':
       return <MyTextsCard texts={item.texts} total={item.total} />;
     case 'featuredDeck':
-      return idx ? <Featured deck={item.deck} idx={idx} /> : null;
+      return <FeaturedDeckCard deck={item.deck} level={level} />;
     case 'forYouDecks':
       return <ForYouCard item={item} level={level} />;
     case 'deckShelf':
@@ -502,21 +598,19 @@ export function FeedCard({ item, level, idx }: { item: FeedItem; level: CefrLeve
 export function MissingNote({ onRetry }: { onRetry: () => void }) {
   const { t } = useTranslation();
   return (
-    <aside
-      aria-labelledby="kf-missing"
-      className="flex items-start gap-3 rounded-[18px] border border-dashed border-border-strong/50 bg-surface px-4 py-3.5"
-      data-testid="kesfet-missing"
-    >
-      <Icon name="sync-offline" size={20} className="mt-0.5 shrink-0 text-fg-muted" />
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <h2 id="kf-missing" className="text-[0.9375rem] font-semibold text-fg">
-          {t('discover.missing.title')}
-        </h2>
-        <p className="text-sm text-fg-muted">{t('discover.missing.body')}</p>
-        <Button variant="secondary" size="sm" leadingIcon="refresh" onClick={onRetry} className="mt-1.5 self-start">
-          {t('discover.missing.retry')}
-        </Button>
-      </div>
-    </aside>
+    <div data-testid="kesfet-missing">
+      <EmptyState
+        tone="card"
+        compact
+        icon={'sync-offline' satisfies IconName}
+        title={t('discover.missing.title')}
+        description={t('discover.missing.body')}
+        action={
+          <Button variant="secondary" leadingIcon="refresh" onClick={onRetry}>
+            {t('discover.missing.retry')}
+          </Button>
+        }
+      />
+    </div>
   );
 }

@@ -7,7 +7,7 @@ export interface IconButtonProps extends Omit<ComponentPropsWithRef<'button'>, '
   icon: IconName;
   /** Accessible name; also shown as a tooltip on pointer devices. */
   label: string;
-  variant?: 'ghost' | 'secondary' | 'primary';
+  variant?: 'ghost' | 'secondary' | 'primary' | 'tonal';
   /** 'md' = 44 px target. 'sm' = 36 px visual with a 44 px hit area. */
   size?: 'sm' | 'md';
   tooltip?: boolean;
@@ -19,6 +19,7 @@ const variants = {
   ghost: 'text-fg-muted hover:bg-hover hover:text-fg',
   secondary: 'border border-border bg-surface text-fg hover:border-border-strong',
   primary: 'bg-accent text-accent-fg hover:bg-accent-hover',
+  tonal: 'bg-accent-soft text-accent-text hover:bg-selected',
 } as const;
 
 export function IconButton({
@@ -38,7 +39,7 @@ export function IconButton({
       aria-label={label}
       aria-pressed={pressed}
       className={cn(
-        'relative inline-flex shrink-0 items-center justify-center rounded-control',
+        'relative inline-flex shrink-0 items-center justify-center rounded-full',
         'transition-[background-color,color,transform] duration-(--duration-micro) ease-standard',
         'motion-safe:active:scale-95 disabled:pointer-events-none disabled:opacity-45',
         size === 'md' ? 'size-11' : "size-9 after:absolute after:-inset-1 after:content-['']",

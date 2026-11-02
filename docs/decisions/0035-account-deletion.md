@@ -97,6 +97,10 @@ a JSON export but no deletion, and no privacy policy.
 | Google gives name, e-mail, photo link, account id | Supabase Auth Google provider; `features/auth/session.ts` reads `full_name`, `avatar_url` |
 | Learning data synced (list in the policy) | `sync_tables`, user tables in `supabase/migrations/*` |
 | Sources keep title, file name, page count only | `sources` table columns |
+| Saved reading texts sync with full body (paste, PDF, article, subtitle, photo text, story); encounter counts | `user_texts`, `user_encounters` (`20261101000100_reader.sql`); policy text updated in v0.5.2 (ADR 0060) |
+| Monthly AI spend per user; per-feature and sync counters; deleted after 90 days / the following month | `text_budget_users`, `ai_feature_usage`, `sync_usage`, `purge_ops_counters(90)` (`20261103000100`, `20261103000200`) |
+| Encrypted nightly backups in R2: daily 14, weekly 8, pre-migration ≤ 10 and ≤ 56 days | `scripts/db-backup.sh`, `.github/workflows/db-backup.yml` (ADR 0060) |
+| No contact address yet: in-app paths and /hesap-sil instead | `[[email]]` / `[[noemail]]` variants, `src/legal/contact.ts` |
 | Random per-install device id in logs, not an ad id | `data/meta.ts` `getDeviceId`; `review_logs.device_id` |
 | AI text to Gemini; candidates cached ≤ 90 days | `ai-extract`, `ai_chunk_cache`, purge job |
 | Daily usage counters | `ai_usage`, `tts_usage`, `image_usage` (instant pictures) |

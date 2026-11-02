@@ -18,11 +18,12 @@ const tones: Record<BadgeTone, string> = {
   outline: 'ring-1 ring-inset ring-border text-fg-muted',
 };
 
+/** Small status label (24 px pill). Not interactive — a choice is a Chip. */
 export function Badge({ tone = 'neutral', dot, className, children, ...rest }: BadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex h-6 items-center gap-1.5 rounded-sm px-2 text-xs font-medium whitespace-nowrap',
+        'inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-caption font-semibold whitespace-nowrap',
         tones[tone],
         className,
       )}
