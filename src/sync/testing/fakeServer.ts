@@ -102,8 +102,12 @@ export class FakeServer implements SyncTransport {
     return `${table}:${id}`;
   }
 
+  /** Every payload pushed, in order (tests look at what went over the wire). */
+  readonly pushed: PushItem[] = [];
+
   async pushBatch(items: PushItem[]): Promise<PushResult> {
     this.calls.push++;
+    this.pushed.push(...items.map((i) => structuredClone(i)));
     if (this.faults.offline) throw new SyncApiError('network', 'offline');
     if (this.faults.dropOnPushCall === this.calls.push) throw new SyncApiError('network', 'connection reset');
     if (this.faults.networkBeforePush) {
@@ -140,6 +144,17 @@ export class FakeServer implements SyncTransport {
           [...this.rows.values()].some((r) => r.table === 'weekly_reports' && r.row.week === p.week);
         if (!cur && !sameWeek) this.rows.set(k, { table: it.table, row: p, seq: ++this.seq });
         res.acked.push(p.id);
+        continue;
+      }
+      // sync_push (20261103000200): a text without its body updates the server's row; there
+      // is none yet: 23502 for an upsert, nothing to do for a delete.
+      if (it.table === 'texts' && !('body' in p) && !cur) {
+        if (it.op === 'delete') {
+          res.acked.push(p.id);
+          res.stale.push(p.id);
+        } else {
+          res.rejected.push({ table: it.table, id: p.id, code: '23502', message: 'row not on the server yet' });
+        }
         continue;
       }
       if (cur && !(p.hlc > (cur.row.hlc as string))) {

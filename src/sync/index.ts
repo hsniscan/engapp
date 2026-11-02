@@ -5,7 +5,7 @@
 import { liveQuery } from 'dexie';
 import { db } from '@/data';
 import { isBackendConfigured } from '@/lib/supabase';
-import { CHANGE_DEBOUNCE_MS, SYNC_INTERVAL_MS, type SyncOutcome } from './engine';
+import { CHANGE_DEBOUNCE_MS, isIdleOutcome, nextPollDelayMs, type SyncOutcome } from './engine';
 import { engine } from './instance';
 
 export { SyncEngine, runSync, type SyncOutcome, type SyncReport, type SyncTransport } from './engine';
@@ -40,26 +40,52 @@ export function startSyncEngine(): () => void {
   if (stop) return stop;
   if (!isBackendConfigured() || typeof window === 'undefined') return () => {};
   const visible = () => document.visibilityState === 'visible';
+  // Background polls back off while nothing changes (decision 0060); any other trigger
+  // (visible again, online, a local write) starts over at the short interval.
+  let idleRuns = 0;
+  let stopped = false;
+  let poll: ReturnType<typeof setTimeout> | null = null;
   const onOnline = () => {
     engine.setState({ online: true });
+    idleRuns = 0;
     requestSync(0);
   };
   const onOffline = () => engine.setState({ online: false });
+  const schedule = () => {
+    if (poll) clearTimeout(poll);
+    if (stopped) return;
+    poll = setTimeout(() => {
+      poll = null;
+      if (!visible()) return schedule();
+      void engine.sync().then((o) => {
+        idleRuns = isIdleOutcome(o) ? idleRuns + 1 : 0;
+        schedule();
+      });
+    }, nextPollDelayMs(idleRuns));
+  };
+  const wake = () => {
+    idleRuns = 0;
+    schedule();
+  };
   const onVisible = () => {
-    if (visible()) requestSync(0);
+    if (visible()) {
+      wake();
+      requestSync(0);
+    }
   };
   window.addEventListener('online', onOnline);
   window.addEventListener('offline', onOffline);
   document.addEventListener('visibilitychange', onVisible);
-  const interval = setInterval(() => {
-    if (visible()) void engine.sync();
-  }, SYNC_INTERVAL_MS);
+  schedule();
 
   // Local writes: push a few seconds after the outbox grows.
   let lastCount = -1;
   const sub = liveQuery(() => db.outbox.count()).subscribe({
     next: (n) => {
-      if (lastCount >= 0 && n > lastCount) requestSync(CHANGE_DEBOUNCE_MS);
+      if (lastCount >= 0 && n > lastCount) {
+        requestSync(CHANGE_DEBOUNCE_MS);
+        wake();
+      }
       lastCount = n;
     },
     error: () => {},
@@ -70,7 +96,8 @@ export function startSyncEngine(): () => void {
     window.removeEventListener('online', onOnline);
     window.removeEventListener('offline', onOffline);
     document.removeEventListener('visibilitychange', onVisible);
-    clearInterval(interval);
+    stopped = true;
+    if (poll) clearTimeout(poll);
     sub.unsubscribe();
     stop = null;
   };

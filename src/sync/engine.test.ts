@@ -500,3 +500,25 @@ describe('review regressions', () => {
     expect(rows.every((r) => r.attempts === 1)).toBe(true);
   });
 });
+
+describe('idle backoff and slim text pushes (decision 0060)', () => {
+  it('polls every minute after a change, doubling while idle up to 10 minutes', async () => {
+    const { nextPollDelayMs, isIdleOutcome } = await import('./engine');
+    expect([0, 1, 2, 3, 4, 50].map(nextPollDelayMs)).toEqual([60_000, 120_000, 240_000, 480_000, 600_000, 600_000]);
+    const report = { pushed: 0, stale: 0, rejected: 0, pulled: 0, fullResync: false, removed: 0, lexicon: 0 };
+    expect(isIdleOutcome({ ok: true, report })).toBe(true);
+    expect(isIdleOutcome({ ok: true, report: { ...report, pulled: 1 } })).toBe(false);
+    expect(isIdleOutcome({ ok: false, reason: 'busy' })).toBe(true);
+    expect(isIdleOutcome({ ok: false, reason: 'error', error: 'network', message: 'x', report })).toBe(false);
+  });
+
+  it('leaves the body out of text updates and deletes only', async () => {
+    const { slimTextPayload } = await import('./engine');
+    const row = { id: 't', body: 'long', created_at: 1, updated_at: 1 };
+    expect(slimTextPayload({ table: 'texts', op: 'upsert', payload: row })).toBe(row);
+    expect(slimTextPayload({ table: 'texts', op: 'upsert', payload: { ...row, updated_at: 2 } })).toEqual({ id: 't', created_at: 1, updated_at: 2 });
+    expect(slimTextPayload({ table: 'texts', op: 'delete', payload: row })).toEqual({ id: 't', created_at: 1, updated_at: 1 });
+    const note = { id: 'n', body: 'x', created_at: 1, updated_at: 2 };
+    expect(slimTextPayload({ table: 'notes', op: 'upsert', payload: note })).toBe(note);
+  });
+});

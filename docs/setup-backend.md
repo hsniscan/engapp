@@ -87,7 +87,9 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 | `SUPABASE_ACCESS_TOKEN`     | `https://supabase.com/dashboard/account/tokens` → **Generate new token** → name `github-actions` → copy (starts with `sbp_`)                                                                                                        |
 | `SUPABASE_DB_PASSWORD`      | the database password from step 3.6                                                                                                                                                                                                 |
 | `GEMINI_API_KEY`            | the key from step 1                                                                                                                                                                                                                 |
-| `SUPABASE_SERVICE_ROLE_KEY` | optional, for the level job (step 9): **Project Settings → API Keys** → the `service_role` key or a secret key (`sb_secret_…`). Without it the job reads the key with `SUPABASE_ACCESS_TOKEN`, which then needs API key read access |
+| `SUPABASE_SERVICE_ROLE_KEY` | recommended, for every scheduled job (steps 9, 12, 14–16, 19): **Project Settings → API Keys** → the `service_role` key or a secret key (`sb_secret_…`). Without it the job reads the key with `SUPABASE_ACCESS_TOKEN`, which then needs API key read access |
+| `BACKUP_PASSPHRASE`         | **required since v0.5.2** (step 20): a long random passphrase (e.g. `openssl rand -base64 32`). Every database backup is encrypted with it. **Keep a copy outside GitHub** (password manager or paper): without it no backup can be read. The deploy refuses to migrate without it |
+| `R2_BACKUP_BUCKET`, `R2_BACKUP_ACCESS_KEY_ID`, `R2_BACKUP_SECRET_ACCESS_KEY` | recommended (step 20): a **private** R2 bucket and an API token limited to it, only for backups. Without them the backups go to the audio bucket under `backups/` (still encrypted) |
 | `ANTHROPIC_API_KEY`         | optional, for pictures (step 12) and the text AI fallback (step 16): `https://console.anthropic.com/settings/keys` → **Create Key** → copy (starts with `sk-ant-`)                                                                  |
 
 **Variables** tab → **New repository variable** (all optional; defaults in brackets):
@@ -95,9 +97,13 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 | Name                        | Value                                                                                                     |
 | --------------------------- | --------------------------------------------------------------------------------------------------------- |
 | `ALLOWED_ORIGINS`           | `<APP_URL>,http://localhost:5173` [default: only `http://localhost:5173`, so **set this** for production] |
-| `GEMINI_MODEL`              | [`gemini-3.8-flash`]                                                                                      |
-| `GEMINI_FALLBACK_MODEL`     | [`gemini-3.5-flash-lite`]                                                                                 |
-| `AI_DAILY_LIMIT`            | AI calls per user per UTC day [`200`]                                                                     |
+| `GEMINI_MODEL`              | [`supabase/functions/_shared/model-defaults.ts`; every model variable below falls back to that file]      |
+| `GEMINI_FALLBACK_MODEL`     | [`model-defaults.ts`]                                                                                     |
+| `AI_DAILY_LIMIT`            | AI calls per user per UTC day, all text AI features together [`120`]                                      |
+| `AI_DAILY_LIMIT_EXTRACT`, `_ENRICH`, `_THEMES`, `_MNEMONIC`, `_CONTRAST`, `_REPORT` | calls per user per UTC day of one feature [`60`, `60`, `10`, `20`, `20`, `4`] |
+| `AI_USER_MONTHLY_USD`       | most one user may spend of the shared Claude text budget per month [`1`]                                  |
+| `AI_USER_MAX_SHARE`         | most one user may spend as a share of that budget (the smaller of the two applies) [`0.1`]                 |
+| `SKIP_PRE_MIGRATION_BACKUP` | `true`: deploy without the backup before migrating (only if the backup itself is broken) [off]            |
 | `AI_SYSTEM_DAILY_LIMIT`     | model calls per UTC day for system jobs (the level job), separate from users' budgets [`100`]             |
 | `CLAUDE_MONTHLY_CREDIT_USD` | the monthly Claude credit in USD; pictures may use 80 % of it [`100`]                                     |
 | `APP_ADMIN_USER_ID`         | your Supabase user id (step 12): who may open the picture review screen [none]                            |
@@ -111,7 +117,7 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 | `CLAUDE_GRADED_MODEL`       | model that writes library texts [`claude-sonnet-5-5`]                                                     |
 | `GRADED_PER_CELL`           | library texts per level and core topic [`9`]                                                              |
 | `GRADED_EXTENDED_PER_CELL`  | library texts per level and extended topic [`0`]                                                          |
-| `ARTICLE_DAILY_LIMIT`       | articles a user may import from links per UTC day (step 17) [`30`]                                        |
+| `ARTICLE_DAILY_LIMIT`       | articles a user may import from links per UTC day (step 17) [`20`]                                        |
 | `CLAUDE_TEXT_MODEL`         | model of the text AI fallback when Gemini runs out of quota (step 17) [`claude-haiku-5-5`]                |
 | `AI_CLAUDE_FALLBACK`        | `off`: never use Claude for the text AI tasks (step 17) [`on`]                                            |
 | `STORY_DAILY_LIMIT`         | daily stories per user per UTC day, each may be regenerated once (step 18) [`1`]                          |
@@ -130,7 +136,9 @@ call AI unless added here. The deploy workflow always appends the production Pag
 2. The `test` job runs the Deno type check and the SQL security tests on a temporary
    local database; `deploy` then:
    - `supabase link --project-ref bikcjlomrjaxymifxogi`
-   - `supabase db push --linked --yes` (applies `supabase/migrations/*.sql` once each)
+   - finds the database (`scripts/supabase-db-url.sh`), takes an encrypted backup to R2
+     (`scripts/db-backup.sh pre-migration`, step 20), then `supabase db push` (applies
+     `supabase/migrations/*.sql` once each). Without `BACKUP_PASSPHRASE` it stops here.
    - `supabase secrets set` for `GEMINI_API_KEY`, `GEMINI_MODEL`,
      `GEMINI_FALLBACK_MODEL`, `AI_PROVIDER=gemini`, `AI_DAILY_LIMIT`, `ALLOWED_ORIGINS`
    - on the first run only: a Web Push (VAPID) key pair, stored as the function secrets
@@ -572,6 +580,25 @@ You only click in two dashboards (Cloudflare and GitHub); the copying is done by
 then uses Supabase only, as before. Files made while R2 was on are made again on Supabase by
 the next audio job run (step 15), which sees them missing there.
 
+## 20. Backups, limits and the nightly health check (v0.5.2)
+
+Decision 0060; restore steps: `docs/runbook-backup-restore.md`.
+
+1. Add the secret `BACKUP_PASSPHRASE` (step 4) and keep a copy outside GitHub.
+2. Recommended: Cloudflare → **R2 → Create bucket** `engapp-backups` (no public access) →
+   **Manage R2 API Tokens → Create API token** → *Object Read & Write*, only that bucket →
+   secrets `R2_BACKUP_BUCKET`, `R2_BACKUP_ACCESS_KEY_ID`, `R2_BACKUP_SECRET_ACCESS_KEY`.
+   `R2_ACCOUNT_ID` is the one from step 19.
+3. GitHub → **Actions → DB backup → Run workflow** once and check that it ends green.
+   It then runs every night (02:45 UTC): daily copies kept 14, weekly (Sunday) copies 8,
+   pre-migration copies 10, none older than 56 days.
+4. The same workflow runs `public.ops_health()` (budgets, refusals, stale holds, job
+   heartbeats, failed pg_cron runs, database size, lexicon terms to review). A `fail` row fails
+   the run. Turn on e-mail for failed runs: GitHub → your avatar → **Settings →
+   Notifications → Actions → "Send notifications for failed workflows only"**.
+5. Sync quotas (per user): `select * from public.sync_limits;` — change one with
+   `update public.sync_limits set value = … where name = '…';` (no deploy needed).
+
 ## Manual deploy without GitHub (alternative)
 
 From the repository root, with the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started)
@@ -592,7 +619,8 @@ supabase functions deploy --use-api
 - Model: change the GitHub variable `GEMINI_MODEL` / `GEMINI_FALLBACK_MODEL` and re-run
   the workflow (or `supabase secrets set GEMINI_MODEL=...`). No code change. Secrets
   take effect on the next function invocation.
-- Daily limit: `AI_DAILY_LIMIT`.
+- Daily limits: `AI_DAILY_LIMIT`, `AI_DAILY_LIMIT_<FEATURE>`; monthly share: `AI_USER_MONTHLY_USD`,
+  `AI_USER_MAX_SHARE`. Sync quotas live in the table `public.sync_limits` (step 20).
 - New app domain: add it to Google (step 2.5 origins), Supabase redirect URLs (3.3) and
   `ALLOWED_ORIGINS` (4).
 - Schema: add a new file under `supabase/migrations/` (never edit an applied one) and push.

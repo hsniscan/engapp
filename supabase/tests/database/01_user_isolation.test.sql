@@ -132,7 +132,7 @@ select throws_ok(
 -- B pushes a row with A's id and a newer hlc: rejected by RLS, A's row untouched.
 select is((select res -> 'rejected' -> 0 ->> 'code' from (select public.sync_push(jsonb_build_array(jsonb_build_object(
   'table', 'notes', 'op', 'upsert', 'payload',
-  pg_temp.note('aaaaaaaa-0000-7000-8000-000000000001', 'stolen', '009999999999999:00000:devb')))) as res) x),
+  pg_temp.note('aaaaaaaa-0000-7000-8000-000000000001', 'stolen', '001762000000000:00000:devb')))) as res) x),
   '42501', 'B cannot overwrite A''s row through push');
 select is((select jsonb_array_length(public.sync_push(jsonb_build_array(jsonb_build_object('table', 'settings', 'op', 'upsert',
   'payload', '{"id":"settings","daily_new_limit":20,"request_retention":0.9,"timezone":"UTC","day_start_hour":4,"theme":"dark","voice":"en-GB","level":"B2","fsrs_params":null,"last_backup_at":null,"created_at":1,"updated_at":1,"deleted_at":null,"hlc":"001761000000000:00000:devb"}'::jsonb))) -> 'acked')),

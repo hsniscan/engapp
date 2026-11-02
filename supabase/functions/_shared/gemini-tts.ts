@@ -34,8 +34,9 @@ export interface GeminiTtsConfig {
 
 // Defaults used only when the environment does not set them (Oct 2026: both models are on
 // the free tier and have their own quota, separate from the text models').
-export const DEFAULT_GEMINI_TTS_MODEL = 'gemini-3.8-flash-tts';
-export const DEFAULT_GEMINI_TTS_FALLBACK_MODEL = 'gemini-3.8-flash-lite-tts';
+// (model-defaults.ts, decision 0060)
+import { DEFAULT_GEMINI_TTS_FALLBACK_MODEL, DEFAULT_GEMINI_TTS_MODEL } from './model-defaults.ts';
+export { DEFAULT_GEMINI_TTS_FALLBACK_MODEL, DEFAULT_GEMINI_TTS_MODEL };
 /** Prebuilt voices ("Clear" in Google's voice list). The accent comes from languageCode. */
 export const DEFAULT_TTS_VOICES: Record<TtsVoice, string> = {
   'en-US': 'Iapetus',

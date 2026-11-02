@@ -8,6 +8,8 @@
 // An answer cut off by MAX_TOKENS keeps its complete list items (salvageTruncatedJson).
 // Model names come only from configuration.
 
+import { DEFAULT_GEMINI_FALLBACK_MODEL, DEFAULT_GEMINI_MODEL } from './model-defaults.ts';
+
 export type AiErrorCode = 'quota_exceeded' | 'ai_failed';
 
 export class AiError extends Error {
@@ -365,7 +367,6 @@ export function createAiProvider(
   });
 }
 
-// Defaults used only when the environment does not set GEMINI_MODEL / GEMINI_FALLBACK_MODEL.
-// (Set GEMINI_FALLBACK_MODEL to an empty string to disable the fallback.)
-export const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
-export const DEFAULT_GEMINI_FALLBACK_MODEL = 'gemini-3.5-flash-lite';
+// Defaults used only when the environment does not set GEMINI_MODEL / GEMINI_FALLBACK_MODEL
+// (model-defaults.ts). Set GEMINI_FALLBACK_MODEL to an empty string to disable the fallback.
+export { DEFAULT_GEMINI_FALLBACK_MODEL, DEFAULT_GEMINI_MODEL } from './model-defaults.ts';

@@ -7,9 +7,12 @@ test('privacy and account deletion never show a missing-address placeholder', as
   await page.goto('/gizlilik');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await expect(page.getByText('iletişim adresi henüz eklenmedi')).toHaveCount(0);
-  await expect(
-    page.getByRole('link', { name: 'github.com/hsniscan/engapp/issues' }).first(),
-  ).toHaveAttribute('href', 'https://github.com/hsniscan/engapp/issues');
+  await expect(page.getByRole('link', { name: /github/ })).toHaveCount(0);
+  await expect(page.getByText(/Henüz ayrı bir iletişim adresi yayımlanmadı/)).toBeVisible();
+  await expect(page.getByRole('link', { name: 'hesap silme sayfası' }).first()).toHaveAttribute(
+    'href',
+    '/hesap-sil',
+  );
 
   await page.goto('/hesap-sil');
   await expect(page.getByText('iletişim adresi henüz eklenmedi')).toHaveCount(0);

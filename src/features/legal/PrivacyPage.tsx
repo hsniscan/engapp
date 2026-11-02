@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { contactEmail } from '@/legal/contact';
+import { contactEmail, contactVariant, contactVariants } from '@/legal/contact';
 import { privacyEn } from '@/legal/privacy.en';
 import { privacyTr } from '@/legal/privacy.tr';
 import type { LegalDocument } from '@/legal/types';
@@ -43,7 +43,7 @@ export function PrivacyPage({ lang }: { lang: 'tr' | 'en' }) {
           <p className="text-sm text-fg-muted">
             {t('legal.updated', { date: formatDate(doc.updated, lang) })}
           </p>
-          {doc.intro.map((p) => (
+          {contactVariants(doc.intro, !!email).map((p) => (
             <p key={p} className="text-[1.0625rem] leading-relaxed text-fg">
               <LegalText text={p} email={email} missingEmail={missing} />
             </p>
@@ -72,21 +72,25 @@ export function PrivacyPage({ lang }: { lang: 'tr' | 'en' }) {
               {i + 1}. {s.heading}
             </h2>
             <div className="flex flex-col gap-3 text-base leading-relaxed text-fg">
-              {s.blocks.map((b, j) =>
-                'p' in b ? (
-                  <p key={j}>
-                    <LegalText text={b.p} email={email} missingEmail={missing} />
-                  </p>
-                ) : (
+              {s.blocks.map((b, j) => {
+                if ('p' in b) {
+                  const text = contactVariant(b.p, !!email);
+                  return text === null ? null : (
+                    <p key={j}>
+                      <LegalText text={text} email={email} missingEmail={missing} />
+                    </p>
+                  );
+                }
+                return (
                   <ul key={j} className="flex list-disc flex-col gap-1.5 pl-5 marker:text-fg-subtle">
-                    {b.ul.map((item) => (
+                    {contactVariants(b.ul, !!email).map((item) => (
                       <li key={item}>
                         <LegalText text={item} email={email} missingEmail={missing} />
                       </li>
                     ))}
                   </ul>
-                ),
-              )}
+                );
+              })}
             </div>
           </section>
         ))}

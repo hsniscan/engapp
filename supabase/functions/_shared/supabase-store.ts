@@ -98,8 +98,14 @@ function check<T>(r: { data: T | null; error: { message: string } | null }, what
 
 export class SupabaseAiStore implements AiStore {
   private readonly db: SupabaseClient;
-  constructor(db: SupabaseClient) {
+  private readonly feature: { feature: string; featureLimit: number } | null;
+  /**
+   * With `feature`, every model call also counts against that feature's own daily counter
+   * (ai_consume_feature, decision 0060); without, only against the shared ai_usage counter.
+   */
+  constructor(db: SupabaseClient, feature?: { feature: string; featureLimit: number }) {
     this.db = db;
+    this.feature = feature ?? null;
   }
 
   async getChunkCache(
@@ -140,6 +146,17 @@ export class SupabaseAiStore implements AiStore {
   }
 
   async consumeAi(userId: string, limit: number): Promise<UsageResult> {
+    if (this.feature) {
+      return check(
+        await this.db.rpc('ai_consume_feature', {
+          p_user: userId,
+          p_feature: this.feature.feature,
+          p_feature_limit: this.feature.featureLimit,
+          p_total_limit: limit,
+        }),
+        'ai_consume_feature',
+      ) as UsageResult;
+    }
     return check(
       await this.db.rpc('ai_consume', { p_user: userId, p_limit: limit }),
       'ai_consume',

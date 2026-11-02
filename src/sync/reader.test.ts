@@ -133,6 +133,45 @@ describe('texts', () => {
     });
   });
 
+  it('progress, finishing and deleting are pushed without the body; the server keeps it (decision 0060)', async () => {
+    let a = await newDevice('dev-a');
+    const b = await newDevice('dev-b');
+    const body = 'A long text. '.repeat(500);
+    let id = '';
+    a = await onDevice(a, async () => {
+      // Saved and read offline before the first push: the slim push is refused (23502) and
+      // the row is sent again with its body in the same run.
+      id = await saveText({ kind: 'paste', title: 'Long', body }, T);
+      await saveReadingProgress(id, 40, 1000, T + MIN);
+      await sync(server, T + 2 * MIN);
+      expect(await db.outbox.count()).toBe(0);
+      expect(server.rowsOf('texts')[0]).toMatchObject({ body, progress_offset: 40 });
+      const firstRun = server.pushed.filter((p) => p.table === 'texts');
+      expect(firstRun.map((p) => 'body' in (p.payload as object))).toEqual([false, true]);
+
+      server.pushed.length = 0;
+      await saveReadingProgress(id, 120, 5000, T + 3 * MIN);
+      await setTextFinished(id, true, T + 4 * MIN);
+      await sync(server, T + 5 * MIN);
+      expect(await db.outbox.count()).toBe(0);
+      const texts = server.pushed.filter((p) => p.table === 'texts');
+      expect(texts).toHaveLength(1);
+      expect('body' in (texts[0]!.payload as object)).toBe(false);
+      expect(server.rowsOf('texts')[0]).toMatchObject({ body, progress_offset: 120, finished_at: T + 4 * MIN });
+    });
+    await onDevice(b, async () => {
+      await sync(server, T + 6 * MIN);
+      expect(await getText(id)).toMatchObject({ body, progress_offset: 120 });
+    });
+    await onDevice(a, async () => {
+      server.pushed.length = 0;
+      await deleteText(id, T + 7 * MIN);
+      await sync(server, T + 8 * MIN);
+      expect('body' in (server.pushed[0]!.payload as object)).toBe(false);
+      expect(server.rowsOf('texts')[0]).toMatchObject({ body, deleted_at: T + 7 * MIN });
+    });
+  });
+
   it('wait in the outbox until the server lists the table', async () => {
     server.registry.delete('texts');
     const a = await newDevice('dev-a');

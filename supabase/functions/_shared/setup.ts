@@ -13,7 +13,13 @@ import {
   loadServerConfig,
   SupabaseAiStore,
 } from './supabase-store.ts';
-import { SupabaseTextBudgetStore, textMonthlyCapUsd, type TextBudget } from './text-budget.ts';
+import {
+  forUser,
+  SupabaseTextBudgetStore,
+  textMonthlyCapUsd,
+  textUserMonthlyCapUsd,
+  type TextBudget,
+} from './text-budget.ts';
 import {
   pickedDailyLimit,
   runStory,
@@ -26,11 +32,39 @@ import { SupabaseStoryStore } from './story-store.ts';
 
 type Env = (key: string) => string | undefined;
 
-export const DEFAULT_AI_DAILY_LIMIT = 200;
+/**
+ * All text AI features of one user together, per UTC day (AI_DAILY_LIMIT). Was 200 until
+ * v0.5.2; decision 0060 lowered it and added a limit per feature below.
+ */
+export const DEFAULT_AI_DAILY_LIMIT = 120;
 
 export function dailyLimit(env: Env): number {
   const n = Number(env('AI_DAILY_LIMIT'));
   return Number.isInteger(n) && n > 0 ? n : DEFAULT_AI_DAILY_LIMIT;
+}
+
+/**
+ * Calls per user and UTC day of each text feature (decision 0060). Cache and dictionary hits
+ * never count. Override one with AI_DAILY_LIMIT_<FEATURE>, e.g. AI_DAILY_LIMIT_EXTRACT=80.
+ * ai-extract counts one call per text chunk, so reading two long articles fits in a day.
+ */
+export const DEFAULT_FEATURE_DAILY_LIMITS: Readonly<Record<string, number>> = {
+  'ai-extract': 60,
+  'ai-enrich': 60,
+  'ai-themes': 10,
+  'ai-mnemonic': 20,
+  'ai-contrast': 20,
+  'ai-report': 4,
+  'ai-examples': 20,
+};
+const FALLBACK_FEATURE_DAILY_LIMIT = 20;
+
+/** The daily limit of one feature (function name such as 'ai-extract'). */
+export function featureDailyLimit(env: Env, name: string): number {
+  const key = `AI_DAILY_LIMIT_${name.replace(/^ai-/, '').replace(/-/g, '_').toUpperCase()}`;
+  const n = Number(env(key));
+  if (Number.isInteger(n) && n > 0) return n;
+  return DEFAULT_FEATURE_DAILY_LIMITS[name] ?? FALLBACK_FEATURE_DAILY_LIMIT;
 }
 
 export { log } from './log.ts';
@@ -49,26 +83,37 @@ export function createAiFunction<T>(
 ): (req: Request) => Promise<Response> {
   const cfg = overrides.store && overrides.authenticate ? null : loadServerConfig(env);
   const admin = cfg ? createAdminClient(cfg) : null;
-  const store = overrides.store ?? new SupabaseAiStore(admin!);
-  // The Claude fallback spends from the monthly text budget, shared with the library jobs.
+  const limit = dailyLimit(env);
+  // The feature's own daily counter next to the shared one (decision 0060).
+  const store =
+    overrides.store ??
+    new SupabaseAiStore(admin!, { feature: name, featureLimit: featureDailyLimit(env, name) });
+  // The Claude fallback spends from the monthly text budget, shared with the library jobs,
+  // and from the calling user's monthly share of it.
+  const capUsd = textMonthlyCapUsd(env);
+  const userCapUsd = textUserMonthlyCapUsd(env, capUsd);
   const budget: TextBudget | undefined = admin
-    ? { store: new SupabaseTextBudgetStore(admin), capUsd: textMonthlyCapUsd(env) }
+    ? { store: new SupabaseTextBudgetStore(admin), capUsd }
     : undefined;
   const authenticate = overrides.authenticate ?? createAuthenticator(cfg!);
   const logger = log(name);
-  let provider: AiProvider | null = null;
-  // Gemini, then Claude Haiku on quota exhaustion (decision 0044).
-  const getProvider =
-    overrides.provider ??
-    (() =>
-      (provider ??= createTextAiProvider(env, { log: logger, ...(budget ? { budget } : {}) })));
-  const limit = dailyLimit(env);
+  // Gemini, then Claude Haiku on quota exhaustion (decision 0044). One provider per request:
+  // the budget it carries names the user who pays.
+  const providerFor = (userId: string): (() => AiProvider) => {
+    if (overrides.provider) return overrides.provider;
+    let provider: AiProvider | null = null;
+    return () =>
+      (provider ??= createTextAiProvider(env, {
+        log: logger,
+        ...(budget ? { budget: forUser(budget, userId, userCapUsd) } : {}),
+      }));
+  };
   return createHandler({
     cors: { allowedOrigins: parseOrigins(env('ALLOWED_ORIGINS')) },
     authenticate,
     log: logger,
     run: (body, userId) =>
-      run(body, { userId, store, provider: getProvider, dailyLimit: limit, log: logger }),
+      run(body, { userId, store, provider: providerFor(userId), dailyLimit: limit, log: logger }),
   });
 }
 
@@ -93,10 +138,12 @@ export function createStoryFunction(
   const cfg = needsDb ? loadServerConfig(env) : null;
   const admin = cfg ? createAdminClient(cfg) : null;
   const store = overrides.store ?? new SupabaseStoryStore(admin!);
+  const capUsd = textMonthlyCapUsd(env);
+  const userCapUsd = textUserMonthlyCapUsd(env, capUsd);
   const budget: TextBudget | null =
     overrides.budget !== undefined
       ? overrides.budget
-      : { store: new SupabaseTextBudgetStore(admin!), capUsd: textMonthlyCapUsd(env) };
+      : { store: new SupabaseTextBudgetStore(admin!), capUsd };
   const authenticate = overrides.authenticate ?? createAuthenticator(cfg!);
   const logger = log('ai-story');
   const model = overrides.model !== undefined ? overrides.model : storyModelFromEnv(env, logger);
@@ -111,7 +158,8 @@ export function createStoryFunction(
         userId,
         store,
         model,
-        ...(budget ? { budget } : {}),
+        // Every story call also counts against this user's monthly share (decision 0060).
+        ...(budget ? { budget: budget.user ? budget : forUser(budget, userId, userCapUsd) } : {}),
         dailyLimit: limit,
         pickedDailyLimit: picked,
         log: logger,

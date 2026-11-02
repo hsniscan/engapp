@@ -192,12 +192,13 @@ describe('public pages', () => {
       ).toBeInTheDocument();
     for (const name of ['Supabase', 'Cloudflare', 'Google Gemini', 'Anthropic Claude'])
       expect(screen.getAllByText(name).length).toBeGreaterThan(0);
-    // No VITE_CONTACT_EMAIL in tests: never a placeholder (Play reviews this page) and never a
-    // made-up address; the public feedback page instead.
+    // No VITE_CONTACT_EMAIL in tests: never a placeholder (Play reviews this page), never a
+    // made-up address and no public issue tracker; the in-app paths and /hesap-sil instead.
     expect(screen.queryByText(/iletişim adresi henüz eklenmedi/)).toBeNull();
-    const contact = screen.getAllByRole('link', { name: 'github.com/hsniscan/engapp/issues' });
-    expect(contact.length).toBeGreaterThan(0);
-    expect(contact[0]).toHaveAttribute('href', 'https://github.com/hsniscan/engapp/issues');
+    expect(screen.queryByRole('link', { name: /github/ })).toBeNull();
+    expect(screen.queryByText(/\[\[(no)?email\]\]|\{\{email\}\}|E-postayla/)).toBeNull();
+    expect(screen.getByText(/Henüz ayrı bir iletişim adresi yayımlanmadı/)).toBeInTheDocument();
+    expect(screen.getByText(/okuma metinleri: yapıştırdığın/)).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: 'hesap silme sayfası' })[0]).toHaveAttribute(
       'href',
       '/hesap-sil',
@@ -228,10 +229,8 @@ describe('public pages', () => {
       screen.getByText(/Profil → ⚙ Ayarlar → Hesap ve eşitleme → Hesabımı ve verilerimi sil/),
     ).toBeInTheDocument();
     expect(screen.queryByText(/iletişim adresi henüz eklenmedi/)).toBeNull();
-    expect(screen.getByRole('link', { name: 'github.com/hsniscan/engapp/issues' })).toHaveAttribute(
-      'href',
-      'https://github.com/hsniscan/engapp/issues',
-    );
+    expect(screen.queryByRole('link', { name: /github/ })).toBeNull();
+    expect(screen.queryByText(/adresine yaz/)).toBeNull();
   });
 
   it('/hesap-sil signed in: shows the account and the delete button', async () => {

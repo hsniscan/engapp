@@ -2,7 +2,7 @@
 -- service-role only.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(17);
+select plan(18);
 
 insert into auth.users (id, email, aud, role)
 values ('33333333-3333-4333-8333-333333333333', 'c@test.local', 'authenticated', 'authenticated');
@@ -15,6 +15,7 @@ select public.lexicon_upsert('[
   {"lemma":"pgtapbank","lemma_norm":"pgtapbank","term_type":"word","pos":"noun","gloss_en":"the land beside a river","gloss_key":"beside land river","meaning_tr":"kıyı","ipa":"/bæŋk/","model":"test"},
   {"lemma":"pgtapbank","lemma_norm":"pgtapbank","term_type":"word","pos":"noun","gloss_en":"an organisation that keeps money","gloss_key":"keep money organisation","meaning_tr":"banka","ipa":"/bæŋk/","model":"test"}
 ]'::jsonb) as res;
+grant select on up1 to authenticated;
 
 select is((select (res -> 0 ->> 'term_created')::boolean from up1), true, 'first item creates the term');
 select is((select (res -> 1 ->> 'term_created')::boolean from up1), false, 'second item reuses the term');
@@ -49,7 +50,10 @@ set local request.jwt.claims to '{"sub":"33333333-3333-4333-8333-333333333333","
 set local request.jwt.claim.sub to '33333333-3333-4333-8333-333333333333'; -- older auth.uid() reads this one
 set local role authenticated;
 
-select is((select count(*)::int from public.lexicon_entries where lemma_norm = 'pgtapbank'), 2, 'signed-in users can read the lexicon');
+-- Decision 0060: no bulk reads; senses come by id (lexicon_get) or through the user's cards.
+select throws_ok($$ select count(*) from public.lexicon_entries $$, '42501', null, 'signed-in users cannot list the lexicon');
+select is(jsonb_array_length(public.lexicon_get(array[(select (res -> 0 ->> 'sense_id')::uuid from up1)])), 1,
+  'but can read a sense by id');
 select throws_ok($$ insert into public.lexicon_terms (lemma, lemma_norm, term_type) values ('evil', 'evil', 'word') $$,
   '42501', null, 'clients cannot insert lexicon terms');
 select throws_ok($$ update public.lexicon_senses set meaning_tr = 'yanlış' $$,

@@ -14,11 +14,28 @@ import { roundUsd } from './image-models.ts';
 type Env = (key: string) => string | undefined;
 
 export const DEFAULT_TEXT_MONTHLY_USD = 10;
+/** One user's share of the month (decision 0060): AI_USER_MONTHLY_USD, default 1 USD … */
+export const DEFAULT_USER_MONTHLY_USD = 1;
+/** … and never more than this fraction of the global cap (AI_USER_MAX_SHARE). */
+export const DEFAULT_USER_MAX_SHARE = 0.1;
 
 /** The month's text cap in USD: CLAUDE_TEXT_MONTHLY_USD when it is a positive number, else 10. */
 export function textMonthlyCapUsd(env: Env): number {
   const v = Number(env('CLAUDE_TEXT_MONTHLY_USD'));
   return roundUsd(Number.isFinite(v) && v > 0 ? v : DEFAULT_TEXT_MONTHLY_USD);
+}
+
+/**
+ * The most one user's calls may spend in a month: AI_USER_MONTHLY_USD (default 1 USD), but
+ * at most AI_USER_MAX_SHARE (default 10 %) of the global cap, so no single account can use up
+ * the month for everyone (review S2).
+ */
+export function textUserMonthlyCapUsd(env: Env, globalCapUsd = textMonthlyCapUsd(env)): number {
+  const own = Number(env('AI_USER_MONTHLY_USD'));
+  const share = Number(env('AI_USER_MAX_SHARE'));
+  const cap = Number.isFinite(own) && own > 0 ? own : DEFAULT_USER_MONTHLY_USD;
+  const frac = Number.isFinite(share) && share > 0 && share <= 1 ? share : DEFAULT_USER_MAX_SHARE;
+  return roundUsd(Math.min(cap, globalCapUsd * frac));
 }
 
 export interface TextBudgetStatus {
@@ -32,6 +49,17 @@ export interface TextBudgetStatus {
 export interface TextBudgetStore {
   /** Hold id, or null when the month's budget cannot cover the amount. */
   reserve(amountUsd: number, capUsd: number, purpose: string, opts?: { batch?: boolean }): Promise<string | null>;
+  /**
+   * A reservation that also counts against one user's monthly share (decision 0060). Null
+   * when either the user's cap or the global cap cannot cover the amount.
+   */
+  reserveForUser(
+    amountUsd: number,
+    capUsd: number,
+    purpose: string,
+    userId: string,
+    userCapUsd: number,
+  ): Promise<string | null>;
   /** Ends a hold: its amount leaves `reserved`, `actualUsd` joins `spent`. */
   settle(holdId: string, actualUsd: number): Promise<void>;
   status(): Promise<TextBudgetStatus>;
@@ -41,6 +69,13 @@ export interface TextBudgetStore {
 export interface TextBudget {
   store: TextBudgetStore;
   capUsd: number;
+  /** The user whose request pays (edge functions); absent for system jobs. */
+  user?: { id: string; capUsd: number };
+}
+
+/** `budget` charged to one user as well (per request in the edge functions). */
+export function forUser(budget: TextBudget, userId: string, userCapUsd: number): TextBudget {
+  return { ...budget, user: { id: userId, capUsd: userCapUsd } };
 }
 
 function check<T>(r: { data: T | null; error: { message: string } | null }, what: string): T {
@@ -67,6 +102,23 @@ export class SupabaseTextBudgetStore implements TextBudgetStore {
       p_batch: opts.batch ?? false,
     });
     return (check(r, 'text_budget_reserve') as string | null) ?? null;
+  }
+
+  async reserveForUser(
+    amountUsd: number,
+    capUsd: number,
+    purpose: string,
+    userId: string,
+    userCapUsd: number,
+  ): Promise<string | null> {
+    const r = await this.db.rpc('text_budget_reserve_user', {
+      p_amount: amountUsd,
+      p_cap: capUsd,
+      p_purpose: purpose,
+      p_user: userId,
+      p_user_cap: userCapUsd,
+    });
+    return (check(r, 'text_budget_reserve_user') as string | null) ?? null;
   }
 
   async settle(holdId: string, actualUsd: number): Promise<void> {
@@ -108,7 +160,11 @@ export async function reserveTextBudget(
   opts: { batch?: boolean } = {},
 ): Promise<string | null> {
   if (!(boundUsd > 0)) throw new Error('a text budget reservation must be positive');
-  return budget.store.reserve(roundUsd(boundUsd, 'up'), budget.capUsd, purpose, opts);
+  const amount = roundUsd(boundUsd, 'up');
+  if (budget.user && !opts.batch) {
+    return budget.store.reserveForUser(amount, budget.capUsd, purpose, budget.user.id, budget.user.capUsd);
+  }
+  return budget.store.reserve(amount, budget.capUsd, purpose, opts);
 }
 
 /** Settles a hold with the real cost (callCostUsd of the response's usage; 0 when not billed). */
@@ -156,7 +212,9 @@ export class MemoryTextBudgetStore implements TextBudgetStore {
   spent = 0;
   reserved = 0;
   cap = 0;
-  readonly holds = new Map<string, { amount: number; purpose: string; batch: boolean }>();
+  readonly holds = new Map<string, { amount: number; purpose: string; batch: boolean; user?: string }>();
+  /** Per-user spent + reserved this month (reserveForUser). */
+  readonly users = new Map<string, { spent: number; reserved: number }>();
   private next = 0;
 
   async reserve(
@@ -176,10 +234,36 @@ export class MemoryTextBudgetStore implements TextBudgetStore {
     return id;
   }
 
+  async reserveForUser(
+    amountUsd: number,
+    capUsd: number,
+    purpose: string,
+    userId: string,
+    userCapUsd: number,
+  ): Promise<string | null> {
+    await Promise.resolve();
+    if (!(amountUsd > 0) || userCapUsd < 0) throw new Error('invalid arguments');
+    const u = this.users.get(userId) ?? { spent: 0, reserved: 0 };
+    if (roundUsd(u.spent + u.reserved + amountUsd) > userCapUsd) return null;
+    if (roundUsd(this.spent + this.reserved + amountUsd) > capUsd) return null;
+    this.cap = capUsd;
+    this.reserved = roundUsd(this.reserved + amountUsd);
+    u.reserved = roundUsd(u.reserved + amountUsd);
+    this.users.set(userId, u);
+    const id = `hold-${++this.next}`;
+    this.holds.set(id, { amount: amountUsd, purpose, batch: false, user: userId });
+    return id;
+  }
+
   async settle(holdId: string, actualUsd: number): Promise<void> {
     await Promise.resolve();
     const h = this.holds.get(holdId);
     this.holds.delete(holdId);
+    const u = h?.user ? this.users.get(h.user) : undefined;
+    if (u) {
+      u.reserved = roundUsd(Math.max(0, u.reserved - h!.amount));
+      u.spent = roundUsd(u.spent + actualUsd);
+    }
     this.reserved = roundUsd(Math.max(0, this.reserved - (h?.amount ?? 0)));
     this.spent = roundUsd(this.spent + actualUsd);
   }

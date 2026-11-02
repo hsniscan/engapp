@@ -13,12 +13,13 @@ import {
   type GenerateJsonResult,
 } from './ai-provider.ts';
 import { callCostUsd, reserveUsd, tokenBound } from './image-models.ts';
+import { DEFAULT_CLAUDE_TEXT_MODEL } from './model-defaults.ts';
 import { reserveTextBudget, settleTextBudget, type TextBudget } from './text-budget.ts';
 
 type Env = (key: string) => string | undefined;
 
-/** Used when CLAUDE_TEXT_MODEL is unset (like DEFAULT_GEMINI_MODEL). */
-export const DEFAULT_CLAUDE_TEXT_MODEL = 'claude-haiku-5-5';
+/** Used when CLAUDE_TEXT_MODEL is unset (model-defaults.ts). */
+export { DEFAULT_CLAUDE_TEXT_MODEL };
 
 export function claudeTextModel(env: Env): string {
   return env('CLAUDE_TEXT_MODEL')?.trim() || DEFAULT_CLAUDE_TEXT_MODEL;
