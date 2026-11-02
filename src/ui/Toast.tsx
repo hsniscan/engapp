@@ -53,9 +53,7 @@ export function Toaster() {
               </span>
             )}
             <div className="flex min-w-0 flex-1 flex-col gap-0.5 py-0.5">
-              <RadixToast.Title className="text-ui font-medium">
-                {item.title}
-              </RadixToast.Title>
+              <RadixToast.Title className="text-ui font-medium">{item.title}</RadixToast.Title>
               {item.description && (
                 <RadixToast.Description className="text-meta opacity-80">
                   {item.description}

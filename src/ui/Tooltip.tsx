@@ -18,7 +18,8 @@ export function Tooltip({ content, children, side = 'bottom' }: TooltipProps) {
         <RadixTooltip.Content
           side={side}
           sideOffset={6}
-          className="z-50 max-w-60 rounded-sm bg-fg px-2 py-1 text-xs font-medium text-fg-inverse shadow-raised data-[state=closed]:animate-pop-out data-[state=delayed-open]:animate-pop-in"
+          collisionPadding={8}
+          className="z-50 max-w-60 rounded-sm bg-fg px-2.5 py-1.5 text-caption font-medium text-fg-inverse shadow-raised data-[state=closed]:animate-pop-out data-[state=delayed-open]:animate-pop-in"
         >
           {content}
         </RadixTooltip.Content>

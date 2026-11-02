@@ -142,6 +142,9 @@
   --text-page-lg: 2rem;
   --text-page-lg--line-height: 2.375rem;
   --text-page-lg--letter-spacing: -0.02em;
+  /* Reader body (Literata): 19 px on a 1.75 line, ~66 characters a line at 40rem. */
+  --text-reading: 1.1875rem;
+  --text-reading--line-height: 1.75;
   --text-display: 2.5rem;
   --text-display--line-height: 1.1;
   --text-display--letter-spacing: -0.015em;

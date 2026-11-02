@@ -20,9 +20,9 @@ export function Switch({ label, description, className, ...rest }: SwitchProps) 
   return (
     <div className={cn('flex min-h-11 items-center justify-between gap-4', className)}>
       <label htmlFor={id} className="flex flex-1 flex-col py-2">
-        <span className="text-[0.9375rem] text-fg">{label}</span>
+        <span className="text-ui font-medium text-fg">{label}</span>
         {description && (
-          <span id={descId} className="text-sm text-fg-muted">
+          <span id={descId} className="text-meta text-fg-muted">
             {description}
           </span>
         )}
@@ -40,7 +40,7 @@ export function Switch({ label, description, className, ...rest }: SwitchProps) 
       >
         <RadixSwitch.Thumb
           className={cn(
-            'block size-5 translate-x-[3px] rounded-full bg-surface-raised shadow-[0_1px_2px_var(--shadow-color)] ring-1 ring-border-strong/40',
+            'block size-5 translate-x-[3px] rounded-full bg-surface-raised shadow-sm ring-1 ring-border-strong/40',
             'transition-transform duration-(--duration-micro) ease-standard motion-reduce:transition-none',
             'data-[state=checked]:translate-x-[23px] data-[state=checked]:ring-0',
           )}

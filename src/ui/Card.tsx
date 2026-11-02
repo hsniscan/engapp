@@ -18,6 +18,8 @@ export interface CardProps extends ComponentPropsWithRef<'div'> {
   /** Inner radius (16) for tiles nested inside another card. */
   inset?: boolean;
   as?: ElementType;
+  /** Destination when `as={Link}` (a whole-card link). */
+  to?: string;
 }
 
 const tones: Record<CardTone, string> = {

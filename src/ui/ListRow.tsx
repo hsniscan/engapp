@@ -77,7 +77,8 @@ export function ListRow(props: ListRowProps) {
     destructive,
     className,
   } = props;
-  const interactive = 'to' in props && props.to ? 'link' : 'onClick' in props && props.onClick ? 'button' : null;
+  const interactive =
+    'to' in props && props.to ? 'link' : 'onClick' in props && props.onClick ? 'button' : null;
   const body = (
     <>
       {leadingIcon ? <IconTile icon={leadingIcon} tone={leadingTone} /> : leading}
@@ -92,9 +93,7 @@ export function ListRow(props: ListRowProps) {
         >
           {title}
         </span>
-        {description && (
-          <span className="line-clamp-2 text-meta text-fg-muted">{description}</span>
-        )}
+        {description && <span className="line-clamp-2 text-meta text-fg-muted">{description}</span>}
       </span>
       {meta != null && <span className="tabular shrink-0 text-ui text-fg-muted">{meta}</span>}
       {trailing ??
@@ -119,7 +118,12 @@ export function ListRow(props: ListRowProps) {
   if (interactive === 'button') {
     const p = props as { onClick: () => void; disabled?: boolean };
     return (
-      <button type="button" onClick={p.onClick} disabled={p.disabled} className={cn(rowClass, 'disabled:opacity-45')}>
+      <button
+        type="button"
+        onClick={p.onClick}
+        disabled={p.disabled}
+        className={cn(rowClass, 'disabled:opacity-45')}
+      >
         {body}
       </button>
     );

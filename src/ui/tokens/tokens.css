@@ -79,10 +79,10 @@
   /* Word stages — ONE sequential pine ramp everywhere (bars, pills, legends, rings):
      Yeni · Öğreniyor · Pekişiyor · Öğrenildi · Kalıcı (light → deep in light theme, dim → bright in dark). */
   --stage-new: light-dark(#d5d9d2, #3a413d);
-  --stage-learning: light-dark(#b6d6cb, #24473e);
-  --stage-consolidating: light-dark(#73ad9c, #2f6d5d);
-  --stage-learned: light-dark(#2b7563, #4ea78f);
-  --stage-mastered: light-dark(#143a32, #a6dccb);
+  --stage-learning: light-dark(#b6d6cb, #2a4f45);
+  --stage-consolidating: light-dark(#73ad9c, #3b8771);
+  --stage-learned: light-dark(#2b7563, #6cc0a8);
+  --stage-mastered: light-dark(#143a32, #c4ebde);
 
   /* Activity: "studied day" is heat-completed everywhere (week strip, heatmap, profile) */
   --heat-empty: light-dark(#e3e6e0, #232826);

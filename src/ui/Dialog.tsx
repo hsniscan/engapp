@@ -21,6 +21,11 @@ export interface DialogProps {
    */
   variant?: 'responsive' | 'sheet' | 'dialog';
   hideClose?: boolean;
+  /**
+   * false: no scrim and the page stays usable behind (the reader's word sheet: tap the next
+   * word while it is open). Default true.
+   */
+  modal?: boolean;
   className?: string;
 }
 
@@ -45,15 +50,23 @@ export function Dialog({
   footer,
   variant = 'responsive',
   hideClose,
+  modal = true,
   className,
 }: DialogProps) {
   const { t } = useTranslation();
   const isSheetish = variant !== 'dialog';
   return (
-    <RadixDialog.Root open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
+    <RadixDialog.Root
+      open={open}
+      defaultOpen={defaultOpen}
+      onOpenChange={onOpenChange}
+      modal={modal}
+    >
       {trigger && <RadixDialog.Trigger asChild>{trigger}</RadixDialog.Trigger>}
       <RadixDialog.Portal>
-        <RadixDialog.Overlay className="fixed inset-0 z-40 bg-scrim data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out" />
+        {modal && (
+          <RadixDialog.Overlay className="fixed inset-0 z-40 bg-scrim data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out" />
+        )}
         <RadixDialog.Content
           className={cn(
             'fixed z-50 flex flex-col overflow-y-auto border-border bg-surface-raised px-5 pt-5 text-fg shadow-overlay sm:px-6 sm:pt-6',

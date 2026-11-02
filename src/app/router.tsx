@@ -329,6 +329,14 @@ if (import.meta.env.DEV) {
     }),
   });
   routes.unshift({
+    path: '/dev/preview',
+    HydrateFallback: () => null,
+    lazy: async () => {
+      const { DesignPreview } = await import('./dev/DesignPreview');
+      return { Component: DesignPreview };
+    },
+  });
+  routes.unshift({
     path: '/dev/ui',
     HydrateFallback: () => null,
     lazy: async () => {

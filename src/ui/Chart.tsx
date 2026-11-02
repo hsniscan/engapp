@@ -144,9 +144,7 @@ export function HeatStrip({ days, label, layout = 'strip', className }: HeatStri
       role="img"
       aria-label={label}
       className={cn(
-        layout === 'strip'
-          ? 'flex gap-1.5'
-          : 'grid w-fit grid-flow-col grid-rows-7 gap-[3px]',
+        layout === 'strip' ? 'flex gap-1.5' : 'grid w-fit grid-flow-col grid-rows-7 gap-[3px]',
         className,
       )}
     >

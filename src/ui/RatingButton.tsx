@@ -43,16 +43,13 @@ export function RatingButton({
     >
       <span className="text-ui font-semibold">{label}</span>
       {interval && (
-        <span className={cn('tabular text-caption', good ? 'opacity-85' : 'text-fg-muted')}>
+        <span className={cn('tabular text-caption', !good && 'text-fg-muted')}>
           <span className="sr-only">{t('rating.nextReview')} </span>
           {interval}
         </span>
       )}
       {shortcut && (
-        <span
-          aria-hidden="true"
-          className="absolute top-1.5 right-1.5 hidden md:pointer-fine:flex"
-        >
+        <span aria-hidden="true" className="absolute top-1.5 right-1.5 hidden md:pointer-fine:flex">
           <Kbd size="sm">{shortcut}</Kbd>
         </span>
       )}
@@ -77,7 +74,11 @@ export interface RatingBarProps {
 export function RatingBar({ onRate, intervals, shortcuts, disabled, className }: RatingBarProps) {
   const { t } = useTranslation();
   return (
-    <div role="group" aria-label={t('rating.group')} className={cn('grid grid-cols-4 gap-2', className)}>
+    <div
+      role="group"
+      aria-label={t('rating.group')}
+      className={cn('grid grid-cols-4 gap-2', className)}
+    >
       {ratings.map((r, i) => (
         <RatingButton
           key={r}

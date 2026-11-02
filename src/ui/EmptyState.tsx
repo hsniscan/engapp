@@ -43,7 +43,9 @@ export function EmptyState({
           className={cn(
             'mb-4 flex items-center justify-center rounded-full',
             compact ? 'size-11' : 'size-14',
-            tone === 'error' ? 'bg-danger-soft text-danger-text' : 'bg-accent-soft text-accent-text',
+            tone === 'error'
+              ? 'bg-danger-soft text-danger-text'
+              : 'bg-accent-soft text-accent-text',
           )}
         >
           <Icon name={icon} size={compact ? 20 : 24} />

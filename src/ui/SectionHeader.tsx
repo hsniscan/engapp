@@ -44,7 +44,7 @@ export function SectionHeader({
   className,
 }: SectionHeaderProps) {
   return (
-    <div className={cn('mb-3 flex items-end justify-between gap-3', className)}>
+    <div className={cn('mb-3 flex items-center justify-between gap-3', className)}>
       <div className="flex min-w-0 flex-col gap-1">
         {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
         <H id={id} className="text-title font-semibold text-fg">

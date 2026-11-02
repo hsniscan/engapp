@@ -15,6 +15,8 @@ export interface TabHeaderProps {
   back?: { to: string; label: string };
   /** Keep the h1 for screen readers but do not show it (immersive or self-titled screens). */
   hideTitle?: boolean;
+  /** h1 on a page (default); h2 only for previews/galleries that already have an h1. */
+  headingLevel?: 'h1' | 'h2';
   className?: string;
 }
 
@@ -28,6 +30,7 @@ export function TabHeader({
   actions,
   back,
   hideTitle,
+  headingLevel: H = 'h1',
   className,
 }: TabHeaderProps) {
   return (
@@ -44,7 +47,7 @@ export function TabHeader({
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
           {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
-          <h1 className="text-page font-semibold text-fg md:text-page-lg">{title}</h1>
+          <H className="text-page font-semibold text-fg md:text-page-lg">{title}</H>
           {description && <p className="max-w-prose text-ui text-fg-muted">{description}</p>}
         </div>
         {actions && <div className="-mr-2 flex shrink-0 items-center gap-1">{actions}</div>}

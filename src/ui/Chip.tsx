@@ -53,17 +53,20 @@ export interface ChipRowProps {
   /** Accessible name of the group. */
   label: string;
   children: ReactNode;
+  /** Bleed to the screen edges on phones (default). false inside a padded card. */
+  bleed?: boolean;
   className?: string;
 }
 
 /** One row of chips that scrolls sideways on phones (never wraps, never truncates a chip). */
-export function ChipRow({ label, children, className }: ChipRowProps) {
+export function ChipRow({ label, children, bleed = true, className }: ChipRowProps) {
   return (
     <div
       role="group"
       aria-label={label}
       className={cn(
-        'no-scrollbar -mx-4 flex snap-x gap-2 overflow-x-auto px-4 py-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0',
+        'no-scrollbar flex snap-x gap-2 overflow-x-auto py-1 sm:flex-wrap sm:overflow-visible',
+        bleed && '-mx-4 px-4 sm:mx-0 sm:px-0',
         className,
       )}
     >
