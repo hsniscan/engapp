@@ -46,13 +46,21 @@ import {
 import { readerPath, type ReaderText, type TextFeedback } from '@/domain/texts';
 import type { Id } from '@/domain/types';
 import { storyEncounterNotes } from '@/domain/story';
+import { possessiveAccusativeSuffix } from '@/domain/trSuffix';
 import { useAppSettings } from '@/features/settings/useAppSettings';
 import { StoryEnd, StoryGlossary } from '@/features/story/StoryParts';
 import { Button, cn, Dialog, EmptyState, Icon, IconButton, Skeleton, toast } from '@/ui';
 import { MARK_CLASS } from './marks';
 import { NewWordsSheet, type NewWordItem } from './NewWordsSheet';
 import { ReaderBody, type Selection } from './ReaderBody';
-import { AlwaysGuessSwitch, DifficultyPicker, HighlightSwitch } from './ReadingSettings';
+import {
+  AlwaysGuessSwitch,
+  DifficultyPicker,
+  HighlightSwitch,
+  ListenSpeedPicker,
+  TextSizePicker,
+} from './ReadingSettings';
+import { TEXT_SCALE, useReaderPrefs } from './readerPrefs';
 import { useListenAlong } from './useListenAlong';
 import { WordSheet, type WordPick } from './WordSheet';
 
@@ -81,25 +89,54 @@ export function ReaderPage() {
  * library text, made when needed, replaces the address. Otherwise "Metin bulunamadı".
  */
 function LibraryRedirect({ id }: { id: string }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
-  const [missing, setMissing] = useState(false);
+  const [state, setState] = useState<'opening' | 'missing' | 'offline'>('opening');
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let live = true;
     openGradedById(id)
       .then((rowId) => {
         if (!live) return;
         if (rowId) void navigate(readerPath(rowId), { replace: true });
-        else setMissing(true);
+        else setState('missing');
       })
       .catch((e: unknown) => {
-        void logError(e, 'reader.openLibrary');
-        if (live) setMissing(true);
+        if (!live) return;
+        // Not on this device yet and no internet: say so (no reading row is made, B5).
+        if (e instanceof GradedUnavailableError && e.reason === 'offline') return setState('offline');
+        if (!(e instanceof GradedUnavailableError)) void logError(e, 'reader.openLibrary');
+        setState('missing');
       });
     return () => {
       live = false;
     };
-  }, [id, navigate]);
-  return missing ? <NotFound /> : <ReaderSkeleton />;
+  }, [id, navigate, attempt]);
+  if (state === 'missing') return <NotFound />;
+  if (state === 'opening') return <ReaderSkeleton />;
+  return (
+    <>
+      <TopBar title="" />
+      <div className="mx-auto max-w-xl px-5 pt-10">
+        <EmptyState
+          icon="info"
+          title={t('reader.graded.unavailableTitle')}
+          description={t('reader.graded.offline')}
+          action={
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setState('opening');
+                setAttempt((n) => n + 1);
+              }}
+            >
+              {t('reader.graded.retry')}
+            </Button>
+          }
+        />
+      </div>
+    </>
+  );
 }
 
 /** The knowledge model, reloaded when a card, an answer or a "Biliyorum" word changes it. */
@@ -319,12 +356,14 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
     [sentenceRows],
   );
   const voice = settings?.voice ?? 'en-US';
+  const [prefs, setPrefs] = useReaderPrefs();
   const listen = useListenAlong(
     sentences,
     voice,
     text.kind === 'graded' || text.kind === 'story',
     undefined,
     clips,
+    Number(prefs.rate),
   );
   const highlight = settings?.reader_highlight !== false;
   const alwaysGuess = settings?.reader_always_guess === true;
@@ -367,19 +406,33 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
   // ---- position: followed while the text is on screen (scrolling, resuming, listening), so
   // leaving saves where the user was, not what a screen being taken down happens to show.
   const offset = useRef(text.progress_offset);
+  // After resuming, the position stays the resumed sentence until the user scrolls: the
+  // programmatic scroll would otherwise record the sentence half under the top bar, and each
+  // opening would move the resume point back (B9).
+  const pinned = useRef(false);
   useEffect(() => {
     let frame = 0;
     const measure = () => {
       frame = 0;
+      if (pinned.current) return;
       const at = visibleOffset(tokens);
       if (at !== null) offset.current = at;
     };
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(measure);
     };
+    const unpin = () => {
+      pinned.current = false;
+    };
     window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('wheel', unpin, { passive: true });
+    window.addEventListener('touchstart', unpin, { passive: true });
+    window.addEventListener('keydown', unpin);
     return () => {
       window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('wheel', unpin);
+      window.removeEventListener('touchstart', unpin);
+      window.removeEventListener('keydown', unpin);
       if (frame) cancelAnimationFrame(frame);
     };
   }, [tokens]);
@@ -449,11 +502,13 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
     document.getElementById(`reader-s-${s}`)?.scrollIntoView({ block: 'start' });
     window.scrollBy(0, -80);
     offset.current = tokens.sentences[s]?.start ?? resumeAt;
+    pinned.current = true;
   }, [resumed, resumeAt, tokens]);
 
-  // ---- listen-along follows the sentence.
+  // ---- listen-along follows the sentence (and is where the user is).
   useEffect(() => {
     if (speaking === null) return;
+    pinned.current = false;
     document
       .getElementById(`reader-s-${speaking}`)
       ?.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -607,7 +662,7 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
               className="inline-flex h-7 items-center rounded-full bg-surface-sunken px-3 font-medium text-fg"
               data-testid="reader-coverage"
             >
-              {t('reader.coverage', { pct: coverage })}
+              {t('reader.coverage', { pct: coverage, suffix: possessiveAccusativeSuffix(coverage) })}
             </span>
           ) : (
             <Skeleton className="h-7 w-48 rounded-full" />
@@ -641,6 +696,7 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
             highlight={highlight}
             selection={selection}
             speaking={listen.current}
+            fontScale={TEXT_SCALE[prefs.size]}
             onWord={onWord}
             targets={targets}
             translations={translations}
@@ -658,7 +714,13 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
             data-testid="reader-summary"
           >
             <h2 id="reader-summary" className="text-[0.9375rem] font-medium text-fg">
-              {t('reader.summary.line', { count: newWords.length, added: addedCount })}
+              {addedCount > 0
+                ? t('reader.summary.line', {
+                    count: newWords.length,
+                    added: addedCount,
+                    suffix: possessiveAccusativeSuffix(addedCount),
+                  })
+                : t('reader.summary.lineNone', { count: newWords.length })}
             </h2>
             {toAdd.length > 0 && (
               <Button
@@ -715,6 +777,12 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
         alwaysGuess={alwaysGuess}
         onClose={() => setSelection(null)}
         onExtend={extend}
+        onListenHere={() => {
+          if (!selection) return;
+          const from = tokens.tokens[selection.first]!.sentence;
+          setSelection(null);
+          if (!listen.start(from)) toast({ title: t('reader.listen.noVoice'), tone: 'danger' });
+        }}
       />
 
       <NewWordsSheet open={newWordsOpen} onOpenChange={setNewWordsOpen} words={toAdd} glosses={textGlosses} />
@@ -726,6 +794,8 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
         title={t('reader.options.title')}
       >
         <div className="flex flex-col gap-5 pb-1">
+          <TextSizePicker value={prefs.size} onChange={(size) => setPrefs({ size })} />
+          <ListenSpeedPicker value={prefs.rate} onChange={(rate) => setPrefs({ rate })} />
           <HighlightSwitch />
           <Legend highlight={highlight} />
           <AlwaysGuessSwitch />

@@ -9,6 +9,7 @@ import { DIFFICULTY_BANDS, READING_DIFFICULTIES, type ReadingDifficulty } from '
 import { SettingsRow, SettingsSection } from '@/features/settings/SettingsLayout';
 import { useAppSettings } from '@/features/settings/useAppSettings';
 import { SegmentedControl, Skeleton, Switch } from '@/ui';
+import { LISTEN_RATES, type ListenRate, TEXT_SIZES, type TextSize } from './readerPrefs';
 
 const pct = (x: number) => Math.round(x * 100);
 
@@ -87,5 +88,31 @@ export function ReadingSettingsSection() {
         <AlwaysGuessSwitch />
       </SettingsRow>
     </SettingsSection>
+  );
+}
+
+// ---- per-device reader preferences (readerPrefs.ts): listening speed and text size.
+
+export function ListenSpeedPicker({ value, onChange }: { value: ListenRate; onChange: (v: ListenRate) => void }) {
+  const { t } = useTranslation();
+  return (
+    <SegmentedControl<ListenRate>
+      legend={t('reader.speed.label')}
+      value={value}
+      onValueChange={onChange}
+      options={LISTEN_RATES.map((r) => ({ value: r, label: t(`reader.speed.r${r.replace('.', '')}` as 'reader.speed.r1') }))}
+    />
+  );
+}
+
+export function TextSizePicker({ value, onChange }: { value: TextSize; onChange: (v: TextSize) => void }) {
+  const { t } = useTranslation();
+  return (
+    <SegmentedControl<TextSize>
+      legend={t('reader.textSize.label')}
+      value={value}
+      onValueChange={onChange}
+      options={TEXT_SIZES.map((s) => ({ value: s, label: t(`reader.textSize.${s}`) }))}
+    />
   );
 }

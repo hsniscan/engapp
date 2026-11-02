@@ -20,6 +20,7 @@ import { specHref, specTitle } from '@/features/decks/suggested';
 import { TodayStoryRow } from '@/features/story/TodayStoryRow';
 import { Button, buttonClasses, cn, Icon, type IconName, IconButton, toast } from '@/ui';
 import type { FeedItem } from './useDiscoverFeed';
+import { useTextKindLabel } from '@/features/reader/kindLabel';
 
 
 const shell = 'flex flex-col gap-3 rounded-[20px] border border-border bg-surface p-[18px]';
@@ -64,6 +65,7 @@ const textPct = (x: ReaderText) =>
 
 function ContinueCard({ text }: { text: ReaderText }) {
   const { t } = useTranslation();
+  const kindLabel = useTextKindLabel();
   const pct = textPct(text);
   return (
     <section aria-labelledby="kf-continue" className={shell} data-testid="kesfet-continue">
@@ -78,7 +80,7 @@ function ContinueCard({ text }: { text: ReaderText }) {
           <span className="block h-full rounded-full bg-accent" style={{ width: `${Math.max(pct, 2)}%` }} />
         </span>
         <span className="text-[0.8125rem] text-fg-muted">
-          {t(`reader.kind.${text.kind}`)} ·{' '}
+          {kindLabel(text)} ·{' '}
           {pct > 0 ? t('discover.continue.pct', { pct }) : t('discover.continue.start')}
         </span>
       </div>
@@ -160,7 +162,15 @@ function GradedRows({ texts, label }: { texts: ScoredGradedText[]; label: string
   );
 }
 
-function SuggestionsCard({ texts, difficulty }: { texts: ScoredGradedText[]; difficulty: string }) {
+function SuggestionsCard({
+  texts,
+  difficulty,
+  stretch = false,
+}: {
+  texts: ScoredGradedText[];
+  difficulty: string;
+  stretch?: boolean;
+}) {
   const { t } = useTranslation();
   return (
     <section aria-labelledby="kf-suggest" className={shell}>
@@ -168,7 +178,7 @@ function SuggestionsCard({ texts, difficulty }: { texts: ScoredGradedText[]; dif
         {t('discover.suggestions.eyebrow')}
       </Eyebrow>
       <p className="-mt-1 text-[0.8125rem] text-fg-muted">
-        {t('discover.suggestions.body', {
+        {t(stretch ? 'discover.suggestions.stretch' : 'discover.suggestions.body', {
           difficulty: t(`gradedLibrary.difficulty.${difficulty as 'dengeli'}`, { defaultValue: difficulty }),
         })}
       </p>
@@ -214,6 +224,7 @@ function CreateTextCard() {
 
 function MyTextsCard({ texts, total }: { texts: ReaderText[]; total: number }) {
   const { t } = useTranslation();
+  const kindLabel = useTextKindLabel();
   return (
     <section aria-labelledby="kf-mine" className={shell}>
       <Eyebrow id="kf-mine" icon="file" more="okuma">
@@ -234,7 +245,7 @@ function MyTextsCard({ texts, total }: { texts: ReaderText[]; total: number }) {
                     {x.title}
                   </span>
                   <span className="text-[0.8125rem] text-fg-muted">
-                    {t(`reader.kind.${x.kind}`)} ·{' '}
+                    {kindLabel(x)} ·{' '}
                     {x.finished_at !== null
                       ? t('reader.list.finished')
                       : pct > 0
@@ -476,7 +487,7 @@ export function FeedCard({ item, level, idx }: { item: FeedItem; level: CefrLeve
     case 'story':
       return <StoryCard />;
     case 'textSuggestions':
-      return <SuggestionsCard texts={item.texts} difficulty={item.difficulty} />;
+      return <SuggestionsCard texts={item.texts} difficulty={item.difficulty} stretch={item.stretch} />;
     case 'createText':
       return <CreateTextCard />;
     case 'newTexts':

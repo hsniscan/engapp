@@ -2913,7 +2913,8 @@
     "suggestions": {
       "eyebrow": "Texts for you",
       "body": "{{difficulty}} difficulty, chosen by the words you know",
-      "label": "Texts for you"
+      "label": "Texts for you",
+      "stretch": "Nothing at {{difficulty}} difficulty yet; these are the closest, a little challenging"
     },
     "createText": {
       "eyebrow": "A text of your own",
@@ -3455,9 +3456,11 @@
       "again": "Read again"
     },
     "summary": {
-      "line_one": "You met {{count}} new word in this text · added {{added}}",
-      "line_other": "You met {{count}} new words in this text · added {{added}}",
-      "cta": "New words in this text"
+      "line_one": "You met {{count}} new word in this text · you added {{added}}",
+      "line_other": "You met {{count}} new words in this text · you added {{added}}",
+      "cta": "New words in this text",
+      "lineNone_one": "You met {{count}} new word in this text · none added yet",
+      "lineNone_other": "You met {{count}} new words in this text · none added yet"
     },
     "newWords": {
       "title": "New words in this text",
@@ -3498,7 +3501,11 @@
         "offline": "You are offline and this word is not in the dictionary on this device.",
         "signIn": "This word is not in the dictionary on this device. Sign in with Google to look it up in the shared dictionary.",
         "notFound": "No meaning was found for this word."
-      }
+      },
+      "markKnown": "I know it, don't mark it",
+      "knownMarked": "\"{{term}}\" added to the words you know",
+      "knownFailed": "Could not be saved. Try again.",
+      "listenHere": "Listen from here"
     },
     "stage": {
       "new": "New card",
@@ -3524,8 +3531,12 @@
     },
     "encounters": {
       "none": "You have not met this word in a card or a text yet.",
-      "line_one": "You have seen this word {{count}} time: {{cards}} in cards, {{texts}} in texts",
-      "line_other": "You have seen this word {{count}} times: {{cards}} in cards, {{texts}} in texts"
+      "line_one": "You have seen this word {{count}} time: {{cards}} in cards, in {{texts}} texts",
+      "line_other": "You have seen this word {{count}} times: {{cards}} in cards, in {{texts}} texts",
+      "cardsOnly_one": "You have seen this word {{count}} time in cards",
+      "cardsOnly_other": "You have seen this word {{count}} times in cards",
+      "textsOnly_one": "You have seen this word in {{count}} text",
+      "textsOnly_other": "You have seen this word in {{count}} texts"
     },
     "difficulty": {
       "label": "Reading difficulty",
@@ -3552,7 +3563,9 @@
       "ocr": "Photo",
       "subtitle": "Subtitles",
       "graded": "Library",
-      "story": "Today's story"
+      "story": "Today's story",
+      "picked": "Text from my words",
+      "pastStory": "Story · {{date}}"
     },
     "list": {
       "title": "My texts",
@@ -3581,6 +3594,18 @@
     },
     "open": {
       "defaultTitle": "My text"
+    },
+    "speed": {
+      "label": "Listening speed",
+      "r075": "Slow",
+      "r1": "Normal",
+      "r125": "Fast"
+    },
+    "textSize": {
+      "label": "Text size",
+      "s": "Small",
+      "m": "Medium",
+      "l": "Large"
     }
   },
   "story": {

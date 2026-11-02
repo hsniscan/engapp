@@ -32,7 +32,7 @@ import { logError } from './errorLog';
 import { loadKnowledge } from './knowledge';
 import { getMeta, setMeta } from './meta';
 import { getSettings } from './settings';
-import { saveText } from './texts';
+import { MAX_TITLE_CHARS } from './texts';
 import { writeTx } from './writer';
 
 export interface GradedSummary {
@@ -257,20 +257,42 @@ export async function setGradedTextBody(
 
 /**
  * The reading row for a library text: the user's existing one (resume point kept), else a new
- * `texts` row (kind 'graded'). The sentences are fetched now when they can be, so the text reads
- * offline from here on, and the row gets the text's plain body (decision 0054). Returns the row
- * id for readerPath.
+ * `texts` row (kind 'graded'). The sentences are fetched first, so the text reads offline from
+ * here on and the row gets the text's plain body (decision 0054). A text that is not on this
+ * device and cannot be fetched (offline) throws GradedUnavailableError and makes no row: an
+ * empty row would hide the text from the library and come back as "Devam et" (v0.5.2, B5).
+ * Find-or-create is one transaction, so a double tap makes one row. Returns the row id.
  */
 export async function openGradedText(entry: { id: string; title: string }, now: Millis = Date.now()): Promise<Id> {
-  const existing = (await gradedReadingRows()).get(entry.id);
-  const id = existing?.id ?? (await saveText({ kind: 'graded', graded_id: entry.id, title: entry.title, body: '' }, now));
+  let plain: string | null = null;
   try {
-    const body = await getGradedBody(entry.id, now);
-    await setGradedTextBody(id, gradedReaderBody(body.sentences).body, now);
+    plain = gradedReaderBody((await getGradedBody(entry.id, now)).sentences).body;
   } catch (e) {
-    // Offline before the first open: the reader asks again when it shows the text.
     if (!(e instanceof GradedUnavailableError)) void logError(e, 'library.open');
+    // Read before: the stored row still opens (without its Turkish and audio).
+    const existing = (await gradedReadingRows()).get(entry.id);
+    if (existing) return existing.id;
+    throw e;
   }
+  const id = await writeTx([db.texts], now, async (w) => {
+    const existing = (await gradedReadingRows()).get(entry.id);
+    if (existing) return existing.id;
+    const row: ReaderText = {
+      ...w.base(),
+      kind: 'graded',
+      title: entry.title.trim().slice(0, MAX_TITLE_CHARS),
+      body: plain ?? '',
+      source_url: null,
+      graded_id: entry.id,
+      progress_offset: 0,
+      read_ms: 0,
+      finished_at: null,
+      feedback: null,
+    };
+    await w.put('texts', row);
+    return row.id;
+  });
+  if (plain !== null) await setGradedTextBody(id, plain, now);
   return id;
 }
 
@@ -327,7 +349,13 @@ export async function scoreLibrary(difficulty?: ReadingDifficulty): Promise<Scor
   ]);
   const interests = new Set(settings.interests ?? []);
   const texts = entries.map((entry) =>
-    scoreGradedText(entry, { pKnown: knowledge.pKnown, difficulty: chosen, interests, topicInterests }),
+    scoreGradedText(entry, {
+      pKnown: knowledge.pKnown,
+      lemmatize: knowledge.lemmatize,
+      difficulty: chosen,
+      interests,
+      topicInterests,
+    }),
   );
   const finished = new Set<string>();
   const started = new Set<string>();

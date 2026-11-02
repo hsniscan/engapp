@@ -34,6 +34,8 @@ export function playGradedClip(
   onDone: () => void,
   fallback: () => boolean,
   urls: readonly string[] = gradedClipUrls(key),
+  /** Listening speed, 1 = normal (the recording keeps its pitch). */
+  rate = 1,
 ): boolean {
   if (typeof Audio === 'undefined' || urls.length === 0) return fallback();
   const id = ++seq;
@@ -58,6 +60,7 @@ export function playGradedClip(
     audio.onended = finish;
     audio.onerror = () => tryAt(i + 1);
     audio.src = url;
+    audio.playbackRate = rate;
     const playing = audio.play() as Promise<void> | undefined;
     playing?.catch(() => {
       if (!done) tryAt(i + 1);

@@ -2913,7 +2913,8 @@
     "suggestions": {
       "eyebrow": "Sana uygun metinler",
       "body": "{{difficulty}} zorlukta, bildiğin kelimelere göre seçildi",
-      "label": "Sana uygun metinler"
+      "label": "Sana uygun metinler",
+      "stretch": "{{difficulty}} zorlukta metin yok; bunlar sana en yakın, biraz zorlayıcı olanlar"
     },
     "createText": {
       "eyebrow": "Sana özel metin",
@@ -3408,7 +3409,7 @@
   },
   "reader": {
     "close": "Okuyucuyu kapat",
-    "coverage": "Bu metnin %{{pct}}'sını biliyorsun",
+    "coverage": "Bu metnin %{{pct}}'{{suffix}} biliyorsun",
     "words_one": "{{count}} kelime",
     "words_other": "{{count}} kelime",
     "readMinutes_one": "{{count}} dk okudun",
@@ -3455,9 +3456,11 @@
       "again": "Yeniden oku"
     },
     "summary": {
-      "line_one": "Bu metinde {{count}} yeni kelime gördün · {{added}} tanesini ekledin",
-      "line_other": "Bu metinde {{count}} yeni kelime gördün · {{added}} tanesini ekledin",
-      "cta": "Bu metindeki yeni kelimeler"
+      "line_one": "Bu metinde {{count}} yeni kelime gördün · {{added}}'{{suffix}} ekledin",
+      "line_other": "Bu metinde {{count}} yeni kelime gördün · {{added}}'{{suffix}} ekledin",
+      "cta": "Bu metindeki yeni kelimeler",
+      "lineNone_one": "Bu metinde {{count}} yeni kelime gördün · henüz eklemedin",
+      "lineNone_other": "Bu metinde {{count}} yeni kelime gördün · henüz eklemedin"
     },
     "newWords": {
       "title": "Bu metindeki yeni kelimeler",
@@ -3498,7 +3501,11 @@
         "offline": "İnternet yok ve bu kelime cihazdaki sözlükte bulunamadı.",
         "signIn": "Bu kelime cihazdaki sözlükte yok. Ortak sözlüğe bakmak için Google ile giriş yap.",
         "notFound": "Bu kelimenin anlamı bulunamadı."
-      }
+      },
+      "markKnown": "Biliyorum, işaretleme",
+      "knownMarked": "“{{term}}” bildiğin kelimelere eklendi",
+      "knownFailed": "Kaydedilemedi. Tekrar dene.",
+      "listenHere": "Buradan dinle"
     },
     "stage": {
       "new": "Yeni kart",
@@ -3524,8 +3531,12 @@
     },
     "encounters": {
       "none": "Bu kelimeyle henüz bir kartta ya da metinde karşılaşmadın.",
-      "line_one": "Bu kelimeyi {{count}} kez gördün: {{cards}} kartta, {{texts}} metinde",
-      "line_other": "Bu kelimeyi {{count}} kez gördün: {{cards}} kartta, {{texts}} metinde"
+      "line_one": "Bu kelimeyi {{count}} kez gördün: {{cards}} kez kartta, {{texts}} metinde",
+      "line_other": "Bu kelimeyi {{count}} kez gördün: {{cards}} kez kartta, {{texts}} metinde",
+      "cardsOnly_one": "Bu kelimeyi {{count}} kez kartta gördün",
+      "cardsOnly_other": "Bu kelimeyi {{count}} kez kartta gördün",
+      "textsOnly_one": "Bu kelimeyi {{count}} metinde gördün",
+      "textsOnly_other": "Bu kelimeyi {{count}} metinde gördün"
     },
     "difficulty": {
       "label": "Okuma zorluğu",
@@ -3552,7 +3563,9 @@
       "ocr": "Fotoğraf",
       "subtitle": "Altyazı",
       "graded": "Kitaplık",
-      "story": "Bugünün hikâyesi"
+      "story": "Bugünün hikâyesi",
+      "picked": "Kelimelerimle metin",
+      "pastStory": "Hikâye · {{date}}"
     },
     "list": {
       "title": "Metinlerim",
@@ -3581,6 +3594,18 @@
     },
     "open": {
       "defaultTitle": "Metnim"
+    },
+    "speed": {
+      "label": "Dinleme hızı",
+      "r075": "Yavaş",
+      "r1": "Normal",
+      "r125": "Hızlı"
+    },
+    "textSize": {
+      "label": "Yazı boyutu",
+      "s": "Küçük",
+      "m": "Orta",
+      "l": "Büyük"
     }
   },
   "story": {

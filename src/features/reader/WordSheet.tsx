@@ -12,9 +12,11 @@ import {
   addNoteWithSenses,
   logError,
   lookupReaderWord,
+  markManyKnown,
   type ReaderMeaning,
   type ReaderWordInfo,
   type TextGloss,
+  unmarkKnownKeys,
 } from '@/data';
 import type { WordStage } from '@/domain/stages';
 import type { Id } from '@/domain/types';
@@ -55,6 +57,8 @@ interface Props {
   alwaysGuess?: boolean;
   onClose: () => void;
   onExtend: (side: 'before' | 'after') => void;
+  /** "Buradan dinle": listen-along from this sentence. */
+  onListenHere?: () => void;
 }
 
 type Lookup =
@@ -123,7 +127,15 @@ function useWordLookup(pick: WordPick | null, glosses?: readonly TextGloss[]): L
   return state.key === key ? state.lookup : { status: 'loading' };
 }
 
-export function WordSheet({ pick, glosses, voice, alwaysGuess = false, onClose, onExtend }: Props) {
+export function WordSheet({
+  pick,
+  glosses,
+  voice,
+  alwaysGuess = false,
+  onClose,
+  onExtend,
+  onListenHere,
+}: Props) {
   const { t } = useTranslation();
   return (
     <Dialog
@@ -147,6 +159,8 @@ export function WordSheet({ pick, glosses, voice, alwaysGuess = false, onClose, 
           voice={voice}
           guessFirst={alwaysGuess || pick.noteId === null}
           onExtend={onExtend}
+          onListenHere={onListenHere}
+          onDone={onClose}
         />
       )}
     </Dialog>
@@ -159,12 +173,16 @@ function SheetBody({
   voice,
   guessFirst,
   onExtend,
+  onListenHere,
+  onDone,
 }: {
   pick: WordPick;
   glosses?: readonly TextGloss[];
   voice: VoicePref;
   guessFirst: boolean;
   onExtend: Props['onExtend'];
+  onListenHere?: () => void;
+  onDone: () => void;
 }) {
   const { t } = useTranslation();
   const lookup = useWordLookup(pick, glosses);
@@ -176,6 +194,26 @@ function SheetBody({
   const speaker = usePronunciationBusy();
   const listId = useId();
   const noteId = pick.noteId ?? addedId ?? (lookup.status === 'ready' ? lookup.info.noteId : null);
+
+  // "Biliyorum, işaretleme" (v0.5.2): a word the user knows, or a name, leaves the marks and
+  // the coverage counts it as known. No card is made; "Geri al" takes it back.
+  const markKnownWord = async () => {
+    try {
+      const added = await markManyKnown([pick.lemma]);
+      onDone();
+      toast({
+        title: t('reader.word.knownMarked', { term: pick.lemma }),
+        tone: 'success',
+        action: {
+          label: t('library.undo'),
+          onClick: () => void unmarkKnownKeys(added).catch((e: unknown) => logError(e, 'reader.knownUndo')),
+        },
+      });
+    } catch (e) {
+      void logError(e, 'reader.markKnown');
+      toast({ title: t('reader.word.knownFailed'), tone: 'danger' });
+    }
+  };
 
   const add = async () => {
     if (lookup.status !== 'ready') return;
@@ -222,7 +260,8 @@ function SheetBody({
           className={speaker.busy ? 'animate-pulse' : undefined}
           onClick={() =>
             speaker.run(
-              () => void playPronunciation(pick.phrase ? pick.written : pick.lemma, voice),
+              // The form the user tapped ("went"), as the title shows it, not the lemma (B12).
+              () => void playPronunciation(pick.written, voice),
             )
           }
         />
@@ -239,6 +278,26 @@ function SheetBody({
           )}
         </div>
       </div>
+
+      {(onListenHere || !noteId) && (
+        <div className="-mt-2 flex flex-wrap gap-1">
+          {onListenHere && (
+            <Button variant="ghost" size="sm" onClick={onListenHere} data-testid="reader-listen-here">
+              {t('reader.word.listenHere')}
+            </Button>
+          )}
+          {!noteId && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => void markKnownWord()}
+              data-testid="reader-mark-known"
+            >
+              {t('reader.word.markKnown')}
+            </Button>
+          )}
+        </div>
+      )}
 
       <blockquote
         lang="en"

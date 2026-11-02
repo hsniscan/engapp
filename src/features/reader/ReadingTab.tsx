@@ -12,6 +12,7 @@ import { ConfirmDialog } from '@/features/cards/ConfirmDialog';
 import { openAddSheet } from '@/features/add/addSheetStore';
 import { GradedLibraryList } from '@/features/library/GradedLibraryList';
 import { Button, IconButton, Skeleton, toast } from '@/ui';
+import { useTextKindLabel } from './kindLabel';
 
 const progressPct = (t: ReaderText) =>
   t.finished_at !== null
@@ -22,6 +23,7 @@ const progressPct = (t: ReaderText) =>
 
 export function ReadingTab() {
   const { t } = useTranslation();
+  const kindLabel = useTextKindLabel();
   const texts = useLiveQuery(() => listTexts(), []);
   const [toDelete, setToDelete] = useState<ReaderText | null>(null);
 
@@ -75,7 +77,7 @@ export function ReadingTab() {
                       {text.title}
                     </span>
                     <span className="flex items-center gap-2 text-[0.8125rem] text-fg-muted">
-                      <span>{t(`reader.kind.${text.kind}`)}</span>
+                      <span>{kindLabel(text)}</span>
                       <span aria-hidden="true">·</span>
                       <span>
                         {text.finished_at !== null
