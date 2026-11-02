@@ -46,6 +46,18 @@ import { loadSupabase } from '@/lib/supabase';
 
 export const MAX_PUSH_BATCH = 100;
 export const MAX_PULL_PAGE = 500;
+/**
+ * Byte budget of one pull page (sync_pull_v4, decision 0060): about 1 MB of JSON, so a page
+ * of long reading texts parses quickly on a phone and never times out on the server.
+ */
+export const MAX_PULL_BYTES = 1_048_576;
+
+/**
+ * Local copies of text bodies by id (the reader's `texts` table). sync_pull_v4 leaves out the
+ * body of a text the device already has; the transport fills it from here, or from the server
+ * when the device has none.
+ */
+export type LocalTextBodies = (ids: string[]) => Promise<Map<string, string>>;
 
 export interface PushItem {
   table: OutboxTable;
@@ -142,8 +154,9 @@ export interface PullResult {
   has_more: boolean;
   full_resync: boolean;
   /**
-   * The pull function that answered: 3 = sync_pull_v3 (the server stores practice_logs),
-   * 2 = sync_pull_v2, 1 = sync_pull. Older backends are used until the migrations land.
+   * The pull function that answered: 3 = sync_pull_v3 or v4 (the server stores
+   * practice_logs), 2 = sync_pull_v2, 1 = sync_pull. Older backends are used until the
+   * migrations land.
    */
   version: 1 | 2 | 3;
 }
@@ -240,15 +253,22 @@ export async function pullChanges(
   limit = MAX_PULL_PAGE,
   c?: SupabaseClient | null,
   fromSeq?: number,
+  localBodies?: LocalTextBodies,
 ): Promise<PullResult> {
   const cl = await client(c);
   const p_limit = Math.min(limit, MAX_PULL_PAGE);
   let env: z.infer<typeof pullEnvelope> | null = null;
   let version: PullResult['version'] = 1;
   if (fromSeq !== undefined) {
-    for (const [fn, v] of [['sync_pull_v3', 3], ['sync_pull_v2', 2]] as const) {
+    // sync_pull_v4 (decision 0060): pages bounded by bytes too, unchanged text bodies left out.
+    const tries = [
+      ['sync_pull_v4', 3, { p_max_bytes: MAX_PULL_BYTES }],
+      ['sync_pull_v3', 3, {}],
+      ['sync_pull_v2', 2, {}],
+    ] as const;
+    for (const [fn, v, extra] of tries) {
       try {
-        env = await rpc(cl, fn, { p_since: sinceSeq, p_limit, p_from: fromSeq }, pullEnvelope);
+        env = await rpc(cl, fn, { p_since: sinceSeq, p_limit, p_from: fromSeq, ...extra }, pullEnvelope);
         version = v;
         break;
       } catch (e) {
@@ -257,6 +277,7 @@ export async function pullChanges(
     }
   }
   env ??= await rpc(cl, 'sync_pull', { p_since: sinceSeq, p_limit }, pullEnvelope);
+  await fillTextBodies(cl, env.rows, localBodies);
   const rows: PulledRow[] = [];
   const invalid: PullResult['invalid'] = [];
   for (const r of env.rows) {
@@ -278,6 +299,53 @@ export async function pullChanges(
     full_resync: env.full_resync,
     version,
   };
+}
+
+const encoder = new TextEncoder();
+
+/**
+ * user_texts rows that came without `body` (the server's copy did not change since this
+ * device's cursor) get the device's own copy when its UTF-8 length matches `body_bytes`, or
+ * else the server's body, fetched by id. A row whose body cannot be found stays without one
+ * and fails validation (logged as invalid, the cursor moves on, as for any invalid row).
+ */
+export async function fillTextBodies(
+  cl: SupabaseClient,
+  rows: { table: string; row: Record<string, unknown> }[],
+  localBodies?: LocalTextBodies,
+): Promise<void> {
+  const slim = rows.filter((r) => r.table === 'user_texts' && typeof r.row.body !== 'string');
+  if (slim.length === 0) return;
+  const ids = slim.map((r) => String(r.row.id));
+  const local = localBodies ? await localBodies(ids) : new Map<string, string>();
+  const missing: string[] = [];
+  for (const r of slim) {
+    const body = local.get(String(r.row.id));
+    if (body !== undefined && encoder.encode(body).length === Number(r.row.body_bytes)) {
+      r.row.body = body;
+    } else {
+      missing.push(String(r.row.id));
+    }
+    delete r.row.body_bytes;
+  }
+  if (missing.length === 0) return;
+  const fetched = new Map<string, string>();
+  for (let i = 0; i < missing.length; i += 50) {
+    let res: { data: unknown; error: { message: string } | null };
+    try {
+      res = await cl.from('user_texts').select('id, body').in('id', missing.slice(i, i + 50));
+    } catch (e) {
+      throw new SyncApiError('network', e instanceof Error ? e.message : String(e));
+    }
+    if (res.error) throw new SyncApiError('server', res.error.message);
+    const parsed = z.array(z.object({ id: z.string(), body: z.string() })).safeParse(res.data);
+    if (!parsed.success) throw new SyncApiError('invalid_response', parsed.error.message);
+    for (const x of parsed.data) fetched.set(x.id, x.body);
+  }
+  for (const r of slim) {
+    const body = fetched.get(String(r.row.id));
+    if (body !== undefined) r.row.body = body;
+  }
 }
 
 /**

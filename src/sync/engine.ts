@@ -67,6 +67,24 @@ import {
 import type { LexiconSense } from '@/domain/types';
 
 export const SYNC_INTERVAL_MS = 60_000;
+/** Longest gap between background polls of a visible app that has nothing to sync. */
+export const SYNC_IDLE_MAX_MS = 10 * 60_000;
+
+/**
+ * Delay before the next background poll (decision 0060): 60 s after a run that moved
+ * something, then doubling with every run in a row that pushed and pulled nothing, up to
+ * 10 minutes. Local changes, coming back to the app and going online still sync at once.
+ */
+export function nextPollDelayMs(idleRuns: number): number {
+  return Math.min(SYNC_IDLE_MAX_MS, SYNC_INTERVAL_MS * 2 ** Math.max(0, Math.min(idleRuns, 10)));
+}
+
+/** A run that changed nothing on either side (counts towards the idle backoff). */
+export function isIdleOutcome(o: SyncOutcome): boolean {
+  if (!o.ok) return o.reason !== 'error';
+  const r = o.report;
+  return r.pushed === 0 && r.pulled === 0 && r.lexicon === 0 && r.removed === 0 && !r.fullResync;
+}
 /** Debounce between a local change and the push it triggers. */
 export const CHANGE_DEBOUNCE_MS = 4_000;
 export const LAST_SYNC_KEY = 'last_sync_at';
@@ -110,9 +128,17 @@ export const LATE_SYNC_TABLES: readonly OutboxTable[] = [
 /** While rows of an unconfirmed table wait, the registry is asked at most this often. */
 export const REGISTRY_RECHECK_MS = 10 * 60_000;
 
+/** The device's own copies of text bodies (sync_pull_v4 leaves unchanged bodies out). */
+async function localTextBodies(ids: string[]): Promise<Map<string, string>> {
+  const rows = await db.texts.bulkGet(ids);
+  const out = new Map<string, string>();
+  for (const r of rows) if (r && typeof r.body === 'string') out.set(r.id, r.body);
+  return out;
+}
+
 export const supabaseTransport: SyncTransport = {
   pushBatch: (items) => pushBatch(items),
-  pullChanges: (since, limit, from) => pullChanges(since, limit, undefined, from),
+  pullChanges: (since, limit, from) => pullChanges(since, limit, undefined, from, localTextBodies),
   pullLexicon: (since, limit) => pullLexicon(since, limit),
   getLexiconSenses: (ids) => getLexiconSenses(ids),
   pullLexiconExamples: (since, limit) => pullLexiconExamples(since, limit),
@@ -191,7 +217,7 @@ export async function pushOutbox(t: SyncTransport, report: SyncReport, opts: Run
     if (items.length === 0) return;
     let res: PushResult;
     try {
-      res = await t.pushBatch(items.map((i): PushItem => ({ table: i.table, op: i.op, payload: i.payload })));
+      res = await pushWithSlimTexts(t, items);
     } catch (e) {
       const f = classify(e);
       if (f.kind === 'server') await failOutboxItems(items, now());
@@ -212,6 +238,44 @@ export async function pushOutbox(t: SyncTransport, report: SyncReport, opts: Run
     // Everything left was just rescheduled; a forced run must not spin on the same rows.
     if (ok.length === 0) return;
   }
+}
+
+/**
+ * A text's body never changes after it is saved, so a change of reading progress, "Bitirdim",
+ * feedback or a deletion is pushed without it (decision 0060): an update (updated_at after
+ * created_at) or a delete. The server keeps its body; for a text it does not have yet it
+ * answers 23502, and that row is sent again at once with its body.
+ */
+export function slimTextPayload(item: Pick<OutboxItem, 'table' | 'op' | 'payload'>): unknown {
+  if (item.table !== 'texts' || !item.payload || typeof item.payload !== 'object') return item.payload;
+  const p = item.payload as { body?: unknown; created_at?: unknown; updated_at?: unknown };
+  if (typeof p.body !== 'string') return item.payload;
+  const update = typeof p.updated_at === 'number' && typeof p.created_at === 'number' && p.updated_at > p.created_at;
+  if (item.op !== 'delete' && !update) return item.payload;
+  const rest: Record<string, unknown> = { ...(item.payload as Record<string, unknown>) };
+  delete rest.body;
+  return rest;
+}
+
+async function pushWithSlimTexts(t: SyncTransport, items: OutboxItem[]): Promise<PushResult> {
+  const slim = new Set<string>();
+  const wire = items.map((i): PushItem => {
+    const payload = slimTextPayload(i);
+    if (payload !== i.payload) slim.add(i.row_id);
+    return { table: i.table, op: i.op, payload };
+  });
+  const res = await t.pushBatch(wire);
+  const retry = items.filter(
+    (i) => slim.has(i.row_id) && res.rejected.some((r) => r.id === i.row_id && r.table === i.table && r.code === '23502'),
+  );
+  if (retry.length === 0) return res;
+  const again = await t.pushBatch(retry.map((i): PushItem => ({ table: i.table, op: i.op, payload: i.payload })));
+  const retried = new Set(retry.map((i) => i.row_id));
+  return {
+    acked: [...res.acked.filter((id) => !retried.has(id)), ...again.acked],
+    stale: [...res.stale.filter((id) => !retried.has(id)), ...again.stale],
+    rejected: [...res.rejected.filter((r) => !(r.id && retried.has(r.id))), ...again.rejected],
+  };
 }
 
 /** tablesServerLacks() result per sync run (keyed by the run's report). */
