@@ -1900,7 +1900,8 @@
     "localIndicatorFull": "Misafir modu — verilerin bu cihazda güvende. Cihazlar arasında eşitlemek için giriş yap.",
     "unavailableIndicatorFull": "Verilerin bu cihazda güvende.",
     "quotaHint": "Bugün çok fazla değişiklik gönderildi. Değişikliklerin bu cihazda güvende; yarın kendiliğinden gönderilir.",
-    "quotaToast": "Bugünkü eşitleme sınırı doldu. Değişikliklerin bu cihazda güvende, yarın gönderilir."
+    "quotaToast": "Bugünkü eşitleme sınırı doldu. Değişikliklerin bu cihazda güvende, yarın gönderilir.",
+    "errorHint": "Değişikliklerin bu cihazda güvende; eşitleme kendiliğinden yeniden denenecek."
   },
   "importer": {
     "privacy": "Gizli iş belgelerini gönderme; metin kelimeleri bulmak için sunucuya gider.",

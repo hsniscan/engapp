@@ -86,6 +86,7 @@ export function ProfilePage() {
         )
       }
     >
+      <SyncAlert />
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <div className="flex flex-col gap-8">
           <ProgressGlance />
@@ -95,6 +96,42 @@ export function ProfilePage() {
         <Shortcuts />
       </div>
     </PageFrame>
+  );
+}
+
+/**
+ * Bugün has no sync pill (design 4.1), so on phones Profil is where a sync problem shows:
+ * quiet when fine (the row at the bottom), explicit when not (this card at the top). A refused
+ * daily quota (ADR 0060/0070) says plainly that the changes are safe and go tomorrow.
+ */
+function SyncAlert() {
+  const { t } = useTranslation();
+  const sync = useSyncStatus();
+  if (sync.mode !== 'account' || sync.state !== 'error') return null;
+  const quota = sync.error === 'quota';
+  return (
+    <Link
+      to="/settings/hesap#senkron"
+      role="status"
+      data-testid="profile-sync-alert"
+      className={cn(
+        'mb-8 flex min-h-14 items-start gap-3 rounded-card px-4 py-3 transition-colors duration-(--duration-micro) hover:brightness-[0.98]',
+        quota ? 'bg-warn-soft text-warn-text' : 'bg-danger-soft text-danger-text',
+      )}
+    >
+      <Icon name="sync-error" size={20} className="mt-0.5 shrink-0" />
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="text-ui font-semibold">{quota ? t('sync.quota') : t('sync.error')}</span>
+        <span className="text-meta">
+          {quota
+            ? t('syncPanel.quotaHint')
+            : sync.stuck > 0
+              ? t('syncPanel.stuck', { count: sync.stuck })
+              : t('syncPanel.errorHint')}
+        </span>
+      </span>
+      <Icon name="chevron-right" size={18} className="mt-0.5 shrink-0" />
+    </Link>
   );
 }
 

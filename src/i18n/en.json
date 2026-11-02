@@ -1900,7 +1900,8 @@
     "localIndicatorFull": "Guest mode — your data is safe on this device. Sign in to sync.",
     "unavailableIndicatorFull": "Your data is safe on this device.",
     "quotaHint": "Too many changes were sent today. Your changes are safe on this device and will be sent automatically tomorrow.",
-    "quotaToast": "Today's sync limit is reached. Your changes are safe on this device and will be sent tomorrow."
+    "quotaToast": "Today's sync limit is reached. Your changes are safe on this device and will be sent tomorrow.",
+    "errorHint": "Your changes are safe on this device; sync will try again by itself."
   },
   "importer": {
     "privacy": "Do not send confidential work documents; the text goes to the server to find the words.",
