@@ -113,6 +113,19 @@ export function deleteText(id: Id, now: Millis = Date.now()): Promise<ReaderText
 }
 
 /**
+ * "Geri al" after "Metni sil" (v0.5.2): brings the text back only when it is still the deletion
+ * `deletedAt` made (a later delete or a newer row from another device is left alone).
+ */
+export function restoreText(id: Id, deletedAt: Millis, now: Millis = Date.now()): Promise<boolean> {
+  return writeTx([db.texts], now, async (w) => {
+    const row = await db.texts.get(id);
+    if (!row || row.deleted_at !== deletedAt) return false;
+    await w.put('texts', { ...row, deleted_at: null });
+    return true;
+  });
+}
+
+/**
  * "Çok zor" / "Çok kolay" (null takes the answer back). The text keeps the answer and the
  * settings' reading_offset moves once per text (domain/encounters.ts nudgeOffset), in the same
  * transaction, so a changed answer never counts twice.

@@ -428,9 +428,10 @@ describe('Okuma tab and Bugünün okuması', () => {
       'href',
       `/oku/${a}`,
     );
-    expect(within(list).getByText('Bitti')).toBeInTheDocument();
+    expect(within(list).getByRole('link', { name: /Book/ })).toHaveTextContent('PDF · Bitti');
+    expect(within(list).getByRole('link', { name: /First text/ })).toHaveTextContent('Okunmadı');
+    // Reversible, so no confirm: it goes at once, with "Geri al" in a toast.
     await user.click(within(list).getByRole('button', { name: '“First text” metnini sil' }));
-    await user.click(await screen.findByRole('button', { name: 'Sil' }));
     await waitFor(() => expect(screen.queryByRole('link', { name: /First text/ })).toBeNull());
     expect((await db.texts.get(a))!.deleted_at).not.toBeNull();
   });
@@ -454,7 +455,7 @@ describe('Okuma tab and Bugünün okuması', () => {
     expect(within(list).queryByText('Bugünün hikâyesi')).toBeNull();
   });
 
-  it('a library text I opened is listed once, as "Okunuyor %x · Devam et"', async () => {
+  it('a library text I opened is listed once, as "%x okundu"', async () => {
     await seedGraded();
     const id = await saveText({
       kind: 'graded',
@@ -466,8 +467,7 @@ describe('Okuma tab and Bugünün okuması', () => {
     renderRoute(<ReadingTab />);
     const mine = await screen.findByTestId('my-texts');
     const link = within(mine).getByRole('link', { name: /The Late Train/ });
-    expect(link).toHaveTextContent(/Okunuyor %\d+/);
-    expect(link).toHaveTextContent('Devam et');
+    expect(link).toHaveTextContent(/Kitaplık · %\d+ okundu/);
     const library = await screen.findByRole('list', { name: 'Metinler' });
     await waitFor(() => expect(within(library).getAllByRole('listitem')).toHaveLength(1));
     expect(library).toHaveTextContent('Another Day');

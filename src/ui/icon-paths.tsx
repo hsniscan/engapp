@@ -161,6 +161,13 @@ export const paths = {
       <path d="M10 9.25v5.5M14 9.25v5.5" />
     </>
   ),
+  // Reader "Dinleyerek oku" (v0.5.2, W4): the pair of `pause`.
+  play: (
+    <>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M10.5 9.1v5.8l4.6-2.9-4.6-2.9z" />
+    </>
+  ),
   info: (
     <>
       <circle cx="12" cy="12" r="8" />

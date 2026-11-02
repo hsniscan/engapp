@@ -1,14 +1,14 @@
-// The graded reading library list (v0.5 İP5, decision 0047): "Sana uygun" first (texts that
-// fit the user's reading difficulty, measured against what they know), then every text with
-// level and topic filters and a coverage chip. Opening a text makes (or reuses) its reading
-// row and goes to the reader. Rendered by /kitaplik and inside Okuma (İP1). With `hideOwn`
-// (under "Metinlerim"), texts the user already has a reading row for are left out: they are
-// listed once, above, with their progress (v0.5.1, decision 0054).
+// The graded reading library list (v0.5 İP5, decision 0047; Çam look v0.5.2): "Sana uygun"
+// first (texts that fit the user's reading difficulty, measured against what they know), then
+// every text with a search box (title or topic, v0.5.2), level and topic chips and a coverage
+// badge. Opening a text makes (or reuses) its reading row and goes to the reader. With
+// `hideOwn` (under "Metinlerim"), texts the user already has a reading row for are left out:
+// they are listed once, above, with their progress (v0.5.1, decision 0054).
 //
 // Everything reads the downloaded catalogue in Dexie; the only network call is the catalogue
 // pull when the list mounts (public data, nothing about the user is sent).
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import {
@@ -27,8 +27,21 @@ import {
 } from '@/domain/library';
 import { readerPath } from '@/domain/texts';
 import { GRADED_LEVELS, GRADED_TOPIC_KEYS } from '../../../supabase/functions/_shared/graded-contract';
-import { FilterChip } from '@/features/decks/parts';
-import { Badge, Button, cn, EmptyState, Icon, Skeleton, toast, type BadgeTone } from '@/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  Chip,
+  ChipRow,
+  cn,
+  EmptyState,
+  Icon,
+  SectionHeader,
+  Skeleton,
+  TextField,
+  toast,
+  type BadgeTone,
+} from '@/ui';
 
 const PAGE = 30;
 const SUGGESTIONS = 3;
@@ -44,10 +57,14 @@ export function GradedLibraryList({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const lib = useLiveQuery(() => scoreLibrary(), []);
-  const offlineIds = useLiveQuery(async () => new Set((await db.graded_bodies.toCollection().primaryKeys()) as string[]), []);
+  const offlineIds = useLiveQuery(
+    async () => new Set((await db.graded_bodies.toCollection().primaryKeys()) as string[]),
+    [],
+  );
   const [pull, setPull] = useState<GradedPullOutcome | 'running'>('running');
   const [level, setLevel] = useState<string | null>(null);
   const [topic, setTopic] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
   const [shown, setShown] = useState(PAGE);
   const [opening, setOpening] = useState<string | null>(null);
 
@@ -63,6 +80,10 @@ export function GradedLibraryList({
     };
   }, []);
 
+  const topicLabel = useCallback(
+    (k: string) => t(`gradedLibrary.topics.${k}`, { defaultValue: k }),
+    [t],
+  );
   const topics = useMemo(() => {
     const present = new Set(lib?.texts.map((s) => s.entry.topic));
     return TOPIC_ORDER.filter((k) => present.has(k));
@@ -76,11 +97,21 @@ export function GradedLibraryList({
     () => (lib ? (hideOwn ? lib.texts.filter((s) => !lib.rows.has(s.entry.id)) : lib.texts) : []),
     [lib, hideOwn],
   );
-  const filtered = useMemo(() => filterLibrary(listed, { level, topic }), [listed, level, topic]);
+  const filtered = useMemo(
+    () => filterLibrary(listed, { level, topic, query, topicLabel }),
+    [listed, level, topic, query, topicLabel],
+  );
   const suggestions = useMemo(
     () => (lib ? suggestTexts(listed, lib.difficulty, SUGGESTIONS, lib.finished) : []),
     [lib, listed],
   );
+  const filtering = level !== null || topic !== null || query.trim() !== '';
+  const clear = () => {
+    setLevel(null);
+    setTopic(null);
+    setQuery('');
+    setShown(PAGE);
+  };
 
   const open = async (s: ScoredGradedText) => {
     if (opening) return;
@@ -99,8 +130,9 @@ export function GradedLibraryList({
     return (
       <div className={cn('flex flex-col gap-3', className)} aria-busy="true">
         <span className="sr-only">{t('gradedLibrary.loading')}</span>
+        <Skeleton className="h-6 w-32" />
         {[0, 1, 2].map((i) => (
-          <Skeleton key={i} className="h-20 w-full rounded-lg" />
+          <Skeleton key={i} className="h-20 w-full rounded-card" />
         ))}
       </div>
     );
@@ -119,12 +151,13 @@ export function GradedLibraryList({
     return (
       <EmptyState
         className={className}
-        icon="layers"
+        tone="card"
+        icon={status === 'offline' ? 'sync-offline' : 'book'}
         title={t('gradedLibrary.emptyTitle')}
         description={description}
         action={
           status === 'offline' || status === 'failed' ? (
-            <Button variant="secondary" onClick={() => refresh(true)}>
+            <Button variant="secondary" leadingIcon="refresh" onClick={() => refresh(true)}>
               {t('gradedLibrary.retry')}
             </Button>
           ) : undefined
@@ -137,6 +170,7 @@ export function GradedLibraryList({
     <TextRow
       key={s.entry.id}
       s={s}
+      topic={topicLabel(s.entry.topic)}
       finished={lib.finished.has(s.entry.id)}
       started={lib.started.has(s.entry.id)}
       offline={offlineIds?.has(s.entry.id) ?? false}
@@ -148,63 +182,108 @@ export function GradedLibraryList({
   return (
     <div className={cn('flex flex-col gap-8', className)}>
       <section aria-labelledby="graded-for-you">
-        <h2 id="graded-for-you" className="font-serif text-xl font-semibold text-fg">
-          {t('gradedLibrary.forYou')}
-        </h2>
-        <p className="mt-1 text-sm text-fg-muted">
-          {t('gradedLibrary.forYouHint', { difficulty: t(`gradedLibrary.difficulty.${lib.difficulty}`) })}
-        </p>
+        <SectionHeader
+          id="graded-for-you"
+          title={t('gradedLibrary.forYou')}
+          description={t('gradedLibrary.forYouHint', {
+            difficulty: t(`gradedLibrary.difficulty.${lib.difficulty}`),
+          })}
+        />
         {suggestions.length > 0 ? (
-          <ul aria-label={t('gradedLibrary.suggestionsLabel')} className="mt-3 flex flex-col gap-2">
+          <ul
+            aria-label={t('gradedLibrary.suggestionsLabel')}
+            className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface"
+          >
             {suggestions.map(row)}
           </ul>
         ) : (
-          <p className="mt-3 rounded-lg border border-dashed border-border px-4 py-3 text-sm text-fg-muted">
+          <Card tone="sunken" className="text-ui text-fg-muted">
             {t('gradedLibrary.forYouNone')}
-          </p>
+          </Card>
         )}
       </section>
 
-      <section aria-labelledby="graded-all">
-        <h2 id="graded-all" className="font-serif text-xl font-semibold text-fg">
-          {t('gradedLibrary.heading', { count: filtered.length })}
-        </h2>
-        <div role="group" aria-label={t('gradedLibrary.filters')} className="mt-3 flex flex-col gap-2">
+      <section aria-labelledby="graded-all" className="flex flex-col gap-3">
+        <SectionHeader
+          id="graded-all"
+          className="mb-0"
+          title={t('gradedLibrary.title')}
+          description={t('gradedLibrary.heading', { count: filtered.length })}
+        />
+        <TextField
+          type="search"
+          label={t('gradedLibrary.search')}
+          hideLabel
+          placeholder={t('gradedLibrary.searchPlaceholder')}
+          leadingIcon="search"
+          value={query}
+          autoComplete="off"
+          enterKeyHint="search"
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setShown(PAGE);
+          }}
+          data-testid="library-search"
+        />
+        <div role="group" aria-label={t('gradedLibrary.filters')} className="flex flex-col gap-1">
           <ChipRow label={t('gradedLibrary.level')}>
-            <FilterChip pressed={level === null} onClick={() => (setLevel(null), setShown(PAGE))}>
-              {t('gradedLibrary.all')}
-            </FilterChip>
+            <Chip selected={level === null} onClick={() => (setLevel(null), setShown(PAGE))}>
+              {t('gradedLibrary.allLevels')}
+            </Chip>
             {levels.map((l) => (
-              <FilterChip key={l} pressed={level === l} onClick={() => (setLevel(level === l ? null : l), setShown(PAGE))}>
+              <Chip
+                key={l}
+                selected={level === l}
+                onClick={() => (setLevel(level === l ? null : l), setShown(PAGE))}
+              >
                 {l}
-              </FilterChip>
+              </Chip>
             ))}
           </ChipRow>
           <ChipRow label={t('gradedLibrary.topic')}>
-            <FilterChip pressed={topic === null} onClick={() => (setTopic(null), setShown(PAGE))}>
-              {t('gradedLibrary.all')}
-            </FilterChip>
+            <Chip selected={topic === null} onClick={() => (setTopic(null), setShown(PAGE))}>
+              {t('gradedLibrary.allTopics')}
+            </Chip>
             {topics.map((k) => (
-              <FilterChip key={k} pressed={topic === k} onClick={() => (setTopic(topic === k ? null : k), setShown(PAGE))}>
-                {t(`gradedLibrary.topics.${k}`, { defaultValue: k })}
-              </FilterChip>
+              <Chip
+                key={k}
+                selected={topic === k}
+                onClick={() => (setTopic(topic === k ? null : k), setShown(PAGE))}
+              >
+                {topicLabel(k)}
+              </Chip>
             ))}
           </ChipRow>
         </div>
         {filtered.length === 0 ? (
-          <div className="mt-4 flex flex-col items-start gap-2">
-            <p className="text-sm text-fg-muted">{t('gradedLibrary.noMatch')}</p>
-            <Button variant="secondary" onClick={() => (setLevel(null), setTopic(null))}>
-              {t('gradedLibrary.clearFilters')}
-            </Button>
-          </div>
+          <EmptyState
+            compact
+            tone="placeholder"
+            icon="search"
+            title={t('gradedLibrary.noMatch')}
+            description={query.trim() ? t('gradedLibrary.noMatchQuery', { query: query.trim() }) : undefined}
+            action={
+              filtering ? (
+                <Button variant="secondary" onClick={clear}>
+                  {t('gradedLibrary.clearFilters')}
+                </Button>
+              ) : undefined
+            }
+          />
         ) : (
-          <ul aria-label={t('gradedLibrary.listLabel')} className="mt-4 flex flex-col gap-2">
+          <ul
+            aria-label={t('gradedLibrary.listLabel')}
+            className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface"
+          >
             {filtered.slice(0, shown).map(row)}
           </ul>
         )}
         {filtered.length > shown && (
-          <Button variant="secondary" className="mt-4" onClick={() => setShown((n) => n + PAGE)}>
+          <Button
+            variant="secondary"
+            className="self-start"
+            onClick={() => setShown((n) => n + PAGE)}
+          >
             {t('gradedLibrary.more', { count: filtered.length - shown })}
           </Button>
         )}
@@ -213,16 +292,9 @@ export function GradedLibraryList({
   );
 }
 
-function ChipRow({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div role="group" aria-label={label} className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
-      {children}
-    </div>
-  );
-}
-
 function TextRow({
   s,
+  topic,
   finished,
   started,
   offline,
@@ -230,6 +302,7 @@ function TextRow({
   onOpen,
 }: {
   s: ScoredGradedText;
+  topic: string;
   finished: boolean;
   started: boolean;
   offline: boolean;
@@ -244,20 +317,20 @@ function TextRow({
         type="button"
         onClick={onOpen}
         aria-busy={busy || undefined}
-        className="flex w-full min-h-11 items-start gap-3 rounded-lg border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-border-strong"
+        className="flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-(--duration-micro) hover:bg-hover focus-visible:outline-offset-[-2px]"
       >
-        <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <span className="font-medium text-fg" lang="en">
+        <span className="flex min-w-0 flex-1 flex-col gap-1">
+          <span lang="en" className="font-serif text-lead font-medium text-fg">
             {s.entry.title}
           </span>
-          <span className="text-sm text-fg-muted">
+          <span className="text-meta text-fg-muted">
             {t('gradedLibrary.meta', {
               level: s.entry.level,
-              topic: t(`gradedLibrary.topics.${s.entry.topic}`, { defaultValue: s.entry.topic }),
+              topic,
               minutes: readingMinutes(s.entry.words),
             })}
           </span>
-          <span className="flex flex-wrap gap-1.5">
+          <span className="flex flex-wrap gap-1.5 pt-0.5">
             <Badge tone={FIT_TONE[fit]} data-testid="coverage-chip">
               {t('gradedLibrary.understood', { percent: understoodPercent(s.unknownRate) })} ·{' '}
               {t(`gradedLibrary.fit.${FIT_KEY[fit]}`)}
@@ -270,7 +343,7 @@ function TextRow({
             {offline && <Badge tone="outline">{t('gradedLibrary.offlineReady')}</Badge>}
           </span>
         </span>
-        <Icon name="chevron-right" size={20} className="mt-0.5 shrink-0 text-fg-muted" />
+        <Icon name="chevron-right" size={18} className="shrink-0 text-fg-subtle" />
       </button>
     </li>
   );

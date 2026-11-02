@@ -121,6 +121,7 @@ export { getSettings, ensureSettings, updateSettings, defaultSettings, DEFAULT_S
 export { readingDifficultyOf } from './settings';
 export {
   deleteText,
+  restoreText,
   getText,
   lastUnfinishedText,
   listTexts,
