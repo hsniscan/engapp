@@ -104,7 +104,7 @@ describe('workflows', () => {
     }
     // Every job that pg_cron starts waits for the gate.
     for (const file of dispatched) {
-      const first = /\njobs:\n {2}gate:\n[\s\S]*?\n {2}([a-z-]+):\n {4}needs: gate\n {4}if: needs\.gate\.outputs\.run == 'true'\n/.exec(read(file));
+      const first = /\njobs:\n {2}gate:\n[\s\S]*?\n {2}([a-z-]+):\n {4}needs: gate\n {4}if: (?:\$\{\{ )?needs\.gate\.outputs\.run == 'true'[^\n]*\n/.exec(read(file));
       expect(first, file).not.toBeNull();
     }
   });
