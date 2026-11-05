@@ -2,7 +2,7 @@
 import Dexie from 'dexie';
 import { type DayBounds, type DayConfig, dayBounds } from '../domain/day';
 import { effectiveLogs } from '../domain/recompute';
-import { type Card, CardState, type CardType, type Id, type Millis, type ReviewLog } from '../domain/types';
+import { type Card, CardState, type CardType, type Id, type Millis, Rating, type ReviewLog } from '../domain/types';
 import { db } from './db';
 
 /** Above this many cards logsByCard reads the whole log table once instead. */
@@ -55,6 +55,8 @@ export interface TodayFacts {
   recognitionNoteIds: Set<Id>;
   /** Card type of each live card answered today. */
   typeOf: Map<Id, CardType>;
+  /** Cards answered Again today (non-undone): their easier siblings may come back (B1). */
+  againCardIds: Set<Id>;
   timeMs: number;
 }
 
@@ -100,6 +102,7 @@ export async function loadTodayFacts(cfg: DayConfig, now: Millis): Promise<Today
     introducedByType,
     recognitionNoteIds,
     typeOf,
+    againCardIds: new Set(answers.filter((l) => l.rating === Rating.Again).map((l) => l.card_id)),
     timeMs: answers.reduce((a, l) => a + l.duration_ms, 0),
   };
 }

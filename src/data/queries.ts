@@ -4,7 +4,7 @@ import { bandFor, type CardSentence, pickRotation, rotationSentences, selectedCo
 import { pickRotating, sentenceKey } from '../domain/textSentences';
 import { previewIntervals, type IntervalPreview } from '../domain/fsrs';
 import { normalizeTerm } from '../domain/normalize';
-import { buildQueue, isBuriedInMode, isStudiable, type QueueCounts, type QueueItem, type QueueMode } from '../domain/queue';
+import { buildQueue, isBuriedInMode, isStudiable, siblingHolds, type QueueCounts, type QueueItem, type QueueMode } from '../domain/queue';
 import { STUDY_MODE_CARD_TYPES, STUDY_MODES, studyModeOf, type StudyMode } from '../domain/studyMode';
 import { shareNewBudget, shareReviewBudget } from '../domain/studyPlan';
 import { type Cloze, firstLetterHint, lastShownSenseId, makeCloze, nextRecognitionSense } from '../domain/recognition';
@@ -103,6 +103,8 @@ interface QueueBase {
   reviewCaps: Record<StudyMode, number> | null;
   /** Smart new-card order input over every mode's first-time cards (null: none / 'ahead'). */
   newOrder: NewOrderInput | null;
+  /** B1 (ADR 0071): due siblings held back today, over every card type (null in 'ahead'). */
+  held: Set<Id> | null;
 }
 
 const queueTables = () => [...new Set([db.cards, db.review_logs, db.settings, db.meta, ...newOrderTables()])];
@@ -136,12 +138,22 @@ async function readQueueBase(
   const newAvailable: Record<StudyMode, number> = { word: 0, production: 0, cloze: 0, dictation: 0 };
   const dueReviews: Record<StudyMode, number> = { word: 0, production: 0, cloze: 0, dictation: 0 };
   const recognitionToday = { recognitionReviewedTodayNoteIds: facts.recognitionNoteIds };
+  // B1: one card per word per day, the hardest format first (domain/queue.ts siblingHolds).
+  const held = ahead
+    ? null
+    : siblingHolds(cards, {
+        now,
+        dayEnd: facts.bounds.end,
+        dayStart: facts.bounds.start,
+        reviewedTodayCardIds: facts.reviewedCardIds,
+        againTodayCardIds: facts.againCardIds,
+      });
   for (const c of cards) {
-    if (!isStudiable(c)) continue;
+    if (!isStudiable(c, now)) continue;
     const m = studyModeOf(c.card_type);
     if (c.state === CardState.New) {
       if (!isBuriedInMode(c, recognitionToday)) newAvailable[m]++;
-    } else if (c.state === CardState.Review && c.due < facts.bounds.end) dueReviews[m]++;
+    } else if (c.state === CardState.Review && c.due < facts.bounds.end && !held?.has(c.id)) dueReviews[m]++;
   }
   const introduced: Record<StudyMode, number> = { word: 0, production: 0, cloze: 0, dictation: 0 };
   for (const t of Object.keys(facts.introducedByType) as CardType[]) introduced[studyModeOf(t)] += facts.introducedByType[t];
@@ -178,7 +190,7 @@ async function readQueueBase(
           carry,
         })
       : null;
-  return { now, settings, facts, ahead, aheadEnd, load, cards, byId, extra, carry, newAllowed, newAvailable, dueReviews, reviewCaps, newOrder };
+  return { now, settings, facts, ahead, aheadEnd, load, cards, byId, extra, carry, newAllowed, newAvailable, dueReviews, reviewCaps, newOrder, held };
 }
 
 /** One queue from the shared read (synchronous: nothing awaited, so no Dexie zone is lost). */
@@ -209,6 +221,9 @@ function queueFromBase(base: QueueBase, opts: StudyQueueOptions): StudyQueue {
     ...(types ? { cardTypes: types, recognitionReviewedTodayNoteIds: facts.recognitionNoteIds } : {}),
     reviewedTodayCardIds: facts.reviewedCardIds,
     reviewedTodayNoteIds: facts.reviewedNoteIds,
+    dayStart: facts.bounds.start,
+    againTodayCardIds: facts.againCardIds,
+    heldCardIds: base.held,
     ...(opts.session ? { session: opts.session } : {}),
     ...(opts.learnAheadMs !== undefined ? { learnAheadMs: opts.learnAheadMs } : {}),
   });
@@ -349,6 +364,11 @@ export interface CardView {
   sentence: CardSentence | null;
   /** Interval labels for the four buttons. */
   previews: Record<RatingValue, IntervalPreview>;
+  /**
+   * v0.5.3 B2 (ADR 0071), cloze cards: the same for an answer picked from multiple choices
+   * (a pick never reaches Öğrenildi, so its stage line differs).
+   */
+  previewsChoice?: Record<RatingValue, IntervalPreview>;
   /** Cached lexicon rows of the senses (their levels), by lexicon_sense_id. */
   lexicon: Map<Id, LexiconSense>;
   /**
@@ -432,6 +452,9 @@ export async function getCardView(cardId: Id, now: Millis = Date.now()): Promise
       hint,
       sentence,
       previews: previewIntervals(schedulerFor(settings), card, now),
+      ...(card.card_type === 'cloze'
+        ? { previewsChoice: previewIntervals(schedulerFor(settings), card, now, { choice: true }) }
+        : {}),
       lexicon: await lexiconOf(senses),
       image:
         card.card_type === 'image'

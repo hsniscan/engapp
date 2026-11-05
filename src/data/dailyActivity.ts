@@ -15,6 +15,7 @@ export async function isTodayComplete(cfg: DayConfig, now: Millis): Promise<bool
   const facts = await loadTodayFacts(cfg, now);
   const due = await dueStudiedCards(facts.bounds.end);
   return isDayComplete(due, {
+    now,
     dayEnd: facts.bounds.end,
     reviewedTodayCardIds: facts.reviewedCardIds,
     reviewedTodayNoteIds: facts.reviewedNoteIds,

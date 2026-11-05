@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { makeCard } from '../test/factories';
-import { buildQueue, DEFAULT_LEARN_AHEAD_MS, isDayComplete, newCardsAllowed, type QueueContext } from './queue';
+import {
+  buildQueue,
+  DEFAULT_LEARN_AHEAD_MS,
+  FORMAT_RANK,
+  isDayComplete,
+  isStudiable,
+  newCardsAllowed,
+  type QueueContext,
+  siblingHolds,
+} from './queue';
 import { type Card, CardState } from './types';
 
 const NOW = Date.UTC(2026, 9, 21, 9);
@@ -89,7 +98,9 @@ describe('buildQueue', () => {
       makeCard({ id: 'clozeZ', note_id: 'Z', card_type: 'cloze', state: CardState.Learning, due: NOW + 5 * MIN }),
     ];
     const ids = buildQueue(cards, ctx()).items.map((i) => i.card_id);
-    expect(ids).toEqual(['rec', 'revY', 'revZ']);
+    // v0.5.3 B1: the hardest due format of a note comes (X's production, not its recognition);
+    // Z's recognition waits for tomorrow because its cloze is due later today.
+    expect(ids).toEqual(['prod', 'revY']);
 
     // revZ answered earlier today; its sibling in learning is buried, X's production too.
     const today = ctx({ reviewedTodayCardIds: new Set(['rec']), reviewedTodayNoteIds: new Set(['X', 'Z']), learnAheadMs: 20 * MIN });
@@ -261,5 +272,95 @@ describe('buildQueue study modes', () => {
     expect(
       buildQueue(cards, ctx({ cardTypes: ['cloze'], dailyNewLimit: 5, newIntroducedToday: 2 })).counts.new,
     ).toBe(3);
+  });
+});
+
+describe('one card per word per day, hardest first (B1, ADR 0071)', () => {
+  const DAY_START = DAY_END - 86_400_000;
+  const typed = (id: string, type: Card['card_type'], due: number, state: Card['state'] = CardState.Review): Card =>
+    makeCard({ id, note_id: 'n', card_type: type, state, due, unlocked: true });
+  const base = (p: Partial<QueueContext> = {}) => ctx({ dayStart: DAY_START, ...p });
+
+  it('holds the easier due siblings and shows only the hardest format', () => {
+    const cards = [
+      typed('rec', 'recognition', NOW - MIN),
+      typed('pro', 'production', NOW - MIN),
+      typed('clo', 'cloze', NOW - MIN),
+      typed('dic', 'dictation', NOW - MIN),
+    ];
+    expect([...siblingHolds(cards, base())].sort()).toEqual(['clo', 'pro', 'rec']);
+    for (const types of [['recognition'], ['production', 'image'], ['cloze']] as const) {
+      expect(buildQueue(cards, base({ cardTypes: types })).items).toEqual([]);
+    }
+    expect(buildQueue(cards, base({ cardTypes: ['dictation'] })).items.map((i) => i.card_id)).toEqual(['dic']);
+  });
+
+  it('keeps the easier sibling held after the harder one was answered (not Again)', () => {
+    const cards = [typed('rec', 'recognition', NOW - MIN), typed('pro', 'production', NOW + 3 * 86_400_000)];
+    const answered = base({ reviewedTodayCardIds: new Set(['pro']), reviewedTodayNoteIds: new Set(['n']) });
+    expect(buildQueue(cards, { ...answered, cardTypes: ['recognition'] }).items).toEqual([]);
+  });
+
+  it('releases the easier sibling the same day after an Again on the harder one', () => {
+    const cards = [
+      typed('rec', 'recognition', NOW - MIN),
+      typed('pro', 'production', NOW + 10 * MIN, CardState.Relearning),
+    ];
+    const again = base({
+      reviewedTodayCardIds: new Set(['pro']),
+      reviewedTodayNoteIds: new Set(['n']),
+      againTodayCardIds: new Set(['pro']),
+    });
+    expect(buildQueue(cards, { ...again, cardTypes: ['recognition'] }).items.map((i) => i.card_id)).toEqual(['rec']);
+  });
+
+  it('moves a sibling at most one day: a card carried over is not held by a waiting sibling', () => {
+    const cards = [typed('rec', 'recognition', DAY_START - 86_400_000), typed('pro', 'production', NOW - MIN)];
+    expect(siblingHolds(cards, base()).size).toBe(0);
+  });
+
+  it('never holds learning steps, new cards or a card answered today', () => {
+    const cards = [
+      typed('rec', 'recognition', NOW - MIN, CardState.Learning),
+      typed('clo', 'cloze', NOW - MIN, CardState.New),
+      typed('pro', 'production', NOW - MIN),
+    ];
+    expect(siblingHolds(cards, base()).size).toBe(0);
+    const rec = [typed('rec', 'recognition', NOW + MIN), typed('pro', 'production', NOW - MIN)];
+    expect(siblingHolds(rec, base({ reviewedTodayCardIds: new Set(['rec']) })).size).toBe(0);
+  });
+
+  it('ignores siblings that are not due today, suspended or resting', () => {
+    const later = [typed('rec', 'recognition', NOW - MIN), typed('pro', 'production', DAY_END + MIN)];
+    expect(siblingHolds(later, base()).size).toBe(0);
+    const suspended = [typed('rec', 'recognition', NOW - MIN), { ...typed('pro', 'production', NOW - MIN), suspended: true }];
+    expect(siblingHolds(suspended, base()).size).toBe(0);
+    const resting = [
+      typed('rec', 'recognition', NOW - MIN),
+      { ...typed('pro', 'production', NOW - MIN), rest_until: NOW + 86_400_000 },
+    ];
+    expect(siblingHolds(resting, base()).size).toBe(0);
+  });
+
+  it('is deterministic between two cards of the same rank (lower id first)', () => {
+    const cards = [typed('b-img', 'image', NOW - MIN), typed('a-pro', 'production', NOW - MIN)];
+    expect([...siblingHolds(cards, base())]).toEqual(['b-img']);
+  });
+
+  it('ranks dictation > production > cloze > recognition', () => {
+    expect(FORMAT_RANK.dictation).toBeGreaterThan(FORMAT_RANK.production);
+    expect(FORMAT_RANK.production).toBeGreaterThan(FORMAT_RANK.cloze);
+    expect(FORMAT_RANK.cloze).toBeGreaterThan(FORMAT_RANK.recognition);
+  });
+});
+
+describe('resting cards (B5, ADR 0071)', () => {
+  it('leaves a resting card out of the queue until the rest ends', () => {
+    const c = { ...review('r', NOW - MIN), rest_until: NOW + 86_400_000 };
+    expect(buildQueue([c], ctx()).items).toEqual([]);
+    expect(buildQueue([c], ctx({ now: NOW + 2 * 86_400_000, dayEnd: DAY_END + 2 * 86_400_000 })).items).toHaveLength(1);
+    expect(isStudiable(c)).toBe(true);
+    expect(isStudiable(c, NOW)).toBe(false);
+    expect(isDayComplete([c], { ...ctx(), now: NOW })).toBe(true);
   });
 });
