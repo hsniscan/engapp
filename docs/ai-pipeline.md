@@ -29,8 +29,9 @@ and `ai-image` ("Görsel üret" / "Yeniden üret", 10 a day) were removed at the
   screen (`/admin/images`). The client downloads them into the Dexie `images` cache
   (`src/features/images/fetcher.ts`), so cards, the word detail and guests/offline keep showing
   the cached copies.
-- **Sentences** live in `public.lexicon_examples`, written by a service-role bulk job (none
-  exists yet; the word bank and the pre-generated audio already read the table). Clients pull
+- **Sentences** live in `public.lexicon_examples`, written by the service-role bulk job
+  `scripts/examples-bulk.ts` (v0.5.3, decision 0074; see "Bulk example sentences" below; the
+  pre-generated audio reads the same table). Clients pull
   the sentences of their own senses with `lexicon_examples_pull` into the Dexie cache, and
   ask `lexicon_examples_find` once for a sense added after its sentences were shipped (those
   rows sit below the pull cursor);
@@ -1391,3 +1392,27 @@ Both models are run through Message Batches (half price). Model ids come from th
   bucket and Kokoro job serve it (decision 0042).
 - **Tests** use recorded fixtures only (`scripts/lib/fixtures/graded/`). No test or script
   calls a live model.
+
+## Bulk example sentences (`examples-tag-v1`, `examples-gen-v1`, `examples-review-v1`)
+
+One-time job, decision 0074; code `scripts/lib/example-bulk-jobs.ts`, prompts
+`scripts/lib/example-bulk-prompt.ts`, workflow `examples-bulk.yml`. All three steps use
+Message Batches and reserve their upper bound on the shared monthly budget (purpose
+`wordbank`) and on the job's own cap `EXAMPLES_BULK_CAP_USD` (default 15 US$).
+
+- **`examples-tag-v1`** (`CLAUDE_EXAMPLES_MODEL`, default the word-bank model): one request per
+  bank row with its Tatoeba candidates (already filtered by length, level and the term's
+  presence) and its meanings; answers, per candidate, the meaning it shows (or none), a context
+  and a level band.
+- **`examples-gen-v1`** (same model): one request per bank row whose meanings still lack
+  sentences; asks for the missing count per meaning in the contexts not yet covered, with the
+  existing sentences as "do not repeat". The term's span is located by `exampleSpan`, never
+  taken from the model.
+- **`examples-review-v1`** (`CLAUDE_EXAMPLES_REVIEW_MODEL`, default the word-bank review model):
+  groups of 20 sentences; each is approved, fixed or rejected, the Turkish judged first on how
+  natural it sounds. The English of a Tatoeba sentence may not be changed (such an answer
+  rejects it); a fixed Turkish is recorded as `attribution.tr_edited`.
+
+Approved sentences are published with `lexicon_examples_insert` (at most three active per
+sense). `examples-bulk.ts plan` prints counts and an estimate; `sample` prints shipped
+sentences to read.

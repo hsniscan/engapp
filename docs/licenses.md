@@ -98,3 +98,31 @@ WebAssembly memory and threads, i.e. a cross-origin-isolated site (decision 0022
 | Tesseract English LSTM model `eng.traineddata` (tessdata_best, integerised; via `@tesseract.js-data/eng` 1.0.0, `4.0.0_best_int`) | web build, `/ocr/<version>/` | Apache-2.0 (tesseract-ocr/tessdata_best); npm packaging MIT |
 
 Code: `tesseract.js` 7.0.0 and `tesseract.js-core` 7.0.0, Apache-2.0.
+
+## Example sentences and phrases (v0.5.3, decision 0074)
+
+| Source | Used for | Licence | What is kept |
+| --- | --- | --- | --- |
+| Tatoeba (tatoeba.org), English–Turkish pairs from the weekly per-language exports (`eng_sentences_detailed`, `tur_sentences_detailed`, `eng-tur_links`; manythings.org/anki `tur-eng.zip` as a fallback) | Example sentences in `lexicon_examples` (`source = 'tatoeba'`) | CC BY 2.0 FR (some sentences are CC0, which allows the same use) | Both sentence ids and both usernames in `lexicon_examples.attribution`; a Turkish translation corrected by the review pass is marked `tr_edited: true` and the app says "çevirisi düzeltildi" (CC BY asks for changes to be indicated). English text is never changed: a Tatoeba sentence whose English needs a fix is dropped |
+| Tatoeba English sentences (`eng_sentences.tsv.bz2`) | Counting how often phrasal verbs and verb + noun pairs occur | CC BY 2.0 FR | Counts only (`ref_phrases.corpus_count`, `zipf`); no text is stored |
+| Wiktionary, "Category:English phrasal verbs" (MediaWiki API) | The candidate list of phrasal verbs | CC BY-SA 4.0 (text; the titles alone are hardly copyrightable, treated as CC BY-SA anyway) | Titles only (`ref_phrases`, `source = 'wiktionary'`); no definitions are copied |
+| Simple English Wikipedia (`simplewiki-latest-pages-articles.xml.bz2`) | Counting, as above | CC BY-SA 4.0 | Counts only |
+
+The download runs inside the GitHub workflows (`examples-bulk.yml`, `word-bank.yml job=phrases`);
+the files are not committed. The phrase list the job builds is kept as a workflow artifact
+(`phrase-lists`).
+
+Credit in the app: under every unedited Tatoeba sentence ("Tatoeba · authors", a link to
+`tatoeba.org/sentences/show/<id>`), and in Ayarlar → Hakkında → Kaynaklar (Tatoeba, Wiktionary,
+and a note that missing sentences were written by Claude and all of them were checked by a
+second model). Tatoeba audio is not used (its licences vary per recording); sentence audio is
+our own TTS.
+
+Share-alike: `ref_phrases` and the phrase rows of `word_bank` (`list_source` `wiktionary` /
+`corpus`) are CC BY-SA 4.0 like the rest of the word bank. The Turkish meanings and examples of
+phrases are AI-written, as for words.
+
+Excluded on purpose: the PHaVE list (Garnier & Schmitt) and Liu's phrasal verb and idiom lists
+(no licence for commercial reuse), and the Oxford Phrasal Academic Lexicon / Oxford Collocations
+Dictionary, Cambridge English Vocabulary Profile phrases and Kelly lists (as above). Collocations
+are found from the corpus counts themselves (log-Dice), not taken from a list.
