@@ -53,7 +53,8 @@
     "errorShort": "Eşitleme hatası",
     "syncNow": "Şimdi eşitle",
     "quota": "Bugünkü eşitleme sınırı doldu",
-    "quotaShort": "Sınır doldu"
+    "quotaShort": "Sınır doldu",
+    "heldShort": "Bir kısmı bekliyor"
   },
   "theme": {
     "label": "Tema",
@@ -1900,7 +1901,9 @@
     "unavailableIndicatorFull": "Verilerin bu cihazda güvende.",
     "quotaHint": "Bugün çok fazla değişiklik gönderildi. Değişikliklerin bu cihazda güvende; yarın kendiliğinden gönderilir.",
     "quotaToast": "Bugünkü eşitleme sınırı doldu. Değişikliklerin bu cihazda güvende, yarın gönderilir.",
-    "errorHint": "Değişikliklerin bu cihazda güvende; eşitleme kendiliğinden yeniden denenecek."
+    "errorHint": "Değişikliklerin bu cihazda güvende; eşitleme kendiliğinden yeniden denenecek.",
+    "heldStorage": "Sunucuda yer azaldı. Yeni kaydettiğin metinler ve Anki’den aktarılan geçmiş şimdilik yalnızca bu cihazda; tekrarların, kelimelerin ve ayarların eşitlenmeye devam ediyor. Yer açılınca kendiliğinden gönderilir.",
+    "heldTexts": "Kaydedilmiş metin sınırına ulaştın. Yeni metinler bu cihazda güvende ama başka cihazlara gönderilmiyor. Okuduğun eski metinleri silersen zamanla yer açılır."
   },
   "importer": {
     "privacy": "Gizli iş belgelerini gönderme; metin kelimeleri bulmak için sunucuya gider.",

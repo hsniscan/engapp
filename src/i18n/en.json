@@ -53,7 +53,8 @@
     "errorShort": "Sync error",
     "syncNow": "Sync now",
     "quota": "Today's sync limit reached",
-    "quotaShort": "Limit reached"
+    "quotaShort": "Limit reached",
+    "heldShort": "Some waiting"
   },
   "theme": {
     "label": "Theme",
@@ -1900,7 +1901,9 @@
     "unavailableIndicatorFull": "Your data is safe on this device.",
     "quotaHint": "Too many changes were sent today. Your changes are safe on this device and will be sent automatically tomorrow.",
     "quotaToast": "Today's sync limit is reached. Your changes are safe on this device and will be sent tomorrow.",
-    "errorHint": "Your changes are safe on this device; sync will try again by itself."
+    "errorHint": "Your changes are safe on this device; sync will try again by itself.",
+    "heldStorage": "The server is running low on space. Newly saved texts and imported Anki history stay on this device for now; your reviews, words and settings keep syncing. They will be sent by themselves once there is room.",
+    "heldTexts": "You have reached the limit for saved texts. New texts are safe on this device but are not sent to your other devices. Deleting old texts you have read frees space over time."
   },
   "importer": {
     "privacy": "Do not send confidential work documents; the text goes to the server to find the words.",

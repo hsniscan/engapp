@@ -16,6 +16,7 @@ const status: { value: SyncStatusInfo } = {
     lastSyncAt: null,
     error: 'quota',
     backendConfigured: true,
+    held: null,
   },
 };
 vi.mock('@/sync/status', () => ({ useSyncStatus: () => status.value }));
