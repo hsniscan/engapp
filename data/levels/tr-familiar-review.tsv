@@ -1,0 +1,174 @@
+# Review of the familiar-word candidates (decision 0073), read by scripts/build-tr-familiar.ts.
+# Columns: lemma, pos (or * for every part of speech), note. A note that starts with "=" keeps
+# the word and gives its Turkish spelling; any other note rejects the candidate:
+#   chance    the Turkish word only looks alike (kemik ≠ chemical)
+#   english   the "Turkish" match is English text inside Turkish pages, not a Turkish word
+#   false     a false friend: same look, other meaning (see false-friends.en-tr.md)
+#   partial   Turkish has the word for only one, narrower sense, so the English word is not
+#             really known (basket = basketbol, kapital = sermaye)
+# Reviewed 2026-11-05 (v0.5.3) by reading every candidate once.
+addressee	*	chance
+address	verb	partial: adres is only the noun
+align	*	english
+altar	*	english
+antics	*	chance: antik = ancient
+arcane	*	chance
+assist	*	partial: asist is a football pass
+assure	*	chance
+attach	*	chance
+automate	*	partial: otomat = vending machine
+aware	*	chance
+baker	*	english
+basket	*	partial: basket = basketball
+belly	*	chance
+berry	*	chance
+better	*	chance
+bitter	*	chance
+blade	*	english
+capital	*	partial: kapital = capital (money) only
+cause	*	chance
+cello	*	chance: Turkish says viyolonsel / çello
+chart	*	chance
+chase	*	chance
+cheeky	*	chance
+chemical	*	chance: kemik = bone
+chili	*	chance
+chilli	*	chance
+chilly	*	chance
+cocoon	*	chance
+colon	*	partial: kolon = column
+comic	noun	partial: komik is only the adjective (funny)
+comma	*	false: koma = coma
+commute	*	chance
+condition	*	partial: kondisyon = physical fitness
+contact	*	partial: kontak = ignition, electric contact
+cordon	*	partial: kordon = cord, seafront
+cotton	*	chance
+court	*	chance
+craft	*	chance
+criminal	*	partial: kriminal = forensic
+cross	*	partial: kros = cross-country running
+curse	*	chance
+define	*	chance
+demise	*	chance
+dessert	*	chance: Turkish says tatlı
+direct	verb	partial: direkt is only the adjective
+direction	*	false: direksiyon = steering wheel
+dizzy	*	chance
+double	*	partial: duble = a double portion, dual road
+effect	*	partial: efekt = special effect
+engine	*	chance
+express	verb	partial: ekspres is only the train / service
+farce	*	chance
+finally	*	chance
+fixture	*	partial: fikstür = fixture list (sport)
+foreman	*	english
+forth	*	chance
+frank	*	english
+frost	*	english
+golden	*	english
+grand	*	english
+grant	*	english
+haste	*	chance
+hostess	*	false: hostes = flight attendant (false-friends list candidate)
+humane	*	chance
+hunter	*	english
+ideally	*	chance
+induction	*	partial: indüksiyon = induction cooker
+innate	*	chance: inat = stubbornness
+inner	*	chance
+insane	*	chance: insan = human
+junior	*	english
+killer	*	chance: kiler = pantry
+lance	*	chance
+lorry	*	chance
+lyrics	*	partial: lirik = lyrical (poetry), not song words
+major	*	partial: majör = major key, a big company
+malice	*	chance
+mamma	*	chance
+march	*	chance
+marine	*	partial: marin = marina
+marry	*	chance
+marvel	*	english
+massive	*	false: masif = solid (wood)
+matter	*	chance
+mechanic	*	partial: mekanik = mechanics, not the person
+minor	*	partial: minör = minor key
+moral	*	false: moral = morale, spirits
+morally	*	chance
+motive	*	false: motif = motif, pattern
+motto	*	chance: moto = motorbike
+multiple	*	chance
+niche	*	chance
+occur	*	chance
+originally	*	chance
+other	*	chance
+otter	*	chance
+pardon	*	partial: pardon is only "excuse me"
+parcel	*	false: parsel = plot of land
+pearl	*	english
+petty	*	chance
+philistine	*	chance: Filistin = Palestine
+place	*	chance
+plane	*	chance
+police	*	=polis
+policy	*	false: polis = police
+postal	*	false: postal = combat boot
+pounce	*	chance
+premier	*	english
+press	*	partial: pres = press machine
+prime	*	partial: prim = bonus payment
+prize	*	false: priz = wall socket
+process	*	partial: proses = industrial process
+punch	*	chance
+ranger	*	english
+risky	*	chance
+robin	*	english
+rubble	*	chance
+salon	*	partial: salon = living room, hall
+sandal	*	false: sandal = rowing boat
+sauce	*	chance
+saucer	*	chance
+sauna	*	=sauna
+scene	*	chance
+scent	*	chance
+scythe	*	chance
+sedate	*	chance
+serene	*	chance
+server	*	english
+service	*	=servis
+settee	*	chance
+settler	*	chance
+severe	*	chance
+short	*	partial: şort = shorts
+singe	*	chance
+slave	*	chance
+sleep	*	chance
+soothe	*	chance
+source	*	chance
+speeder	*	chance
+spice	*	chance
+stare	*	chance
+state	*	chance
+steel	*	chance
+steely	*	chance
+stern	*	english
+still	*	chance
+stoke	*	chance
+supernatural	*	english
+supper	*	chance
+surely	*	chance
+survivor	*	english
+thesis	*	false: tesis = facility
+tongue	*	chance
+torch	*	chance
+trash	*	chance
+traverse	*	chance
+tribe	*	english
+unite	*	chance
+unsure	*	chance
+valentine	*	chance
+verse	*	english
+violet	*	english
+battery	*	false: bateri = drum kit (battery = batarya, pil)
+statue	*	false: statü = status

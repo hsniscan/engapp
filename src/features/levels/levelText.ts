@@ -9,6 +9,12 @@ export function useLevelLabel(level: WordLevel): string {
 
 const LIST_NAME = { cefrj: 'CEFR-J', octanove: 'Octanove' } as const;
 
+/** The Turkish word of a familiar-word correction ("tanidik:mikrofon" → "mikrofon"), else null. */
+export function familiarWord(reason: string | null | undefined): string | null {
+  const m = /^tanidik:(.+)$/.exec(reason?.trim() ?? '');
+  return m ? m[1]!.trim() : null;
+}
+
 /**
  * "CEFR-J: B1 → Türk öğrenci için A2 (yapay zekâ: Türkçede 'televizyon')" for a corrected list level;
  * null otherwise.
@@ -19,6 +25,15 @@ export function useCorrectionLine(
   const { t } = useTranslation();
   if (!level || (level.source !== 'cefrj' && level.source !== 'octanove')) return null;
   if (!level.list_cefr || level.list_cefr === level.cefr) return null;
+  // A familiar international word (decision 0073): "Türkçede de var: mikrofon".
+  const familiar = familiarWord(level.reason_tr);
+  if (familiar)
+    return t('wordLevel.correction_familiar', {
+      list: LIST_NAME[level.source],
+      from: level.list_cefr,
+      to: level.cefr,
+      word: familiar,
+    });
   return t('wordLevel.correction', {
     list: LIST_NAME[level.source],
     from: level.list_cefr,

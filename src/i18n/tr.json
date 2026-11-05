@@ -2214,7 +2214,8 @@
     "overrideAutoUnknown": "Otomatik",
     "overrideHint": "Kendi seçtiğin seviye yalnızca sende görünür ve cihazların arasında eşitlenir.",
     "overrideFailed": "Seviye kaydedilemedi. Tekrar dene.",
-    "correction_reason": "{{list}}: {{from}} → Türk öğrenci için {{to}} (yapay zekâ: {{reason}})"
+    "correction_reason": "{{list}}: {{from}} → Türk öğrenci için {{to}} (yapay zekâ: {{reason}})",
+    "correction_familiar": "{{list}}: {{from}} → Türk öğrenci için {{to}} (Türkçede de var: {{word}})"
   },
   "sources": {
     "title": "Kaynaklar",
