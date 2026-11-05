@@ -10,7 +10,7 @@
 --    'graded' points at the shared library text (graded_id); the server stores its body as ''
 --    (trigger graded_body_ref). The device keeps its own copy of the plain text (made from the
 --    library sentences when the text is opened, decision 0054) and never replaces it with the
---    empty server body (src/domain/texts.ts keepGradedBody). Existing rows are emptied with
+--    empty server body (src/domain/syncMerge.ts keepGradedBody). Existing rows are emptied with
 --    their HLC unchanged, so no device takes the empty body over its own copy. Graded rows no
 --    longer count towards the text quota.
 

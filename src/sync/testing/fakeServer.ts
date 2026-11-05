@@ -13,6 +13,13 @@ interface Stored {
   seq: number;
 }
 
+/** A copy of the server's rows and sequence, as a nightly backup would hold them. */
+export interface FakeBackup {
+  rows: Map<string, Stored>;
+  seq: number;
+  purgedThrough: number;
+}
+
 /** The six v0.1 tables: all that sync_pull / sync_pull_v2 return. */
 const V2_TABLES = new Set(['notes', 'senses', 'cards', 'review_logs', 'sources', 'settings']);
 
@@ -93,6 +100,39 @@ export class FakeServer implements SyncTransport {
     else this.registry.delete('decks');
   }
 
+  /**
+   * Restore epoch (sync_pull_v5, migration 20261106000500): 1 until a restore. undefined = a
+   * backend from before it (no epoch and no seq_head in the pull answer).
+   */
+  epoch: number | undefined = 1;
+  /** The database is past the guard (migration 20261106000510): new text bodies and Anki logs are refused. */
+  storageFull = false;
+
+  /** The nightly backup: a copy of everything the database holds now. */
+  backup(): FakeBackup {
+    return {
+      rows: new Map([...this.rows].map(([k, v]) => [k, structuredClone(v)])),
+      seq: this.seq,
+      purgedThrough: this.purgedThrough,
+    };
+  }
+
+  /**
+   * Restores a backup: rows and sequence go back to the backup's. With `afterRestore`
+   * (runbook §3, sync_after_restore) the sequence then jumps a billion ahead and the epoch
+   * changes.
+   */
+  restore(b: FakeBackup, opts: { afterRestore?: boolean } = {}): void {
+    this.rows.clear();
+    for (const [k, v] of b.rows) this.rows.set(k, structuredClone(v));
+    this.seq = b.seq;
+    this.purgedThrough = b.purgedThrough;
+    if (opts.afterRestore) {
+      this.seq += 1_000_000_000;
+      this.epoch = (this.epoch ?? 1) + 1_000;
+    }
+  }
+
   readonly userId: string;
   constructor(userId = 'user-1') {
     this.userId = userId;
@@ -129,6 +169,14 @@ export class FakeServer implements SyncTransport {
       }
       const insertOnly =
         it.table === 'review_logs' || it.table === 'practice_logs' || it.table === 'level_tests' || it.table === 'weekly_reports';
+      // The database guard (20261106000510): new text bodies and Anki imports wait.
+      const k0 = this.key(it.table, p.id);
+      const newBody =
+        it.table === 'texts' && typeof p.body === 'string' && p.body !== '' && this.rows.get(k0)?.row.body !== p.body;
+      if (this.storageFull && (newBody || (it.table === 'review_logs' && p.origin === 'anki' && !this.rows.has(k0)))) {
+        res.rejected.push({ table: it.table, id: p.id, code: '53400', message: 'storage_full: the server is nearly full' });
+        continue;
+      }
       if (insertOnly && it.op === 'delete') {
         res.rejected.push({ table: it.table, id: p.id, code: '42501', message: 'logs are append-only' });
         continue;
@@ -183,7 +231,7 @@ export class FakeServer implements SyncTransport {
     const version: PullResult['version'] = from === undefined ? 1 : this.practiceSupported ? 3 : 2;
     const start = from === undefined ? since : Math.min(Math.max(from, 0), since);
     if (start > 0 && start < this.purgedThrough) {
-      return { rows: [], invalid: [], next_seq: since, has_more: false, full_resync: true, version };
+      return { rows: [], invalid: [], next_seq: since, has_more: false, full_resync: true, version, ...this.epochInfo() };
     }
     const all = [...this.rows.values()]
       .filter((r) => r.seq > since && (version === 3 ? this.registry.has(r.table) : V2_TABLES.has(r.table)))
@@ -196,7 +244,13 @@ export class FakeServer implements SyncTransport {
       has_more: all.length > page.length,
       full_resync: false,
       version,
+      ...this.epochInfo(),
     };
+  }
+
+  /** sync_pull_v5's extras (none from a backend before 20261106000500). */
+  private epochInfo(): Pick<PullResult, 'epoch' | 'seqHead'> {
+    return this.epoch === undefined ? {} : { epoch: this.epoch, seqHead: this.seq };
   }
 
   /** public.sync_tables names (read with a plain select by the client); null: no registry. */

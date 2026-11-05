@@ -527,7 +527,7 @@ describe('idle backoff and slim text pushes (decision 0060)', () => {
   it('polls every minute after a change, doubling while idle up to 10 minutes', async () => {
     const { nextPollDelayMs, isIdleOutcome } = await import('./engine');
     expect([0, 1, 2, 3, 4, 50].map(nextPollDelayMs)).toEqual([60_000, 120_000, 240_000, 480_000, 600_000, 600_000]);
-    const report = { pushed: 0, stale: 0, rejected: 0, pulled: 0, fullResync: false, removed: 0, lexicon: 0 };
+    const report = { pushed: 0, stale: 0, rejected: 0, pulled: 0, fullResync: false, removed: 0, lexicon: 0, held: 0, requeued: 0 };
     expect(isIdleOutcome({ ok: true, report })).toBe(true);
     expect(isIdleOutcome({ ok: true, report: { ...report, pulled: 1 } })).toBe(false);
     expect(isIdleOutcome({ ok: false, reason: 'busy' })).toBe(true);

@@ -162,39 +162,48 @@ describe('sync api', () => {
     expect(res.rows).toEqual([{ table: 'notes', seq: 5, row: { ...note, level_override: null } }]);
   });
 
-  it('with a start cursor pulls through sync_pull_v4 and falls back to v3, v2, then sync_pull, on an older backend', async () => {
+  /** A backend that lacks the named pull functions. */
+  const backendOf = (page: unknown, missing: string[]) => {
+    const calls: string[] = [];
+    const client = {
+      rpc: async (fn: string) => {
+        calls.push(fn);
+        return missing.includes(fn)
+          ? { data: null, error: { code: 'PGRST202', message: `Could not find the function public.${fn}` } }
+          : { data: page, error: null };
+      },
+    } as unknown as SupabaseClient;
+    return { calls, client };
+  };
+
+  it('with a start cursor pulls through sync_pull_v5 and falls back to v4, v3, v2, then sync_pull, on an older backend', async () => {
     const page = { rows: [], next_seq: 9, has_more: false, full_resync: false };
-    const v4 = fakeClient({ data: page });
-    expect((await pullChanges(9, 500, v4.client, 0)).version).toBe(3);
-    expect(v4.calls).toEqual([
-      { fn: 'sync_pull_v4', args: { p_since: 9, p_limit: 500, p_from: 0, p_max_bytes: 1_048_576 } },
+    const v5 = fakeClient({ data: { ...page, epoch: 1762000000000, seq_head: 42 } });
+    const res5 = await pullChanges(9, 500, v5.client, 0);
+    expect(res5).toMatchObject({ version: 3, epoch: 1762000000000, seqHead: 42 });
+    expect(v5.calls).toEqual([
+      { fn: 'sync_pull_v5', args: { p_since: 9, p_limit: 500, p_from: 0, p_max_bytes: 1_048_576 } },
     ]);
+    const v4 = backendOf(page, ['sync_pull_v5']);
+    const res4 = await pullChanges(9, 500, v4.client, 0);
+    expect(res4.version).toBe(3);
+    expect(res4.epoch).toBeUndefined();
+    expect(v4.calls).toEqual(['sync_pull_v5', 'sync_pull_v4']);
 
-    const backend = (missing: string[]) => {
-      const calls: string[] = [];
-      const client = {
-        rpc: async (fn: string) => {
-          calls.push(fn);
-          return missing.includes(fn)
-            ? { data: null, error: { code: 'PGRST202', message: `Could not find the function public.${fn}` } }
-            : { data: page, error: null };
-        },
-      } as unknown as SupabaseClient;
-      return { calls, client };
-    };
-    const v3 = backend(['sync_pull_v4']);
+    const backend = (missing: string[]) => backendOf(page, missing);
+    const v3 = backend(['sync_pull_v5', 'sync_pull_v4']);
     expect((await pullChanges(9, 500, v3.client, 0)).version).toBe(3);
-    expect(v3.calls).toEqual(['sync_pull_v4', 'sync_pull_v3']);
+    expect(v3.calls).toEqual(['sync_pull_v5', 'sync_pull_v4', 'sync_pull_v3']);
 
-    const v2 = backend(['sync_pull_v4', 'sync_pull_v3']);
+    const v2 = backend(['sync_pull_v5', 'sync_pull_v4', 'sync_pull_v3']);
     expect((await pullChanges(9, 500, v2.client, 0)).version).toBe(2);
-    expect(v2.calls).toEqual(['sync_pull_v4', 'sync_pull_v3', 'sync_pull_v2']);
+    expect(v2.calls).toEqual(['sync_pull_v5', 'sync_pull_v4', 'sync_pull_v3', 'sync_pull_v2']);
 
-    const old = backend(['sync_pull_v4', 'sync_pull_v3', 'sync_pull_v2']);
+    const old = backend(['sync_pull_v5', 'sync_pull_v4', 'sync_pull_v3', 'sync_pull_v2']);
     const res = await pullChanges(9, 500, old.client, 0);
     expect(res.next_seq).toBe(9);
     expect(res.version).toBe(1);
-    expect(old.calls).toEqual(['sync_pull_v4', 'sync_pull_v3', 'sync_pull_v2', 'sync_pull']);
+    expect(old.calls).toEqual(['sync_pull_v5', 'sync_pull_v4', 'sync_pull_v3', 'sync_pull_v2', 'sync_pull']);
   });
 
   it('validates practice_logs rows from sync_pull_v3', async () => {

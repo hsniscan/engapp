@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fillLateColumns } from './syncMerge';
+import { fillLateColumns, keepGradedBody, needsGradedBody } from './syncMerge';
 
 describe('fillLateColumns (same HLC: take columns an older version dropped)', () => {
   it('takes a level the server has over the local unset value', () => {
@@ -78,5 +78,23 @@ describe('fillLateColumns (same HLC: take columns an older version dropped)', ()
     expect(fillLateColumns('sources', { id: 's1', topics: ['science'] }, local)).toBe(local);
     const card = { id: 'c1', due: 1 };
     expect(fillLateColumns('cards', { id: 'c1', due: 2 }, card)).toBe(card);
+  });
+});
+
+describe('keepGradedBody (library texts by reference, decision 0075)', () => {
+  const remote = { id: 't', kind: 'graded', graded_id: 'g-1', body: '', progress_offset: 9 };
+  it('keeps the device copy of a library text when the server row has no body', () => {
+    expect(keepGradedBody('texts', remote, { ...remote, body: 'The cat sat.', progress_offset: 2 })).toEqual({
+      ...remote,
+      body: 'The cat sat.',
+    });
+    expect(needsGradedBody('texts', remote)).toBe(true);
+  });
+  it('leaves every other row alone', () => {
+    const own = { ...remote, kind: 'paste', graded_id: null };
+    expect(keepGradedBody('texts', own, { ...own, body: 'mine' })).toBe(own);
+    expect(keepGradedBody('notes', remote, { body: 'x' })).toBe(remote);
+    expect(keepGradedBody('texts', remote, undefined)).toBe(remote);
+    expect(needsGradedBody('texts', { ...remote, body: 'x' })).toBe(false);
   });
 });

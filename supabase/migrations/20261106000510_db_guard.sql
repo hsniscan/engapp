@@ -2,9 +2,10 @@
 -- Free plan's 500 MB database, and a nearly full database keeps the essentials working.
 --
 -- 1. Per-user limits sized for the Free plan (they were sized for a paid one: 300 MB of pushes
---    a day, 100 MB of texts per user). Measured on the live data (ADR 0075): a review log is
---    about 300 B stored with its indexes and 350-450 B on the wire; a card, note or sense
---    400-600 B; a heavy daily learner pushes about 150-300 KB a day. The new limits leave a
+--    a day, 100 MB of texts per user). Measured on the current schema (ADR 0075): a review
+--    log is about 400 B on the wire and 460 B stored with its indexes; a card update about
+--    600 B on the wire; one answer (log + card) about 1 KB, so a heavy learner (300 answers)
+--    pushes about 300 KB a day. The new limits leave a
 --    100x margin for normal use, let a large Anki history arrive over a few days (the outbox
 --    simply waits), and cap one account at about 20-25 MB of new rows a day, so the ~370 MB of
 --    head room cannot go in a day, and the 350 MB e-mail (scripts/ops-health.sh) comes first.

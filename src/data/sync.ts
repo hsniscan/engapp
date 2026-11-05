@@ -2,7 +2,8 @@
 // pulled pages together with their cursor, full-resync cleanup and the lexicon cache.
 // Business rules for conflicts live in applyRemoteRows (maintenance.ts); this module only
 // moves rows in and out of Dexie in the right transactions.
-import type { Id, LexiconExample, LexiconSense, Millis, OutboxRow, OutboxTable } from '../domain/types';
+import { compareHlc } from '../domain/hlc';
+import { INSERT_ONLY_TABLES, type Id, type LexiconExample, type LexiconSense, type Millis, type OutboxRow, type OutboxTable } from '../domain/types';
 import { db } from './db';
 import { rebuildDailyActivity } from './dailyActivity';
 import { applyRemoteRows, type ApplyRemoteResult, type RemoteBatch } from './maintenance';
@@ -117,6 +118,20 @@ export async function failOutboxItems(items: OutboxItem[], now: Millis): Promise
   });
 }
 
+/**
+ * The server refused these items for a quota or because it is nearly full (SQLSTATE 53400,
+ * decision 0075): not the rows' fault, so they keep their attempts (they never show as
+ * stuck) and wait until `until` (a forced "Şimdi senkronla" still tries them).
+ */
+export async function holdOutboxItems(items: OutboxItem[], until: Millis): Promise<void> {
+  if (items.length === 0) return;
+  await db.transaction('rw', db.outbox, async () => {
+    for (const item of items) {
+      for (const r of await entriesOf(item)) await db.outbox.update(r.seq!, { next_attempt_at: until });
+    }
+  });
+}
+
 /** Distinct rows that failed STUCK_ATTEMPTS times or more ("10 başarısız deneme"). */
 export async function stuckOutboxCount(): Promise<number> {
   const rows = await scanWhere(db.outbox, (r) => r.attempts >= STUCK_ATTEMPTS);
@@ -188,6 +203,40 @@ export async function removeRowsMissingOnServer(seen: Record<ResyncTable, Set<Id
   });
   if (removed) await rebuildDailyActivity(now);
   return removed;
+}
+
+/**
+ * What a full pull from the server returned, per table: row id → HLC (insert-only rows: '').
+ * Used after a database restore (decision 0075) to find what the server lacks.
+ */
+export type ServerRowIndex = Map<string, Map<Id, string>>;
+
+/**
+ * After a database restore (decision 0075): queue every local synced row that the full pull
+ * did not return, or returned in an older version (lower HLC), so the server gets back what
+ * its backup missed. Rows are queued as they are (same HLC, full payload): the push is the
+ * usual last-writer-wins / insert-if-new, so a repeat is harmless. Rows already waiting in
+ * the outbox are left alone. Nothing is deleted locally. Returns the number of rows queued.
+ */
+export async function requeueRowsServerLacks(server: ServerRowIndex, now: Millis = Date.now()): Promise<number> {
+  const tables = [...RESYNC_TABLES, ...INSERT_ONLY_TABLES] as const;
+  return db.transaction('rw', [db.outbox, ...tables.map((t) => db.table(t))], async () => {
+    const pending = await outboxRowIds();
+    const queue: OutboxRow[] = [];
+    for (const table of tables) {
+      const seen = server.get(table) ?? new Map<Id, string>();
+      const insertOnly = (INSERT_ONLY_TABLES as readonly string[]).includes(table);
+      await db.table(table).each((row: { id: Id; hlc: string; deleted_at?: Millis | null }) => {
+        if (pending.has(rowKey(table, row.id))) return;
+        const theirs = seen.get(row.id);
+        if (theirs !== undefined && (insertOnly || compareHlc(theirs, row.hlc) >= 0)) return;
+        const op: OutboxRow['op'] = !insertOnly && row.deleted_at != null ? 'delete' : 'upsert';
+        queue.push({ table: table as OutboxTable, row_id: row.id, op, payload: row, attempts: 0, next_attempt_at: now });
+      });
+    }
+    if (queue.length) await db.outbox.bulkAdd(queue);
+    return queue.length;
+  });
 }
 
 // ------------------------------------------------------------------ lexicon cache

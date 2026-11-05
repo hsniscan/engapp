@@ -144,6 +144,9 @@ const pullEnvelope = z.object({
   next_seq: z.number(),
   has_more: z.boolean(),
   full_resync: z.boolean(),
+  // sync_pull_v5 (decision 0075): the server's restore epoch and the head of its sequence.
+  epoch: z.number().optional().catch(undefined),
+  seq_head: z.number().nullable().optional().catch(undefined),
 });
 
 export interface PullResult {
@@ -159,6 +162,13 @@ export interface PullResult {
    * migrations land.
    */
   version: 1 | 2 | 3;
+  /**
+   * The server's restore epoch (sync_pull_v5, decision 0075): it changes when the database is
+   * restored from a backup. Undefined from an older backend.
+   */
+  epoch?: number;
+  /** The last value of the server's sync sequence (v5); a cursor above it means a restore. */
+  seqHead?: number | null;
 }
 
 const lexiconPullEnvelope = z.object({
@@ -261,7 +271,9 @@ export async function pullChanges(
   let version: PullResult['version'] = 1;
   if (fromSeq !== undefined) {
     // sync_pull_v4 (decision 0060): pages bounded by bytes too, unchanged text bodies left out.
+    // sync_pull_v5 (decision 0075): v4 plus the restore epoch.
     const tries = [
+      ['sync_pull_v5', 3, { p_max_bytes: MAX_PULL_BYTES }],
       ['sync_pull_v4', 3, { p_max_bytes: MAX_PULL_BYTES }],
       ['sync_pull_v3', 3, {}],
       ['sync_pull_v2', 2, {}],
@@ -298,6 +310,8 @@ export async function pullChanges(
     has_more: env.has_more,
     full_resync: env.full_resync,
     version,
+    ...(env.epoch !== undefined ? { epoch: env.epoch } : {}),
+    ...(env.seq_head !== undefined ? { seqHead: env.seq_head } : {}),
   };
 }
 
@@ -321,7 +335,11 @@ export async function fillTextBodies(
   const missing: string[] = [];
   for (const r of slim) {
     const body = local.get(String(r.row.id));
-    if (body !== undefined && encoder.encode(body).length === Number(r.row.body_bytes)) {
+    // A library text has no body on the server (decision 0075): keep the device's own copy.
+    const graded = r.row.kind === 'graded' && typeof r.row.graded_id === 'string' && Number(r.row.body_bytes) === 0;
+    if (graded) {
+      r.row.body = body ?? '';
+    } else if (body !== undefined && encoder.encode(body).length === Number(r.row.body_bytes)) {
       r.row.body = body;
     } else {
       missing.push(String(r.row.id));
