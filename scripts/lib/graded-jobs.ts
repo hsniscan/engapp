@@ -6,8 +6,9 @@
 //            texts are missing and what they would cost. No writes, no model calls.
 //   submit   plans the missing slots (graded_jobs rows), then sends the queued writer
 //            requests (graded-v1) and the queued checks (gradedcheck-v1) as Message Batches,
-//            each after reserving its whole upper-bound cost on the monthly text budget
-//            (halved until it fits; nothing is sent when nothing fits).
+//            each after reserving its whole upper-bound cost on the monthly Claude budget and
+//            the library's own monthly cap (graded-budget.ts, decision 0073; halved until it
+//            fits; nothing is sent when nothing fits).
 //   collect  reads finished batches and settles their real cost. A written text gets the
 //            coverage check (graded-coverage.ts); it passes → stored as 'checking' and queued
 //            for the checker; it fails → rewritten once with the words to avoid, then given up
@@ -66,6 +67,7 @@ export const WRITER_MAX_ATTEMPTS = 2;
 export const CHECK_MAX_ATTEMPTS = 2;
 /** Expected output tokens (thinking at effort low + JSON), per level, for estimates only. */
 export const EXPECTED_WRITER_OUTPUT: Readonly<Record<GradedLevel, number>> = {
+  A1: 1300,
   A2: 1800,
   B1: 2400,
   B2: 3200,
@@ -166,6 +168,11 @@ export interface GradedStore {
   textsForCheck(ids: string[]): Promise<TextForCheck[]>;
   cells(): Promise<CellCounts>;
   recentApproved(limit: number): Promise<{ level: string; topic: string; title: string }[]>;
+  /**
+   * What the library's batches created since `sinceIso` cost: the real cost of collected ones,
+   * the reservation of open ones (the library's own monthly cap, graded-budget.ts).
+   */
+  monthSpendUsd(sinceIso: string): Promise<number>;
 }
 
 export interface GradedModels {

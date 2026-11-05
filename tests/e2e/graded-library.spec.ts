@@ -147,3 +147,39 @@ test('Okuma: an opened library text is listed once, with its progress, and a sug
   await expect(library).toContainText('Why the Sky Is Blue');
   await expect(library).not.toContainText('The Late Train');
 });
+
+test('Okuma: the full library (360 texts, A1 to C1) lists in pages, filters by A1 and works offline', async ({
+  page,
+  backend,
+}) => {
+  // v0.5.3 (decision 0073): the library plan, 8/8/8/7/5 texts per core topic on A1..C1.
+  const topics = ['business', 'technology', 'daily_life', 'travel', 'science', 'health', 'sports', 'culture', 'history', 'news'];
+  const perTopic: Record<string, number> = { A1: 8, A2: 8, B1: 8, B2: 7, C1: 5 };
+  let n = 0;
+  for (const [level, count] of Object.entries(perTopic))
+    for (const topic of topics)
+      for (let i = 0; i < count; i++) {
+        n++;
+        backend.graded.push(text(n, level, topic, `${level} text ${n}`));
+      }
+  expect(backend.graded).toHaveLength(360);
+
+  await page.goto('/kitaplik');
+  const list = page.getByRole('list', { name: 'Metinler', exact: true });
+  await expect(list.getByRole('listitem')).toHaveCount(30);
+  await expect(page.getByRole('button', { name: 'Daha fazla göster (330)' })).toBeVisible();
+  // The A1 shelf: its own level chip, and the easiest texts first.
+  const levels = page.getByRole('group', { name: 'Seviye' });
+  await expect(levels.getByRole('button', { name: 'A1' })).toBeVisible();
+  await expect(list.getByRole('listitem').first()).toContainText('A1 text');
+  await levels.getByRole('button', { name: 'A1' }).click();
+  await expect(page.getByRole('button', { name: 'Daha fazla göster (50)' })).toBeVisible();
+
+  // Offline after the first visit: the catalogue is on the device and the same list comes back.
+  backend.offline = true;
+  await page.reload();
+  await expect(list.getByRole('listitem')).toHaveCount(30);
+  await expect(page.getByRole('button', { name: 'Daha fazla göster (330)' })).toBeVisible();
+  await page.getByRole('group', { name: 'Seviye' }).getByRole('button', { name: 'C1' }).click();
+  await expect(page.getByRole('button', { name: 'Daha fazla göster (20)' })).toBeVisible();
+});

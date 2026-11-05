@@ -1,15 +1,22 @@
 // Wiring of the graded library job for the command line (scripts/graded-batch.ts): service-role
-// Supabase client, Claude Message Batches API, models and the text budget's cap from the
-// environment, the level file from the repository.
+// Supabase client, Claude Message Batches API, models, the monthly Claude budget
+// (CLAUDE_MONTHLY_CREDIT_USD) with the library's own cap (GRADED_MONTHLY_USD, decision 0073)
+// from the environment, the level file from the repository.
 
 import { readFileSync } from 'node:fs';
 import { createAnthropic } from '../../supabase/functions/_shared/image-claude.ts';
-import { DEFAULT_GRADED_MODEL, imageModels } from '../../supabase/functions/_shared/image-models.ts';
+import {
+  DEFAULT_GRADED_MODEL,
+  imageModels,
+  monthlyCapUsd,
+} from '../../supabase/functions/_shared/image-models.ts';
 import { parseLevelTable, type LevelTable } from '../../supabase/functions/_shared/graded-coverage.ts';
 import {
-  SupabaseTextBudgetStore,
-  textMonthlyCapUsd,
-} from '../../supabase/functions/_shared/text-budget.ts';
+  CappedBudgetStore,
+  ClaudeMonthlyBudgetStore,
+  gradedMonthlyCapUsd,
+  monthStartIso,
+} from './graded-budget.ts';
 import { log, serviceClient } from './image-env.ts';
 import type { BatchApi, BatchResult } from './image-jobs.ts';
 import type { GradedDeps, GradedModels } from './graded-jobs.ts';
@@ -53,14 +60,18 @@ const noBatches: BatchApi = {
 /** The job's wiring; `withClaude` false (plan, report, dry runs) needs no Claude key. */
 export function gradedDepsFromEnv(withClaude: boolean): GradedDeps & {
   store: SupabaseGradedStore;
-  budgetStore: SupabaseTextBudgetStore;
+  budgetStore: CappedBudgetStore;
 } {
   const env: Env = (k) => process.env[k] || undefined;
   const db = serviceClient();
-  const budgetStore = new SupabaseTextBudgetStore(db);
+  const store = new SupabaseGradedStore(db);
+  const budgetStore = new CappedBudgetStore(new ClaudeMonthlyBudgetStore(db), {
+    capUsd: gradedMonthlyCapUsd(env),
+    spentUsd: () => store.monthSpendUsd(monthStartIso()),
+  });
   return {
-    store: new SupabaseGradedStore(db),
-    budget: { store: budgetStore, capUsd: textMonthlyCapUsd(env) },
+    store,
+    budget: { store: budgetStore, capUsd: monthlyCapUsd(env) },
     budgetStore,
     batches: withClaude ? batchApi(env) : noBatches,
     models: gradedModels(env),

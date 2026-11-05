@@ -130,6 +130,11 @@ class FakeStore implements GradedStore {
     }
     return { texts: [...texts.values()], jobs: [] };
   }
+  async monthSpendUsd() {
+    let sum = 0;
+    for (const b of this.batches.values()) sum += b.state === 'collected' ? (b.cost_usd ?? 0) : b.reserved_usd;
+    return sum;
+  }
   async recentApproved(limit: number) {
     return [...this.texts.values()].filter((t) => t.status === 'approved').slice(0, limit).map((t) => ({ level: t.level, topic: t.topic, title: t.title }));
   }
@@ -225,14 +230,16 @@ describe('graded-v1 prompt', () => {
 });
 
 describe('graded job', () => {
-  it('plan reads only and estimates the first 360 texts within the monthly cap', async () => {
+  it('plan reads only and estimates the 360 library texts within the library cap', async () => {
     const { deps, store, batches } = setup();
     const r = await runPlan(deps, FIRST_PLAN);
     expect(r.missing).toBe(360);
-    expect(r.byLevel).toEqual({ A2: 90, B1: 90, B2: 90, C1: 90 });
+    expect(r.byLevel).toEqual({ A1: 80, A2: 80, B1: 80, B2: 70, C1: 50 });
     expect(r.estimatedUsd).toBeGreaterThan(1);
     expect(r.estimatedUsd).toBeLessThan(10);
     expect(r.upperBoundUsd).toBeGreaterThan(r.estimatedUsd);
+    // The whole first round of writer requests fits the library's default 20 US$ at once.
+    expect(r.upperBoundUsd).toBeLessThan(20);
     expect(store.jobsMap.size).toBe(0);
     expect(batches.sent).toHaveLength(0);
   });

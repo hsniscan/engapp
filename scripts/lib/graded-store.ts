@@ -1,5 +1,5 @@
 // The graded library job's database access (service role): tables and functions from
-// 20261101000510_graded_texts.sql. The text budget is separate (_shared/text-budget.ts).
+// 20261101000510_graded_texts.sql. The budget is separate (graded-budget.ts).
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
@@ -159,6 +159,23 @@ export class SupabaseGradedStore implements GradedStore {
         .limit(limit),
       'graded_texts read',
     ) as { level: string; topic: string; title: string }[];
+  }
+
+  async monthSpendUsd(sinceIso: string): Promise<number> {
+    let sum = 0;
+    for (let from = 0; ; from += 1000) {
+      const page = check(
+        await this.db
+          .from('graded_batches')
+          .select('id, state, reserved_usd, cost_usd')
+          .gte('created_at', sinceIso)
+          .order('id')
+          .range(from, from + 999),
+        'graded_batches read',
+      ) as { state: string; reserved_usd: number | string; cost_usd: number | string | null }[];
+      for (const b of page) sum += Number(b.state === 'collected' ? (b.cost_usd ?? 0) : b.reserved_usd);
+      if (page.length < 1000) return Math.round(sum * 1e6) / 1e6;
+    }
   }
 
   /** English sentences of every approved text (for the audio pre-generation). */

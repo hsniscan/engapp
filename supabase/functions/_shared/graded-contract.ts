@@ -6,17 +6,19 @@
 import { z } from 'zod';
 
 /** Prompt versions (stored with every text). */
-export const GRADED_PROMPT_VERSION = 'graded-v1';
+export const GRADED_PROMPT_VERSION = 'graded-v2';
 export const GRADED_CHECK_VERSION = 'gradedcheck-v1';
 
-export const GRADED_LEVELS = ['A2', 'B1', 'B2', 'C1'] as const;
+/** Library shelves, easiest first. A1 added in v0.5.3 (decision 0073). */
+export const GRADED_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1'] as const;
 export type GradedLevel = (typeof GRADED_LEVELS)[number];
 
 export const isGradedLevel = (v: unknown): v is GradedLevel =>
   typeof v === 'string' && (GRADED_LEVELS as readonly string[]).includes(v);
 
-/** Running words per text, by level (plan: 150–600 words). */
+/** Running words per text, by level (plan: 150–600 words; A1 60–120, decision 0073). */
 export const GRADED_LENGTHS: Readonly<Record<GradedLevel, { min: number; max: number }>> = {
+  A1: { min: 60, max: 120 },
   A2: { min: 150, max: 250 },
   B1: { min: 220, max: 350 },
   B2: { min: 320, max: 480 },

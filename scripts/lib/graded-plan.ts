@@ -2,9 +2,10 @@
 // angle and one text type per slot so the nine texts of a cell differ. Pure: the job
 // (graded-jobs.ts) compares the grid with the slots it already has and plans the rest.
 //
-// First plan: A2, B1, B2, C1 × the ten core topics × 9 = 360 texts. The profile's other
-// interests come later (`extendedPerCell`), and a cell can grow (`perCell`) when the owner
-// wants more texts each month.
+// Library plan (v0.5.3, decision 0073): five shelves × the ten core topics, 360 texts —
+// A1 8, A2 8, B1 8, B2 7, C1 5 per topic (80 + 80 + 80 + 70 + 50): beginners, who need easy
+// reading most, get the most texts. The profile's other interests come later
+// (`extendedPerCell`), and every cell can grow (`perCell`) when the owner wants more texts.
 
 import {
   CORE_TOPIC_KEYS,
@@ -174,6 +175,133 @@ export const TOPIC_ANGLES: Readonly<Record<GradedTopic, readonly string[]>> = {
   law: ['renting a flat: reading the contract', 'a dispute between neighbours', 'what a jury does'],
 };
 
+/**
+ * A1 angles per core topic: concrete, everyday situations a beginner can read about in the
+ * present tense (slot k uses angle k). Other topics fall back to TOPIC_ANGLES.
+ */
+export const A1_ANGLES: Readonly<Partial<Record<GradedTopic, readonly string[]>>> = {
+  business: [
+    'a day at work in a small office',
+    'a new colleague says hello',
+    'a shop assistant and a customer',
+    'my boss, my desk and my computer',
+    'a busy morning in a café kitchen',
+    'phone calls at a hotel reception',
+    'a woman who works from home',
+    'lunch break with colleagues',
+    'a short job interview',
+  ],
+  technology: [
+    'my phone and what I do with it',
+    'a family video call on Sunday',
+    'a new laptop for a student',
+    'a man who cannot find his phone',
+    'music on the bus with headphones',
+    'taking photos in the park',
+    'a grandfather sends his first message',
+    'the television, the radio and the family',
+    'an online shopping order arrives',
+  ],
+  daily_life: [
+    'my morning routine',
+    'a family dinner at home',
+    'shopping at the supermarket',
+    'my neighbour and her cat',
+    'a rainy Sunday at home',
+    'cleaning the flat with friends',
+    'a birthday party in the garden',
+    'my favourite room in the house',
+    'a walk with the dog',
+  ],
+  travel: [
+    'at the airport',
+    'a train to the sea',
+    'a small hotel in the mountains',
+    'buying a ticket at the bus station',
+    'a day in a big city',
+    'a map, a bicycle and a lake',
+    'postcards from a holiday',
+    'asking the way to the museum',
+    'packing a bag for a weekend',
+  ],
+  science: [
+    'the sun, the moon and the stars',
+    'water: rain, rivers and the sea',
+    'plants need light and water',
+    'hot and cold: ice and steam',
+    'animals in winter',
+    'our body: heart and lungs',
+    'a simple experiment with a glass of water',
+    'day and night',
+    'colours in the sky',
+  ],
+  health: [
+    'a visit to the doctor',
+    'healthy food for breakfast',
+    'walking every day',
+    'a cold and a cup of tea',
+    'sleep: when I go to bed',
+    'at the dentist',
+    'fruit and vegetables at the market',
+    'a yoga class for beginners',
+    'drinking water at work',
+  ],
+  sports: [
+    'football in the park on Saturday',
+    'my first swimming lesson',
+    'a tennis game with a friend',
+    'running in the morning',
+    'a basketball team at school',
+    'cycling to work',
+    'watching a match on television',
+    'a long walk in the hills',
+    'a small table tennis club',
+  ],
+  culture: [
+    'a concert in the park',
+    'a visit to a museum',
+    'a film night with friends',
+    'a book I like',
+    'a street festival',
+    'learning to cook a family dish',
+    'music in the car',
+    'photos on the wall',
+    'a dance class',
+  ],
+  history: [
+    'an old house in my town',
+    'my grandmother’s photos',
+    'a castle on a hill',
+    'how people wrote letters in the past',
+    'an old bicycle',
+    'a market that is two hundred years old',
+    'the first trains',
+    'an old map of the city',
+    'a clock in the town square',
+  ],
+  news: [
+    'a new park opens in town',
+    'a lost cat comes home',
+    'snow closes a small school for a day',
+    'a library has a book party',
+    'a new bus stop near the hospital',
+    'a town cleans its river',
+    'a café wins a prize for its cakes',
+    'a big storm and a quiet morning',
+    'a village has a new football field',
+  ],
+};
+
+/** Kinds of text for the A1 shelf (short and concrete), rotated like GENRES. */
+export const A1_GENRES = [
+  'short story',
+  'description of a person or a place',
+  'dialogue',
+  'diary entry',
+  'short email or message',
+  'short news report',
+] as const;
+
 /** Kinds of text, rotated over the slots of a cell. */
 export const GENRES = [
   'short story',
@@ -190,7 +318,8 @@ export const GENRES = [
 export const planKeyOf = (level: string, topic: string, slot: number) => `${level}|${topic}|${slot}`;
 
 export function planItem(level: GradedLevel, topic: GradedTopic, slot: number): PlanItem {
-  const angles = TOPIC_ANGLES[topic];
+  const angles = (level === 'A1' ? A1_ANGLES[topic] : undefined) ?? TOPIC_ANGLES[topic];
+  const genres: readonly string[] = level === 'A1' ? A1_GENRES : GENRES;
   const li = GRADED_LEVELS.indexOf(level);
   const ti = GRADED_TOPIC_KEYS.indexOf(topic);
   const round = Math.floor(slot / angles.length);
@@ -200,20 +329,33 @@ export function planItem(level: GradedLevel, topic: GradedTopic, slot: number): 
     topic,
     slot,
     angle: angles[slot % angles.length]! + (round > 0 ? ` (a new text, version ${round + 1})` : ''),
-    genre: GENRES[(slot + li * 2 + ti + round * 4) % GENRES.length]!,
+    genre: genres[(slot + li * 2 + ti + round * 4) % genres.length]!,
     words: GRADED_LENGTHS[level],
   };
 }
 
 export interface PlanTargets {
   levels: readonly GradedLevel[];
-  /** Texts per cell of each core topic (first plan: 9). */
+  /** Texts per cell of each core topic, for a level `perLevel` does not name. */
   perCell: number;
-  /** Texts per cell of each other profile topic (first plan: 0). */
+  /** Texts per core-topic cell of these levels (the library plan's own counts). */
+  perLevel?: Partial<Record<GradedLevel, number>>;
+  /** Texts per cell of each other profile topic (library plan: 0). */
   extendedPerCell: number;
 }
 
-export const FIRST_PLAN: PlanTargets = { levels: GRADED_LEVELS, perCell: 9, extendedPerCell: 0 };
+/** Texts per core topic and level in the library plan (× 10 topics = 360). */
+export const LIBRARY_PER_LEVEL: Readonly<Record<GradedLevel, number>> = { A1: 8, A2: 8, B1: 8, B2: 7, C1: 5 };
+
+export const FIRST_PLAN: PlanTargets = {
+  levels: GRADED_LEVELS,
+  perCell: 9,
+  perLevel: LIBRARY_PER_LEVEL,
+  extendedPerCell: 0,
+};
+
+/** The core-topic target of one level. */
+export const coreTarget = (t: PlanTargets, level: GradedLevel): number => t.perLevel?.[level] ?? t.perCell;
 
 /** A slot the job already has (graded_jobs), by its state. */
 export interface ExistingSlot {
@@ -239,7 +381,7 @@ export function planMissing(targets: PlanTargets, existing: readonly ExistingSlo
   const out: PlanItem[] = [];
   for (const level of targets.levels) {
     for (const topic of GRADED_TOPIC_KEYS) {
-      const target = CORE_TOPIC_KEYS.includes(topic) ? targets.perCell : targets.extendedPerCell;
+      const target = CORE_TOPIC_KEYS.includes(topic) ? coreTarget(targets, level) : targets.extendedPerCell;
       if (target <= 0) continue;
       const slots = byCell.get(`${level}|${topic}`) ?? [];
       const used = new Set(slots.map((s) => s.slot));
