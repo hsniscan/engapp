@@ -1344,15 +1344,17 @@ Meanings you do not list are kept unchanged. Most words need no change. Answer w
 }
 ```
 
-## Graded library (`graded-v1`, `gradedcheck-v1`)
+## Graded library (`graded-v2`, `gradedcheck-v1`)
 
-Short English texts for each level, A2 to C1, each with a Turkish translation and an en-US clip
-per sentence (decision 0047). The nightly job `.github/workflows/graded.yml` drives
+Short English texts for each level, A1 to C1, each with a Turkish translation and a clip per
+sentence in both accents (decisions 0047, 0073). The nightly job `.github/workflows/graded.yml` drives
 `scripts/graded-batch.ts`. Its jobs:
 
 - `plan`: print the missing slots and the worst-case cost.
 - `collect`: fetch finished batches, then gate, check and store.
-- `submit`: send new batches. It runs only when `GRADED_BULK=true`.
+- `submit`: send new batches. It runs unless `GRADED_BULK=false` (v0.5.3).
+- `bulk`: collect + submit in a loop for up to 5.5 hours, then the audio: the whole library in
+  one manual run (decision 0073).
 - `audio`: run the Kokoro pre-generation with `--source graded`.
 - `report`: print the counts.
 
@@ -1360,22 +1362,23 @@ Both models are run through Message Batches (half price). Model ids come from th
 
 | Step    | Prompt           | Model (env)                                 | Output                                                                 |
 | ------- | ---------------- | ------------------------------------------- | ---------------------------------------------------------------------- |
-| Writer  | `graded-v1`      | `CLAUDE_GRADED_MODEL` [`claude-sonnet-5-5`] | `{title, sentences:[{en, tr, new_paragraph}], target_lemmas, glosses}` |
+| Writer  | `graded-v2`      | `CLAUDE_GRADED_MODEL` [`claude-sonnet-5-5`] | `{title, sentences:[{en, tr, new_paragraph}], target_lemmas, glosses}` |
 | Checker | `gradedcheck-v1` | `CLAUDE_CHECK_MODEL` [`claude-haiku-5-5`]   | scores for naturalness, level fit, translation, safety, facts, copying |
 
 - **Plan** (`scripts/lib/graded-plan.ts`). A slot is `LEVEL|topic|n`, and each slot has its own
   angle and genre. Topics are the ten core ones (business English, technology, daily life,
   travel, science, health, sports, culture, history, news) plus nine extended ones that map to
-  the profile interests. All are timeless: no real news, no real people. The first plan has
-  9 texts per level and core topic, 360 in all (`GRADED_PER_CELL`,
-  `GRADED_EXTENDED_PER_CELL`). Failed slots are planned again, up to twice the target.
-- **Writer.** The prompt (`scripts/lib/graded-prompt.ts`) asks for an original text of 150–250
+  the profile interests. All are timeless: no real news, no real people. The library plan has
+  8/8/8/7/5 texts per core topic on A1/A2/B1/B2/C1, 360 in all (`LIBRARY_PER_LEVEL`;
+  `GRADED_PER_CELL` asks N per topic on every level instead, `GRADED_EXTENDED_PER_CELL`). Failed slots are planned again, up to twice the target.
+- **Writer.** The prompt (`scripts/lib/graded-prompt.ts`) asks for an original text, written fresh and
+  never adapted from a published one, of 60–120 (A1), 150–250
   (A2), 220–350 (B1), 320–480 (B2) or 420–600 (C1) words, written mostly in words at or below
   the level, with natural Turkish for every sentence. The input is the plan item only. No user
   data is ever sent (a snapshot test pins the payload).
 - **Coverage gate** (`_shared/graded-coverage.ts`, client-levels word lists):
   - at least 95 % of tokens at or below the level;
-  - at most 3 % at level+1;
+  - at most 3 % at level+1 (5 % at A1, where 3 % leaves too few words);
   - no word above level+2 unless it is glossed.
 
   Proper nouns and function words are not counted. A failure is rewritten once, with the
@@ -1384,10 +1387,14 @@ Both models are run through Message Batches (half price). Model ids come from th
 - **Checker.** It approves a text only when it is natural (4 or more out of 5), fits the level,
   has a correct translation, is safe, has no false facts and is not copied. Otherwise the text
   is `rejected`, with the reasons in `checks`.
-- **Budget.** Before a batch is sent, its worst-case cost is reserved on the monthly text
-  budget (`CLAUDE_TEXT_MONTHLY_USD`, default 10 USD; `_shared/text-budget.ts`). The batch is
-  halved until it fits. On collect, the hold is settled with the real `usage`.
+- **Budget** (v0.5.3, `scripts/lib/graded-budget.ts`). Before a batch is sent, its worst-case
+  cost is reserved on the shared monthly Claude budget (`image_budget_*`, 80 % of
+  `CLAUDE_MONTHLY_CREDIT_USD`, purpose `batch`) and must also fit the library's own monthly cap
+  (`GRADED_MONTHLY_USD` or the run's `cap_usd`, default 20 USD, counted from `graded_batches`).
+  The app's text budget (`CLAUDE_TEXT_MONTHLY_USD`) is not touched. The batch is halved until
+  it fits. On collect, the hold is settled with the real `usage`.
 - **Audio.** Each sentence's `audio_key` is `ttsObjectPath('en-US', en)`, so the existing `tts`
-  bucket and Kokoro job serve it (decision 0042).
+  bucket and Kokoro job serve it (decision 0042). Since v0.5.3 the job also makes the en-GB
+  clip; the reader computes its path from the sentence and tries it first for a British voice.
 - **Tests** use recorded fixtures only (`scripts/lib/fixtures/graded/`). No test or script
   calls a live model.
