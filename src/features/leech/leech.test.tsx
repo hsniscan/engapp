@@ -85,6 +85,15 @@ describe('leech in the review session', () => {
     );
     await answerWhen('bank', '1');
 
+    // The flag lives in the study screen's top bar, which is drawn again (a new node) when the
+    // next card (or the summary) replaces the "waiting" placeholder. Wait until the session has
+    // settled there, and read the flag from the screen each time, never from a node held across
+    // that swap.
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-card-type]') ?? screen.queryByRole('heading', { name: 'Oturum tamamlandı' }),
+      ).not.toBeNull(),
+    );
     const flag = await screen.findByTestId('leech-flag');
     expect(flag).toHaveTextContent('“bank” kartını 6. kez unuttun.');
     // v0.5.3 B5: the card rests for 30 days; it is not suspended, and "Geri al" is right there.
@@ -94,7 +103,9 @@ describe('leech in the review session', () => {
     expect((await db.cards.get(bankRecognition))!.suspended).toBe(false);
     const logsBefore = await db.review_logs.count();
 
-    await user.click(within(flag).getByRole('button', { name: 'Başka yoldan bakalım' }));
+    await user.click(
+      within(screen.getByTestId('leech-flag')).getByRole('button', { name: 'Başka yoldan bakalım' }),
+    );
     const sheet = await screen.findByTestId('leech-sheet');
     expect(within(sheet.ownerDocument.body).getByRole('dialog', { name: 'Bu karta başka yoldan bakalım' })).toBeInTheDocument();
     await within(sheet).findByRole('button', { name: /Ara ver ya da baştan başla/ });
