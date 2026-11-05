@@ -5,8 +5,12 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import {
+  budgetPurpose,
+  forPool,
   forUser,
   MemoryTextBudgetStore,
+  SYSTEM_POOL,
+  textSystemMonthlyCapUsd,
   recordTextSpend,
   reserveTextBudget,
   settleTextBudget,
@@ -115,12 +119,20 @@ describe('text budget', () => {
 });
 
 describe('per-user share (decision 0060)', () => {
-  it('is 1 USD by default, never more than 10 % of the global cap', () => {
-    expect(textUserMonthlyCapUsd(env({}))).toBe(1);
-    expect(textUserMonthlyCapUsd(env({ CLAUDE_TEXT_MONTHLY_USD: '5' }))).toBe(0.5);
+  it('is 2 USD by default, never more than 20 % of the global cap (decision 0077)', () => {
+    expect(textUserMonthlyCapUsd(env({}))).toBe(2);
+    expect(textUserMonthlyCapUsd(env({ CLAUDE_TEXT_MONTHLY_USD: '5' }))).toBe(1);
     expect(textUserMonthlyCapUsd(env({ AI_USER_MONTHLY_USD: '3', CLAUDE_TEXT_MONTHLY_USD: '100' }))).toBe(3);
-    expect(textUserMonthlyCapUsd(env({ AI_USER_MONTHLY_USD: '3', AI_USER_MAX_SHARE: '0.2' }))).toBe(2);
-    expect(textUserMonthlyCapUsd(env({ AI_USER_MAX_SHARE: 'x', AI_USER_MONTHLY_USD: '-1' }))).toBe(1);
+    expect(textUserMonthlyCapUsd(env({ AI_USER_MONTHLY_USD: '3', AI_USER_MAX_SHARE: '0.1' }))).toBe(1);
+    expect(textUserMonthlyCapUsd(env({ AI_USER_MAX_SHARE: 'x', AI_USER_MONTHLY_USD: '-1' }))).toBe(2);
+  });
+
+  it('gives the owner (APP_ADMIN_USER_ID) 75 % of the global cap', () => {
+    const vars = { APP_ADMIN_USER_ID: 'AAAA-owner', CLAUDE_TEXT_MONTHLY_USD: '20' };
+    expect(textUserMonthlyCapUsd(env(vars), 20, 'aaaa-owner')).toBe(15);
+    expect(textUserMonthlyCapUsd(env(vars), 20, 'someone-else')).toBe(2);
+    expect(textUserMonthlyCapUsd(env({ ...vars, AI_OWNER_MAX_SHARE: '0.9' }), 20, 'aaaa-owner')).toBe(18);
+    expect(textUserMonthlyCapUsd(env({}), 10, 'aaaa-owner')).toBe(2);
   });
 
   it('one user cannot spend more than the share; another user still can', async () => {
@@ -152,6 +164,50 @@ describe('per-user share (decision 0060)', () => {
     const hold = await reserveTextBudget(forUser({ store, capUsd: 10 }, 'u', 1), 5, 'graded', { batch: true });
     expect(hold).not.toBeNull();
     expect(store.users.size).toBe(0);
+  });
+});
+
+describe('system jobs pool (decision 0077)', () => {
+  it('is 2 USD by default, never more than 15 % of the global cap', () => {
+    expect(textSystemMonthlyCapUsd(env({}))).toBe(1.5);
+    expect(textSystemMonthlyCapUsd(env({ CLAUDE_TEXT_MONTHLY_USD: '20' }))).toBe(2);
+    expect(textSystemMonthlyCapUsd(env({ CLAUDE_TEXT_MONTHLY_USD: '30', AI_SYSTEM_MONTHLY_USD: '9' }))).toBe(4.5);
+    expect(textSystemMonthlyCapUsd(env({ AI_SYSTEM_MAX_SHARE: '0.5', AI_SYSTEM_MONTHLY_USD: '9' }))).toBe(5);
+  });
+
+  it('a job stops at its pool and leaves the rest of the month for the users', async () => {
+    const store = new MemoryTextBudgetStore();
+    const job = forPool({ store, capUsd: 10 }, SYSTEM_POOL, 1.5);
+    const call = async () => ({ value: 1, costUsd: 0.03 });
+    let ok = 0;
+    for (let i = 0; i < 200; i++) {
+      const r = await recordTextSpend(job, { purpose: 'levels', boundUsd: 0.12 }, call);
+      if (r.kind === 'budget') break;
+      ok++;
+    }
+    // Each call reserves 0.12 and costs 0.03: it stops once spent + 0.12 would pass 1.5.
+    expect(ok).toBe(47);
+    expect(store.pools.get(SYSTEM_POOL)).toEqual({ spent: 1.41, reserved: 0 });
+    expect(store.spent).toBeCloseTo(1.41, 6);
+    const user = forUser({ store, capUsd: 10 }, 'u', 2);
+    expect((await recordTextSpend(user, { purpose: 'ai-extract', boundUsd: 0.3 }, call)).kind).toBe('ok');
+  });
+
+  it('the global cap still applies to the pool, batch holds included', async () => {
+    const store = new MemoryTextBudgetStore();
+    store.spent = 9.95;
+    const job = forPool({ store, capUsd: 10 }, SYSTEM_POOL, 1.5);
+    expect(await reserveTextBudget(job, 0.1, 'levels')).toBeNull();
+    expect(await reserveTextBudget(job, 0.1, 'levels', { batch: true })).toBeNull();
+    expect(store.pools.get(SYSTEM_POOL)).toBeUndefined();
+  });
+
+  it('purposes are stored in the form the database accepts', () => {
+    expect(budgetPurpose('ai-extract')).toBe('ai_extract');
+    expect(budgetPurpose('Story')).toBe('story');
+    expect(budgetPurpose('9-lives')).toBe('lives');
+    expect(budgetPurpose('---')).toBe('text');
+    expect(budgetPurpose('x'.repeat(40))).toHaveLength(32);
   });
 });
 
