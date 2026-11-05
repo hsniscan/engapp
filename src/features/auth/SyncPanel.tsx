@@ -4,7 +4,7 @@ import { syncNow } from '@/sync';
 import { useSyncStatus } from '@/sync/status';
 import { Button, Icon, toast } from '@/ui';
 import { useAuth } from './session';
-import { syncTitle } from './syncText';
+import { heldHint, syncTitle } from './syncText';
 import { formatSince } from './time';
 
 /** "Senkron" section body for Settings: state, last successful sync, "Şimdi senkronla". */
@@ -64,6 +64,16 @@ export function SyncPanel() {
           </Button>
         )}
       </div>
+      {account && s.held && !quota && (
+        <p
+          role="status"
+          data-testid="sync-held"
+          className="flex items-start gap-2 rounded-control bg-warn-soft px-3 py-2.5 text-meta text-warn-text"
+        >
+          <Icon name="info" size={18} className="mt-px shrink-0" />
+          <span>{heldHint(t, s.held)}</span>
+        </p>
+      )}
       {quota ? (
         <p
           role="status"

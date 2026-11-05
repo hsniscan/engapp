@@ -11,3 +11,10 @@ export function syncTitle(t: TFunction, s: SyncStatusInfo): string {
   if (s.state === 'pending') return t('sync.pending', { count: s.pending });
   return t(`sync.${s.state}`);
 }
+
+/** The plain-words note for rows the server holds back while the rest syncs (decision 0075). */
+export function heldHint(t: TFunction, reason: NonNullable<SyncStatusInfo['held']>): string {
+  if (reason === 'storage') return t('syncPanel.heldStorage');
+  if (reason === 'texts') return t('syncPanel.heldTexts');
+  return t('syncPanel.quotaHint');
+}

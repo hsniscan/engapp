@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import '@/features/auth/register';
 import { AccountLinkDialog } from '@/features/auth/AccountLinkDialog';
+import { heldHint } from '@/features/auth/syncText';
 import { startConnectedFeatures } from '@/features/auth/startConnected';
 import { useSyncStatus } from '@/sync/status';
 import { Icon, SyncStatus, Tooltip } from '@/ui';
@@ -64,18 +65,21 @@ export function SyncIndicator({ compact = false }: { compact?: boolean }) {
     );
   }
 
-  if (s.state === 'error' && s.error === 'quota') {
-    // A refused daily quota (ADR 0060/0070): say plainly what happened and that data is safe.
+  const quota = s.state === 'error' && s.error === 'quota';
+  if (quota || (s.held && s.state !== 'error' && s.state !== 'offline')) {
+    // A refused daily quota (ADR 0060/0070), or rows the server holds back while everything
+    // else syncs (ADR 0075): say plainly what happened and that data is safe.
+    const hint = quota || !s.held ? t('syncPanel.quotaHint') : heldHint(t, s.held);
     return (
-      <Tooltip content={t('syncPanel.quotaHint')}>
+      <Tooltip content={hint}>
         <Link
           to="/settings/hesap#senkron"
-          aria-label={`${t('sync.label')}: ${t('sync.quota')}`}
+          aria-label={`${t('sync.label')}: ${hint}`}
           className="inline-flex h-11 items-center gap-1.5 rounded-full bg-warn-soft px-2.5 text-meta font-semibold text-warn-text transition-colors duration-(--duration-micro) hover:bg-hover"
         >
           <Icon name="sync-error" size={18} />
           <span aria-hidden="true" className={compact ? 'sr-only' : 'whitespace-nowrap'}>
-            {t('sync.quotaShort')}
+            {quota ? t('sync.quotaShort') : t('sync.heldShort')}
           </span>
         </Link>
       </Tooltip>
