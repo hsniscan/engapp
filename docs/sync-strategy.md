@@ -200,8 +200,13 @@ older (it would reject the body-less upsert with 23502 too, and the full resend 
 **Limits.** `sync_push` counts calls, rows and bytes per user per UTC day (`sync_usage`) against
 `public.sync_limits`; over a limit the whole call fails with SQLSTATE `53400` and the outbox
 waits (normal backoff). `user_texts` has a per-user count and total-size quota (BEFORE INSERT
-trigger, `53400` as a per-row rejection: the row stays in the outbox with exponential backoff
-and shows as stuck after 10 attempts; a quota message in the UI is a later wave). A payload whose HLC is more than one day ahead of the
+trigger, `53400` as a per-row rejection). Since v0.5.3 (decision 0075) a per-row `53400` *holds*
+the row for 6 hours without counting an attempt (it never shows as stuck), and
+`meta.sync_held` tells Ayarlar → Hesap and the indicator what waits and why. Above 420 MB of
+database (`db_guard`, size cached every 15 minutes) new text bodies and Anki-imported review
+logs are refused the same way (`storage_full`); everything else keeps syncing. Library texts
+(`kind = 'graded'`) are stored with an empty body on the server and keep their body on the
+device (`keepGradedBody`); they do not count towards the text quota. A payload whose HLC is more than one day ahead of the
 server clock is rejected (`22023`), so one device with a wrong clock cannot win every LWW race
 for ever.
 
@@ -245,6 +250,18 @@ client mechanisms make it safe to add a table after clients already pull with v3
 deletions were not purged yet just pulls normally. On `full_resync`: push the outbox,
 then pull from 0 and delete local synced rows (not in the outbox) that the full pull
 did not return.
+
+### Restore epoch (v0.5.3, migration 20261106000500, decision 0075)
+
+`sync_pull_v5` returns v4's page plus `epoch` (from `public.sync_epoch`, 1 until a restore)
+and `seq_head` (last value of `sync_seq`). The restore runbook runs `sync_after_restore()`,
+which moves every sequence a billion ahead and sets a new epoch. On the first page of a pull
+the engine compares (`restoreDetected`): a new epoch, or a cursor above `seq_head`, starts a full
+resync in restore mode (`meta.restore_resync_pending`). Restore mode pulls from 0 but deletes
+nothing; every local row the server did not return, or returned with a lower HLC, is queued
+again as it is (`requeueRowsServerLacks`), so rows acked after the backup come back from every
+device that still has them. The epoch is stored in `meta.sync_epoch`; the first one a device
+sees is only stored (a device that pulled before treats any epoch but 1 as a restore).
 
 ## Lexicon
 
