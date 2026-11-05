@@ -61,7 +61,7 @@ describe('Bugün', () => {
     );
     expect(within(hero).getByRole('link', { name: /Çalışmaya başla/ })).toHaveAttribute(
       'href',
-      '/study?mode=word',
+      '/study?mode=mixed',
     );
     // One chip per mode on the Today card: the whole day at a glance (ADR 0055).
     expect(within(hero).getByTestId('study-type-word')).toHaveAccessibleName(/^Kelime\s*2 kart$/);
