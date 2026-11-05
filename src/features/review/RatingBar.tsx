@@ -132,7 +132,7 @@ export const RatingBar = forwardRef<HTMLDivElement, RatingBarProps>(function Rat
           {(() => {
             const { interval, change } = ratingLines(view, suggested!, t);
             return (
-              <span className="tabular text-meta font-normal opacity-85">
+              <span className="tabular text-meta font-normal">
                 <span className="sr-only">{t('rating.nextReview')} </span>
                 {[interval, change].filter(Boolean).join(' · ')}
               </span>
