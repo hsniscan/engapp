@@ -260,6 +260,58 @@ describe('runStory', () => {
     expect(budgetStore.spent).toBe(0);
     expect(budgetStore.reserved).toBe(0);
   });
+
+  it('a call that timed out keeps its whole reservation (it may have been billed)', async () => {
+    const budgetStore = new MemoryTextBudgetStore();
+    const timedOut = new AiError('ai_failed', 'timeout', undefined, { maybeBilled: true });
+    const { d } = deps({ budget: { store: budgetStore, capUsd: 10 } }, [timedOut]);
+    expect(await code(runStory(STORY_REQUEST, d))).toBe('ai_failed');
+    expect(budgetStore.reserved).toBe(0);
+    expect(budgetStore.spent).toBeGreaterThan(0);
+  });
+});
+
+describe('runStory with Gemini behind Claude (decision 0077)', () => {
+  const gemini = () => fakeModel([GOOD_STORY], 0);
+
+  it('Claude writes the story while it can; Gemini is not asked', async () => {
+    const g = gemini();
+    const { d, calls } = deps({ fallback: () => g.model });
+    await runStory(STORY_REQUEST, d);
+    expect(calls).toHaveLength(1);
+    expect(g.calls).toHaveLength(0);
+  });
+
+  it('a used-up budget: Gemini writes the story, nothing is booked', async () => {
+    const budgetStore = new MemoryTextBudgetStore();
+    budgetStore.spent = 10;
+    const g = gemini();
+    const { d, calls, store } = deps({ budget: { store: budgetStore, capUsd: 10 }, fallback: () => g.model });
+    const r = await runStory(STORY_REQUEST, d);
+    expect(r.story.title).toBe('The Sunday Cake');
+    expect(calls).toHaveLength(0);
+    expect(g.calls).toHaveLength(1);
+    expect(budgetStore.spent).toBe(10);
+    expect([...store.days.values()][0]!.stories).toBe(1);
+  });
+
+  it('Claude does not answer (rate limit, outage): Gemini writes it', async () => {
+    const g = gemini();
+    const { d, calls } = deps(
+      { fallback: () => g.model },
+      [new AiError('quota_exceeded', 'overloaded', 30)],
+    );
+    await runStory(STORY_REQUEST, d);
+    expect(calls).toHaveLength(1);
+    expect(g.calls).toHaveLength(1);
+  });
+
+  it('no Anthropic key: Gemini alone', async () => {
+    const g = gemini();
+    const { d } = deps({ model: null, fallback: () => g.model });
+    expect(await code(runStory(STORY_REQUEST, d))).toBe('ok');
+    expect(g.calls).toHaveLength(1);
+  });
 });
 
 // ---------------------------------------------------------------------------
