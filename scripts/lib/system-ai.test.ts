@@ -66,7 +66,8 @@ describe('createSystemTextProvider', () => {
     store.pools.set(SYSTEM_POOL, { spent: 1.45, reserved: 0 });
     store.spent = 1.45;
     const apis = fakeApis();
-    const p = createSystemTextProvider(BOTH, { store, purpose: 'levels', fetch: apis.fetch });
+    const tenUsd = env({ ANTHROPIC_API_KEY: 'a', GEMINI_API_KEY: 'g', GEMINI_MODEL: 'gem-main', CLAUDE_TEXT_MONTHLY_USD: '10' });
+    const p = createSystemTextProvider(tenUsd, { store, purpose: 'levels', fetch: apis.fetch });
     const r = await p.generateJson(req);
     expect(r.model).toBe('gem-main');
     expect(apis.hosts).toEqual(['gemini']);

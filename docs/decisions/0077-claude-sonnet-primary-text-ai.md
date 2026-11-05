@@ -151,3 +151,10 @@ would not.
   deadline, or sending list-shaped chunks straight to Gemini.
 - Story latency goes from ~5 s to ~10–20 s on Sonnet; the client waits up to 150 s.
 - `text_budget_pools` rows are not purged (one row per pool and month).
+
+## Owner's cap (2026-11-05 21:26 UTC)
+
+The owner chose **30 USD a month** for the Claude text budget. `DEFAULT_TEXT_MONTHLY_USD` and the
+workflows' fallback are now 30, so no repository variable is needed. At 30 USD the owner's share is
+22.5 USD (about 1,250 mixed actions), users 2 USD each, system jobs 2 USD. The Anthropic Console
+spending limit must leave room for it on top of the picture budget.

@@ -22,11 +22,11 @@ import { featureDailyLimit, dailyLimit } from './setup.ts';
 const env = (vars: Record<string, string>) => (k: string) => vars[k];
 
 describe('text budget', () => {
-  it('reads the cap from CLAUDE_TEXT_MONTHLY_USD, 10 USD by default', () => {
-    expect(textMonthlyCapUsd(env({}))).toBe(10);
+  it('reads the cap from CLAUDE_TEXT_MONTHLY_USD, 30 USD by default (owner, 2026-11-05)', () => {
+    expect(textMonthlyCapUsd(env({}))).toBe(30);
     expect(textMonthlyCapUsd(env({ CLAUDE_TEXT_MONTHLY_USD: '25' }))).toBe(25);
-    expect(textMonthlyCapUsd(env({ CLAUDE_TEXT_MONTHLY_USD: 'lots' }))).toBe(10);
-    expect(textMonthlyCapUsd(env({ CLAUDE_TEXT_MONTHLY_USD: '-3' }))).toBe(10);
+    expect(textMonthlyCapUsd(env({ CLAUDE_TEXT_MONTHLY_USD: 'lots' }))).toBe(30);
+    expect(textMonthlyCapUsd(env({ CLAUDE_TEXT_MONTHLY_USD: '-3' }))).toBe(30);
   });
 
   it('reserves the bound, then books the real cost', async () => {
@@ -123,7 +123,7 @@ describe('per-user share (decision 0060)', () => {
     expect(textUserMonthlyCapUsd(env({}))).toBe(2);
     expect(textUserMonthlyCapUsd(env({ CLAUDE_TEXT_MONTHLY_USD: '5' }))).toBe(1);
     expect(textUserMonthlyCapUsd(env({ AI_USER_MONTHLY_USD: '3', CLAUDE_TEXT_MONTHLY_USD: '100' }))).toBe(3);
-    expect(textUserMonthlyCapUsd(env({ AI_USER_MONTHLY_USD: '3', AI_USER_MAX_SHARE: '0.1' }))).toBe(1);
+    expect(textUserMonthlyCapUsd(env({ AI_USER_MONTHLY_USD: '3', AI_USER_MAX_SHARE: '0.1', CLAUDE_TEXT_MONTHLY_USD: '10' }))).toBe(1);
     expect(textUserMonthlyCapUsd(env({ AI_USER_MAX_SHARE: 'x', AI_USER_MONTHLY_USD: '-1' }))).toBe(2);
   });
 
@@ -169,10 +169,11 @@ describe('per-user share (decision 0060)', () => {
 
 describe('system jobs pool (decision 0077)', () => {
   it('is 2 USD by default, never more than 15 % of the global cap', () => {
-    expect(textSystemMonthlyCapUsd(env({}))).toBe(1.5);
+    expect(textSystemMonthlyCapUsd(env({}))).toBe(2);
+    expect(textSystemMonthlyCapUsd(env({ CLAUDE_TEXT_MONTHLY_USD: '10' }))).toBe(1.5);
     expect(textSystemMonthlyCapUsd(env({ CLAUDE_TEXT_MONTHLY_USD: '20' }))).toBe(2);
     expect(textSystemMonthlyCapUsd(env({ CLAUDE_TEXT_MONTHLY_USD: '30', AI_SYSTEM_MONTHLY_USD: '9' }))).toBe(4.5);
-    expect(textSystemMonthlyCapUsd(env({ AI_SYSTEM_MAX_SHARE: '0.5', AI_SYSTEM_MONTHLY_USD: '9' }))).toBe(5);
+    expect(textSystemMonthlyCapUsd(env({ AI_SYSTEM_MAX_SHARE: '0.5', AI_SYSTEM_MONTHLY_USD: '9', CLAUDE_TEXT_MONTHLY_USD: '10' }))).toBe(5);
   });
 
   it('a job stops at its pool and leaves the rest of the month for the users', async () => {

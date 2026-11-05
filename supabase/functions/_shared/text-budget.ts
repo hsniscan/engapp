@@ -2,7 +2,7 @@
 // Claude call of a text job (the graded library now, the daily story later) reserves an upper
 // bound of its cost first, settles the real cost from `usage` after, and is refused when the
 // month's spent + reserved + bound would pass the cap. Same rule as the picture budget
-// (image_budget_*), with its own cap: CLAUDE_TEXT_MONTHLY_USD (default 10 USD, owner's
+// (image_budget_*), with its own cap: CLAUDE_TEXT_MONTHLY_USD (default 30 USD since 2026-11-05 with Claude Sonnet first, owner's
 // decision 2026-10-25).
 //
 // Environment-neutral (Deno edge functions and the Node jobs). Prices and the bound come from
@@ -13,7 +13,7 @@ import { roundUsd } from './image-models.ts';
 
 type Env = (key: string) => string | undefined;
 
-export const DEFAULT_TEXT_MONTHLY_USD = 10;
+export const DEFAULT_TEXT_MONTHLY_USD = 30;
 /**
  * One user's share of the month (decision 0060): AI_USER_MONTHLY_USD … Raised from 1 to 2 USD
  * with Claude Sonnet as the primary text model (decision 0077): 1 USD were ~25 word
@@ -49,7 +49,7 @@ function usd(env: Env, key: string, fallback: number): number {
   return Number.isFinite(v) && v > 0 ? v : fallback;
 }
 
-/** The month's text cap in USD: CLAUDE_TEXT_MONTHLY_USD when it is a positive number, else 10. */
+/** The month's text cap in USD: CLAUDE_TEXT_MONTHLY_USD when it is a positive number, else 30 (owner, 2026-11-05). */
 export function textMonthlyCapUsd(env: Env): number {
   const v = Number(env('CLAUDE_TEXT_MONTHLY_USD'));
   return roundUsd(Number.isFinite(v) && v > 0 ? v : DEFAULT_TEXT_MONTHLY_USD);

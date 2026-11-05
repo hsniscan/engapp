@@ -116,7 +116,7 @@ jobs:
           GEMINI_FALLBACK_MODEL: ${{ vars.GEMINI_FALLBACK_MODEL }}
           AI_SYSTEM_DAILY_LIMIT: ${{ vars.AI_SYSTEM_DAILY_LIMIT || '100' }}
           # The month's cap and the system jobs' share of it (decision 0077).
-          CLAUDE_TEXT_MONTHLY_USD: ${{ vars.CLAUDE_TEXT_MONTHLY_USD || '10' }}
+          CLAUDE_TEXT_MONTHLY_USD: ${{ vars.CLAUDE_TEXT_MONTHLY_USD || '30' }}
           AI_SYSTEM_MONTHLY_USD: ${{ vars.AI_SYSTEM_MONTHLY_USD || '2' }}
           AI_SYSTEM_MAX_SHARE: ${{ vars.AI_SYSTEM_MAX_SHARE || '0.15' }}
           AI_CLAUDE_FALLBACK: ${{ vars.AI_CLAUDE_FALLBACK || 'on' }}

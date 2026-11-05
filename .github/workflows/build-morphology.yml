@@ -50,7 +50,7 @@ jobs:
           CLAUDE_TEXT_MODEL: ${{ vars.CLAUDE_TEXT_MODEL }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
           GEMINI_FALLBACK_MODEL: ${{ vars.GEMINI_FALLBACK_MODEL }}
-          CLAUDE_TEXT_MONTHLY_USD: ${{ vars.CLAUDE_TEXT_MONTHLY_USD || '10' }}
+          CLAUDE_TEXT_MONTHLY_USD: ${{ vars.CLAUDE_TEXT_MONTHLY_USD || '30' }}
           AI_SYSTEM_MONTHLY_USD: ${{ vars.AI_SYSTEM_MONTHLY_USD || '2' }}
           AI_SYSTEM_MAX_SHARE: ${{ vars.AI_SYSTEM_MAX_SHARE || '0.15' }}
         run: |
