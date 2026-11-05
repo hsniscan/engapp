@@ -16,6 +16,7 @@ import {
 } from '../domain/recompute';
 import { addAnswerToDay, emptyDay } from '../domain/streak';
 import {
+  type AnswerMode,
   type Card,
   type CefrLevel,
   type CardType,
@@ -582,6 +583,8 @@ export interface AnswerInput {
   duration_ms: number;
   /** Recognition card: the sense whose sentence was shown. */
   shown_sense_id?: Id | null;
+  /** v0.5.3 (ADR 0071): how the answer was given; absent = unknown (like a self-rated one). */
+  answer_mode?: AnswerMode | null;
 }
 
 export interface AnswerResult {
@@ -648,10 +651,11 @@ async function writeAnswer(
     shown_sense_id: input.shown_sense_id ?? null,
     created_at: w.now,
     hlc: w.nextHlc(),
+    ...(input.answer_mode ? { answer_mode: input.answer_mode } : {}),
   };
   await w.insertLog(log);
   const fsrs = inOrder
-    ? applyRating(scheduler, card, input.rating, at)
+    ? applyRating(scheduler, card, input.rating, at, { choice: input.answer_mode === 'choice' })
     : replayCard(scheduler, card, [...((await logsByCard([card.id])).get(card.id) ?? [])]).fsrs;
   const saved = await w.put('cards', { ...card, ...fsrs, unlocked: true });
   const unlockedCardIds =

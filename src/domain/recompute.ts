@@ -50,7 +50,9 @@ export function replayCard(
   let fsrs = emptyFsrs(card.created_at);
   const steps: ReplayStep[] = [];
   for (const log of effectiveLogs(own)) {
-    const after = applyRating(scheduler, { id: card.id, ...fsrs }, log.rating, log.reviewed_at);
+    const after = applyRating(scheduler, { id: card.id, ...fsrs }, log.rating, log.reviewed_at, {
+      choice: log.answer_mode === 'choice',
+    });
     steps.push({ log, before: fsrs, after });
     fsrs = after;
   }

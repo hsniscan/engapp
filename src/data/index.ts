@@ -150,6 +150,7 @@ export {
   revertFsrsParams,
   type ReviewCounts,
 } from './fsrsOpt';
+export { getSlowThresholds } from './pace';
 export { repairDuplicateSenses, repairListEntrySentences } from './repairs';
 export { getDeviceId, getCurrentUserId, getMeta, setMeta, META } from './meta';
 export { PULL_BACKFILL_KEY } from './backfill';

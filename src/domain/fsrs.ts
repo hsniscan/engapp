@@ -12,7 +12,7 @@ import {
 import { z } from 'zod';
 import type { CardStateValue, FsrsFields, Id, Millis, RatingValue, Settings } from './types';
 import { CardState, Rating } from './types';
-import { FSRS_CONFIG, GRAD_CAP, PROVEN, RAMP_CAPS, RAMP_EPOCH, RAMP_FUZZ_MIN_DAYS, RAMP_LEN } from './fsrsConfig';
+import { FSRS_CONFIG, GRAD_CAP, PROVEN, RAMP_CAPS, RAMP_EPOCH, RAMP_FUZZ_MIN_DAYS, RAMP_LEN, STAGE } from './fsrsConfig';
 import { cardStage, isLearnedStage, type WordStage } from './stages';
 import { type DayConfig, dayKeyOf } from './day';
 
@@ -258,11 +258,24 @@ export function nextRampStep(
  * replay from logs all go through here and agree. FSRS computes the memory state as before;
  * for answers at or after RAMP_EPOCH the ramp caps the interval (docs/decisions/0041).
  */
+export interface ApplyOptions {
+  /**
+   * v0.5.3 B2 (ADR 0071): the answer was picked from multiple choices. A right pick never
+   * moves the card to Öğrenildi: its ramp counter stays at most 2 (or where it was), so
+   * Öğrenildi always rests on recalls that were not prompted by a list of options.
+   */
+  choice?: boolean;
+}
+
+/** Ramp step a multiple-choice answer may reach: just under Öğrenildi (STAGE.learnedStep). */
+export const CHOICE_MAX_RAMP = STAGE.learnedStep - 1;
+
 export function applyRating(
   scheduler: Scheduler,
   card: { id: Id } & FsrsFields,
   rating: RatingValue,
   at: Millis,
+  opts: ApplyOptions = {},
 ): FsrsFields {
   if (!isRating(rating)) throw new Error(`Invalid rating ${String(rating)}`);
   const before = card.state;
@@ -290,6 +303,13 @@ export function applyRating(
     isLaterDueDay(scheduler.day, card, at),
   );
   const next: FsrsFields = { ...fsrs, ramp_step, learned_at: card.learned_at ?? null };
+  if (opts.choice && rating !== Rating.Again) {
+    // A choice keeps the counter where it was or below Öğrenildi, and never makes a card that
+    // was not Öğrenildi yet reach it (also when stability alone would cross the line).
+    next.ramp_step = Math.min(ramp_step, Math.max(rampStep, CHOICE_MAX_RAMP));
+    const wasLearned = isLearnedStage(cardStage({ state: before, ramp_step: rampStep, stability: card.stability }));
+    if (!wasLearned && isLearnedStage(cardStage(next))) next.ramp_step = Math.min(next.ramp_step, CHOICE_MAX_RAMP);
+  }
   if (next.learned_at === null && isLearnedStage(cardStage(next))) next.learned_at = at;
   return next;
 }
@@ -325,10 +345,11 @@ export function previewIntervals(
   scheduler: Scheduler,
   card: { id: Id } & FsrsFields,
   at: Millis,
+  opts: ApplyOptions = {},
 ): Record<RatingValue, IntervalPreview> {
   const out = {} as Record<RatingValue, IntervalPreview>;
   for (const rating of RATINGS) {
-    const next = applyRating(scheduler, card, rating, at);
+    const next = applyRating(scheduler, card, rating, at, opts);
     const interval = Math.max(0, next.due - at);
     out[rating] = {
       rating,
