@@ -17,7 +17,9 @@
  *
  * The optional input data/levels/level-tr.tsv (exported from the server with
  * `node scripts/system-jobs.ts export-tr`) adds the Turkish-learner corrections to the
- * client file, so guests see the same levels as signed-in users.
+ * client file, so guests see the same levels as signed-in users. data/levels/tr-familiar.tsv
+ * (`node scripts/build-tr-familiar.ts`, decision 0073) marks familiar international words
+ * (microphone ↔ mikrofon) one step easier, unless a correction already makes them as easy.
  *
  * No new dependency: the wheel is a zip (read with node:zlib) and the word list is
  * msgpack (a 60-line decoder below).
@@ -28,6 +30,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync, inflateRawSync } from 'node:zlib';
 import { normalizeLemma } from '../supabase/functions/_shared/text.ts';
+import { FAMILIAR_REASON_PREFIX, parseFamiliarTsv, type FamiliarRow } from './lib/tr-familiar.ts';
 import {
   CEFR,
   fitZipfThresholds,
@@ -372,6 +375,12 @@ function readCorrections(): TrCorrection[] {
     });
 }
 
+/** data/levels/tr-familiar.tsv (scripts/build-tr-familiar.ts), if present. */
+function readFamiliar(): FamiliarRow[] {
+  const file = join(OUT, 'tr-familiar.tsv');
+  return existsSync(file) ? parseFamiliarTsv(readFileSync(file, 'utf8')) : [];
+}
+
 const LICENSE_HEADER = [
   'Engapp word-level data. Derived from the CEFR-J Wordlist 1.5 (© Tono Laboratory, TUFS; free for',
   'research and commercial use with citation), the Octanove Vocabulary Profile C1/C2 1.0 (CC BY-SA 4.0)',
@@ -446,10 +455,22 @@ export async function build(): Promise<BuildResult> {
   const client = new Map<string, { zipf: number | null; entries: string[] }>();
   const corrections = readCorrections();
   const corr = new Map(corrections.map((c) => [`${c.lemma_norm}\t${c.pos}\t${c.source}`, c]));
+  // Familiar international words (decision 0073): one step easier unless a correction for
+  // the same list level is already at least as easy.
+  const familiar = readFamiliar();
+  const fam = new Map(familiar.map((f) => [`${f.lemma_norm}\t${f.pos}\t${f.source}`, f]));
+  let familiarInClient = 0;
   for (const r of refs) {
     const e = client.get(r.lemma_norm) ?? { zipf: freq.get(r.lemma_norm) ?? null, entries: [] };
-    const c = corr.get(`${r.lemma_norm}\t${r.pos}\t${r.source}`);
-    const tr = c && c.base === r.cefr ? `:${c.cefr}:${c.reason.replace(/[\t\n|]/g, ' ')}` : '';
+    const key = `${r.lemma_norm}\t${r.pos}\t${r.source}`;
+    let c: { cefr: Cefr; reason: string } | undefined = corr.get(key);
+    if (c && corr.get(key)!.base !== r.cefr) c = undefined;
+    const f = fam.get(key);
+    if (f && f.cefr === r.cefr && (!c || CEFR.indexOf(c.cefr) > CEFR.indexOf(f.cefr_tr))) {
+      c = { cefr: f.cefr_tr, reason: `${FAMILIAR_REASON_PREFIX}${f.tr}` };
+      familiarInClient++;
+    }
+    const tr = c ? `:${c.cefr}:${c.reason.replace(/[\t\n|]/g, ' ')}` : '';
     e.entries.push(`${POS_CODE[r.pos]}:${r.cefr}:${r.source === 'cefrj' ? 'j' : 'o'}${tr}`);
     client.set(r.lemma_norm, e);
   }
@@ -472,6 +493,7 @@ export async function build(): Promise<BuildResult> {
     header([
       'Columns: lemma, zipf (empty: unknown), entries separated by "|".',
       'Entry: pos:cefr:src[:cefr_tr:reason_tr]; pos n v j(adj) r(adv) p c o(pron) d i x(other); src j=CEFR-J o=Octanove.',
+      `reason_tr "${FAMILIAR_REASON_PREFIX}<word>": a familiar international word (Turkish <word>), one step easier (decision 0073).`,
       `Words without entries: frequency only. Lemmas: ${client.size}; frequency-only words have Zipf >= ${clientMinZipf}.`,
       `@min_zipf ${clientMinZipf}`,
     ]) +
@@ -540,6 +562,7 @@ export async function build(): Promise<BuildResult> {
     client_lemmas: client.size,
     client_min_zipf: clientMinZipf,
     tr_corrections_in_client: corrections.length,
+    tr_familiar_in_client: familiarInClient,
     calibration: {
       words: calib.length,
       fitted_thresholds: fitted,

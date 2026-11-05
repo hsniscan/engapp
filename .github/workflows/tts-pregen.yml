@@ -1,5 +1,6 @@
-# Pre-generated pronunciation audio (decision 0042). Makes an MP3 of every lexicon headword and
-# every public example sentence, in both accents, with Kokoro-82M (Apache-2.0) on the
+# Pre-generated pronunciation audio (decision 0042). Makes an MP3 of every lexicon headword,
+# every public example sentence and (v0.5.3, decision 0073) every word-bank example sentence,
+# in both accents, with Kokoro-82M (Apache-2.0) on the
 # runners' CPUs, and uploads them to the public `tts` Storage bucket, where the app plays them
 # directly (no edge-function call). No paid API and no Gemini call.
 #
@@ -10,9 +11,13 @@
 # Usual sequence: run with plan_only (counts, current bucket size, estimates; makes nothing),
 # then a full run (default 8 shards: about 1.5 hours for ~40 000 clips), then optionally
 # prune_ondemand to delete the older Gemini WAV files that the MP3s replace.
-# With the repository variable TTS_PREGEN_WEEKLY=true a weekly run picks up new words.
-# source=graded reads the graded library's approved sentences instead (en-US only, decision
-# 0047); the graded library workflow (graded.yml) calls this workflow that way every night.
+# A weekly run (Sundays) picks up new words and sentences; the repository variable
+# TTS_PREGEN_WEEKLY=false turns it off (on by default since v0.5.3).
+# source=graded reads the graded library's approved sentences instead (both accents since
+# v0.5.3); the graded library workflow (graded.yml) calls this workflow that way every night.
+# Free-plan guard (decision 0073): a run never makes more than fits under AUDIO_MAX_BYTES
+# (default 6 GB on R2, 0.9 GB on Supabase Storage), so audio and the database backups that
+# share the Cloudflare account stay inside the free 10 GB.
 #
 # Repository secrets (the same as the word bank job):
 #   SUPABASE_SERVICE_ROLE_KEY  the project's service_role (or sb_secret_) key, or else
@@ -25,7 +30,7 @@ name: Pronunciation audio
 
 on:
   schedule:
-    - cron: '30 4 * * 0' # Sundays 04:30 UTC; does nothing unless TTS_PREGEN_WEEKLY is 'true'
+    - cron: '30 4 * * 0' # Sundays 04:30 UTC; off only when TTS_PREGEN_WEEKLY is 'false'
   workflow_dispatch:
     inputs:
       voice:
@@ -50,7 +55,7 @@ on:
         type: boolean
         default: false
       source:
-        description: 'What to read aloud: the dictionary, or the graded library (en-US only)'
+        description: 'What to read aloud: the dictionary (with the word-bank examples), or the graded library'
         type: choice
         options: [dictionary, graded]
         default: dictionary
@@ -91,10 +96,13 @@ env:
   KOKORO_VOICES_SHA256: bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d
   # Cloudflare R2 (decision 0053); the R2 write keys are given only to the steps that run the upload scripts (decision 0060).
   AUDIO_BASE_URL: ${{ vars.AUDIO_BASE_URL }}
+  # Free-plan guard (decision 0073): most bytes the audio may take in its bucket (empty: 6 GB on
+  # R2, 0.9 GB on Supabase Storage).
+  AUDIO_MAX_BYTES: ${{ vars.AUDIO_MAX_BYTES }}
 
 jobs:
   plan:
-    if: github.event_name == 'workflow_dispatch' || vars.TTS_PREGEN_WEEKLY == 'true' || inputs.source == 'graded'
+    if: github.event_name == 'workflow_dispatch' || vars.TTS_PREGEN_WEEKLY != 'false' || inputs.source == 'graded'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:

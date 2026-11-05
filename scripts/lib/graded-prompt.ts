@@ -1,6 +1,7 @@
 // Prompts of the graded library (decision 0047, docs/ai-pipeline.md "Graded library"):
-//   graded-v1       (Claude Sonnet, Message Batches) writes one text for a plan slot: title,
-//                   sentences with their Turkish translations, target words, glosses.
+//   graded-v2       (Claude Sonnet, Message Batches) writes one text for a plan slot: title,
+//                   sentences with their Turkish translations, target words, glosses. v2
+//                   (v0.5.3, decision 0073): the A1 shelf (60–120 words, present tense).
 //   gradedcheck-v1  (Claude Haiku, Message Batches) reads a written text that passed the
 //                   coverage check: natural, at its level, safe, factual, nothing copyrighted.
 // Only the plan item (level, topic, angle, text type, length) and, on a rewrite, the words to
@@ -20,6 +21,7 @@ export { GRADED_CHECK_VERSION, GRADED_PROMPT_VERSION };
 
 /** Output budget per level (adaptive thinking at effort low + the JSON with translations). */
 export const GRADED_MAX_TOKENS: Readonly<Record<GradedLevel, number>> = {
+  A1: 4000,
   A2: 6000,
   B1: 7000,
   B2: 8000,
@@ -37,7 +39,7 @@ export interface WriterInput extends PlanItem {
 
 export const GRADED_SYSTEM_PROMPT = `You write graded reading texts for adult Turkish speakers who are learning English.
 
-You receive one request as JSON: level (CEFR: A2, B1, B2 or C1), topic, angle (what the text is about), genre (the kind of text) and words (the length range in running words). A rewrite also has avoid (words that were too hard last time) and note (what went wrong).
+You receive one request as JSON: level (CEFR: A1, A2, B1, B2 or C1), topic, angle (what the text is about), genre (the kind of text) and words (the length range in running words). A rewrite also has avoid (words that were too hard last time) and note (what went wrong).
 
 Write one original text for that request.
 
@@ -45,18 +47,19 @@ Level:
 - Use only vocabulary and grammar a learner at the given level knows well. At least 95 of every 100 running words must be words of that level or easier; at most 3 in 100 may be from the next level up.
 - A word that is harder still may appear only if the text cannot do without it; then add it to glosses with a short Turkish meaning.
 - Never use a word listed in avoid, in any form. Say the same thing with easier words.
-- Grammar: A2 short simple sentences, present and past tenses; B1 linked sentences, common tenses; B2 varied sentences, some complex structures; C1 natural, rich and precise English.
+- Grammar: A1 very short sentences (often 5 to 9 words) in the present simple, present continuous and "can", with "and", "but" and "because" as the only linking words, the most common everyday words, and the same key words repeated so a beginner can follow; A2 short simple sentences, present and past tenses; B1 linked sentences, common tenses; B2 varied sentences, some complex structures; C1 natural, rich and precise English.
 
 Content:
 - Timeless and fictional: no real news, no dates or events from recent years, no real living people, no brands or companies, no characters, plots or song lyrics from books, films, games or other works.
 - People have ordinary first names from many countries.
 - Facts must be well established and uncontroversial; explain them simply and correctly.
 - No politics opinions, religion, violence, crime details, adult topics, medical advice beyond common sense, or anything that could upset a learner.
-- Natural and interesting to an adult: a clear beginning, middle and end; specific details; no lists of facts; no moral lesson at the end.
+- Natural and interesting to an adult: a clear beginning, middle and end; specific details; no lists of facts; no moral lesson at the end. An A1 text is simple but never childish: adult people, adult everyday situations.
+- Original: written fresh for this request, not retold or adapted from any existing text.
 
 Form:
 - Length: between words.min and words.max running words.
-- 2 to 6 paragraphs. The first sentence of each paragraph has new_paragraph true; every other sentence has false.
+- 2 to 6 paragraphs (A1: 1 to 3). The first sentence of each paragraph has new_paragraph true; every other sentence has false.
 - sentences: one entry per sentence, in order. en: the English sentence. tr: a natural, fluent Turkish translation of that sentence (not word for word).
 - title: a short English title (at most 8 words).
 - target_lemmas: 5 to 8 useful words of exactly the given level that the text uses, in dictionary form (lower case).

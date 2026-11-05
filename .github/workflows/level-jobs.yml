@@ -47,6 +47,10 @@ on:
         description: 'Only the deterministic part (levels and word frequencies), no model calls'
         type: boolean
         default: false
+      export_tr:
+        description: 'Instead: copy the stored Turkish-learner corrections into the app level file and open a pull request'
+        type: boolean
+        default: false
 
 concurrency:
   group: level-jobs
@@ -85,7 +89,7 @@ jobs:
 
   levels:
     needs: gate
-    if: needs.gate.outputs.run == 'true'
+    if: ${{ needs.gate.outputs.run == 'true' && !inputs.export_tr }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -135,3 +139,66 @@ jobs:
           # AI steps stop after 40 minutes, leaving time for the last resolve inside timeout-minutes.
           args+=(--max-minutes 40)
           node scripts/system-jobs.ts "${args[@]}"
+
+  # export_tr (decision 0073): copies the Turkish-learner corrections stored on the server
+  # (ref_word_levels.tr_*, level-tr-v1) into the app's level file, so guests, offline use and
+  # the level test use them too. Exports data/levels/level-tr.tsv, rebuilds
+  # data/levels/client-levels.tsv (plus the familiar words of tr-familiar.tsv), moves the level
+  # test's words to the corrected levels, runs the level-data tests and opens a pull request
+  # with the result (or, if Actions may not open pull requests here, pushes the branch and
+  # prints its link). Nothing is merged or deployed by this job.
+  export-tr:
+    if: github.event_name == 'workflow_dispatch' && inputs.export_tr
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Service key (the only step that may use the access token)
+        env:
+          SERVICE_KEY_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: scripts/resolve-service-key.sh
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Export the corrections and rebuild the level files
+        run: |
+          set -euo pipefail
+          source scripts/supabase-service-env.sh
+          node scripts/system-jobs.ts export-tr
+          node scripts/build-levels.ts > "$RUNNER_TEMP/levels-summary.json"
+          node scripts/relevel-level-test.ts
+          jq '{tr_corrections_in_client, tr_familiar_in_client}' "$RUNNER_TEMP/levels-summary.json"
+      - name: Level-data tests
+        run: pnpm vitest run scripts/lib/tr-familiar.test.ts scripts/lib/level-test-relevel.test.ts src/domain/level.test.ts src/domain/levelTest.test.ts supabase/functions/_shared/graded-coverage.test.ts
+      - name: Open a pull request with the new level files
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- data/ && [ -z "$(git ls-files --others --exclude-standard data/)" ]; then
+            echo "::notice::The level files are already up to date: nothing to commit."; exit 0
+          fi
+          n=$(grep -vc '^#' data/levels/level-tr.tsv || true)
+          branch="data/level-tr-${GITHUB_RUN_ID}"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "$branch"
+          git add data/levels data/level-test
+          git commit -q -m "data(levels): $n Turkish-learner corrections into the app's level file" \
+            -m "Exported by the level job (export_tr, decision 0073): level-tr.tsv, client-levels.tsv, manifest.json, level-test bank."
+          git push -q origin "$branch"
+          body="Exported from ref_word_levels by run ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}: $n corrections. The level-data tests passed in that run. Merge to ship them to guests, offline use and the level test (decision 0073)."
+          if gh pr create --base "${GITHUB_REF_NAME}" --head "$branch" --title "data(levels): Turkish-learner corrections in the app ($n)" --body "$body"; then
+            echo "Pull request opened." >> "$GITHUB_STEP_SUMMARY"
+          else
+            url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/compare/${GITHUB_REF_NAME}...${branch}?expand=1"
+            echo "::notice::Actions may not open pull requests in this repository; open one here: $url"
+            echo "Branch pushed: [$branch]($url)" >> "$GITHUB_STEP_SUMMARY"
+          fi
