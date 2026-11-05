@@ -5,7 +5,7 @@ import { PULL_BACKFILL_KEY } from './backfill';
 import { EngDb, STAGE_RULE_NOTICE_KEY } from './db';
 
 /** The current schema version; bump with every new Dexie version. */
-const LATEST = 38;
+const LATEST = 39;
 
 /** A re-pull list after the later upgrades: v29 (reader) adds settings, texts and encounters; v33 (dictation) cards; v34 settings. */
 const withLater = (list: readonly string[] | undefined) =>
@@ -729,7 +729,7 @@ describe('Dexie schema', () => {
 
   it('v36 upgrade keeps settings and re-pulls them once for reader_always_guess', async () => {
     for (const [name, cursor, expected] of [
-      ['upgrade-v36-synced', 40, ['settings']],
+      ['upgrade-v36-synced', 40, ['settings', 'cards']],
       ['upgrade-v36-fresh', 0, undefined],
     ] as const) {
       // A database as v0.5 left it (version 34), with every earlier backfill done.
@@ -753,9 +753,35 @@ describe('Dexie schema', () => {
     }
   });
 
+  it('v39 upgrade keeps cards and re-pulls them once for rest_until', async () => {
+    for (const [name, cursor, expected] of [
+      ['upgrade-v39-synced', 40, ['cards']],
+      ['upgrade-v39-fresh', 0, undefined],
+    ] as const) {
+      // A database as v0.5.2 left it (version 38), with every earlier backfill done.
+      const old = new Dexie(name);
+      old.version(1).stores({ cards: 'id', meta: 'key' });
+      old.version(38).stores({ graded_catalog: 'id, level, topic, server_seq', graded_bodies: 'id, fetched_at' });
+      await old.open();
+      await old.table('cards').add({ id: 'c1', card_type: 'recognition', suspended: false });
+      await old.table('meta').put({ key: 'sync_cursor', value: cursor });
+      old.close();
+
+      const d = new EngDb(name);
+      await d.open();
+      expect(d.verno).toBe(LATEST);
+      expect((await d.meta.get(PULL_BACKFILL_KEY))?.value).toEqual(expected);
+      // No rest_until key means not resting; the row is untouched and nothing is queued.
+      expect(await d.cards.get('c1')).toEqual({ id: 'c1', card_type: 'recognition', suspended: false });
+      expect(await d.outbox.count()).toBe(0);
+      d.close();
+      await d.delete();
+    }
+  });
+
   it('v38 upgrade keeps settings and re-pulls them once for study_options', async () => {
     for (const [name, cursor, expected] of [
-      ['upgrade-v38-synced', 40, ['settings']],
+      ['upgrade-v38-synced', 40, ['settings', 'cards']],
       ['upgrade-v38-fresh', 0, undefined],
     ] as const) {
       // A database as v0.5.1 left it (version 36), with every earlier backfill done.

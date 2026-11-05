@@ -426,6 +426,15 @@ export class EngDb extends Dexie {
     this.version(38)
       .stores({})
       .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
+    // v39 (v0.5.3 study, decision 0071; 40–45 belong to the other v0.5.3 packages): cards gain
+    // rest_until (the 30-day rest after a sixth lapse) and review logs answer_mode (choice /
+    // typed / flip). Both optional, absent = not resting / unknown. A device that pulled cards
+    // while it ran an older version dropped rest_until: re-pull cards once. Logs are not
+    // re-pulled (no older version ever wrote the field; a missed value only means the answer
+    // counts like a self-rated one). No new table or index.
+    this.version(39)
+      .stores({})
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['cards']));
   }
 }
 
