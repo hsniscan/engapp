@@ -7,7 +7,8 @@ import { type ReactNode, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 import { getSettings, logError, markKnown, unmarkKnown } from '@/data';
-import { addSuggestedDeck, findTagDeck } from '@/data/deckHub';
+import { findTagDeck } from '@/data/deckHub';
+import { runDeckAdd, useDeckAddProgress } from './deckAddRunner';
 import { CEFR } from '@/domain/level';
 import {
   deckProgress,
@@ -118,7 +119,10 @@ function SuggestedBody({
   const [filter, setFilter] = useState<Filter>('all');
   const [shown, setShown] = useState(PAGE);
   const [scan, setScan] = useState(false);
-  const [adding, setAdding] = useState<{ done: number; total: number } | null>(null);
+  const [starting, setStarting] = useState(false);
+  // A run of this deck going on (also one resumed at start-up) shows here (v0.5.3 A1).
+  const run = useDeckAddProgress();
+  const adding = run ? { done: run.done, total: run.total } : starting ? { done: 0, total: 0 } : null;
 
   const frame = (children: ReactNode) => (
     <PageFrame
@@ -162,11 +166,10 @@ function SuggestedBody({
 
   const add = async () => {
     if (adding) return;
-    setAdding({ done: 0, total: progress.fresh });
+    setStarting(true);
     try {
-      const r = await addSuggestedDeck(words, title, {
-        onProgress: (done, total) => setAdding({ done, total }),
-      });
+      const r = await runDeckAdd(words, title);
+      if (!r) return;
       if (r.added === 0) toast({ title: t('deckHub.suggested.addedNothing'), tone: 'warn' });
       else
         toast({
@@ -181,7 +184,7 @@ function SuggestedBody({
       void logError(e, 'SuggestedDeck.add');
       toast({ title: t('deckHub.suggested.addFailed'), tone: 'danger' });
     } finally {
-      setAdding(null);
+      setStarting(false);
     }
   };
 

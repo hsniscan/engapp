@@ -17,6 +17,7 @@ import { startAuth, useAuth } from '@/features/auth/session';
 import { lookupLexicon, type LexiconSuggestion } from '@/features/import/lexicon';
 import { useOnline } from '@/lib/online';
 import { fetchWordBank } from '@/features/wordbank/fetcher';
+import { useWordBankEpoch } from '@/features/wordbank/prefetch';
 import type { LookupState } from './QuickSheet';
 import { lookupForms } from './route';
 
@@ -53,9 +54,12 @@ export function useTermLookup(term: string): TermLookup {
   const auth = useAuth();
   const online = useOnline();
   const forms = useMemo(() => lookupForms(term), [term]);
+  // Runs again when bank rows land (v0.5.3 A2): the live query alone missed them on a device
+  // that had no bank yet, and the sheet kept saying "giriş yap" for a word the bank has.
+  const bankEpoch = useWordBankEpoch();
   const local = useLiveQuery(
     () => (term ? quickPreview(term, forms) : Promise.resolve(undefined)),
-    [term, forms.join('|')],
+    [term, forms.join('|'), bankEpoch],
   );
 
   // ai-enrich, once, only when the device has nothing for the word (not even the user's card).
@@ -75,9 +79,17 @@ export function useTermLookup(term: string): TermLookup {
   }, [missing, online]);
   // A device that never opened Kelime Bankası has no copy of it: fetch it now, so a guest finds
   // "house" too (the live query above picks the rows up as they land; B4).
+  // While that download runs, the sheet says "aranıyor", not "giriş yap" (v0.5.3 A2).
+  const [bankTriedFor, setBankTriedFor] = useState<string | null>(null);
   useEffect(() => {
-    if (missing && online) void fetchWordBank();
-  }, [missing, online]);
+    if (!missing || !online) return;
+    let live = true;
+    void fetchWordBank().finally(() => live && setBankTriedFor(term));
+    return () => {
+      live = false;
+    };
+  }, [missing, online, term]);
+  const bankPending = missing && online && bankTriedFor !== term;
   const signedIn = auth.status === 'signed_in';
   const shouldAsk = missing && online && signedIn && mine === null;
   const lookup: LookupState = !missing
@@ -86,7 +98,7 @@ export function useTermLookup(term: string): TermLookup {
       ? mine.state
       : !online
         ? 'offline'
-        : signedIn
+        : signedIn || bankPending
           ? 'searching'
           : auth.status === 'loading'
             ? 'searching'

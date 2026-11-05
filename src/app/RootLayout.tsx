@@ -3,7 +3,6 @@ import { useLocation, useMatches, useOutlet } from 'react-router';
 import { AddSheet } from '@/features/add/AddSheet';
 import { openAddSheet, useAddSheetOpen } from '@/features/add/addSheetStore';
 import { ImportJobNotices } from '@/features/import/ImportJobNotices';
-import { BackupReminder } from '@/features/settings/BackupReminder';
 import { IosInstallGuide } from '@/features/settings/IosInstallGuide';
 import { AppShell } from '@/ui';
 import { isImmersive, isRouteHandle, navSectionOf } from './routeHandle';
@@ -36,8 +35,6 @@ export function RootLayout() {
         addOpen={addOpen}
         addSection={navSectionOf(handles) === 'add'}
       >
-        {/* Guest backup reminder: renders only on the home screen ("/"). */}
-        {!immersive && <BackupReminder />}
         {outlet}
       </AppShell>
       <SyncServices />

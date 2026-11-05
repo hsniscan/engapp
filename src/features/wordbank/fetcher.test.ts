@@ -1,7 +1,14 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { resetDb } from '@/test/db';
 import { db } from '@/data/db';
-import { fetchWordBank, isWordBankComplete, WORD_BANK_REFRESH_MS, type WordBankFetchDeps } from './fetcher';
+import {
+  fetchWordBank,
+  isWordBankComplete,
+  onWordBankChange,
+  WORD_BANK_REFRESH_MS,
+  wordBankEpoch,
+  type WordBankFetchDeps,
+} from './fetcher';
 
 const T = Date.UTC(2026, 9, 22, 9);
 
@@ -59,6 +66,19 @@ describe('fetchWordBank', () => {
     expect(s.calls).toEqual([2500]);
     expect(await db.word_bank.get('w0|noun')).toBeUndefined();
     expect(await db.word_bank.get('new|noun')).toBeDefined();
+  });
+
+  it('tells lookups that new rows landed, once per run that changed something (A2)', async () => {
+    const s = server([row('house', 1), row('habit', 2)]);
+    let heard = 0;
+    const off = onWordBankChange(() => heard++);
+    const before = wordBankEpoch();
+    await fetchWordBank(s.deps);
+    expect(heard).toBe(1);
+    expect(wordBankEpoch()).toBe(before + 1);
+    await fetchWordBank(s.deps); // fresh: nothing new
+    expect(heard).toBe(1);
+    off();
   });
 
   it('does nothing offline or without a backend, and never throws', async () => {

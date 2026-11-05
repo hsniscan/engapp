@@ -1648,7 +1648,10 @@
     "appGuestTitle": "Your data lives on this phone",
     "appGuest": "Uninstalling the app or clearing its data deletes your words. Create an account or make a backup.",
     "appTitle": "Where is your data?",
-    "appSignedIn": "Your data is on this phone and in your account; it comes back from your account even if you uninstall the app."
+    "appSignedIn": "Your data is on this phone and in your account; it comes back from your account even if you uninstall the app.",
+    "noticeTitle": "Your words are on this device",
+    "noticeBody": "In guest mode your data is only in this browser. Rarely, the browser may clear it to free space; take a backup now and then or create an account.",
+    "noticeSignIn": "Create an account"
   },
   "install": {
     "title": "Install the app",
@@ -2297,7 +2300,10 @@
     "home": "Back to home",
     "duration": "{{count}} questions · {{time}}",
     "towardNextNone": "You hardly know the {{next}} words yet; {{next}} needs 80%.",
-    "unreliableLevel": "Measured level (not reliable)"
+    "unreliableLevel": "Measured level (not reliable)",
+    "counter": "{{done}} / {{max}}",
+    "progressOf": "{{done}} questions answered, at most {{max}}",
+    "continue": "Continue"
   },
   "level": {
     "offerTitle": "Measure your level in 5 minutes?",
@@ -2514,11 +2520,11 @@
     "manual": "I want to add words myself",
     "welcome": {
       "title": "Let's start learning words for good",
-      "body": "Engapp asks you a few words every day and brings each back just before you forget it. Three short steps, then your first study session:",
+      "body": "Engapp asks you a few words every day and brings each back just before you forget it. Three short steps and you are ready:",
       "step1": "Measure your level: a 5-minute word test, at most 70 questions (skip it if you like).",
       "step2": "Pick your interests: example sentences come from these topics.",
       "step3": "Pick a ready deck, such as “The 500 most used words”.",
-      "step4": "Do your first session: a few minutes, a few new words.",
+      "step4": "Then your first session starts: a few minutes, a few new words.",
       "start": "Let's begin",
       "haveAccount": "Already have an account?",
       "signIn": "Sign in",
@@ -2558,7 +2564,10 @@
       "loading": "Loading ready decks",
       "offline": "Ready decks need the internet. Try again once you're online, or add words yourself.",
       "retry": "Try again",
-      "skipOffline": "Skip for now and open the app"
+      "skipOffline": "Skip for now and open the app",
+      "addingStart": "Getting the deck ready…",
+      "addingLabel": "Adding the deck",
+      "addingHint": "This takes a few seconds. Your first session opens when it is done."
     }
   },
   "decks": {
@@ -3916,5 +3925,36 @@
     "month_other": "{{n}} months",
     "year_one": "{{n}} year",
     "year_other": "{{n}} years"
+  },
+  "reminderOffer": {
+    "title": "Shall I remind you tomorrow?",
+    "body": "One short reminder a day at the time you pick. None on a day you already studied.",
+    "guestBody": "In the browser, reminders need an account. Create a free one and I will remind you every day at your time.",
+    "time": "Time",
+    "yes": "Yes, at {{hour}}:00",
+    "no": "No, thanks",
+    "signIn": "Create an account",
+    "done": "Done: a reminder every day at {{hour}}:00",
+    "declined": "Okay, I won't ask again. You can turn it on any time in Settings → Notifications.",
+    "denied": "Notifications were not allowed. You can allow them in your phone settings.",
+    "failed": "Could not turn the reminder on. Try again."
+  },
+  "waiting": {
+    "title": "While you wait",
+    "body_one": "Your cards are ready again in {{count}} min.",
+    "body_other": "Your cards are ready again in {{count}} min.",
+    "newTitle_one": "+{{count}} new word",
+    "newTitle_other": "+{{count}} new words",
+    "newBody": "Learn a few more words now",
+    "readTitle": "Read a short text",
+    "readBody": "Readings at your level, in Discover",
+    "pingAction_one": "Let me know when ready ({{count}} min)",
+    "pingAction_other": "Let me know when ready ({{count}} min)",
+    "pingHint": "One notification when the cards are ready",
+    "pingSet": "Okay, I'll let you know when the cards are ready",
+    "pingTitle": "Your cards are ready",
+    "pingBody": "Have one more look at the words you just learned.",
+    "reminderTitle": "Turn on the daily reminder",
+    "reminderBody": "A short reminder every day at your time"
   }
 }

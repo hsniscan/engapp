@@ -23,4 +23,10 @@ describe('shouldRemindBackup', () => {
     expect(shouldRemindBackup({ ...base, noteCount: 0 })).toBe(false);
     expect(shouldRemindBackup({ ...base, dismissedOn: '2026-10-21' })).toBe(false);
   });
+  it('shows on one day, then rests for a week (A7)', () => {
+    const seen = { day: '2026-10-21', at: 8 * DAY };
+    expect(shouldRemindBackup({ ...base, seen })).toBe(true);
+    expect(shouldRemindBackup({ ...base, seen, todayKey: '2026-10-22', now: 9 * DAY })).toBe(false);
+    expect(shouldRemindBackup({ ...base, seen, todayKey: '2026-10-28', now: 15 * DAY })).toBe(true);
+  });
 });

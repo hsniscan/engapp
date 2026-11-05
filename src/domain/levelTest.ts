@@ -174,6 +174,9 @@ export function answeredCount(state: TestState): number {
   return state.items.length + state.items.filter((i) => i.mc_ok !== undefined).length;
 }
 
+/** The most questions a test can ask ("en çok 70 soru"): every block, every meaning question. */
+export const MAX_QUESTIONS = MAX_BLOCKS * (REAL_PER_BLOCK + PSEUDO_PER_BLOCK) + MAX_MEANING_QUESTIONS;
+
 /** Rough progress for the progress bar: the test has at most MAX_BLOCKS blocks. */
 export function progress(state: TestState): number {
   if (state.done) return 1;

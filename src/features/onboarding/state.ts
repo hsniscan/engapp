@@ -9,6 +9,8 @@ import { flags } from '@/features/settings/platform';
 
 export const ONBOARDING_DONE_KEY = 'onboarding';
 export const ONBOARDING_STEP_KEY = 'onboarding.step';
+/** Set while the deck step adds its deck (kept across a restart, so the add resumes there). */
+export const ONBOARDING_ADDING_KEY = 'onboarding.adding';
 
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
@@ -20,7 +22,19 @@ const subscribe = (l: () => void) => {
 };
 
 const snapshot = () =>
-  `${flags.get(ONBOARDING_DONE_KEY) ?? ''}|${parseOnboardingStep(flags.get(ONBOARDING_STEP_KEY)) ?? ''}`;
+  `${flags.get(ONBOARDING_DONE_KEY) ?? ''}|${parseOnboardingStep(flags.get(ONBOARDING_STEP_KEY)) ?? ''}|${flags.get(ONBOARDING_ADDING_KEY) ?? ''}`;
+
+export function setOnboardingAdding(on: boolean): void {
+  flags.set(ONBOARDING_ADDING_KEY, on ? '1' : '');
+  emit();
+}
+
+/** The deck step is adding its deck: Bugün keeps the onboarding up although words exist. */
+export function useOnboardingAdding(): boolean {
+  const local = useSyncExternalStore(subscribe, snapshot, snapshot);
+  const [done, , adding] = local.split('|');
+  return done !== 'done' && adding === '1';
+}
 
 export function setOnboardingStep(step: OnboardingStep): void {
   flags.set(ONBOARDING_STEP_KEY, step);
@@ -30,6 +44,7 @@ export function setOnboardingStep(step: OnboardingStep): void {
 /** The user finished or left the onboarding: never shown again on this device. */
 export function finishOnboarding(): void {
   flags.set(ONBOARDING_DONE_KEY, 'done');
+  flags.set(ONBOARDING_ADDING_KEY, '');
   emit();
 }
 
@@ -44,7 +59,7 @@ export function useOnboarding(): { needed: boolean; step: OnboardingStep } | und
     return { words, interestsAsked: settings?.interests != null };
   }, []);
   if (!facts) return undefined;
-  const [done, rawStep] = local.split('|');
+  const [done, rawStep, adding] = local.split('|');
   const step = parseOnboardingStep(rawStep);
   return {
     needed: needsOnboarding({
@@ -52,7 +67,8 @@ export function useOnboarding(): { needed: boolean; step: OnboardingStep } | und
       words: facts.words,
       interestsAsked: facts.interestsAsked,
       inProgress: step !== null,
+      adding: adding === '1',
     }),
-    step: step ?? 'welcome',
+    step: adding === '1' ? 'deck' : (step ?? 'welcome'),
   };
 }

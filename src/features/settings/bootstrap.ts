@@ -6,20 +6,18 @@ import {
   ensureStreakFreezes,
   db,
   ensureSettings,
-  getCurrentUserId,
   logError,
   repairDuplicateSenses,
   repairListEntrySentences,
 } from '@/data';
-import i18n from '@/i18n';
 import { isNativeApp } from '@/native/platform';
-import { toast } from '@/ui';
 import { scheduleWeeklyLevelUpdate } from '@/features/leveltest/schedule';
 import { startReports } from '@/features/report/queue';
-import { downloadBackup } from './backupActions';
 import { scheduleStartupIntegrityCheck } from './integrity';
 import { captureInstallPrompt, flags, refreshStorageInfo, requestPersistence } from './platform';
 import { startThemeSync } from './themeSync';
+import { resumePendingDeckAdd } from '@/features/decks/deckAddRunner';
+import { startWordBankPrefetch } from '@/features/wordbank/prefetch';
 
 let started = false;
 
@@ -34,53 +32,47 @@ export function installErrorHandlers(): void {
 }
 
 const PERSIST_FLAG = 'persistAsked';
+/** When persistence was last asked for (ms, as a string): asked again at most weekly. */
+const PERSIST_ASKED_AT = 'persistAskedAt';
+export const PERSIST_RETRY_MS = 7 * 86_400_000;
 
 /**
- * The first time the device holds a note, ask for persistent storage. If the browser says no
- * and the user is a guest, warn once: the browser may evict the data under storage pressure.
+ * The first time the device holds a note, ask the browser for persistent storage, and ask again
+ * at most once a week while it says no (Chromium grants it later for an app used often or
+ * installed). Never a toast (v0.5.3 A5, ADR 0072): the old 15-second warning covered the first
+ * card of the first session. A guest whose data is not protected sees one calm notice in
+ * Profil instead (StorageNotice), with "Yedek al" and "Hesap aç". The Android app has nothing
+ * to ask: its WebView keeps the data until the app is uninstalled (ADR 0064).
  */
-export function watchFirstCard(native: () => boolean = isNativeApp): () => void {
-  if (flags.get(PERSIST_FLAG)) return () => {};
+export function watchFirstCard(
+  native: () => boolean = isNativeApp,
+  now: () => number = Date.now,
+): () => void {
+  if (native()) return () => {};
+  if (flags.get(PERSIST_FLAG)) {
+    void askAgainIfDue(now());
+    return () => {};
+  }
   const sub = liveQuery(() => db.notes.limit(1).count()).subscribe({
     next: async (n) => {
       if (n === 0 || flags.get(PERSIST_FLAG)) return;
       flags.set(PERSIST_FLAG, '1');
       sub.unsubscribe();
-      // Android app (v0.5.2, ADR 0064): the WebView keeps app data until the app is uninstalled
-      // or its storage is cleared; persist() has no meaning there and usually answers false, so
-      // the browser-eviction warning would be wrong. A guest is told what really loses data.
-      if (native()) {
-        if (!(await getCurrentUserId())) {
-          toast({
-            title: i18n.t('storage.appGuestTitle'),
-            description: i18n.t('storage.appGuest'),
-            tone: 'neutral',
-            duration: 15_000,
-            action: {
-              label: i18n.t('backup.download'),
-              onClick: () => void downloadBackup(),
-            },
-          });
-        }
-        return;
-      }
-      const granted = await requestPersistence();
-      if (granted === false && !(await getCurrentUserId())) {
-        toast({
-          title: i18n.t('storage.deniedTitle'),
-          description: i18n.t('storage.deniedGuest'),
-          tone: 'warn',
-          duration: 15_000,
-          action: {
-            label: i18n.t('backup.download'),
-            onClick: () => void downloadBackup(),
-          },
-        });
-      }
+      flags.set(PERSIST_ASKED_AT, String(now()));
+      await requestPersistence();
     },
     error: (e: unknown) => void logError(e, 'persist.watch'),
   });
   return () => sub.unsubscribe();
+}
+
+async function askAgainIfDue(at: number): Promise<void> {
+  const info = await refreshStorageInfo().catch(() => null);
+  if (!info?.supported || info.persisted !== false) return;
+  const last = Number(flags.get(PERSIST_ASKED_AT) ?? 0);
+  if (at - last < PERSIST_RETRY_MS) return;
+  flags.set(PERSIST_ASKED_AT, String(at));
+  await requestPersistence().catch(() => null);
 }
 
 /** A study session (or its picker) is open: heavy maintenance waits, it would stall cards. */
@@ -151,6 +143,14 @@ export function bootstrap(): void {
       inReview,
     );
     watchFirstCard();
+    // v0.5.3 A2: the offline word bank, in the background (online, not metered).
+    whenIdle(async () => startWordBankPrefetch(), inReview, 3000);
+    // v0.5.3 A1: a ready-deck add cut short (app closed mid-add) finishes now.
+    whenIdle(
+      () => resumePendingDeckAdd().catch((e: unknown) => void logError(e, 'bootstrap.deckAdd')),
+      inReview,
+      1500,
+    );
     void refreshStorageInfo();
     scheduleStartupIntegrityCheck(inReview);
     scheduleRepairs(inReview);

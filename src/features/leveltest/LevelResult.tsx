@@ -3,7 +3,7 @@
 // the made-up words or the meaning questions make the result unreliable.
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { applyTestLevel, logError } from '@/data';
 import { LEVELS, levelIndex, type TestResult } from '@/domain/levelTest';
 import type { CefrLevel } from '@/domain/types';
@@ -26,6 +26,9 @@ export interface LevelTestOutcome {
 export function LevelResult({ outcome }: { outcome: LevelTestOutcome }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  // Inside the onboarding the button goes on to its next step, not "home" (v0.5.3 A7).
+  const [params] = useSearchParams();
+  const fromOnboarding = params.get('from') === 'onboarding';
   const { result, from } = outcome;
   const [applied, setApplied] = useState(result.reliable);
   const next = LEVELS[levelIndex(result.level) + 1] ?? null;
@@ -42,7 +45,8 @@ export function LevelResult({ outcome }: { outcome: LevelTestOutcome }) {
         toast({ title: t('levelTest.saveFailed'), tone: 'danger' });
       });
   };
-  const retake = () => void navigate('/level-test', { replace: true });
+  const retake = () =>
+    void navigate(fromOnboarding ? '/level-test?from=onboarding' : '/level-test', { replace: true });
 
   return (
     <div
@@ -160,7 +164,7 @@ export function LevelResult({ outcome }: { outcome: LevelTestOutcome }) {
 
       <div className="mt-auto flex flex-col gap-2 pt-4">
         <Link to="/" replace className={buttonClasses({ size: 'lg', fullWidth: true })}>
-          {t('levelTest.home')}
+          {fromOnboarding ? t('levelTest.continue') : t('levelTest.home')}
         </Link>
         {(result.reliable || applied) && (
           <Button variant="ghost" fullWidth onClick={retake}>
