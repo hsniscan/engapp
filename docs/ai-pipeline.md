@@ -10,6 +10,11 @@ Prompt versions: **`extract-v5`**, **`enrich-v2`** (`_shared/prompts.ts`); the l
 prompt or a response schema bumps the version (the chunk cache is keyed by it) and is
 copied here; `src/ai/docs-sync.test.ts` fails when this file and the code differ.
 
+**Providers (v0.5.3, decision 0077).** Every text AI task runs on Claude Sonnet first
+(`CLAUDE_TEXT_MODEL`, under the monthly text budget) and on Gemini when Claude cannot answer
+(budget used up, outage, no key): see "Provider chain" below. Only the pronunciation audio of a
+missing word still uses Gemini TTS first.
+
 Pictures (v0.4: `image-v2`, `visual-v1`, `imagecheck-v2`) use Claude, not Gemini, and have
 their own page: [ai-image.md](ai-image.md) (decisions 0029, 0030). The word bank job
 (`wordbank-v1`, decision 0038) also uses Claude: see "Word bank" below.
@@ -49,9 +54,13 @@ and `ai-image` ("Görsel üret" / "Yeniden üret", 10 a day) were removed at the
 ## Rules
 
 - AI needs a signed-in (Google) account. Guests never reach the functions.
-- The Gemini key lives only in Supabase secrets. Model names come only from
+- The Anthropic and Gemini keys live only in Supabase secrets (and GitHub secrets for the
+  jobs). Model names come only from `CLAUDE_TEXT_MODEL`, `CLAUDE_STORY_MODEL`,
   `GEMINI_MODEL` / `GEMINI_FALLBACK_MODEL` (defaults in one place:
-  `_shared/ai-provider.ts`, used only when the variable is unset).
+  `_shared/model-defaults.ts`, used only when the variable is unset).
+- No Claude call without a budget hold: every call reserves its worst case on the monthly
+  text budget first (`CLAUDE_TEXT_MONTHLY_USD`), plus the caller's share of it (a user's, or
+  the system jobs' pool). A refused hold sends nothing and the request goes to Gemini.
 - Nothing the model returns becomes a card without server validation and the user's
   approval in the preview.
 - The shared lexicon never stores user text: only lemma, part of speech, English gloss,
@@ -263,15 +272,15 @@ All errors: `{ "error": { "code": "...", "message": "...", "retry_after_s"?: n }
 | `unauthorized`       | 401  | no token, invalid/expired token, anonymous session                                               |
 | `invalid_input`      | 400  | body fails validation, chunk_hash ≠ SHA-256(text), body > 64 KB                                  |
 | `daily_limit`        | 429  | the user's `AI_DAILY_LIMIT` calls for today (UTC) are used                                       |
-| `quota_exceeded`     | 503  | Gemini 429/RESOURCE_EXHAUSTED or 503/UNAVAILABLE on both models after retries; `Retry-After` set |
+| `quota_exceeded`     | 503  | Claude unavailable or out of budget AND Gemini 429/RESOURCE_EXHAUSTED or 503/UNAVAILABLE on both models after retries; `Retry-After` set |
 | `ai_failed`          | 502  | other model failures (bad request, blocked prompt, unusable output after retries, timeouts)      |
 | `method_not_allowed` | 405  | not POST/OPTIONS                                                                                 |
 | `internal`           | 500  | unexpected server error (details only in function logs)                                          |
 
 ## Model calls
 
-`AiProvider` (`_shared/ai-provider.ts`); `AI_PROVIDER=gemini` is the only primary
-implementation; Claude is the quota fallback (below).
+`AiProvider` (`_shared/ai-provider.ts`). Claude (`_shared/ai-claude-text.ts`) is the primary,
+Gemini (this section) the fallback; the chain is in "Provider chain" below.
 
 - `POST https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent`,
   header `x-goog-api-key`, body
@@ -292,31 +301,57 @@ responseMimeType:"application/json", responseJsonSchema, maxOutputTokens}}`
   INVALID_ARGUMENT for `maxItems: 30` on this schema (observed Oct 2026); the limits are
   in the prompts and enforced by the server.
 
-### Claude fallback (v0.5, decision 0044)
+### Provider chain (v0.5.3, decision 0077)
 
-`createAiFunction` builds the provider with `createTextAiProvider(env)` (`_shared/ai.ts`):
+`createAiFunction` builds the provider with `createTextAiProvider(env, {budget, purpose})`
+(`_shared/ai.ts`); the jobs use the same chain through `scripts/lib/system-ai.ts`:
 
-1. Gemini as above (primary model, then `GEMINI_FALLBACK_MODEL`).
-2. Only if that ends in `quota_exceeded` (429 / `RESOURCE_EXHAUSTED`, or 503 `UNAVAILABLE`
-   on both models): the same request on Claude, `CLAUDE_TEXT_MODEL` [`claude-haiku-5-5`],
-   key `ANTHROPIC_API_KEY` (`_shared/ai-claude-text.ts`, official SDK, 60 s timeout, 1 SDK
-   retry). Any other Gemini failure is returned as before.
+1. Claude, `CLAUDE_TEXT_MODEL` [`claude-sonnet-5-5`], key `ANTHROPIC_API_KEY`
+   (`_shared/ai-claude-text.ts`, official SDK). Before the call its worst case is reserved on
+   the monthly text budget and on the caller's share (the user's, or the system jobs' pool);
+   after it the real cost from `usage` is booked. One attempt, no SDK retry when Gemini is
+   behind it.
+2. Gemini as above (primary model, then `GEMINI_FALLBACK_MODEL`) after **any** Claude failure:
+   budget or share used up (nothing was sent), 429 / 529 / 5xx, a bad key, a timeout, a
+   refusal, a 400, or an answer that fails the task's validation. Gemini is free, so the app
+   keeps working when the month's Claude money is gone. When both fail, Gemini's error is
+   returned, except that a quota error of either side wins (`quota_exceeded`, the client
+   retries later).
 
-- Request: `system` = the task's system prompt, one user message = the task's user text,
+- Request: `system` = the task's system prompt as one cached block
+  (`cache_control: {type: "ephemeral"}`: the chunks of one article read it at ~10 % of the
+  input price), one user message = the task's user text,
   `output_config: {effort: "low", format: {type: "json_schema", schema}}` where `schema` is the
   task's own response schema through `toClaudeSchema` (every object
   `additionalProperties: false`; `minimum`/`maximum`/`minLength`/`maxLength`/`maxItems`/
-  `pattern` dropped; `type: [X, "null"]` → `anyOf`). `max_tokens` = the task's
-  `maxOutputTokens` + 2048 (adaptive thinking). No temperature.
-- Answer: text blocks joined and parsed; the task's `validate` runs (one more attempt on a
-  mismatch); `stop_reason: "max_tokens"` keeps the complete list items (`truncated`);
-  `refusal` → `ai_failed`; Claude 429 / 529 → `quota_exceeded`.
-- `result.model` is the Claude model id, so caches and the lexicon record who wrote a row.
-- Cost: every answered call goes to `recordTextSpend({model, usd, input_tokens,
-output_tokens})`; **for now it only logs** (`text spend`). TODO at the v0.5 merge: the text
-  budget of İP5 (`CLAUDE_TEXT_MONTHLY_USD`).
-- Off: `AI_CLAUDE_FALLBACK=off`, or no `ANTHROPIC_API_KEY`. With no Gemini key but a Claude
-  key, Claude alone.
+  `pattern` dropped; `type: [X, "null"]` → `anyOf`). Sonnet: `thinking: {type: "between_tools"}`
+  (no extended thinking; `MODELS_WITHOUT_TEXT_THINKING`) and `max_tokens` = the task's
+  `maxOutputTokens`; another model thinks adaptively with 2048 more `max_tokens`. No
+  temperature, no prefill, no tool choice (the current models reject them).
+- Timeout per call: the task's `timeoutMs` (60 s if none). A call that timed out or lost its
+  connection may still be billed: its whole reservation is booked as spent.
+- Answer: text blocks joined and parsed; the task's `validate` runs; `stop_reason: "max_tokens"`
+  keeps the complete list items (`truncated`); `refusal` → `ai_failed`.
+- `result.model` is the model id that answered, so caches and the lexicon record who wrote a row.
+- Cost: every answered call is booked on the budget (`text_budget`, purpose = the function
+  name, e.g. `ai_extract`) and logged (`text spend`).
+- Without `ANTHROPIC_API_KEY`, with `AI_CLAUDE_FALLBACK=off`, or without a budget (a local
+  script without the database): Gemini alone. Without `GEMINI_API_KEY`: Claude alone.
+  `AI_TEXT_PRIMARY=gemini` restores the v0.5 order (Gemini first, Claude only on Gemini's
+  quota errors).
+
+**Shares of the monthly text budget** (`CLAUDE_TEXT_MONTHLY_USD`, default 10 USD; decision
+0077, numbers and cost estimates there):
+
+| who | share | default at 10 USD |
+| --- | --- | --- |
+| a user | `AI_USER_MONTHLY_USD` [2], at most `AI_USER_MAX_SHARE` [0.2] of the cap | 2 USD |
+| the owner (`APP_ADMIN_USER_ID`) | `AI_OWNER_MAX_SHARE` [0.75] of the cap | 7.5 USD |
+| system jobs (level job, morphemes, level-test bank) | `AI_SYSTEM_MONTHLY_USD` [2], at most `AI_SYSTEM_MAX_SHARE` [0.15] | 1.5 USD |
+| graded library, word bank (Message Batches) | the month itself (owner-run, `GRADED_BULK`) | — |
+
+Every share also counts against the month, so the month's total never passes the cap. A
+used-up share sends that caller's requests to Gemini; nothing stops.
 
 ## fetch-article (v0.5, decision 0044)
 
@@ -344,9 +379,10 @@ our own block walk: never HTML. The address and the text are not stored or logge
 "Bugünün hikâyesi": `POST /functions/v1/ai-story` `{level, difficulty, interests[], target_lemmas[5–8], avoid[]}`
 (closed) → `{prompt_version, model, story:{title, paragraphs[], used_lemmas[], questions[3], glosses[]}, usage}`.
 One story per user and UTC day plus one regeneration (`story_consume`, `STORY_DAILY_LIMIT`),
-Claude Haiku (`CLAUDE_STORY_MODEL`) under the monthly text budget, nothing stored. Prompt,
-schema and checks: `docs/ai-story.md`. Its own error: `budget_exhausted` (503) when this
-month's `CLAUDE_TEXT_MONTHLY_USD` cannot cover the call.
+Claude (`CLAUDE_STORY_MODEL`, else `CLAUDE_TEXT_MODEL`: Sonnet) under the monthly text budget,
+Gemini when the budget or the user's share cannot cover the call or Claude does not answer
+(decision 0077); nothing stored. Prompt, schema and checks: `docs/ai-story.md`. Its own error:
+`budget_exhausted` (503) only when the budget refuses and no Gemini key is set.
 
 ## Extract prompt (`extract-v5`)
 
@@ -762,7 +798,10 @@ Its report, `docs/quality/golden-extract.md`, is a file snapshot (`pnpm vitest r
 `node scripts/system-jobs.ts levels`, run by `.github/workflows/level-jobs.yml` every night
 (02:30 UTC) and by hand (`dry_run`, `max_calls` inputs). It uses the service role and the
 **system AI budget** (`ai_system_consume()`, `AI_SYSTEM_DAILY_LIMIT`, default 100 calls per
-UTC day, table `ai_system_usage`), never a user's `ai_usage`. About 100 items per call.
+UTC day, table `ai_system_usage`), never a user's `ai_usage`. About 100 items per call. Model
+calls use the provider chain (Claude Sonnet first, decision 0077) and every Claude call is
+also booked on the system jobs' pool of the monthly text budget (`text_budget_pools`,
+`AI_SYSTEM_MONTHLY_USD`); when the pool is used up the job continues on Gemini.
 
 1. **Resolve** every lexicon sense with the rule, and every term's `zipf` from the reference
    data (no AI; runs on every run, also without `GEMINI_API_KEY`); only changed rows are
@@ -783,7 +822,8 @@ UTC day, table `ai_system_usage`), never a user's `ai_usage`. About 100 items pe
    list level they were made for (`tr_base_cefr`); a new list version ignores them.
 4. **Resolve** again, so the corrections reach the lexicon at once (also after an AI error).
 
-Steps 2–3 are skipped with a warning when `GEMINI_API_KEY` is missing (or `--no-ai`). The run
+Steps 2–3 are skipped with a warning when both `GEMINI_API_KEY` and `ANTHROPIC_API_KEY` are
+missing (or `--no-ai`). The run
 stops calling the model when the budget is used up, the provider answers with a quota error, a
 call fails, or `--max-minutes` (40 in the workflow) has passed; the next run continues. An
 unexpected error in steps 2–3 still runs step 4, then ends the run red. Orchestration and
@@ -792,8 +832,8 @@ decision 0037). `--dry-run` reports counts without
 writing or calling the model. `node scripts/system-jobs.ts export-tr` writes the stored
 corrections to `data/levels/level-tr.tsv`; `node scripts/build-levels.ts` then adds them to
 the client level file (guests and offline see them after the next app release).
-`try-tr` / `try-guess` call the model once on the committed list or on sample senses, with
-no database (prompt checks).
+`try-tr` / `try-guess` call the model once on the committed list or on sample senses, storing
+nothing (prompt checks); Claude only when the service-role database is set (for its budget).
 
 ### `level-guess-v1`
 
@@ -1024,7 +1064,8 @@ Response schema:
 ## Level test bank (one-off, `bank-tr-v1`, `bank-check-v1`, `pseudo-check-v1`)
 
 The level test's question bank (`data/level-test/bank.json`, decision 0017) was built once
-by `scripts/build-level-test.ts` with the local Gemini key; the app never calls a model for
+by `scripts/build-level-test.ts` with the local Gemini key (since decision 0077 the script uses
+the provider chain: Claude first when the database for the budget is set); the app never calls a model for
 it and no user quota is used. Prompts (in the script, versioned there):
 
 - `bank-tr-v1` (`meanings`): for each list word and part of speech the Turkish meaning a
@@ -1081,8 +1122,9 @@ A one-off system job (İP6, ADR 0014), not an edge function. It runs with
   6 example words from the frequency list. No user text is ever sent.
 - **Batches.** 20 morphemes per request, about 7 requests for the current 133.
   The job uses the system budget, never a user's quota.
-- **Model.** `GEMINI_MODEL`, with `GEMINI_FALLBACK_MODEL` on quota or overload errors. Both
-  come from the environment only.
+- **Model.** The text provider chain (decision 0077): `CLAUDE_TEXT_MODEL` first, booked on the
+  monthly text budget and the system jobs' pool (needs the service-role database), then
+  `GEMINI_MODEL` and `GEMINI_FALLBACK_MODEL`. Defaults in `model-defaults.ts`.
 - **Validation.** `validateMorphemeAnswer`:
   - `meaning_tr`: at most 40 characters and 6 words;
   - only letters and punctuation are allowed;
