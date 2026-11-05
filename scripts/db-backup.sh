@@ -79,6 +79,18 @@ export AWS_REQUEST_CHECKSUM_CALCULATION=when_required AWS_RESPONSE_CHECKSUM_VALI
 endpoint="https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com"
 s3() { aws --endpoint-url "$endpoint" "$@"; }
 
+# Free-plan guard: R2 is free up to 10 GB stored; the owner does not want to pay. Before every
+# upload, count everything in the bucket and refuse (the run fails, GitHub e-mails the owner)
+# if this copy would go past R2_MAX_BYTES (default 8 GB, a margin under the free 10 GB).
+max_bytes="${R2_MAX_BYTES:-8589934592}"
+used=$(s3 s3api list-objects-v2 --bucket "$bucket" --query 'sum(Contents[].Size)' --output text 2>/dev/null || echo 0)
+case "$used" in ''|None|null) used=0 ;; esac
+used=${used%.*}
+if [ $((used + size)) -gt "$max_bytes" ]; then
+  echo "::error::R2 bucket $bucket holds $((used / 1048576)) MB; this $((size / 1048576)) MB copy would pass the $((max_bytes / 1048576)) MB free-plan guard. No backup uploaded (docs/runbook-backup-restore.md)."
+  exit 1
+fi
+
 put() { s3 s3 cp --only-show-errors "$work/backup.tar.gz.gpg" "s3://$bucket/backups/$1/$stamp.tar.gz.gpg"; }
 prune() { # prefix keep
   local keys n oldest k

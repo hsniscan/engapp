@@ -104,7 +104,7 @@ jobs:
         run: scripts/supabase-db-url.sh
 
       # Decision 0060: a migration that goes wrong must never be the end of users' data. The
-      # dump is taken before every push once BACKUP_PASSPHRASE is set; a failed backup stops the deploy.
+      # dump is taken before every push; without BACKUP_PASSPHRASE the deploy stops.
       - name: Back up before migrating
         env:
           DB_URL_FILE: ${{ runner.temp }}/db-url
@@ -124,12 +124,8 @@ jobs:
             exit 0
           fi
           if [ -z "$BACKUP_PASSPHRASE" ] || [ -z "$R2_ACCOUNT_ID" ]; then
-            # Until the owner adds BACKUP_PASSPHRASE (2026-11-02: he chose to ship v0.5.2 first
-            # and set the secret later), a missing passphrase skips the backup with a warning.
-            # The nightly db-backup.yml keeps failing (and e-mailing) until the secret exists.
-            # Once it is set, a failed backup still stops the deploy below.
-            echo "::warning::BACKUP_PASSPHRASE / R2_ACCOUNT_ID is not set: migrating WITHOUT a fresh backup (docs/runbook-backup-restore.md)."
-            exit 0
+            echo "::error::BACKUP_PASSPHRASE / R2_ACCOUNT_ID is not set: refusing to migrate without a backup (docs/runbook-backup-restore.md). For one emergency deploy set the variable SKIP_PRE_MIGRATION_BACKUP=true."
+            exit 1
           fi
           scripts/db-backup.sh pre-migration
 
