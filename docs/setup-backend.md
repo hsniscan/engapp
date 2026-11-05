@@ -592,12 +592,32 @@ Decision 0060; restore steps: `docs/runbook-backup-restore.md`.
 3. GitHub → **Actions → DB backup → Run workflow** once and check that it ends green.
    It then runs every night (02:45 UTC): daily copies kept 14, weekly (Sunday) copies 8,
    pre-migration copies 10, none older than 56 days.
-4. The same workflow runs `public.ops_health()` (budgets, refusals, stale holds, job
-   heartbeats, failed pg_cron runs, database size, lexicon terms to review). A `fail` row fails
-   the run. Turn on e-mail for failed runs: GitHub → your avatar → **Settings →
-   Notifications → Actions → "Send notifications for failed workflows only"**.
+4. **Health check** (`ops-health.yml`, 06:30 UTC; decision 0076) runs `public.ops_health()`
+   (budgets, refusals, stale holds, job heartbeats, failed pg_cron runs, database size, lexicon
+   terms to review) and `public.ops_health_reliability()` (backup age, the job clock, users'
+   errors, edge-function failures, AI fallbacks and quota refusals), and checks that the
+   newest backup in R2 is under 26 hours old. A `fail` row fails the run. Turn on e-mail for
+   failed runs: GitHub → your avatar → **Settings → Notifications → Actions → "Send
+   notifications for failed workflows only"**.
 5. Sync quotas (per user): `select * from public.sync_limits;` — change one with
    `update public.sync_limits set value = … where name = '…';` (no deploy needed).
+
+## 21. Job clock and error reports (v0.5.3)
+
+Decision 0076 (with a short Turkish checklist at its end).
+
+1. GitHub → avatar → **Settings → Developer settings → Personal access tokens → Fine-grained
+   tokens → Generate new token**: only the `engapp` repository, permission **Actions: Read and
+   write**, nothing else, the longest expiry.
+2. Repository secret `GH_DISPATCH_TOKEN` = that token (step 4).
+3. **Actions → Supabase → Run workflow**: the deploy copies the token into Supabase Vault.
+   From then on pg_cron starts the backup, the health check, the level, library and picture
+   jobs on time; GitHub's own schedules only catch misses, and a run that finds tonight's work
+   already done skips itself ("Skipped: …" notice).
+4. Check: next morning the **Health check** run shows `gh_dispatch ok`. In the SQL editor:
+   `select at, workflow, outcome, status_code from ops_dispatch_log order by id desc limit 10;`
+5. Users' error reports: `select * from client_errors order by id desc limit 50;` (the health
+   check prints only counts and fingerprints, its log is public).
 
 ## Manual deploy without GitHub (alternative)
 

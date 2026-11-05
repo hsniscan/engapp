@@ -8,7 +8,7 @@ Never paste the database URL, the passphrase or keys into an issue, a chat or a 
 
 | Copy | When | Kept | Key in R2 |
 | --- | --- | --- | --- |
-| daily | every night 02:45 UTC (`.github/workflows/db-backup.yml`) | last 14 | `backups/daily/<stamp>.tar.gz.gpg` |
+| daily | every night 02:45 UTC (`.github/workflows/db-backup.yml`, started by pg_cron, decision 0076) | last 14 | `backups/daily/<stamp>.tar.gz.gpg` |
 | weekly | the Sunday daily copy, again | last 8 | `backups/weekly/…` |
 | pre-migration | every deploy, right before `supabase db push` | last 10 | `backups/pre-migration/…` |
 
@@ -86,10 +86,15 @@ Never update or delete `review_logs` rows (AGENTS.md); only insert missing ones.
 
 ## 5. When the nightly check fails
 
-The **DB backup** run shows a table of `ops_health()`; a `fail` row turns it red:
+The **Health check** run (`ops-health.yml`, 06:30 UTC) shows a table of `ops_health()` and
+`ops_health_reliability()`; a `fail` row turns it red, and so does the step "Newest backup in
+R2" when the newest daily copy is older than 26 hours (the dead man's switch, decision 0076):
 
 | Check | Meaning | What to do |
 | --- | --- | --- |
+| `backup_age` / "Newest backup in R2" | no good nightly backup for more than 26 hours | open the last **Database backup** run; if there is none, look at `gh_dispatch` |
+| `gh_dispatch` | GitHub refused the job-clock token (expired?) | make a new token and save it as `GH_DISPATCH_TOKEN`, then run **Supabase** (setup step 21) |
+| `client_errors_24h` / `fn_errors_24h` (warn) | many errors in the app / in edge functions | `select * from client_errors where fingerprint = '…' order by id desc;` |
 | `text_budget` 100 % / `text_budget_refusals` | the monthly Claude text budget is used up; AI falls back or refuses | raise `CLAUDE_TEXT_MONTHLY_USD` or wait for the month; look at `text_budget_user_caps` |
 | `job_db-backup` | no good backup for 3 days | open the failed run; usually an expired key or a missing secret |
 | `pg_cron` | a scheduled database job failed | `select * from cron.job_run_details where status = 'failed' order by start_time desc limit 20;` |
