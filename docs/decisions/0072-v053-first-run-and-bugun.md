@@ -57,7 +57,8 @@ found that a new guest's first five minutes were rough:
 6. **"Beklerken" (A6).** When `ready === 0 && later > 0`, a short list under the hero: "+5 yeni
    kelime" (`addExtraNew`, only when new cards are not paused), "Kısa bir metin oku" (Keşfet →
    Okuma) and, with reminders off, "Hazır olunca haber ver" (one local notification, id 1090, at
-   the next learning step; Android) or the reminder setting (web).
+   the next learning step; Android) or, on the web, the reminder setting (only after a "Hesap aç"
+   answer to the offer, so the two never show together and a "Hayır" is never asked again).
 7. **Bugün declutter (A7).** One note slot holds every prompt: the rule note, streak, load,
    reminder offer, backup reminder, FSRS offer, interests, level change, then the daily-goal
    prompt; only the first that renders shows. The backup reminder left `RootLayout` (no banner

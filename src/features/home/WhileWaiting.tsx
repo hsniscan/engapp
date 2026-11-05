@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router';
 import { addExtraNew, logError, type MoreStudyOverview } from '@/data';
 import { extraNewMode } from '@/features/extra/links';
 import { useReminderState } from '@/features/notify/nativeReminder';
-import { pingWhenDue, type NativeDeps } from '@/features/notify/reminderOffer';
+import { pingWhenDue, useOfferAnswer, type NativeDeps } from '@/features/notify/reminderOffer';
 import { isNativeApp } from '@/native/platform';
 import { parseNotify } from '@/domain/notify';
 import { useAppSettings } from '@/features/settings/useAppSettings';
@@ -37,6 +37,8 @@ export function WhileWaiting({
   const reminder = useReminderState();
   const { settings } = useAppSettings();
   const webOn = !!parseNotify(settings?.notify)?.enabled;
+  // The note slot's offer asks about reminders first; a "Hayır" there is final (A4).
+  const offer = useOfferAnswer();
   const [busy, setBusy] = useState<'new' | 'ping' | null>(null);
   const [pinged, setPinged] = useState(false);
   const mode = more ? extraNewMode(more) : null;
@@ -112,7 +114,7 @@ export function WhileWaiting({
             description={t('waiting.pingHint')}
           />
         )}
-        {!native && settings && !webOn && (
+        {!native && settings && !webOn && offer === 'yes' && (
           <ListRow
             to={NOTIFY_SETTINGS_HREF}
             leadingIcon="bell"
