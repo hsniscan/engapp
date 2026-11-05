@@ -17,6 +17,8 @@
 # Audio on Cloudflare R2 (decision 0053), optional: secrets R2_ACCOUNT_ID, R2_ACCESS_KEY_ID,
 #   R2_SECRET_ACCESS_KEY, R2_BUCKET and the variable AUDIO_BASE_URL. Without all five the tts
 #   function keeps using Supabase Storage only.
+# Job clock (decision 0076), optional: secret GH_DISPATCH_TOKEN, a fine-grained GitHub token with
+#   only "Actions: Read and write" on this repository. pg_cron uses it to start the nightly jobs.
 # Web Push (VAPID) keys are generated here on the first deploy and kept as Supabase function
 # secrets; nobody has to create them (docs/decisions/0024-web-push.md).
 name: Supabase
@@ -274,6 +276,26 @@ jobs:
           psql "$(cat "$RUNNER_TEMP/db-url")" -v ON_ERROR_STOP=1 -qAt \
             -c "select public.push_configure('https://$SUPABASE_PROJECT_REF.supabase.co/functions/v1/push-send')" \
             -c "select 'extensions: ' || string_agg(extname, ', ') from pg_extension where extname in ('pg_cron', 'pg_net')"
+
+      - name: Job clock token
+        # Decision 0076: pg_cron starts the nightly GitHub jobs on time with a fine-grained
+        # token (Actions: read and write, this repository only) kept in Supabase Vault. The
+        # optional secret GH_DISPATCH_TOKEN is copied there on every deploy; without it the
+        # jobs keep GitHub's own (late) schedule. The token goes to psql through the
+        # environment (\getenv), never on a command line.
+        env:
+          GH_DISPATCH_TOKEN: ${{ secrets.GH_DISPATCH_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "$GH_DISPATCH_TOKEN" ]; then
+            echo "::notice::GH_DISPATCH_TOKEN is not set: the nightly jobs start on GitHub's late schedule (docs/decisions/0076-job-clock-and-error-reports.md)."
+            exit 0
+          fi
+          command -v psql >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client; }
+          psql "$(cat "$RUNNER_TEMP/db-url")" -v ON_ERROR_STOP=1 -qAt <<'SQL'
+          \getenv tok GH_DISPATCH_TOKEN
+          select 'job clock token: ' || public.ops_dispatch_set_token(:'tok');
+          SQL
 
       - name: Picture review admin
         # The owner's auth user id from the repository variable APP_ADMIN_USER_ID (Supabase

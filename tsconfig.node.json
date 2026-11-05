@@ -32,6 +32,7 @@
     "scripts/graded-batch.ts",
     "scripts/tts-pregen.ts",
     "scripts/audio-migrate.ts",
-    "scripts/check-*.ts"
+    "scripts/check-*.ts",
+    "scripts/ci-gate*.ts"
   ]
 }

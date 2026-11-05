@@ -11,12 +11,20 @@
 #                                 them the encrypted file goes to the audio bucket (R2_BUCKET).
 #   SUPABASE_ACCESS_TOKEN         optional: only to look up the exact pooler host.
 # A failed run makes GitHub e-mail the repository owner (Settings > Notifications > Actions).
+# Started at 02:45 UTC by the database clock (pg_cron, decision 0076); the schedule below is the
+# backstop. The health check and the dead man's switch run in ops-health.yml at 06:30 UTC.
 name: Database backup
+run-name: ${{ (github.event_name == 'schedule' || inputs.trigger == 'cron') && 'Database backup [auto:daily]' || 'Database backup' }}
 
 on:
   schedule:
-    - cron: '45 2 * * *' # 02:45 UTC, before the purge jobs at 03:17
+    - cron: '45 2 * * *' # backstop; pg_cron dispatches at 02:45 UTC, before the purge jobs at 03:17
   workflow_dispatch:
+    inputs:
+      trigger:
+        description: 'Leave empty. "cron" = started by the database clock (decision 0076)'
+        type: string
+        default: ''
 
 concurrency:
   group: db-backup
@@ -31,7 +39,33 @@ env:
   SUPABASE_CLI_VERSION: 2.121.0
 
 jobs:
+  gate:
+    # Decision 0076: pg_cron starts this workflow on time (trigger=cron); GitHub's schedule is
+    # the backstop. Once per slot: skip when the other automatic run already did the work.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      run: ${{ steps.gate.outputs.run }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          sparse-checkout: scripts/ci-gate.ts
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - id: gate
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TRIGGER: ${{ inputs.trigger }}
+        run: node scripts/ci-gate.ts daily 1200
+
   backup:
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -64,12 +98,6 @@ jobs:
             exit 1
           fi
           scripts/db-backup.sh daily
-
-      - name: Health check (budgets, jobs, database size)
-        # Fails the run (and so e-mails the owner) when ops_health() reports a problem.
-        run: scripts/ops-health.sh
-        env:
-          DB_URL_FILE: ${{ runner.temp }}/db-url
 
       - name: Forget the database URL
         if: always()
