@@ -21,6 +21,11 @@ passphrase in the secret `BACKUP_PASSPHRASE`. Inside:
 - `public-auth.dump`: `pg_dump -Fc` of the `public` and `auth` schemas, to restore one table;
 - `MANIFEST`: kind, time, git commit, number of accounts, sha256 of each file.
 
+Cost: R2 is free up to 10 GB stored and 1 million writes a month. At most 32 copies are kept
+(14 + 8 + 10); before each upload `scripts/db-backup.sh` adds up everything in the bucket and
+refuses to upload past `R2_MAX_BYTES` (default 8 GB), so the owner never pays. A refused upload
+fails the run and GitHub e-mails the owner.
+
 Storage (`tts`, `images` buckets) is not in the dump: the audio and pictures are shared content
 that the jobs can produce again.
 
