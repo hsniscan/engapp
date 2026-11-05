@@ -75,6 +75,7 @@ import {
 } from './ReadingSettings';
 import { TEXT_SCALE, useReaderPrefs } from './readerPrefs';
 import { useListenAlong } from './useListenAlong';
+import { useVoicedClips } from './useVoicedClips';
 import { WordSheet, type WordPick } from './WordSheet';
 
 /** Where ✕ goes when there is no page to go back to (Keşfet → Okuma). */
@@ -375,11 +376,8 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
     const byStart = new Map(graded.spans.map((s) => [s.start, graded.sentences[s.index] ?? null]));
     return tokens.sentences.map((s) => byStart.get(s.start) ?? null);
   }, [graded, tokens]);
-  const clips = useMemo(
-    () => sentenceRows?.map((r) => r?.audio_key ?? null) ?? null,
-    [sentenceRows],
-  );
   const voice = settings?.voice ?? 'en-US';
+  const clips = useVoicedClips(sentenceRows, voice);
   const [prefs, setPrefs] = useReaderPrefs();
   const listen = useListenAlong(
     sentences,

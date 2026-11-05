@@ -12,21 +12,24 @@
  *       Resumable: a later run skips every file already there. Needs --model / --voices (or
  *       KOKORO_MODEL / KOKORO_VOICES) and --python (or KOKORO_PYTHON, default python3).
  *   node scripts/tts-pregen.ts plan|run --source graded [...]
- *       The graded library instead (decision 0047): every sentence of an approved text, en-US
- *       only, named like every other clip (the text stores each sentence's audio_key).
+ *       The graded library instead (decision 0047): every sentence of an approved text, in
+ *       both accents since v0.5.3 (decision 0073), named like every other clip.
  *   node scripts/tts-pregen.ts prune-ondemand [--dry-run]
  *       Deletes the on-demand Gemini WAV files (decision 0028) whose text now has an MP3.
  *
  * Environment: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY. With R2_ACCOUNT_ID, R2_ACCESS_KEY_ID,
  * R2_SECRET_ACCESS_KEY, R2_BUCKET and AUDIO_BASE_URL also set (decision 0053) new files go to R2
  * instead of Supabase Storage; a file in either bucket counts as present, and prune-ondemand
- * deletes from both. Secrets are read from the environment only and never printed; logs are
+ * deletes from both. Free-plan guard (decision 0073): a run makes no more than its share of
+ * what is left under AUDIO_MAX_BYTES (default 6 GB on R2, 0.9 GB on Supabase Storage). Secrets are read from the environment only and never printed; logs are
  * JSON lines on stdout.
  */
 import { parseArgs } from 'node:util';
 import { createClient } from '@supabase/supabase-js';
 import {
+  audioMaxBytes,
   estimate,
+  fitToBytes,
   gradedTexts,
   parseSource,
   parseVoices,
@@ -150,6 +153,19 @@ async function main(): Promise<void> {
   }
 
   const plan = await planJobs(set.texts, present, { voices, shard, shards, max });
+  // Free-plan guard: this shard's share of what is left under the cap of the target bucket.
+  const target = r2 ? 'r2' : 'supabase';
+  const held = r2Bucket ? r2Bucket.bytes.mp3 + r2Bucket.bytes.wav : bucket.bytes.mp3 + bucket.bytes.wav;
+  const capBytes = audioMaxBytes((k) => process.env[k], target);
+  const fit = fitToBytes(plan.jobs, Math.max(0, capBytes - held) / shards);
+  const projectedMB = MB(held + estimate(plan.jobs).bytes * shards);
+  log('tts size guard', { target, heldMB: MB(held), capMB: MB(capBytes), projectedMB, dropped: fit.dropped });
+  if (fit.dropped > 0) {
+    console.log(
+      `::warning::${fit.dropped} clips left out: the ${target} audio would pass its ${MB(capBytes)} MB cap (AUDIO_MAX_BYTES, decision 0073)`,
+    );
+  }
+  plan.jobs = fit.jobs;
   const est = estimate(plan.jobs);
   log('tts plan', {
     shard,

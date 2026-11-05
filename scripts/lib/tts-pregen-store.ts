@@ -17,7 +17,7 @@ export class SupabasePregenStore {
     this.db = db;
   }
 
-  /** Every headword and active example sentence (keyset pages by id). */
+  /** Every headword, active example sentence and word-bank example (keyset / range pages). */
   async publicRows(): Promise<PublicRows> {
     const terms: { lemma: string; lemma_norm: string }[] = [];
     for (let after = ''; ;) {
@@ -46,7 +46,23 @@ export class SupabasePregenStore {
       if (rows.length < PAGE) break;
       after = rows.at(-1)!.id;
     }
-    return { terms, examples };
+    // The word bank's example sentences (v0.5.3, decision 0073): live rows only.
+    const bank: { example_en: string }[] = [];
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await this.db
+        .from('word_bank')
+        .select('lemma_norm, pos, senses')
+        .eq('retired', false)
+        .order('lemma_norm')
+        .order('pos')
+        .range(from, from + PAGE - 1);
+      if (error) throw new Error(`word_bank: ${error.message}`);
+      const rows = (data ?? []) as { senses: { example_en?: unknown }[] | null }[];
+      for (const r of rows)
+        for (const s of r.senses ?? []) if (typeof s?.example_en === 'string') bank.push({ example_en: s.example_en });
+      if (rows.length < PAGE) break;
+    }
+    return { terms, examples, bank };
   }
 
   /** English sentences of every approved graded text (decision 0047; keyset pages by id). */
