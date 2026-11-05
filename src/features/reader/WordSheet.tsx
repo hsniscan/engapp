@@ -8,6 +8,8 @@
 // Bankası, the cached shared lexicon: offline and instant); only when none of these has the
 // word and the device is online is ai-enrich asked, with the word alone, never the sentence.
 // When no meaning is found, the user can type one here and keep reading (B13).
+import { fetchWordBank } from '@/features/wordbank/fetcher';
+import { useWordBankEpoch } from '@/features/wordbank/prefetch';
 import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -89,6 +91,8 @@ function useWordLookup(pick: WordPick | null, glosses?: readonly TextGloss[]): L
   const lemma = pick?.lemma ?? '';
   const written = pick?.written ?? '';
   const key = pick ? `${lemma}|${written}` : '';
+  // New bank rows (the background download finishing) run a missed lookup again.
+  const bankEpoch = useWordBankEpoch();
   const [state, setState] = useState<{ key: string; lookup: Lookup }>({
     key: '',
     lookup: { status: 'loading' },
@@ -99,9 +103,17 @@ function useWordLookup(pick: WordPick | null, glosses?: readonly TextGloss[]): L
     const done = (lookup: Lookup) => live && setState({ key, lookup });
     void (async () => {
       try {
-        const info = await lookupReaderWord(lemma, written, glosses);
+        let info = await lookupReaderWord(lemma, written, glosses);
         if (info.source) return done({ status: 'ready', info, online: false });
         if (!isOnline()) return done({ status: 'none', reason: 'offline' });
+        // A device without the offline word bank fetches it and looks again (v0.5.3 A2):
+        // a guest is never sent to sign in for a word the app ships.
+        const bank = await fetchWordBank();
+        if (!live) return;
+        if (bank.status === 'done') {
+          info = await lookupReaderWord(lemma, written, glosses);
+          if (info.source) return done({ status: 'ready', info, online: false });
+        }
         if (!signedIn) return done({ status: 'none', reason: 'signIn' });
         const res = await lookupLexicon(lemma, { more: false });
         if (!res.ok || res.senses.length === 0)
@@ -137,7 +149,7 @@ function useWordLookup(pick: WordPick | null, glosses?: readonly TextGloss[]): L
       live = false;
     };
     // `key` identifies the pick; the rest of it never changes for the same key.
-  }, [key, lemma, written, signedIn, glosses]);
+  }, [key, lemma, written, signedIn, glosses, bankEpoch]);
   return state.key === key ? state.lookup : { status: 'loading' };
 }
 

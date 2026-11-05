@@ -13,6 +13,7 @@ import { useAuth } from '@/features/auth/session';
 import { syncTitle } from '@/features/auth/syncText';
 import { formatSince } from '@/features/auth/time';
 import { formatDate, useLevelOverview } from '@/features/leveltest/levelText';
+import { StorageNotice } from '@/features/settings/StorageNotice';
 import { useAppSettings } from '@/features/settings/useAppSettings';
 import { formatNumber } from '@/features/stats/format';
 import { ProgressGlance } from '@/features/stats/ProgressGlance';
@@ -87,6 +88,7 @@ export function ProfilePage() {
       }
     >
       <SyncAlert />
+      <StorageNotice />
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <div className="flex flex-col gap-8">
           <ProgressGlance />

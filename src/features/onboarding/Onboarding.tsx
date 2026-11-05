@@ -2,25 +2,31 @@
 // Welcome → a short level test (skippable) → interests → a ready deck → the first session.
 // Adding words by hand stays as a quiet secondary link on every step. Shown on Bugün in place of
 // the empty-state welcome, only to a brand-new user (domain/onboarding.ts).
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { getSettings, logError, setMeta } from '@/data';
 import { STAGE_RULE_NOTICE_KEY } from '@/data/db';
 import { useAuth } from '@/features/auth/session';
-import { addSuggestedDeck } from '@/data/deckHub';
 import { nextOnboardingStep, ONBOARDING_STEPS, type OnboardingStep } from '@/domain/onboarding';
 import { deckWords, suggestedKey, type SuggestedSpec } from '@/domain/suggestedDecks';
 import type { TopicKey } from '@/domain/topics';
 import { openAddSheet } from '@/features/add/addSheetStore';
+import { resumePendingDeckAdd, runDeckAdd, useDeckAddProgress } from '@/features/decks/deckAddRunner';
 import { specTitle, useBankData, useWordBankDownload } from '@/features/decks/suggested';
+import { flags } from '@/features/settings/platform';
 import { OFFER_DISMISSED_KEY } from '@/features/leveltest/levelText';
 import { saveFirstInterests, skipInterests } from '@/features/profile/actions';
 import { TopicChips } from '@/features/profile/TopicChips';
 import { formatNumber } from '@/features/stats/format';
 import { Badge, Button, cn, Logo, ProgressBar, Skeleton, toast } from '@/ui';
-import { finishOnboarding, setOnboardingStep } from './state';
+import {
+  finishOnboarding,
+  ONBOARDING_ADDING_KEY,
+  setOnboardingAdding,
+  setOnboardingStep,
+} from './state';
 
 /** Where the first session starts: today's word study. */
 export const FIRST_SESSION_HREF = '/study?mode=word';
@@ -121,11 +127,11 @@ function StepCard({
 
 function Welcome({ onStart }: { onStart: () => void }) {
   const { t } = useTranslation();
+  // The three steps the counter counts ("Adım 1 / 3"); the first session is where they lead.
   const steps = [
     t('onboarding.welcome.step1'),
     t('onboarding.welcome.step2'),
     t('onboarding.welcome.step3'),
-    t('onboarding.welcome.step4'),
   ];
   return (
     <>
@@ -147,6 +153,9 @@ function Welcome({ onStart }: { onStart: () => void }) {
             </li>
           ))}
         </ol>
+        <p className="-mt-3 text-ui text-fg-muted" data-testid="onboarding-welcome-then">
+          {t('onboarding.welcome.step4')}
+        </p>
         <Button size="lg" fullWidth onClick={onStart}>
           {t('onboarding.welcome.start')}
         </Button>
@@ -156,6 +165,7 @@ function Welcome({ onStart }: { onStart: () => void }) {
     </>
   );
 }
+
 
 /**
  * "Zaten hesabım var · Giriş yap" (v0.5.2, B3): an existing user on a new phone signs in
@@ -205,7 +215,7 @@ function LevelStep({ onSkip }: { onSkip: () => void }) {
             onClick={() => {
               // The test's "Devam" returns to Bugün: the flow goes on with interests.
               setOnboardingStep('interests');
-              void navigate('/level-test');
+              void navigate('/level-test?from=onboarding');
             }}
           >
             {t('onboarding.level.start')}
@@ -228,6 +238,7 @@ function LevelStep({ onSkip }: { onSkip: () => void }) {
     </>
   );
 }
+
 
 function InterestsStep({ onDone }: { onDone: () => void }) {
   const { t } = useTranslation();
@@ -277,6 +288,7 @@ function InterestsStep({ onDone }: { onDone: () => void }) {
   );
 }
 
+
 function DeckStep() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -302,27 +314,56 @@ function DeckStep() {
     [data, specs],
   );
   const [chosen, setChosen] = useState<string>(suggestedKey({ kind: 'top', size: 500 }));
-  const [adding, setAdding] = useState<{ done: number; total: number } | null>(null);
+  const progress = useDeckAddProgress();
+  // A flagged add (cut short by a restart) starts at once, below.
+  const [starting, setStarting] = useState(() => flags.get(ONBOARDING_ADDING_KEY) === '1');
+  const adding = progress ?? (starting ? { done: 0, total: 0 } : null);
+
+  const finish = useCallback(() => {
+    finishOnboarding();
+    void navigate(FIRST_SESSION_HREF);
+  }, [navigate]);
+
+  // An add cut short (the app was closed mid-add) goes on here, with its progress.
+  useEffect(() => {
+    if (flags.get(ONBOARDING_ADDING_KEY) !== '1') return;
+    let live = true;
+    void resumePendingDeckAdd()
+      .then(() => live && finish())
+      .catch((e: unknown) => {
+        void logError(e, 'onboarding.deckResume');
+        if (live) {
+          setOnboardingAdding(false);
+          setStarting(false);
+        }
+      });
+    return () => {
+      live = false;
+    };
+  }, [finish]);
 
   const start = async () => {
     const deck = decks.find((d) => suggestedKey(d.spec) === chosen) ?? decks[0];
     if (!deck || adding) return;
-    setAdding({ done: 0, total: deck.words.length });
+    // Kept up through the add: its first word must not swap the step for the home screen.
+    setOnboardingAdding(true);
+    setStarting(true);
     try {
-      await addSuggestedDeck(deck.words, specTitle(t, deck.spec), {
-        onProgress: (done, total) => setAdding({ done, total }),
-      });
-      finishOnboarding();
-      void navigate(FIRST_SESSION_HREF);
+      await runDeckAdd(deck.words, specTitle(t, deck.spec));
+      finish();
     } catch (e) {
       void logError(e, 'onboarding.deck');
       toast({ title: t('deckHub.suggested.addFailed'), tone: 'danger' });
-      setAdding(null);
+      setOnboardingAdding(false);
+      setStarting(false);
     }
   };
 
   let body: ReactNode;
-  if (!data || (data.entries.length === 0 && download === 'running')) {
+  if (adding && (!data || decks.length === 0)) {
+    // Resuming before the bank list has loaded: only the progress.
+    body = <AddingProgress adding={adding} />;
+  } else if (!data || (data.entries.length === 0 && download === 'running')) {
     body = (
       <div aria-busy="true" className="flex flex-col gap-2">
         <span className="sr-only">{t('onboarding.deck.loading')}</span>
@@ -395,14 +436,13 @@ function DeckStep() {
           })}
         </fieldset>
         <p className="text-meta text-fg-muted">{t('onboarding.deck.pace')}</p>
-        <Button size="lg" fullWidth loading={adding !== null} onClick={() => void start()}>
-          {adding
-            ? t('onboarding.deck.adding', {
-                done: formatNumber(adding.done),
-                total: formatNumber(adding.total),
-              })
-            : t('onboarding.deck.start')}
-        </Button>
+        {adding ? (
+          <AddingProgress adding={adding} />
+        ) : (
+          <Button size="lg" fullWidth onClick={() => void start()}>
+            {t('onboarding.deck.start')}
+          </Button>
+        )}
       </>
     );
   }
@@ -416,7 +456,30 @@ function DeckStep() {
       >
         {body}
       </StepCard>
-      <ManualLink />
+      {!adding && <ManualLink />}
     </>
+  );
+}
+
+/** "Ekleniyor… 400 / 500" with a bar, in place of the start button while the deck goes in. */
+function AddingProgress({ adding }: { adding: { done: number; total: number } }) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex flex-col gap-2" role="status" data-testid="onboarding-deck-adding">
+      <p className="tabular text-ui font-semibold text-fg">
+        {adding.total > 0
+          ? t('onboarding.deck.adding', {
+              done: formatNumber(adding.done),
+              total: formatNumber(adding.total),
+            })
+          : t('onboarding.deck.addingStart')}
+      </p>
+      <ProgressBar
+        value={adding.done}
+        max={Math.max(1, adding.total)}
+        label={t('onboarding.deck.addingLabel')}
+      />
+      <p className="text-meta text-fg-muted">{t('onboarding.deck.addingHint')}</p>
+    </div>
   );
 }

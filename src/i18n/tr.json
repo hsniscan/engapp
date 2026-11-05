@@ -1652,7 +1652,10 @@
     "appGuestTitle": "Verilerin bu telefonda duruyor",
     "appGuest": "Uygulamayı kaldırırsan ya da verilerini temizlersen kelimelerin silinir. Hesap aç ya da yedek al.",
     "appTitle": "Verilerin nerede?",
-    "appSignedIn": "Verilerin bu telefonda ve hesabında duruyor; uygulamayı kaldırsan da hesabından geri gelir."
+    "appSignedIn": "Verilerin bu telefonda ve hesabında duruyor; uygulamayı kaldırsan da hesabından geri gelir.",
+    "noticeTitle": "Kelimelerin bu cihazda duruyor",
+    "noticeBody": "Misafir modunda veriler yalnızca bu tarayıcıda. Tarayıcı yer açmak için nadiren de olsa silebilir; ara sıra yedek al ya da hesap aç.",
+    "noticeSignIn": "Hesap aç"
   },
   "install": {
     "title": "Uygulamayı yükle",
@@ -2318,7 +2321,10 @@
     "home": "Ana sayfaya dön",
     "duration": "{{count}} soru · {{time}}",
     "towardNextNone": "{{next}} kelimelerini henüz pek bilmiyorsun; {{next}} için %80 gerekir.",
-    "unreliableLevel": "Ölçülen seviye (güvenilir değil)"
+    "unreliableLevel": "Ölçülen seviye (güvenilir değil)",
+    "counter": "{{done}} / {{max}}",
+    "progressOf": "{{done}} soru cevaplandı, en çok {{max}}",
+    "continue": "Devam et"
   },
   "level": {
     "offerTitle": "Seviyeni 5 dakikada ölçelim mi?",
@@ -2535,11 +2541,11 @@
     "manual": "Kelimeleri kendim eklemek istiyorum",
     "welcome": {
       "title": "Kelimeleri kalıcı öğrenmeye başlayalım",
-      "body": "Engapp sana her gün birkaç kelime sorar ve tam unutmak üzereyken yeniden getirir. Üç kısa adımda hazırız, sonra ilk çalışman başlar:",
+      "body": "Engapp sana her gün birkaç kelime sorar ve tam unutmak üzereyken yeniden getirir. Üç kısa adımda hazırız:",
       "step1": "Seviyeni ölç: 5 dakikalık bir kelime testi, en çok 70 soru (istersen atla).",
       "step2": "İlgi alanlarını seç: örnek cümleler bu konulardan gelsin.",
       "step3": "Hazır bir deste seç: “En çok kullanılan 500 kelime” gibi.",
-      "step4": "İlk çalışmanı yap: birkaç dakika, birkaç yeni kelime.",
+      "step4": "Sonra ilk çalışman başlar: birkaç dakika, birkaç yeni kelime.",
       "start": "Başlayalım",
       "haveAccount": "Zaten hesabın var mı?",
       "signIn": "Giriş yap",
@@ -2579,7 +2585,10 @@
       "loading": "Hazır desteler yükleniyor",
       "offline": "Hazır desteleri getirmek için internet gerekiyor. Bağlanınca yeniden dene ya da kelimeleri kendin ekle.",
       "retry": "Yeniden dene",
-      "skipOffline": "Şimdilik atla, uygulamaya geç"
+      "skipOffline": "Şimdilik atla, uygulamaya geç",
+      "addingStart": "Deste hazırlanıyor…",
+      "addingLabel": "Deste ekleniyor",
+      "addingHint": "Birkaç saniye sürer. Bitince ilk çalışman açılır."
     }
   },
   "decks": {
@@ -3956,5 +3965,36 @@
     "month_other": "{{n}} ay",
     "year_one": "{{n}} yıl",
     "year_other": "{{n}} yıl"
+  },
+  "reminderOffer": {
+    "title": "Yarın sana hatırlatayım mı?",
+    "body": "Günde bir kez, seçtiğin saatte kısa bir hatırlatma. O gün çalıştıysan gelmez.",
+    "guestBody": "Tarayıcıda hatırlatma bir hesapla çalışır. Ücretsiz hesap aç, her gün seçtiğin saatte hatırlatayım.",
+    "time": "Saat",
+    "yes": "Evet, {{hour}}.00'da",
+    "no": "Hayır, teşekkürler",
+    "signIn": "Hesap aç",
+    "done": "Tamam, her gün {{hour}}.00'da hatırlatırım",
+    "declined": "Peki, sormayacağım. Ayarlar → Bildirim'den istediğin zaman açabilirsin.",
+    "denied": "Bildirim izni verilmedi. Telefonun ayarlarından açabilirsin.",
+    "failed": "Hatırlatma açılamadı. Tekrar dene."
+  },
+  "waiting": {
+    "title": "Beklerken",
+    "body_one": "Kartların {{count}} dk sonra yeniden hazır.",
+    "body_other": "Kartların {{count}} dk sonra yeniden hazır.",
+    "newTitle_one": "+{{count}} yeni kelime",
+    "newTitle_other": "+{{count}} yeni kelime",
+    "newBody": "Şimdi birkaç kelime daha öğren",
+    "readTitle": "Kısa bir metin oku",
+    "readBody": "Seviyene uygun okumalar, Keşfet'te",
+    "pingAction_one": "Hazır olunca haber ver ({{count}} dk)",
+    "pingAction_other": "Hazır olunca haber ver ({{count}} dk)",
+    "pingHint": "Kartlar hazır olunca tek bir bildirim",
+    "pingSet": "Tamam, kartlar hazır olunca haber vereceğim",
+    "pingTitle": "Kartların hazır",
+    "pingBody": "Az önce öğrendiğin kelimeleri bir kez daha gör.",
+    "reminderTitle": "Günlük hatırlatmayı aç",
+    "reminderBody": "Her gün seçtiğin saatte kısa bir hatırlatma"
   }
 }

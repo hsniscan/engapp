@@ -14,6 +14,11 @@ describe('first-run onboarding: who sees it', () => {
     expect(needsOnboarding({ ...base, done: true })).toBe(false);
   });
 
+  it('stays while the deck step adds its deck, words or not, until done (v0.5.3 A1)', () => {
+    expect(needsOnboarding({ ...base, interestsAsked: true, inProgress: true, words: 40, adding: true })).toBe(true);
+    expect(needsOnboarding({ ...base, interestsAsked: true, words: 40, adding: true, done: true })).toBe(false);
+  });
+
   it('keeps going after its own interests step answered the question', () => {
     expect(needsOnboarding({ ...base, interestsAsked: true, inProgress: true })).toBe(true);
     // ...until the first deck brings words.

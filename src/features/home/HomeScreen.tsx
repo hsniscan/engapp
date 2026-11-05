@@ -13,6 +13,7 @@ import { FsrsOptOffer } from '@/features/fsrs/FsrsOptOffer';
 import { LevelChangeLine, LevelTestOffer } from '@/features/leveltest/LevelHomeNotes';
 import { LoadNotes } from '@/features/load/LoadNotes';
 import { FirstRunGate } from '@/features/onboarding/FirstRunGate';
+import { useOnboardingAdding } from '@/features/onboarding/state';
 import { InterestsPrompt } from '@/features/profile/InterestsPrompt';
 import { TodayReadingCard } from '@/features/reader/TodayReadingCard';
 import { StreakFreezeNote } from '@/features/smart/StreakFreezeNote';
@@ -32,6 +33,9 @@ import {
   Skeleton,
 } from '@/ui';
 import { GoalPrompt } from './GoalPrompt';
+import { WhileWaiting } from './WhileWaiting';
+import { ReminderOffer } from '@/features/notify/ReminderOffer';
+import { BackupReminder } from '@/features/settings/BackupReminder';
 import { greetingKey, homeDate } from './greeting';
 import { HomeNote } from './HomeNote';
 import { hasMoreStudy } from '@/features/extra/links';
@@ -61,8 +65,10 @@ export function HomeScreen() {
   // Time-dependent (streak day, "what comes next"): recomputed at the day change and on resume.
   const tick = useStudyTick();
   const core = useLiveQuery(() => getHomeCore(), [tick]);
+  // The deck step stays up while its deck goes in (v0.5.3 A1): no flash of the empty home.
+  const addingDeck = useOnboardingAdding();
   // A brand-new user gets the guided first run (features/onboarding, v0.5.1).
-  if (core && !core.hasCards)
+  if (addingDeck || (core && !core.hasCards))
     return (
       <FirstRunGate>
         <HomeWelcome />
@@ -132,6 +138,8 @@ function Dashboard({ core }: { core: HomeCore }) {
   // "Biraz daha çalış" only once every mode is done for today (not just Kelime), the learning
   // steps that come back later today included (v0.5.2, review B1).
   const allDone = study ? study.left === 0 : false;
+  // v0.5.3 A6: only learning steps wait (nothing ready now, some later today).
+  const waiting = !!study && study.ready === 0 && study.later > 0;
   const moreBelow = allDone && !!more && hasMoreStudy(more);
 
   return (
@@ -153,9 +161,27 @@ function Dashboard({ core }: { core: HomeCore }) {
           <TodaySkeleton />
         )}
         {allDone && more && <MoreStudy more={more} />}
-        {heroReady && <Notes />}
-        {heroReady && goals && goals.dayTarget === null && <GoalPrompt />}
-        {heroReady && <TodayReadingCard />}
+        {waiting && study && moreResult !== undefined && (
+          <WhileWaiting
+            more={more}
+            nextDue={study.nextLearningDue}
+            minutes={
+              study.nextLearningDue === null
+                ? null
+                : Math.max(1, Math.ceil((study.nextLearningDue - core.now) / 60_000))
+            }
+          />
+        )}
+        {/* Below the card: one note at most, then the reading. Space is held while they load,
+            so the page does not jump (v0.5.3 A7). */}
+        {heroReady && goals !== undefined ? (
+          <>
+            <Notes sessionOver={!!study && study.ready === 0} goalPrompt={goals.dayTarget === null} />
+            <TodayReadingCard />
+          </>
+        ) : (
+          <BelowHeroSkeleton />
+        )}
       </div>
       <div className="flex min-w-0 flex-col gap-8">
         {stages && totalWords !== undefined && goals && (
@@ -196,13 +222,13 @@ function useHomeDecks(enabled: boolean): HomeDeck[] | undefined {
 }
 
 /**
- * Occasional notes, at most one at a time (v0.5.1): the stricter "öğrenildi" rule, a covered
- * streak day, load (catch-up, vacation), the FSRS offer, interests, a level change. Every note
- * stays mounted and decides by itself whether it renders; the container shows only the first
- * one that does, so the next comes up once it is closed. The guest backup reminder is a banner
- * of its own above the page (RootLayout) and does not hold these back.
+ * Bugün's one note slot (v0.5.1; v0.5.3 A7, ADR 0072): every prompt card of the page goes
+ * here, most important first, and only the first one that renders is shown; the next comes up
+ * once it is closed or answered. Every note stays mounted and decides by itself whether it
+ * renders. The reminder offer (A4), the guest backup reminder (weekly, once above the hero)
+ * and the daily-goal prompt joined the queue in v0.5.3.
  */
-function Notes() {
+function Notes({ sessionOver, goalPrompt }: { sessionOver: boolean; goalPrompt: boolean }) {
   return (
     <div
       className="flex flex-col empty:hidden [&>:empty]:hidden [&>:not(:empty)~*]:hidden"
@@ -211,9 +237,21 @@ function Notes() {
       <StageRuleNote />
       <StreakFreezeNote />
       <LoadNotes />
+      <ReminderOffer sessionOver={sessionOver} />
+      <BackupReminder />
       <FsrsOptOffer />
       <InterestsPrompt />
       <LevelChangeLine />
+      {goalPrompt && <GoalPrompt />}
+    </div>
+  );
+}
+
+/** Holds the place of the note and the reading card while they load. */
+function BelowHeroSkeleton() {
+  return (
+    <div aria-hidden="true" className="flex flex-col gap-8" data-testid="below-hero-skeleton">
+      <Skeleton className="h-28 rounded-card" />
     </div>
   );
 }

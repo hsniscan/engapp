@@ -54,6 +54,10 @@ test('first run: a brand-new guest is guided from welcome to the first session',
     page.getByRole('button', { name: 'Kelimeleri kendim eklemek istiyorum' }),
   ).toBeVisible();
   await expect(page.getByRole('button', { name: 'İlk kelimeni ekle' })).toHaveCount(0);
+  // Three counted steps ("Adım 1 / 3"); the first session is where they lead (v0.5.3 A7).
+  await expect(welcome.getByRole('listitem')).toHaveCount(3);
+  await expect(welcome.getByText('Üç kısa adımda hazırız', { exact: false })).toBeVisible();
+  await expect(page.getByTestId('onboarding-welcome-then')).toBeVisible();
   await welcome.getByRole('button', { name: 'Başlayalım' }).click();
 
   // 2. Level test, skippable.
@@ -77,6 +81,8 @@ test('first run: a brand-new guest is guided from welcome to the first session',
   await expect(top500).toBeChecked();
   await deck.getByRole('radio', { name: /En çok kullanılan 100 kelime/ }).check();
   await deck.getByRole('button', { name: 'Bu desteyle ilk çalışmaya başla' }).click();
+  // The deck goes in with the onboarding still up: never the empty home (v0.5.3 A1).
+  await expect(page.getByRole('button', { name: 'İlk kelimeni ekle' })).toHaveCount(0);
 
   await expect(page).toHaveURL(/\/study\?mode=word$/, { timeout: 30_000 });
   await expect(page.getByRole('button', { name: 'Cevabı göster' })).toBeVisible();
@@ -101,4 +107,17 @@ test('first run: "kendim ekleyeceğim" opens the add sheet and ends the onboardi
   await expect(page.getByRole('button', { name: 'İlk kelimeni ekle' })).toBeVisible();
   await page.reload();
   await expect(page.getByRole('button', { name: 'İlk kelimeni ekle' })).toBeVisible();
+});
+
+test('first run: the level test from the onboarding starts at once and counts to 70 (A7)', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.getByTestId('onboarding-welcome').getByRole('button', { name: 'Başlayalım' }).click();
+  await page.getByTestId('onboarding-level').getByRole('button', { name: 'Teste başla' }).click();
+  await expect(page).toHaveURL(/\/level-test\?from=onboarding$/);
+  // No second intro with a second "Teste başla": the first question is there.
+  await expect(page.getByRole('button', { name: 'Biliyorum' })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole('button', { name: 'Teste başla' })).toHaveCount(0);
+  await expect(page.getByText('0 / 70')).toBeVisible();
 });
