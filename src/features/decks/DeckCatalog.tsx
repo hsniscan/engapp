@@ -1,7 +1,8 @@
 // Keşfet › Desteler: suggested decks cut from the word bank on the device: a featured deck for
 // the learner's level, "Senin için", the most-used words (100 … 3000), by level, by part of
-// speech (with level × part of speech links), false friends. Kinds without data yet (phrasal
-// verbs, idioms, topics) are not shown at all (v0.5.1: no "Yakında" tiles).
+// speech (with level × part of speech links), "Kalıplar" (phrasal verbs and collocations, v0.5.3
+// decision 0074, shown once the bank has them), false friends. Kinds without data yet (idioms,
+// topics) are not shown at all (v0.5.1: no "Yakında" tiles).
 // v0.5.2 "Çam" (ADR 0067): shared cards, rows and bars only; the CEFR ramp is drawn with the
 // stage tokens (deckUi.levelColor).
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -180,6 +181,8 @@ export function DeckCatalog({
         idx={data.idx}
         ambiguous={view.ambiguous}
       />
+
+      {view.phrases.length > 0 && <PhraseSection groups={view.phrases} idx={data.idx} />}
 
       {ff && ffNotes && ff.words.length > 0 && (
         <section aria-labelledby="dc-ff" className="flex flex-col gap-3">
@@ -424,6 +427,75 @@ function PosSection({
           ))}
         </ChipRow>
       )}
+    </section>
+  );
+}
+
+/**
+ * "Kalıplar": one card per kind the bank has (phrasal verbs, collocations) with a few open
+ * examples and how much is known, then a link per level.
+ */
+function PhraseSection({
+  groups,
+  idx,
+}: {
+  groups: { all: DeckCard; levels: DeckCard[] }[];
+  idx: OwnedIndex;
+}) {
+  const { t } = useTranslation();
+  return (
+    <section aria-labelledby="dc-phrases" className="flex flex-col gap-3">
+      <SectionHeader
+        id="dc-phrases"
+        title={t('deckHub.discover.phrases')}
+        description={t('deckHub.discover.phrasesBody')}
+      />
+      <ul className="flex flex-col gap-3">
+        {groups.map(({ all, levels }) => {
+          const spec = all.spec as Extract<SuggestedSpec, { kind: 'phrases' }>;
+          const open = all.words.filter((w) => deckWordStatus(w, idx) === 'new');
+          const sample = (open.length >= 3 ? open : all.words).slice(0, 3).map((w) => w.lemma);
+          return (
+            <li key={spec.phrase} className="flex flex-col gap-2">
+              <Card as={Link} to={specHref(spec)} interactive className="flex flex-col gap-2">
+                <span className="flex items-baseline justify-between gap-2">
+                  <span className="text-ui font-semibold text-fg">{specTitle(t, spec)}</span>
+                  <span className="tabular text-meta text-fg-muted">
+                    {t('deckHub.discover.deckPct', {
+                      words: nf.format(all.progress.total),
+                      pct: knownPct(all),
+                    })}
+                  </span>
+                </span>
+                <Term italic className="truncate text-meta text-fg-muted">
+                  {sample.join(', ')}
+                </Term>
+                <QuietBar value={knownPct(all)} />
+              </Card>
+              {levels.length > 1 && (
+                <ChipRow label={specTitle(t, spec)} bleed={false}>
+                  {levels.map((d) => (
+                    <Link
+                      key={specHref(d.spec)}
+                      to={specHref(d.spec)}
+                      className={buttonClasses({
+                        variant: 'secondary',
+                        size: 'sm',
+                        className: 'shrink-0 snap-start rounded-full',
+                      })}
+                    >
+                      {specTitle(t, d.spec)}
+                      <span className="tabular font-normal text-fg-muted">
+                        {nf.format(d.progress.total)}
+                      </span>
+                    </Link>
+                  ))}
+                </ChipRow>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </section>
   );
 }

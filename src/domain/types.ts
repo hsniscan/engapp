@@ -507,6 +507,21 @@ export interface LexiconExample {
   translations: Record<string, string>;
   status: 'active' | 'retired';
   updated_at: Millis;
+  /** v0.5.3 (ADR 0074): 'tatoeba' for a Tatoeba sentence; absent/null = written by a model. */
+  source?: 'tatoeba' | null;
+  /** Tatoeba's sentence ids and authors (CC BY 2.0 FR asks for credit). */
+  attribution?: ExampleAttribution | null;
+}
+
+/** Credit of a Tatoeba sentence (lexicon_examples.attribution). */
+export interface ExampleAttribution {
+  license: string;
+  en_id: number;
+  en_by: string;
+  tr_id: number;
+  tr_by: string;
+  /** The Turkish translation was corrected by Engapp's review. */
+  tr_edited?: boolean;
 }
 
 /**

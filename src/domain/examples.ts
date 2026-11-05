@@ -14,6 +14,7 @@ import { sha256Hex } from './chunking';
 import { findSpan, isValidSpan, type Span } from './recognition';
 import type {
   ContentFeedback,
+  ExampleAttribution,
   FeedbackVerdict,
   Id,
   LevelBand,
@@ -89,6 +90,8 @@ export interface ExampleItem {
   editId: Id | null;
   /** The shared sentence (shown as "original" next to an edit). */
   original: string;
+  /** Tatoeba's credit for an unedited Tatoeba sentence (ADR 0074), else null. */
+  credit?: ExampleAttribution | null;
 }
 
 export interface ExampleState {
@@ -135,6 +138,7 @@ function toItem(e: LexiconExample, state: ExampleState): ExampleItem {
     verdict: state.feedback.get(e.id) ?? null,
     editId: edit?.id ?? null,
     original: e.text_en,
+    credit: !edit && e.source === 'tatoeba' && e.attribution ? e.attribution : null,
   };
 }
 

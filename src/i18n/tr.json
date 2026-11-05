@@ -464,7 +464,10 @@
     "emptyText": "Cümle boş olamaz.",
     "saved": "Cümle kaydedildi.",
     "saveFailed": "Kaydedilemedi. Tekrar dene.",
-    "none": "Bu anlam için henüz örnek cümle yok."
+    "none": "Bu anlam için henüz örnek cümle yok.",
+    "credit": "Tatoeba · {{authors}}",
+    "creditEdited": "Tatoeba · {{authors}} · çevirisi düzeltildi",
+    "creditLink": "Bu cümle Tatoeba’dan (CC BY 2.0 FR). Kaynağı aç"
   },
   "mnemonic": {
     "title": "Anımsatıcı",
@@ -2248,7 +2251,21 @@
     "aiTitle": "Yapay zekâ tahminleri",
     "aiBody": "Listede olmayan kelimelerin seviyesi ve Türk öğrenci düzeltmeleri Google Gemini ile üretilir. Bunlar tahmindir: düzeltme liste seviyesini en fazla bir basamak değiştirir, tahmin de kelimenin sıklığıyla sınırlanır. Bir kelimenin seviyesini her zaman kendin değiştirebilirsin.",
     "wordBankTitle": "Kelime Bankası",
-    "wordBankBody": "Kelime Bankası, CEFR-J ve Octanove listelerindeki kelimeleri gösterir. Türkçe anlamları ve örnek cümleleri bir kez Claude (Anthropic) ile üretildi; ortak sözlükte anlamı zaten olan kelimelerde o anlam kullanıldı. Octanove verisinden türetildiği için Kelime Bankası da CC BY-SA 4.0 lisanslıdır."
+    "wordBankBody": "Kelime Bankası, CEFR-J ve Octanove listelerindeki kelimeleri gösterir. Türkçe anlamları ve örnek cümleleri bir kez Claude (Anthropic) ile üretildi; ortak sözlükte anlamı zaten olan kelimelerde o anlam kullanıldı. Octanove verisinden türetildiği için Kelime Bankası da CC BY-SA 4.0 lisanslıdır.",
+    "tatoeba": {
+      "name": "Tatoeba",
+      "what": "Örnek cümlelerin bir kısmı, gönüllülerin yazıp çevirdiği Tatoeba cümleleridir. Her cümlenin altında yazanların adı görünür; çevirisi düzeltilen cümlelerde bu da belirtilir.",
+      "license": "CC BY 2.0 FR",
+      "cite": "Tatoeba (tatoeba.org), cümleler ve çeviriler CC BY 2.0 FR lisansıyla."
+    },
+    "wiktionary": {
+      "name": "Wiktionary",
+      "what": "Phrasal verb listesi Wiktionary’nin “English phrasal verbs” kategorisinden alındı; hangilerinin öğretileceğine Tatoeba ve Simple English Wikipedia’daki kullanım sıklığına bakılarak karar verildi. Anlamlar ve örnekler Engapp’indir.",
+      "license": "CC BY-SA 4.0",
+      "cite": "Wiktionary, the free dictionary (en.wiktionary.org), Category:English phrasal verbs; Simple English Wikipedia (simple.wikipedia.org)."
+    },
+    "examplesTitle": "Örnek cümleler",
+    "examplesBody": "Her anlam için yaklaşık üç örnek cümle var. Önce Tatoeba’daki uygun cümleler seçildi; eksik kalanları Claude (Anthropic) bir kez yazdı. Hepsini, Türkçesinin doğal olup olmadığına ve doğru anlamı gösterip göstermediğine bakarak ikinci bir yapay zekâ kontrol etti."
   },
   "levelTest": {
     "title": "Seviye testi",
@@ -3171,14 +3188,17 @@
       "falseFriends": "Yanıltıcı benzerler",
       "pairs": "{{count}} çift",
       "notEqual": "eşit değil",
-      "falseFriendsBody": "Türkçeye benzeyen ama başka anlama gelen kelimeler: {{examples}}…"
+      "falseFriendsBody": "Türkçeye benzeyen ama başka anlama gelen kelimeler: {{examples}}…",
+      "phrases": "Kalıplar",
+      "phrasesBody": "Tek tek kelimeler değil, birlikte öğrenilen ifadeler"
     },
     "kind": {
       "top": "En sık · içerik kelimeleri",
       "level": "Seviye",
       "pos": "Kelime türü",
       "levelPos": "Seviye · kelime türü",
-      "falseFriends": "Yanıltıcı benzerler"
+      "falseFriends": "Yanıltıcı benzerler",
+      "phrases": "Kalıplar"
     },
     "deckName": {
       "top": "En çok kullanılan {{size}} kelime",
@@ -3195,14 +3215,30 @@
         "noun": "{{level}} isimler",
         "adverb": "{{level}} zarflar"
       },
-      "falseFriends": "Yanıltıcı benzerler"
+      "falseFriends": "Yanıltıcı benzerler",
+      "phrases": {
+        "phrasal": "Phrasal verb’ler",
+        "collocation": "Kalıp ifadeler"
+      },
+      "phrasesLevel": {
+        "phrasal": "{{level}} phrasal verb’ler",
+        "collocation": "{{level}} kalıp ifadeler"
+      }
     },
     "deckBody": {
       "top": "İngilizce metinlerde en sık geçen {{size}} isim, fiil, sıfat ve zarf. Bunları bilmek, okuduğun hemen her sayfanın iskeletini tanımak demek. Sıralama wordfreq verisinden.",
       "level": "{{level}} seviyesindeki tüm kelimeler, en sık kullanılandan başlayarak.",
       "pos": "Her seviyeden {{pos}}, en sık kullanılandan başlayarak.",
       "levelPos": "{{level}} seviyesindeki {{pos}}, en sık kullanılandan başlayarak.",
-      "falseFriends": "Türkçede benzer bir kelime olduğu için yanlış anlaşılan İngilizce kelimeler. Kartın arkasında hangi Türkçe kelimeyle karıştığı da yazar."
+      "falseFriends": "Türkçede benzer bir kelime olduğu için yanlış anlaşılan İngilizce kelimeler. Kartın arkasında hangi Türkçe kelimeyle karıştığı da yazar.",
+      "phrases": {
+        "phrasal": "Bir fiille küçük bir kelimenin birleşip yeni anlam kazandığı ifadeler: give up (vazgeçmek), find out (öğrenmek). En sık kullanılandan başlayarak.",
+        "collocation": "İngilizcede birlikte söylenen kelimeler: make a decision (karar vermek), pay attention (dikkat etmek). Türkçeden çevirince kolayca yanlış kurulurlar (“do a mistake” değil, “make a mistake”)."
+      },
+      "phrasesLevel": {
+        "phrasal": "{{level}} seviyesindeki phrasal verb’ler, en sık kullanılandan başlayarak.",
+        "collocation": "{{level}} seviyesindeki kalıp ifadeler, en sık kullanılandan başlayarak."
+      }
     },
     "posPlural": {
       "verb": "fiiller",

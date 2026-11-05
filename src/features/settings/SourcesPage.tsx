@@ -6,12 +6,16 @@ const SOURCES = [
   { key: 'cefrj', url: 'https://github.com/openlanguageprofiles/olp-en-cefrj' },
   { key: 'octanove', url: 'https://github.com/openlanguageprofiles/olp-en-cefrj' },
   { key: 'wordfreq', url: 'https://github.com/rspeer/wordfreq' },
+  // v0.5.3 (ADR 0074): example sentences and the phrasal verb list.
+  { key: 'tatoeba', url: 'https://tatoeba.org/downloads' },
+  { key: 'wiktionary', url: 'https://en.wiktionary.org/wiki/Category:English_phrasal_verbs' },
 ] as const;
 
 /**
  * Settings → Hakkında → Kaynaklar: attribution of the word lists and frequency data behind
  * word levels (required by their licences: CEFR-J asks for citation, Octanove and wordfreq are
- * CC BY-SA 4.0). docs/licenses.md has the full record.
+ * CC BY-SA 4.0), of the Tatoeba example sentences (CC BY 2.0 FR) and of the Wiktionary phrasal
+ * verb list (CC BY-SA 4.0). docs/licenses.md has the full record.
  */
 export function SourcesPage() {
   const { t } = useTranslation();
@@ -80,6 +84,12 @@ export function SourcesPage() {
           >
             {t('wordBank.entryLink')}
           </Link>
+        </section>
+        <section aria-labelledby="sources-examples" className="flex flex-col gap-1.5 px-1 pt-2">
+          <h2 id="sources-examples" className="text-lead font-semibold text-fg">
+            {t('sources.examplesTitle')}
+          </h2>
+          <p className="text-ui text-fg-muted">{t('sources.examplesBody')}</p>
         </section>
       </div>
     </PageFrame>
