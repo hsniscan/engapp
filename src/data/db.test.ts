@@ -5,7 +5,7 @@ import { PULL_BACKFILL_KEY } from './backfill';
 import { EngDb, STAGE_RULE_NOTICE_KEY } from './db';
 
 /** The current schema version; bump with every new Dexie version. */
-const LATEST = 38;
+const LATEST = 42;
 
 /** A re-pull list after the later upgrades: v29 (reader) adds settings, texts and encounters; v33 (dictation) cards; v34 settings. */
 const withLater = (list: readonly string[] | undefined) =>
@@ -861,11 +861,46 @@ describe('Dexie schema', () => {
     expect(d.tables.map((t) => t.name)).not.toContain('example_jobs');
     expect(await d.lexicon_examples.get('e1')).toMatchObject({ text_en: 'Hi.' });
     expect(await d.content_feedback.get('f1')).toMatchObject({ verdict: 'like' });
+    // sync_cursor stays; lexicon_examples_cursor is cleared later by v42 (re-read for credits).
     expect((await d.meta.toArray()).map((m) => m.key).sort()).toEqual(
-      expect.arrayContaining(['lexicon_examples_cursor', 'sync_cursor']),
+      expect.arrayContaining(['sync_cursor']),
     );
     const keys = (await d.meta.toArray()).map((m) => m.key);
     expect(keys.filter((k) => k.startsWith('example'))).toEqual([]);
+    expect(await d.outbox.count()).toBe(0);
+    d.close();
+    await d.delete();
+  });
+
+  it('v42 upgrade re-reads the word bank and shared sentences, and keeps everything else', async () => {
+    // A database as v0.5.2 left it (version 38).
+    const old = new Dexie('upgrade-v42');
+    old.version(1).stores({ settings: 'id', meta: 'key' });
+    old.version(38).stores({
+      word_bank: 'id, cefr, lemma_norm',
+      lexicon_examples: 'id, sense_id',
+    });
+    await old.open();
+    await old.table('word_bank').add({ id: 'run|verb', lemma_norm: 'run', pos: 'verb', cefr: 'A1' });
+    await old.table('lexicon_examples').add({ id: 'e1', sense_id: 'ls1', text_en: 'Hi.' });
+    await old.table('meta').bulkPut([
+      { key: 'word_bank_cursor', value: 120 },
+      { key: 'word_bank_synced_at', value: 5 },
+      { key: 'lexicon_examples_cursor', value: 40 },
+      { key: 'sync_cursor', value: 9 },
+    ]);
+    old.close();
+
+    const d = new EngDb('upgrade-v42');
+    await d.open();
+    expect(d.verno).toBe(LATEST);
+    expect(await d.meta.get('word_bank_cursor')).toBeUndefined();
+    expect(await d.meta.get('lexicon_examples_cursor')).toBeUndefined();
+    expect((await d.meta.get('sync_cursor'))?.value).toBe(9);
+    expect((await d.meta.get('word_bank_synced_at'))?.value).toBe(5);
+    // The copies stay until the pull overwrites them (offline still works).
+    expect(await d.word_bank.count()).toBe(1);
+    expect(await d.lexicon_examples.get('e1')).toMatchObject({ text_en: 'Hi.' });
     expect(await d.outbox.count()).toBe(0);
     d.close();
     await d.delete();

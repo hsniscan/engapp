@@ -426,6 +426,15 @@ export class EngDb extends Dexie {
     this.version(38)
       .stores({})
       .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
+    // v42 (v0.5.3 sentences/phrases, ADR 0074; 39–41 and 43–45 belong to the other v0.5.3
+    // packages): the word bank gains phrasal verbs and collocations (new part-of-speech and
+    // list values an older version skipped as invalid) and shared example sentences gain
+    // `source` / `attribution` (Tatoeba credit, which an older version dropped). Both copies are
+    // read-only system content: the cursors are cleared so the next pull reads them again. No
+    // new table or index; user data is untouched.
+    this.version(42)
+      .stores({})
+      .upgrade((tx) => tx.table('meta').bulkDelete(['word_bank_cursor', 'lexicon_examples_cursor']));
   }
 }
 
