@@ -58,11 +58,18 @@ export async function timeFirstCard(
   trigger: 'click' | 'none',
 ): Promise<{ ms: number; at: number }> {
   return page.evaluate(async (how) => {
+    // A card is ready when it can be answered: a flip card's "Cevabı göster", or (Bugün's
+    // button opens the mixed session since v0.5.3, ADR 0071) a typed or choice card's input.
     const ready = () => {
+      const card = document.querySelector('[data-card-type]');
+      if (!card) return false;
       const b = [...document.querySelectorAll('button')].find(
         (x) => x.textContent?.trim() === 'Cevabı göster',
       );
-      return !!b && !b.disabled && !!document.querySelector('[data-card-type]');
+      if (b) return !b.disabled;
+      const input = card.querySelector<HTMLInputElement | HTMLTextAreaElement>('input:not([type="hidden"]), textarea');
+      if (input) return !input.disabled;
+      return !!document.querySelector('[data-testid="cloze-choice"]');
     };
     const t0 = performance.now();
     if (how === 'click') (document.querySelector('a[data-testid="start-study"]') as HTMLAnchorElement).click();
