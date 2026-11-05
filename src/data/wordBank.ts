@@ -10,7 +10,7 @@ import {
 } from '../../supabase/functions/_shared/wordbank-contract';
 import type { Id, Millis } from '../domain/types';
 import { entryFromRow, type OwnedTerms, type WordBankEntry } from '../domain/wordBank';
-import { addNoteWithSenses, type AddNoteInput, type AddNoteResult } from './actions';
+import { addNotesBulk, type AddNoteInput } from './actions';
 import { db } from './db';
 import { getKnownTermKeys } from './knownTerms';
 import { getMeta, setMeta } from './meta';
@@ -129,14 +129,17 @@ export interface BankAddResult {
   created: Id[];
 }
 
-/** Adds bank words one by one through the normal add path (each word is one transaction). */
+/** Adds bank words through the normal add rules, many per transaction (addNotesBulk). */
 export async function addFromWordBank(
   picks: readonly { entry: WordBankEntry; senses?: readonly number[] }[],
   now: Millis = Date.now(),
 ): Promise<BankAddResult> {
   const out: BankAddResult = { added: [], unchanged: [], cards: 0, created: [] };
-  for (const p of picks) {
-    const res: AddNoteResult = await addNoteWithSenses(bankNoteInput(p.entry, p.senses), now);
+  const results = await addNotesBulk(
+    picks.map((p) => bankNoteInput(p.entry, p.senses)),
+    now,
+  );
+  for (const res of results) {
     if (res.addedSenses.length > 0 || res.status !== 'existing') out.added.push(res.note.term);
     else out.unchanged.push(res.note.term);
     out.cards += res.createdCards.length;

@@ -47,7 +47,8 @@ export type MutableTable = keyof MutableRows;
 export class SyncWriter {
   private clock: Hlc;
   private readonly pending: OutboxRow[] = [];
-  readonly now: Millis;
+  /** The write's time; only a bulk add moves it forward per row (setNow). */
+  now: Millis;
   readonly userId: string | null;
   readonly deviceId: string;
 
@@ -56,6 +57,14 @@ export class SyncWriter {
     this.clock = clock;
     this.userId = userId;
     this.deviceId = deviceId;
+  }
+
+  /**
+   * Bulk adds (data/bulkAdd.ts): many logical writes in one transaction, each stamped with its
+   * own time as if it were its own write. Never moves backwards.
+   */
+  setNow(now: Millis): void {
+    if (now > this.now) this.now = now;
   }
 
   nextHlc(): string {
