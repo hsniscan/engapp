@@ -34,9 +34,15 @@ async function wordDoneOthersWaiting(page: Page) {
       if (card.state === 0) store.put({ ...card, suspended: true });
       else store.put({ ...card, due: later });
     }
+    const notes = new Set<unknown>();
     for (const type of ['production', 'cloze']) {
-      const card = all.find((c) => c.card_type === type && c.deleted_at === null && c.state === 2);
-      if (card) store.put({ ...card, due: Date.now() - 60_000, unlocked: true, suspended: false });
+      // One card per word a day (v0.5.3 B1): each type from a different word, so no card is held.
+      const card = all.find(
+        (c) => c.card_type === type && c.deleted_at === null && c.state === 2 && !notes.has(c.note_id),
+      );
+      if (!card) continue;
+      notes.add(card.note_id);
+      store.put({ ...card, due: Date.now() - 60_000, unlocked: true, suspended: false });
     }
     await new Promise((res) => (tx.oncomplete = res));
     db.close();
@@ -76,8 +82,8 @@ test('Bugün: Kelime done → the hero leads to Üretim; a wrong typed answer ne
 
   // Üretim: a wrong typed answer. Tekrar is suggested; İyi needs a second tap.
   const t0 = await page.evaluate(() => Date.now());
-  await cta.click();
-  await expect(page).toHaveURL(/\/study\?mode=production$/);
+  // The hero opens the mixed session; Üretim on its own stays one tap away in the picker.
+  await page.goto('/study?mode=production');
   const progress = page.getByTestId('study-progress');
   await expect(progress).toHaveText(/^0 \/ \d+/);
   const total = Number(/\/ (\d+)/.exec((await progress.textContent()) ?? '')?.[1]);

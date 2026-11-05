@@ -128,9 +128,18 @@ test('typed answers: Üretim can be answered without typing, Boşluk doldurma re
     const tx = db.transaction('cards', 'readwrite');
     const store = tx.objectStore('cards');
     const cards = await all(store);
+    // v0.5.3: one card per word a day (B1), so each card from a different word; cloze cards
+    // still young (from Öğrenildi a cloze is typed only, B2), so the choices show.
+    const notes = new Set();
+    const young = (x) => x.card_type !== 'cloze' || (x.ramp_step ?? 0) < 3 || x.stability < 14;
     for (const type of ['production', 'cloze']) {
-      for (const c of cards.filter((x) => x.card_type === type && x.deleted_at === null && x.state === 2).slice(0, 2))
+      const pick = cards.filter(
+        (x) => x.card_type === type && x.deleted_at === null && x.state === 2 && young(x) && !notes.has(x.note_id),
+      );
+      for (const c of pick.slice(0, 2)) {
+        notes.add(c.note_id);
         store.put({ ...c, due: Date.now() - 60000, unlocked: true, suspended: false });
+      }
     }
     await new Promise((r) => (tx.oncomplete = r));
   `,
