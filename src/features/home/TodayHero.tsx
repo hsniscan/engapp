@@ -9,7 +9,7 @@ import { Link, useNavigate } from 'react-router';
 import { getStreakFreezeView } from '@/data';
 import type { StreakSummary } from '@/domain/streak';
 import type { StudyMode } from '@/domain/studyMode';
-import { modeLeft, modeLeftToday, type TodayStudy } from '@/features/review/studyModes';
+import { modeLeftToday, type TodayStudy } from '@/features/review/studyModes';
 import { durationText } from '@/features/review/intervalText';
 import { useNow } from '@/features/settings/useNow';
 import { formatClock, formatDayLong } from '@/features/stats/format';
@@ -29,6 +29,8 @@ import type { NextDue } from './queries';
 import type { TodayActivity, WeekDot } from './todayQueries';
 
 export const WORD_STUDY_HREF = '/study?mode=word';
+/** v0.5.3 B3: Bugün's primary button, one interleaved session of every mode. */
+export const MIXED_STUDY_HREF = '/study?mode=mixed';
 
 const studyHref = (mode: StudyMode) => `/study?mode=${mode}`;
 
@@ -277,15 +279,9 @@ function ReadyCard({ data }: { data: HeroData }) {
   const review = study.modes.reduce((n, m) => n + study.counts[m].left.review, 0);
   const steps = study.modes.reduce((n, m) => n + study.counts[m].left.learning, 0);
   const fresh = study.modes.reduce((n, m) => n + study.counts[m].newCount, 0);
-  const next = study.nextReady ?? study.next ?? 'word';
-  const nextLeft = modeLeft(study.counts[next]);
-  // The first mode keeps "Çalışmaya başla" / "Devam et"; after it, the button names the next one.
-  const cta =
-    next === study.modes[0]
-      ? answered > 0
-        ? t('today.continue')
-        : t('today.start')
-      : t(`today.goTo.${next}`, { count: nextLeft });
+  // v0.5.3 B3 (ADR 0071): the one button starts one mixed session of every mode (formats
+  // interleaved, one card per word a day); single modes stay on the Çalış picker.
+  const cta = answered > 0 ? t('today.continue') : t('today.start');
   const ringText = t('today.ringLabel', { done, total: planned });
   return (
     <TodayFrame
@@ -314,7 +310,7 @@ function ReadyCard({ data }: { data: HeroData }) {
     >
       <ModeChips data={data} />
       <Link
-        to={studyHref(next)}
+        to={MIXED_STUDY_HREF}
         data-testid="start-study"
         className={buttonClasses({ size: 'lg', fullWidth: true })}
       >

@@ -62,8 +62,9 @@ test('Bugün: Kelime done → the hero leads to Üretim; a wrong typed answer ne
     /Boşluk doldurma\s+\d+ kart/,
   );
   const cta = page.getByTestId('start-study');
-  await expect(cta).toHaveText(/Üretime geç \(\d+\)/);
-  await expect(cta).toHaveAttribute('href', '/study?mode=production');
+  // v0.5.3 B3: one mixed session of every mode, not the next mode on its own.
+  await expect(cta).toHaveText(/Devam et|Çalışmaya başla/);
+  await expect(cta).toHaveAttribute('href', '/study?mode=mixed');
   // "Biraz daha çalış" waits until every mode is done.
   await expect(page.getByRole('region', { name: 'Biraz daha çalış' })).toHaveCount(0);
   await shot(page, 'bugun-hero');
