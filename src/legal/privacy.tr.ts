@@ -89,7 +89,10 @@ export const privacyTr: LegalDocument = {
           p: '**Fotoğraftan metin.** "Fotoğraftan metin" ile çektiğin ya da galeriden seçtiğin fotoğraf yalnızca cihazında okunur: Android uygulamasında Google ML Kit, web sürümünde tarayıcının içinde çalışan Tesseract ile. Fotoğraf hiçbir sunucuya gönderilmez ve saklanmaz. Okunan metni kaydedersen yalnızca metin, okuma metinlerinin arasına kaydedilir ve giriş yaptıysan kendi hesabınla eşitlenir. Android uygulamasında Google ML Kit, kendi işleyişini ölçmek için Google\'a kullanım ve performans bilgisi gönderir (cihaz modeli, Android ve uygulama sürümü, kuruluma özel bir kimlik, ne kadar sürdüğü, hata kodları); bu bilgide fotoğraf ya da okunan metin yoktur.',
         },
         {
-          p: '**İşlemediklerimiz.** Konumun, rehberin, mikrofonun ve fotoğraf arşivin kullanılmaz. Kamerayı yalnızca "Fotoğraftan metin" ile sen açarsın; uygulamanın kamera izni yoktur, fotoğrafı telefonun kendi kamera uygulaması çeker. Reklam kimliği, analiz ya da izleme aracı yoktur. Uygulamanın hata kaydı yalnızca cihazında tutulur, bize gönderilmez.',
+          p: '**Hata raporları.** Giriş yaptıysan, uygulamada bir hata olduğunda kısa bir hata raporu internet varken sunucumuza gider; böylece hataları görüp düzeltebiliriz. Raporda yalnızca hatanın teknik mesajı, uygulamanın neresinde olduğu, uygulama sürümü, web ya da Android bilgisi ve hesap kimliğin bulunur; içindeki bağlantılar, e-posta adresleri, tırnak içindeki metinler ve uzun sayılar gönderilmeden önce silinir. Kartların, metinlerin ve cümlelerin gönderilmez. Günde en fazla 20 rapor gider. Misafir modunda hiçbir rapor gönderilmez; hata kaydı yalnızca cihazında kalır.',
+        },
+        {
+          p: '**İşlemediklerimiz.** Konumun, rehberin, mikrofonun ve fotoğraf arşivin kullanılmaz. Kamerayı yalnızca "Fotoğraftan metin" ile sen açarsın; uygulamanın kamera izni yoktur, fotoğrafı telefonun kendi kamera uygulaması çeker. Reklam kimliği, analiz ya da izleme aracı yoktur.',
         },
       ],
     },
@@ -153,6 +156,7 @@ export const privacyTr: LegalDocument = {
             'Hesabın, öğrenme verilerin ve okuma metinlerin, hesabın açık olduğu sürece saklanır.',
             'Sildiğin bir kart ya da kelime, diğer cihazlarına da silindiği bilgisi gidebilsin diye 30 gün işaretli kalır, sonra sunucudan tamamen silinir.',
             'AI aday önbelleği, AI kullanım sayaçları, eşitleme sayaçları ve gönderilen bildirim kayıtları 90 gün sonra silinir; aylık AI harcama tutarı bir sonraki ayın sonunda silinir.',
+            'Hata raporları 30 gün sonra silinir.',
             'Hesabını sildiğinde sunucudaki bütün verilerin hemen silinir.',
             'Veritabanının şifrelenmiş bir yedeği her gece alınır ve Cloudflare R2\'de saklanır: günlük yedekler 14 gün, haftalık yedekler 8 hafta, sunucu güncellemelerinden hemen önce alınan yedekler en fazla 8 hafta tutulur. Yedekler yalnızca bir arızadan sonra verileri geri yüklemek için kullanılır; hesabını sildiğinde verilerin bu yedeklerde en fazla bu süreler boyunca kalır ve sonra kendiliğinden silinir.',
             'Hizmet sağlayıcıların kendi teknik kayıtları ve yedekleri kendi saklama sürelerine tabidir.',
@@ -172,7 +176,7 @@ export const privacyTr: LegalDocument = {
           ],
         },
         {
-          p: 'Silinenler: kartların ve kelimelerin, okuma metinlerin ve karşılaşma sayıların, çalışma geçmişin ve istatistiklerin, ayarların, raporların, bildirim kayıtların, AI önbelleğin, AI ve eşitleme sayaçların, aylık AI harcama tutarın, görsel sayaçların, görsel isteklerin ve görsel cevapların (yöneticiysen yönetici kaydın ve görsel onay kararların da), ardından hesabının kendisi. Ortak sözlükteki görseller kalır. Silme geri alınamaz; istersen önce **Profil → Ayarlar → Yedek ve veri** bölümünden JSON yedeğini indir.',
+          p: 'Silinenler: kartların ve kelimelerin, okuma metinlerin ve karşılaşma sayıların, çalışma geçmişin ve istatistiklerin, ayarların, raporların, hata raporların, bildirim kayıtların, AI önbelleğin, AI ve eşitleme sayaçların, aylık AI harcama tutarın, görsel sayaçların, görsel isteklerin ve görsel cevapların (yöneticiysen yönetici kaydın ve görsel onay kararların da), ardından hesabının kendisi. Ortak sözlükteki görseller kalır. Silme geri alınamaz; istersen önce **Profil → Ayarlar → Yedek ve veri** bölümünden JSON yedeğini indir.',
         },
         {
           p: 'Misafir modundaki veriler yalnızca cihazındadır: **Profil → Ayarlar → Hesap ve eşitleme → Bu cihazdaki verileri sil** ile ya da uygulamayı kaldırarak silebilirsin.',
