@@ -145,3 +145,17 @@ export function monthlyCapUsd(env: Env): number {
   const c = Number.isFinite(credit) && credit > 0 ? credit : DEFAULT_MONTHLY_CREDIT_USD;
   return roundUsd(c * IMAGE_BUDGET_SHARE);
 }
+
+/**
+ * The picture jobs' own ceiling (owner, 2026-11-05: "resimleri 50 dolar yap"): IMAGE_MONTHLY_USD,
+ * default 50, never above the shared monthly budget. A picture batch is reserved against this
+ * cap on the shared month (image_budget_*), so pictures stop once the month's shared Claude
+ * spend (pictures plus the content jobs that share it) reaches 50 USD.
+ */
+export const DEFAULT_IMAGE_MONTHLY_USD = 50;
+
+export function imageMonthlyCapUsd(env: Env): number {
+  const v = Number(env('IMAGE_MONTHLY_USD'));
+  const own = Number.isFinite(v) && v > 0 ? v : DEFAULT_IMAGE_MONTHLY_USD;
+  return roundUsd(Math.min(own, monthlyCapUsd(env)));
+}

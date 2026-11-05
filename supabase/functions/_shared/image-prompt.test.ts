@@ -18,6 +18,7 @@ import {
   callCostUsd,
   imageModels,
   monthlyCapUsd,
+  imageMonthlyCapUsd,
   reserveUsd,
   tokenBound,
   DEFAULT_CHECK_MODEL,
@@ -361,6 +362,10 @@ describe('models and prices', () => {
     expect(monthlyCapUsd(() => undefined)).toBe(80);
     expect(monthlyCapUsd((k) => (k === 'CLAUDE_MONTHLY_CREDIT_USD' ? '200' : undefined))).toBe(160);
     expect(monthlyCapUsd(() => 'abc')).toBe(80);
+    // Pictures' own ceiling (owner, 2026-11-05): 50 USD, never above the shared budget.
+    expect(imageMonthlyCapUsd(() => undefined)).toBe(50);
+    expect(imageMonthlyCapUsd((k) => (k === 'IMAGE_MONTHLY_USD' ? '30' : undefined))).toBe(30);
+    expect(imageMonthlyCapUsd((k) => (k === 'IMAGE_MONTHLY_USD' ? '500' : undefined))).toBe(80);
     expect(tokenBound('x'.repeat(300))).toBe(164);
   });
 });

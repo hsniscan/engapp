@@ -119,6 +119,7 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 | `GRADED_BULK`               | `false`: the reading library job stops writing new texts (step 16) [on]                                   |
 | `GRADED_MONTHLY_USD`        | the reading library's own monthly Claude cap in US$ (step 16) [20]                                        |
 | `AUDIO_MAX_BYTES`           | most bytes the pre-generated audio may take in its bucket (step 15) [6 GB on R2, 0.9 GB on Supabase]     |
+| `IMAGE_MONTHLY_USD`         | pictures' own monthly ceiling in US$ on the shared Claude budget [`50`, owner 2026-11-05]                 |
 | `CLAUDE_TEXT_MONTHLY_USD`   | monthly cap in USD for Claude text AI: every text feature, stories, level job (the library has its own cap) [`30`, owner 2026-11-05] |
 | `CLAUDE_GRADED_MODEL`       | model that writes library texts [`claude-sonnet-5-5`]                                                     |
 | `GRADED_PER_CELL`           | library texts per level and core topic [`9`]                                                              |
