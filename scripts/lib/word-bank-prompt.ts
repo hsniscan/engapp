@@ -101,9 +101,22 @@ export function problemText(code: string | null | undefined): string | null {
   return (code && PROBLEM_TEXT[code]) || null;
 }
 
+/**
+ * Extra instruction for the multi-word rows of decision 0074 (sent in the user turn, so the
+ * cached system prompt and its version stay the same for single words).
+ */
+export const PHRASE_HINTS: Readonly<Record<string, string>> = {
+  'phrasal verb':
+    'This is a phrasal verb. Give only its meanings as a phrasal verb (not those of the verb alone), each as a Turkish verb in the infinitive ("vazgeçmek"). In the examples the particle may come after a short object ("turn the radio down").',
+  phrase:
+    'This is a common English collocation. Give the natural Turkish equivalent of the whole phrase (make a decision: "karar vermek"), usually one meaning. Examples use the whole phrase; the verb may take a regular ending.',
+};
+
 /** The user turn: the word, its level and the given meanings (numbered); nothing else. */
 export function wordUserContent(w: WordInput): string {
   const body: Record<string, unknown> = { lemma: w.lemma_norm, pos: w.pos, level: w.cefr };
+  const hint = PHRASE_HINTS[w.pos];
+  if (hint) body.hint = hint;
   if (w.given.length > 0)
     body.given = w.given.map((g, i) => ({ n: i + 1, meaning_tr: g.meaning_tr }));
   const problem = problemText(w.problem);

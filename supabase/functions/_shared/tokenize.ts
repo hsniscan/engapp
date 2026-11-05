@@ -333,6 +333,11 @@ const IRREGULAR: Record<string, string[]> = Object.assign(Object.create(null) as
   "one's": ["one's"],
 });
 
+/** Base forms of a known irregular form ("went" → ["go"]); empty for any other word. */
+export function irregularBases(word: string): readonly string[] {
+  return IRREGULAR[normalizeLemma(word)] ?? [];
+}
+
 const VOWEL = /[aeiou]/;
 
 /** Candidate base forms of one lower-case word (always includes the word itself). */

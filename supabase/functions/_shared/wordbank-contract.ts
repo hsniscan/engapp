@@ -4,10 +4,15 @@
 
 import { z } from 'zod';
 import { findGappedSpan, findSpan } from './locate.ts';
+import { irregularBases } from './tokenize.ts';
 
 export const WORDBANK_PROMPT_VERSION = 'wordbank-v1';
 
-/** Parts of speech of the reference lists (ref_word_levels.pos). */
+/**
+ * Parts of speech of the bank: those of the reference lists (ref_word_levels.pos), plus
+ * 'phrasal verb' and 'phrase' (collocations) from ref_phrases (v0.5.3, decision 0074; the
+ * lexicon's own names). Older app versions skip rows with a value they do not know.
+ */
 export const WORDBANK_POS = [
   'noun',
   'verb',
@@ -19,8 +24,20 @@ export const WORDBANK_POS = [
   'determiner',
   'interjection',
   'other',
+  'phrasal verb',
+  'phrase',
 ] as const;
 export type WordBankPos = (typeof WORDBANK_POS)[number];
+
+/** Parts of speech of the multi-word rows (the "Kalıplar" decks). */
+export const WORDBANK_PHRASE_POS = ['phrasal verb', 'phrase'] as const;
+
+/**
+ * Where a bank row's level comes from: the CEFR-J and Octanove lists, Wiktionary's phrasal
+ * verb headwords or the corpus collocations (decision 0074; both levelled by frequency).
+ */
+export const WORDBANK_LIST_SOURCES = ['cefrj', 'octanove', 'wiktionary', 'corpus'] as const;
+export type WordBankListSource = (typeof WORDBANK_LIST_SOURCES)[number];
 
 export const WORDBANK_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
 
@@ -42,7 +59,7 @@ export const wordBankRowSchema = z.object({
   pos: z.enum(WORDBANK_POS),
   lemma: z.string().min(1).max(120),
   cefr: z.enum(WORDBANK_LEVELS),
-  list_source: z.enum(['cefrj', 'octanove']),
+  list_source: z.enum(WORDBANK_LIST_SOURCES),
   zipf: z.coerce.number().min(0).max(9).nullable(),
   lexicon_term_id: z.uuid().nullable(),
   senses: z.array(wordBankSenseSchema).min(1).max(WORDBANK_MAX_SENSES),
@@ -60,11 +77,13 @@ export const WORDBANK_PAGE = 1000;
 
 /**
  * Loose "same word" test for regular inflections: apple → apples, use → used, study →
- * studies, run → running, big → bigger. Irregular forms (go → went) are not accepted: the
- * prompt asks for the base form or a regular ending.
+ * studies, run → running, big → bigger, and (v0.5.3) the known irregular forms (went → go,
+ * made → make), so Tatoeba sentences and phrasal verbs ("gave it up") are found too.
  */
 function sameWordLoose(sentenceWord: string, termWord: string): boolean {
   if (sentenceWord === termWord) return true;
+  // Irregular forms of a word inside a phrase ("gave up", "made a decision").
+  if (irregularBases(sentenceWord).includes(termWord)) return true;
   if (termWord.length < 3) return false;
   const stem = termWord.replace(/(e|y)$/u, '');
   return sentenceWord.startsWith(stem) && sentenceWord.length - termWord.length <= 4;
