@@ -14,10 +14,40 @@ import { roundUsd } from './image-models.ts';
 type Env = (key: string) => string | undefined;
 
 export const DEFAULT_TEXT_MONTHLY_USD = 10;
-/** One user's share of the month (decision 0060): AI_USER_MONTHLY_USD, default 1 USD … */
-export const DEFAULT_USER_MONTHLY_USD = 1;
-/** … and never more than this fraction of the global cap (AI_USER_MAX_SHARE). */
-export const DEFAULT_USER_MAX_SHARE = 0.1;
+/**
+ * One user's share of the month (decision 0060): AI_USER_MONTHLY_USD … Raised from 1 to 2 USD
+ * with Claude Sonnet as the primary text model (decision 0077): 1 USD were ~25 word
+ * extractions a month on Sonnet, after which the user's calls go to Gemini.
+ */
+export const DEFAULT_USER_MONTHLY_USD = 2;
+/** … and never more than this fraction of the global cap (AI_USER_MAX_SHARE; was 0.1). */
+export const DEFAULT_USER_MAX_SHARE = 0.2;
+/**
+ * The owner's share (APP_ADMIN_USER_ID, decision 0077): AI_OWNER_MAX_SHARE of the global cap.
+ * The owner is the main user; the rest of the month stays for other users and the system
+ * jobs' pool.
+ */
+export const DEFAULT_OWNER_MAX_SHARE = 0.75;
+/**
+ * The system jobs' pool (nightly level job, morpheme meanings, level-test bank; decision 0077):
+ * AI_SYSTEM_MONTHLY_USD (default 2 USD), at most AI_SYSTEM_MAX_SHARE (default 15 %) of the
+ * global cap. On Sonnet the level job's 100 calls a day would cost ~3 USD a day: without its
+ * own share it would use up the month in a few nights.
+ */
+export const DEFAULT_SYSTEM_MONTHLY_USD = 2;
+export const DEFAULT_SYSTEM_MAX_SHARE = 0.15;
+/** Pool name of the system jobs (text_budget_pools.pool). */
+export const SYSTEM_POOL = 'system';
+
+function share(env: Env, key: string, fallback: number): number {
+  const v = Number(env(key));
+  return Number.isFinite(v) && v > 0 && v <= 1 ? v : fallback;
+}
+
+function usd(env: Env, key: string, fallback: number): number {
+  const v = Number(env(key));
+  return Number.isFinite(v) && v > 0 ? v : fallback;
+}
 
 /** The month's text cap in USD: CLAUDE_TEXT_MONTHLY_USD when it is a positive number, else 10. */
 export function textMonthlyCapUsd(env: Env): number {
@@ -26,16 +56,46 @@ export function textMonthlyCapUsd(env: Env): number {
 }
 
 /**
- * The most one user's calls may spend in a month: AI_USER_MONTHLY_USD (default 1 USD), but
- * at most AI_USER_MAX_SHARE (default 10 %) of the global cap, so no single account can use up
- * the month for everyone (review S2).
+ * The most one user's calls may spend in a month: AI_USER_MONTHLY_USD (default 2 USD), but
+ * at most AI_USER_MAX_SHARE (default 20 %) of the global cap, so no single account can use up
+ * the month for everyone (review S2). The owner (`userId` equal to APP_ADMIN_USER_ID) gets
+ * AI_OWNER_MAX_SHARE (default 75 %) of the global cap instead (decision 0077).
  */
-export function textUserMonthlyCapUsd(env: Env, globalCapUsd = textMonthlyCapUsd(env)): number {
-  const own = Number(env('AI_USER_MONTHLY_USD'));
-  const share = Number(env('AI_USER_MAX_SHARE'));
-  const cap = Number.isFinite(own) && own > 0 ? own : DEFAULT_USER_MONTHLY_USD;
-  const frac = Number.isFinite(share) && share > 0 && share <= 1 ? share : DEFAULT_USER_MAX_SHARE;
-  return roundUsd(Math.min(cap, globalCapUsd * frac));
+export function textUserMonthlyCapUsd(
+  env: Env,
+  globalCapUsd = textMonthlyCapUsd(env),
+  userId?: string,
+): number {
+  const owner = env('APP_ADMIN_USER_ID')?.trim().toLowerCase();
+  if (owner && userId && userId.toLowerCase() === owner) {
+    return roundUsd(globalCapUsd * share(env, 'AI_OWNER_MAX_SHARE', DEFAULT_OWNER_MAX_SHARE));
+  }
+  const cap = usd(env, 'AI_USER_MONTHLY_USD', DEFAULT_USER_MONTHLY_USD);
+  return roundUsd(
+    Math.min(cap, globalCapUsd * share(env, 'AI_USER_MAX_SHARE', DEFAULT_USER_MAX_SHARE)),
+  );
+}
+
+/**
+ * The system jobs' monthly pool: AI_SYSTEM_MONTHLY_USD (default 2 USD), at most
+ * AI_SYSTEM_MAX_SHARE (default 15 %) of the global cap. Its calls count against the global cap
+ * too, so the month's total never passes CLAUDE_TEXT_MONTHLY_USD.
+ */
+export function textSystemMonthlyCapUsd(env: Env, globalCapUsd = textMonthlyCapUsd(env)): number {
+  const cap = usd(env, 'AI_SYSTEM_MONTHLY_USD', DEFAULT_SYSTEM_MONTHLY_USD);
+  return roundUsd(
+    Math.min(cap, globalCapUsd * share(env, 'AI_SYSTEM_MAX_SHARE', DEFAULT_SYSTEM_MAX_SHARE)),
+  );
+}
+
+/** A budget hold's purpose as the database accepts it (`^[a-z][a-z0-9_]{0,31}$`). */
+export function budgetPurpose(name: string): string {
+  const p = name
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, '_')
+    .replace(/^[^a-z]+/, '')
+    .slice(0, 32);
+  return p || 'text';
 }
 
 export interface TextBudgetStatus {
@@ -61,6 +121,18 @@ export interface TextBudgetStore {
     userCapUsd: number,
   ): Promise<string | null>;
   /** Ends a hold: its amount leaves `reserved`, `actualUsd` joins `spent`. */
+  /**
+   * A reservation that also counts against a named pool's monthly cap (the system jobs,
+   * decision 0077). Null when either the pool's cap or the global cap cannot cover it.
+   */
+  reservePool(
+    amountUsd: number,
+    capUsd: number,
+    purpose: string,
+    pool: string,
+    poolCapUsd: number,
+    opts?: { batch?: boolean },
+  ): Promise<string | null>;
   settle(holdId: string, actualUsd: number): Promise<void>;
   status(): Promise<TextBudgetStatus>;
 }
@@ -71,11 +143,18 @@ export interface TextBudget {
   capUsd: number;
   /** The user whose request pays (edge functions); absent for system jobs. */
   user?: { id: string; capUsd: number };
+  /** The pool a system job pays from (decision 0077); ignored when `user` is set. */
+  pool?: { name: string; capUsd: number };
 }
 
 /** `budget` charged to one user as well (per request in the edge functions). */
 export function forUser(budget: TextBudget, userId: string, userCapUsd: number): TextBudget {
   return { ...budget, user: { id: userId, capUsd: userCapUsd } };
+}
+
+/** `budget` charged to a pool as well (the system jobs). */
+export function forPool(budget: TextBudget, name: string, poolCapUsd: number): TextBudget {
+  return { ...budget, pool: { name, capUsd: poolCapUsd } };
 }
 
 function check<T>(r: { data: T | null; error: { message: string } | null }, what: string): T {
@@ -121,6 +200,25 @@ export class SupabaseTextBudgetStore implements TextBudgetStore {
     return (check(r, 'text_budget_reserve_user') as string | null) ?? null;
   }
 
+  async reservePool(
+    amountUsd: number,
+    capUsd: number,
+    purpose: string,
+    pool: string,
+    poolCapUsd: number,
+    opts: { batch?: boolean } = {},
+  ): Promise<string | null> {
+    const r = await this.db.rpc('text_budget_reserve_pool', {
+      p_amount: amountUsd,
+      p_cap: capUsd,
+      p_purpose: purpose,
+      p_pool: pool,
+      p_pool_cap: poolCapUsd,
+      p_batch: opts.batch ?? false,
+    });
+    return (check(r, 'text_budget_reserve_pool') as string | null) ?? null;
+  }
+
   async settle(holdId: string, actualUsd: number): Promise<void> {
     check(
       await this.db.rpc('text_budget_settle', { p_hold: holdId, p_actual: actualUsd }),
@@ -161,10 +259,14 @@ export async function reserveTextBudget(
 ): Promise<string | null> {
   if (!(boundUsd > 0)) throw new Error('a text budget reservation must be positive');
   const amount = roundUsd(boundUsd, 'up');
+  const p = budgetPurpose(purpose);
   if (budget.user && !opts.batch) {
-    return budget.store.reserveForUser(amount, budget.capUsd, purpose, budget.user.id, budget.user.capUsd);
+    return budget.store.reserveForUser(amount, budget.capUsd, p, budget.user.id, budget.user.capUsd);
   }
-  return budget.store.reserve(amount, budget.capUsd, purpose, opts);
+  if (budget.pool) {
+    return budget.store.reservePool(amount, budget.capUsd, p, budget.pool.name, budget.pool.capUsd, opts);
+  }
+  return budget.store.reserve(amount, budget.capUsd, p, opts);
 }
 
 /** Settles a hold with the real cost (callCostUsd of the response's usage; 0 when not billed). */
@@ -183,8 +285,9 @@ export type TextSpend<T> =
 
 /**
  * One budgeted model call: reserve the bound, run `call`, settle the real cost it reports.
- * A call that throws was not billed by the API (transport or API error): it is settled at 0
- * and the error is rethrown. The edge functions (the daily story) use this for every call.
+ * A call that throws with an API error was not billed: it is settled at 0 and the error is
+ * rethrown. One that may have been billed (an error with `maybeBilled`, e.g. a timeout) keeps
+ * its whole bound (decision 0077). The edge functions (the daily story) use this for every call.
  */
 export async function recordTextSpend<T>(
   budget: TextBudget,
@@ -197,7 +300,8 @@ export async function recordTextSpend<T>(
   try {
     out = await call();
   } catch (e) {
-    await settleTextBudget(budget, hold, 0);
+    const billed = !!e && typeof e === 'object' && (e as { maybeBilled?: unknown }).maybeBilled === true;
+    await settleTextBudget(budget, hold, billed ? opts.boundUsd : 0);
     throw e;
   }
   await settleTextBudget(budget, hold, out.costUsd);
@@ -212,9 +316,14 @@ export class MemoryTextBudgetStore implements TextBudgetStore {
   spent = 0;
   reserved = 0;
   cap = 0;
-  readonly holds = new Map<string, { amount: number; purpose: string; batch: boolean; user?: string }>();
+  readonly holds = new Map<
+    string,
+    { amount: number; purpose: string; batch: boolean; user?: string; pool?: string }
+  >();
   /** Per-user spent + reserved this month (reserveForUser). */
   readonly users = new Map<string, { spent: number; reserved: number }>();
+  /** Per-pool spent + reserved this month (reservePool). */
+  readonly pools = new Map<string, { spent: number; reserved: number }>();
   private next = 0;
 
   async reserve(
@@ -255,11 +364,33 @@ export class MemoryTextBudgetStore implements TextBudgetStore {
     return id;
   }
 
+  async reservePool(
+    amountUsd: number,
+    capUsd: number,
+    purpose: string,
+    pool: string,
+    poolCapUsd: number,
+    opts: { batch?: boolean } = {},
+  ): Promise<string | null> {
+    await Promise.resolve();
+    if (!(amountUsd > 0) || poolCapUsd < 0) throw new Error('invalid arguments');
+    const p = this.pools.get(pool) ?? { spent: 0, reserved: 0 };
+    if (roundUsd(p.spent + p.reserved + amountUsd) > poolCapUsd) return null;
+    if (roundUsd(this.spent + this.reserved + amountUsd) > capUsd) return null;
+    this.cap = capUsd;
+    this.reserved = roundUsd(this.reserved + amountUsd);
+    p.reserved = roundUsd(p.reserved + amountUsd);
+    this.pools.set(pool, p);
+    const id = `hold-${++this.next}`;
+    this.holds.set(id, { amount: amountUsd, purpose, batch: opts.batch ?? false, pool });
+    return id;
+  }
+
   async settle(holdId: string, actualUsd: number): Promise<void> {
     await Promise.resolve();
     const h = this.holds.get(holdId);
     this.holds.delete(holdId);
-    const u = h?.user ? this.users.get(h.user) : undefined;
+    const u = h?.user ? this.users.get(h.user) : h?.pool ? this.pools.get(h.pool) : undefined;
     if (u) {
       u.reserved = roundUsd(Math.max(0, u.reserved - h!.amount));
       u.spent = roundUsd(u.spent + actualUsd);

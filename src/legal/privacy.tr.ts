@@ -19,7 +19,7 @@ export const privacyTr: LegalDocument = {
           ul: [
             'Misafir modunda bütün verilerin yalnızca kendi cihazında durur; bize hiçbir şey gelmez.',
             'Google ile giriş yaparsan kartların, çalışma geçmişin, kaydettiğin okuma metinleri (yapıştırdığın metinler, makaleler, PDF, altyazı ve fotoğraftan okunan metinler, hikâyeler) ve ayarların, cihazların arasında eşitlenmek için sunucumuzda saklanır.',
-            "AI özelliklerini kullandığında gönderdiğin metin Google Gemini ile, Gemini'nin kotası dolduğunda Anthropic Claude ile işlenir. Gemini'yi ücretsiz katmanda kullandığımız için gönderilen metinler Google'ın ürünlerini geliştirmek için kullanılabilir. Gizli ya da kişisel bilgi içeren metin gönderme.",
+            "AI özelliklerini kullandığında gönderdiğin metin önce Anthropic Claude ile işlenir; Claude'un aylık bütçesi dolduğunda ya da Claude yanıt vermediğinde Google Gemini ile işlenir. Gemini'yi ücretsiz katmanda kullandığımız için Gemini'ye giden metinler Google'ın ürünlerini geliştirmek için kullanılabilir. Gizli ya da kişisel bilgi içeren metin gönderme.",
             'Reklam yok, verilerini satmıyoruz, seni izleyen bir analiz aracı kullanmıyoruz.',
             'Hesabını ve bütün verilerini istediğin an uygulamadan ya da [hesap silme sayfasından](/hesap-sil) silebilirsin.',
           ],
@@ -65,7 +65,7 @@ export const privacyTr: LegalDocument = {
           p: '**Cihaz kimliği.** Uygulama, senkron için her kuruluma rastgele bir cihaz kimliği verir ve bunu cevap kayıtlarına yazar. Bu bir reklam kimliği değildir; telefonun donanım kimliklerine erişilmez.',
         },
         {
-          p: '**AI ile işlenen metinler.** "Metinden kart çıkar" ile yapıştırdığın ya da PDF dosyasından okunan metin, parçalar hâlinde sunucuya ve oradan Google Gemini\'ye gönderilir. AI\'ın bir parçadan çıkardığı aday kelimeler ve geçtikleri cümleler, aynı metni tekrar işlememek için sunucuda en fazla 90 gün saklanır.',
+          p: '**AI ile işlenen metinler.** "Metinden kart çıkar" ile yapıştırdığın ya da PDF dosyasından okunan metin, parçalar hâlinde sunucuya ve oradan Anthropic Claude\'a (Claude kullanılamadığında Google Gemini\'ye) gönderilir. AI\'ın bir parçadan çıkardığı aday kelimeler ve geçtikleri cümleler, aynı metni tekrar işlememek için sunucuda en fazla 90 gün saklanır.',
         },
         {
           p: '**Makale ve altyazı içe aktarma.** Bir bağlantıdan makale aldığında yalnızca adres sunucumuza gider; sunucu sayfayı indirip metnini ayıklar, sana gönderir ve bu işlem sırasında ne adresi ne metni saklar. Metin, adresiyle birlikte okuma metinlerinin arasına cihazına kaydedilir ve giriş yaptıysan yukarıda anlatıldığı gibi kendi hesabınla eşitlenir; ortak tablolara ya da başka kullanıcılara gitmez. Altyazı dosyaları yalnızca cihazında okunur; içinden aldığın metin de aynı şekilde kaydedilir ve eşitlenir.',
@@ -121,14 +121,14 @@ export const privacyTr: LegalDocument = {
           ul: [
             "**Supabase** (veritabanı, giriş, sunucu fonksiyonları): hesabın ve öğrenme verilerin. Sunucular Avrupa Birliği'nde, İrlanda bölgesindedir.",
             '**Cloudflare** (web sitesinin barındırılması): uygulama dosyalarını sunarken IP adresin ve tarayıcı bilgin gibi teknik bağlantı verilerini işler. **Cloudflare R2** (dosya deposu): ortak sözlüğün ses dosyaları ve veritabanının şifrelenmiş yedekleri.',
-            '**Google**: Google ile giriş; profil fotoğrafın Google\'ın sunucusundan yüklenir. **Google ML Kit** (yalnızca Android uygulamasında "Fotoğraftan metin" kullanınca): yukarıda anlatılan kullanım ve performans bilgisi; fotoğraf ve metin gönderilmez. **Google Gemini** (AI): kart çıkarmak için gönderdiğin metin parçaları, elle eklediğin kelime, temalara ayırma için kelimelerin ve kısa İngilizce tanımları, sesli okunacak kelime ya da cümle, haftalık rapor yorumu için yalnızca sayılar.',
+            '**Google**: Google ile giriş; profil fotoğrafın Google\'ın sunucusundan yüklenir. **Google ML Kit** (yalnızca Android uygulamasında "Fotoğraftan metin" kullanınca): yukarıda anlatılan kullanım ve performans bilgisi; fotoğraf ve metin gönderilmez. **Google Gemini** (AI yedeği ve sesli okuma): Claude\'un aylık bütçesi dolduğunda ya da Claude yanıt vermediğinde, aşağıda Claude için sayılan aynı AI istekleri Gemini ile işlenir; hazır ses dosyası olmayan, sesli okunacak kelime ya da cümle de Gemini\'ye gider.',
             "**Anthropic Claude** (kelime görselleri, ortak sözlük için toplu olarak bir kez çizilir): yalnızca ortak sözlükteki kelime, sözcük türü ve Türkçe anlamı, kısa bir çizim ipucu, yeniden çizimde hazır bir düzeltme notu ve kontrol için Claude'un çizdiği resmin kendisi. Hesabına, kartlarına ya da cümlelerine ait hiçbir bilgi gönderilmez.",
-            "**Anthropic Claude** (AI yedeği): Gemini'nin kotası dolduğunda, yukarıda Gemini için sayılan aynı AI istekleri Claude ile işlenir. **Anthropic Claude** (Bugünün hikâyesi): yalnızca yukarıda sayılan kelime listesi, seviye, zorluk ve ilgi alanları.",
+            "**Anthropic Claude** (AI): kart çıkarmak için gönderdiğin metin parçaları, elle eklediğin kelime, temalara ayırma için kelimelerin ve kısa İngilizce tanımları, haftalık rapor yorumu için yalnızca sayılar. **Anthropic Claude** (Bugünün hikâyesi): yalnızca yukarıda sayılan kelime listesi, seviye, zorluk ve ilgi alanları.",
             '**Tarayıcıların bildirim servisleri** (Google, Mozilla, Apple, Microsoft): web bildirimlerini açtıysan, şifreli hatırlatma metni ("Bugün 12 kart çalışmaya hazır" gibi).',
           ],
         },
         {
-          p: "Gemini'yi şu an ücretsiz katmanda kullanıyoruz. Google'ın koşullarına göre ücretsiz katmanda gönderilen metinler Google'ın ürünlerini geliştirmek için kullanılabilir ve insan değerlendiriciler tarafından okunabilir. Bu yüzden gizli, iş ya da kişisel bilgi içeren metinleri AI ile işleme.",
+          p: "Claude'a Anthropic'in ücretli API'si ile gönderilen metinler, Anthropic'in ticari koşullarına göre modellerini eğitmek için kullanılmaz. Yedek olarak kullandığımız Gemini'yi ise ücretsiz katmanda kullanıyoruz: Google'ın koşullarına göre ücretsiz katmanda gönderilen metinler Google'ın ürünlerini geliştirmek için kullanılabilir ve insan değerlendiriciler tarafından okunabilir. Hangi metnin yedeğe gideceğini önceden bilemeyeceğin için gizli, iş ya da kişisel bilgi içeren metinleri AI ile işleme.",
         },
         {
           p: 'Örnek cümleler, hatırlatıcı önerileri, benzer kelime notları ve sesli okuma dosyaları sözlükteki ortak içerikten üretilir; bunlar için senin cümlelerin gönderilmez.',

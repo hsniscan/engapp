@@ -45,9 +45,9 @@ Errors as in `docs/ai-pipeline.md` ("Errors"), plus:
 | code | status | when |
 |---|---|---|
 | `daily_limit` | 429 | today's story (UTC day) was made; or a regeneration was already used, or asked before a story |
-| `budget_exhausted` | 503 | this month's text budget (`CLAUDE_TEXT_MONTHLY_USD`) cannot cover the call; no call was made |
+| `budget_exhausted` | 503 | this month's text budget (`CLAUDE_TEXT_MONTHLY_USD`) or the user's share cannot cover the call and no Gemini key is set; no call was made |
 | `ai_failed` | 502 | two answers in a row were unusable |
-| `internal` | 500 | no `ANTHROPIC_API_KEY` |
+| `internal` | 500 | neither `ANTHROPIC_API_KEY` nor `GEMINI_API_KEY` |
 
 A request that ends without a story gives its count back (`story_refund`).
 
@@ -56,12 +56,15 @@ A request that ends without a story gives its count back (`story_refund`).
 1. Auth as in ai-extract (a signed-in Google account; `user_id` only from the token).
 2. Daily counter `story_consume` (`STORY_DAILY_LIMIT`, default 1 story per UTC day, and one
    regeneration of it).
-3. Model: Claude Haiku, `CLAUDE_STORY_MODEL`, else `CLAUDE_TEXT_MODEL`, else the provider
-   default. Structured output with the schema below, `max_tokens` 2048 + 2048 for thinking,
-   12 s per call.
+3. Model: Claude, `CLAUDE_STORY_MODEL`, else `CLAUDE_TEXT_MODEL`, else the default in
+   `model-defaults.ts` (Claude Sonnet since v0.5.3, decision 0077; Haiku before). Structured
+   output with the schema below, `max_tokens` 2048 (a model that thinks gets 2048 more; Sonnet
+   runs without extended thinking), 25 s per call (12 s on Haiku). Gemini (`GEMINI_MODEL`, free
+   tier, nothing reserved) writes the story instead when the budget refuses the call or Claude
+   does not answer (rate limit, outage, timeout), and alone without `ANTHROPIC_API_KEY`.
 4. Budget: every call is wrapped in `recordTextSpend` (purpose `story`): the upper bound is
    reserved first, the real cost (from `usage`) is settled after, an unusable answer is billed
-   too, a transport failure is settled at 0.
+   too, an API error is settled at 0, a timeout keeps its whole reservation (it may be billed).
 5. Validation (`validateStoryOutput`), first failing check: `invalid_shape`, `bad_title`,
    `bad_text` (links, markup, other scripts), `length` (130–280 words accepted),
    `targets_missing` (at least 5 target words must occur in the text, any inflection,

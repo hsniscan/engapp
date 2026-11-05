@@ -2,20 +2,23 @@
  * One-off system job `morpheme-tr-v1`: Turkish explanations for the morphemes of the built
  * morphology file, 20 per model request (~7 requests for ~130 morphemes).
  *
- *   GEMINI_API_KEY=… GEMINI_MODEL=… [GEMINI_FALLBACK_MODEL=…] \
+ *   [ANTHROPIC_API_KEY=… SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=…] [GEMINI_API_KEY=…] \
  *     node scripts/build-morphology/meanings.ts [--force]
  *   node scripts/build-morphology/index.ts …     # merges the result into the app file
  *
- * Server side only: the key comes from the environment (a GitHub secret in the workflow, a
- * local secrets file otherwise) and never reaches the client. Model names come only from
- * the environment. Already explained morphemes (same prompt version) are skipped, so a
+ * Server side only: the keys come from the environment (GitHub secrets in the workflow, a
+ * local secrets file otherwise) and never reach the client. The text provider chain of
+ * decision 0077 (scripts/lib/system-ai.ts): Claude first, booked on the monthly text budget
+ * and the system jobs' pool, which needs the service-role database; Gemini behind it, or
+ * alone without the database. Model names come only from the environment or
+ * model-defaults.ts. Already explained morphemes (same prompt version) are skipped, so a
  * rerun costs 0 calls; `--force` redoes all. Writes data/reference/morpheme-meanings.tr.json,
  * which the owner can review and edit like any other data file. Until it exists, the app
  * shows the hand-written short meaning of scripts/build-morphology/inventory.ts.
  */
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
-import { createGeminiProvider } from '../../supabase/functions/_shared/ai-provider.ts';
+import { createSystemTextProvider, serviceClientFromEnv, systemTextAiAvailable } from '../lib/system-ai.ts';
 import {
   MORPHEME_BATCH,
   MORPHEME_PROMPT_VERSION,
@@ -31,10 +34,10 @@ import { decodeMsgpack } from './msgpack.ts';
 import { readZipEntry } from './zip.ts';
 
 const OUT = 'data/reference/morpheme-meanings.tr.json';
-const apiKey = process.env.GEMINI_API_KEY;
-const model = process.env.GEMINI_MODEL;
-if (!apiKey || !model) {
-  console.error('GEMINI_API_KEY and GEMINI_MODEL must be set');
+const env = (k: string) => process.env[k];
+const db = serviceClientFromEnv(env);
+if (!systemTextAiAvailable(env, { db })) {
+  console.error('GEMINI_API_KEY (or ANTHROPIC_API_KEY with SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY) must be set');
   process.exit(2);
 }
 const force = process.argv.includes('--force');
@@ -70,7 +73,13 @@ const todo: MorphemeJobItem[] = data.morphemes
   .filter((m) => !items[m.id]);
 console.log(`${todo.length} morphemes to explain, ${Math.ceil(todo.length / MORPHEME_BATCH)} requests`);
 
-const provider = createGeminiProvider({ apiKey, model, fallbackModel: process.env.GEMINI_FALLBACK_MODEL ?? null, timeoutMs: 90_000 });
+const provider = createSystemTextProvider(env, {
+  db,
+  purpose: 'morphemes',
+  gemini: { timeoutMs: 90_000 },
+  claudeTimeoutMs: 90_000,
+  log: (msg, data) => console.log(msg, JSON.stringify(data ?? {})),
+});
 let failed = 0;
 for (let i = 0; i < todo.length; i += MORPHEME_BATCH) {
   const batch = todo.slice(i, i + MORPHEME_BATCH);

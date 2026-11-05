@@ -27,7 +27,7 @@ import {
   type StoryModel,
   type StoryStore,
 } from './story.ts';
-import { storyModelFromEnv } from './story-claude.ts';
+import { geminiStoryModelFromEnv, storyModelFromEnv } from './story-claude.ts';
 import { SupabaseStoryStore } from './story-store.ts';
 
 type Env = (key: string) => string | undefined;
@@ -88,24 +88,26 @@ export function createAiFunction<T>(
   const store =
     overrides.store ??
     new SupabaseAiStore(admin!, { feature: name, featureLimit: featureDailyLimit(env, name) });
-  // The Claude fallback spends from the monthly text budget, shared with the library jobs,
-  // and from the calling user's monthly share of it.
+  // Claude spends from the monthly text budget, shared with the library and system jobs, and
+  // from the calling user's monthly share of it (the owner's share is larger, decision 0077).
   const capUsd = textMonthlyCapUsd(env);
-  const userCapUsd = textUserMonthlyCapUsd(env, capUsd);
   const budget: TextBudget | undefined = admin
     ? { store: new SupabaseTextBudgetStore(admin), capUsd }
     : undefined;
   const authenticate = overrides.authenticate ?? createAuthenticator(cfg!);
   const logger = log(name);
-  // Gemini, then Claude Haiku on quota exhaustion (decision 0044). One provider per request:
-  // the budget it carries names the user who pays.
+  // Claude Sonnet first, Gemini behind it (decision 0077). One provider per request: the
+  // budget it carries names the user who pays.
   const providerFor = (userId: string): (() => AiProvider) => {
     if (overrides.provider) return overrides.provider;
     let provider: AiProvider | null = null;
     return () =>
       (provider ??= createTextAiProvider(env, {
         log: logger,
-        ...(budget ? { budget: forUser(budget, userId, userCapUsd) } : {}),
+        purpose: name,
+        ...(budget
+          ? { budget: forUser(budget, userId, textUserMonthlyCapUsd(env, capUsd, userId)) }
+          : {}),
       }));
   };
   return createHandler({
@@ -123,12 +125,15 @@ export interface StoryOverrides {
   authenticate?: (req: Request) => Promise<string>;
   /** null: no budget (tests); absent: the monthly text budget in Supabase. */
   budget?: TextBudget | null;
+  /** The Gemini story model behind Claude; null: none (tests); absent: from GEMINI_API_KEY. */
+  fallback?: (() => StoryModel) | null;
 }
 
 /**
  * ai-story (decision 0050): a signed-in Google account, the story's own daily counter
- * (STORY_DAILY_LIMIT) and Claude Haiku (CLAUDE_STORY_MODEL) under the monthly text budget
- * (CLAUDE_TEXT_MONTHLY_USD), every call through recordTextSpend.
+ * (STORY_DAILY_LIMIT) and Claude (CLAUDE_STORY_MODEL, else CLAUDE_TEXT_MODEL: Sonnet) under the
+ * monthly text budget (CLAUDE_TEXT_MONTHLY_USD), every call through recordTextSpend; Gemini
+ * writes the story when Claude cannot (budget used up, outage, no key; decision 0077).
  */
 export function createStoryFunction(
   env: Env,
@@ -139,7 +144,6 @@ export function createStoryFunction(
   const admin = cfg ? createAdminClient(cfg) : null;
   const store = overrides.store ?? new SupabaseStoryStore(admin!);
   const capUsd = textMonthlyCapUsd(env);
-  const userCapUsd = textUserMonthlyCapUsd(env, capUsd);
   const budget: TextBudget | null =
     overrides.budget !== undefined
       ? overrides.budget
@@ -147,6 +151,8 @@ export function createStoryFunction(
   const authenticate = overrides.authenticate ?? createAuthenticator(cfg!);
   const logger = log('ai-story');
   const model = overrides.model !== undefined ? overrides.model : storyModelFromEnv(env, logger);
+  const fallback =
+    overrides.fallback !== undefined ? overrides.fallback : geminiStoryModelFromEnv(env);
   const limit = storyDailyLimit(env);
   const picked = pickedDailyLimit(env);
   return createHandler({
@@ -158,8 +164,15 @@ export function createStoryFunction(
         userId,
         store,
         model,
+        ...(fallback ? { fallback } : {}),
         // Every story call also counts against this user's monthly share (decision 0060).
-        ...(budget ? { budget: budget.user ? budget : forUser(budget, userId, userCapUsd) } : {}),
+        ...(budget
+          ? {
+              budget: budget.user
+                ? budget
+                : forUser(budget, userId, textUserMonthlyCapUsd(env, capUsd, userId)),
+            }
+          : {}),
         dailyLimit: limit,
         pickedDailyLimit: picked,
         log: logger,

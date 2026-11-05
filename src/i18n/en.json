@@ -2246,7 +2246,7 @@
       "license": "CC BY-SA 4.0 (derived data, shared alike)."
     },
     "aiTitle": "AI estimates",
-    "aiBody": "Levels of words outside the lists and the corrections for Turkish learners are made with Google Gemini. They are estimates: a correction moves a list level by at most one step, and an estimate is bounded by the word's frequency. You can always change a word's level yourself.",
+    "aiBody": "Levels of words outside the lists and the corrections for Turkish learners are made with AI (Anthropic Claude or Google Gemini). They are estimates: a correction moves a list level by at most one step, and an estimate is bounded by the word's frequency. You can always change a word's level yourself.",
     "wordBankTitle": "Word bank",
     "wordBankBody": "The word bank shows the words of the CEFR-J and Octanove lists. Their Turkish meanings and example sentences were generated once with Claude (Anthropic); where the shared dictionary already had a meaning, that one is used. Being derived from the Octanove data, the word bank is licensed CC BY-SA 4.0 too."
   },

@@ -3,19 +3,26 @@
 # (level-guess-v1) and runs the Turkish-learner check of the lists (level-tr-v1). All model
 # calls come from the system AI budget (public.ai_system_consume, AI_SYSTEM_DAILY_LIMIT per
 # UTC day), never from a user's budget; a run stops when it is used up and the next night
-# continues. Details: docs/ai-pipeline.md ("Level job"), docs/setup-backend.md.
+# continues. Claude Sonnet answers first (decision 0077); every Claude call is reserved on the
+# monthly text budget and on the system jobs' pool (AI_SYSTEM_MONTHLY_USD, at most
+# AI_SYSTEM_MAX_SHARE of CLAUDE_TEXT_MONTHLY_USD), so the job can never use up the month; when
+# the pool is used up the calls go to Gemini (free tier). Details: docs/ai-pipeline.md
+# ("Level job"), docs/setup-backend.md.
 #
 # The first step (resolve levels and word frequencies from the reference data) needs no AI and
-# runs on every run; without GEMINI_API_KEY only the AI steps are skipped, with a warning
+# runs on every run; without GEMINI_API_KEY and ANTHROPIC_API_KEY only the AI steps are skipped, with a warning
 # (decision 0037). Every run ends with a heartbeat in public.job_runs; a job that stopped running
 # shows up as a warning in the next run of either nightly job ("Job health", setup-backend.md).
 #
 # Repository secrets (same as deploy-supabase.yml):
-#   GEMINI_API_KEY             Google AI Studio API key (optional: without it no AI steps)
+#   ANTHROPIC_API_KEY          Claude API key (optional: the primary model)
+#   GEMINI_API_KEY             Google AI Studio API key (optional: the free fallback)
 #   SUPABASE_SERVICE_ROLE_KEY  optional: the project's service_role (or sb_secret_) key.
 #                              Without it the key is read through the Management API with
 #   SUPABASE_ACCESS_TOKEN      (needs the "API keys: Read" permission / a full-access token).
-# Repository variables (optional): GEMINI_MODEL, GEMINI_FALLBACK_MODEL, AI_SYSTEM_DAILY_LIMIT
+# Repository variables (optional): CLAUDE_TEXT_MODEL, CLAUDE_TEXT_MONTHLY_USD,
+#   AI_SYSTEM_MONTHLY_USD, AI_SYSTEM_MAX_SHARE, GEMINI_MODEL, GEMINI_FALLBACK_MODEL,
+#   AI_SYSTEM_DAILY_LIMIT
 name: Level job
 
 on:
@@ -66,11 +73,19 @@ jobs:
 
       - name: Run the level job
         env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           # Only when a variable sets one; otherwise model-defaults.ts applies (decision 0060).
+          CLAUDE_TEXT_MODEL: ${{ vars.CLAUDE_TEXT_MODEL }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
           GEMINI_FALLBACK_MODEL: ${{ vars.GEMINI_FALLBACK_MODEL }}
           AI_SYSTEM_DAILY_LIMIT: ${{ vars.AI_SYSTEM_DAILY_LIMIT || '100' }}
+          # The month's cap and the system jobs' share of it (decision 0077).
+          CLAUDE_TEXT_MONTHLY_USD: ${{ vars.CLAUDE_TEXT_MONTHLY_USD || '10' }}
+          AI_SYSTEM_MONTHLY_USD: ${{ vars.AI_SYSTEM_MONTHLY_USD || '2' }}
+          AI_SYSTEM_MAX_SHARE: ${{ vars.AI_SYSTEM_MAX_SHARE || '0.15' }}
+          AI_CLAUDE_FALLBACK: ${{ vars.AI_CLAUDE_FALLBACK || 'on' }}
+          AI_TEXT_PRIMARY: ${{ vars.AI_TEXT_PRIMARY || 'claude' }}
           DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
           MAX_CALLS: ${{ inputs.max_calls }}
           NO_AI: ${{ inputs.no_ai && '--no-ai' || '' }}
@@ -78,6 +93,7 @@ jobs:
           set -euo pipefail
           if [ -n "$MAX_CALLS" ] && ! [[ "$MAX_CALLS" =~ ^[0-9]{1,5}$ ]]; then echo "::error::max_calls must be a whole number"; exit 1; fi
           # An empty variable means "use the default", not "no fallback model".
+          if [ -z "$CLAUDE_TEXT_MODEL" ]; then unset CLAUDE_TEXT_MODEL; fi
           if [ -z "$GEMINI_MODEL" ]; then unset GEMINI_MODEL; fi
           if [ -z "$GEMINI_FALLBACK_MODEL" ]; then unset GEMINI_FALLBACK_MODEL; fi
           source scripts/supabase-service-env.sh

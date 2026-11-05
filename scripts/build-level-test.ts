@@ -26,13 +26,18 @@
  *       part of speech (no shared word with the right answer), then lets the model check every
  *       question (prompt bank-check-v1) and re-picks the options of the questions it flags.
  *
- * Model names come from GEMINI_MODEL / GEMINI_FALLBACK_MODEL (defaults in ai-provider.ts).
- * The API key is read from the environment and never printed.
+ * Model calls go through the text provider chain (decision 0077, scripts/lib/system-ai.ts):
+ * Claude (CLAUDE_TEXT_MODEL) first when ANTHROPIC_API_KEY, SUPABASE_URL and
+ * SUPABASE_SERVICE_ROLE_KEY are set (every call booked on the monthly text budget and the
+ * system jobs' pool), Gemini (GEMINI_MODEL / GEMINI_FALLBACK_MODEL) behind it or alone.
+ * Model defaults: supabase/functions/_shared/model-defaults.ts. Keys are read from the
+ * environment and never printed.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createAiProvider, type AiProvider } from '../supabase/functions/_shared/ai-provider.ts';
+import type { AiProvider } from '../supabase/functions/_shared/ai-provider.ts';
+import { createSystemTextProvider, serviceClientFromEnv } from './lib/system-ai.ts';
 import { CEFR, type Cefr } from '../supabase/functions/_shared/cefr.ts';
 import { normalizeLemma } from '../supabase/functions/_shared/text.ts';
 import { decodeMsgpack, fetchPinned, SOURCES, unzipMember } from './build-levels.ts';
@@ -166,7 +171,13 @@ function realStem(w: string, en: Map<string, number>): string | null {
 }
 
 function aiProvider(): AiProvider {
-  return createAiProvider((k) => process.env[k], { timeoutMs: 90_000, totalBudgetMs: 400_000 });
+  const env = (k: string) => process.env[k];
+  return createSystemTextProvider(env, {
+    db: serviceClientFromEnv(env),
+    purpose: 'level_test',
+    gemini: { timeoutMs: 90_000, totalBudgetMs: 400_000 },
+    claudeTimeoutMs: 120_000,
+  });
 }
 
 // ---------------------------------------------------------------------------

@@ -1,11 +1,13 @@
-// The daily story's model (decision 0050): Claude Haiku through the text provider of
-// ai-claude-text.ts (structured output, the same schema conversion and JSON handling), one
+// The daily story's models (decision 0050): Claude (Sonnet since decision 0077) through the
+// text provider of ai-claude-text.ts (structured output, the same schema conversion and JSON handling), one
 // answered call per `call`. The model id comes only from CLAUDE_STORY_MODEL, else
 // CLAUDE_TEXT_MODEL, else the provider's default (AGENTS.md rule 5); the key only from
 // ANTHROPIC_API_KEY. The monthly text budget is applied by the pipeline (story.ts), which
-// wraps every call in recordTextSpend with the cost reported here.
+// wraps every call in recordTextSpend with the cost reported here. Behind it Gemini (free
+// tier, no budget) when the budget is used up or Claude does not answer (decision 0077).
 
 import { claudeTextModel, createClaudeTextProvider, type TextSpend } from './ai-claude-text.ts';
+import { createAiProvider, DEFAULT_GEMINI_MODEL, type GeminiConfig } from './ai-provider.ts';
 import type { StoryModel } from './story.ts';
 
 type Env = (key: string) => string | undefined;
@@ -72,4 +74,32 @@ export function storyModelFromEnv(env: Env, log?: Log, fetchImpl?: typeof fetch)
   const model = claudeStoryModel(env);
   return () =>
     createClaudeStoryModel({ apiKey: key, model, ...(log ? { log } : {}), ...(fetchImpl ? { fetch: fetchImpl } : {}) });
+}
+
+/**
+ * The story on Gemini (decision 0077): the same prompt and schema, one call per `call` (the
+ * provider still retries transient errors and falls back to GEMINI_FALLBACK_MODEL). Free tier:
+ * costUsd 0, nothing is reserved. Null without GEMINI_API_KEY.
+ */
+export function geminiStoryModelFromEnv(
+  env: Env,
+  overrides: Partial<GeminiConfig> = {},
+): (() => StoryModel) | null {
+  if (!env('GEMINI_API_KEY')) return null;
+  return () => {
+    const provider = createAiProvider(env, { maxAttempts: 2, ...overrides });
+    return {
+      model: env('GEMINI_MODEL') || DEFAULT_GEMINI_MODEL,
+      async call(req) {
+        const r = await provider.generateJson({
+          system: req.system,
+          user: req.user,
+          schema: req.schema,
+          maxOutputTokens: req.maxOutputTokens,
+          timeoutMs: req.timeoutMs,
+        });
+        return { data: r.data, costUsd: 0, model: r.model };
+      },
+    };
+  };
 }
