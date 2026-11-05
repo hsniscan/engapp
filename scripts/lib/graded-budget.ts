@@ -62,6 +62,10 @@ export class CappedBudgetStore implements TextBudgetStore {
     return Promise.reject(new Error('the graded library is a system job: no per-user reservations'));
   }
 
+  reservePool(): Promise<string | null> {
+    return Promise.reject(new Error('the graded library has its own cap: no pool reservations'));
+  }
+
   settle(holdId: string, actualUsd: number): Promise<void> {
     return this.inner.settle(holdId, actualUsd);
   }
@@ -95,6 +99,10 @@ export class ClaudeMonthlyBudgetStore implements TextBudgetStore {
 
   reserveForUser(): Promise<string | null> {
     return Promise.reject(new Error('no per-user reservations on the monthly Claude budget'));
+  }
+
+  reservePool(): Promise<string | null> {
+    return Promise.reject(new Error('no pool reservations on the monthly Claude budget'));
   }
 
   async settle(holdId: string, actualUsd: number): Promise<void> {
