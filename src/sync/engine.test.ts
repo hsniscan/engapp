@@ -413,6 +413,30 @@ describe('SyncEngine', () => {
     expect((await db.meta.get('last_sync_at'))?.value).toBe(T);
   });
 
+  it('calls afterSync only after a sync that went well (decision 0076: error reports)', async () => {
+    await newDevice('dev-a');
+    let calls = 0;
+    const e = new SyncEngine({
+      transport: server,
+      getSessionUserId: async () => USER,
+      isOnline: () => true,
+      now: () => T,
+      afterSync: () => {
+        calls++;
+        throw new Error('an extra must never fail the sync');
+      },
+    });
+    server.faults.offline = true;
+    await e.sync();
+    expect(calls).toBe(0);
+    server.faults.offline = false;
+    expect(await e.sync()).toMatchObject({ ok: true });
+    expect(calls).toBe(1);
+    const guest = new SyncEngine({ transport: server, getSessionUserId: async () => null, afterSync: () => calls++ });
+    await guest.sync();
+    expect(calls).toBe(1);
+  });
+
   it('coalesces concurrent calls and respects the tab runner', async () => {
     await newDevice('dev-a');
     let runs = 0;

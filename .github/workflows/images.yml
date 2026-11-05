@@ -18,18 +18,25 @@
 # Repository variables (optional): CLAUDE_IMAGE_MODEL, CLAUDE_CHECK_MODEL,
 #   CLAUDE_MONTHLY_CREDIT_USD (default 100), IMAGE_BULK ('false': nightly bulk drawing paused)
 name: Picture jobs
+run-name: ${{ (github.event_name == 'schedule' || inputs.trigger == 'cron') && format('Picture jobs [auto:{0}]', (inputs.job || (github.event.schedule == '30 1 * * *' && 'nightly') || 'collect')) || 'Picture jobs' }}
 
 on:
   schedule:
+    # Backstops: pg_cron dispatches job=nightly at 01:30 and job=collect at 02:45 … 12:45 UTC
+    # (decision 0076).
     - cron: '30 1 * * *' # 01:30 UTC: nightly (collect, score, submit)
     # A batch usually finishes within an hour or two: collect it as soon as it is done.
     - cron: '45 2-12/2 * * *' # 02:45, 04:45 … 12:45 UTC: collect only
   workflow_dispatch:
     inputs:
+      trigger:
+        description: 'Leave empty. "cron" = started by the database clock (decision 0076)'
+        type: string
+        default: ''
       job:
         description: 'Which job to run'
         type: choice
-        options: [pilot, visualize, submit, collect, report]
+        options: [pilot, visualize, submit, collect, report, nightly]
         default: collect
       count:
         description: 'pilot: number of senses (default 50); visualize: at most this many; submit: batch size'
@@ -47,7 +54,35 @@ env:
   SUPABASE_PROJECT_REF: bikcjlomrjaxymifxogi
 
 jobs:
+  gate:
+    # Decision 0076: pg_cron starts this workflow on time (trigger=cron); GitHub's schedule is
+    # the backstop. Once per slot: skip when the other automatic run already did the work.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      run: ${{ steps.gate.outputs.run }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          sparse-checkout: scripts/ci-gate.ts
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - id: gate
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TRIGGER: ${{ inputs.trigger }}
+          SLOT: ${{ (inputs.job || (github.event.schedule == '30 1 * * *' && 'nightly') || 'collect') }}
+        # nightly: once a day; collect: once per two-hour slot.
+        run: node scripts/ci-gate.ts "$SLOT" "$([ "$SLOT" = nightly ] && echo 1200 || echo 100)"
+
   images:
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:

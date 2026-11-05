@@ -88,7 +88,10 @@ export const privacyEn: LegalDocument = {
           p: '**Text from a photo.** A photo you take or pick for "Text from a photo" is read on your device only: by Google ML Kit in the Android app, by Tesseract running inside your browser on the web. The photo is never sent to a server and is not kept. If you save the recognised text, only the text is saved, among your reading texts, and syncs with your own account if you are signed in. In the Android app, Google ML Kit sends usage and performance information to Google to measure how it works (device model, Android and app version, a per-installation identifier, how long it took, error codes); it contains no photo and no recognised text.',
         },
         {
-          p: '**What we do not process.** Your location, contacts, microphone and photo library are not used. The camera opens only when you start "Text from a photo"; the app has no camera permission, the phone\'s own camera app takes the picture. There is no advertising ID and no analytics or tracking tool. The app\'s error log stays on your device and is never sent to us.',
+          p: '**Error reports.** If you are signed in, a short error report goes to our server when the app hits an error and you are online, so we can see and fix errors. It holds only the technical error message, where in the app it happened, the app version, web or Android, and your account ID; links, e-mail addresses, quoted text and long numbers in it are removed before it is sent. Your cards, texts and sentences are not sent. At most 20 reports a day are sent. In guest mode no report is sent; the error log stays on your device only.',
+        },
+        {
+          p: '**What we do not process.** Your location, contacts, microphone and photo library are not used. The camera opens only when you start "Text from a photo"; the app has no camera permission, the phone\'s own camera app takes the picture. There is no advertising ID and no analytics or tracking tool.',
         },
       ],
     },
@@ -152,6 +155,7 @@ export const privacyEn: LegalDocument = {
             'Your account, study data and reading texts are kept while your account exists.',
             'A card or word you delete stays marked as deleted for 30 days, so your other devices learn about the deletion, and is then removed from the server completely.',
             'The AI candidate cache, AI usage counters, sync counters and the record of sent reminders are deleted after 90 days; the monthly AI spend amount is deleted at the end of the following month.',
+            'Error reports are deleted after 30 days.',
             'When you delete your account, all your data on the server is deleted immediately.',
             'An encrypted backup of the database is taken every night and kept in Cloudflare R2: daily backups for 14 days, weekly backups for 8 weeks, and backups taken right before a server update for at most 8 weeks. Backups are used only to restore data after a failure; after you delete your account your data stays in these backups for at most these periods and is then deleted automatically.',
             'Technical logs and backups of the service providers follow their own retention periods.',
@@ -171,7 +175,7 @@ export const privacyEn: LegalDocument = {
           ],
         },
         {
-          p: 'What is deleted: your cards and words, your reading texts and word encounter counts, study history and statistics, settings, reports, notification records, AI cache, AI and sync counters, your monthly AI spend amount, picture counters, picture requests and picture answers (for an admin also the admin record and picture review decisions), and then the account itself. Pictures in the shared dictionary stay. Deletion cannot be undone; if you like, first download the JSON backup under **Profil → Ayarlar → Yedek ve veri (Backup and data)**.',
+          p: 'What is deleted: your cards and words, your reading texts and word encounter counts, study history and statistics, settings, reports, error reports, notification records, AI cache, AI and sync counters, your monthly AI spend amount, picture counters, picture requests and picture answers (for an admin also the admin record and picture review decisions), and then the account itself. Pictures in the shared dictionary stay. Deletion cannot be undone; if you like, first download the JSON backup under **Profil → Ayarlar → Yedek ve veri (Backup and data)**.',
         },
         {
           p: 'Guest-mode data exists only on your device: delete it with **Profil → Ayarlar → Hesap ve eşitleme → Bu cihazdaki verileri sil (Delete the data on this device)** or by uninstalling the app.',

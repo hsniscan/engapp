@@ -566,6 +566,8 @@ export interface SyncEngineDeps {
   isOnline?: () => boolean;
   now?: () => Millis;
   runner?: { run<T>(fn: () => Promise<T>): Promise<T | undefined> };
+  /** After a sync that went well (online, signed in, linked): e.g. send the error log (decision 0076). */
+  afterSync?: () => void;
 }
 
 type Listener = () => void;
@@ -573,7 +575,8 @@ type Listener = () => void;
 export class SyncEngine {
   private snapshot: EngineSnapshot;
   private readonly listeners = new Set<Listener>();
-  private readonly deps: Required<Omit<SyncEngineDeps, 'runner'>> & Pick<SyncEngineDeps, 'runner'>;
+  private readonly deps: Required<Omit<SyncEngineDeps, 'runner' | 'afterSync'>> &
+    Pick<SyncEngineDeps, 'runner' | 'afterSync'>;
   private inflight: Promise<SyncOutcome> | null = null;
   private again: RunOptions | null = null;
 
@@ -672,6 +675,11 @@ export class SyncEngine {
       try {
         const report = await runSync(transport, { ...opts, now: this.deps.now });
         this.setState({ running: false, error: null, errorMessage: null });
+        try {
+          this.deps.afterSync?.();
+        } catch {
+          // Extras never fail a sync.
+        }
         return { ok: true, report };
       } catch (e) {
         const f = classify(e);

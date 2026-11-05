@@ -3,6 +3,7 @@
 import { createTtsFromEnv, type SpeechSynth } from '../_shared/gemini-tts.ts';
 import { createHandler, parseOrigins } from '../_shared/http.ts';
 import { log } from '../_shared/log.ts';
+import { opsEvents } from '../_shared/ops-events.ts';
 import { R2Client, r2ConfigFromEnv } from '../_shared/r2.ts';
 import { parseAudioBaseUrl } from '../_shared/tts-contract.ts';
 import { runTts, ttsDailyLimit, type TtsStore } from '../_shared/tts.ts';
@@ -19,7 +20,10 @@ const cfg = loadServerConfig(env);
 const logger = log('tts');
 // Audio on Cloudflare R2 when its four credentials and the public AUDIO_BASE_URL are set
 // (decision 0053); otherwise Supabase Storage only, exactly as before.
-const supabaseStore = new SupabaseTtsStore(createAdminClient(cfg), cfg.url);
+const admin = createAdminClient(cfg);
+const supabaseStore = new SupabaseTtsStore(admin, cfg.url);
+// Failed audio requests are counted for the nightly health check (decision 0076).
+const events = opsEvents(admin, 'tts', logger);
 const r2 = r2ConfigFromEnv(env);
 const audioBase = parseAudioBaseUrl(env('AUDIO_BASE_URL'));
 if (r2 && !audioBase) logger('tts r2 off', { reason: 'AUDIO_BASE_URL is not set' });
@@ -33,6 +37,7 @@ Deno.serve(
     cors: { allowedOrigins: parseOrigins(env('ALLOWED_ORIGINS')) },
     authenticate: createAuthenticator(cfg),
     log: logger,
+    onError: events.onError,
     run: (body, userId) =>
       runTts(body, {
         userId,

@@ -1,0 +1,114 @@
+# Nightly health check and the backup's dead man's switch (decision 0076). The database clock
+# (pg_cron, migration 20261106000600) starts it at 06:30 UTC (09:30 in Türkiye); GitHub's own
+# schedule below is the backstop when the database itself is down. A failed run makes GitHub
+# e-mail the owner. It fails when:
+#   - the newest nightly backup in R2 is older than 26 hours or missing (scripts/backup-age.sh),
+#   - a check of public.ops_health() / ops_health_reliability() says 'fail' (budgets refused,
+#     pg_cron failures, the database near 500 MB, the backup heartbeat older than 26 hours,
+#     GitHub refusing pg_cron's token), or the database cannot be reached at all.
+# The summary also counts users' errors, edge-function failures, AI fallbacks and quota
+# refusals of the last day (counts and fingerprints only: the run log is public).
+# It also switches the scheduled workflows back on, so the 60-day inactivity rule of public
+# repositories cannot silently stop the backups.
+#
+# Repository secrets: SUPABASE_DB_PASSWORD, SUPABASE_ACCESS_TOKEN (optional, pooler lookup),
+#   R2_ACCOUNT_ID and R2_BACKUP_* (or the audio bucket's R2_*), as in db-backup.yml.
+name: Health check
+run-name: ${{ (github.event_name == 'schedule' || inputs.trigger == 'cron') && 'Health check [auto:daily]' || 'Health check' }}
+
+on:
+  schedule:
+    - cron: '30 6 * * *' # backstop; pg_cron dispatches at 06:30 UTC
+  workflow_dispatch:
+    inputs:
+      trigger:
+        description: 'Leave empty. "cron" = started by the database clock (decision 0076)'
+        type: string
+        default: ''
+
+concurrency:
+  group: ops-health
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  SUPABASE_PROJECT_REF: bikcjlomrjaxymifxogi
+  SUPABASE_REGION: eu-west-1
+
+jobs:
+  gate:
+    # Once a day: skip when the other automatic run (pg_cron or the schedule) already ran.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      run: ${{ steps.gate.outputs.run }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          sparse-checkout: scripts/ci-gate.ts
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - id: gate
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TRIGGER: ${{ inputs.trigger }}
+        run: node scripts/ci-gate.ts daily 1200 any
+
+  health:
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: write # switch the scheduled workflows back on
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Keep the schedules switched on
+        # GitHub turns off the schedules of a public repository after 60 days without commits.
+        # Enabling an enabled workflow does nothing; never fails the run.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for wf in db-backup.yml ops-health.yml level-jobs.yml graded.yml images.yml word-bank.yml tts-pregen.yml; do
+            gh api -X PUT "repos/$GITHUB_REPOSITORY/actions/workflows/$wf/enable" >/dev/null \
+              || echo "::warning::Could not switch $wf on"
+          done
+
+      - name: Newest backup in R2
+        id: r2
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BACKUP_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
+          R2_BACKUP_ACCESS_KEY_ID: ${{ secrets.R2_BACKUP_ACCESS_KEY_ID }}
+          R2_BACKUP_SECRET_ACCESS_KEY: ${{ secrets.R2_BACKUP_SECRET_ACCESS_KEY }}
+        run: scripts/backup-age.sh
+
+      - name: Find the database
+        id: db
+        if: always()
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: scripts/supabase-db-url.sh
+
+      - name: Health check (budgets, jobs, backup age, errors)
+        if: always() && steps.db.outcome == 'success'
+        env:
+          DB_URL_FILE: ${{ runner.temp }}/db-url
+        run: scripts/ops-health.sh
+
+      - name: Forget the database URL
+        if: always()
+        run: rm -f "$RUNNER_TEMP/db-url"

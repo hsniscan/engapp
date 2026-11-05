@@ -5,6 +5,7 @@ import type { AiProvider } from './ai-provider.ts';
 import { createTextAiProvider } from './ai.ts';
 import { createHandler, parseOrigins } from './http.ts';
 import { log } from './log.ts';
+import { opsEvents } from './ops-events.ts';
 import type { PipelineDeps } from './extract.ts';
 import type { AiStore } from './store.ts';
 import {
@@ -95,7 +96,9 @@ export function createAiFunction<T>(
     ? { store: new SupabaseTextBudgetStore(admin), capUsd }
     : undefined;
   const authenticate = overrides.authenticate ?? createAuthenticator(cfg!);
-  const logger = log(name);
+  // Failures and provider fallbacks are counted for the nightly health check (decision 0076).
+  const events = opsEvents(admin, name, log(name));
+  const logger = events.wrapLog(log(name));
   // Claude Sonnet first, Gemini behind it (decision 0077). One provider per request: the
   // budget it carries names the user who pays.
   const providerFor = (userId: string): (() => AiProvider) => {
@@ -114,6 +117,7 @@ export function createAiFunction<T>(
     cors: { allowedOrigins: parseOrigins(env('ALLOWED_ORIGINS')) },
     authenticate,
     log: logger,
+    onError: events.onError,
     run: (body, userId) =>
       run(body, { userId, store, provider: providerFor(userId), dailyLimit: limit, log: logger }),
   });
@@ -149,7 +153,8 @@ export function createStoryFunction(
       ? overrides.budget
       : { store: new SupabaseTextBudgetStore(admin!), capUsd };
   const authenticate = overrides.authenticate ?? createAuthenticator(cfg!);
-  const logger = log('ai-story');
+  const events = opsEvents(admin, 'ai-story', log('ai-story'));
+  const logger = events.wrapLog(log('ai-story'));
   const model = overrides.model !== undefined ? overrides.model : storyModelFromEnv(env, logger);
   const fallback =
     overrides.fallback !== undefined ? overrides.fallback : geminiStoryModelFromEnv(env);
@@ -159,6 +164,7 @@ export function createStoryFunction(
     cors: { allowedOrigins: parseOrigins(env('ALLOWED_ORIGINS')) },
     authenticate,
     log: logger,
+    onError: events.onError,
     run: (body, userId) =>
       runStory(body, {
         userId,
