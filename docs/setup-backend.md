@@ -101,8 +101,12 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 | `GEMINI_FALLBACK_MODEL`     | [`model-defaults.ts`]                                                                                     |
 | `AI_DAILY_LIMIT`            | AI calls per user per UTC day, all text AI features together [`120`]                                      |
 | `AI_DAILY_LIMIT_EXTRACT`, `_ENRICH`, `_THEMES`, `_MNEMONIC`, `_CONTRAST`, `_REPORT` | calls per user per UTC day of one feature [`60`, `60`, `10`, `20`, `20`, `4`] |
-| `AI_USER_MONTHLY_USD`       | most one user may spend of the shared Claude text budget per month [`1`]                                  |
-| `AI_USER_MAX_SHARE`         | most one user may spend as a share of that budget (the smaller of the two applies) [`0.1`]                 |
+| `AI_USER_MONTHLY_USD`       | most one user may spend of the shared Claude text budget per month [`2`]                                  |
+| `AI_USER_MAX_SHARE`         | most one user may spend as a share of that budget (the smaller of the two applies) [`0.2`]                 |
+| `AI_OWNER_MAX_SHARE`        | share of that budget the owner (`APP_ADMIN_USER_ID`) may spend [`0.75`]                                    |
+| `AI_SYSTEM_MONTHLY_USD`     | most the system jobs (level job, morphemes) may spend of it per month [`2`]                               |
+| `AI_SYSTEM_MAX_SHARE`       | most the system jobs may spend as a share of it (the smaller of the two applies) [`0.15`]                 |
+| `AI_TEXT_PRIMARY`           | `gemini`: Gemini first and Claude only when Gemini's quota runs out (the v0.5 order) [`claude`]           |
 | `SKIP_PRE_MIGRATION_BACKUP` | `true`: deploy without the backup before migrating (only if the backup itself is broken) [off]            |
 | `AI_SYSTEM_DAILY_LIMIT`     | model calls per UTC day for system jobs (the level job), separate from users' budgets [`100`]             |
 | `CLAUDE_MONTHLY_CREDIT_USD` | the monthly Claude credit in USD; pictures may use 80 % of it [`100`]                                     |
@@ -113,15 +117,15 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 | `WORD_BANK_NIGHTLY`         | `true`: the word bank job also runs every night (step 14) [off]                                           |
 | `TTS_PREGEN_WEEKLY`         | `true`: the pronunciation audio job also runs every Sunday for new words (step 15) [off]                  |
 | `GRADED_BULK`               | `true`: the reading library job writes new texts every night (step 16) [off]                              |
-| `CLAUDE_TEXT_MONTHLY_USD`   | monthly cap in USD for Claude text features: library texts, stories (step 16) [`10`]                      |
+| `CLAUDE_TEXT_MONTHLY_USD`   | monthly cap in USD for all Claude text AI: every text feature, stories, library texts, level job [`10`]   |
 | `CLAUDE_GRADED_MODEL`       | model that writes library texts [`claude-sonnet-5-5`]                                                     |
 | `GRADED_PER_CELL`           | library texts per level and core topic [`9`]                                                              |
 | `GRADED_EXTENDED_PER_CELL`  | library texts per level and extended topic [`0`]                                                          |
 | `ARTICLE_DAILY_LIMIT`       | articles a user may import from links per UTC day (step 17) [`20`]                                        |
-| `CLAUDE_TEXT_MODEL`         | model of the text AI fallback when Gemini runs out of quota (step 17) [`claude-haiku-5-5`]                |
-| `AI_CLAUDE_FALLBACK`        | `off`: never use Claude for the text AI tasks (step 17) [`on`]                                            |
+| `CLAUDE_TEXT_MODEL`         | model of every text AI task; Gemini only steps in when it cannot answer (step 17) [`claude-sonnet-5-5`]   |
+| `AI_CLAUDE_FALLBACK`        | `off`: never use Claude for the text AI tasks, Gemini only (step 17) [`on`]                               |
 | `STORY_DAILY_LIMIT`         | daily stories per user per UTC day, each may be regenerated once (step 18) [`1`]                          |
-| `CLAUDE_STORY_MODEL`        | model that writes the daily story (step 18) [`CLAUDE_TEXT_MODEL`, else `claude-haiku-5-5`]                |
+| `CLAUDE_STORY_MODEL`        | model that writes the daily story (step 18) [`CLAUDE_TEXT_MODEL`, else `claude-sonnet-5-5`]               |
 
 `ALLOWED_ORIGINS` is the list of web origins allowed to call the AI functions
 (comma-separated, exact, no trailing slash). Preview deploys on other origins cannot
@@ -466,11 +470,12 @@ deploys `fetch-article`. Optional variables (step 4): `ARTICLE_DAILY_LIMIT`,
 
 - **Article import** needs no key: the server downloads the page itself (user agent
   `EngappReader/1.0`), returns plain text and stores nothing (decision 0044).
-- **Claude fallback**: when Gemini answers "quota exhausted" on both models, ai-extract,
-  ai-enrich, ai-themes, ai-mnemonic, ai-report and ai-contrast retry the same
-  request on Claude Haiku. It uses the `ANTHROPIC_API_KEY` secret that pictures already use;
-  without it the old `quota_exceeded` error remains. Each Claude call is logged as
-  `text spend` in the function logs (USD and tokens) until the text budget lands.
+- **Claude first (v0.5.3, decision 0077)**: ai-extract, ai-enrich, ai-themes, ai-mnemonic,
+  ai-report, ai-contrast and ai-story ask Claude Sonnet first, under the monthly text budget
+  (`CLAUDE_TEXT_MONTHLY_USD`) and the user's share of it; Gemini answers whenever Claude
+  cannot (the month or the share is used up, an outage, no key). It uses the
+  `ANTHROPIC_API_KEY` secret that pictures already use; without it everything runs on Gemini
+  as before. Each Claude call is booked in `text_budget` and logged as `text spend`.
 - Check after deploy: **Edge Functions → fetch-article → Logs** shows `extracted` lines with
   sizes only, never an address.
 
@@ -481,9 +486,10 @@ Nothing new to create: the deploy (step 5) applies `20261101000800_story.sql` an
 app says the story cannot be written right now). Optional variables (step 4):
 `STORY_DAILY_LIMIT`, `CLAUDE_STORY_MODEL`, `CLAUDE_TEXT_MONTHLY_USD`.
 
-- One story per user per day costs about 0.001 US$ on Claude Haiku; every call is booked in
-  the same monthly text budget as the reading library. When the month's budget is used up the
-  app shows a calm message and nothing is sent.
+- One story costs about 0.01–0.02 US$ on Claude Sonnet (0.001 on Haiku before v0.5.3); every
+  call is booked in the same monthly text budget as the reading library. When the month's
+  budget is used up Gemini writes the story (without a Gemini key the app shows a calm message
+  and nothing is sent).
 - Only the day's 5–8 words, the level, the reading difficulty and up to three interests are
   sent; the story is not stored on the server (decision 0050).
 - Check after deploy: **Edge Functions → ai-story → Logs** shows `ai-story model call` lines

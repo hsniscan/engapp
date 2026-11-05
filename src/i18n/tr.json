@@ -2246,7 +2246,7 @@
       "license": "CC BY-SA 4.0 (türetilmiş veri, aynı lisansla paylaşılır)."
     },
     "aiTitle": "Yapay zekâ tahminleri",
-    "aiBody": "Listede olmayan kelimelerin seviyesi ve Türk öğrenci düzeltmeleri Google Gemini ile üretilir. Bunlar tahmindir: düzeltme liste seviyesini en fazla bir basamak değiştirir, tahmin de kelimenin sıklığıyla sınırlanır. Bir kelimenin seviyesini her zaman kendin değiştirebilirsin.",
+    "aiBody": "Listede olmayan kelimelerin seviyesi ve Türk öğrenci düzeltmeleri yapay zekâyla (Anthropic Claude ya da Google Gemini) üretilir. Bunlar tahmindir: düzeltme liste seviyesini en fazla bir basamak değiştirir, tahmin de kelimenin sıklığıyla sınırlanır. Bir kelimenin seviyesini her zaman kendin değiştirebilirsin.",
     "wordBankTitle": "Kelime Bankası",
     "wordBankBody": "Kelime Bankası, CEFR-J ve Octanove listelerindeki kelimeleri gösterir. Türkçe anlamları ve örnek cümleleri bir kez Claude (Anthropic) ile üretildi; ortak sözlükte anlamı zaten olan kelimelerde o anlam kullanıldı. Octanove verisinden türetildiği için Kelime Bankası da CC BY-SA 4.0 lisanslıdır."
   },

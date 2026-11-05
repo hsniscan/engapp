@@ -5,15 +5,19 @@
 # Repository secrets (Settings > Secrets and variables > Actions > Secrets):
 #   SUPABASE_ACCESS_TOKEN   personal access token from supabase.com/dashboard/account/tokens
 #   SUPABASE_DB_PASSWORD    the database password of the project
-#   GEMINI_API_KEY          Google AI Studio API key
-#   ANTHROPIC_API_KEY       optional: Claude API key for the Claude fallback of the text tasks and
-#                           the daily story (decisions 0044, 0050). Pictures are drawn only by the
-#                           nightly job (images.yml), which reads its own copy of the secret.
+#   ANTHROPIC_API_KEY       Claude API key: the primary model of every text AI task and the daily
+#                           story (Claude Sonnet under CLAUDE_TEXT_MONTHLY_USD, decision 0077).
+#                           Pictures are drawn only by the nightly job (images.yml), which reads
+#                           its own copy of the secret.
+#   GEMINI_API_KEY          Google AI Studio API key: the free fallback of the text tasks when
+#                           Claude's budget is used up or Claude is down, and pronunciation audio
+#                           of words without a pre-made file. At least one of the two is required.
 # Repository variables (same page > Variables), all optional:
 #   GEMINI_MODEL, GEMINI_FALLBACK_MODEL, AI_DAILY_LIMIT, ALLOWED_ORIGINS, VAPID_SUBJECT,
 #   APP_ADMIN_USER_ID (the owner's auth user id: may use the picture review screen),
 #   ARTICLE_DAILY_LIMIT, CLAUDE_TEXT_MODEL, AI_CLAUDE_FALLBACK (decision 0044),
-#   STORY_DAILY_LIMIT, CLAUDE_STORY_MODEL, CLAUDE_TEXT_MONTHLY_USD (decision 0050)
+#   STORY_DAILY_LIMIT, CLAUDE_STORY_MODEL, CLAUDE_TEXT_MONTHLY_USD (decision 0050),
+#   AI_TEXT_PRIMARY, AI_USER_MONTHLY_USD, AI_USER_MAX_SHARE, AI_OWNER_MAX_SHARE (decision 0077)
 # Audio on Cloudflare R2 (decision 0053), optional: secrets R2_ACCOUNT_ID, R2_ACCESS_KEY_ID,
 #   R2_SECRET_ACCESS_KEY, R2_BUCKET and the variable AUDIO_BASE_URL. Without all five the tts
 #   function keeps using Supabase Storage only.
@@ -88,11 +92,16 @@ jobs:
       - name: Check secrets
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           missing=0
-          for v in SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD GEMINI_API_KEY; do
+          for v in SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD; do
             if [ -z "${!v}" ]; then echo "::error::Repository secret $v is not set (see docs/setup-backend.md)"; missing=1; fi
           done
+          # The text AI needs one of the two keys (decision 0077): Claude first, Gemini behind it.
+          if [ -z "$GEMINI_API_KEY" ] && [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::error::Neither ANTHROPIC_API_KEY nor GEMINI_API_KEY is set (see docs/setup-backend.md)"; missing=1
+          fi
           exit $missing
 
       - name: Link project
@@ -152,19 +161,23 @@ jobs:
           AI_DAILY_LIMIT_MNEMONIC: ${{ vars.AI_DAILY_LIMIT_MNEMONIC }}
           AI_DAILY_LIMIT_CONTRAST: ${{ vars.AI_DAILY_LIMIT_CONTRAST }}
           AI_DAILY_LIMIT_REPORT: ${{ vars.AI_DAILY_LIMIT_REPORT }}
-          # One user's monthly share of the text budget (decision 0060): USD, and the largest
-          # fraction of CLAUDE_TEXT_MONTHLY_USD one user may take.
-          AI_USER_MONTHLY_USD: ${{ vars.AI_USER_MONTHLY_USD || '1' }}
-          AI_USER_MAX_SHARE: ${{ vars.AI_USER_MAX_SHARE || '0.1' }}
+          # One user's monthly share of the text budget (decisions 0060, 0077): USD, and the
+          # largest fraction of CLAUDE_TEXT_MONTHLY_USD one user may take; the owner
+          # (APP_ADMIN_USER_ID) may take AI_OWNER_MAX_SHARE of it.
+          AI_USER_MONTHLY_USD: ${{ vars.AI_USER_MONTHLY_USD || '2' }}
+          AI_USER_MAX_SHARE: ${{ vars.AI_USER_MAX_SHARE || '0.2' }}
+          AI_OWNER_MAX_SHARE: ${{ vars.AI_OWNER_MAX_SHARE || '0.75' }}
+          APP_ADMIN_USER_ID: ${{ vars.APP_ADMIN_USER_ID }}
           # https://localhost = the Android app (Capacitor), docs/decisions/0033-android-capacitor.md.
           ALLOWED_ORIGINS: ${{ format('{0},https://engapp-65y.pages.dev,http://localhost:5173,https://localhost', vars.ALLOWED_ORIGINS) }}
           VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT || 'https://engapp-65y.pages.dev' }}
-          # Claude (text fallback, daily story); optional.
+          # Claude: the primary text model and the daily story (decision 0077).
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          # Article import and the Claude fallback of the text AI tasks (decision 0044); optional.
           ARTICLE_DAILY_LIMIT: ${{ vars.ARTICLE_DAILY_LIMIT || '20' }}
           CLAUDE_TEXT_MODEL: ${{ vars.CLAUDE_TEXT_MODEL }}
+          # 'off': Gemini only. AI_TEXT_PRIMARY=gemini: Gemini first, Claude on its quota errors.
           AI_CLAUDE_FALLBACK: ${{ vars.AI_CLAUDE_FALLBACK || 'on' }}
+          AI_TEXT_PRIMARY: ${{ vars.AI_TEXT_PRIMARY || 'claude' }}
           # The daily story (decision 0050); optional. The text budget is shared with graded.yml.
           STORY_DAILY_LIMIT: ${{ vars.STORY_DAILY_LIMIT || '1' }}
           CLAUDE_STORY_MODEL: ${{ vars.CLAUDE_STORY_MODEL }}
@@ -182,7 +195,8 @@ jobs:
           f="$(mktemp)"
           trap 'rm -f "$f"' EXIT # also when `secrets set` fails
           {
-            echo "GEMINI_API_KEY=$GEMINI_API_KEY"
+            # Keys only when the secret exists, so a missing key never overwrites a stored one.
+            if [ -n "$GEMINI_API_KEY" ]; then echo "GEMINI_API_KEY=$GEMINI_API_KEY"; fi
             for v in GEMINI_MODEL GEMINI_FALLBACK_MODEL GEMINI_TTS_MODEL GEMINI_TTS_FALLBACK_MODEL \
                      AI_DAILY_LIMIT_EXTRACT AI_DAILY_LIMIT_ENRICH AI_DAILY_LIMIT_THEMES \
                      AI_DAILY_LIMIT_MNEMONIC AI_DAILY_LIMIT_CONTRAST AI_DAILY_LIMIT_REPORT; do
@@ -193,6 +207,9 @@ jobs:
             echo "AI_DAILY_LIMIT=$AI_DAILY_LIMIT"
             echo "AI_USER_MONTHLY_USD=$AI_USER_MONTHLY_USD"
             echo "AI_USER_MAX_SHARE=$AI_USER_MAX_SHARE"
+            echo "AI_OWNER_MAX_SHARE=$AI_OWNER_MAX_SHARE"
+            echo "AI_TEXT_PRIMARY=$AI_TEXT_PRIMARY"
+            if [ -n "$APP_ADMIN_USER_ID" ]; then echo "APP_ADMIN_USER_ID=$APP_ADMIN_USER_ID"; fi
             echo "ALLOWED_ORIGINS=$ALLOWED_ORIGINS"
             echo "VAPID_SUBJECT=$VAPID_SUBJECT"
             echo "ARTICLE_DAILY_LIMIT=$ARTICLE_DAILY_LIMIT"
@@ -208,7 +225,10 @@ jobs:
             done
           } > "$f"
           if [ -z "$ANTHROPIC_API_KEY" ]; then
-            echo "::notice::ANTHROPIC_API_KEY is not set: the Claude fallback and the daily story are off (docs/setup-backend.md)."
+            echo "::warning::ANTHROPIC_API_KEY is not set: the text AI runs on Gemini only (docs/setup-backend.md)."
+          fi
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "::notice::GEMINI_API_KEY is not set: no free fallback when Claude's budget is used up, and no audio for words without a pre-made file."
           fi
           supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" --env-file "$f"
           # A model variable that was removed must not leave its old value behind as a secret:
