@@ -6,6 +6,8 @@ import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CardView } from '@/data';
 import { type AnswerCheck, checkAnswer, diffLetters, suggestRating } from '@/domain/answerCheck';
+import { cardFormat } from '@/domain/formatLadder';
+import { Rating } from '@/domain/types';
 import { posLabel } from '@/features/cards/labels';
 import { CardPicture } from '@/features/images';
 import { LeechHint } from '@/features/leech';
@@ -284,10 +286,13 @@ export function ProductionStudy({
   ratingRef,
   showRef,
   frame,
+  slow,
 }: KindProps) {
   const { t } = useTranslation();
   const [typed, setTyped] = useState('');
   const [hintShown, setHintShown] = useState(false);
+  // B2 format ladder: from Öğrenildi the blanked sentence is a hint, not part of the question.
+  const [sentenceShown, setSentenceShown] = useState(false);
   const [check, setCheck] = useState<AnswerCheck | null>(null);
   const [mode, setMode] = useProductionAnswerMode();
   const checking = useRef(false);
@@ -296,13 +301,15 @@ export function ProductionStudy({
   const picture = card.card_type === 'image' && view.image ? view.image : null;
   // "Aklımdan" (no typing): the answer is shown and rated without a check.
   const flip = mode === 'flip';
+  const sentenceAsHint = cardFormat(card).sentenceAsHint && !picture && !!view.sentence && !!blankSpan(view);
+  const usedHint = hintShown || (sentenceAsHint && sentenceShown);
 
   const submit = (answer: string) => {
     if (checking.current) return;
     checking.current = true;
     void checkTypedAnswer(answer, view).then((c) => {
       setCheck(c);
-      onReveal(false);
+      onReveal(false, 'typed');
     });
   };
 
@@ -332,7 +339,7 @@ export function ProductionStudy({
           ) : (
             <MeaningBlock view={view} />
           )}
-          {!picture && view.sentence && <BlankedSentenceBox view={view} />}
+          {!picture && view.sentence && (!sentenceAsHint || sentenceShown) && <BlankedSentenceBox view={view} />}
           {hintShown && view.hint && (
             <p className="font-serif text-heading tracking-[0.18em] text-fg-muted" data-testid="first-letter">
               <span className="sr-only">{t('review.firstLetter')} </span>
@@ -349,6 +356,16 @@ export function ProductionStudy({
           >
             {t('study.firstLetter')}
           </CardTextButton>
+          {sentenceAsHint && (
+            <CardTextButton
+              icon="book"
+              disabled={sentenceShown}
+              testId="sentence-hint"
+              onClick={() => setSentenceShown(true)}
+            >
+              {t('study.showSentence')}
+            </CardTextButton>
+          )}
           {!flip && (
             <CardTextButton tone="muted" onClick={() => submit('')}>
               {t('study.dontKnow')}
@@ -373,7 +390,7 @@ export function ProductionStudy({
             variant="secondary"
             size="lg"
             fullWidth
-            onClick={(e) => onReveal(e.detail === 0)}
+            onClick={(e) => onReveal(e.detail === 0, 'flip')}
           >
             {t('review.showAnswer')}
           </Button>
@@ -395,7 +412,9 @@ export function ProductionStudy({
   // suggestion in "aklımdan"; otherwise treated as "Bilmiyorum".
   const result = check ?? checkAnswer('', note.term);
   const unchecked = flip && !check;
-  const suggested = unchecked ? null : suggestRating(result.verdict, hintShown);
+  // A self-rated ("aklımdan") answer only gets the pace mark (B6); a checked one the full
+  // suggestion and the "Devam" button (A3).
+  const suggested = unchecked ? (slow ? Rating.Hard : null) : suggestRating(result.verdict, usedHint, { slow });
   return frame(
     <BackRegion>
       <CardSurface className="min-h-full flex-1" testId="study-back">
@@ -429,7 +448,7 @@ export function ProductionStudy({
       </CardSurface>
       <BackExtras view={view} speech={speech} />
     </BackRegion>,
-    <RatingBar ref={ratingRef} view={view} onAnswer={onAnswer} suggested={suggested} />,
+    <RatingBar ref={ratingRef} view={view} onAnswer={onAnswer} suggested={suggested} primary={!unchecked} />,
     t('study.scrollCard'),
   );
 }

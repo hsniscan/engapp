@@ -14,6 +14,11 @@ export interface RatingButtonProps extends Omit<ComponentPropsWithRef<'button'>,
   shortcut?: string;
   /** Optional third line, e.g. a stage change ("↑ Öğrenildi") or "Bir daha dokun". */
   note?: ReactNode;
+  /**
+   * 'sm' (48 px) under a "Devam" button that applies the suggested rating (v0.5.3 A3); the
+   * buttons are then all tinted, İyi included, so the eye goes to the suggestion. Default 'md'.
+   */
+  size?: 'md' | 'sm';
 }
 
 /**
@@ -26,20 +31,23 @@ export function RatingButton({
   interval,
   shortcut,
   note,
+  size = 'md',
   className,
   ...rest
 }: RatingButtonProps) {
   const { t } = useTranslation();
   const label = labelOverride ?? t(`rating.${rating}`);
-  const good = rating === 'good';
+  const small = size === 'sm';
+  const good = rating === 'good' && !small;
   return (
     <button
       type="button"
       className={cn(
-        'group relative flex min-h-16 flex-1 flex-col items-center justify-center gap-0.5 rounded-control px-2 py-2',
+        'group relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-control px-2',
+        small ? 'min-h-12 py-1' : 'min-h-16 py-2',
         'transition-[background-color,filter,transform] duration-(--duration-micro) ease-standard motion-safe:active:scale-[0.97]',
         'disabled:pointer-events-none disabled:opacity-45',
-        ratingLook[rating].button,
+        small && rating === 'good' ? ratingLook.good.tonal : ratingLook[rating].button,
         className,
       )}
       {...rest}

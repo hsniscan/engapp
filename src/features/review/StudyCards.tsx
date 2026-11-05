@@ -7,6 +7,7 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CardView } from '@/data';
+import { cardFormat } from '@/domain/formatLadder';
 import { posLabel } from '@/features/cards/labels';
 import { CardExamples } from '@/features/examples/ExamplesPanel';
 import { CardBackExtras } from '@/features/family/CardBackExtras';
@@ -270,7 +271,8 @@ export function RecognitionFront({
           />
         )}
         <TermHead view={view} />
-        {view.sentence && (
+        {/* B2 format ladder (ADR 0071): from Öğrenildi the term alone; the sentence is on the back. */}
+        {view.sentence && cardFormat(view.card).sentenceOnFront && (
           <Sentence
             sentence={view.sentence.text}
             span={view.sentence.span}

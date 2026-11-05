@@ -82,7 +82,8 @@ export function StudyModesPage() {
     async () => (await db.notes.filter((n) => n.deleted_at === null).first()) !== undefined,
     [],
   );
-  const [mixed, setMixed] = useState(() => flags.get(MIXED_FLAG) === '1');
+  // v0.5.3 B3 (ADR 0071): one mixed session is the default; only a stored '0' turns it off.
+  const [mixed, setMixed] = useState(() => flags.get(MIXED_FLAG) !== '0');
   // Dictation cards of words whose example sentences arrived since the last visit (cheap
   // when nothing changed; the counts follow through the live query).
   useEffect(() => {

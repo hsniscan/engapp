@@ -398,7 +398,8 @@
       "typeAnswer": "Type the word for the blank",
       "correctTag": "Correct",
       "yourPick": "Your pick",
-      "pickedWord": "The word you picked"
+      "pickedWord": "The word you picked",
+      "pickToCheck": "Tap an option; it is checked at once."
     },
     "empty": {
       "word": "Word study is done for today",
@@ -416,7 +417,9 @@
     "learnedToday_one": "{{count}} word reached Learned today.",
     "learnedToday_other": "{{count}} words reached Learned today.",
     "example": "Example",
-    "meaning": "Meaning"
+    "meaning": "Meaning",
+    "continueWith": "Continue · {{rating}}",
+    "showSentence": "Show the sentence"
   },
   "examples": {
     "title": "Example sentences",

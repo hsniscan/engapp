@@ -398,7 +398,8 @@
       "typeAnswer": "Boşluğa gelen kelimeyi yaz",
       "correctTag": "Doğrusu",
       "yourPick": "Senin seçimin",
-      "pickedWord": "Seçtiğin kelime"
+      "pickedWord": "Seçtiğin kelime",
+      "pickToCheck": "Bir seçeneğe dokun; hemen kontrol edilir."
     },
     "empty": {
       "word": "Kelime çalışma bugünlük bitti",
@@ -416,7 +417,9 @@
     "learnedToday_one": "Bugün {{count}} kelime Öğrenildi'ye geçti.",
     "learnedToday_other": "Bugün {{count}} kelime Öğrenildi'ye geçti.",
     "example": "Örnek",
-    "meaning": "Anlamı"
+    "meaning": "Anlamı",
+    "continueWith": "Devam · {{rating}}",
+    "showSentence": "Cümleyi göster"
   },
   "examples": {
     "title": "Örnek cümleler",
