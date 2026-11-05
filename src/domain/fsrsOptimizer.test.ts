@@ -232,3 +232,27 @@ describe('shouldSuggest', () => {
     );
   });
 });
+
+describe('multiple-choice answers are not fit targets (v0.5.3 B7)', () => {
+  const D = 86_400_000;
+  const t0 = Date.UTC(2026, 9, 1);
+  const logs = [
+    { card_id: 'a', rating: 3, reviewed_at: t0 },
+    { card_id: 'a', rating: 3, reviewed_at: t0 + 2 * D, choice: true },
+    { card_id: 'a', rating: 1, reviewed_at: t0 + 6 * D },
+    { card_id: 'a', rating: 3, reviewed_at: t0 + 8 * D, choice: true },
+  ];
+
+  it('marks them in the dataset, and they stay in the card history', () => {
+    const ds = buildDataset(logs);
+    expect([...ds.rating]).toEqual([3, 3, 1, 3]);
+    expect([...ds.skip!]).toEqual([0, 1, 0, 1]);
+  });
+
+  it('leaves them out of the evaluated reviews; the memory state still uses them', () => {
+    const all = evaluate(DEFAULTS, buildDataset(logs.map(({ choice: _c, ...l }) => l)), () => true);
+    const typedOnly = evaluate(DEFAULTS, buildDataset(logs), () => true);
+    expect(all.count).toBe(3);
+    expect(typedOnly.count).toBe(1);
+  });
+});

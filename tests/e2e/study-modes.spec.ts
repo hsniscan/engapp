@@ -15,9 +15,15 @@ async function makeDue(page: Page, types: string[]) {
     const all: Record<string, unknown>[] = await new Promise(
       (res) => (store.getAll().onsuccess = (e) => res((e.target as IDBRequest).result)),
     );
+    const notes = new Set<unknown>();
     for (const type of wanted) {
-      const card = all.find((c) => c.card_type === type && c.deleted_at === null && c.state === 2);
-      if (card) store.put({ ...card, due: Date.now() - 60_000, unlocked: true, suspended: false });
+      // One card per word a day (v0.5.3 B1): each type from a different word, so no card is held.
+      const card = all.find(
+        (c) => c.card_type === type && c.deleted_at === null && c.state === 2 && !notes.has(c.note_id),
+      );
+      if (!card) continue;
+      notes.add(card.note_id);
+      store.put({ ...card, due: Date.now() - 60_000, unlocked: true, suspended: false });
     }
     await new Promise((res) => (tx.oncomplete = res));
     db.close();
@@ -63,14 +69,21 @@ test('study modes: separate sessions, typed Üretim answer above the keyboard, c
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('body').press('1');
 
-  // Boşluk doldurma: pick a choice, check, rate.
+  // Boşluk doldurma: a tap on a choice checks it at once (v0.5.3 A3); a young card offers
+  // choices, a card from Öğrenildi is typed only (B2). "Devam" applies the suggestion.
   await page.goto('/study?mode=cloze');
   await expect(page.locator('[data-card-type="cloze"]')).toBeVisible();
   const choices = page.getByRole('group', { name: 'Seçenekler' }).getByRole('button');
-  await expect(choices).toHaveCount(4);
-  await choices.first().click();
-  await page.getByRole('button', { name: 'Kontrol et' }).click();
+  await expect(choices.first().or(page.getByTestId('answer-input'))).toBeVisible();
+  if (await choices.count()) {
+    await expect(choices).toHaveCount(4);
+    await choices.first().click();
+  } else {
+    await page.getByTestId('answer-input').fill('x');
+    await page.getByRole('button', { name: 'Kontrol et' }).click();
+  }
   await expect(page.getByText(/Önerimiz:/)).toBeVisible();
+  await expect(page.getByTestId('rating-continue')).toBeVisible();
   await page.locator('body').press('3');
 
   // Kelime çalışma shows recognition cards only.

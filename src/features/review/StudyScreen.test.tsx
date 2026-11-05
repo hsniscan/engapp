@@ -67,6 +67,30 @@ describe('Üretim session', () => {
     expect((await db.review_logs.toArray())[0]!.rating).toBe(Rating.Hard);
   });
 
+  it('from Öğrenildi shows only the meaning; the sentence is a hint (B2 format ladder)', async () => {
+    const user = userEvent.setup();
+    const prod = (await db.cards.toArray()).find((c) => c.card_type === 'production')!;
+    await db.cards.update(prod.id, {
+      state: 2,
+      ramp_step: 3,
+      stability: 30,
+      difficulty: 5,
+      reps: 5,
+      last_review: Date.now() - 20 * DAY,
+      due: Date.now() - DAY,
+      scheduled_days: 20,
+    });
+    renderRoute(<ReviewScreen studyMode="production" />, { path: '/study' });
+    expect(await screen.findByText('isteksiz')).toBeInTheDocument();
+    expect(screen.queryByText(/She was/)).toBeNull();
+    await user.click(screen.getByTestId('sentence-hint'));
+    expect(screen.getByText(/She was/)).toBeInTheDocument();
+    await user.type(screen.getByTestId('answer-input'), 'reluctant{Enter}');
+    expect(await screen.findByText('Doğru')).toBeInTheDocument();
+    // Seeing the sentence counts as a hint: Zor.
+    expect(screen.getByTestId('rating-continue')).toHaveAttribute('data-rating', 'hard');
+  });
+
   it('"Bilmiyorum, göster" reveals the answer and suggests Tekrar', async () => {
     const user = userEvent.setup();
     renderRoute(<ReviewScreen studyMode="production" />, { path: '/study' });
@@ -87,19 +111,40 @@ describe('Boşluk doldurma session', () => {
       return [...b];
     });
     const wrong = choices.find((b) => b.textContent !== 'reluctant')!;
-    expect(screen.getByRole('button', { name: 'Kontrol et' })).toBeDisabled();
+    const wrongText = wrong.textContent!;
+    // v0.5.3 A3: no "Kontrol et"; a tap on a choice checks it at once.
+    expect(screen.queryByRole('button', { name: 'Kontrol et' })).toBeNull();
     await user.click(wrong);
-    expect(wrong).toHaveAttribute('aria-pressed', 'true');
-    await user.click(screen.getByRole('button', { name: 'Kontrol et' }));
 
     expect(await screen.findByText('Bu sefer olmadı')).toBeInTheDocument();
     expect(document.querySelector('[data-choice="right"]')).toHaveTextContent('reluctant');
-    expect(document.querySelector('[data-choice="picked"]')).toHaveTextContent(wrong.textContent!);
+    expect(document.querySelector('[data-choice="picked"]')).toHaveTextContent(wrongText);
     expect(screen.getByText('Seçtiğin kelime')).toBeInTheDocument();
     expect(screen.getByText(/Önerimiz:/)).toHaveTextContent('Tekrar');
+    // The big "Devam" button follows the suggestion.
+    expect(screen.getByTestId('rating-continue')).toHaveAttribute('data-rating', 'again');
 
-    await user.click(screen.getByRole('button', { name: /^Tekrar/ }));
+    await user.click(screen.getByTestId('rating-continue'));
     await waitFor(async () => expect(await db.review_logs.count()).toBe(1));
+    const [log] = await db.review_logs.toArray();
+    expect(log).toMatchObject({ rating: Rating.Again, answer_mode: 'choice' });
+  });
+
+  it('a right pick suggests Zor (a choice is not recall, B2) and Enter applies it', async () => {
+    const user = userEvent.setup();
+    renderRoute(<ReviewScreen studyMode="cloze" />, { path: '/study' });
+    const group = await screen.findByRole('group', { name: 'Seçenekler' });
+    const right = await waitFor(() => {
+      const b = [...group.querySelectorAll('button')].find((x) => x.textContent === 'reluctant');
+      expect(b).toBeTruthy();
+      return b!;
+    });
+    await user.click(right);
+    expect(await screen.findByTestId('rating-continue')).toHaveAttribute('data-rating', 'hard');
+    expect(screen.getByText(/Önerimiz:/)).toHaveTextContent('Zor');
+    fireEvent.keyDown(document.body, { key: 'Enter' });
+    await waitFor(async () => expect(await db.review_logs.count()).toBe(1));
+    expect((await db.review_logs.toArray())[0]).toMatchObject({ rating: Rating.Hard, answer_mode: 'choice' });
   });
 
   it('can be answered by typing', async () => {
@@ -109,6 +154,27 @@ describe('Boşluk doldurma session', () => {
     await user.type(screen.getByTestId('answer-input'), 'Reluctant{Enter}');
     expect(await screen.findByText('Doğru')).toBeInTheDocument();
     expect(screen.getByText(/Önerimiz:/)).toHaveTextContent('İyi');
+    await user.click(screen.getByTestId('rating-continue'));
+    await waitFor(async () => expect(await db.review_logs.count()).toBe(1));
+    expect((await db.review_logs.toArray())[0]).toMatchObject({ rating: Rating.Good, answer_mode: 'typed' });
+  });
+
+  it('is typed only once the card is Öğrenildi (format ladder, B2)', async () => {
+    const cloze = (await db.cards.toArray()).find((c) => c.card_type === 'cloze')!;
+    await db.cards.update(cloze.id, {
+      state: 2,
+      ramp_step: 3,
+      stability: 30,
+      difficulty: 5,
+      reps: 5,
+      last_review: Date.now() - 20 * DAY,
+      due: Date.now() - DAY,
+      scheduled_days: 20,
+    });
+    renderRoute(<ReviewScreen studyMode="cloze" />, { path: '/study' });
+    expect(await screen.findByTestId('answer-input')).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Seçenekler' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Seçenek yerine yazarak cevapla/ })).toBeNull();
   });
 });
 
@@ -119,9 +185,8 @@ describe('study modes picker', () => {
     expect(production).toHaveAttribute('href', '/study?mode=production');
     await waitFor(() => expect(production).toHaveTextContent('1'));
     expect(screen.getByTestId('study-mode-word')).toHaveTextContent('0');
-    // The first type with cards is the main one.
-    expect(screen.getByTestId('study-start')).toHaveAttribute('href', '/study?mode=production');
-    expect(screen.getByTestId('study-start')).toHaveTextContent('Üretime başla');
+    // v0.5.3 B3: "Karışık çalış" is on by default: the start button runs one mixed session.
+    expect(screen.getByTestId('study-start')).toHaveAttribute('href', '/study?mode=mixed');
     // Dikte cannot give cards on this device (no dictation cards): not listed (ADR 0055).
     expect(screen.queryByTestId('study-mode-dictation')).toBeNull();
     expect(screen.getByText(/tek oturumda karışık gelir/)).toHaveTextContent(
@@ -151,10 +216,11 @@ describe('a wrong typed answer', () => {
     await screen.findByText('isteksiz');
     await user.type(screen.getByTestId('answer-input'), 'zzz{Enter}');
     expect(await screen.findByText('Bu sefer olmadı')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /İyi/ }));
+    const good = document.querySelector<HTMLButtonElement>('[role="group"] [data-rating="good"]')!;
+    await user.click(good);
     expect(await db.review_logs.count()).toBe(0);
     expect(screen.getByTestId('rating-confirm')).toHaveTextContent('Yine de “İyi” mi?');
-    await user.click(screen.getByRole('button', { name: /İyi/ }));
+    await user.click(good);
     await waitFor(async () => expect(await db.review_logs.count()).toBe(1));
   });
 });

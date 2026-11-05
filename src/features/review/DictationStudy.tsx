@@ -56,7 +56,7 @@ function ListenButton({
   );
 }
 
-export function DictationStudy({ view, speech, revealed, onReveal, onAnswer, ratingRef, frame }: KindProps) {
+export function DictationStudy({ view, speech, revealed, onReveal, onAnswer, ratingRef, frame, slow }: KindProps) {
   const { t } = useTranslation();
   const label = useModeLabel(view, true);
   const voice = useLiveQuery(async () => (await getSettings()).voice, []) ?? 'en-US';
@@ -87,7 +87,7 @@ export function DictationStudy({ view, speech, revealed, onReveal, onAnswer, rat
     // The base form ("reopen" where the sentence says "reopened") is almost right. No synonyms
     // here: the user heard one particular word.
     setCheck(a.verdict !== 'correct' && b.verdict === 'correct' ? { ...a, verdict: 'close' } : a);
-    onReveal(false);
+    onReveal(false, 'typed');
   };
 
   const listenRow = (
@@ -138,7 +138,7 @@ export function DictationStudy({ view, speech, revealed, onReveal, onAnswer, rat
   }
 
   const result = check ?? checkAnswer('', cloze.answer);
-  const suggested = suggestRating(result.verdict, false);
+  const suggested = suggestRating(result.verdict, false, { slow });
   return frame(
     <BackRegion>
       <CardSurface className="min-h-full flex-1" testId="study-back">

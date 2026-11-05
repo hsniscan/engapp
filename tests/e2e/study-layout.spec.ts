@@ -18,9 +18,15 @@ async function makeDue(page: Page, types: string[]) {
     const all: Record<string, unknown>[] = await new Promise(
       (res) => (store.getAll().onsuccess = (e) => res((e.target as IDBRequest).result)),
     );
+    const notes = new Set<unknown>();
     for (const type of wanted) {
-      const card = all.find((c) => c.card_type === type && c.deleted_at === null && c.state === 2);
-      if (card) store.put({ ...card, due: Date.now() - 60_000, unlocked: true, suspended: false });
+      // One card per word a day (v0.5.3 B1): each type from a different word, so no card is held.
+      const card = all.find(
+        (c) => c.card_type === type && c.deleted_at === null && c.state === 2 && !notes.has(c.note_id),
+      );
+      if (!card) continue;
+      notes.add(card.note_id);
+      store.put({ ...card, due: Date.now() - 60_000, unlocked: true, suspended: false });
     }
     await new Promise((res) => (tx.oncomplete = res));
     db.close();
@@ -84,9 +90,12 @@ for (const height of [844, 600]) {
     await expect(page.getByTestId('study-front')).toBeVisible();
     const choices = page.getByRole('group', { name: 'Seçenekler' }).getByRole('button');
     await expect(choices.first().or(page.getByTestId('answer-input'))).toBeVisible();
+    // A tap on a choice checks it at once (v0.5.3 A3); "Kontrol et" is for typing only.
     if (await choices.count()) await choices.first().click();
-    else await page.getByTestId('answer-input').fill('x');
-    await page.getByRole('button', { name: 'Kontrol et' }).click();
+    else {
+      await page.getByTestId('answer-input').fill('x');
+      await page.getByRole('button', { name: 'Kontrol et' }).click();
+    }
     await ratingBarOnScreen(page, `cloze ${height}`);
   });
 }

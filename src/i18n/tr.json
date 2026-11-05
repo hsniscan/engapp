@@ -399,7 +399,8 @@
       "typeAnswer": "Boşluğa gelen kelimeyi yaz",
       "correctTag": "Doğrusu",
       "yourPick": "Senin seçimin",
-      "pickedWord": "Seçtiğin kelime"
+      "pickedWord": "Seçtiğin kelime",
+      "pickToCheck": "Bir seçeneğe dokun; hemen kontrol edilir."
     },
     "empty": {
       "word": "Kelime çalışma bugünlük bitti",
@@ -417,7 +418,9 @@
     "learnedToday_one": "Bugün {{count}} kelime Öğrenildi'ye geçti.",
     "learnedToday_other": "Bugün {{count}} kelime Öğrenildi'ye geçti.",
     "example": "Örnek",
-    "meaning": "Anlamı"
+    "meaning": "Anlamı",
+    "continueWith": "Devam · {{rating}}",
+    "showSentence": "Cümleyi göster"
   },
   "examples": {
     "title": "Örnek cümleler",
@@ -531,7 +534,7 @@
     "sheetLead_one": "“{{term}}” kartını {{count}} kez unuttun. Aynı yoldan tekrar etmek yerine aşağıdakilerden birini dene.",
     "sheetLead_other": "“{{term}}” kartını {{count}} kez unuttun. Aynı yoldan tekrar etmek yerine aşağıdakilerden birini dene.",
     "sheetLeadCalm": "“{{term}}” kartını farklı bir yoldan çalışmak için aşağıdakilerden birini dene.",
-    "safeNote": "Kart sen istemedikçe askıya alınmaz, silinmez; geçmişin olduğu gibi kalır.",
+    "safeNote": "Kart sen istemedikçe silinmez; geçmişin olduğu gibi kalır. Altıncı kez unutulan bir kart 30 gün dinlenir, istersen hemen geri getirebilirsin.",
     "gone": "Bu kart artık yok.",
     "paths": {
       "mnemonic": "Bir anımsatıcı bul",
@@ -569,7 +572,8 @@
       "crossedAction": "Başka yoldan bakalım",
       "confused": "“{{term}}” başka bir kelimeyle mi karıştı?",
       "confusedAction": "Kelimeyi seç",
-      "suspended": "Ayarın gereği askıya alındı."
+      "suspended": "Ayarın gereği askıya alındı.",
+      "rested": "30 gün dinlenmeye aldık; bu süre başka kelimelere kalsın."
     },
     "picker": {
       "title": "Hangi kelimeyle karıştırdın?",
@@ -635,6 +639,27 @@
       "more_other": "ve {{count}} kart daha",
       "pairsTitle": "Karıştırabileceğin kelimeler",
       "pairsLead": "Birbirine benzeyen ya da aynı anlama gelen kelimelerin. Bir fark kartı ikisini ayırmana yardım eder."
+    },
+    "struggling": "Zorlanıyor",
+    "strugglingLabel_one": "Zorlanıyor: {{count}} kez unuttun",
+    "strugglingLabel_other": "Zorlanıyor: {{count}} kez unuttun",
+    "rescue": {
+      "label": "Önerilen yol",
+      "lead_one": "Bu kelimeyi {{count}} kez unuttun. Aynı yoldan tekrar etmek yerine şunu dene:",
+      "lead_other": "Bu kelimeyi {{count}} kez unuttun. Aynı yoldan tekrar etmek yerine şunu dene:",
+      "falseFriend": "Türkçedeki “{{tr}}” ile karışıyor olabilir. İkisini yan yana söyle:",
+      "mnemonicChosen": "Anımsatıcını bir kez sesli söyle:",
+      "mnemonicSuggestion": "Bu çağrışım işine yarayabilir:",
+      "useMnemonic": "Bunu kullan",
+      "mnemonicSaved": "Anımsatıcı kaydedildi",
+      "family": "Aynı aileden kelimelerle birlikte düşün:"
+    },
+    "rest": {
+      "badge": "Dinlenmede",
+      "title": "Bu kelime dinleniyor",
+      "body": "Çok kez unuttuğun bir kartı {{date}} tarihine kadar dinlenmeye aldık; o gün kendiliğinden geri gelir.",
+      "end": "Şimdi geri getir",
+      "ended": "Kart bugün yeniden çalışmaya geldi"
     }
   },
   "add": {
@@ -1029,7 +1054,7 @@
       "sessionLengthHint": "Bir oturumda en çok bu kadar kart. Bitince devam etmek sende.",
       "sessionAll": "Hepsi",
       "leechSuspend": "Zorlanılan kartı askıya al",
-      "leechSuspendHint": "Bir kart 6. kez unutulunca otomatik askıya alınır; Kelimelerim'den geri açabilirsin."
+      "leechSuspendHint": "Açıkken 6. kez unutulan kart süresiz askıya alınır (Kelimelerim'den geri açarsın). Kapalıyken 30 gün dinlenir, sonra kendiliğinden döner."
     },
     "levels": {
       "A1": "Başlangıç",

@@ -399,7 +399,8 @@
       "typeAnswer": "Type the word for the blank",
       "correctTag": "Correct",
       "yourPick": "Your pick",
-      "pickedWord": "The word you picked"
+      "pickedWord": "The word you picked",
+      "pickToCheck": "Tap an option; it is checked at once."
     },
     "empty": {
       "word": "Word study is done for today",
@@ -417,7 +418,9 @@
     "learnedToday_one": "{{count}} word reached Learned today.",
     "learnedToday_other": "{{count}} words reached Learned today.",
     "example": "Example",
-    "meaning": "Meaning"
+    "meaning": "Meaning",
+    "continueWith": "Continue · {{rating}}",
+    "showSentence": "Show the sentence"
   },
   "examples": {
     "title": "Example sentences",
@@ -531,7 +534,7 @@
     "sheetLead_one": "You have forgotten “{{term}}” {{count}} time. Instead of repeating it the same way, try one of these.",
     "sheetLead_other": "You have forgotten “{{term}}” {{count}} times. Instead of repeating it the same way, try one of these.",
     "sheetLeadCalm": "Try one of these to study “{{term}}” another way.",
-    "safeNote": "The card is never suspended or deleted unless you choose to; your history stays as it is.",
+    "safeNote": "A card is never deleted unless you ask; your history stays as it is. A card forgotten for the sixth time rests for 30 days, and you can bring it back at once.",
     "gone": "This card no longer exists.",
     "paths": {
       "mnemonic": "Find a memory hook",
@@ -569,7 +572,8 @@
       "crossedAction": "Try another way",
       "confused": "Did you mix up “{{term}}” with another word?",
       "confusedAction": "Pick the word",
-      "suspended": "Suspended, as your setting says."
+      "suspended": "Suspended, as your setting says.",
+      "rested": "It rests for 30 days, so the time goes to other words."
     },
     "picker": {
       "title": "Which word did you mix it up with?",
@@ -635,6 +639,27 @@
       "more_other": "and {{count}} more cards",
       "pairsTitle": "Words you may mix up",
       "pairsLead": "Your words that look alike or mean the same. A contrast card helps you tell them apart."
+    },
+    "struggling": "Struggling",
+    "strugglingLabel_one": "Struggling: forgotten {{count}} time",
+    "strugglingLabel_other": "Struggling: forgotten {{count}} times",
+    "rescue": {
+      "label": "Suggested way",
+      "lead_one": "You forgot this word {{count}} time. Instead of the same route again, try this:",
+      "lead_other": "You forgot this word {{count}} times. Instead of the same route again, try this:",
+      "falseFriend": "It may be mixed up with the Turkish “{{tr}}”. Say the two side by side:",
+      "mnemonicChosen": "Say your mnemonic out loud once:",
+      "mnemonicSuggestion": "This association may help:",
+      "useMnemonic": "Use this",
+      "mnemonicSaved": "Mnemonic saved",
+      "family": "Think of it with words from the same family:"
+    },
+    "rest": {
+      "badge": "Resting",
+      "title": "This word is resting",
+      "body": "A card you forgot many times rests until {{date}}; it comes back by itself then.",
+      "end": "Bring it back now",
+      "ended": "The card is back in today’s study"
     }
   },
   "add": {
@@ -1029,7 +1054,7 @@
       "sessionLengthHint": "At most this many cards in one session. You decide whether to go on.",
       "sessionAll": "All",
       "leechSuspend": "Suspend hard-to-learn cards",
-      "leechSuspendHint": "A card forgotten for the 6th time is suspended; you can bring it back from My words."
+      "leechSuspendHint": "On: a card forgotten for the 6th time is suspended until you reopen it (in Kelimelerim). Off: it rests for 30 days, then comes back by itself."
     },
     "levels": {
       "A1": "Beginner",

@@ -284,13 +284,24 @@ function otherRealWord(typed: string, term: string, known: readonly string[] = [
   return matchesAny(typed, known.filter((w) => foldAnswer(w) !== foldAnswer(term))) ? typed.trim() : null;
 }
 
+export interface SuggestOptions {
+  /**
+   * v0.5.3 B2 (ADR 0071): the answer was picked from multiple choices. Picking from four is
+   * recognition with a guess floor, not recall: a right pick suggests Zor.
+   */
+  choice?: boolean;
+  /** v0.5.3 B6: the answer came very slowly for this user and format (domain/pace.ts): Zor. */
+  slow?: boolean;
+}
+
 /**
  * The answer button we suggest after a typed answer or a choice. Right (or a synonym) without
- * help: İyi. Right after a hint, or "neredeyse": Zor. Wrong or "Bilmiyorum": Tekrar. The user
- * can always pick another button.
+ * help: İyi. Right after a hint, from multiple choices, very slowly, or "neredeyse": Zor. Wrong
+ * or "Bilmiyorum": Tekrar. The user can always pick another button.
  */
-export function suggestRating(verdict: AnswerVerdict, usedHint: boolean): RatingValue {
-  if (verdict === 'correct' || verdict === 'synonym') return usedHint ? Rating.Hard : Rating.Good;
+export function suggestRating(verdict: AnswerVerdict, usedHint: boolean, opts: SuggestOptions = {}): RatingValue {
+  if (verdict === 'correct' || verdict === 'synonym')
+    return usedHint || opts.choice || opts.slow ? Rating.Hard : Rating.Good;
   if (verdict === 'close') return Rating.Hard;
   return Rating.Again;
 }

@@ -20,6 +20,7 @@ import {
   markNotesKnown,
   resetNoteProgress,
   restoreNotes,
+  setCardRest,
   setSuspended,
   softDeleteSense,
   undoMarkNotesKnown,
@@ -27,6 +28,7 @@ import {
   type NoteDetail,
 } from '@/data';
 import { noteStage } from '@/domain/deckFilter';
+import { isResting } from '@/domain/leech';
 import { cardStage } from '@/domain/stages';
 import { type Card as CardRow, CardState, type NoteTermType, type Sense } from '@/domain/types';
 import { FalseFriendStrips } from '@/features/family/FalseFriendStrip';
@@ -342,6 +344,7 @@ function ReadView({
           {t('library.detail.duplicateHint')}
         </Card>
       )}
+      <RestNotice cards={cards} now={now} onError={(e) => failed(e, 'NoteDetail.endRest')} />
       <FalseFriendStrips term={note.term_norm} className="max-w-none" />
 
       <section aria-labelledby={`${id}-meaning`} className="flex flex-col gap-2">
@@ -475,6 +478,41 @@ function ReadView({
   );
 }
 
+/**
+ * v0.5.3 B5 (ADR 0071): a card forgotten for the sixth time rests for 30 days; here it says
+ * until when, and "Şimdi geri getir" ends the rest (the card comes back today).
+ */
+function RestNotice({ cards, now, onError }: { cards: CardRow[]; now: number; onError: (e: unknown) => void }) {
+  const { t, i18n } = useTranslation();
+  const resting = cards.filter((c) => c.deleted_at === null && !c.suspended && isResting(c, now));
+  if (!resting.length) return null;
+  const until = Math.max(...resting.map((c) => c.rest_until!));
+  const date = new Intl.DateTimeFormat(i18n.language, { day: 'numeric', month: 'long' }).format(until);
+  const end = () =>
+    setCardRest(
+      resting.map((c) => c.id),
+      null,
+    ).then(
+      () =>
+        toast.undo({
+          title: t('leech.rest.ended'),
+          undoLabel: t('ui.undo'),
+          onUndo: () =>
+            void Promise.all(resting.map((c) => setCardRest([c.id], c.rest_until!))).catch(onError),
+        }),
+      onError,
+    );
+  return (
+    <Card tone="sunken" padding="sm" className="flex flex-col gap-2 px-4" data-testid="rest-notice">
+      <p className="text-ui font-semibold text-fg">{t('leech.rest.title')}</p>
+      <p className="text-meta text-fg-muted">{t('leech.rest.body', { date })}</p>
+      <Button size="sm" variant="secondary" className="self-start" onClick={() => void end()}>
+        {t('leech.rest.end')}
+      </Button>
+    </Card>
+  );
+}
+
 function CardList({ cards, senses }: { cards: CardRow[]; senses: Sense[] }) {
   const { t } = useTranslation();
   const order = { recognition: 0, production: 1, cloze: 2, image: 3, dictation: 4 } as const;
@@ -510,6 +548,7 @@ function CardList({ cards, senses }: { cards: CardRow[]; senses: Sense[] }) {
             </span>
             {d && <span className="tabular text-fg-muted">{d}</span>}
             {!c.unlocked && <Badge tone="outline">{t('library.detail.locked')}</Badge>}
+            {isResting(c, now) && <Badge tone="warn">{t('leech.rest.badge')}</Badge>}
             {c.suspended ? (
               <Badge tone="outline">{t('cards.suspended')}</Badge>
             ) : (

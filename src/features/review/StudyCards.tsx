@@ -7,11 +7,12 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CardView } from '@/data';
+import { cardFormat } from '@/domain/formatLadder';
 import { posLabel } from '@/features/cards/labels';
 import { CardExamples } from '@/features/examples/ExamplesPanel';
 import { CardBackExtras } from '@/features/family/CardBackExtras';
 import { CardPicture } from '@/features/images';
-import { ContrastBack, ContrastFront, LeechBadge, LeechHint } from '@/features/leech';
+import { ContrastBack, ContrastFront, LeechBadge, LeechHint, RescuePath } from '@/features/leech';
 import { LevelDialogButton } from '@/features/levels/LevelDetails';
 import { useCardLevel } from '@/features/levels/useWordLevel';
 import { useMnemonic } from '@/features/mnemonics';
@@ -172,6 +173,8 @@ export function BackExtras({ view, speech }: StudyCardProps) {
   const senses = view.sense ? [view.sense] : view.senses;
   return (
     <>
+      {/* v0.5.3 B5: one recommended way to look at a word forgotten 3+ times. */}
+      <RescuePath view={view} />
       {senses.map((s) => (
         <MnemonicCard key={s.id} senseId={s.id} />
       ))}
@@ -270,7 +273,8 @@ export function RecognitionFront({
           />
         )}
         <TermHead view={view} />
-        {view.sentence && (
+        {/* B2 format ladder (ADR 0071): from Öğrenildi the term alone; the sentence is on the back. */}
+        {view.sentence && cardFormat(view.card).sentenceOnFront && (
           <Sentence
             sentence={view.sentence.text}
             span={view.sentence.span}

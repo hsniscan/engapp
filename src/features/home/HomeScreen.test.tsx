@@ -61,7 +61,7 @@ describe('Bugün', () => {
     );
     expect(within(hero).getByRole('link', { name: /Çalışmaya başla/ })).toHaveAttribute(
       'href',
-      '/study?mode=word',
+      '/study?mode=mixed',
     );
     // One chip per mode on the Today card: the whole day at a glance (ADR 0055).
     expect(within(hero).getByTestId('study-type-word')).toHaveAccessibleName(/^Kelime\s*2 kart$/);
@@ -84,7 +84,7 @@ describe('Bugün', () => {
     expect(await db.daily_activity.count()).toBe(1);
   });
 
-  it('is not done while another mode still has cards: the button goes to it (ADR 0055)', async () => {
+  it('is not done while another mode still has cards; the button starts one mixed session (B3)', async () => {
     await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] });
     // Kelime has nothing today; Üretim has one card open.
     await db.cards.where('card_type').equals('recognition').modify({ suspended: true });
@@ -93,8 +93,8 @@ describe('Bugün', () => {
     const hero = await screen.findByTestId('today-hero');
     expect(screen.queryByTestId('today-hero-done')).toBeNull();
     expect(within(hero).getByTestId('today-split')).toHaveTextContent('1 kart kaldı');
-    expect(within(hero).getByTestId('start-study')).toHaveTextContent('Üretime geç (1)');
-    expect(within(hero).getByTestId('start-study')).toHaveAttribute('href', '/study?mode=production');
+    expect(within(hero).getByTestId('start-study')).toHaveTextContent('Çalışmaya başla');
+    expect(within(hero).getByTestId('start-study')).toHaveAttribute('href', '/study?mode=mixed');
     expect(screen.queryByTestId('more-study')).toBeNull();
   });
 

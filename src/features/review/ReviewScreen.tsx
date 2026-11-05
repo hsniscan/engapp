@@ -7,7 +7,8 @@ import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useSta
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useSearchParams } from 'react-router';
-import { db, getSettings } from '@/data';
+import { db, getSettings, getSlowThresholds, logError, setCardRest } from '@/data';
+import { isSlowAnswer, type SlowThresholds } from '@/domain/pace';
 import { STUDY_MODE_CARD_TYPES, type StudyMode } from '@/domain/studyMode';
 import type { Id, RatingValue } from '@/domain/types';
 import { getNextDue, cfgOf } from '@/features/home/queries';
@@ -77,6 +78,17 @@ export function ReviewScreen({ studyMode, ahead = false, deckId }: ReviewScreenP
     [deckId],
   );
   const settings = useLiveQuery(() => getSettings(), []);
+  // B6: the user's own answer pace, read once per session.
+  const [slowAfter, setSlowAfter] = useState<SlowThresholds | null>(null);
+  useEffect(() => {
+    let live = true;
+    void getSlowThresholds()
+      .then((v) => live && setSlowAfter(v))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
   const speech = useSpeech(settings?.voice ?? 'en-US');
   const [editOpen, setEditOpen] = useState(false);
   // "Bu karta başka yoldan bakalım" (v0.3 İP6): which card, and whether it opens on the picker.
@@ -184,7 +196,7 @@ export function ReviewScreen({ studyMode, ahead = false, deckId }: ReviewScreenP
         if (target?.closest('button, a')) return;
         if (s.phase === 'card' && !s.flipped && s.current && flipsWithSpace(s.current.view)) {
           e.preventDefault();
-          session.flip();
+          session.flip('flip');
         }
       } else if (e.key >= '1' && e.key <= '4') {
         if (s.phase === 'card' && s.flipped) {
@@ -211,6 +223,15 @@ export function ReviewScreen({ studyMode, ahead = false, deckId }: ReviewScreenP
       onOpenSheet={() => setLeech({ cardId: notice.cardId, startWith: 'paths' })}
       onPickConfusion={() => setLeech({ cardId: notice.cardId, startWith: 'picker' })}
       onDismiss={session.dismissNotice}
+      onEndRest={() =>
+        void setCardRest([notice.cardId], null)
+          .then(() => {
+            session.dismissNotice();
+            toast({ title: t('leech.rest.ended'), tone: 'neutral' });
+            return session.reloadQueue();
+          })
+          .catch((e: unknown) => void logError(e, 'review:endRest'))
+      }
     />
   ) : null;
   const leechSheet = (
@@ -373,10 +394,11 @@ export function ReviewScreen({ studyMode, ahead = false, deckId }: ReviewScreenP
       view: current.view,
       speech: speak,
       revealed: state.flipped,
-      onReveal: (viaKeyboard) => {
+      onReveal: (viaKeyboard, mode) => {
         if (viaKeyboard) focusAfter.current = 'ratings';
-        session.flip();
+        session.flip(mode);
       },
+      slow: isSlowAnswer(state.revealMs, current.view.card.card_type, slowAfter),
       onAnswer: (rating, viaKeyboard) => {
         if (viaKeyboard) focusAfter.current = 'show';
         session.answer(rating);

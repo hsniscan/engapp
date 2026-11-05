@@ -1,7 +1,7 @@
 // Leech cards on the device: flagged from the logs when the 6th lapse happens, never
 // suspended by the app; split and reset only change cards, never review logs.
 import { beforeEach, describe, expect, it } from 'vitest';
-import { LEECH_LAPSES } from '../domain/leech';
+import { LEECH_LAPSES, LEECH_REST_MS } from '../domain/leech';
 import { Rating, type Card } from '../domain/types';
 import { resetDb } from '../test/db';
 import { addNoteWithSenses, answerCard, undoAnswer } from './actions';
@@ -11,6 +11,7 @@ import {
   getLeechSheet,
   leechAfterAnswer,
   listLeechCards,
+  setCardRest,
   resetCard,
   splitSenses,
   undoLeechAction,
@@ -63,15 +64,33 @@ const logsSnapshot = async () => (await db.review_logs.toArray()).sort((a, b) =>
 beforeEach(resetDb);
 
 describe('leech detection', () => {
-  it('flags the 6th lapse in the session, from the logs, and suspends nothing', async () => {
+  it('flags the 6th lapse in the session, from the logs, and rests the card for 30 days (v0.5.3 B5)', async () => {
     const { recognition } = await bank();
     const five = await forget(recognition.id, LEECH_LAPSES - 1);
-    expect(await leechAfterAnswer(recognition.id, five.last)).toEqual({ crossed: false, lapses: 5, suspended: false });
+    expect(await leechAfterAnswer(recognition.id, five.last)).toEqual({ crossed: false, lapses: 5, suspended: false, restUntil: null });
     await answerCard({ card_id: recognition.id, rating: Rating.Easy, duration_ms: 1000 }, five.t + DAY);
-    const sixth = await answerCard({ card_id: recognition.id, rating: Rating.Again, duration_ms: 1000 }, five.t + 5 * DAY);
-    expect(await leechAfterAnswer(recognition.id, sixth.log.id)).toEqual({ crossed: true, lapses: 6, suspended: false });
+    const at = five.t + 5 * DAY;
+    const sixth = await answerCard({ card_id: recognition.id, rating: Rating.Again, duration_ms: 1000 }, at);
+    const before = (await db.cards.get(recognition.id))!;
+    expect(await leechAfterAnswer(recognition.id, sixth.log.id, at)).toEqual({
+      crossed: true,
+      lapses: 6,
+      suspended: false,
+      restUntil: at + LEECH_REST_MS,
+    });
     expect(await getCardLapses(recognition.id)).toBe(sixth.card.lapses);
     expect((await db.cards.toArray()).every((c) => !c.suspended && c.deleted_at === null)).toBe(true);
+    // Only rest_until changed: the FSRS state is the replay of the logs as before.
+    const rested = (await db.cards.get(recognition.id))!;
+    expect(rested.rest_until).toBe(at + LEECH_REST_MS);
+    expect({ ...rested, rest_until: undefined, updated_at: 0, hlc: '' }).toEqual({ ...before, rest_until: undefined, updated_at: 0, hlc: '' });
+    expect((await getStudyQueue({ studyMode: 'word' }, at + DAY)).items.map((i) => i.card_id)).not.toContain(recognition.id);
+    expect((await getStudyQueue({ studyMode: 'word' }, at + 31 * DAY)).items.map((i) => i.card_id)).toContain(recognition.id);
+    // "Şimdi geri getir": the rest ends and the card comes back today.
+    await setCardRest([recognition.id], null, at + DAY);
+    expect((await db.cards.get(recognition.id))!.rest_until).toBeNull();
+    expect((await getStudyQueue({ studyMode: 'word' }, at + DAY)).items.map((i) => i.card_id)).toContain(recognition.id);
+    await setCardRest([recognition.id], at + LEECH_REST_MS, at + DAY);
 
     const sheet = (await getLeechSheet(recognition.id))!;
     expect(sheet).toMatchObject({ leech: true, lapses: 6, canSplit: true });
@@ -90,7 +109,7 @@ describe('leech detection', () => {
     const five = await forget(recognition.id, LEECH_LAPSES - 1);
     await answerCard({ card_id: recognition.id, rating: Rating.Easy, duration_ms: 1000 }, five.t + DAY);
     const sixth = await answerCard({ card_id: recognition.id, rating: Rating.Again, duration_ms: 1000 }, five.t + 5 * DAY);
-    expect(await leechAfterAnswer(recognition.id, sixth.log.id)).toEqual({ crossed: true, lapses: 6, suspended: true });
+    expect(await leechAfterAnswer(recognition.id, sixth.log.id)).toEqual({ crossed: true, lapses: 6, suspended: true, restUntil: null });
     expect((await db.cards.get(recognition.id))!.suspended).toBe(true);
   });
 });

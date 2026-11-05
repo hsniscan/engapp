@@ -3,7 +3,7 @@
 import type { ReactNode, Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CardView } from '@/data';
-import type { RatingValue } from '@/domain/types';
+import { Rating, type AnswerMode, type RatingValue } from '@/domain/types';
 import { Button } from '@/ui';
 import type { SpeakProps } from './CardFaces';
 import { RatingBar } from './RatingBar';
@@ -14,7 +14,13 @@ export interface KindProps {
   speech: SpeakProps;
   /** The answer side is showing (session state "flipped"). */
   revealed: boolean;
-  onReveal: (viaKeyboard: boolean) => void;
+  /** Show the answer side; `mode`: picked from choices, typed and checked, or flipped (default). */
+  onReveal: (viaKeyboard: boolean, mode?: AnswerMode) => void;
+  /**
+   * v0.5.3 B6 (ADR 0071): the answer side came very late for this user and this format
+   * (domain/pace.ts): a right answer then suggests Zor.
+   */
+  slow: boolean;
   onAnswer: (rating: RatingValue, viaKeyboard: boolean) => void;
   ratingRef: Ref<HTMLDivElement>;
   showRef: Ref<HTMLButtonElement>;
@@ -32,9 +38,11 @@ export function RecognitionStudy({
   ratingRef,
   showRef,
   frame,
+  slow,
 }: KindProps) {
   const { t } = useTranslation();
   if (revealed) {
+    // B6: a self-rated card has no check; a very slow flip only marks Zor (no "Devam").
     return frame(
       <BackRegion>
         <p className="sr-only" role="status">
@@ -42,7 +50,13 @@ export function RecognitionStudy({
         </p>
         <RecognitionBack view={view} speech={speech} />
       </BackRegion>,
-      <RatingBar ref={ratingRef} view={view} onAnswer={onAnswer} />,
+      <RatingBar
+        ref={ratingRef}
+        view={view}
+        onAnswer={onAnswer}
+        suggested={slow ? Rating.Hard : null}
+        primary={false}
+      />,
       t('study.scrollCard'),
     );
   }

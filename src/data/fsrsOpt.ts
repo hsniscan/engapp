@@ -11,12 +11,17 @@ import { recomputeCardsIn } from './maintenance';
 import { defaultSettings, SETTINGS_ID } from './settings';
 import { writeTx } from './writer';
 
-/** Answers that count (undo rows and the answers they cancel removed), oldest first. */
+/**
+ * Answers that count (undo rows and the answers they cancel removed), oldest first. A pick
+ * from multiple choices is marked `choice`: it shapes the card's history but is never a fit
+ * target (v0.5.3 B7, ADR 0071).
+ */
 export async function loadOptimizerLogs(): Promise<DatasetLog[]> {
   return effectiveLogs(await db.review_logs.toArray()).map((l) => ({
     card_id: l.card_id,
     rating: l.rating,
     reviewed_at: l.reviewed_at,
+    ...(l.answer_mode === 'choice' ? { choice: true } : {}),
   }));
 }
 

@@ -2,13 +2,18 @@
 // choices from the user's own words, or a typed answer. Hints: the first letter and the
 // sentence's Turkish. The result marks the right choice and the user's pick, shows the word
 // with its meaning and pronunciation, and suggests a button.
+//
+// v0.5.3 (ADR 0071): tapping a choice checks it at once (A3); a right pick suggests Zor and
+// never moves the card to Öğrenildi (B2); from Öğrenildi the blank is typed only (the format
+// ladder); a very slow right answer suggests Zor (B6).
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type AnswerCheck, checkAnswer, suggestRating } from '@/domain/answerCheck';
 import { type ClozeChoice, pickClozeChoices } from '@/domain/clozeChoices';
+import { cardFormat } from '@/domain/formatLadder';
 import { firstLetterHint } from '@/domain/recognition';
 import { LeechHint } from '@/features/leech';
-import { Button, cn, Eyebrow, Icon, Term } from '@/ui';
+import { cn, Eyebrow, Icon, Term } from '@/ui';
 import { Ipa, SpeakButton } from './CardFaces';
 import { useClozeAnswerMode } from './answerMode';
 import type { KindProps } from './kinds';
@@ -56,7 +61,7 @@ interface Result {
 }
 
 export function ClozeStudy(kp: KindProps) {
-  const { view, speech, revealed, onReveal, onAnswer, ratingRef, frame } = kp;
+  const { view, speech, revealed, onReveal, onAnswer, ratingRef, frame, slow } = kp;
   const { t } = useTranslation();
   const label = useModeLabel(view, false);
   const choices = useChoices(kp);
@@ -72,7 +77,9 @@ export function ClozeStudy(kp: KindProps) {
   const [result, setResult] = useState<Result | null>(null);
   const cloze = view.cloze!;
   const sentence = view.sentence;
-  const typingMode = typing || choices === null;
+  // B2 format ladder: a card at Öğrenildi or above is answered by typing only.
+  const choicesAllowed = cardFormat(view.card).choicesAllowed;
+  const typingMode = typing || choices === null || !choicesAllowed;
 
   const checkTyped = async (answer: string): Promise<AnswerCheck> => {
     const a = await checkTypedAnswer(answer, view, cloze.answer);
@@ -89,23 +96,21 @@ export function ClozeStudy(kp: KindProps) {
       checking.current = true;
       void checkTyped(typed).then((check) => {
         setResult({ check, picked: null });
-        onReveal(false);
-      });
-      return;
-    } else {
-      if (picked === null || !choices) return;
-      const right = choices[picked]!.correct;
-      setResult({
-        check: {
-          verdict: right ? 'correct' : 'wrong',
-          distance: right ? 0 : 1,
-          expected: cloze.answer,
-          typed: choices[picked]!.term,
-        },
-        picked,
+        onReveal(false, 'typed');
       });
     }
-    onReveal(false);
+  };
+
+  /** A tap on a choice checks it at once (A3: no separate "Kontrol et"). */
+  const choose = (i: number) => {
+    if (!choices || result) return;
+    setPicked(i);
+    const right = choices[i]!.correct;
+    setResult({
+      check: { verdict: right ? 'correct' : 'wrong', distance: right ? 0 : 1, expected: cloze.answer, typed: choices[i]!.term },
+      picked: i,
+    });
+    onReveal(false, 'choice');
   };
 
   const fill = typingMode ? null : picked !== null && choices ? choices[picked]!.term : null;
@@ -162,7 +167,8 @@ export function ClozeStudy(kp: KindProps) {
                 key={c.term}
                 type="button"
                 aria-pressed={picked === i}
-                onClick={() => setPicked(i)}
+                data-testid="cloze-choice"
+                onClick={() => choose(i)}
                 className={cn(
                   'flex min-h-14 items-center justify-center rounded-control border px-2 py-1 font-serif text-lead break-words',
                   'transition-[background-color,border-color] duration-(--duration-micro) ease-standard motion-safe:active:scale-[0.98]',
@@ -176,7 +182,7 @@ export function ClozeStudy(kp: KindProps) {
             ))}
           </div>
         )}
-        {choices !== null && (
+        {choices !== null && choicesAllowed && (
           <div className="mt-2 flex justify-center border-t border-border pt-2">
             <CardTextButton
               tone="muted"
@@ -197,15 +203,18 @@ export function ClozeStudy(kp: KindProps) {
           autoFocus={typing}
         />
       ) : (
-        <Button size="lg" fullWidth disabled={picked === null} onClick={submit}>
-          {t('study.check')}
-        </Button>
+        <p className="text-center text-meta text-fg-muted" data-testid="cloze-pick-hint">
+          {choices === undefined ? '\u00a0' : t('study.cloze.pickToCheck')}
+        </p>
       ),
     );
   }
 
   const r = result ?? { check: checkAnswer('', cloze.answer), picked: null };
-  const suggested = suggestRating(r.check.verdict, hintShown);
+  const choice = r.picked !== null;
+  const suggested = suggestRating(r.check.verdict, hintShown, { choice, slow });
+  // A pick never reaches Öğrenildi: its buttons show the choice previews (B2).
+  const ratingView = choice && view.previewsChoice ? { ...view, previews: view.previewsChoice } : view;
   const pickedWrong =
     r.picked !== null && choices && !choices[r.picked]!.correct ? choices[r.picked]! : null;
   const sense = view.sense;
@@ -300,7 +309,7 @@ export function ClozeStudy(kp: KindProps) {
       )}
       <BackExtras view={view} speech={speech} />
     </BackRegion>,
-    <RatingBar ref={ratingRef} view={view} onAnswer={onAnswer} suggested={suggested} />,
+    <RatingBar ref={ratingRef} view={ratingView} onAnswer={onAnswer} suggested={suggested} />,
     t('study.scrollCard'),
   );
 }

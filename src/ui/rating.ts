@@ -10,8 +10,9 @@ export const ratings: readonly Rating[] = ['again', 'hard', 'good', 'easy'];
  *   button: the answer button's fill + label colour
  *   dot:    a swatch/bar segment (summary, charts)
  *   text:   the label on a neutral surface
+ *   tonal:  (İyi only) the tinted button under "Devam" (v0.5.3 A3)
  */
-export const ratingLook: Record<Rating, { button: string; dot: string; text: string }> = {
+export const ratingLook: Record<Rating, { button: string; dot: string; text: string; tonal?: string }> = {
   again: {
     button: 'bg-rating-again-soft text-rating-again-text hover:brightness-[0.97]',
     dot: 'bg-rating-again',
@@ -24,6 +25,8 @@ export const ratingLook: Record<Rating, { button: string; dot: string; text: str
   },
   good: {
     button: 'bg-accent text-accent-fg hover:bg-accent-hover',
+    // v0.5.3 A3: İyi as a small tinted button when another rating is suggested.
+    tonal: 'bg-accent-soft text-accent-text hover:brightness-[0.97]',
     dot: 'bg-rating-good',
     text: 'text-rating-good-text',
   },

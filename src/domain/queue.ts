@@ -29,9 +29,16 @@
 // Study modes (redesign, plan/ogrenme-modeli.md §4): with `cardTypes` set, the queue holds only
 // those card types ("Kelime çalışma" = recognition, "Üretim" = production + image, "Boşluk
 // doldurma" = cloze). `newIntroducedToday` is then that mode's own first-time counter, and
-// burying changes: due cards are never buried, and only a first-time production / cloze /
-// picture card whose recognition sibling was answered today waits until tomorrow. Without
-// `cardTypes` the queue is the old mixed one.
+// burying changes: a first-time production / cloze / picture card whose recognition sibling
+// was answered today waits until tomorrow, and due reviews follow the sibling rule below.
+// Without `cardTypes` the queue is the old mixed one.
+//
+// One card per word per day, hardest first (v0.5.3 B1, docs/decisions/0071): when several
+// cards of one note are due, only the hardest format is shown that day (dictation >
+// production / picture > cloze > recognition); the easier due Review siblings move to
+// tomorrow at queue time, their FSRS state untouched (`siblingHolds`). An easier sibling
+// whose harder one was answered Again today is released the same day (relearning aid).
+// Every study mode and the mixed session apply it, from the same card set.
 import { relativeOverdueness } from './catchup';
 import { type NewOrderInput, type NewReason, selectNewCards } from './newOrder';
 import { type Card, CardState, type CardType, type Id, type Millis } from './types';
@@ -40,9 +47,75 @@ export type QueueCard = Pick<
   Card,
   'id' | 'note_id' | 'card_type' | 'state' | 'due' | 'suspended' | 'deleted_at' | 'unlocked' | 'created_at'
 > &
-  Partial<Pick<Card, 'scheduled_days' | 'ramp_step' | 'last_review'>>;
+  Partial<Pick<Card, 'scheduled_days' | 'ramp_step' | 'last_review' | 'rest_until'>>;
 
 export const NEW_EVERY_N_REVIEWS = 5;
+
+/**
+ * How hard a format is to retrieve (B1): dictation > production / picture > cloze >
+ * recognition. The hardest due sibling of a note is the one shown today.
+ */
+export const FORMAT_RANK: Record<CardType, number> = {
+  recognition: 0,
+  cloze: 1,
+  production: 2,
+  image: 2,
+  dictation: 3,
+};
+
+/** `a` is harder than `b` (rank, then id, so the rule is the same on every device). */
+function harder(a: Pick<QueueCard, 'id' | 'card_type'>, b: Pick<QueueCard, 'id' | 'card_type'>): boolean {
+  const d = FORMAT_RANK[a.card_type] - FORMAT_RANK[b.card_type];
+  return d > 0 || (d === 0 && a.id < b.id);
+}
+
+/**
+ * Due Review cards held back today because a harder sibling of the same note is shown today
+ * (v0.5.3 B1, ADR 0071). Pure and deterministic. A Review card `c` (due today, not answered
+ * today) is held when a harder sibling `s`:
+ *   - was answered today without an Again (the answer would prime `c`), or
+ *   - is itself due today and not answered yet, and `c` fell due today (so `c` moves at most
+ *     one day: a card already carried over is not held again by a sibling still waiting).
+ * A harder sibling answered Again today never holds `c`: seeing the easier format after a
+ * miss is a relearning aid. Learning steps and new cards are never held here (new cards have
+ * isBuriedInMode). The card's FSRS state is not changed; it is simply not shown today.
+ */
+export function siblingHolds(
+  cards: Iterable<QueueCard>,
+  ctx: Pick<QueueContext, 'now' | 'dayEnd' | 'dayStart' | 'reviewedTodayCardIds' | 'againTodayCardIds'>,
+): Set<Id> {
+  const byNote = new Map<Id, QueueCard[]>();
+  for (const c of cards) {
+    if (!isStudiable(c, ctx.now) || c.state === CardState.New) continue;
+    const answered = ctx.reviewedTodayCardIds.has(c.id);
+    if (!answered && c.due >= ctx.dayEnd) continue;
+    const list = byNote.get(c.note_id);
+    if (list) list.push(c);
+    else byNote.set(c.note_id, [c]);
+  }
+  const held = new Set<Id>();
+  const again = ctx.againTodayCardIds;
+  const start = ctx.dayStart ?? -Infinity;
+  for (const list of byNote.values()) {
+    if (list.length < 2) continue;
+    for (const c of list) {
+      if (c.state !== CardState.Review || ctx.reviewedTodayCardIds.has(c.id)) continue;
+      for (const s of list) {
+        if (s === c || !harder(s, c)) continue;
+        if (ctx.reviewedTodayCardIds.has(s.id)) {
+          if (again?.has(s.id)) continue;
+          held.add(c.id);
+          break;
+        }
+        if (s.due < ctx.dayEnd && c.due >= start) {
+          held.add(c.id);
+          break;
+        }
+      }
+    }
+  }
+  return held;
+}
 /**
  * Learn-ahead (ADR 0055): when nothing else is left, a learning card due within this window is
  * shown early. 2 minutes covers the 1-minute step (Again on a new card) but honours the 6 and
@@ -87,6 +160,15 @@ export interface QueueContext {
   cardTypes?: readonly CardType[] | null;
   /** Study mode: notes whose recognition card was answered today (non-undone). */
   recognitionReviewedTodayNoteIds?: ReadonlySet<Id>;
+  /** Inclusive start of the current local day (sibling rule: "first due today"). */
+  dayStart?: Millis;
+  /** Cards answered Again today (non-undone): their easier siblings are released (B1). */
+  againTodayCardIds?: ReadonlySet<Id>;
+  /**
+   * Due siblings held back today (B1), when the caller computed them once over every card
+   * type (data/queries.ts). Absent: computed here from `cards`.
+   */
+  heldCardIds?: ReadonlySet<Id> | null;
 }
 
 export type QueueKind = 'learning' | 'review' | 'new';
@@ -119,8 +201,12 @@ export interface QueueResult {
   postponed?: Id[];
 }
 
-/** Card can be studied at all (ignores due date and burying). */
-export function isStudiable(c: QueueCard): boolean {
+/**
+ * Card can be studied at all (ignores due date and burying). With `now`, a card resting after
+ * its sixth lapse (rest_until, ADR 0071) is not studiable until the rest ends.
+ */
+export function isStudiable(c: QueueCard, now?: Millis): boolean {
+  if (now !== undefined && c.rest_until != null && now < c.rest_until) return false;
   return c.deleted_at === null && !c.suspended && c.unlocked;
 }
 
@@ -164,10 +250,15 @@ export function buildQueue(cards: Iterable<QueueCard>, ctx: QueueContext): Queue
   let nextLearningDue: Millis | null = null;
 
   const types = ctx.cardTypes ? new Set<CardType>(ctx.cardTypes) : null;
-  const buried = (c: QueueCard) => (types ? isBuriedInMode(c, ctx) : isBuried(c, ctx));
-  for (const c of cards) {
+  const all = Array.isArray(cards) ? (cards as QueueCard[]) : [...cards];
+  // B1: one card per note per day, the hardest format first (not in 'ahead' mode, which keeps
+  // the old note-level burying of the mixed queue).
+  const held = ahead ? null : (ctx.heldCardIds ?? siblingHolds(all, ctx));
+  const buried = (c: QueueCard) =>
+    (types ? isBuriedInMode(c, ctx) : isBuried(c, ctx)) || !!held?.has(c.id);
+  for (const c of all) {
     if (types && !types.has(c.card_type)) continue;
-    if (!isStudiable(c) || buried(c)) continue;
+    if (!isStudiable(c, ctx.now) || buried(c)) continue;
     if (isLearning(c)) {
       if (c.due <= ctx.now) learningDue.push(c);
       else if (c.due <= ctx.now + learnAhead) learningSoon.push(c);
@@ -283,10 +374,10 @@ function item(c: QueueCard, kind: QueueKind): QueueItem {
  */
 export function isDayComplete(
   cards: Iterable<QueueCard>,
-  ctx: Pick<QueueContext, 'dayEnd' | 'reviewedTodayCardIds' | 'reviewedTodayNoteIds'>,
+  ctx: Pick<QueueContext, 'dayEnd' | 'reviewedTodayCardIds' | 'reviewedTodayNoteIds'> & { now?: Millis },
 ): boolean {
   for (const c of cards) {
-    if (!isStudiable(c) || c.state === CardState.New || isBuried(c, ctx)) continue;
+    if (!isStudiable(c, ctx.now) || c.state === CardState.New || isBuried(c, ctx)) continue;
     if (c.due < ctx.dayEnd) return false;
   }
   return true;

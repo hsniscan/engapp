@@ -21,7 +21,7 @@ import {
 import type { QueueItem, QueueKind, QueueMode } from '@/domain/queue';
 import type { StudyMode } from '@/domain/studyMode';
 import { sessionCards } from '@/domain/studyOptions';
-import { Rating, type Id, type RatingValue } from '@/domain/types';
+import { type AnswerMode, Rating, type Id, type RatingValue } from '@/domain/types';
 import type { LeechNotice } from '@/features/leech';
 import { canShowPicture, preloadPicture } from '@/features/images/picture';
 
@@ -45,6 +45,8 @@ export interface SessionAnswer {
   /** Set once the write has finished. */
   logId: Id | null;
   view: CardView;
+  /** v0.5.3: how the answer was given (choice / typed / flip). */
+  answerMode?: AnswerMode;
 }
 
 export type SessionPhase = 'loading' | 'card' | 'waiting' | 'done';
@@ -53,6 +55,13 @@ export interface SessionState {
   phase: SessionPhase;
   current: CurrentCard | null;
   flipped: boolean;
+  /**
+   * v0.5.3 (ADR 0071): ms from showing the card to showing its answer (the check, the pick or
+   * the flip), for the pace hint (B6); null before the flip.
+   */
+  revealMs: number | null;
+  /** How the answer side was reached: picked from choices, typed and checked, or flipped. */
+  answerMode: AnswerMode | null;
   /** Answers in this session (undone ones removed). */
   answered: number;
   /** Cards left, including the one on screen. */
@@ -112,6 +121,8 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
     phase: 'loading',
     current: null,
     flipped: false,
+    revealMs: null,
+    answerMode: null,
     answered: 0,
     remaining: 0,
     cardsTotal: 0,
@@ -217,6 +228,8 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
         phase: 'card',
         current,
         flipped: false,
+        revealMs: null,
+        answerMode: null,
         remaining: remainingCount(current),
       });
       prefetch();
@@ -299,16 +312,27 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
     };
   }, [advance, finish, capItems, mode, studyMode, deckId]);
 
-  const flip = useCallback(() => {
-    const s = stateRef.current;
-    if (s.phase === 'card' && !s.flipped) patch({ flipped: true });
-  }, [patch]);
+  /** Show the answer side; `mode` says how it was reached (default: a self-rated flip). */
+  const flip = useCallback(
+    (mode: AnswerMode = 'flip') => {
+      const s = stateRef.current;
+      if (s.phase === 'card' && !s.flipped)
+        patch({ flipped: true, revealMs: Math.max(0, Math.round(now() - shownAt.current)), answerMode: mode });
+    },
+    [patch],
+  );
 
   const answer = useCallback(
     (rating: RatingValue) => {
       const s = stateRef.current;
       if (s.phase !== 'card' || !s.flipped || !s.current) return;
-      const { view, kind } = s.current;
+      const { kind } = s.current;
+      const answerMode: AnswerMode = s.answerMode ?? 'flip';
+      // A pick from choices never reaches Öğrenildi (B2): the summary reads its own previews.
+      const view =
+        answerMode === 'choice' && s.current.view.previewsChoice
+          ? { ...s.current.view, previews: s.current.view.previewsChoice }
+          : s.current.view;
       const entry: SessionAnswer = {
         cardId: view.card.id,
         kind,
@@ -316,6 +340,7 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
         durationMs: Math.min(MAX_ANSWER_MS, Math.max(0, Math.round(now() - shownAt.current))),
         logId: null,
         view,
+        answerMode,
       };
       answers.current.push(entry);
       if (kind === 'review') counts.current.reviews++;
@@ -331,6 +356,7 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
             rating,
             duration_ms: entry.durationMs,
             shown_sense_id: view.card.card_type === 'recognition' ? (view.sense?.id ?? null) : null,
+            answer_mode: answerMode,
           });
           entry.logId = res.log.id;
           if (rating === Rating.Again) {
@@ -347,6 +373,7 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
                   crossed: leech.crossed,
                   confusable: type !== 'affix' && type !== 'contrast',
                   suspended: leech.suspended,
+                  restUntil: leech.restUntil,
                 },
               });
             }
@@ -373,6 +400,8 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
         patch({
           current: { view: cached, kind: next.kind },
           flipped: false,
+          revealMs: null,
+          answerMode: null,
           answered: answers.current.length,
           remaining: upcoming.current.length + 1,
           canUndo: false,

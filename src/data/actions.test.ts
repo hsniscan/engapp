@@ -126,6 +126,16 @@ describe('answerCard and undo', () => {
     ]);
   });
 
+  it('stores how the answer was given (v0.5.3, ADR 0071); absent stays absent', async () => {
+    const a = await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] }, T);
+    const rec = (await cardsOf(a.note.id)).find((c) => c.card_type === 'recognition')!;
+    const r1 = await answerCard({ card_id: rec.id, rating: Rating.Good, duration_ms: 1000, answer_mode: 'flip' }, T + MIN);
+    expect(r1.log.answer_mode).toBe('flip');
+    const r2 = await answerCard({ card_id: rec.id, rating: Rating.Good, duration_ms: 1000 }, T + 12 * MIN);
+    expect('answer_mode' in r2.log).toBe(false);
+    expect((await db.review_logs.get(r1.log.id))?.answer_mode).toBe('flip');
+  });
+
   it('unlocks production/cloze when recognition reaches Review; undo locks them again', async () => {
     const a = await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'kıyı', source_sentence: sentence, span: [26, 30] }] }, T);
     const rec = (await cardsOf(a.note.id)).find((c) => c.card_type === 'recognition')!;
