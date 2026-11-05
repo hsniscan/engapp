@@ -31,7 +31,7 @@ import {
 } from '../../supabase/functions/_shared/text.ts';
 import type { WordBankSense } from '../../supabase/functions/_shared/wordbank-contract.ts';
 import type { BatchApi, BatchResult, Log } from './image-jobs.ts';
-import type { LexiconItem } from './word-bank-jobs.ts';
+import { lexiconCefrSource, type LexiconItem } from './word-bank-jobs.ts';
 import { exampleProblem } from './word-bank-prompt.ts';
 import {
   buildReviewRequest,
@@ -626,7 +626,7 @@ export async function runReviewCollect(deps: ReviewDeps): Promise<ReviewCollectR
             model: b.model,
             zipf: row.zipf,
             cefr: row.cefr,
-            cefr_source: row.list_source,
+            cefr_source: lexiconCefrSource(row.list_source),
             cefr_list: row.cefr,
           } satisfies LexiconItem;
         }),

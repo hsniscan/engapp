@@ -441,8 +441,8 @@ describe('word bank collect', () => {
       customIdOf('run', 'verb'),
       answer({
         lemma: 'run',
-        senses: [sense(0, 'koşmak', 'to move fast on foot', 'He ran to school.', 'Okula koştu.')],
-      }), // irregular form
+        senses: [sense(0, 'koşmak', 'to move fast on foot', 'He hurried to school.', 'Okula koştu.')],
+      }), // the word is missing (irregular forms such as "ran" are accepted since v0.5.3)
     );
     const r = await runCollect(deps);
 
@@ -467,7 +467,7 @@ describe('word bank collect', () => {
       },
     ]);
 
-    // run: "ran" does not contain the word → rejected, asked again with the reason.
+    // run: the sentence does not contain the word → rejected, asked again with the reason.
     expect(store.rows.has('run|verb')).toBe(false);
     expect(store.jobs.get('run|verb')).toMatchObject({
       state: 'queued',

@@ -24,6 +24,7 @@ import type { CalledMessage } from '../../supabase/functions/_shared/image-pipel
 import { isDuplicateSense } from '../../supabase/functions/_shared/text.ts';
 import {
   WORDBANK_MAX_SENSES,
+  type WordBankListSource,
   type WordBankSense,
 } from '../../supabase/functions/_shared/wordbank-contract.ts';
 import {
@@ -47,7 +48,7 @@ export interface PendingWord {
   lemma_norm: string;
   pos: string;
   cefr: string;
-  source: 'cefrj' | 'octanove';
+  source: WordBankListSource;
   zipf: number | null;
   attempt: number;
   /** Why the previous answer was rejected (sent with the retry), or null. */
@@ -164,6 +165,14 @@ export interface WordBankDeps {
 /** custom_id of a word's request: stable and within the API's [a-zA-Z0-9_-]{1,64}. */
 export function customIdOf(lemmaNorm: string, pos: string): string {
   return `wb_${createHash('sha256').update(`${lemmaNorm}|${pos}`).digest('hex').slice(0, 40)}`;
+}
+
+/**
+ * The lexicon's cefr_source for a bank row's list: the two word lists keep their name; the
+ * phrase lists (decision 0074) are levelled by frequency, which the lexicon calls 'freq'.
+ */
+export function lexiconCefrSource(listSource: string): 'cefrj' | 'octanove' | 'freq' {
+  return listSource === 'cefrj' || listSource === 'octanove' ? listSource : 'freq';
 }
 
 const BAND_RANK = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
@@ -583,7 +592,7 @@ export async function runCollect(deps: WordBankDeps): Promise<CollectReport> {
                   model: msg.model ?? b.model,
                   zipf: w.zipf,
                   cefr: w.cefr,
-                  cefr_source: w.source,
+                  cefr_source: lexiconCefrSource(w.source),
                   cefr_list: w.cefr,
                 } satisfies LexiconItem),
           })),

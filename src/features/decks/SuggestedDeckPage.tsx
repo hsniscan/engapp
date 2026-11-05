@@ -225,7 +225,10 @@ function SuggestedBody({
           <StatTile bare value={nf.format(progress.fresh)} label={t('deckHub.suggested.freshLabel')} />
         </div>
 
-        {spec.kind !== 'level' && spec.kind !== 'levelPos' && progress.total > 0 && (
+        {spec.kind !== 'level' &&
+          spec.kind !== 'levelPos' &&
+          !(spec.kind === 'phrases' && spec.level) &&
+          progress.total > 0 && (
           <div className="flex flex-col gap-2">
             <Eyebrow as="h2">{t('deckHub.suggested.levels')}</Eyebrow>
             <SegBar

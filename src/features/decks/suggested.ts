@@ -14,6 +14,7 @@ import {
   suggestedKey,
   TOP_SIZES,
   CONTENT_POS,
+  PHRASE_KINDS,
 } from '@/domain/suggestedDecks';
 import { CEFR } from '@/domain/level';
 import type { CefrLevel } from '@/domain/types';
@@ -35,6 +36,10 @@ export function specTitle(t: TFunction, spec: SuggestedSpec): string {
       return t(`deckHub.deckName.levelPos.${spec.pos}`, { level: spec.level });
     case 'falseFriends':
       return t('deckHub.deckName.falseFriends');
+    case 'phrases':
+      return spec.level
+        ? t(`deckHub.deckName.phrasesLevel.${spec.phrase}`, { level: spec.level })
+        : t(`deckHub.deckName.phrases.${spec.phrase}`);
   }
 }
 
@@ -53,6 +58,10 @@ export function specBody(t: TFunction, spec: SuggestedSpec): string {
       });
     case 'falseFriends':
       return t('deckHub.deckBody.falseFriends');
+    case 'phrases':
+      return spec.level
+        ? t(`deckHub.deckBody.phrasesLevel.${spec.phrase}`, { level: spec.level })
+        : t(`deckHub.deckBody.phrases.${spec.phrase}`);
   }
 }
 
@@ -66,6 +75,10 @@ export function allSpecs(): SuggestedSpec[] {
     ...CONTENT_POS.map((pos): SuggestedSpec => ({ kind: 'pos', pos })),
     ...CEFR.flatMap((level) => CONTENT_POS.map((pos): SuggestedSpec => ({ kind: 'levelPos', level, pos }))),
     { kind: 'falseFriends' },
+    ...PHRASE_KINDS.flatMap((phrase): SuggestedSpec[] => [
+      { kind: 'phrases', phrase },
+      ...CEFR.map((level): SuggestedSpec => ({ kind: 'phrases', phrase, level })),
+    ]),
   ];
 }
 

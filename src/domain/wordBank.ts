@@ -1,6 +1,7 @@
 // Kelime Bankası (decision 0038): browsing the leveled list words and picking words to study.
 // Pure functions; the rows come from the device's copy of public.word_bank (src/data/wordBank.ts).
 import type {
+  WordBankListSource,
   WordBankRow,
   WordBankSense,
 } from '../../supabase/functions/_shared/wordbank-contract';
@@ -18,8 +19,8 @@ export interface WordBankEntry {
   pos: string;
   lemma: string;
   cefr: CefrLevel;
-  /** The word list the level comes from. */
-  list_source: 'cefrj' | 'octanove';
+  /** The word list the level comes from (phrases: 'wiktionary' / 'corpus', decision 0074). */
+  list_source: WordBankListSource;
   zipf: number | null;
   lexicon_term_id: string | null;
   senses: WordBankSense[];

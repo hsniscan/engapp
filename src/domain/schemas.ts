@@ -283,6 +283,20 @@ export const lexiconExampleSchema: z.ZodType<LexiconExample> = z.object({
   translations: z.record(z.string(), z.string()),
   status: z.enum(['active', 'retired']),
   updated_at: millis,
+  // v0.5.3 (ADR 0074): optional, so rows from an older server still parse.
+  source: z.enum(['tatoeba']).nullable().optional().catch(null),
+  attribution: z
+    .object({
+      license: z.string().max(40),
+      en_id: z.number().int().positive(),
+      en_by: z.string().max(100),
+      tr_id: z.number().int().positive(),
+      tr_by: z.string().max(100),
+      tr_edited: z.boolean().optional(),
+    })
+    .nullable()
+    .optional()
+    .catch(null),
 });
 
 /** decks.filter is kept as raw JSON here; domain/deckFilter.ts parses it for evaluation. */

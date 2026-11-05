@@ -73,6 +73,43 @@ describe('example sentences on the back of a card', () => {
     expect(await screen.findByText(/Our team can/)).toBeInTheDocument();
   });
 
+  it('credits a Tatoeba sentence with its authors and a link to the source (ADR 0074)', async () => {
+    await storeExamples([
+      ex({
+        id: 'e1',
+        context: 'daily',
+        source: 'tatoeba',
+        attribution: { license: 'CC BY 2.0 FR', en_id: 1234, en_by: 'CK', tr_id: 5678, tr_by: 'duran' },
+        updated_at: 3,
+      }),
+      ex({
+        id: 'w1',
+        context: 'work',
+        text_en: 'Our team can cope with the extra work.',
+        span: [13, 17],
+        source: 'tatoeba',
+        attribution: { license: 'CC BY 2.0 FR', en_id: 99, en_by: 'CK', tr_id: 100, tr_by: 'CK', tr_edited: true },
+        updated_at: 3,
+      }),
+    ]);
+    localStorage.setItem('engapp.examples.open', '1');
+    const user = userEvent.setup();
+    renderRoute(<CardBack view={await view()} isNew={false} speech={speech} />);
+    // The model-written sentence carries no credit; the Tatoeba one names its authors.
+    expect(await screen.findByText(/with stress well/)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Tatoeba/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Sonraki cümle' }));
+    const credit = await screen.findByRole('link', { name: 'Tatoeba · CK, duran' });
+    expect(credit).toHaveAttribute('href', 'https://tatoeba.org/sentences/show/1234');
+    // A corrected translation says so, and one author is named once.
+    const tabs = screen.getByRole('tablist', { name: 'Bağlamlar' });
+    await user.click(within(tabs).getByRole('tab', { name: /İş/ }));
+    expect(await screen.findByRole('link', { name: 'Tatoeba · CK · çevirisi düzeltildi' })).toHaveAttribute(
+      'href',
+      'https://tatoeba.org/sentences/show/99',
+    );
+  });
+
   it('orders the context tabs by the interest profile (İP7) and follows its changes', async () => {
     localStorage.setItem('engapp.examples.open', '1');
     renderRoute(<CardBack view={await view()} isNew={false} speech={speech} />);

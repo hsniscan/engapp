@@ -48,15 +48,21 @@ describe('keys', () => {
     { kind: 'pos', pos: 'adverb' },
     { kind: 'levelPos', level: 'B1', pos: 'adjective' },
     { kind: 'falseFriends' },
+    { kind: 'phrases', phrase: 'phrasal' },
+    { kind: 'phrases', phrase: 'collocation' },
+    { kind: 'phrases', phrase: 'phrasal', level: 'B1' },
+    { kind: 'phrases', phrase: 'collocation', level: 'A2' },
   ];
 
   it('round-trips every deck', () => {
     for (const s of specs) expect(parseSuggestedKey(suggestedKey(s))).toEqual(s);
     expect(suggestedKey({ kind: 'levelPos', level: 'B1', pos: 'verb' })).toBe('b1-verb');
+    expect(suggestedKey({ kind: 'phrases', phrase: 'phrasal', level: 'B1' })).toBe('phrasal-verbs-b1');
+    expect(suggestedKey({ kind: 'phrases', phrase: 'collocation' })).toBe('collocations');
   });
 
   it('rejects unknown keys', () => {
-    for (const k of ['', 'top-42', 'level-d1', 'pos-preposition', 'b1-preposition', 'b1-verb-x', 'x'])
+    for (const k of ['', 'top-42', 'level-d1', 'pos-preposition', 'b1-preposition', 'b1-verb-x', 'x', 'phrasal-verbs-x', 'collocations-d1', 'phrasal'])
       expect(parseSuggestedKey(k)).toBeNull();
   });
 
@@ -123,6 +129,33 @@ describe('deckWords', () => {
     expect(
       deckWords(bank, { kind: 'levelPos', level: 'B1', pos: 'verb' }).map((w) => w.lemma),
     ).toEqual(['suggest', 'avoid']);
+  });
+
+  it('phrasal verbs and collocations have their own decks, not the word decks', () => {
+    const withPhrases = [
+      ...bank,
+      entry('give up', 'A1', 4.5, 'phrasal verb'),
+      entry('turn down', 'B1', 3.8, 'phrasal verb'),
+      entry('make a decision', 'B1', 3.9, 'phrase'),
+    ];
+    expect(deckWords(withPhrases, { kind: 'phrases', phrase: 'phrasal' }).map((w) => w.lemma)).toEqual([
+      'give up',
+      'turn down',
+    ]);
+    expect(
+      deckWords(withPhrases, { kind: 'phrases', phrase: 'phrasal', level: 'B1' }).map((w) => w.lemma),
+    ).toEqual(['turn down']);
+    expect(
+      deckWords(withPhrases, { kind: 'phrases', phrase: 'collocation' }).map((w) => w.lemma),
+    ).toEqual(['make a decision']);
+    expect(deckWords(withPhrases, { kind: 'level', level: 'A1' }).map((w) => w.lemma)).not.toContain('give up');
+    expect(deckWords(withPhrases, { kind: 'level', level: 'B1' }).map((w) => w.lemma)).toEqual([
+      'suggest',
+      'avoid',
+      'rare',
+    ]);
+    expect(deckWords(withPhrases, { kind: 'pos', pos: 'verb' }).map((w) => w.lemma)).not.toContain('give up');
+    expect(deckWords(withPhrases, { kind: 'top', size: 100 }).map((w) => w.lemma)).not.toContain('give up');
   });
 
   it('false friends come from the table it is given', () => {

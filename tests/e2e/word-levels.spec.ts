@@ -116,7 +116,12 @@ test('card back: the level badge explains itself and links to Kaynaklar; Setting
     sources.getByRole('heading', { name: 'Octanove Vocabulary Profile C1/C2 1.0' }),
   ).toBeVisible();
   await expect(sources.getByRole('heading', { name: 'wordfreq 3.1.1' })).toBeVisible();
-  await expect(sources.getByText('CC BY-SA 4.0', { exact: true })).toBeVisible();
+  // Octanove and the Wiktionary phrasal verb list share CC BY-SA 4.0 (ADR 0074).
+  await expect(sources.getByText('CC BY-SA 4.0', { exact: true })).toHaveCount(2);
+  await expect(sources.getByRole('heading', { name: 'Tatoeba' })).toBeVisible();
+  await expect(sources.getByText('CC BY 2.0 FR', { exact: true })).toBeVisible();
+  await expect(sources.getByRole('heading', { name: 'Wiktionary' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Örnek cümleler', level: 2 })).toBeVisible();
 
   // The settings page reaches it through "Hakkında ve yardım".
   await page.locator('a[href="/settings/hakkinda"]').click();

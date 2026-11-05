@@ -465,7 +465,10 @@
     "emptyText": "The sentence cannot be empty.",
     "saved": "Sentence saved.",
     "saveFailed": "Could not save. Try again.",
-    "none": "There are no example sentences for this meaning yet."
+    "none": "There are no example sentences for this meaning yet.",
+    "credit": "Tatoeba · {{authors}}",
+    "creditEdited": "Tatoeba · {{authors}} · translation corrected",
+    "creditLink": "This sentence is from Tatoeba (CC BY 2.0 FR). Open the source"
   },
   "mnemonic": {
     "title": "Mnemonic",
@@ -2252,7 +2255,21 @@
     "aiTitle": "AI estimates",
     "aiBody": "Levels of words outside the lists and the corrections for Turkish learners are made with AI (Anthropic Claude or Google Gemini). They are estimates: a correction moves a list level by at most one step, and an estimate is bounded by the word's frequency. You can always change a word's level yourself.",
     "wordBankTitle": "Word bank",
-    "wordBankBody": "The word bank shows the words of the CEFR-J and Octanove lists. Their Turkish meanings and example sentences were generated once with Claude (Anthropic); where the shared dictionary already had a meaning, that one is used. Being derived from the Octanove data, the word bank is licensed CC BY-SA 4.0 too."
+    "wordBankBody": "The word bank shows the words of the CEFR-J and Octanove lists. Their Turkish meanings and example sentences were generated once with Claude (Anthropic); where the shared dictionary already had a meaning, that one is used. Being derived from the Octanove data, the word bank is licensed CC BY-SA 4.0 too.",
+    "tatoeba": {
+      "name": "Tatoeba",
+      "what": "Some example sentences are Tatoeba sentences, written and translated by volunteers. Each one shows its authors; a corrected translation says so.",
+      "license": "CC BY 2.0 FR",
+      "cite": "Tatoeba (tatoeba.org), sentences and translations under CC BY 2.0 FR."
+    },
+    "wiktionary": {
+      "name": "Wiktionary",
+      "what": "The phrasal verb list comes from Wiktionary's \"English phrasal verbs\" category; which ones to teach was decided by how often they occur in Tatoeba and Simple English Wikipedia. Meanings and examples are Engapp's own.",
+      "license": "CC BY-SA 4.0",
+      "cite": "Wiktionary, the free dictionary (en.wiktionary.org), Category:English phrasal verbs; Simple English Wikipedia (simple.wikipedia.org)."
+    },
+    "examplesTitle": "Example sentences",
+    "examplesBody": "Each meaning has about three example sentences. Fitting Tatoeba sentences were chosen first; Claude (Anthropic) wrote the missing ones once. A second AI checked all of them for natural Turkish and for showing the right meaning."
   },
   "levelTest": {
     "title": "Level test",
@@ -3175,14 +3192,17 @@
       "falseFriends": "False friends",
       "pairs": "{{count}} pairs",
       "notEqual": "not equal",
-      "falseFriendsBody": "Words that look Turkish but mean something else: {{examples}}…"
+      "falseFriendsBody": "Words that look Turkish but mean something else: {{examples}}…",
+      "phrases": "Phrases",
+      "phrasesBody": "Expressions learned as a whole, not word by word"
     },
     "kind": {
       "top": "Most frequent · content words",
       "level": "Level",
       "pos": "Part of speech",
       "levelPos": "Level · part of speech",
-      "falseFriends": "False friends"
+      "falseFriends": "False friends",
+      "phrases": "Phrases"
     },
     "deckName": {
       "top": "Most used {{size}} words",
@@ -3199,14 +3219,30 @@
         "noun": "{{level}} nouns",
         "adverb": "{{level}} adverbs"
       },
-      "falseFriends": "False friends"
+      "falseFriends": "False friends",
+      "phrases": {
+        "phrasal": "Phrasal verbs",
+        "collocation": "Collocations"
+      },
+      "phrasesLevel": {
+        "phrasal": "{{level}} phrasal verbs",
+        "collocation": "{{level}} collocations"
+      }
     },
     "deckBody": {
       "top": "The {{size}} nouns, verbs, adjectives and adverbs that occur most in English texts. Ranking from wordfreq.",
       "level": "Every {{level}} word, most frequent first. Lists from CEFR-J and Octanove.",
       "pos": "{{pos}} of every level, most frequent first.",
       "levelPos": "{{level}} {{pos}}, most frequent first.",
-      "falseFriends": "English words misread because a Turkish word looks similar."
+      "falseFriends": "English words misread because a Turkish word looks similar.",
+      "phrases": {
+        "phrasal": "A verb and a small word that together mean something new: give up, find out. Most used first.",
+        "collocation": "Words English puts together: make a decision, pay attention. Easy to get wrong when translating from Turkish (\"make a mistake\", not \"do a mistake\")."
+      },
+      "phrasesLevel": {
+        "phrasal": "{{level}} phrasal verbs, most used first.",
+        "collocation": "{{level}} collocations, most used first."
+      }
     },
     "posPlural": {
       "verb": "verbs",

@@ -1,0 +1,148 @@
+# Bulk example sentences (v0.5.3 C2, decision 0074). About three shared example sentences per
+# Kelime Bankası meaning, shipped through lexicon_examples: the app shows them on card fronts
+# and in the "Örnek cümleler" tabs, and the pronunciation workflow (tts-pregen.yml) voices them.
+# One-time content, not an in-app feature. Expected cost about 10-15 US$ in all, never more
+# than EXAMPLES_BULK_CAP_USD (default 15) over every batch of this job, and every batch also
+# reserves its upper bound on the shared monthly Claude budget.
+#
+# Usual sequence:
+#   1. job=plan                 counts and a cost estimate (reads only, no key needed)
+#   2. job=match                downloads Tatoeba's English-Turkish pairs (CC BY 2.0 FR, free)
+#                               and stores the pairs that fit each word as candidates
+#   3. job=run                  collects finished batches, publishes what the review approved,
+#                               then sends the next batches (tag Tatoeba pairs -> generate what
+#                               is missing -> review). Repeat (a batch usually ends within an
+#                               hour, at most 24 h) until plan shows sentencesWanted near 0 and
+#                               no item is waiting. With EXAMPLES_BULK_NIGHTLY=true the run step
+#                               happens every night by itself.
+#   4. job=sample               prints shipped sentences to read
+# Then run the pronunciation workflow (Pronunciation audio) for the new sentences' MP3s.
+#
+# Repository secrets: ANTHROPIC_API_KEY, SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_ACCESS_TOKEN),
+# as for the word bank job. Optional repository variables: EXAMPLES_BULK_CAP_USD,
+# CLAUDE_EXAMPLES_MODEL (else the word-bank model), CLAUDE_EXAMPLES_REVIEW_MODEL (else the
+# word-bank review model), CLAUDE_MONTHLY_CREDIT_USD, EXAMPLES_BULK_NIGHTLY.
+name: Example sentences job
+
+on:
+  schedule:
+    - cron: '15 4 * * *' # 04:15 UTC; does nothing unless EXAMPLES_BULK_NIGHTLY is 'true'
+  workflow_dispatch:
+    inputs:
+      job:
+        description: 'plan: counts and cost, sends nothing; match: Tatoeba candidates (free); run: collect, publish, send the next batches; collect / publish: one step; sample: print sentences'
+        type: choice
+        options: [plan, match, run, collect, publish, sample]
+        default: plan
+      max:
+        description: 'run: at most this many requests per batch (empty: 2000)'
+        type: string
+        default: ''
+      dry_run:
+        description: 'run / match / publish: report what would happen, write and send nothing'
+        type: boolean
+        default: false
+      rematch:
+        description: 'match: match every word again (new Tatoeba sentences), not only new words'
+        type: boolean
+        default: false
+      cap_usd:
+        description: 'Override EXAMPLES_BULK_CAP_USD for this run (total US$ the job may ever spend)'
+        type: string
+        default: ''
+
+concurrency:
+  group: examples-bulk
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  SUPABASE_PROJECT_REF: bikcjlomrjaxymifxogi
+
+jobs:
+  examples:
+    if: github.event_name == 'workflow_dispatch' || vars.EXAMPLES_BULK_NIGHTLY == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Service key (the only step that may use the access token)
+        env:
+          SERVICE_KEY_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: scripts/resolve-service-key.sh
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Download Tatoeba (match only)
+        if: inputs.job == 'match'
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/tatoeba"
+          mkdir -p "$dir"
+          base=https://downloads.tatoeba.org/exports/per_language
+          if curl -fsSL --retry 3 "$base/eng/eng-tur_links.tsv.bz2" | bunzip2 > "$dir/eng-tur_links.tsv" \
+            && curl -fsSL --retry 3 "$base/eng/eng_sentences_detailed.tsv.bz2" | bunzip2 > "$dir/eng_sentences_detailed.tsv" \
+            && curl -fsSL --retry 3 "$base/tur/tur_sentences_detailed.tsv.bz2" | bunzip2 > "$dir/tur_sentences_detailed.tsv"; then
+            echo "TATOEBA_ARGS=--official $dir" >> "$GITHUB_ENV"
+          else
+            echo "::warning::Tatoeba's own exports failed; using manythings.org's tur-eng.zip (built from Tatoeba)"
+            curl -fsSL --retry 3 -A 'Mozilla/5.0 (engapp content job)' -o "$dir/tur-eng.zip" https://www.manythings.org/anki/tur-eng.zip
+            unzip -o -q "$dir/tur-eng.zip" tur.txt -d "$dir"
+            echo "TATOEBA_ARGS=--manythings $dir/tur.txt" >> "$GITHUB_ENV"
+          fi
+          wc -l "$dir"/*.t* || true
+
+      - name: Run the example sentences job
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_EXAMPLES_MODEL: ${{ vars.CLAUDE_EXAMPLES_MODEL }}
+          CLAUDE_EXAMPLES_REVIEW_MODEL: ${{ vars.CLAUDE_EXAMPLES_REVIEW_MODEL }}
+          CLAUDE_WORDBANK_MODEL: ${{ vars.CLAUDE_WORDBANK_MODEL }}
+          CLAUDE_WORDBANK_REVIEW_MODEL: ${{ vars.CLAUDE_WORDBANK_REVIEW_MODEL }}
+          CLAUDE_CHECK_MODEL: ${{ vars.CLAUDE_CHECK_MODEL }}
+          CLAUDE_MONTHLY_CREDIT_USD: ${{ vars.CLAUDE_MONTHLY_CREDIT_USD }}
+          EXAMPLES_BULK_CAP_USD: ${{ inputs.cap_usd || vars.EXAMPLES_BULK_CAP_USD }}
+          JOB: ${{ inputs.job || 'run' }}
+          MAX: ${{ inputs.max }}
+          DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
+          REMATCH: ${{ inputs.rematch && '--rematch' || '' }}
+          NODE_OPTIONS: --max-old-space-size=6144
+        run: |
+          set -euo pipefail
+          case "$JOB" in plan|match|run|collect|publish|sample) ;; *) echo "::error::Unknown job"; exit 1 ;; esac
+          if [ -n "$MAX" ] && ! [[ "$MAX" =~ ^[0-9]{1,5}$ ]]; then echo "::error::max must be a whole number"; exit 1; fi
+          if [ -n "$EXAMPLES_BULK_CAP_USD" ] && ! [[ "$EXAMPLES_BULK_CAP_USD" =~ ^[0-9]{1,3}(\.[0-9]{1,2})?$ ]]; then echo "::error::cap_usd must be a number of US dollars"; exit 1; fi
+          source scripts/supabase-service-env.sh
+          args=()
+          if [ -n "$MAX" ]; then args+=(--max "$MAX"); fi
+          if [ -n "$DRY_RUN" ]; then args+=("$DRY_RUN"); fi
+          case "$JOB" in
+            plan)
+              node scripts/examples-bulk.ts plan
+              ;;
+            match)
+              # shellcheck disable=SC2086
+              node scripts/examples-bulk.ts match $TATOEBA_ARGS $REMATCH ${DRY_RUN:+"$DRY_RUN"}
+              node scripts/examples-bulk.ts plan
+              ;;
+            run)
+              node scripts/examples-bulk.ts run "${args[@]}"
+              node scripts/examples-bulk.ts plan
+              ;;
+            collect)
+              node scripts/examples-bulk.ts collect
+              ;;
+            publish)
+              node scripts/examples-bulk.ts publish ${DRY_RUN:+"$DRY_RUN"}
+              ;;
+            sample)
+              node scripts/examples-bulk.ts sample ${MAX:+--limit "$MAX"}
+              ;;
+          esac
