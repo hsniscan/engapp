@@ -7,7 +7,7 @@ import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useSta
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useSearchParams } from 'react-router';
-import { db, getSettings, getSlowThresholds } from '@/data';
+import { db, getSettings, getSlowThresholds, logError, setCardRest } from '@/data';
 import { isSlowAnswer, type SlowThresholds } from '@/domain/pace';
 import { STUDY_MODE_CARD_TYPES, type StudyMode } from '@/domain/studyMode';
 import type { Id, RatingValue } from '@/domain/types';
@@ -223,6 +223,15 @@ export function ReviewScreen({ studyMode, ahead = false, deckId }: ReviewScreenP
       onOpenSheet={() => setLeech({ cardId: notice.cardId, startWith: 'paths' })}
       onPickConfusion={() => setLeech({ cardId: notice.cardId, startWith: 'picker' })}
       onDismiss={session.dismissNotice}
+      onEndRest={() =>
+        void setCardRest([notice.cardId], null)
+          .then(() => {
+            session.dismissNotice();
+            toast({ title: t('leech.rest.ended'), tone: 'neutral' });
+            return session.reloadQueue();
+          })
+          .catch((e: unknown) => void logError(e, 'review:endRest'))
+      }
     />
   ) : null;
   const leechSheet = (

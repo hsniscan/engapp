@@ -373,6 +373,7 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
                   crossed: leech.crossed,
                   confusable: type !== 'affix' && type !== 'contrast',
                   suspended: leech.suspended,
+                  restUntil: leech.restUntil,
                 },
               });
             }

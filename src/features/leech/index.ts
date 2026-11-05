@@ -5,6 +5,7 @@ export { ContrastBack, ContrastFront } from './ContrastFaces';
 export { ContrastEditor } from './ContrastEditor';
 export { familyIdOf, useFamilyOf, useLeechSheet } from './hooks';
 export { LeechBadge, LeechHint } from './LeechMarker';
+export { RescuePath } from './RescuePath';
 export { DifferenceEditor, LeechSheet, PairList, type LeechSheetProps } from './LeechSheet';
 export { ContrastDialog, LeechStatsSection } from './LeechStats';
 export { requestContrast, type ContrastRequestDeps, type ContrastRequestResult } from './request';

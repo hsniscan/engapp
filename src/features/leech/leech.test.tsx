@@ -4,7 +4,7 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { addNoteWithSenses, answerCard, db, ensureSettings } from '@/data';
+import { addNoteWithSenses, answerCard, db, ensureSettings, saveOwnMnemonic } from '@/data';
 import { LEECH_LAPSES } from '@/domain/leech';
 import { Rating, type Id } from '@/domain/types';
 import { ReviewScreen } from '@/features/review/ReviewScreen';
@@ -73,7 +73,7 @@ async function answerWhen(term: string, key: string) {
 }
 
 describe('leech in the review session', () => {
-  it('flags the 6th lapse at once, offers at least three paths and suspends nothing by itself', async () => {
+  it('flags the 6th lapse at once, rests it 30 days (undo at hand) and offers at least three paths', async () => {
     await forget(bankRecognition, LEECH_LAPSES - 1);
     const user = userEvent.setup();
     renderRoute(
@@ -87,6 +87,10 @@ describe('leech in the review session', () => {
 
     const flag = await screen.findByTestId('leech-flag');
     expect(flag).toHaveTextContent('“bank” kartını 6. kez unuttun.');
+    // v0.5.3 B5: the card rests for 30 days; it is not suspended, and "Geri al" is right there.
+    expect(flag).toHaveTextContent('30 gün dinlenmeye aldık');
+    expect(within(flag).getByTestId('leech-rest-undo')).toBeInTheDocument();
+    await waitFor(async () => expect((await db.cards.get(bankRecognition))!.rest_until).toBeGreaterThan(Date.now()));
     expect((await db.cards.get(bankRecognition))!.suspended).toBe(false);
     const logsBefore = await db.review_logs.count();
 
@@ -97,7 +101,7 @@ describe('leech in the review session', () => {
     const paths = [...sheet.querySelectorAll('[data-path]')].map((p) => p.getAttribute('data-path'));
     expect(paths.length).toBeGreaterThanOrEqual(3);
     expect(paths).toEqual(expect.arrayContaining(['mnemonic', 'confusion', 'split', 'restart']));
-    expect(within(sheet).getByText(/sen istemedikçe askıya alınmaz/)).toBeInTheDocument();
+    expect(within(sheet).getByText(/30 gün dinlenir/)).toBeInTheDocument();
     expect((await db.cards.get(bankRecognition))!.suspended).toBe(false);
 
     // Start over, by the user only, behind a confirmation; the logs stay as they are.
@@ -126,6 +130,28 @@ describe('leech in the review session', () => {
     await user.click(screen.getByRole('button', { name: 'Kart seçenekleri' }));
     await user.click(await screen.findByRole('menuitem', { name: 'Başka yoldan bak' }));
     expect(await screen.findByTestId('leech-sheet')).toBeInTheDocument();
+  });
+
+  it('from 3 lapses the card is "Zorlanıyor" and its back recommends one path (v0.5.3 B5)', async () => {
+    await forget(bankRecognition, 3);
+    const sense = (await db.senses.toArray()).find((s) => s.meaning_tr === 'banka')!;
+    await saveOwnMnemonic(sense.id, 'Banka, bank: para koyduğun bank.');
+    renderRoute(<ReviewScreen studyMode="word" />, { path: '/review' });
+    for (let i = 0; i < 3; i++) {
+      const shown = await screen.findByText(/^(bank|light)$/, { selector: 'p[lang="en"]' });
+      if (shown.textContent === 'bank') break;
+      await press(' ');
+      await press('3');
+    }
+    expect(await screen.findByTestId('struggling-marker')).toHaveTextContent('Zorlanıyor');
+    await press(' ');
+    const rescue = await screen.findByTestId('rescue-path');
+    expect(rescue).toHaveTextContent('Bu kelimeyi 3 kez unuttun');
+    // One path only: "bank" has a Turkish look-alike (bank = sıra), which comes before the
+    // user's mnemonic (domain/leech.ts pickRescuePath).
+    expect(rescue).toHaveAttribute('data-path', 'false_friend');
+    expect(rescue).toHaveTextContent(/Türkçedeki “bank” ile karışıyor olabilir/);
+    expect(rescue).not.toHaveTextContent('para koyduğun bank');
   });
 
   it('after Again: "mixed it up?" → pick a word → a contrast card written by the user', async () => {

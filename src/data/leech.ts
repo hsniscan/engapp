@@ -9,6 +9,7 @@ import {
   canSplitSenses,
   isLeech,
   lapsesFromLogs,
+  LEECH_REST_MS,
   type LeechEntry,
   listLeeches,
   primaryRecognition,
@@ -33,20 +34,44 @@ export async function getCardLapses(cardId: Id): Promise<number> {
 
 /**
  * Did this answer make the card a leech? (Asked right after answerCard, in the session.) With
- * "Zorlanılan kartı askıya al" on (settings.study_options, v0.5.2) the card is suspended then.
+ * "Zorlanılan kartı askıya al" on (settings.study_options, v0.5.2) the card is suspended then;
+ * otherwise (v0.5.3 B5, ADR 0071) it rests for 30 days (rest_until), which the user can undo
+ * at once or later in the word's detail.
  */
 export async function leechAfterAnswer(
   cardId: Id,
   logId: Id,
-): Promise<{ crossed: boolean; lapses: number; suspended: boolean }> {
+  now: Millis = Date.now(),
+): Promise<{ crossed: boolean; lapses: number; suspended: boolean; restUntil: Millis | null }> {
   const logs = await db.review_logs.where('card_id').equals(cardId).toArray();
   const crossed = becameLeech(logs, logId);
   let suspended = false;
-  if (crossed && leechAutoSuspend(await getSettings())) {
-    await setSuspended({ card_ids: [cardId] }, true);
-    suspended = true;
+  let restUntil: Millis | null = null;
+  if (crossed) {
+    if (leechAutoSuspend(await getSettings())) {
+      await setSuspended({ card_ids: [cardId] }, true);
+      suspended = true;
+    } else {
+      restUntil = now + LEECH_REST_MS;
+      await setCardRest([cardId], restUntil, now);
+    }
   }
-  return { crossed, lapses: lapsesFromLogs(logs), suspended };
+  return { crossed, lapses: lapsesFromLogs(logs), suspended, restUntil };
+}
+
+/**
+ * Rest these cards until `until` (v0.5.3 B5), or end their rest (`until` null: "Şimdi geri
+ * getir"). Only rest_until changes: the FSRS fields and the logs stay as they are, so a card
+ * that comes back is simply overdue.
+ */
+export async function setCardRest(cardIds: readonly Id[], until: Millis | null, now: Millis = Date.now()): Promise<void> {
+  await writeTx([db.cards], now, async (w) => {
+    for (const id of cardIds) {
+      const c = await db.cards.get(id);
+      if (!c || c.deleted_at !== null || (c.rest_until ?? null) === until) continue;
+      await w.put('cards', { ...c, rest_until: until });
+    }
+  });
 }
 
 export interface LeechSheetData {
