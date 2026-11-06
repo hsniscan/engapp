@@ -16,6 +16,8 @@ export interface LeechNotice {
   confusable: boolean;
   /** v0.5.2: "Zorlanılan kartı askıya al" suspended the card. */
   suspended?: boolean;
+  /** v0.5.3 B5: the card rests until then (30 days after its sixth lapse); null/absent = not. */
+  restUntil?: number | null;
 }
 
 export function AfterAgainBar({
@@ -23,11 +25,14 @@ export function AfterAgainBar({
   onOpenSheet,
   onPickConfusion,
   onDismiss,
+  onEndRest,
 }: {
   notice: LeechNotice;
   onOpenSheet: () => void;
   onPickConfusion: () => void;
   onDismiss: () => void;
+  /** v0.5.3 B5: "Geri al" for the 30-day rest (the card comes back today). */
+  onEndRest?: () => void;
 }) {
   const { t } = useTranslation();
   if (!notice.crossed && !notice.confusable) return null;
@@ -47,7 +52,13 @@ export function AfterAgainBar({
             ? t('leech.afterAgain.crossed', { term: notice.term, count: notice.lapses })
             : t('leech.afterAgain.confused', { term: notice.term })}
           {notice.crossed && notice.suspended && ` ${t('leech.afterAgain.suspended')}`}
+          {notice.crossed && !notice.suspended && notice.restUntil != null && ` ${t('leech.afterAgain.rested')}`}
         </p>
+        {notice.crossed && !notice.suspended && notice.restUntil != null && onEndRest && (
+          <Button size="sm" variant="ghost" className="shrink-0" data-testid="leech-rest-undo" onClick={onEndRest}>
+            {t('ui.undo')}
+          </Button>
+        )}
         <Button
           size="sm"
           variant={notice.crossed ? 'secondary' : 'ghost'}

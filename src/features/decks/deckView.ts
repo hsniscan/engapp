@@ -11,6 +11,7 @@ import {
   forYouSpecs,
   multiPosLemmas,
   type OwnedIndex,
+  PHRASE_KINDS,
   posLevelCounts,
   type SuggestedSpec,
   TOP_SIZES,
@@ -51,6 +52,13 @@ export function useDeckView(data: BankData | undefined) {
       pos: posLevelCounts(entries),
       ambiguous: multiPosLemmas(entries),
       levelPos: CONTENT_POS.map((pos) => deckCard(entries, idx, { kind: 'levelPos', level, pos })),
+      // "Kalıplar" (decision 0074): only the kinds the bank has rows for, with their levels.
+      phrases: PHRASE_KINDS.map((phrase) => ({
+        all: deckCard(entries, idx, { kind: 'phrases', phrase }),
+        levels: CEFR.map((lv) => deckCard(entries, idx, { kind: 'phrases', phrase, level: lv })).filter(
+          (d) => d.words.length > 0,
+        ),
+      })).filter((p) => p.all.words.length > 0),
     };
   }, [data]);
 }

@@ -16,6 +16,7 @@ import {
 } from '../domain/recompute';
 import { addAnswerToDay, emptyDay } from '../domain/streak';
 import {
+  type AnswerMode,
   type Card,
   type CefrLevel,
   type CardType,
@@ -248,6 +249,54 @@ export async function addNoteWithSenses(
   input: AddNoteInput,
   now: Millis = Date.now(),
 ): Promise<AddNoteResult> {
+  const checked = checkAddNote(input);
+  return writeTx([db.notes, db.senses, db.cards], now, (w) => addNoteInTx(w, input, checked));
+}
+
+/**
+ * Many adds in one transaction per chunk (v0.5.3 A1, ADR 0072): the same rules and rows as
+ * addNoteWithSenses one by one, each word stamped `now + i` as before, but a 2,765-word deck
+ * costs ~14 commits instead of 2,765. A chunk is all or nothing, so an interrupted add leaves
+ * whole words only and can simply be run again (the duplicate rules skip what is there).
+ * `onChunk` gets (done, total) after each committed chunk. Invalid inputs are skipped.
+ */
+export async function addNotesBulk(
+  inputs: readonly AddNoteInput[],
+  now: Millis = Date.now(),
+  opts: { chunk?: number; onChunk?: (done: number, total: number) => void } = {},
+): Promise<AddNoteResult[]> {
+  const size = Math.max(1, opts.chunk ?? 200);
+  const out: AddNoteResult[] = [];
+  for (let start = 0; start < inputs.length; start += size) {
+    const part = inputs.slice(start, start + size);
+    const results = await writeTx([db.notes, db.senses, db.cards], now + start, async (w) => {
+      const res: AddNoteResult[] = [];
+      for (const [i, input] of part.entries()) {
+        let checked: CheckedAdd;
+        try {
+          checked = checkAddNote(input);
+        } catch (e) {
+          if (e instanceof ActionError) continue;
+          throw e;
+        }
+        w.setNow(now + start + i);
+        res.push(await addNoteInTx(w, input, checked));
+      }
+      return res;
+    });
+    out.push(...results);
+    opts.onChunk?.(Math.min(start + size, inputs.length), inputs.length);
+  }
+  return out;
+}
+
+interface CheckedAdd {
+  term: string;
+  termNorm: string;
+}
+
+/** Validation of addNoteWithSenses, before any write. */
+function checkAddNote(input: AddNoteInput): CheckedAdd {
   const term = input.term.normalize('NFC').replace(/\s+/g, ' ').trim();
   const termNorm = normalizeTerm(term);
   if (!termNorm) throw new ActionError('invalid_input', 'Empty term');
@@ -269,125 +318,130 @@ export async function addNoteWithSenses(
       source_sentence_tr: s.source_sentence_tr?.trim() || null,
     });
   }
+  return { term, termNorm };
+}
 
-  return writeTx([db.notes, db.senses, db.cards], now, async (w) => {
-    const sameTerm = await db.notes.where('term_norm').equals(termNorm).toArray();
-    const live = sameTerm
-      .filter((n) => n.deleted_at === null)
-      .sort((a, b) => a.created_at - b.created_at)[0];
-    const deleted = sameTerm
-      .filter((n) => n.deleted_at !== null)
-      .sort((a, b) => b.deleted_at! - a.deleted_at!)[0];
-    const createdCards: Card[] = [];
-    let status: AddNoteResult['status'];
-    let note: Note;
+async function addNoteInTx(
+  w: SyncWriter,
+  input: AddNoteInput,
+  { term, termNorm }: CheckedAdd,
+): Promise<AddNoteResult> {
+  const sameTerm = await db.notes.where('term_norm').equals(termNorm).toArray();
+  const live = sameTerm
+    .filter((n) => n.deleted_at === null)
+    .sort((a, b) => a.created_at - b.created_at)[0];
+  const deleted = sameTerm
+    .filter((n) => n.deleted_at !== null)
+    .sort((a, b) => b.deleted_at! - a.deleted_at!)[0];
+  const createdCards: Card[] = [];
+  let status: AddNoteResult['status'];
+  let note: Note;
 
-    const merged = (n: Note): Note => {
-      const m = {
-        ...n,
-        tags: uniqueTags([...n.tags, ...(input.tags ?? [])]),
-        ipa: n.ipa ?? input.ipa ?? null,
-        lexicon_term_id: n.lexicon_term_id ?? input.lexicon_term_id ?? null,
-      };
-      assertNoteFits(m);
-      return m;
+  const merged = (n: Note): Note => {
+    const m = {
+      ...n,
+      tags: uniqueTags([...n.tags, ...(input.tags ?? [])]),
+      ipa: n.ipa ?? input.ipa ?? null,
+      lexicon_term_id: n.lexicon_term_id ?? input.lexicon_term_id ?? null,
     };
+    assertNoteFits(m);
+    return m;
+  };
 
-    if (live) {
-      status = 'existing';
-      const m = merged(live);
-      note = JSON.stringify(m) === JSON.stringify(live) ? live : await w.put('notes', m);
-    } else if (deleted) {
-      status = 'reactivated';
-      note = await w.put('notes', { ...merged(deleted), deleted_at: null });
-    } else {
-      status = 'created';
-      note = await w.put('notes', {
-        ...w.base(),
-        term,
-        term_norm: termNorm,
-        term_type: input.term_type ?? (term.includes(' ') ? 'phrase' : 'word'),
-        lexicon_term_id: input.lexicon_term_id ?? null,
-        ipa: input.ipa ?? null,
-        tags: uniqueTags(input.tags ?? []),
-        possible_duplicate: false,
-        level_override: null,
-      });
+  if (live) {
+    status = 'existing';
+    const m = merged(live);
+    note = JSON.stringify(m) === JSON.stringify(live) ? live : await w.put('notes', m);
+  } else if (deleted) {
+    status = 'reactivated';
+    note = await w.put('notes', { ...merged(deleted), deleted_at: null });
+  } else {
+    status = 'created';
+    note = await w.put('notes', {
+      ...w.base(),
+      term,
+      term_norm: termNorm,
+      term_type: input.term_type ?? (term.includes(' ') ? 'phrase' : 'word'),
+      lexicon_term_id: input.lexicon_term_id ?? null,
+      ipa: input.ipa ?? null,
+      tags: uniqueTags(input.tags ?? []),
+      possible_duplicate: false,
+      level_override: null,
+    });
+  }
+
+  let recognition = await recognitionOf(note.id);
+  if (!recognition) {
+    recognition = await w.put('cards', newCard(w, note.id, null, 'recognition', true));
+    createdCards.push(recognition);
+  } else if (recognition.deleted_at !== null) {
+    recognition = await w.put('cards', { ...recognition, deleted_at: null, unlocked: true });
+    createdCards.push(recognition);
+  }
+  const recState: RecognitionUnlockInput = recognition;
+
+  const senses = await db.senses.where('note_id').equals(note.id).toArray();
+  let nextNo =
+    Math.max(0, ...senses.filter((s) => s.deleted_at === null).map((s) => s.sense_no)) + 1;
+  const addedSenses: Sense[] = [];
+  const skippedSenses: SenseInput[] = [];
+
+  for (const inp of input.senses) {
+    const meaning = inp.meaning_tr_override?.trim() || inp.meaning_tr;
+    const key = normalizeTerm(meaning);
+    const sentence = inp.source_sentence?.trim() ? inp.source_sentence : null;
+    const sentenceKey = input.one_sense_per_sentence && sentence ? normalizeTerm(sentence) : null;
+    const matches = (s: Sense): boolean =>
+      (!!inp.lexicon_sense_id && s.lexicon_sense_id === inp.lexicon_sense_id) ||
+      meaningKey(s) === key;
+    // A live sense that is the same meaning in other words ("davet" next to "davetiye,
+    // davet", same part of speech), or, for an import, the sense of the same sentence:
+    // reuse it instead of adding a second one.
+    const duplicates = (s: Sense): boolean =>
+      matches(s) ||
+      isDuplicateSense(
+        { pos: s.pos, meaning_tr: s.meaning_tr_override?.trim() || s.meaning_tr },
+        { pos: inp.pos, meaning_tr: meaning },
+      ) ||
+      (sentenceKey !== null &&
+        !!s.source_sentence &&
+        normalizeTerm(s.source_sentence) === sentenceKey);
+    if (senses.some((s) => s.deleted_at === null && duplicates(s))) {
+      skippedSenses.push(inp);
+      continue;
     }
-
-    let recognition = await recognitionOf(note.id);
-    if (!recognition) {
-      recognition = await w.put('cards', newCard(w, note.id, null, 'recognition', true));
-      createdCards.push(recognition);
-    } else if (recognition.deleted_at !== null) {
-      recognition = await w.put('cards', { ...recognition, deleted_at: null, unlocked: true });
-      createdCards.push(recognition);
-    }
-    const recState: RecognitionUnlockInput = recognition;
-
-    const senses = await db.senses.where('note_id').equals(note.id).toArray();
-    let nextNo =
-      Math.max(0, ...senses.filter((s) => s.deleted_at === null).map((s) => s.sense_no)) + 1;
-    const addedSenses: Sense[] = [];
-    const skippedSenses: SenseInput[] = [];
-
-    for (const inp of input.senses) {
-      const meaning = inp.meaning_tr_override?.trim() || inp.meaning_tr;
-      const key = normalizeTerm(meaning);
-      const sentence = inp.source_sentence?.trim() ? inp.source_sentence : null;
-      const sentenceKey = input.one_sense_per_sentence && sentence ? normalizeTerm(sentence) : null;
-      const matches = (s: Sense): boolean =>
-        (!!inp.lexicon_sense_id && s.lexicon_sense_id === inp.lexicon_sense_id) ||
-        meaningKey(s) === key;
-      // A live sense that is the same meaning in other words ("davet" next to "davetiye,
-      // davet", same part of speech), or, for an import, the sense of the same sentence:
-      // reuse it instead of adding a second one.
-      const duplicates = (s: Sense): boolean =>
-        matches(s) ||
-        isDuplicateSense(
-          { pos: s.pos, meaning_tr: s.meaning_tr_override?.trim() || s.meaning_tr },
-          { pos: inp.pos, meaning_tr: meaning },
-        ) ||
-        (sentenceKey !== null &&
-          !!s.source_sentence &&
-          normalizeTerm(s.source_sentence) === sentenceKey);
-      if (senses.some((s) => s.deleted_at === null && duplicates(s))) {
-        skippedSenses.push(inp);
-        continue;
-      }
-      const sentenceTr = (sentence && inp.source_sentence_tr?.trim()) || null;
-      const fields = {
-        lexicon_sense_id: inp.lexicon_sense_id ?? null,
-        pos: inp.pos ?? null,
-        gloss_en: inp.gloss_en ?? null,
-        meaning_tr: inp.meaning_tr.trim(),
-        meaning_tr_override: inp.meaning_tr_override?.trim() || null,
-        source_sentence: sentence,
-        source_sentence_tr: sentenceTr,
-        span: cleanSpan(sentence, inp.span),
-        source_id: inp.source_id ?? null,
-      };
-      const old = senses.find((s) => s.deleted_at !== null && matches(s));
-      const sense = old
-        ? await w.put('senses', {
-            ...old,
-            deleted_at: null,
-            sense_no: nextNo++,
-            ...(fields.source_sentence
-              ? {
-                  source_sentence: fields.source_sentence,
-                  source_sentence_tr: fields.source_sentence_tr,
-                  span: fields.span,
-                }
-              : {}),
-          })
-        : await w.put('senses', { ...w.base(), note_id: note.id, sense_no: nextNo++, ...fields });
-      senses.push(sense);
-      addedSenses.push(sense);
-      createdCards.push(...(await ensureSenseCards(w, sense, recState, note.term_type)));
-    }
-    return { note, status, addedSenses, skippedSenses, createdCards };
-  });
+    const sentenceTr = (sentence && inp.source_sentence_tr?.trim()) || null;
+    const fields = {
+      lexicon_sense_id: inp.lexicon_sense_id ?? null,
+      pos: inp.pos ?? null,
+      gloss_en: inp.gloss_en ?? null,
+      meaning_tr: inp.meaning_tr.trim(),
+      meaning_tr_override: inp.meaning_tr_override?.trim() || null,
+      source_sentence: sentence,
+      source_sentence_tr: sentenceTr,
+      span: cleanSpan(sentence, inp.span),
+      source_id: inp.source_id ?? null,
+    };
+    const old = senses.find((s) => s.deleted_at !== null && matches(s));
+    const sense = old
+      ? await w.put('senses', {
+          ...old,
+          deleted_at: null,
+          sense_no: nextNo++,
+          ...(fields.source_sentence
+            ? {
+                source_sentence: fields.source_sentence,
+                source_sentence_tr: fields.source_sentence_tr,
+                span: fields.span,
+              }
+            : {}),
+        })
+      : await w.put('senses', { ...w.base(), note_id: note.id, sense_no: nextNo++, ...fields });
+    senses.push(sense);
+    addedSenses.push(sense);
+    createdCards.push(...(await ensureSenseCards(w, sense, recState, note.term_type)));
+  }
+  return { note, status, addedSenses, skippedSenses, createdCards };
 }
 
 export interface NotePatch {
@@ -582,6 +636,8 @@ export interface AnswerInput {
   duration_ms: number;
   /** Recognition card: the sense whose sentence was shown. */
   shown_sense_id?: Id | null;
+  /** v0.5.3 (ADR 0071): how the answer was given; absent = unknown (like a self-rated one). */
+  answer_mode?: AnswerMode | null;
 }
 
 export interface AnswerResult {
@@ -648,10 +704,11 @@ async function writeAnswer(
     shown_sense_id: input.shown_sense_id ?? null,
     created_at: w.now,
     hlc: w.nextHlc(),
+    ...(input.answer_mode ? { answer_mode: input.answer_mode } : {}),
   };
   await w.insertLog(log);
   const fsrs = inOrder
-    ? applyRating(scheduler, card, input.rating, at)
+    ? applyRating(scheduler, card, input.rating, at, { choice: input.answer_mode === 'choice' })
     : replayCard(scheduler, card, [...((await logsByCard([card.id])).get(card.id) ?? [])]).fsrs;
   const saved = await w.put('cards', { ...card, ...fsrs, unlocked: true });
   const unlockedCardIds =

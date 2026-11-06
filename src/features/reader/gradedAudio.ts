@@ -4,8 +4,18 @@
 // ttsAudioUrls). The files are public, so guests hear them too; nothing about the user is sent.
 // When a clip cannot be played (offline, not there, blocked) the device voice reads the
 // sentence instead, so "Dinleyerek oku" never stops in the middle of a text.
+//
+// Since v0.5.3 (decision 0073) the library is recorded in both accents. The British clip has no
+// stored key: it is content-addressed like every clip, so it is computed from the sentence. A
+// clip string may hold several space-separated paths, tried in order (the chosen accent first,
+// then the stored en-US clip for a text recorded before both accents were).
 import { backendConfig } from '@/lib/supabase';
-import { parseAudioBaseUrl, ttsAudioUrls } from '../../../supabase/functions/_shared/tts-contract';
+import {
+  parseAudioBaseUrl,
+  ttsAudioUrls,
+  ttsObjectPath,
+  type TtsVoice,
+} from '../../../supabase/functions/_shared/tts-contract';
 
 const AUDIO_BASE_URL = parseAudioBaseUrl(import.meta.env.VITE_AUDIO_BASE_URL);
 
@@ -17,9 +27,28 @@ export function gradedClipUrls(
     supabaseUrl: backendConfig?.url ?? null,
   },
 ): string[] {
-  const path = key.trim().replace(/^\/+/, '');
-  if (!path || path.includes('..')) return [];
-  return ttsAudioUrls(path, from);
+  const out: string[] = [];
+  for (const part of key.split(/\s+/)) {
+    const path = part.replace(/^\/+/, '');
+    if (!path || path.includes('..')) continue;
+    for (const url of ttsAudioUrls(path, from)) if (!out.includes(url)) out.push(url);
+  }
+  return out;
+}
+
+/**
+ * The clip string of a library sentence in the reader's accent: the stored en-US key as it is,
+ * or the British clip's path first and the stored key after it. Null when the sentence has no
+ * recording.
+ */
+export async function voicedClipKey(
+  row: { en: string; audio_key: string | null },
+  voice: TtsVoice,
+): Promise<string | null> {
+  const key = row.audio_key?.trim();
+  if (!key) return null;
+  if (voice === 'en-US') return key;
+  return `${await ttsObjectPath(voice, row.en)} ${key}`;
 }
 
 let el: HTMLAudioElement | null = null;

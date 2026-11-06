@@ -97,6 +97,12 @@ export interface Card extends SyncedRow, FsrsFields {
   suspended: boolean;
   /** Production/cloze/image cards stay locked until the note's recognition card reaches Review. */
   unlocked: boolean;
+  /**
+   * v0.5.3 (ADR 0071): the card rests until this time ("30 gün dinlenmede") after its sixth
+   * lapse; the queue skips it until then. Absent/null = not resting. The FSRS fields are
+   * untouched: the card comes back overdue and is scheduled from its real elapsed time.
+   */
+  rest_until?: Millis | null;
 }
 
 /** Immutable answer record. Never updated or deleted (undo adds a new row with undo_of). */
@@ -117,9 +123,17 @@ export interface ReviewLog {
    * null = 'app' (rows written before the column, and every answer given here).
    */
   origin?: ReviewLogOrigin | null;
+  /**
+   * v0.5.3 (ADR 0071): how the answer was given. 'choice' = picked from multiple choices
+   * (never moves a card to Öğrenildi, left out of the personal FSRS fit), 'typed' = typed and
+   * checked, 'flip' = self-rated after showing the answer. Absent/null = unknown (older rows,
+   * Anki imports), treated like 'flip'.
+   */
+  answer_mode?: AnswerMode | null;
 }
 
 export type ReviewLogOrigin = 'app' | 'anki';
+export type AnswerMode = 'choice' | 'typed' | 'flip';
 
 /** "Bildim" / "Bilemedim" in a practice round. */
 export type PracticeResult = 'known' | 'unknown';
@@ -507,6 +521,21 @@ export interface LexiconExample {
   translations: Record<string, string>;
   status: 'active' | 'retired';
   updated_at: Millis;
+  /** v0.5.3 (ADR 0074): 'tatoeba' for a Tatoeba sentence; absent/null = written by a model. */
+  source?: 'tatoeba' | null;
+  /** Tatoeba's sentence ids and authors (CC BY 2.0 FR asks for credit). */
+  attribution?: ExampleAttribution | null;
+}
+
+/** Credit of a Tatoeba sentence (lexicon_examples.attribution). */
+export interface ExampleAttribution {
+  license: string;
+  en_id: number;
+  en_by: string;
+  tr_id: number;
+  tr_by: string;
+  /** The Turkish translation was corrected by Engapp's review. */
+  tr_edited?: boolean;
 }
 
 /**

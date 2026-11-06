@@ -14,7 +14,8 @@ import { fsrsEqual, pickFsrs } from '../domain/fsrs';
 import { compareHlc } from '../domain/hlc';
 import { checkIntegrity, type IntegrityReport } from '../domain/integrity';
 import { keepProfileFields } from '../domain/profile';
-import { fillLateColumns } from '../domain/syncMerge';
+import { fillLateColumns, keepGradedBody, needsGradedBody } from '../domain/syncMerge';
+import { gradedReaderBody } from '../domain/library';
 import { primaryRecognition } from '../domain/leech';
 import { deriveUnlocked, effectiveLogs, replayCard } from '../domain/recompute';
 import {
@@ -313,6 +314,7 @@ export async function applyRemoteRows(
 ): Promise<ApplyRemoteResult> {
   const result: ApplyRemoteResult = { applied: 0, skipped: 0, invalid: 0, recomputedCards: 0 };
   let logsArrived = false;
+  const gradedWithoutBody: { id: Id; graded_id: string; hlc: string }[] = [];
   await writeTx([...allSyncedTables(), db.report_drafts], now, async (w) => {
     const touchedCards = new Set<Id>();
     const touchedTerms = new Set<string>();
@@ -388,7 +390,9 @@ export async function applyRemoteRows(
           result.skipped++;
           continue;
         }
-        await db.table(table).put(keepProfileFields(table, row, local));
+        const merged = keepGradedBody(table, keepProfileFields(table, row, local), local);
+        await db.table(table).put(merged);
+        if (needsGradedBody(table, merged)) gradedWithoutBody.push(merged);
         result.applied++;
         if (
           table === 'settings' &&
@@ -404,7 +408,26 @@ export async function applyRemoteRows(
     await flagDuplicates(w, touchedTerms);
   });
   if (logsArrived) await rebuildDailyActivity(now);
+  if (gradedWithoutBody.length) await fillGradedBodies(gradedWithoutBody);
   return result;
+}
+
+/**
+ * Pulled reading rows of library texts come without a body (decision 0075). When this device
+ * has the text's sentences, the body is rebuilt from them at once, locally only (no outbox
+ * entry: the server never stores it); otherwise opening the text fills it (openGradedText).
+ */
+async function fillGradedBodies(rows: { id: Id; graded_id: string; hlc: string }[]): Promise<void> {
+  await db.transaction('rw', db.texts, db.graded_bodies, async () => {
+    for (const r of rows) {
+      const cached = await db.graded_bodies.get(r.graded_id);
+      if (!cached) continue;
+      const body = gradedReaderBody(cached.sentences).body;
+      const cur = await db.texts.get(r.id);
+      if (!cur || cur.body !== '' || cur.hlc !== r.hlc || body === '') continue;
+      await db.texts.update(r.id, { body });
+    }
+  });
 }
 
 /**

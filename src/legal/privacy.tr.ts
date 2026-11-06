@@ -19,7 +19,7 @@ export const privacyTr: LegalDocument = {
           ul: [
             'Misafir modunda bütün verilerin yalnızca kendi cihazında durur; bize hiçbir şey gelmez.',
             'Google ile giriş yaparsan kartların, çalışma geçmişin, kaydettiğin okuma metinleri (yapıştırdığın metinler, makaleler, PDF, altyazı ve fotoğraftan okunan metinler, hikâyeler) ve ayarların, cihazların arasında eşitlenmek için sunucumuzda saklanır.',
-            "AI özelliklerini kullandığında gönderdiğin metin Google Gemini ile, Gemini'nin kotası dolduğunda Anthropic Claude ile işlenir. Gemini'yi ücretsiz katmanda kullandığımız için gönderilen metinler Google'ın ürünlerini geliştirmek için kullanılabilir. Gizli ya da kişisel bilgi içeren metin gönderme.",
+            "AI özelliklerini kullandığında gönderdiğin metin önce Anthropic Claude ile işlenir; Claude'un aylık bütçesi dolduğunda ya da Claude yanıt vermediğinde Google Gemini ile işlenir. Gemini'yi ücretsiz katmanda kullandığımız için Gemini'ye giden metinler Google'ın ürünlerini geliştirmek için kullanılabilir. Gizli ya da kişisel bilgi içeren metin gönderme.",
             'Reklam yok, verilerini satmıyoruz, seni izleyen bir analiz aracı kullanmıyoruz.',
             'Hesabını ve bütün verilerini istediğin an uygulamadan ya da [hesap silme sayfasından](/hesap-sil) silebilirsin.',
           ],
@@ -65,7 +65,7 @@ export const privacyTr: LegalDocument = {
           p: '**Cihaz kimliği.** Uygulama, senkron için her kuruluma rastgele bir cihaz kimliği verir ve bunu cevap kayıtlarına yazar. Bu bir reklam kimliği değildir; telefonun donanım kimliklerine erişilmez.',
         },
         {
-          p: '**AI ile işlenen metinler.** "Metinden kart çıkar" ile yapıştırdığın ya da PDF dosyasından okunan metin, parçalar hâlinde sunucuya ve oradan Google Gemini\'ye gönderilir. AI\'ın bir parçadan çıkardığı aday kelimeler ve geçtikleri cümleler, aynı metni tekrar işlememek için sunucuda en fazla 90 gün saklanır.',
+          p: '**AI ile işlenen metinler.** "Metinden kart çıkar" ile yapıştırdığın ya da PDF dosyasından okunan metin, parçalar hâlinde sunucuya ve oradan Anthropic Claude\'a (Claude kullanılamadığında Google Gemini\'ye) gönderilir. AI\'ın bir parçadan çıkardığı aday kelimeler ve geçtikleri cümleler, aynı metni tekrar işlememek için sunucuda en fazla 90 gün saklanır.',
         },
         {
           p: '**Makale ve altyazı içe aktarma.** Bir bağlantıdan makale aldığında yalnızca adres sunucumuza gider; sunucu sayfayı indirip metnini ayıklar, sana gönderir ve bu işlem sırasında ne adresi ne metni saklar. Metin, adresiyle birlikte okuma metinlerinin arasına cihazına kaydedilir ve giriş yaptıysan yukarıda anlatıldığı gibi kendi hesabınla eşitlenir; ortak tablolara ya da başka kullanıcılara gitmez. Altyazı dosyaları yalnızca cihazında okunur; içinden aldığın metin de aynı şekilde kaydedilir ve eşitlenir.',
@@ -89,7 +89,10 @@ export const privacyTr: LegalDocument = {
           p: '**Fotoğraftan metin.** "Fotoğraftan metin" ile çektiğin ya da galeriden seçtiğin fotoğraf yalnızca cihazında okunur: Android uygulamasında Google ML Kit, web sürümünde tarayıcının içinde çalışan Tesseract ile. Fotoğraf hiçbir sunucuya gönderilmez ve saklanmaz. Okunan metni kaydedersen yalnızca metin, okuma metinlerinin arasına kaydedilir ve giriş yaptıysan kendi hesabınla eşitlenir. Android uygulamasında Google ML Kit, kendi işleyişini ölçmek için Google\'a kullanım ve performans bilgisi gönderir (cihaz modeli, Android ve uygulama sürümü, kuruluma özel bir kimlik, ne kadar sürdüğü, hata kodları); bu bilgide fotoğraf ya da okunan metin yoktur.',
         },
         {
-          p: '**İşlemediklerimiz.** Konumun, rehberin, mikrofonun ve fotoğraf arşivin kullanılmaz. Kamerayı yalnızca "Fotoğraftan metin" ile sen açarsın; uygulamanın kamera izni yoktur, fotoğrafı telefonun kendi kamera uygulaması çeker. Reklam kimliği, analiz ya da izleme aracı yoktur. Uygulamanın hata kaydı yalnızca cihazında tutulur, bize gönderilmez.',
+          p: '**Hata raporları.** Giriş yaptıysan, uygulamada bir hata olduğunda kısa bir hata raporu internet varken sunucumuza gider; böylece hataları görüp düzeltebiliriz. Raporda yalnızca hatanın teknik mesajı, uygulamanın neresinde olduğu, uygulama sürümü, web ya da Android bilgisi ve hesap kimliğin bulunur; içindeki bağlantılar, e-posta adresleri, tırnak içindeki metinler ve uzun sayılar gönderilmeden önce silinir. Kartların, metinlerin ve cümlelerin gönderilmez. Günde en fazla 20 rapor gider. Misafir modunda hiçbir rapor gönderilmez; hata kaydı yalnızca cihazında kalır.',
+        },
+        {
+          p: '**İşlemediklerimiz.** Konumun, rehberin, mikrofonun ve fotoğraf arşivin kullanılmaz. Kamerayı yalnızca "Fotoğraftan metin" ile sen açarsın; uygulamanın kamera izni yoktur, fotoğrafı telefonun kendi kamera uygulaması çeker. Reklam kimliği, analiz ya da izleme aracı yoktur.',
         },
       ],
     },
@@ -121,14 +124,14 @@ export const privacyTr: LegalDocument = {
           ul: [
             "**Supabase** (veritabanı, giriş, sunucu fonksiyonları): hesabın ve öğrenme verilerin. Sunucular Avrupa Birliği'nde, İrlanda bölgesindedir.",
             '**Cloudflare** (web sitesinin barındırılması): uygulama dosyalarını sunarken IP adresin ve tarayıcı bilgin gibi teknik bağlantı verilerini işler. **Cloudflare R2** (dosya deposu): ortak sözlüğün ses dosyaları ve veritabanının şifrelenmiş yedekleri.',
-            '**Google**: Google ile giriş; profil fotoğrafın Google\'ın sunucusundan yüklenir. **Google ML Kit** (yalnızca Android uygulamasında "Fotoğraftan metin" kullanınca): yukarıda anlatılan kullanım ve performans bilgisi; fotoğraf ve metin gönderilmez. **Google Gemini** (AI): kart çıkarmak için gönderdiğin metin parçaları, elle eklediğin kelime, temalara ayırma için kelimelerin ve kısa İngilizce tanımları, sesli okunacak kelime ya da cümle, haftalık rapor yorumu için yalnızca sayılar.',
+            '**Google**: Google ile giriş; profil fotoğrafın Google\'ın sunucusundan yüklenir. **Google ML Kit** (yalnızca Android uygulamasında "Fotoğraftan metin" kullanınca): yukarıda anlatılan kullanım ve performans bilgisi; fotoğraf ve metin gönderilmez. **Google Gemini** (AI yedeği ve sesli okuma): Claude\'un aylık bütçesi dolduğunda ya da Claude yanıt vermediğinde, aşağıda Claude için sayılan aynı AI istekleri Gemini ile işlenir; hazır ses dosyası olmayan, sesli okunacak kelime ya da cümle de Gemini\'ye gider.',
             "**Anthropic Claude** (kelime görselleri, ortak sözlük için toplu olarak bir kez çizilir): yalnızca ortak sözlükteki kelime, sözcük türü ve Türkçe anlamı, kısa bir çizim ipucu, yeniden çizimde hazır bir düzeltme notu ve kontrol için Claude'un çizdiği resmin kendisi. Hesabına, kartlarına ya da cümlelerine ait hiçbir bilgi gönderilmez.",
-            "**Anthropic Claude** (AI yedeği): Gemini'nin kotası dolduğunda, yukarıda Gemini için sayılan aynı AI istekleri Claude ile işlenir. **Anthropic Claude** (Bugünün hikâyesi): yalnızca yukarıda sayılan kelime listesi, seviye, zorluk ve ilgi alanları.",
+            "**Anthropic Claude** (AI): kart çıkarmak için gönderdiğin metin parçaları, elle eklediğin kelime, temalara ayırma için kelimelerin ve kısa İngilizce tanımları, haftalık rapor yorumu için yalnızca sayılar. **Anthropic Claude** (Bugünün hikâyesi): yalnızca yukarıda sayılan kelime listesi, seviye, zorluk ve ilgi alanları.",
             '**Tarayıcıların bildirim servisleri** (Google, Mozilla, Apple, Microsoft): web bildirimlerini açtıysan, şifreli hatırlatma metni ("Bugün 12 kart çalışmaya hazır" gibi).',
           ],
         },
         {
-          p: "Gemini'yi şu an ücretsiz katmanda kullanıyoruz. Google'ın koşullarına göre ücretsiz katmanda gönderilen metinler Google'ın ürünlerini geliştirmek için kullanılabilir ve insan değerlendiriciler tarafından okunabilir. Bu yüzden gizli, iş ya da kişisel bilgi içeren metinleri AI ile işleme.",
+          p: "Claude'a Anthropic'in ücretli API'si ile gönderilen metinler, Anthropic'in ticari koşullarına göre modellerini eğitmek için kullanılmaz. Yedek olarak kullandığımız Gemini'yi ise ücretsiz katmanda kullanıyoruz: Google'ın koşullarına göre ücretsiz katmanda gönderilen metinler Google'ın ürünlerini geliştirmek için kullanılabilir ve insan değerlendiriciler tarafından okunabilir. Hangi metnin yedeğe gideceğini önceden bilemeyeceğin için gizli, iş ya da kişisel bilgi içeren metinleri AI ile işleme.",
         },
         {
           p: 'Örnek cümleler, hatırlatıcı önerileri, benzer kelime notları ve sesli okuma dosyaları sözlükteki ortak içerikten üretilir; bunlar için senin cümlelerin gönderilmez.',
@@ -153,6 +156,7 @@ export const privacyTr: LegalDocument = {
             'Hesabın, öğrenme verilerin ve okuma metinlerin, hesabın açık olduğu sürece saklanır.',
             'Sildiğin bir kart ya da kelime, diğer cihazlarına da silindiği bilgisi gidebilsin diye 30 gün işaretli kalır, sonra sunucudan tamamen silinir.',
             'AI aday önbelleği, AI kullanım sayaçları, eşitleme sayaçları ve gönderilen bildirim kayıtları 90 gün sonra silinir; aylık AI harcama tutarı bir sonraki ayın sonunda silinir.',
+            'Hata raporları 30 gün sonra silinir.',
             'Hesabını sildiğinde sunucudaki bütün verilerin hemen silinir.',
             'Veritabanının şifrelenmiş bir yedeği her gece alınır ve Cloudflare R2\'de saklanır: günlük yedekler 14 gün, haftalık yedekler 8 hafta, sunucu güncellemelerinden hemen önce alınan yedekler en fazla 8 hafta tutulur. Yedekler yalnızca bir arızadan sonra verileri geri yüklemek için kullanılır; hesabını sildiğinde verilerin bu yedeklerde en fazla bu süreler boyunca kalır ve sonra kendiliğinden silinir.',
             'Hizmet sağlayıcıların kendi teknik kayıtları ve yedekleri kendi saklama sürelerine tabidir.',
@@ -172,7 +176,7 @@ export const privacyTr: LegalDocument = {
           ],
         },
         {
-          p: 'Silinenler: kartların ve kelimelerin, okuma metinlerin ve karşılaşma sayıların, çalışma geçmişin ve istatistiklerin, ayarların, raporların, bildirim kayıtların, AI önbelleğin, AI ve eşitleme sayaçların, aylık AI harcama tutarın, görsel sayaçların, görsel isteklerin ve görsel cevapların (yöneticiysen yönetici kaydın ve görsel onay kararların da), ardından hesabının kendisi. Ortak sözlükteki görseller kalır. Silme geri alınamaz; istersen önce **Profil → Ayarlar → Yedek ve veri** bölümünden JSON yedeğini indir.',
+          p: 'Silinenler: kartların ve kelimelerin, okuma metinlerin ve karşılaşma sayıların, çalışma geçmişin ve istatistiklerin, ayarların, raporların, hata raporların, bildirim kayıtların, AI önbelleğin, AI ve eşitleme sayaçların, aylık AI harcama tutarın, görsel sayaçların, görsel isteklerin ve görsel cevapların (yöneticiysen yönetici kaydın ve görsel onay kararların da), ardından hesabının kendisi. Ortak sözlükteki görseller kalır. Silme geri alınamaz; istersen önce **Profil → Ayarlar → Yedek ve veri** bölümünden JSON yedeğini indir.',
         },
         {
           p: 'Misafir modundaki veriler yalnızca cihazındadır: **Profil → Ayarlar → Hesap ve eşitleme → Bu cihazdaki verileri sil** ile ya da uygulamayı kaldırarak silebilirsin.',

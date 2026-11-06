@@ -1,7 +1,11 @@
 /**
  * Server-side system jobs (v0.2 İP2), run by .github/workflows/level-jobs.yml every night
  * and on demand. Uses the service role and the system AI budget (public.ai_system_consume,
- * AI_SYSTEM_DAILY_LIMIT calls per UTC day), never a user's budget. Prompts and pure steps:
+ * AI_SYSTEM_DAILY_LIMIT calls per UTC day), never a user's budget. Model calls go through the
+ * text provider chain (decision 0077, scripts/lib/system-ai.ts): Claude Sonnet first, every
+ * call reserved on the monthly text budget and the system jobs' pool (AI_SYSTEM_MONTHLY_USD,
+ * at most AI_SYSTEM_MAX_SHARE of CLAUDE_TEXT_MONTHLY_USD); Gemini when the pool or the month is
+ * used up, or Claude does not answer. Prompts and pure steps:
  * supabase/functions/_shared/level-job.ts; docs: docs/ai-pipeline.md ("Level job").
  *
  *   node scripts/system-jobs.ts levels [--dry-run] [--no-ai] [--max-calls N] [--max-minutes 40]
@@ -10,8 +14,8 @@
  *       2. guess:   level-guess-v1 for senses outside the lists that never had a guess
  *       3. tr:      level-tr-v1, the Turkish-learner check of the word lists
  *       4. resolve again, so corrections reach the lexicon (and every device) at once
- *       Steps 2-3 need GEMINI_API_KEY: without it (or with --no-ai) they are skipped with a
- *       warning and the run still succeeds. They stop when the budget, the provider quota or
+ *       Steps 2-3 need GEMINI_API_KEY or ANTHROPIC_API_KEY: without both (or with --no-ai) they
+ *       are skipped with a warning and the run still succeeds. They stop when the budget, the provider quota or
  *       --max-minutes is used up; the next run continues where this one stopped. An error in
  *       them still runs step 4, then fails the run. Logic and tests: scripts/lib/level-run.ts.
  *       Every run ends with a heartbeat (public.job_runs, scripts/lib/heartbeat.ts).
@@ -23,10 +27,13 @@
  *   node --env-file=<file with GEMINI_API_KEY> scripts/system-jobs.ts try-tr [--limit 100] [--offset 0]
  *   node --env-file=<...> scripts/system-jobs.ts try-guess
  *       Local prompt check: one model call on the committed list (try-tr) or on built-in
- *       sample senses (try-guess). No database, nothing is stored.
+ *       sample senses (try-guess). Nothing is stored; Claude is used only when SUPABASE_URL and
+ *       SUPABASE_SERVICE_ROLE_KEY are set too (its call is booked on the budget), else Gemini.
  *
- * Environment: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (levels, export-tr); GEMINI_API_KEY,
- * GEMINI_MODEL, GEMINI_FALLBACK_MODEL (levels, try-*); AI_SYSTEM_DAILY_LIMIT (default 100).
+ * Environment: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (levels, export-tr); ANTHROPIC_API_KEY,
+ * CLAUDE_TEXT_MODEL, CLAUDE_TEXT_MONTHLY_USD, AI_SYSTEM_MONTHLY_USD, AI_SYSTEM_MAX_SHARE,
+ * GEMINI_API_KEY, GEMINI_MODEL, GEMINI_FALLBACK_MODEL (levels, try-*); AI_SYSTEM_DAILY_LIMIT
+ * (default 100).
  * Secrets are read from the environment only and never printed.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -34,7 +41,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { AiError, createAiProvider, type AiProvider } from '../supabase/functions/_shared/ai-provider.ts';
+import { AiError, type AiProvider } from '../supabase/functions/_shared/ai-provider.ts';
 import { parseCefr } from '../supabase/functions/_shared/cefr.ts';
 import { lemmasNeeded, type RefEntry, type RefLookup, type WordRefs } from '../supabase/functions/_shared/level.ts';
 import {
@@ -56,6 +63,11 @@ import {
   type TrPendingItem,
 } from '../supabase/functions/_shared/level-job.ts';
 import { heartbeat, summary } from './lib/heartbeat.ts';
+import {
+  createSystemTextProvider,
+  serviceClientFromEnv,
+  systemTextAiAvailable,
+} from './lib/system-ai.ts';
 import {
   runLevels,
   type LevelAi,
@@ -232,9 +244,11 @@ async function levels(opts: { dryRun: boolean; maxCalls: number; noAi: boolean; 
   const c = db();
   // The deterministic part needs no AI: without a key it still runs, and only the AI steps are
   // skipped (decision 0037).
-  const haveKey = !!env('GEMINI_API_KEY');
+  const haveKey = systemTextAiAvailable(env, { db: c });
   if (!haveKey && !opts.noAi && !dryRun)
-    console.log('::warning::GEMINI_API_KEY is not set: levels and zipf are resolved, AI steps skipped');
+    console.log(
+      '::warning::Neither GEMINI_API_KEY nor ANTHROPIC_API_KEY is set: levels and zipf are resolved, AI steps skipped',
+    );
   const useAi = haveKey && !opts.noAi && !dryRun;
   const budget = new Budget(
     useAi ? c : null,
@@ -243,7 +257,8 @@ async function levels(opts: { dryRun: boolean; maxCalls: number; noAi: boolean; 
     Date.now() + opts.maxMinutes * 60_000,
   );
   let provider: AiProvider | null = null;
-  const getProvider = () => (provider ??= createAiProvider(env));
+  const getProvider = () =>
+    (provider ??= createSystemTextProvider(env, { db: c, purpose: 'levels', log }));
   const levelDb: LevelDb = {
     senses: () => allSenses(c),
     refs: (rows) => loadRefs(c, rows),
@@ -328,6 +343,11 @@ async function exportTr(out: string) {
   console.log(`${rows.length} corrections written to ${out}`);
 }
 
+/** The provider of the local prompt checks: Claude only with the budget's database. */
+function localProvider(): AiProvider {
+  return createSystemTextProvider(env, { db: serviceClientFromEnv(env), purpose: 'levels', log });
+}
+
 /** The committed list as TrPendingItems, most frequent first (local prompt checks). */
 function localList(): TrPendingItem[] {
   const read = (f: string) =>
@@ -350,7 +370,7 @@ function localList(): TrPendingItem[] {
 async function tryTr(limit: number, offset: number) {
   const items = localList().slice(offset, offset + limit);
   const budget = new Budget(null, Infinity, 1);
-  const res = await callModel(createAiProvider(env), budget, {
+  const res = await callModel(localProvider(), budget, {
     system: LEVEL_TR_SYSTEM_PROMPT,
     user: buildLevelTrUserPrompt(items),
     schema: LEVEL_TR_RESPONSE_SCHEMA as unknown as Record<string, unknown>,
@@ -379,7 +399,7 @@ const SAMPLE_SENSES: GuessTarget[] = [
 
 async function tryGuess() {
   const budget = new Budget(null, Infinity, 1);
-  const res = await callModel(createAiProvider(env), budget, {
+  const res = await callModel(localProvider(), budget, {
     system: LEVEL_GUESS_SYSTEM_PROMPT,
     user: buildLevelGuessUserPrompt(SAMPLE_SENSES),
     schema: LEVEL_GUESS_RESPONSE_SCHEMA as unknown as Record<string, unknown>,

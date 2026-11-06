@@ -138,6 +138,21 @@ describe('library', () => {
     );
   });
 
+  it('shows a resting card in the word detail and brings it back now (v0.5.3 B5)', async () => {
+    const user = userEvent.setup();
+    const tide = (await db.cards.toArray()).find((c) => c.card_type === 'recognition' && c.created_at === 3000)!;
+    await db.cards.update(tide.id, { rest_until: Date.now() + 20 * 86_400_000 });
+    renderRoute(<LibraryPage />, { path: '/library' });
+    await screen.findByRole('list', { name: 'Kelimeler' });
+    await user.click(screen.getByRole('button', { name: /^tide/ }));
+    const dialog = await screen.findByRole('dialog', { name: 'tide' });
+    const notice = await within(dialog).findByTestId('rest-notice');
+    expect(notice).toHaveTextContent('Bu kelime dinleniyor');
+    await user.click(within(notice).getByRole('button', { name: 'Şimdi geri getir' }));
+    await waitFor(async () => expect((await db.cards.get(tide.id))!.rest_until).toBeNull());
+    await waitFor(() => expect(within(dialog).queryByTestId('rest-notice')).toBeNull());
+  });
+
   it('the row menu suspends a word at once', async () => {
     const user = userEvent.setup();
     renderRoute(<LibraryPage />, { path: '/library' });

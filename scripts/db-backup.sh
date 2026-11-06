@@ -86,6 +86,17 @@ max_bytes="${R2_MAX_BYTES:-8589934592}"
 used=$(s3 s3api list-objects-v2 --bucket "$bucket" --query 'sum(Contents[].Size)' --output text 2>/dev/null || echo 0)
 case "$used" in ''|None|null) used=0 ;; esac
 used=${used%.*}
+# The free 10 GB is per account (decision 0073): with a separate backup bucket the audio
+# bucket on the same account counts too (read with the audio key; unreadable counts as 0).
+if [ -n "${R2_BACKUP_BUCKET:-}" ] && [ -n "${R2_BUCKET:-}" ] && [ "$R2_BUCKET" != "$bucket" ] \
+  && [ -n "${R2_ACCESS_KEY_ID:-}" ] && [ -n "${R2_SECRET_ACCESS_KEY:-}" ]; then
+  audio=$(AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID" AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY" \
+    s3 s3api list-objects-v2 --bucket "$R2_BUCKET" --query 'sum(Contents[].Size)' --output text 2>/dev/null || echo 0)
+  case "$audio" in ''|None|null) audio=0 ;; esac
+  audio=${audio%.*}
+  echo "R2 audio bucket holds $((audio / 1048576)) MB on the same account"
+  used=$((used + audio))
+fi
 if [ $((used + size)) -gt "$max_bytes" ]; then
   echo "::error::R2 bucket $bucket holds $((used / 1048576)) MB; this $((size / 1048576)) MB copy would pass the $((max_bytes / 1048576)) MB free-plan guard. No backup uploaded (docs/runbook-backup-restore.md)."
   exit 1

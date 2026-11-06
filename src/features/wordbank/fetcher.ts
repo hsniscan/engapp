@@ -61,6 +61,28 @@ export interface WordBankFetchOptions {
 }
 
 let inflight: Promise<WordBankFetchOutcome> | null = null;
+
+// ------------------------------------------------------------------ "the bank changed"
+// Bumped after a run that stored or removed rows (v0.5.3 A2), so a lookup that missed (the add
+// sheet, the reader) runs again by itself instead of waiting for the user to type again.
+let epoch = 0;
+const epochListeners = new Set<() => void>();
+
+export function wordBankEpoch(): number {
+  return epoch;
+}
+
+export function onWordBankChange(l: () => void): () => void {
+  epochListeners.add(l);
+  return () => {
+    epochListeners.delete(l);
+  };
+}
+
+function bumpEpoch(): void {
+  epoch++;
+  for (const l of [...epochListeners]) l();
+}
 const progressListeners = new Set<(rows: number) => void>();
 
 /**
@@ -77,9 +99,14 @@ export function fetchWordBank(
     inflight ??
     (inflight = runFetch(deps, opts.force ?? false, (n) => {
       for (const l of [...progressListeners]) l(n);
-    }).finally(() => {
-      inflight = null;
-    }));
+    })
+      .then((r) => {
+        if (r.status === 'done' && r.stored + r.removed > 0) bumpEpoch();
+        return r;
+      })
+      .finally(() => {
+        inflight = null;
+      }));
   return run.finally(() => {
     if (listener) progressListeners.delete(listener);
   });

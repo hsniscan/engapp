@@ -88,3 +88,25 @@ export function fillLateColumns<T extends object>(table: string, remote: object,
   }
   return out;
 }
+
+/** A library text's reading row: kind 'graded' pointing at a shared text. */
+function isGradedRef(row: unknown): row is { kind: 'graded'; graded_id: string; body: string } {
+  const r = row as { kind?: unknown; graded_id?: unknown } | null | undefined;
+  return !!r && r.kind === 'graded' && typeof r.graded_id === 'string';
+}
+
+/**
+ * Library texts are stored by reference on the server (decision 0075): a pulled reading row of
+ * a library text has an empty body. The device's own copy of the text (made from the library
+ * sentences when it was opened, decision 0054) is kept, so progress and "Devam et" keep working.
+ */
+export function keepGradedBody<T>(table: string, remote: T, local: unknown): T {
+  if (table !== 'texts' || !isGradedRef(remote) || remote.body !== '') return remote;
+  const mine = (local as { body?: unknown } | undefined)?.body;
+  return typeof mine === 'string' && mine !== '' ? { ...remote, body: mine } : remote;
+}
+
+/** A pulled library text without a body on this device (fill it from the library cache). */
+export function needsGradedBody(table: string, row: unknown): row is { id: string; graded_id: string; hlc: string } {
+  return table === 'texts' && isGradedRef(row) && row.body === '';
+}

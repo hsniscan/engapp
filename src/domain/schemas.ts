@@ -100,6 +100,8 @@ export const cardSchema: z.ZodType<Card> = z.object({
   // (data/maintenance.ts) fills them in.
   ramp_step: z.number().int().min(0).default(0),
   learned_at: millis.nullable().default(null),
+  // v0.5.3 (ADR 0071): absent in older rows and backups = not resting.
+  rest_until: millis.nullable().optional(),
 });
 
 export const reviewLogSchema: z.ZodType<ReviewLog> = z.object({
@@ -117,6 +119,8 @@ export const reviewLogSchema: z.ZodType<ReviewLog> = z.object({
   // v0.3 İP1: absent/null = 'app'. An unknown value from a newer app is read as absent, so
   // the log still counts.
   origin: z.enum(['app', 'anki']).nullable().optional().catch(undefined),
+  // v0.5.3 (ADR 0071): absent/null = unknown; an unknown value from a newer app reads as absent.
+  answer_mode: z.enum(['choice', 'typed', 'flip']).nullable().optional().catch(undefined),
 });
 
 export const practiceLogSchema: z.ZodType<PracticeLog> = z.object({
@@ -283,6 +287,20 @@ export const lexiconExampleSchema: z.ZodType<LexiconExample> = z.object({
   translations: z.record(z.string(), z.string()),
   status: z.enum(['active', 'retired']),
   updated_at: millis,
+  // v0.5.3 (ADR 0074): optional, so rows from an older server still parse.
+  source: z.enum(['tatoeba']).nullable().optional().catch(null),
+  attribution: z
+    .object({
+      license: z.string().max(40),
+      en_id: z.number().int().positive(),
+      en_by: z.string().max(100),
+      tr_id: z.number().int().positive(),
+      tr_by: z.string().max(100),
+      tr_edited: z.boolean().optional(),
+    })
+    .nullable()
+    .optional()
+    .catch(null),
 });
 
 /** decks.filter is kept as raw JSON here; domain/deckFilter.ts parses it for evaluation. */

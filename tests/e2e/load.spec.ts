@@ -74,13 +74,31 @@ test('5-day break: catch-up caps today at the daily capacity and pauses new card
 
   // Building and opening the capped queue writes nothing; each answer writes one review log.
   const before = await dumpTables(page, ['cards', 'review_logs']);
+  // v0.5.3 B3: Bugün's button opens one mixed session, so any study type may come first.
   await page.getByTestId('start-study').click();
-  await expect(page.getByRole('button', { name: 'Cevabı göster', disabled: false })).toBeVisible();
+  await expect(page).toHaveURL(/\/study\?mode=mixed$/);
+  const flip = page.getByRole('button', { name: 'Cevabı göster', disabled: false });
+  const dontKnow = page.getByRole('button', { name: 'Bilmiyorum, göster' });
+  const choices = page.getByRole('group', { name: 'Seçenekler' }).getByRole('button');
+  const input = page.getByTestId('answer-input');
+  const front = flip.or(dontKnow).or(choices.first()).or(input).first();
+  await expect(front).toBeVisible();
   expect(await dumpTables(page, ['cards', 'review_logs'])).toEqual(before);
   for (let i = 0; i < 3; i++) {
-    await page.getByRole('button', { name: 'Cevabı göster', disabled: false }).click();
+    await expect(front).toBeVisible();
+    if (await flip.isVisible()) await flip.click();
+    else if (await dontKnow.isVisible()) await dontKnow.click();
+    else if (await choices.first().isVisible()) await choices.first().click();
+    else {
+      await input.fill('zzzz');
+      await input.press('Enter');
+    }
     await expect(page.getByRole('group', { name: 'Ne kadar iyi hatırladın?' })).toBeVisible();
-    await page.locator('body').press('3');
+    // Tekrar: never asks for a second tap, whatever the suggestion.
+    await page.locator('body').press('1');
+    await expect
+      .poll(async () => (await dumpTables(page, ['review_logs'])).review_logs!.length)
+      .toBe(before.review_logs!.length + i + 1);
   }
   await expect
     .poll(async () => (await dumpTables(page, ['review_logs'])).review_logs!.length)

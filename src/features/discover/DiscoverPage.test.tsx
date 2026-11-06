@@ -112,6 +112,31 @@ describe('Keşfet', () => {
     expect(screen.queryByText('Phrasal verbs')).toBeNull();
   });
 
+  it('Desteler: Kalıplar appears once phrasal verbs and collocations are in the bank (ADR 0074)', async () => {
+    await applyWordBankPage([
+      ...BANK(),
+      row('give up', 'A1', 'phrasal verb', 4.6, 'vazgeçmek'),
+      row('find out', 'A2', 'phrasal verb', 4.5, 'öğrenmek'),
+      row('make a decision', 'B1', 'phrase', 3.9, 'karar vermek'),
+    ]);
+    open('/kesfet?f=desteler');
+    const section = await screen.findByRole('region', { name: 'Kalıplar' });
+    const phrasal = within(section).getByRole('link', { name: /^Phrasal verb’ler/ });
+    expect(phrasal).toHaveAttribute('href', '/decks/suggested/phrasal-verbs');
+    expect(phrasal.textContent).toMatch(/give up, find out/);
+    // One level chip per level that has phrases, when there is more than one.
+    expect(within(section).getByRole('link', { name: /^A2 phrasal verb’ler/ })).toHaveAttribute(
+      'href',
+      '/decks/suggested/phrasal-verbs-a2',
+    );
+    expect(within(section).getByRole('link', { name: /^Kalıp ifadeler/ })).toHaveAttribute(
+      'href',
+      '/decks/suggested/collocations',
+    );
+    // The word decks stay words.
+    expect(screen.getByRole('link', { name: /^A2 kelimeleri/ }).textContent).not.toMatch(/find out/);
+  });
+
   it('Okuma: the reading cards, then Metinlerim and the library', async () => {
     await saveText({ kind: 'paste', title: 'Morning notes', body: 'Hello there.' });
     open('/kesfet?f=okuma');

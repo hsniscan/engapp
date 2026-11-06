@@ -6,7 +6,11 @@ import {
   ttsOnDemandObjectPath,
 } from '../../supabase/functions/_shared/tts-contract.ts';
 import {
+  audioMaxBytes,
+  DEFAULT_AUDIO_MAX_BYTES,
   estimate,
+  estimateBytes,
+  fitToBytes,
   gradedTexts,
   parseSource,
   parseVoices,
@@ -49,6 +53,15 @@ describe('publicTexts', () => {
     expect(set.words).toBe(4);
     expect(set.sentences).toBe(2);
     expect(set.skipped).toBe(2);
+  });
+
+  it('voices the word bank example sentences too (decision 0073)', () => {
+    const set = publicTexts({
+      ...rows,
+      bank: [{ example_en: 'The  station was busy.' }, { example_en: 'She was reluctant to leave.' }],
+    });
+    expect(set.texts).toContain('The station was busy.');
+    expect(set.sentences).toBe(3); // the shared example is counted once
   });
 });
 
@@ -253,11 +266,12 @@ describe('estimate', () => {
 });
 
 describe('graded library audio (decision 0047)', () => {
-  it('reads every approved sentence once, en-US only, with the key the text stores', async () => {
+  it('reads every approved sentence once, in both accents, with the key the text stores', async () => {
     const set = gradedTexts(['The train was late.', 'The  train was late.', 'x'.repeat(301), 'Maria smiled.']);
     expect(set.texts).toEqual(['Maria smiled.', 'The train was late.']);
     expect(set.skipped).toBe(1);
-    expect(voicesFor(parseSource('graded'), parseVoices('both'))).toEqual(['en-US']);
+    expect(voicesFor(parseSource('graded'), parseVoices('both'))).toEqual(['en-US', 'en-GB']);
+    expect(voicesFor(parseSource('graded'), parseVoices('en-GB'))).toEqual(['en-GB']);
     expect(voicesFor(parseSource(''), parseVoices('both'))).toEqual(['en-US', 'en-GB']);
     expect(() => parseSource('news')).toThrow();
     const plan = await planJobs(set.texts, new Set(), { voices: ['en-US'], shard: 0, shards: 1, max: 10 });
@@ -265,5 +279,30 @@ describe('graded library audio (decision 0047)', () => {
       await ttsObjectPath('en-US', 'Maria smiled.'),
       await ttsObjectPath('en-US', 'The train was late.'),
     ]);
+  });
+});
+
+describe('free-plan guard (decision 0073)', () => {
+  it('caps audio at 6 GB on R2 and 0.9 GB on Supabase, or AUDIO_MAX_BYTES', () => {
+    expect(audioMaxBytes(() => undefined, 'r2')).toBe(DEFAULT_AUDIO_MAX_BYTES.r2);
+    expect(audioMaxBytes(() => undefined, 'supabase')).toBe(900_000_000);
+    expect(audioMaxBytes(() => '5e9', 'r2')).toBe(5_000_000_000);
+    expect(audioMaxBytes(() => 'lots', 'r2')).toBe(6_000_000_000);
+  });
+
+  it('keeps the jobs that fit, in order, and counts the rest', () => {
+    const jobs = ['a short one.', 'x'.repeat(100), 'two words'].map((text) => ({ text }));
+    const first = estimateBytes(jobs[0]!.text);
+    expect(fitToBytes(jobs, first)).toEqual({ jobs: [jobs[0]], dropped: 2 });
+    expect(fitToBytes(jobs, 0)).toEqual({ jobs: [], dropped: 3 });
+    expect(fitToBytes(jobs, 1e9).dropped).toBe(0);
+  });
+
+  it('fits the v0.5.3 audio in the free 10 GB with both voices', () => {
+    // 305 MB today; ~14.7k bank examples, ~7.2k library sentences and ~44k new sentences,
+    // each in two accents, at a typical 60-character sentence.
+    const sentence = estimateBytes('x'.repeat(60));
+    const total = 305e6 + (14_700 + 7_200 + 44_000) * 2 * sentence;
+    expect(total).toBeLessThan(DEFAULT_AUDIO_MAX_BYTES.r2);
   });
 });

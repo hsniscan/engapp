@@ -79,9 +79,12 @@ for (const width of [360, 1280]) {
           await page.getByRole('button', { name: 'Bilmiyorum, göster' }).click();
         else {
           const choices = page.getByRole('group', { name: 'Seçenekler' }).getByRole('button');
+          // A tap on a choice checks it at once (v0.5.3 A3); "Kontrol et" is for typing only.
           if (await choices.count()) await choices.first().click();
-          else await page.getByTestId('answer-input').fill('x');
-          await page.getByRole('button', { name: 'Kontrol et' }).click();
+          else {
+            await page.getByTestId('answer-input').fill('x');
+            await page.getByRole('button', { name: 'Kontrol et' }).click();
+          }
         }
         await expect(page.getByRole('group', { name: /Ne kadar iyi hatırladın\?/ })).toBeVisible();
         await check(page, `study-${mode}-result`, tag);

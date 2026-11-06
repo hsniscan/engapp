@@ -18,7 +18,7 @@ export const privacyEn: LegalDocument = {
           ul: [
             'In guest mode all your data stays on your own device; nothing reaches us.',
             'If you sign in with Google, your cards, study history, the reading texts you save (pasted texts, articles, PDF, subtitle and photo texts, stories) and your settings are stored on our server so that they sync between your devices.',
-            "When you use the AI features, the text you send is processed by Google Gemini, or by Anthropic Claude when Gemini's quota runs out. Because we use Gemini on its free tier, the text sent may be used to improve Google's products. Do not send text that contains confidential or personal information.",
+            "When you use the AI features, the text you send is processed by Anthropic Claude first, or by Google Gemini when Claude's monthly budget is used up or Claude does not answer. Because we use Gemini on its free tier, text that goes to Gemini may be used to improve Google's products. Do not send text that contains confidential or personal information.",
             'No ads, we do not sell your data, and we use no analytics or tracking tools.',
             'You can delete your account and all your data at any time in the app or on the [account deletion page](/hesap-sil).',
           ],
@@ -64,7 +64,7 @@ export const privacyEn: LegalDocument = {
           p: '**Device ID.** For sync, the app gives each installation a random device ID and writes it into answer records. It is not an advertising ID; no hardware identifiers of your phone are accessed.',
         },
         {
-          p: '**Text processed by AI.** Text you paste into "create cards from text", or that is read from a PDF you import, is sent in chunks to the server and from there to Google Gemini. The candidate words the AI finds in a chunk, with the sentences they appear in, are kept on the server for at most 90 days so the same text is not processed twice.',
+          p: '**Text processed by AI.** Text you paste into "create cards from text", or that is read from a PDF you import, is sent in chunks to the server and from there to Anthropic Claude (or to Google Gemini when Claude cannot be used). The candidate words the AI finds in a chunk, with the sentences they appear in, are kept on the server for at most 90 days so the same text is not processed twice.',
         },
         {
           p: '**Article and subtitle import.** When you import an article from a link, only the address goes to our server; the server downloads the page, extracts its text, sends it to you and keeps neither the address nor the text while doing so. The text is saved with its address on your device among your reading texts and, if you are signed in, syncs with your own account as described above; it never goes to shared tables or other users. Subtitle files are read only on your device; the text you take from one is saved and synced the same way.',
@@ -88,7 +88,10 @@ export const privacyEn: LegalDocument = {
           p: '**Text from a photo.** A photo you take or pick for "Text from a photo" is read on your device only: by Google ML Kit in the Android app, by Tesseract running inside your browser on the web. The photo is never sent to a server and is not kept. If you save the recognised text, only the text is saved, among your reading texts, and syncs with your own account if you are signed in. In the Android app, Google ML Kit sends usage and performance information to Google to measure how it works (device model, Android and app version, a per-installation identifier, how long it took, error codes); it contains no photo and no recognised text.',
         },
         {
-          p: '**What we do not process.** Your location, contacts, microphone and photo library are not used. The camera opens only when you start "Text from a photo"; the app has no camera permission, the phone\'s own camera app takes the picture. There is no advertising ID and no analytics or tracking tool. The app\'s error log stays on your device and is never sent to us.',
+          p: '**Error reports.** If you are signed in, a short error report goes to our server when the app hits an error and you are online, so we can see and fix errors. It holds only the technical error message, where in the app it happened, the app version, web or Android, and your account ID; links, e-mail addresses, quoted text and long numbers in it are removed before it is sent. Your cards, texts and sentences are not sent. At most 20 reports a day are sent. In guest mode no report is sent; the error log stays on your device only.',
+        },
+        {
+          p: '**What we do not process.** Your location, contacts, microphone and photo library are not used. The camera opens only when you start "Text from a photo"; the app has no camera permission, the phone\'s own camera app takes the picture. There is no advertising ID and no analytics or tracking tool.',
         },
       ],
     },
@@ -120,14 +123,14 @@ export const privacyEn: LegalDocument = {
           ul: [
             '**Supabase** (database, sign-in, server functions): your account and study data. The servers are in the European Union, in the Ireland region.',
             "**Cloudflare** (hosting of the website): processes technical connection data such as your IP address and browser details while serving the app's files. **Cloudflare R2** (file storage): the shared dictionary's audio files and the encrypted backups of the database.",
-            '**Google**: sign-in with Google; your profile photo is loaded from Google\'s servers. **Google ML Kit** (only in the Android app, when you use "Text from a photo"): the usage and performance information described above; no photo and no text. **Google Gemini** (AI): the text chunks you send to create cards, a word you add by hand, your words and their short English definitions for theme grouping, the word or sentence to be read aloud, and only numbers for the weekly report comment.',
+            '**Google**: sign-in with Google; your profile photo is loaded from Google\'s servers. **Google ML Kit** (only in the Android app, when you use "Text from a photo"): the usage and performance information described above; no photo and no text. **Google Gemini** (AI backup and reading aloud): when Claude\'s monthly budget is used up or Claude does not answer, the same AI requests listed below for Claude are processed by Gemini; a word or sentence to be read aloud that has no ready-made audio file also goes to Gemini.',
             '**Anthropic Claude** (word pictures, drawn once in bulk for the shared dictionary): only a word from the shared dictionary, its part of speech and Turkish meaning, a short drawing hint, a fixed correction note when a picture is redrawn, and, for the check, the picture Claude drew. Nothing about your account, your cards or your sentences is sent.',
-            "**Anthropic Claude** (AI backup): when Gemini's quota runs out, the same AI requests listed above for Gemini are processed by Claude. **Anthropic Claude** (Today's story): only the word list, level, difficulty and interests described above.",
+            "**Anthropic Claude** (AI): the text chunks you send to create cards, a word you add by hand, your words and their short English definitions for theme grouping, and only numbers for the weekly report comment. **Anthropic Claude** (Today's story): only the word list, level, difficulty and interests described above.",
             '**Browser push services** (Google, Mozilla, Apple, Microsoft): if you turned on web reminders, the encrypted reminder text (such as "12 cards are ready for review today").',
           ],
         },
         {
-          p: "We currently use Gemini on its free tier. Under Google's terms, text sent on the free tier may be used to improve Google's products and may be read by human reviewers. Therefore do not process confidential, business or personal text with the AI features.",
+          p: "Text sent to Claude through Anthropic's paid API is not used to train its models under Anthropic's commercial terms. Gemini, our backup, is used on its free tier: under Google's terms, text sent on the free tier may be used to improve Google's products and may be read by human reviewers. Since you cannot know in advance which text goes to the backup, do not process confidential, business or personal text with the AI features.",
         },
         {
           p: 'Example sentences, memory aid suggestions, notes on confusable words and read-aloud audio files are generated from the shared dictionary content; your own sentences are not sent for them.',
@@ -152,6 +155,7 @@ export const privacyEn: LegalDocument = {
             'Your account, study data and reading texts are kept while your account exists.',
             'A card or word you delete stays marked as deleted for 30 days, so your other devices learn about the deletion, and is then removed from the server completely.',
             'The AI candidate cache, AI usage counters, sync counters and the record of sent reminders are deleted after 90 days; the monthly AI spend amount is deleted at the end of the following month.',
+            'Error reports are deleted after 30 days.',
             'When you delete your account, all your data on the server is deleted immediately.',
             'An encrypted backup of the database is taken every night and kept in Cloudflare R2: daily backups for 14 days, weekly backups for 8 weeks, and backups taken right before a server update for at most 8 weeks. Backups are used only to restore data after a failure; after you delete your account your data stays in these backups for at most these periods and is then deleted automatically.',
             'Technical logs and backups of the service providers follow their own retention periods.',
@@ -171,7 +175,7 @@ export const privacyEn: LegalDocument = {
           ],
         },
         {
-          p: 'What is deleted: your cards and words, your reading texts and word encounter counts, study history and statistics, settings, reports, notification records, AI cache, AI and sync counters, your monthly AI spend amount, picture counters, picture requests and picture answers (for an admin also the admin record and picture review decisions), and then the account itself. Pictures in the shared dictionary stay. Deletion cannot be undone; if you like, first download the JSON backup under **Profil → Ayarlar → Yedek ve veri (Backup and data)**.',
+          p: 'What is deleted: your cards and words, your reading texts and word encounter counts, study history and statistics, settings, reports, error reports, notification records, AI cache, AI and sync counters, your monthly AI spend amount, picture counters, picture requests and picture answers (for an admin also the admin record and picture review decisions), and then the account itself. Pictures in the shared dictionary stay. Deletion cannot be undone; if you like, first download the JSON backup under **Profil → Ayarlar → Yedek ve veri (Backup and data)**.',
         },
         {
           p: 'Guest-mode data exists only on your device: delete it with **Profil → Ayarlar → Hesap ve eşitleme → Bu cihazdaki verileri sil (Delete the data on this device)** or by uninstalling the app.',

@@ -4,7 +4,8 @@
 //
 //   request (strict: target words, level, difficulty, topics, avoid list)
 //   -> daily limit (one story per UTC day, one regeneration of it)
-//   -> Claude Haiku under the monthly text budget (recordTextSpend per call)
+//   -> Claude (Sonnet, decision 0077) under the monthly text budget (recordTextSpend per call);
+//      Gemini (free tier) when the budget is used up or Claude does not answer
 //   -> validation (target words really used, length, questions, glosses), one more try
 //   -> response; nothing is stored on the server (the device saves the story as its own text)
 //
@@ -52,7 +53,8 @@ import { recordTextSpend, type TextBudget } from './text-budget.ts';
 export const STORY_MAX_OUTPUT_TOKENS = 2048;
 /** Head room Claude's adaptive thinking gets on top of the answer (as ai-claude-text.ts). */
 export const STORY_THINKING_TOKENS = 2048;
-export const STORY_TIMEOUT_MS = 12_000;
+/** Per call. Was 12 s on Haiku; Sonnet writes slower (decision 0077). */
+export const STORY_TIMEOUT_MS = 25_000;
 /** Model calls per request: the first answer and one more when it is not usable. */
 export const STORY_ATTEMPTS = 2;
 export const STORY_BUDGET_PURPOSE = 'story';
@@ -110,6 +112,11 @@ export interface StoryDeps {
   store: StoryStore;
   /** Null when no model is configured (no ANTHROPIC_API_KEY). */
   model: (() => StoryModel) | null;
+  /**
+   * The model behind it (Gemini, no budget: free tier; decision 0077): used when the budget
+   * refuses a Claude call or Claude does not answer, and alone when `model` is null.
+   */
+  fallback?: () => StoryModel;
   /** The monthly text budget; absent only in tests and local runs. */
   budget?: TextBudget;
   dailyLimit: number;
@@ -260,7 +267,8 @@ export async function runStory(body: unknown, deps: StoryDeps): Promise<StoryRes
   const req = parsed.data;
   const retry = req.avoid.length > 0;
   const picked = req.source === 'picked';
-  if (!deps.model) throw new ApiError('internal', 'The story model is not configured');
+  if (!deps.model && !deps.fallback)
+    throw new ApiError('internal', 'The story model is not configured');
 
   const limit = picked ? (deps.pickedDailyLimit ?? DEFAULT_PICKED_DAILY_LIMIT) : deps.dailyLimit;
   const usage = picked
@@ -280,7 +288,11 @@ export async function runStory(body: unknown, deps: StoryDeps): Promise<StoryRes
 
   let done = false;
   try {
-    const model = deps.model();
+    const model = deps.model?.() ?? null;
+    let backupModel: StoryModel | null = null;
+    const backup = () => (backupModel ??= deps.fallback?.() ?? null);
+    // From the first failure of Claude on, the rest of the request runs on the fallback.
+    let onBackup = !model;
     const prompt = {
       level: req.level,
       difficulty: req.difficulty,
@@ -295,36 +307,53 @@ export async function runStory(body: unknown, deps: StoryDeps): Promise<StoryRes
     const check: StoryCheck = picked
       ? { words: PICKED_WORDS_ACCEPTED[req.length], minUsed: pickedMinUsed(req.target_lemmas.length) }
       : {};
-    const boundUsd = reserveUsd(model.model, {
-      inputTokens: tokenBound(system + user),
-      maxTokens: STORY_MAX_OUTPUT_TOKENS + STORY_THINKING_TOKENS,
-    });
+    const boundUsd = model
+      ? reserveUsd(model.model, {
+          inputTokens: tokenBound(system + user),
+          maxTokens: STORY_MAX_OUTPUT_TOKENS + STORY_THINKING_TOKENS,
+        })
+      : 0;
+    const modelRequest = {
+      system,
+      user,
+      schema: STORY_RESPONSE_SCHEMA as unknown as Record<string, unknown>,
+      maxOutputTokens: STORY_MAX_OUTPUT_TOKENS,
+      timeoutMs: STORY_TIMEOUT_MS,
+    };
     const call = async () => {
-      const answer = await model.call({
-        system,
-        user,
-        schema: STORY_RESPONSE_SCHEMA as unknown as Record<string, unknown>,
-        maxOutputTokens: STORY_MAX_OUTPUT_TOKENS,
-        timeoutMs: STORY_TIMEOUT_MS,
-      });
+      const answer = await model!.call(modelRequest);
       return { value: answer, costUsd: answer.costUsd };
+    };
+    /** One Claude call under the budget; null when the budget refuses it. */
+    const claudeCall = async (): Promise<StoryModelAnswer | null> => {
+      if (!deps.budget) return (await call()).value;
+      const spend = await recordTextSpend(
+        deps.budget,
+        { purpose: STORY_BUDGET_PURPOSE, boundUsd },
+        call,
+      );
+      return spend.kind === 'budget' ? null : spend.value;
     };
 
     let last: StoryDropReason = 'not_json';
     for (let attempt = 1; attempt <= STORY_ATTEMPTS; attempt++) {
-      let answer: StoryModelAnswer;
-      if (deps.budget) {
-        const spend = await recordTextSpend(
-          deps.budget,
-          { purpose: STORY_BUDGET_PURPOSE, boundUsd },
-          call,
-        );
-        if (spend.kind === 'budget')
-          throw new ApiError('budget_exhausted', 'This month’s text budget is used up.');
-        answer = spend.value;
-      } else {
-        answer = (await call()).value;
+      let answer: StoryModelAnswer | null = null;
+      if (!onBackup) {
+        try {
+          answer = await claudeCall();
+        } catch (e) {
+          if (!(e instanceof AiError) || !backup()) throw e;
+          deps.log?.('ai-story fallback', { reason: e.message.slice(0, 200) });
+          onBackup = true;
+        }
+        if (answer === null && !onBackup) {
+          if (!backup())
+            throw new ApiError('budget_exhausted', 'This month’s text budget is used up.');
+          deps.log?.('ai-story fallback', { reason: 'text budget' });
+          onBackup = true;
+        }
       }
+      if (answer === null) answer = await backup()!.call(modelRequest);
       const story =
         answer.data === undefined
           ? 'not_json'

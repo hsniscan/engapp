@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   checkCoverage,
+  coverageMaxNext,
   levelTableOf,
   parseLevelTable,
   profileObject,
@@ -90,6 +91,26 @@ describe('the gate', () => {
     expect(r.problems).toContain('next_level');
     expect(r.offenders[0]).toBe('journey');
     expect(r.ok).toBe(false);
+  });
+
+  it('lets a short A1 text use up to 5 % A2 words (decision 0073)', () => {
+    expect(coverageMaxNext('A1')).toBe(0.05);
+    expect(coverageMaxNext('A2')).toBe(0.03);
+    // 208 A1 tokens + 8 A2 ones ≈ 3.7 %: too many at level + 1 for A2, fine for A1.
+    const a1Words = Array.from({ length: 20 }, () => 'The big cat and the dog go to the house.');
+    const text = [...a1Words, 'The journey, the journey, the journey, the journey, the journey, the journey, the journey, the journey.'];
+    const t = levelTableOf({
+      journey: ['A2', 4],
+      house: ['A1', 5],
+      cat: ['A1', 5],
+      dog: ['A1', 5],
+      big: ['A1', 5],
+      go: ['A1', 6],
+    });
+    const r = checkCoverage(profileSentences(text, t), 'A1');
+    expect(r.covNext).toBeGreaterThan(0.03);
+    expect(r.covNext).toBeLessThanOrEqual(0.05);
+    expect(r.problems).not.toContain('next_level');
   });
 
   it('fails when fewer than 95 % are at or below the level', () => {

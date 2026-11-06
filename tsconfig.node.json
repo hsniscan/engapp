@@ -29,9 +29,12 @@
     "scripts/img-*.ts",
     "scripts/system-jobs.ts",
     "scripts/word-bank.ts",
+    "scripts/examples-bulk.ts",
+    "scripts/build-phrases.ts",
     "scripts/graded-batch.ts",
     "scripts/tts-pregen.ts",
     "scripts/audio-migrate.ts",
-    "scripts/check-*.ts"
+    "scripts/check-*.ts",
+    "scripts/ci-gate*.ts"
   ]
 }

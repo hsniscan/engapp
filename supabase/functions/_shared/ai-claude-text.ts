@@ -1,8 +1,9 @@
-// Claude Haiku as the second provider of the text AI tasks (v0.5, plan A.8, decision 0044):
-// when Gemini runs out of quota after its own fallback model, the same request (system
-// prompt, user text, JSON schema, validator) runs on Claude with structured output.
-// The official SDK; the key comes only from ANTHROPIC_API_KEY, the model only from
-// CLAUDE_TEXT_MODEL (default below, AGENTS.md rule 5).
+// Claude as the provider of the text AI tasks: the primary since v0.5.3 (Sonnet, decision
+// 0077; ai.ts puts Gemini behind it), before that the fallback after Gemini (decision 0044).
+// The same request (system prompt, user text, JSON schema, validator) runs on Claude with
+// structured output, under the monthly text budget. The official SDK; the key comes only
+// from ANTHROPIC_API_KEY, the model only from CLAUDE_TEXT_MODEL (default in
+// model-defaults.ts, AGENTS.md rule 5).
 
 import Anthropic from '@anthropic-ai/sdk';
 import {
@@ -13,7 +14,7 @@ import {
   type GenerateJsonResult,
 } from './ai-provider.ts';
 import { callCostUsd, reserveUsd, tokenBound } from './image-models.ts';
-import { DEFAULT_CLAUDE_TEXT_MODEL } from './model-defaults.ts';
+import { DEFAULT_CLAUDE_TEXT_MODEL, MODELS_WITHOUT_TEXT_THINKING } from './model-defaults.ts';
 import { reserveTextBudget, settleTextBudget, type TextBudget } from './text-budget.ts';
 
 type Env = (key: string) => string | undefined;
@@ -57,6 +58,8 @@ export interface ClaudeTextConfig {
   maxRetries?: number;
   /** Attempts when the answer fails validation; default 2. */
   maxAttempts?: number;
+  /** What the budget hold is for (text_budget_holds.purpose), e.g. the function name. */
+  purpose?: string;
   recordTextSpend?: RecordTextSpend;
   /**
    * The monthly text budget (CLAUDE_TEXT_MONTHLY_USD). Each call reserves its worst case first
@@ -163,6 +166,29 @@ function isQuota(e: unknown): boolean {
   return e instanceof Anthropic.APIError && (e.status === 529 || e.status === 503);
 }
 
+/**
+ * True when the request may have been billed although no answer came back: a timeout or a
+ * broken connection after the request left (no HTTP status). An API error with a status
+ * (4xx/5xx) is never billed.
+ */
+function maybeBilled(e: unknown): boolean {
+  if (e instanceof Anthropic.APIConnectionError) return true; // includes the timeout error
+  return !(e instanceof Anthropic.APIError);
+}
+
+/** Whether `model` runs the text tasks without extended thinking (model-defaults.ts). */
+export function textThinkingOff(model: string): boolean {
+  return MODELS_WITHOUT_TEXT_THINKING.some((m) => model.startsWith(m));
+}
+
+/** Room for adaptive thinking on top of the answer (models that think). */
+export const THINKING_HEADROOM_TOKENS = 2048;
+
+/** max_tokens of one call: the task's answer budget, plus thinking room when the model thinks. */
+export function claudeMaxTokens(model: string, maxOutputTokens: number | undefined): number {
+  return (maxOutputTokens ?? 8192) + (textThinkingOff(model) ? 0 : THINKING_HEADROOM_TOKENS);
+}
+
 export function createClaudeTextProvider(cfg: ClaudeTextConfig): AiProvider {
   const client = new Anthropic({
     apiKey: cfg.apiKey,
@@ -173,6 +199,7 @@ export function createClaudeTextProvider(cfg: ClaudeTextConfig): AiProvider {
   });
   const maxAttempts = cfg.maxAttempts ?? 2;
   const record = cfg.recordTextSpend ?? logTextSpend();
+  const thinkingOff = textThinkingOff(cfg.model);
 
   return {
     name: 'claude',
@@ -180,14 +207,15 @@ export function createClaudeTextProvider(cfg: ClaudeTextConfig): AiProvider {
       const schema = toClaudeSchema(req.schema) as Record<string, unknown>;
       let last = 'no attempt';
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        const maxTokens = (req.maxOutputTokens ?? 8192) + 2048;
+        const maxTokens = claudeMaxTokens(cfg.model, req.maxOutputTokens);
         let hold: string | null = null;
+        let bound = 0;
         if (cfg.budget) {
-          const bound = reserveUsd(cfg.model, {
+          bound = reserveUsd(cfg.model, {
             inputTokens: tokenBound(req.system + req.user),
             maxTokens,
           });
-          hold = await reserveTextBudget(cfg.budget, bound, 'ai-fallback');
+          hold = await reserveTextBudget(cfg.budget, bound, cfg.purpose ?? 'text');
           if (!hold) throw new AiError('quota_exceeded', `${cfg.model}: monthly text budget`, 3600);
         }
         let msg: Anthropic.Message;
@@ -195,19 +223,28 @@ export function createClaudeTextProvider(cfg: ClaudeTextConfig): AiProvider {
           msg = await client.messages.create(
             {
               model: cfg.model,
-              // Haiku thinks adaptively; leave room for it on top of the answer.
               max_tokens: maxTokens,
+              // Sonnet: no extended thinking (`between_tools`, there are no tools); a model that
+              // thinks gets THINKING_HEADROOM_TOKENS on top of the answer. No temperature: the
+              // current models only take the default.
+              ...(thinkingOff ? { thinking: { type: 'between_tools' as const } } : {}),
               output_config: { effort: 'low', format: { type: 'json_schema', schema } },
-              system: req.system,
+              // The task's system prompt is the same on every call: cached for 5 minutes, so
+              // the chunks of one article pay ~10 % of its input price after the first.
+              system: [{ type: 'text', text: req.system, cache_control: { type: 'ephemeral' } }],
               messages: [{ role: 'user', content: req.user }],
             },
             req.timeoutMs ? { timeout: req.timeoutMs } : undefined,
           );
         } catch (e) {
-          if (hold) await settleTextBudget(cfg.budget!, hold, 0).catch(() => {});
+          // A timeout may still be billed: it keeps its whole reservation (the safe side).
+          if (hold)
+            await settleTextBudget(cfg.budget!, hold, maybeBilled(e) ? bound : 0).catch(() => {});
           const m = e instanceof Error ? e.message : String(e);
           if (isQuota(e)) throw new AiError('quota_exceeded', `${cfg.model}: ${m}`, 60);
-          throw new AiError('ai_failed', `${cfg.model}: ${m}`);
+          throw new AiError('ai_failed', `${cfg.model}: ${m}`, undefined, {
+            maybeBilled: maybeBilled(e),
+          });
         }
 
         const usage = {

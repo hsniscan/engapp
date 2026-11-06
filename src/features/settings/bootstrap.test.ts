@@ -10,7 +10,8 @@ vi.mock('./platform', async (orig) => ({
   ...(await orig<typeof import('./platform')>()),
   requestPersistence,
 }));
-const { watchFirstCard } = await import('./bootstrap');
+const { PERSIST_RETRY_MS, watchFirstCard } = await import('./bootstrap');
+const DAY = 86_400_000;
 
 beforeEach(async () => {
   await resetDb();
@@ -22,26 +23,41 @@ beforeEach(async () => {
 async function firstNote() {
   // Only the count matters here.
   await db.notes.add({ id: 'n1', term_norm: 'serendipity' } as unknown as Note);
-  await vi.waitFor(() => expect(toast).toHaveBeenCalled());
 }
 
 describe('watchFirstCard (first note on the device)', () => {
-  it('web guest: asks for persistent storage and warns when the browser says no', async () => {
+  it('web: asks for persistent storage on the first note, and never shows a toast (A5)', async () => {
     const stop = watchFirstCard(() => false);
     await firstNote();
+    await vi.waitFor(() => expect(requestPersistence).toHaveBeenCalledTimes(1));
     stop();
-    expect(requestPersistence).toHaveBeenCalledTimes(1);
-    expect(toast.mock.calls[0]![0]).toMatchObject({ tone: 'warn' });
+    expect(toast).not.toHaveBeenCalled();
   });
 
-  it('Android app guest: no persist() and no browser warning, a neutral uninstall note (ADR 0064)', async () => {
+  it('asks again at most weekly while the browser says no', async () => {
+    const T = Date.UTC(2026, 10, 5);
+    localStorage.setItem('engapp.persistAsked', '1');
+    localStorage.setItem('engapp.persistAskedAt', String(T));
+    const persisted = vi.fn(async () => false);
+    vi.stubGlobal('navigator', { ...navigator, storage: { persist: vi.fn(), persisted, estimate: async () => ({}) } });
+    try {
+      watchFirstCard(() => false, () => T + DAY);
+      await vi.waitFor(() => expect(persisted).toHaveBeenCalled());
+      await new Promise((r) => setTimeout(r, 0));
+      expect(requestPersistence).not.toHaveBeenCalled();
+      watchFirstCard(() => false, () => T + PERSIST_RETRY_MS + DAY);
+      await vi.waitFor(() => expect(requestPersistence).toHaveBeenCalledTimes(1));
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('Android app: nothing to ask, nothing shown (the notice lives in Profil)', async () => {
     const stop = watchFirstCard(() => true);
     await firstNote();
+    await new Promise((r) => setTimeout(r, 20));
     stop();
     expect(requestPersistence).not.toHaveBeenCalled();
-    const shown = toast.mock.calls[0]![0] as { title: string; tone: string; description: string };
-    expect(shown.tone).toBe('neutral');
-    expect(shown.description).toMatch(/kaldırırsan/);
-    expect(shown.description).not.toMatch(/tarayıcı/i);
+    expect(toast).not.toHaveBeenCalled();
   });
 });

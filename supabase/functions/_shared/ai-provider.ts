@@ -15,11 +15,22 @@ export type AiErrorCode = 'quota_exceeded' | 'ai_failed';
 export class AiError extends Error {
   readonly code: AiErrorCode;
   readonly retryAfterS?: number;
-  constructor(code: AiErrorCode, message: string, retryAfterS?: number) {
+  /**
+   * The request left but no answer came back (a timeout, a broken connection): it may have
+   * been billed, so a budget books its whole reservation (decision 0077).
+   */
+  readonly maybeBilled: boolean;
+  constructor(
+    code: AiErrorCode,
+    message: string,
+    retryAfterS?: number,
+    opts: { maybeBilled?: boolean } = {},
+  ) {
     super(message);
     this.name = 'AiError';
     this.code = code;
     this.retryAfterS = retryAfterS;
+    this.maybeBilled = opts.maybeBilled ?? false;
   }
 }
 

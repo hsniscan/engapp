@@ -30,6 +30,7 @@ import {
 } from '@/ui';
 import { useLevelData } from '@/features/levels/useLevelData';
 import { useNow } from '@/features/settings/useNow';
+import { useTodayStudy } from '@/features/review/studyModes';
 import { DeckEditorDialog } from './DeckEditorDialog';
 import { MIN_THEME_WORDS } from '@/domain/themes';
 import { DISCOVER_DECKS_HREF, nf, openImportSheet } from './deckUi';
@@ -62,6 +63,10 @@ export function MineTab() {
   const hour = Math.floor(useNow() / 3_600_000);
   const data = useLiveQuery(() => getMyDecks(), [levelData, hour]);
   const pending = useLiveQuery(async () => !!(await getThemePreview()), []);
+  // Today's count is Bugün's own (v0.5.3 A7): new cards and every mode included, so the two
+  // screens never disagree ("51 kart" there, "11 kart" here).
+  const study = useTodayStudy();
+  const todayLeft = study?.left;
   const titles = useMemo(() => titleIndex(t), [t]);
   const [editing, setEditing] = useState(false);
   const [manual, setManual] = useState(false);
@@ -81,15 +86,16 @@ export function MineTab() {
                 {t('deckHub.mine.allUnit')}
               </span>
             </p>
-            {data && (
+            {data && todayLeft !== undefined && (
               <p
+                data-testid="mine-all-today"
                 className={cn(
                   'text-meta',
-                  data.all.dueToday > 0 ? 'font-semibold text-accent-text' : 'text-fg-muted',
+                  todayLeft > 0 ? 'font-semibold text-accent-text' : 'text-fg-muted',
                 )}
               >
-                {data.all.dueToday > 0
-                  ? t('deckHub.mine.allDue', { count: data.all.dueToday })
+                {todayLeft > 0
+                  ? t('deckHub.mine.allDue', { count: todayLeft })
                   : t('deckHub.mine.allDueNone')}
               </p>
             )}

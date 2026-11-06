@@ -51,6 +51,13 @@ export interface DatasetLog {
   card_id: string;
   rating: number; // 1–4
   reviewed_at: number;
+  /**
+   * v0.5.3 B7 (ADR 0071): picked from multiple choices. The answer still moves the card's
+   * memory state (the scheduler applied it too), but it is never a training or test target:
+   * a pick from four options is recognition with a guess floor, and its "remembered" would
+   * pull every format's fitted stabilities up.
+   */
+  choice?: boolean;
 }
 
 /** Review history in flat arrays (cheap to send to a worker and to loop over). */
@@ -61,6 +68,8 @@ export interface ReviewDataset {
   /** UTC day number of the review (ts-fsrs counts elapsed days between UTC dates). */
   day: Int32Array;
   at: Float64Array;
+  /** 1 = the answer is not a target of the fit (a multiple-choice pick, B7). Absent = none. */
+  skip?: Uint8Array;
 }
 
 /** Group effective (non-undone) logs by card, each card in answer order. */
@@ -77,6 +86,7 @@ export function buildDataset(logs: readonly DatasetLog[]): ReviewDataset {
   const rating = new Uint8Array(n);
   const day = new Int32Array(n);
   const at = new Float64Array(n);
+  const skip = new Uint8Array(n);
   let i = 0;
   let c = 0;
   for (const list of byCard.values()) {
@@ -86,11 +96,12 @@ export function buildDataset(logs: readonly DatasetLog[]): ReviewDataset {
       rating[i] = l.rating;
       day[i] = Math.floor(l.reviewed_at / DAY_MS);
       at[i] = l.reviewed_at;
+      skip[i] = l.choice ? 1 : 0;
       i++;
     }
   }
   cardStart[c] = i;
-  return { cardStart, rating, day, at };
+  return { cardStart, rating, day, at, skip };
 }
 
 export function cardCount(ds: ReviewDataset): number {
@@ -225,7 +236,7 @@ function walkCard(
   for (let i = start; i < end; i++) {
     const g = ds.rating[i]!;
     const t = st ? ds.day[i]! - ds.day[i - 1]! : 0;
-    if (st && t > 0 && visit) visit(i, recall(m, t, st.stability), g > 1, t, i - start, lapses);
+    if (st && t > 0 && visit && !ds.skip?.[i]) visit(i, recall(m, t, st.stability), g > 1, t, i - start, lapses);
     st = step(m, st, Math.max(0, t), g);
     if (g === 1) lapses++;
   }
@@ -334,7 +345,7 @@ export function pretrainInitialStability(
     if (ds.cardStart[c + 1]! - i < 2) continue;
     // Only cards whose second answer is on a later day (same-day steps blur the first rating).
     const t = ds.day[i + 1]! - ds.day[i]!;
-    if (t < 1 || !include(ds.at[i + 1]!)) continue;
+    if (t < 1 || !include(ds.at[i + 1]!) || ds.skip?.[i + 1]) continue;
     groups[ds.rating[i]! - 1]!.push([t, ds.rating[i + 1]! > 1]);
   }
   const out = [...w];
@@ -399,7 +410,7 @@ export function trainParams(
   for (let c = 0; c < cardCount(ds); c++) {
     let k = 0;
     for (let i = ds.cardStart[c]! + 1; i < ds.cardStart[c + 1]!; i++) {
-      if (ds.day[i]! > ds.day[i - 1]! && include(ds.at[i]!)) k++;
+      if (ds.day[i]! > ds.day[i - 1]! && include(ds.at[i]!) && !ds.skip?.[i]) k++;
     }
     if (k > 0) {
       cards.push(c);
@@ -553,7 +564,7 @@ export function optimizeParams(
   const times: number[] = [];
   for (let c = 0; c < cardCount(ds); c++) {
     for (let i = ds.cardStart[c]! + 1; i < ds.cardStart[c + 1]!; i++) {
-      if (ds.day[i]! > ds.day[i - 1]!) times.push(ds.at[i]!);
+      if (ds.day[i]! > ds.day[i - 1]! && !ds.skip?.[i]) times.push(ds.at[i]!);
     }
   }
   times.sort((a, b) => a - b);

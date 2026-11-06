@@ -5,7 +5,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation, useNavigate } from 'react-router';
+import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import { countOutsideWords, getKnownTermKeys, getSettings, logError, saveLevelTest } from '@/data';
 import {
   type Answer,
@@ -13,6 +13,7 @@ import {
   createTest,
   currentQuestion,
   type LevelTestBank,
+  MAX_QUESTIONS,
   progress,
   answerQuestion,
   scoreTest,
@@ -56,6 +57,9 @@ export function LevelTestScreen() {
   const [loadFailed, setLoadFailed] = useState(false);
   const [phase, setPhase] = useState<Phase>({ kind: 'intro' });
   const settings = useLiveQuery(() => getSettings(), []);
+  // From the onboarding (v0.5.3 A7): its own "Teste başla" was the start; no second intro.
+  const [params] = useSearchParams();
+  const fromOnboarding = params.get('from') === 'onboarding';
 
   useEffect(() => {
     let live = true;
@@ -81,6 +85,14 @@ export function LevelTestScreen() {
       startedAt: Date.now(),
     });
   };
+
+  // Opened from the onboarding: starts as soon as the question bank and the settings are there.
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (!fromOnboarding || autoStarted.current || !bank || !settings) return;
+    autoStarted.current = true;
+    start();
+  });
 
   /** `before`: the test as it was before the last answer, to go back to if saving fails. */
   const finish = async (
@@ -165,6 +177,13 @@ export function LevelTestScreen() {
   }
 
   if (phase.kind === 'intro') {
+    if (fromOnboarding && !loadFailed) {
+      return (
+        <Frame>
+          <Skeleton className="h-60 w-full" />
+        </Frame>
+      );
+    }
     return (
       <Frame>
         <Intro ready={!!bank} failed={loadFailed} onStart={start} />
@@ -310,13 +329,13 @@ function TestView({
         <ProgressBar
           value={Math.round(progress(state) * 100)}
           label={t('a11y.progress')}
-          valueText={t('levelTest.progress', { done })}
+          valueText={t('levelTest.progressOf', { done, max: MAX_QUESTIONS })}
         />
         <span
           aria-hidden="true"
           className="tabular min-w-8 shrink-0 pl-1 text-right text-meta text-fg-muted"
         >
-          {done}
+          {t('levelTest.counter', { done, max: MAX_QUESTIONS })}
         </span>
       </div>
 

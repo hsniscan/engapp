@@ -16,12 +16,31 @@ export type ContentPos = (typeof CONTENT_POS)[number];
 export const TOP_SIZES = [100, 500, 1000, 2000, 3000] as const;
 export type TopSize = (typeof TOP_SIZES)[number];
 
+/**
+ * "Kalıplar" (v0.5.3 C4, decision 0074): the bank's multi-word rows, by their part of speech.
+ * phrasal = 'phrasal verb' (give up), collocation = 'phrase' (make a decision).
+ */
+export const PHRASE_KINDS = ['phrasal', 'collocation'] as const;
+export type PhraseKind = (typeof PHRASE_KINDS)[number];
+export const PHRASE_POS: Readonly<Record<PhraseKind, string>> = {
+  phrasal: 'phrasal verb',
+  collocation: 'phrase',
+};
+const PHRASE_KEY: Readonly<Record<PhraseKind, string>> = {
+  phrasal: 'phrasal-verbs',
+  collocation: 'collocations',
+};
+const PHRASE_POS_SET: ReadonlySet<string> = new Set(Object.values(PHRASE_POS));
+/** A bank row that is a phrasal verb or a collocation, not a single word. */
+export const isPhrasePos = (pos: string): boolean => PHRASE_POS_SET.has(pos);
+
 export type SuggestedSpec =
   | { kind: 'top'; size: TopSize }
   | { kind: 'level'; level: CefrLevel }
   | { kind: 'pos'; pos: ContentPos }
   | { kind: 'levelPos'; level: CefrLevel; pos: ContentPos }
-  | { kind: 'falseFriends' };
+  | { kind: 'falseFriends' }
+  | { kind: 'phrases'; phrase: PhraseKind; level?: CefrLevel };
 
 const isPos = (s: string): s is ContentPos => (CONTENT_POS as readonly string[]).includes(s);
 const asLevel = (s: string): CefrLevel | null => {
@@ -29,7 +48,10 @@ const asLevel = (s: string): CefrLevel | null => {
   return (CEFR as readonly string[]).includes(up) ? (up as CefrLevel) : null;
 };
 
-/** URL key of a deck: top-500, level-b1, pos-verb, b1-verb, false-friends. */
+/**
+ * URL key of a deck: top-500, level-b1, pos-verb, b1-verb, false-friends, phrasal-verbs,
+ * phrasal-verbs-b1, collocations, collocations-a2.
+ */
 export function suggestedKey(spec: SuggestedSpec): string {
   switch (spec.kind) {
     case 'top':
@@ -42,6 +64,10 @@ export function suggestedKey(spec: SuggestedSpec): string {
       return `${spec.level.toLowerCase()}-${spec.pos}`;
     case 'falseFriends':
       return 'false-friends';
+    case 'phrases':
+      return spec.level
+        ? `${PHRASE_KEY[spec.phrase]}-${spec.level.toLowerCase()}`
+        : PHRASE_KEY[spec.phrase];
   }
 }
 
@@ -49,6 +75,14 @@ export function suggestedKey(spec: SuggestedSpec): string {
 export function parseSuggestedKey(raw: string): SuggestedSpec | null {
   const key = raw.trim().toLowerCase();
   if (key === 'false-friends') return { kind: 'falseFriends' };
+  for (const phrase of PHRASE_KINDS) {
+    const base = PHRASE_KEY[phrase];
+    if (key === base) return { kind: 'phrases', phrase };
+    if (key.startsWith(`${base}-`)) {
+      const level = asLevel(key.slice(base.length + 1));
+      return level ? { kind: 'phrases', phrase, level } : null;
+    }
+  }
   const [a = '', b = '', ...rest] = key.split('-');
   if (rest.length) return null;
   if (a === 'top') {
@@ -161,13 +195,16 @@ function matches(
     case 'top':
       return isPos(e.pos) && !fn?.has(e.lemma_norm);
     case 'level':
-      return e.cefr === spec.level;
+      // Word decks: phrasal verbs and collocations have their own ("Kalıplar").
+      return e.cefr === spec.level && !isPhrasePos(e.pos);
     case 'pos':
       return e.pos === spec.pos;
     case 'levelPos':
       return e.cefr === spec.level && e.pos === spec.pos;
     case 'falseFriends':
       return opts.falseFriends?.has(e.lemma_norm) ?? false;
+    case 'phrases':
+      return e.pos === PHRASE_POS[spec.phrase] && (!spec.level || e.cefr === spec.level);
   }
 }
 

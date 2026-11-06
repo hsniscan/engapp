@@ -4,7 +4,7 @@ import { getMeta, pendingChangesCount, stuckOutboxCount } from '@/data';
 import { useOnline } from '@/lib/online';
 import { isBackendConfigured } from '@/lib/supabase';
 import type { SyncState } from '@/ui';
-import { LAST_SYNC_KEY, type SyncErrorKind } from './engine';
+import { LAST_SYNC_KEY, SYNC_HELD_KEY, type SyncErrorKind, type SyncHeld } from './engine';
 import { engine } from './instance';
 
 export interface SyncStatusInfo {
@@ -18,6 +18,11 @@ export interface SyncStatusInfo {
   lastSyncAt: number | null;
   error: SyncErrorKind | null;
   backendConfigured: boolean;
+  /**
+   * Why some rows wait although sync works (decision 0075): the server is nearly full
+   * ('storage') or a per-account quota ('texts', 'quota'). null: nothing is held back.
+   */
+  held: SyncHeld['reason'] | null;
 }
 
 /** Pure mapping used by the hook (and tests). */
@@ -47,6 +52,11 @@ export function useSyncStatus(): SyncStatusInfo {
   const stuck = useLiveQuery(() => (active ? stuckOutboxCount() : 0), [active]) ?? 0;
   const lastSyncAt =
     useLiveQuery(async () => (await getMeta<number>(LAST_SYNC_KEY)) ?? null, []) ?? null;
+  const held =
+    useLiveQuery(async () => {
+      const h = await getMeta<SyncHeld>(SYNC_HELD_KEY);
+      return h && h.rows.length > 0 ? h.reason : null;
+    }, []) ?? null;
   // Re-evaluate "linked account?" when the indicator mounts (cheap, local only).
   useEffect(() => {
     void engine.isActive();
@@ -66,5 +76,6 @@ export function useSyncStatus(): SyncStatusInfo {
     lastSyncAt,
     error: snap.error,
     backendConfigured: isBackendConfigured(),
+    held: active ? held : null,
   };
 }

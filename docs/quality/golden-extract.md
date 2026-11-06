@@ -13,8 +13,8 @@ wordfreq) with the model's `cefr_guess`; "known" words are simulated notes from
 | --- | --- | --: | --: | --: | --: | --: | --: | --: | --- |
 | 1-city-heat | B1 | 14 | 5 | 60 % | 0 % | 40 % | 0 | 0 | 10 / 1 / 1 / 2 |
 | 1-city-heat | B2 | 12 | 11 | 64 % | 9 % | 27 % | 0 | 0 | 11 / 0 / 1 / 0 |
-| 2-hybrid-work | B1 | 12 | 8 | 100 % | 0 % | 0 % | 0 | 0 | 8 / 0 / 1 / 3 |
-| 2-hybrid-work | B2 | 21 | 16 | 56 % | 6 % | 38 % | 0 | 0 | 19 / 1 / 1 / 0 |
+| 2-hybrid-work | B1 | 12 | 8 | 100 % | 0 % | 0 % | 0 | 0 | 9 / 0 / 1 / 2 |
+| 2-hybrid-work | B2 | 21 | 18 | 56 % | 6 % | 39 % | 0 | 0 | 20 / 0 / 1 / 0 |
 | 3-sleep-science | B1 | 19 | 6 | 100 % | 0 % | 0 % | 0 | 0 | 17 / 0 / 1 / 1 |
 | 3-sleep-science | B2 | 26 | 25 | 64 % | 8 % | 28 % | 0 | 0 | 25 / 0 / 1 / 0 |
 | 4-lighthouse-story | B1 | 11 | 6 | 100 % | 0 % | 0 % | 0 | 0 | 9 / 0 / 0 / 2 |
@@ -22,7 +22,7 @@ wordfreq) with the model's `cefr_guess`; "known" words are simulated notes from
 | 5-word-list | B1 | 30 | 12 | 58 % | 8 % | 33 % | 0 | 0 | 19 / 4 / 3 / 4 |
 | 5-word-list | B2 | 30 | 14 | 57 % | 7 % | 36 % | 0 | 0 | 15 / 10 / 3 / 2 |
 | **all** | **B1** | | **37** | **81 %** | **3 %** | **16 %** | **0** | **0** | |
-| **all** | **B2** | | **73** | **60 %** | **7 %** | **33 %** | **0** | **0** | |
+| **all** | **B2** | | **75** | **60 %** | **7 %** | **33 %** | **0** | **0** | |
 
 ## Candidates
 
@@ -42,14 +42,14 @@ wordfreq) with the model's `cefr_guess`; "known" words are simulated notes from
 ### 2-hybrid-work · B1
 
 - Pre-selected: productive (B1), allowance (B1), hesitate (B1), emphasise (B1*), fill in (B1*), take part (B1*), come up (B1*), get in touch (B1*)
+- Senin için, not selected: hybrid working (B2)
 - Biliyorsun: commute (B2)
-- Above the next level: hybrid working (C1), isolated (C1), refurbish (C1)
+- Above the next level: isolated (C1), refurbish (C1)
 
 ### 2-hybrid-work · B2
 
-- Pre-selected: review (B2), suit (A2), hybrid working (C1), cover (A2), committed (B2*), circumstances (B2*), delay (B1), productive (B1), adjustment (B2), allowance (B1), emphasise (B2*), fill in (B2*), take part (B1*), give a clear picture (B2*), come up (B2*), do not hesitate (B2*)
-- Senin için, not selected: isolated (C1), refurbish (C1), confidentially (C1*)
-- Kolay: appreciate (A2)
+- Pre-selected: review (B2), suit (A2), hybrid working (B2*), cover (A2), appreciate (A2), committed (B2*), circumstances (B2*), delay (B1), isolated (C1), productive (B1), adjustment (B2), allowance (B1), emphasise (B2*), fill in (B2*), take part (B1*), give a clear picture (B2*), come up (B2*), do not hesitate (B2*)
+- Senin için, not selected: refurbish (C1), confidentially (C1*)
 - Biliyorsun: commute (B2)
 
 ### 3-sleep-science · B1

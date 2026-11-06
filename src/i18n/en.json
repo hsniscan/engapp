@@ -53,7 +53,8 @@
     "errorShort": "Sync error",
     "syncNow": "Sync now",
     "quota": "Today's sync limit reached",
-    "quotaShort": "Limit reached"
+    "quotaShort": "Limit reached",
+    "heldShort": "Some waiting"
   },
   "theme": {
     "label": "Theme",
@@ -398,7 +399,8 @@
       "typeAnswer": "Type the word for the blank",
       "correctTag": "Correct",
       "yourPick": "Your pick",
-      "pickedWord": "The word you picked"
+      "pickedWord": "The word you picked",
+      "pickToCheck": "Tap an option; it is checked at once."
     },
     "empty": {
       "word": "Word study is done for today",
@@ -416,7 +418,9 @@
     "learnedToday_one": "{{count}} word reached Learned today.",
     "learnedToday_other": "{{count}} words reached Learned today.",
     "example": "Example",
-    "meaning": "Meaning"
+    "meaning": "Meaning",
+    "continueWith": "Continue · {{rating}}",
+    "showSentence": "Show the sentence"
   },
   "examples": {
     "title": "Example sentences",
@@ -464,7 +468,10 @@
     "emptyText": "The sentence cannot be empty.",
     "saved": "Sentence saved.",
     "saveFailed": "Could not save. Try again.",
-    "none": "There are no example sentences for this meaning yet."
+    "none": "There are no example sentences for this meaning yet.",
+    "credit": "Tatoeba · {{authors}}",
+    "creditEdited": "Tatoeba · {{authors}} · translation corrected",
+    "creditLink": "This sentence is from Tatoeba (CC BY 2.0 FR). Open the source"
   },
   "mnemonic": {
     "title": "Mnemonic",
@@ -527,7 +534,7 @@
     "sheetLead_one": "You have forgotten “{{term}}” {{count}} time. Instead of repeating it the same way, try one of these.",
     "sheetLead_other": "You have forgotten “{{term}}” {{count}} times. Instead of repeating it the same way, try one of these.",
     "sheetLeadCalm": "Try one of these to study “{{term}}” another way.",
-    "safeNote": "The card is never suspended or deleted unless you choose to; your history stays as it is.",
+    "safeNote": "A card is never deleted unless you ask; your history stays as it is. A card forgotten for the sixth time rests for 30 days, and you can bring it back at once.",
     "gone": "This card no longer exists.",
     "paths": {
       "mnemonic": "Find a memory hook",
@@ -565,7 +572,8 @@
       "crossedAction": "Try another way",
       "confused": "Did you mix up “{{term}}” with another word?",
       "confusedAction": "Pick the word",
-      "suspended": "Suspended, as your setting says."
+      "suspended": "Suspended, as your setting says.",
+      "rested": "It rests for 30 days, so the time goes to other words."
     },
     "picker": {
       "title": "Which word did you mix it up with?",
@@ -631,6 +639,27 @@
       "more_other": "and {{count}} more cards",
       "pairsTitle": "Words you may mix up",
       "pairsLead": "Your words that look alike or mean the same. A contrast card helps you tell them apart."
+    },
+    "struggling": "Struggling",
+    "strugglingLabel_one": "Struggling: forgotten {{count}} time",
+    "strugglingLabel_other": "Struggling: forgotten {{count}} times",
+    "rescue": {
+      "label": "Suggested way",
+      "lead_one": "You forgot this word {{count}} time. Instead of the same route again, try this:",
+      "lead_other": "You forgot this word {{count}} times. Instead of the same route again, try this:",
+      "falseFriend": "It may be mixed up with the Turkish “{{tr}}”. Say the two side by side:",
+      "mnemonicChosen": "Say your mnemonic out loud once:",
+      "mnemonicSuggestion": "This association may help:",
+      "useMnemonic": "Use this",
+      "mnemonicSaved": "Mnemonic saved",
+      "family": "Think of it with words from the same family:"
+    },
+    "rest": {
+      "badge": "Resting",
+      "title": "This word is resting",
+      "body": "A card you forgot many times rests until {{date}}; it comes back by itself then.",
+      "end": "Bring it back now",
+      "ended": "The card is back in today’s study"
     }
   },
   "add": {
@@ -1025,7 +1054,7 @@
       "sessionLengthHint": "At most this many cards in one session. You decide whether to go on.",
       "sessionAll": "All",
       "leechSuspend": "Suspend hard-to-learn cards",
-      "leechSuspendHint": "A card forgotten for the 6th time is suspended; you can bring it back from My words."
+      "leechSuspendHint": "On: a card forgotten for the 6th time is suspended until you reopen it (in Kelimelerim). Off: it rests for 30 days, then comes back by itself."
     },
     "levels": {
       "A1": "Beginner",
@@ -1648,7 +1677,10 @@
     "appGuestTitle": "Your data lives on this phone",
     "appGuest": "Uninstalling the app or clearing its data deletes your words. Create an account or make a backup.",
     "appTitle": "Where is your data?",
-    "appSignedIn": "Your data is on this phone and in your account; it comes back from your account even if you uninstall the app."
+    "appSignedIn": "Your data is on this phone and in your account; it comes back from your account even if you uninstall the app.",
+    "noticeTitle": "Your words are on this device",
+    "noticeBody": "In guest mode your data is only in this browser. Rarely, the browser may clear it to free space; take a backup now and then or create an account.",
+    "noticeSignIn": "Create an account"
   },
   "install": {
     "title": "Install the app",
@@ -1900,7 +1932,9 @@
     "unavailableIndicatorFull": "Your data is safe on this device.",
     "quotaHint": "Too many changes were sent today. Your changes are safe on this device and will be sent automatically tomorrow.",
     "quotaToast": "Today's sync limit is reached. Your changes are safe on this device and will be sent tomorrow.",
-    "errorHint": "Your changes are safe on this device; sync will try again by itself."
+    "errorHint": "Your changes are safe on this device; sync will try again by itself.",
+    "heldStorage": "The server is running low on space. Newly saved texts and imported Anki history stay on this device for now; your reviews, words and settings keep syncing. They will be sent by themselves once there is room.",
+    "heldTexts": "You have reached the limit for saved texts. New texts are safe on this device but are not sent to your other devices. Deleting old texts you have read frees space over time."
   },
   "importer": {
     "privacy": "Do not send confidential work documents; the text goes to the server to find the words.",
@@ -2214,7 +2248,8 @@
     "overrideAutoUnknown": "Automatic",
     "overrideHint": "A level you choose is visible only to you and syncs between your devices.",
     "overrideFailed": "The level could not be saved. Try again.",
-    "correction_reason": "{{list}}: {{from}} → {{to}} for Turkish learners (AI: {{reason}})"
+    "correction_reason": "{{list}}: {{from}} → {{to}} for Turkish learners (AI: {{reason}})",
+    "correction_familiar": "{{list}}: {{from}} → {{to}} for Turkish learners (also in Turkish: {{word}})"
   },
   "sources": {
     "title": "Sources",
@@ -2246,9 +2281,23 @@
       "license": "CC BY-SA 4.0 (derived data, shared alike)."
     },
     "aiTitle": "AI estimates",
-    "aiBody": "Levels of words outside the lists and the corrections for Turkish learners are made with Google Gemini. They are estimates: a correction moves a list level by at most one step, and an estimate is bounded by the word's frequency. You can always change a word's level yourself.",
+    "aiBody": "Levels of words outside the lists and the corrections for Turkish learners are made with AI (Anthropic Claude or Google Gemini). They are estimates: a correction moves a list level by at most one step, and an estimate is bounded by the word's frequency. You can always change a word's level yourself.",
     "wordBankTitle": "Word bank",
-    "wordBankBody": "The word bank shows the words of the CEFR-J and Octanove lists. Their Turkish meanings and example sentences were generated once with Claude (Anthropic); where the shared dictionary already had a meaning, that one is used. Being derived from the Octanove data, the word bank is licensed CC BY-SA 4.0 too."
+    "wordBankBody": "The word bank shows the words of the CEFR-J and Octanove lists. Their Turkish meanings and example sentences were generated once with Claude (Anthropic); where the shared dictionary already had a meaning, that one is used. Being derived from the Octanove data, the word bank is licensed CC BY-SA 4.0 too.",
+    "tatoeba": {
+      "name": "Tatoeba",
+      "what": "Some example sentences are Tatoeba sentences, written and translated by volunteers. Each one shows its authors; a corrected translation says so.",
+      "license": "CC BY 2.0 FR",
+      "cite": "Tatoeba (tatoeba.org), sentences and translations under CC BY 2.0 FR."
+    },
+    "wiktionary": {
+      "name": "Wiktionary",
+      "what": "The phrasal verb list comes from Wiktionary's \"English phrasal verbs\" category; which ones to teach was decided by how often they occur in Tatoeba and Simple English Wikipedia. Meanings and examples are Engapp's own.",
+      "license": "CC BY-SA 4.0",
+      "cite": "Wiktionary, the free dictionary (en.wiktionary.org), Category:English phrasal verbs; Simple English Wikipedia (simple.wikipedia.org)."
+    },
+    "examplesTitle": "Example sentences",
+    "examplesBody": "Each meaning has about three example sentences. Fitting Tatoeba sentences were chosen first; Claude (Anthropic) wrote the missing ones once. A second AI checked all of them for natural Turkish and for showing the right meaning."
   },
   "levelTest": {
     "title": "Level test",
@@ -2297,7 +2346,10 @@
     "home": "Back to home",
     "duration": "{{count}} questions · {{time}}",
     "towardNextNone": "You hardly know the {{next}} words yet; {{next}} needs 80%.",
-    "unreliableLevel": "Measured level (not reliable)"
+    "unreliableLevel": "Measured level (not reliable)",
+    "counter": "{{done}} / {{max}}",
+    "progressOf": "{{done}} questions answered, at most {{max}}",
+    "continue": "Continue"
   },
   "level": {
     "offerTitle": "Measure your level in 5 minutes?",
@@ -2514,11 +2566,11 @@
     "manual": "I want to add words myself",
     "welcome": {
       "title": "Let's start learning words for good",
-      "body": "Engapp asks you a few words every day and brings each back just before you forget it. Three short steps, then your first study session:",
+      "body": "Engapp asks you a few words every day and brings each back just before you forget it. Three short steps and you are ready:",
       "step1": "Measure your level: a 5-minute word test, at most 70 questions (skip it if you like).",
       "step2": "Pick your interests: example sentences come from these topics.",
       "step3": "Pick a ready deck, such as “The 500 most used words”.",
-      "step4": "Do your first session: a few minutes, a few new words.",
+      "step4": "Then your first session starts: a few minutes, a few new words.",
       "start": "Let's begin",
       "haveAccount": "Already have an account?",
       "signIn": "Sign in",
@@ -2558,7 +2610,10 @@
       "loading": "Loading ready decks",
       "offline": "Ready decks need the internet. Try again once you're online, or add words yourself.",
       "retry": "Try again",
-      "skipOffline": "Skip for now and open the app"
+      "skipOffline": "Skip for now and open the app",
+      "addingStart": "Getting the deck ready…",
+      "addingLabel": "Adding the deck",
+      "addingHint": "This takes a few seconds. Your first session opens when it is done."
     }
   },
   "decks": {
@@ -3171,14 +3226,17 @@
       "falseFriends": "False friends",
       "pairs": "{{count}} pairs",
       "notEqual": "not equal",
-      "falseFriendsBody": "Words that look Turkish but mean something else: {{examples}}…"
+      "falseFriendsBody": "Words that look Turkish but mean something else: {{examples}}…",
+      "phrases": "Phrases",
+      "phrasesBody": "Expressions learned as a whole, not word by word"
     },
     "kind": {
       "top": "Most frequent · content words",
       "level": "Level",
       "pos": "Part of speech",
       "levelPos": "Level · part of speech",
-      "falseFriends": "False friends"
+      "falseFriends": "False friends",
+      "phrases": "Phrases"
     },
     "deckName": {
       "top": "Most used {{size}} words",
@@ -3195,14 +3253,30 @@
         "noun": "{{level}} nouns",
         "adverb": "{{level}} adverbs"
       },
-      "falseFriends": "False friends"
+      "falseFriends": "False friends",
+      "phrases": {
+        "phrasal": "Phrasal verbs",
+        "collocation": "Collocations"
+      },
+      "phrasesLevel": {
+        "phrasal": "{{level}} phrasal verbs",
+        "collocation": "{{level}} collocations"
+      }
     },
     "deckBody": {
       "top": "The {{size}} nouns, verbs, adjectives and adverbs that occur most in English texts. Ranking from wordfreq.",
       "level": "Every {{level}} word, most frequent first. Lists from CEFR-J and Octanove.",
       "pos": "{{pos}} of every level, most frequent first.",
       "levelPos": "{{level}} {{pos}}, most frequent first.",
-      "falseFriends": "English words misread because a Turkish word looks similar."
+      "falseFriends": "English words misread because a Turkish word looks similar.",
+      "phrases": {
+        "phrasal": "A verb and a small word that together mean something new: give up, find out. Most used first.",
+        "collocation": "Words English puts together: make a decision, pay attention. Easy to get wrong when translating from Turkish (\"make a mistake\", not \"do a mistake\")."
+      },
+      "phrasesLevel": {
+        "phrasal": "{{level}} phrasal verbs, most used first.",
+        "collocation": "{{level}} collocations, most used first."
+      }
     },
     "posPlural": {
       "verb": "verbs",
@@ -3916,5 +3990,36 @@
     "month_other": "{{n}} months",
     "year_one": "{{n}} year",
     "year_other": "{{n}} years"
+  },
+  "reminderOffer": {
+    "title": "Shall I remind you tomorrow?",
+    "body": "One short reminder a day at the time you pick. None on a day you already studied.",
+    "guestBody": "In the browser, reminders need an account. Create a free one and I will remind you every day at your time.",
+    "time": "Time",
+    "yes": "Yes, at {{hour}}:00",
+    "no": "No, thanks",
+    "signIn": "Create an account",
+    "done": "Done: a reminder every day at {{hour}}:00",
+    "declined": "Okay, I won't ask again. You can turn it on any time in Settings → Notifications.",
+    "denied": "Notifications were not allowed. You can allow them in your phone settings.",
+    "failed": "Could not turn the reminder on. Try again."
+  },
+  "waiting": {
+    "title": "While you wait",
+    "body_one": "Your cards are ready again in {{count}} min.",
+    "body_other": "Your cards are ready again in {{count}} min.",
+    "newTitle_one": "+{{count}} new word",
+    "newTitle_other": "+{{count}} new words",
+    "newBody": "Learn a few more words now",
+    "readTitle": "Read a short text",
+    "readBody": "Readings at your level, in Discover",
+    "pingAction_one": "Let me know when ready ({{count}} min)",
+    "pingAction_other": "Let me know when ready ({{count}} min)",
+    "pingHint": "One notification when the cards are ready",
+    "pingSet": "Okay, I'll let you know when the cards are ready",
+    "pingTitle": "Your cards are ready",
+    "pingBody": "Have one more look at the words you just learned.",
+    "reminderTitle": "Turn on the daily reminder",
+    "reminderBody": "A short reminder every day at your time"
   }
 }

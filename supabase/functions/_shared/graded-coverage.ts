@@ -13,7 +13,7 @@
 // capitalised sentence opener the data does not know) are left out.
 //
 // The gate (plan): ≥ 95 % of the counted tokens at or below the text's level, ≤ 3 % at
-// level + 1, and nothing above level + 2 unless the text glosses it.
+// level + 1 (5 % for the short A1 texts), and nothing above level + 2 unless the text glosses it.
 
 import { CEFR, levelRank, type Cefr } from './cefr.ts';
 import { listLevel, zipfBand, type RefEntry, type WordRefs } from './level.ts';
@@ -22,6 +22,13 @@ import { normalizeLemma } from './text.ts';
 
 export const COVERAGE_MIN_AT_LEVEL = 0.95;
 export const COVERAGE_MAX_NEXT = 0.03;
+/**
+ * A1 texts (decision 0073) are 60–120 words, so 3 % would be two or three words: an A1 text may
+ * use up to 5 % A2 words (still at least 95 % A1, nothing harder unless glossed).
+ */
+export const COVERAGE_MAX_NEXT_A1 = 0.05;
+
+export const coverageMaxNext = (level: Cefr): number => (level === 'A1' ? COVERAGE_MAX_NEXT_A1 : COVERAGE_MAX_NEXT);
 
 /** The level file, parsed for the checker. */
 export interface LevelTable {
@@ -255,7 +262,7 @@ export function checkCoverage(
   const covNext = t === 0 ? 0 : round4(next / t);
   const problems: string[] = [];
   if (covLevel < COVERAGE_MIN_AT_LEVEL) problems.push('at_level');
-  if (covNext > COVERAGE_MAX_NEXT) problems.push('next_level');
+  if (covNext > coverageMaxNext(level)) problems.push('next_level');
   if (above.length > 0) problems.push('above');
   offenders.sort((a, b) => b.n - a.n || a.lemma.localeCompare(b.lemma));
   return {

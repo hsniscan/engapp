@@ -413,6 +413,30 @@ describe('SyncEngine', () => {
     expect((await db.meta.get('last_sync_at'))?.value).toBe(T);
   });
 
+  it('calls afterSync only after a sync that went well (decision 0076: error reports)', async () => {
+    await newDevice('dev-a');
+    let calls = 0;
+    const e = new SyncEngine({
+      transport: server,
+      getSessionUserId: async () => USER,
+      isOnline: () => true,
+      now: () => T,
+      afterSync: () => {
+        calls++;
+        throw new Error('an extra must never fail the sync');
+      },
+    });
+    server.faults.offline = true;
+    await e.sync();
+    expect(calls).toBe(0);
+    server.faults.offline = false;
+    expect(await e.sync()).toMatchObject({ ok: true });
+    expect(calls).toBe(1);
+    const guest = new SyncEngine({ transport: server, getSessionUserId: async () => null, afterSync: () => calls++ });
+    await guest.sync();
+    expect(calls).toBe(1);
+  });
+
   it('coalesces concurrent calls and respects the tab runner', async () => {
     await newDevice('dev-a');
     let runs = 0;
@@ -527,7 +551,7 @@ describe('idle backoff and slim text pushes (decision 0060)', () => {
   it('polls every minute after a change, doubling while idle up to 10 minutes', async () => {
     const { nextPollDelayMs, isIdleOutcome } = await import('./engine');
     expect([0, 1, 2, 3, 4, 50].map(nextPollDelayMs)).toEqual([60_000, 120_000, 240_000, 480_000, 600_000, 600_000]);
-    const report = { pushed: 0, stale: 0, rejected: 0, pulled: 0, fullResync: false, removed: 0, lexicon: 0 };
+    const report = { pushed: 0, stale: 0, rejected: 0, pulled: 0, fullResync: false, removed: 0, lexicon: 0, held: 0, requeued: 0 };
     expect(isIdleOutcome({ ok: true, report })).toBe(true);
     expect(isIdleOutcome({ ok: true, report: { ...report, pulled: 1 } })).toBe(false);
     expect(isIdleOutcome({ ok: false, reason: 'busy' })).toBe(true);

@@ -101,8 +101,12 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 | `GEMINI_FALLBACK_MODEL`     | [`model-defaults.ts`]                                                                                     |
 | `AI_DAILY_LIMIT`            | AI calls per user per UTC day, all text AI features together [`120`]                                      |
 | `AI_DAILY_LIMIT_EXTRACT`, `_ENRICH`, `_THEMES`, `_MNEMONIC`, `_CONTRAST`, `_REPORT` | calls per user per UTC day of one feature [`60`, `60`, `10`, `20`, `20`, `4`] |
-| `AI_USER_MONTHLY_USD`       | most one user may spend of the shared Claude text budget per month [`1`]                                  |
-| `AI_USER_MAX_SHARE`         | most one user may spend as a share of that budget (the smaller of the two applies) [`0.1`]                 |
+| `AI_USER_MONTHLY_USD`       | most one user may spend of the shared Claude text budget per month [`2`]                                  |
+| `AI_USER_MAX_SHARE`         | most one user may spend as a share of that budget (the smaller of the two applies) [`0.2`]                 |
+| `AI_OWNER_MAX_SHARE`        | share of that budget the owner (`APP_ADMIN_USER_ID`) may spend [`0.75`]                                    |
+| `AI_SYSTEM_MONTHLY_USD`     | most the system jobs (level job, morphemes) may spend of it per month [`2`]                               |
+| `AI_SYSTEM_MAX_SHARE`       | most the system jobs may spend as a share of it (the smaller of the two applies) [`0.15`]                 |
+| `AI_TEXT_PRIMARY`           | `gemini`: Gemini first and Claude only when Gemini's quota runs out (the v0.5 order) [`claude`]           |
 | `SKIP_PRE_MIGRATION_BACKUP` | `true`: deploy without the backup before migrating (only if the backup itself is broken) [off]            |
 | `AI_SYSTEM_DAILY_LIMIT`     | model calls per UTC day for system jobs (the level job), separate from users' budgets [`100`]             |
 | `CLAUDE_MONTHLY_CREDIT_USD` | the monthly Claude credit in USD; pictures may use 80 % of it [`100`]                                     |
@@ -111,17 +115,20 @@ In the GitHub repository: **Settings → Secrets and variables → Actions**.
 | `CLAUDE_CHECK_MODEL`        | model that scores and checks pictures [`claude-haiku-5-5`]                                                |
 | `CLAUDE_WORDBANK_MODEL`     | model of the word bank job (step 14) [`CLAUDE_CHECK_MODEL`]                                               |
 | `WORD_BANK_NIGHTLY`         | `true`: the word bank job also runs every night (step 14) [off]                                           |
-| `TTS_PREGEN_WEEKLY`         | `true`: the pronunciation audio job also runs every Sunday for new words (step 15) [off]                  |
-| `GRADED_BULK`               | `true`: the reading library job writes new texts every night (step 16) [off]                              |
-| `CLAUDE_TEXT_MONTHLY_USD`   | monthly cap in USD for Claude text features: library texts, stories (step 16) [`10`]                      |
+| `TTS_PREGEN_WEEKLY`         | `false`: the pronunciation audio job stops its Sunday run for new words (step 15) [on]                   |
+| `GRADED_BULK`               | `false`: the reading library job stops writing new texts (step 16) [on]                                   |
+| `GRADED_MONTHLY_USD`        | the reading library's own monthly Claude cap in US$ (step 16) [20]                                        |
+| `AUDIO_MAX_BYTES`           | most bytes the pre-generated audio may take in its bucket (step 15) [6 GB on R2, 0.9 GB on Supabase]     |
+| `IMAGE_MONTHLY_USD`         | pictures' own monthly ceiling in US$ on the shared Claude budget [`50`, owner 2026-11-05]                 |
+| `CLAUDE_TEXT_MONTHLY_USD`   | monthly cap in USD for Claude text AI: every text feature, stories, level job (the library has its own cap) [`30`, owner 2026-11-05] |
 | `CLAUDE_GRADED_MODEL`       | model that writes library texts [`claude-sonnet-5-5`]                                                     |
 | `GRADED_PER_CELL`           | library texts per level and core topic [`9`]                                                              |
 | `GRADED_EXTENDED_PER_CELL`  | library texts per level and extended topic [`0`]                                                          |
 | `ARTICLE_DAILY_LIMIT`       | articles a user may import from links per UTC day (step 17) [`20`]                                        |
-| `CLAUDE_TEXT_MODEL`         | model of the text AI fallback when Gemini runs out of quota (step 17) [`claude-haiku-5-5`]                |
-| `AI_CLAUDE_FALLBACK`        | `off`: never use Claude for the text AI tasks (step 17) [`on`]                                            |
+| `CLAUDE_TEXT_MODEL`         | model of every text AI task; Gemini only steps in when it cannot answer (step 17) [`claude-sonnet-5-5`]   |
+| `AI_CLAUDE_FALLBACK`        | `off`: never use Claude for the text AI tasks, Gemini only (step 17) [`on`]                               |
 | `STORY_DAILY_LIMIT`         | daily stories per user per UTC day, each may be regenerated once (step 18) [`1`]                          |
-| `CLAUDE_STORY_MODEL`        | model that writes the daily story (step 18) [`CLAUDE_TEXT_MODEL`, else `claude-haiku-5-5`]                |
+| `CLAUDE_STORY_MODEL`        | model that writes the daily story (step 18) [`CLAUDE_TEXT_MODEL`, else `claude-sonnet-5-5`]               |
 
 `ALLOWED_ORIGINS` is the list of web origins allowed to call the AI functions
 (comma-separated, exact, no trailing slash). Preview deploys on other origins cannot
@@ -227,9 +234,15 @@ Editor**, `select count(*) filter (where zipf is not null), count(*) from public
 shows most terms with a frequency, and
 `select count(*) from public.ref_word_levels where tr_checked_at is not null;` grows each night.
 
-To give guests and offline devices the corrections too (they use the level file shipped
-with the app): `SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… node scripts/system-jobs.ts
-export-tr`, then `node scripts/build-levels.ts`, and commit `data/levels/`.
+To give guests, offline devices and the level test the corrections too (they use the level
+file shipped with the app): **Actions → Level jobs → Run workflow** with **export_tr** ticked
+(v0.5.3, decision 0073). It exports the corrections, rebuilds `data/levels/` and the level test
+bank, runs the level-data tests and opens a pull request; merge it. By hand, the same is
+`SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… node scripts/system-jobs.ts export-tr`, then
+`node scripts/build-levels.ts` and `node scripts/relevel-level-test.ts`. Words Turkish has
+borrowed (mikrofon, penisilin) are one level easier from `data/levels/tr-familiar.tsv`; to
+change that list edit `data/levels/tr-familiar-review.tsv` and run
+`node scripts/build-tr-familiar.ts`.
 
 ## 10. Push reminders (v0.3)
 
@@ -415,8 +428,10 @@ bucket take MP3 files itself) and the service-role key exactly like the word ban
    made, so a cancelled or failed job is simply run again: it skips everything already there.
 3. **Optional clean-up.** Run once more with **prune_ondemand** ticked: deletes the older
    Gemini WAV files that an MP3 now replaces (they are no longer played).
-4. Optional: set the repository variable `TTS_PREGEN_WEEKLY` to `true` to pick up new words
-   every Sunday at 04:30 UTC (one job, at most 4,000 clips).
+4. Every Sunday at 04:30 UTC the job picks up new words and sentences (one job, at most 4,000
+   clips). Set the repository variable `TTS_PREGEN_WEEKLY` to `false` to stop it. Since v0.5.3
+   the word bank's example sentences are voiced too, and no run lets the audio pass
+   `AUDIO_MAX_BYTES` (6 GB on R2: the free 10 GB is per account and the backups share it).
 
 Check: `plan_only` again shows `missing: 0`. In the app, a speaker tap on a dictionary word
 plays without the spinner; in the browser's network tab the request goes to
@@ -424,8 +439,8 @@ plays without the spinner; in the browser's network tab the request goes to
 
 ## 16. Okuma kitaplığı (v0.5)
 
-Short texts for each level, A2 to C1, with a Turkish translation and audio for every
-sentence (decision 0047). Claude writes and checks them in nightly batches. Until there are
+Short texts for each level, A1 to C1, with a Turkish translation and audio for every
+sentence (decisions 0047, 0073). Claude writes and checks them in nightly batches. Until there are
 texts, the library page says new texts are being prepared; nothing else changes.
 
 Needs: the `ANTHROPIC_API_KEY` secret (step 12) and the service-role key, exactly as for
@@ -433,29 +448,32 @@ pictures.
 
 1. **Deploy** (step 5), so that the migrations `20261101000500_text_budget.sql` and
    `20261101000510_graded_texts.sql` are in place.
-2. **Cap.** This is optional. Text features (library texts, and stories later) share their own
-   monthly cap, separate from pictures. The default is 10 USD. To change it, set the
-   repository variable `CLAUDE_TEXT_MONTHLY_USD`. A call that would pass the cap is not sent.
+2. **Cap.** This is optional. Since v0.5.3 the library draws on the shared monthly Claude
+   budget (like pictures) and has its own monthly cap on top: 20 USD by default, the run's
+   `cap_usd` input or the repository variable `GRADED_MONTHLY_USD`. A batch that would pass
+   either cap is not sent. The app's own text cap (`CLAUDE_TEXT_MONTHLY_USD`) is left alone.
 3. **Plan.** Go to **Actions → Graded library → Run workflow**, job `plan`. It sends nothing.
    The log lists the missing texts per level and topic (360 for the first plan) and the
    worst-case cost.
-4. **Turn it on (from 1 November).** Set the repository variable **`GRADED_BULK`** to `true`.
-   The workflow then runs every night at 02:15 UTC. It does these steps in order:
+4. **Fill it once.** Run the workflow with job `bulk` (and `cap_usd` if not 20). It writes,
+   checks and stores the whole plan in about 2–5.5 hours, then makes the audio. It is on by
+   default: the workflow also runs every night at 02:15 UTC. It does these steps in order:
    - collects last night's batch;
    - checks coverage and quality, then stores the approved texts;
    - sends the next batch inside the cap;
    - makes the sentence audio;
    - prints a report.
 
-   Set `GRADED_BULK` to `false` to pause. Other jobs by hand: `submit` (needs `GRADED_BULK`
-   or **dry_run**), `collect`, `audio`, `report`.
+   Set `GRADED_BULK` to `false` to pause. Other jobs by hand: `submit` (or **dry_run**),
+   `collect`, `audio`, `report`.
 
-5. Optional: `GRADED_PER_CELL` (texts per level and core topic, default 9),
+5. Optional: `GRADED_PER_CELL` (texts per level and core topic on every level; default the
+   library plan 8/8/8/7/5 on A1–C1),
    `GRADED_EXTENDED_PER_CELL` (default 0; e.g. `3` adds the extended topics such as food, film
    and law), `CLAUDE_GRADED_MODEL`, `CLAUDE_CHECK_MODEL`.
 
-Check: in **SQL Editor**, `select * from public.text_budget_status();` shows this month's cap
-and spending. `select status, count(*) from public.graded_texts group by 1;` grows after each
+Check: in **SQL Editor**, `select * from public.image_budget_status();` shows this month's
+shared cap and spending; the job log's `library_month` line shows the library's own. `select status, count(*) from public.graded_texts group by 1;` grows after each
 night. In the app, **/kitaplik** lists the approved texts.
 
 ## 17. Article import and the Claude fallback (v0.5)
@@ -466,11 +484,12 @@ deploys `fetch-article`. Optional variables (step 4): `ARTICLE_DAILY_LIMIT`,
 
 - **Article import** needs no key: the server downloads the page itself (user agent
   `EngappReader/1.0`), returns plain text and stores nothing (decision 0044).
-- **Claude fallback**: when Gemini answers "quota exhausted" on both models, ai-extract,
-  ai-enrich, ai-themes, ai-mnemonic, ai-report and ai-contrast retry the same
-  request on Claude Haiku. It uses the `ANTHROPIC_API_KEY` secret that pictures already use;
-  without it the old `quota_exceeded` error remains. Each Claude call is logged as
-  `text spend` in the function logs (USD and tokens) until the text budget lands.
+- **Claude first (v0.5.3, decision 0077)**: ai-extract, ai-enrich, ai-themes, ai-mnemonic,
+  ai-report, ai-contrast and ai-story ask Claude Sonnet first, under the monthly text budget
+  (`CLAUDE_TEXT_MONTHLY_USD`) and the user's share of it; Gemini answers whenever Claude
+  cannot (the month or the share is used up, an outage, no key). It uses the
+  `ANTHROPIC_API_KEY` secret that pictures already use; without it everything runs on Gemini
+  as before. Each Claude call is booked in `text_budget` and logged as `text spend`.
 - Check after deploy: **Edge Functions → fetch-article → Logs** shows `extracted` lines with
   sizes only, never an address.
 
@@ -481,9 +500,10 @@ Nothing new to create: the deploy (step 5) applies `20261101000800_story.sql` an
 app says the story cannot be written right now). Optional variables (step 4):
 `STORY_DAILY_LIMIT`, `CLAUDE_STORY_MODEL`, `CLAUDE_TEXT_MONTHLY_USD`.
 
-- One story per user per day costs about 0.001 US$ on Claude Haiku; every call is booked in
-  the same monthly text budget as the reading library. When the month's budget is used up the
-  app shows a calm message and nothing is sent.
+- One story costs about 0.01–0.02 US$ on Claude Sonnet (0.001 on Haiku before v0.5.3); every
+  call is booked in the same monthly text budget as the reading library. When the month's
+  budget is used up Gemini writes the story (without a Gemini key the app shows a calm message
+  and nothing is sent).
 - Only the day's 5–8 words, the level, the reading difficulty and up to three interests are
   sent; the story is not stored on the server (decision 0050).
 - Check after deploy: **Edge Functions → ai-story → Logs** shows `ai-story model call` lines
@@ -592,12 +612,32 @@ Decision 0060; restore steps: `docs/runbook-backup-restore.md`.
 3. GitHub → **Actions → DB backup → Run workflow** once and check that it ends green.
    It then runs every night (02:45 UTC): daily copies kept 14, weekly (Sunday) copies 8,
    pre-migration copies 10, none older than 56 days.
-4. The same workflow runs `public.ops_health()` (budgets, refusals, stale holds, job
-   heartbeats, failed pg_cron runs, database size, lexicon terms to review). A `fail` row fails
-   the run. Turn on e-mail for failed runs: GitHub → your avatar → **Settings →
-   Notifications → Actions → "Send notifications for failed workflows only"**.
+4. **Health check** (`ops-health.yml`, 06:30 UTC; decision 0076) runs `public.ops_health()`
+   (budgets, refusals, stale holds, job heartbeats, failed pg_cron runs, database size, lexicon
+   terms to review) and `public.ops_health_reliability()` (backup age, the job clock, users'
+   errors, edge-function failures, AI fallbacks and quota refusals), and checks that the
+   newest backup in R2 is under 26 hours old. A `fail` row fails the run. Turn on e-mail for
+   failed runs: GitHub → your avatar → **Settings → Notifications → Actions → "Send
+   notifications for failed workflows only"**.
 5. Sync quotas (per user): `select * from public.sync_limits;` — change one with
    `update public.sync_limits set value = … where name = '…';` (no deploy needed).
+
+## 21. Job clock and error reports (v0.5.3)
+
+Decision 0076 (with a short Turkish checklist at its end).
+
+1. GitHub → avatar → **Settings → Developer settings → Personal access tokens → Fine-grained
+   tokens → Generate new token**: only the `engapp` repository, permission **Actions: Read and
+   write**, nothing else, the longest expiry.
+2. Repository secret `GH_DISPATCH_TOKEN` = that token (step 4).
+3. **Actions → Supabase → Run workflow**: the deploy copies the token into Supabase Vault.
+   From then on pg_cron starts the backup, the health check, the level, library and picture
+   jobs on time; GitHub's own schedules only catch misses, and a run that finds tonight's work
+   already done skips itself ("Skipped: …" notice).
+4. Check: next morning the **Health check** run shows `gh_dispatch ok`. In the SQL editor:
+   `select at, workflow, outcome, status_code from ops_dispatch_log order by id desc limit 10;`
+5. Users' error reports: `select * from client_errors order by id desc limit 50;` (the health
+   check prints only counts and fingerprints, its log is public).
 
 ## Manual deploy without GitHub (alternative)
 

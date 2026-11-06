@@ -6,7 +6,16 @@ import { wordBankId, type WordBankEntry } from '../domain/wordBank';
 import { resetDb } from '../test/db';
 import { addNoteWithSenses, answerCard } from './actions';
 import { db } from './db';
-import { addSuggestedDeck, findTagDeck, getDeckWords, getMyDecks, getOwnedIndex } from './deckHub';
+import {
+  addSuggestedDeck,
+  DECK_ADD_JOB_KEY,
+  findTagDeck,
+  getDeckWords,
+  getMyDecks,
+  getOwnedIndex,
+  pendingDeckAdd,
+  resumeDeckAdd,
+} from './deckHub';
 import { createDeck, listDecks } from './decks';
 import { markKnown } from './knownTerms';
 import { updateSettings } from './settings';
@@ -73,7 +82,7 @@ describe('addSuggestedDeck', () => {
     });
     expect(r).toMatchObject({ added: 2, alreadyCarded: 1, known: 1 });
     expect(r.cards).toBeGreaterThanOrEqual(2);
-    expect(progress).toEqual([1, 2]);
+    expect(progress).toEqual([0, 2]);
 
     const notes = (await db.notes.toArray()).filter((n) => n.deleted_at === null);
     expect(notes.map((n) => n.term).sort()).toEqual(['admit', 'afford', 'avoid']);
@@ -93,6 +102,41 @@ describe('addSuggestedDeck', () => {
     const again = await addSuggestedDeck(words, 'B1 fiiller', { now: T + 1000 });
     expect(again).toMatchObject({ added: 0, alreadyCarded: 3, known: 1 });
     expect(again.deck?.id).toBe(decks[0]!.id);
+    expect(await listDecks()).toHaveLength(1);
+  });
+
+  it('a big deck goes in chunks, one note per word, created in order, and leaves no job', async () => {
+    const words = Array.from({ length: 450 }, (_, i) => entry(`word${String(i).padStart(3, '0')}`));
+    const progress: number[] = [];
+    const started = performance.now();
+    const r = await addSuggestedDeck(words, 'İlk 450', { now: T, onProgress: (d) => progress.push(d) });
+    const ms = performance.now() - started;
+    expect(r.added).toBe(450);
+    expect(progress).toEqual([0, 200, 400, 450]);
+    const notes = (await db.notes.toArray()).sort((a, b) => a.created_at - b.created_at);
+    expect(notes).toHaveLength(450);
+    expect(notes[0]!.term).toBe('word000');
+    expect(notes[449]!.term).toBe('word449');
+    expect(new Set(notes.map((n) => n.created_at)).size).toBe(450);
+    // Every write is queued for sync, in the same transactions.
+    expect(await db.outbox.where('table').equals('notes').count()).toBe(450);
+    expect(await pendingDeckAdd()).toBeNull();
+    // Generous bound for CI: one-by-one took ~65 ms a word on a desktop.
+    expect(ms).toBeLessThan(20_000);
+  });
+
+  it('an add cut short is finished by resumeDeckAdd without doubling words', async () => {
+    const words = ['avoid', 'admit', 'afford'].map((l) => entry(l));
+    await db.word_bank.bulkPut(words);
+    // As if the app closed after the first word: the job row and one note are there.
+    await db.meta.put({ key: DECK_ADD_JOB_KEY, value: { name: 'B1 fiiller', ids: words.map((w) => w.id), at: T } });
+    await addNoteWithSenses({ term: 'avoid', tags: ['B1 fiiller'], senses: [{ meaning_tr: 'avoid anlamı' }] }, T);
+    const r = await resumeDeckAdd({ now: T + 1000 });
+    expect(r).toMatchObject({ added: 2, alreadyCarded: 1 });
+    const live = (await db.notes.toArray()).filter((n) => n.deleted_at === null);
+    expect(live.map((n) => n.term).sort()).toEqual(['admit', 'afford', 'avoid']);
+    expect(await pendingDeckAdd()).toBeNull();
+    expect(await resumeDeckAdd()).toBeNull();
     expect(await listDecks()).toHaveLength(1);
   });
 

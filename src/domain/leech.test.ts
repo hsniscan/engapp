@@ -6,6 +6,11 @@ import {
   becameLeech,
   canSplitSenses,
   isLeech,
+  isResting,
+  isStruggling,
+  LEECH_REST_MS,
+  pickRescuePath,
+  STRUGGLING_LAPSES,
   lapsesFromLogs,
   LEECH_LAPSES,
   listLeeches,
@@ -138,5 +143,30 @@ describe('split and primary recognition', () => {
     expect(primaryRecognition([suspendedRec, per1, fresh])).toBe(fresh);
     expect(primaryRecognition([{ ...rec, deleted_at: 1 }, per1])).toBe(per1);
     expect(primaryRecognition([])).toBeUndefined();
+  });
+});
+
+describe('struggling cards and the rescue path (v0.5.3 B5)', () => {
+  it('"Zorlanıyor" from 3 lapses, a leech from 6', () => {
+    expect(isStruggling(2)).toBe(false);
+    expect(isStruggling(STRUGGLING_LAPSES)).toBe(true);
+    expect(isLeech(5)).toBe(false);
+    expect(isLeech(6)).toBe(true);
+  });
+
+  it('recommends one path: false friend, then mnemonic, then family', () => {
+    expect(pickRescuePath({ falseFriend: true, mnemonic: true, family: true })).toBe('false_friend');
+    expect(pickRescuePath({ falseFriend: false, mnemonic: true, family: true })).toBe('mnemonic');
+    expect(pickRescuePath({ falseFriend: false, mnemonic: false, family: true })).toBe('family');
+    expect(pickRescuePath({ falseFriend: false, mnemonic: false, family: false })).toBeNull();
+  });
+
+  it('a resting card rests until rest_until', () => {
+    const now = Date.UTC(2026, 10, 10);
+    expect(isResting({ rest_until: now + LEECH_REST_MS }, now)).toBe(true);
+    expect(isResting({ rest_until: now }, now)).toBe(false);
+    expect(isResting({ rest_until: null }, now)).toBe(false);
+    expect(isResting({}, now)).toBe(false);
+    expect(LEECH_REST_MS).toBe(30 * 86_400_000);
   });
 });

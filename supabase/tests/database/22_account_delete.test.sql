@@ -111,6 +111,12 @@ begin
   insert into public.text_budget_holds (month, amount_usd, purpose, user_id)
     values (date_trunc('month', now() at time zone 'utc')::date, 0.01, 'story', u);
   insert into public.sync_usage (user_id, day) values (u, current_date);
+  -- client_errors takes the user from auth.uid() (decision 0076): act as that user for one row.
+  perform set_config('request.jwt.claims', json_build_object('sub', u, 'role', 'authenticated')::text, true);
+  perform set_config('request.jwt.claim.sub', u::text, true);
+  insert into public.client_errors (fingerprint, message) values ('seed', 'seed error');
+  perform set_config('request.jwt.claims', '', true);
+  perform set_config('request.jwt.claim.sub', '', true);
 end;
 $f$;
 

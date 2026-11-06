@@ -18,6 +18,12 @@
 //         registry lists them.
 //   backfill: a table this device learned about in an app update is pulled once more from
 //         the start (data/backfill.ts), since an older version skipped its rows.
+//   restore (decision 0075): every pull page carries the server's restore epoch and the head
+//         of its sequence. A new epoch (the database came back from a backup), or a cursor
+//         above the head, runs a full resync that re-pushes every local row the server lacks
+//         or holds in an older version instead of deleting it.
+//   held rows: a row refused for a quota or a nearly full server (SQLSTATE 53400) waits
+//         HOLD_MS without counting as a failed attempt; SYNC_HELD_KEY tells the UI.
 //
 // Triggers (startSyncEngine): app open, `online`, back to a visible tab, every 60 s while
 // visible, shortly after local changes, requestSync() (end of a review session) and the
@@ -34,6 +40,7 @@ import {
   getCurrentUserId,
   getCursor,
   getMeta,
+  holdOutboxItems,
   logError,
   META,
   PULL_BACKFILL_KEY,
@@ -41,11 +48,13 @@ import {
   outboxKey,
   putLexiconSenses,
   removeRowsMissingOnServer,
+  requeueRowsServerLacks,
   setMeta,
   takeOutboxItems,
   type OutboxItem,
   type RemoteBatch,
   type ResyncTable,
+  type ServerRowIndex,
 } from '@/data';
 import type { Id, Millis, OutboxTable } from '@/domain/types';
 import {
@@ -94,6 +103,53 @@ export const FULL_RESYNC_KEY = 'full_resync_pending';
 const MAX_ROUNDS = 10_000; // guards against a server that keeps answering has_more
 /** A purge can land between two pages of a full pull; start over at most this often. */
 const MAX_FULL_PULL_RESTARTS = 3;
+
+/** The server's restore epoch this device last synced with (decision 0075). */
+export const SYNC_EPOCH_KEY = 'sync_epoch';
+/** Set while a full resync after a database restore is under way (the epoch to store at the end). */
+export const RESTORE_RESYNC_KEY = 'restore_resync_pending';
+/** The epoch of a database that was never restored (migration 20261106000500). */
+export const INITIAL_EPOCH = 1;
+/** Rows the server refused for a quota or because it is nearly full ({@link SyncHeld}). */
+export const SYNC_HELD_KEY = 'sync_held';
+/** How long such a row waits before it is offered again (a forced sync tries at once). */
+export const HOLD_MS = 6 * 60 * 60_000;
+
+/**
+ * Rows the server keeps refusing for now, not for their content (decision 0075): 'storage'
+ * the database is nearly full (only new texts and Anki imports wait), 'texts' the account's
+ * text quota, 'quota' another per-row quota. `rows`: outbox keys still waiting.
+ */
+export interface SyncHeld {
+  reason: 'storage' | 'texts' | 'quota';
+  at: Millis;
+  rows: string[];
+}
+
+/** Why the server held a row back, from its 53400 message. */
+export function heldReason(message: string): SyncHeld['reason'] {
+  if (/storage_full/i.test(message)) return 'storage';
+  if (/text/i.test(message)) return 'texts';
+  return 'quota';
+}
+
+/**
+ * Did the server's database come back from a backup since this device last pulled (decision
+ * 0075)? `stored`: the epoch this device synced with (undefined: never seen one). A device that
+ * never saw an epoch treats any epoch but the first as a restore, unless it never pulled
+ * (cursor 0: it pulls and pushes everything anyway). A cursor above the server's sequence head
+ * means the sequence went backwards: a restore whose after-restore step did not run.
+ */
+export function restoreDetected(
+  stored: number | undefined,
+  page: Pick<PullResult, 'epoch' | 'seqHead'>,
+  cursor: number,
+): boolean {
+  if (cursor > 0 && typeof page.seqHead === 'number' && cursor > page.seqHead) return true;
+  if (typeof page.epoch !== 'number') return false; // an older backend
+  if (stored === undefined) return cursor > 0 && page.epoch !== INITIAL_EPOCH;
+  return page.epoch !== stored;
+}
 
 export interface SyncTransport {
   pushBatch(items: PushItem[]): Promise<PushResult>;
@@ -168,6 +224,10 @@ export interface SyncReport {
   fullResync: boolean;
   removed: number;
   lexicon: number;
+  /** Rows refused for now (53400) that wait in the outbox. */
+  held: number;
+  /** Local rows queued again after a database restore (decision 0075). */
+  requeued: number;
 }
 
 export type SyncOutcome =
@@ -194,7 +254,17 @@ function classify(e: unknown): SyncFailure {
   return new SyncFailure('server', e instanceof Error ? e.message : String(e));
 }
 
-const emptyReport = (): SyncReport => ({ pushed: 0, stale: 0, rejected: 0, pulled: 0, fullResync: false, removed: 0, lexicon: 0 });
+const emptyReport = (): SyncReport => ({
+  pushed: 0,
+  stale: 0,
+  rejected: 0,
+  pulled: 0,
+  fullResync: false,
+  removed: 0,
+  lexicon: 0,
+  held: 0,
+  requeued: 0,
+});
 
 function toBatch(rows: PulledRow[]): RemoteBatch {
   const batch: RemoteBatch = {};
@@ -226,32 +296,72 @@ export async function pushOutbox(t: SyncTransport, report: SyncReport, opts: Run
   // Rows that failed in this run are not sent again in the same run (a forced run would
   // otherwise resend them with every batch and burn through their attempts at once).
   const failedThisRun = new Set<string>();
-  for (let round = 0; round < MAX_ROUNDS; round++) {
-    const items = await takeOutboxItems(MAX_PUSH_BATCH, now(), opts.force, failedThisRun, skipTables);
-    if (items.length === 0) return;
-    let res: PushResult;
-    try {
-      res = await pushWithSlimTexts(t, items);
-    } catch (e) {
-      const f = classify(e);
-      if (f.kind === 'server') await failOutboxItems(items, now());
-      throw f;
+  const acks = new Set<string>();
+  const holds = new Set<string>();
+  let reason: SyncHeld['reason'] | null = null;
+  try {
+    for (let round = 0; round < MAX_ROUNDS; round++) {
+      const items = await takeOutboxItems(MAX_PUSH_BATCH, now(), opts.force, failedThisRun, skipTables);
+      if (items.length === 0) return;
+      let res: PushResult;
+      try {
+        res = await pushWithSlimTexts(t, items);
+      } catch (e) {
+        const f = classify(e);
+        if (f.kind === 'server') await failOutboxItems(items, now());
+        throw f;
+      }
+      const acked = new Set(res.acked);
+      const rejected = new Map(res.rejected.filter((r) => !!r.id).map((r) => [r.id as string, r]));
+      const ok: OutboxItem[] = [];
+      const held: OutboxItem[] = [];
+      const failed: OutboxItem[] = [];
+      for (const it of items) {
+        const r = rejected.get(it.row_id);
+        if (acked.has(it.row_id) && !r) ok.push(it);
+        else if (r && r.code === '53400') {
+          held.push(it);
+          reason ??= heldReason(r.message);
+        } else failed.push(it);
+      }
+      await ackOutboxItems(ok);
+      await holdOutboxItems(held, now() + HOLD_MS);
+      await failOutboxItems(failed, now());
+      for (const it of [...failed, ...held]) failedThisRun.add(outboxKey(it));
+      for (const it of ok) acks.add(outboxKey(it));
+      for (const it of held) holds.add(outboxKey(it));
+      report.pushed += ok.length;
+      report.stale += res.stale.length;
+      report.rejected += failed.length;
+      report.held += held.length;
+      for (const r of res.rejected) {
+        if (r.code !== '53400') void logError(`${r.code}: ${r.message}`, `sync.push rejected ${r.table ?? '?'}/${r.id ?? '?'}`);
+      }
+      // Everything left was just rescheduled; a forced run must not spin on the same rows.
+      if (ok.length === 0) return;
     }
-    const acked = new Set(res.acked);
-    const rejected = new Set(res.rejected.map((r) => r.id).filter((x): x is string => !!x));
-    const ok: OutboxItem[] = [];
-    const failed: OutboxItem[] = [];
-    for (const it of items) (acked.has(it.row_id) && !rejected.has(it.row_id) ? ok : failed).push(it);
-    await ackOutboxItems(ok);
-    await failOutboxItems(failed, now());
-    for (const it of failed) failedThisRun.add(outboxKey(it));
-    report.pushed += ok.length;
-    report.stale += res.stale.length;
-    report.rejected += failed.length;
-    for (const r of res.rejected) void logError(`${r.code}: ${r.message}`, `sync.push rejected ${r.table ?? '?'}/${r.id ?? '?'}`);
-    // Everything left was just rescheduled; a forced run must not spin on the same rows.
-    if (ok.length === 0) return;
+  } finally {
+    await noteHeldRows(acks, holds, reason, now());
   }
+}
+
+/**
+ * Keeps SYNC_HELD_KEY up to date: rows held in this push are added, rows acked (or no longer
+ * in the outbox at all) are taken off, and the note goes once nothing is held.
+ */
+async function noteHeldRows(acked: Set<string>, held: Set<string>, reason: SyncHeld['reason'] | null, now: Millis): Promise<void> {
+  const before = await getMeta<SyncHeld>(SYNC_HELD_KEY);
+  if (!before && held.size === 0) return;
+  const queued = before && before.rows.length ? new Set((await db.outbox.toArray()).map((r) => outboxKey(r))) : null;
+  const rows = new Set((before?.rows ?? []).filter((k) => !acked.has(k) && (!queued || queued.has(k))));
+  for (const k of held) rows.add(k);
+  const next: SyncHeld | null = rows.size ? { reason: reason ?? before?.reason ?? 'quota', at: held.size ? now : (before?.at ?? now), rows: [...rows] } : null;
+  if (!next && !before) return;
+  if (next && before && next.reason === before.reason && next.at === before.at && next.rows.join() === before.rows.join()) return;
+  await db.transaction('rw', db.meta, async () => {
+    if (next) await setMeta(SYNC_HELD_KEY, next);
+    else await db.meta.delete(SYNC_HELD_KEY);
+  });
 }
 
 /**
@@ -262,8 +372,10 @@ export async function pushOutbox(t: SyncTransport, report: SyncReport, opts: Run
  */
 export function slimTextPayload(item: Pick<OutboxItem, 'table' | 'op' | 'payload'>): unknown {
   if (item.table !== 'texts' || !item.payload || typeof item.payload !== 'object') return item.payload;
-  const p = item.payload as { body?: unknown; created_at?: unknown; updated_at?: unknown };
+  const p = item.payload as { body?: unknown; created_at?: unknown; updated_at?: unknown; kind?: unknown; graded_id?: unknown };
   if (typeof p.body !== 'string') return item.payload;
+  // A library text is stored by reference (decision 0075): the server keeps no body for it.
+  if (p.kind === 'graded' && typeof p.graded_id === 'string' && p.body !== '') return { ...p, body: '' };
   const update = typeof p.updated_at === 'number' && typeof p.created_at === 'number' && p.updated_at > p.created_at;
   if (item.op !== 'delete' && !update) return item.payload;
   const rest: Record<string, unknown> = { ...(item.payload as Record<string, unknown>) };
@@ -370,6 +482,26 @@ async function notePullVersion(page: PullResult): Promise<void> {
   }
 }
 
+/**
+ * Compares the first page of a pull with the restore epoch this device knows (decision 0075).
+ * A restore marks a full resync in restore mode (RESTORE_RESYNC_KEY) and returns true; the
+ * first epoch a device sees is stored.
+ */
+async function checkEpoch(page: PullResult, cursor: number): Promise<boolean> {
+  const stored = await getMeta<number>(SYNC_EPOCH_KEY);
+  if (restoreDetected(stored, page, cursor)) {
+    await db.transaction('rw', db.meta, async () => {
+      await setMeta(FULL_RESYNC_KEY, true);
+      await setMeta(RESTORE_RESYNC_KEY, typeof page.epoch === 'number' ? page.epoch : (stored ?? true));
+    });
+    return true;
+  }
+  if (typeof page.epoch === 'number' && stored !== page.epoch) {
+    await db.transaction('rw', db.meta, () => setMeta(SYNC_EPOCH_KEY, page.epoch));
+  }
+  return false;
+}
+
 /** Incremental pull. Returns true when the server asked for a full resync. */
 async function pullAll(t: SyncTransport, report: SyncReport, now: () => Millis): Promise<boolean> {
   const start = await getCursor(META.syncCursor);
@@ -377,6 +509,7 @@ async function pullAll(t: SyncTransport, report: SyncReport, now: () => Millis):
   for (let round = 0; round < MAX_ROUNDS; round++) {
     const page = await t.pullChanges(cursor, MAX_PULL_PAGE, start);
     await notePullVersion(page);
+    if (round === 0 && (await checkEpoch(page, start))) return true;
     if (page.full_resync) return true;
     for (const bad of page.invalid) void logError(bad.error, `sync.pull invalid ${bad.table}/${String(bad.id)}`);
     await applyPulledPage(toBatch(page.rows), page.next_seq, now());
@@ -391,9 +524,19 @@ async function pullAll(t: SyncTransport, report: SyncReport, now: () => Millis):
  * Full resync (device offline longer than the server keeps tombstones): push the outbox
  * first, then pull everything from 0 and drop local rows the server no longer has. A flag
  * in meta makes an interrupted resync start over.
+ *
+ * After a database restore (RESTORE_RESYNC_KEY, decision 0075) nothing is dropped: a local
+ * row the server lacks, or holds in an older version, is what the backup missed (rows this
+ * device pushed, or pulled from another device, after the backup). Such rows are queued
+ * again and go out with the run's next push.
  */
 async function fullResync(t: SyncTransport, report: SyncReport, now: () => Millis): Promise<void> {
   report.fullResync = true;
+  let restore = await getMeta<number | boolean>(RESTORE_RESYNC_KEY);
+  // A full resync for another reason (tombstones purged) may meet a restored database too:
+  // then it must not delete what the server lacks. Checked on the first page below.
+  const startCursor = await getCursor(META.syncCursor);
+  const storedEpoch = await getMeta<number>(SYNC_EPOCH_KEY);
   await db.transaction('rw', db.meta, () => setMeta(FULL_RESYNC_KEY, true));
   // Rows the server keeps rejecting stay in the outbox; the cleanup below never removes them.
   await pushOutbox(t, report, { force: true, now });
@@ -411,32 +554,59 @@ async function fullResync(t: SyncTransport, report: SyncReport, now: () => Milli
     encounters: new Set(),
   });
   let seen = emptySeen();
+  // Restore mode: every row the server returned, with its HLC ('' for insert-only rows).
+  let server: ServerRowIndex = new Map();
+  const index = (table: string, id: unknown, hlc: unknown) => {
+    if (typeof id !== 'string') return;
+    let m = server.get(table);
+    if (!m) server.set(table, (m = new Map()));
+    m.set(id, typeof hlc === 'string' ? hlc : '');
+  };
+  let epoch: number | undefined;
   let cursor = 0;
   let restarts = 0;
   for (let round = 0; round < MAX_ROUNDS; round++) {
     const page = await t.pullChanges(cursor, MAX_PULL_PAGE, 0);
     await notePullVersion(page);
+    if (typeof page.epoch === 'number') epoch = page.epoch;
+    if (round === 0 && restore === undefined && restoreDetected(storedEpoch, page, startCursor)) {
+      restore = typeof page.epoch === 'number' ? page.epoch : true;
+      await db.transaction('rw', db.meta, () => setMeta(RESTORE_RESYNC_KEY, restore));
+    }
     if (page.full_resync) {
       // Tombstones were purged past our cursor while we were paging: the pages we have are
       // fine, but `seen` would miss every row of the pages not pulled yet, and removing
       // "missing" rows would wipe them locally. Start the full pull over.
       if (++restarts > MAX_FULL_PULL_RESTARTS) throw new SyncFailure('server', 'full resync kept restarting');
       seen = emptySeen();
+      server = new Map();
       cursor = 0;
       continue;
     }
-    for (const r of page.rows) if (r.table in seen) seen[r.table as ResyncTable].add((r.row as { id: Id }).id);
+    for (const r of page.rows) {
+      const row = r.row as { id: Id; hlc?: string };
+      if (r.table in seen) seen[r.table as ResyncTable].add(row.id);
+      if (restore) index(r.table, row.id, row.hlc);
+    }
     for (const bad of page.invalid) {
-      // An invalid row still exists on the server: never delete it locally.
+      // An invalid row still exists on the server: never delete it locally (nor push it again
+      // after a restore: whatever the server has stays).
       if (bad.table in seen && typeof bad.id === 'string') seen[bad.table as ResyncTable].add(bad.id);
+      if (restore) index(bad.table, bad.id, '\uffff');
     }
     await applyPulledPage(toBatch(page.rows), page.next_seq, now());
     report.pulled += page.rows.length;
     cursor = page.next_seq;
     if (!page.has_more) break;
   }
-  report.removed = await removeRowsMissingOnServer(seen, now());
-  await db.transaction('rw', db.meta, () => setMeta(FULL_RESYNC_KEY, false));
+  if (restore) report.requeued = await requeueRowsServerLacks(server, now());
+  else report.removed = await removeRowsMissingOnServer(seen, now());
+  await db.transaction('rw', db.meta, async () => {
+    await setMeta(FULL_RESYNC_KEY, false);
+    if (restore !== undefined) await db.meta.delete(RESTORE_RESYNC_KEY);
+    const known = epoch ?? (typeof restore === 'number' ? restore : undefined);
+    if (known !== undefined) await setMeta(SYNC_EPOCH_KEY, known);
+  });
 }
 
 /** Lexicon rows referenced by the user's senses: corrections via the cursor, gaps by id. */
@@ -566,6 +736,8 @@ export interface SyncEngineDeps {
   isOnline?: () => boolean;
   now?: () => Millis;
   runner?: { run<T>(fn: () => Promise<T>): Promise<T | undefined> };
+  /** After a sync that went well (online, signed in, linked): e.g. send the error log (decision 0076). */
+  afterSync?: () => void;
 }
 
 type Listener = () => void;
@@ -573,7 +745,8 @@ type Listener = () => void;
 export class SyncEngine {
   private snapshot: EngineSnapshot;
   private readonly listeners = new Set<Listener>();
-  private readonly deps: Required<Omit<SyncEngineDeps, 'runner'>> & Pick<SyncEngineDeps, 'runner'>;
+  private readonly deps: Required<Omit<SyncEngineDeps, 'runner' | 'afterSync'>> &
+    Pick<SyncEngineDeps, 'runner' | 'afterSync'>;
   private inflight: Promise<SyncOutcome> | null = null;
   private again: RunOptions | null = null;
 
@@ -672,6 +845,11 @@ export class SyncEngine {
       try {
         const report = await runSync(transport, { ...opts, now: this.deps.now });
         this.setState({ running: false, error: null, errorMessage: null });
+        try {
+          this.deps.afterSync?.();
+        } catch {
+          // Extras never fail a sync.
+        }
         return { ok: true, report };
       } catch (e) {
         const f = classify(e);

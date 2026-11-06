@@ -312,6 +312,8 @@ function SentenceCard({
         )}
       </div>
 
+      {item.credit && <Credit credit={item.credit} />}
+
       {(item.editId || skipped) && (
         <div className="flex flex-wrap gap-1.5">
           {item.editId && <Badge tone="neutral">{t('examples.edited')}</Badge>}
@@ -393,6 +395,23 @@ function SentenceCard({
 
       <EditDialog open={editing} onOpenChange={setEditing} item={item} term={term} senseId={senseId} />
     </div>
+  );
+}
+
+/** Tatoeba's credit line (CC BY 2.0 FR): the authors, and whether the Turkish was corrected. */
+function Credit({ credit }: { credit: NonNullable<ExampleItem['credit']> }) {
+  const { t } = useTranslation();
+  const authors = [...new Set([credit.en_by, credit.tr_by].filter(Boolean))].join(', ') || 'Tatoeba';
+  return (
+    <a
+      href={`https://tatoeba.org/sentences/show/${credit.en_id}`}
+      target="_blank"
+      rel="noreferrer noopener"
+      title={t('examples.creditLink')}
+      className="self-start text-caption text-fg-subtle underline-offset-2 hover:underline"
+    >
+      {t(credit.tr_edited ? 'examples.creditEdited' : 'examples.credit', { authors })}
+    </a>
   );
 }
 

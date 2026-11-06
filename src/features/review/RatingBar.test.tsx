@@ -26,14 +26,14 @@ describe('RatingBar', () => {
     renderRoute(<RatingBar view={await view()} onAnswer={onAnswer} suggested={Rating.Again} />);
     expect(screen.getByTestId('rating-confirm')).toHaveTextContent('Tekrar öneriyoruz');
 
-    fireEvent.click(screen.getByRole('button', { name: /İyi/ }));
+    fireEvent.click(rating('good'));
     expect(onAnswer).not.toHaveBeenCalled();
     expect(screen.getByTestId('rating-confirm')).toHaveTextContent('Yine de “İyi” mi?');
-    fireEvent.click(screen.getByRole('button', { name: /İyi/ }));
+    fireEvent.click(rating('good'));
     expect(onAnswer).toHaveBeenCalledWith(Rating.Good, expect.any(Boolean));
 
     onAnswer.mockClear();
-    fireEvent.click(screen.getByRole('button', { name: /Tekrar/ }));
+    fireEvent.click(rating('again'));
     expect(onAnswer).toHaveBeenCalledWith(Rating.Again, expect.any(Boolean));
   });
 
@@ -50,7 +50,42 @@ describe('RatingBar', () => {
     const onAnswer = vi.fn();
     renderRoute(<RatingBar view={await view()} onAnswer={onAnswer} suggested={Rating.Good} />);
     expect(screen.queryByTestId('rating-confirm')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: /Kolay/ }));
+    fireEvent.click(rating('easy'));
     expect(onAnswer).toHaveBeenCalledWith(Rating.Easy, expect.any(Boolean));
   });
+
+  it('one "Devam" button applies the suggestion, in its colour (v0.5.3 A3)', async () => {
+    const onAnswer = vi.fn();
+    renderRoute(<RatingBar view={await view()} onAnswer={onAnswer} suggested={Rating.Again} />);
+    const go = screen.getByTestId('rating-continue');
+    expect(go).toHaveTextContent('Devam · Tekrar');
+    expect(go).toHaveAttribute('data-rating', 'again');
+    // İyi is not the filled button when another rating is suggested.
+    expect(rating('good').className).not.toContain('bg-accent ');
+    fireEvent.click(go);
+    expect(onAnswer).toHaveBeenCalledWith(Rating.Again, expect.any(Boolean));
+  });
+
+  it('Enter applies the suggestion', async () => {
+    const onAnswer = vi.fn();
+    renderRoute(<RatingBar view={await view()} onAnswer={onAnswer} suggested={Rating.Hard} />);
+    act(() => void fireEvent.keyDown(document.body, { key: 'Enter' }));
+    expect(onAnswer).toHaveBeenCalledWith(Rating.Hard, true);
+  });
+
+  it('without "Devam" (a self-rated card) only the suggestion is marked', async () => {
+    renderRoute(<RatingBar view={await view()} onAnswer={vi.fn()} suggested={Rating.Hard} primary={false} />);
+    expect(screen.queryByTestId('rating-continue')).toBeNull();
+    expect(screen.getByText(/Önerimiz:/)).toHaveTextContent('Zor');
+  });
+
+  it('no suggestion: the four big buttons, İyi filled', async () => {
+    renderRoute(<RatingBar view={await view()} onAnswer={vi.fn()} />);
+    expect(screen.queryByTestId('rating-continue')).toBeNull();
+    expect(rating('good').className).toContain('bg-accent ');
+  });
 });
+
+function rating(name: string): HTMLButtonElement {
+  return document.querySelector<HTMLButtonElement>(`[role="group"] [data-rating="${name}"]`)!;
+}

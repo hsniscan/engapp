@@ -14,8 +14,15 @@ export function needsOnboarding(input: {
   words: number;
   interestsAsked: boolean;
   inProgress: boolean;
+  /**
+   * The ready deck of the last step is being added (v0.5.3 A1): its first word must not end
+   * the flow mid-add, so the "Ekleniyor… n/N" step stays until the add is done.
+   */
+  adding?: boolean;
 }): boolean {
-  if (input.done || input.words > 0) return false;
+  if (input.done) return false;
+  if (input.adding) return true;
+  if (input.words > 0) return false;
   return !input.interestsAsked || input.inProgress;
 }
 

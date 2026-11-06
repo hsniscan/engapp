@@ -76,7 +76,37 @@ describe('workflows', () => {
     const nightly = read('db-backup.yml');
     expect(nightly).toMatch(/cron: '\d+ \d+ \* \* \*'/);
     expect(nightly).toContain('scripts/db-backup.sh daily');
-    expect(nightly).toContain('scripts/ops-health.sh');
+    // The health check and the backup's dead man's switch run on their own (decision 0076).
+    const health = read('ops-health.yml');
+    expect(health).toContain('scripts/ops-health.sh');
+    expect(health).toContain('scripts/backup-age.sh');
+  });
+
+  it('let pg_cron start every important scheduled workflow, once per slot (decision 0076)', () => {
+    const sql = readFileSync('supabase/migrations/20261106000600_ops_dispatch.sql', 'utf8');
+    const calls = [...sql.matchAll(/ops_dispatch\('([a-z0-9-]+\.yml)'(?:, '(\{[^']*\})')?\)/g)].map((m) => ({
+      file: m[1]!,
+      inputs: JSON.parse(m[2] ?? '{}') as Record<string, string>,
+    }));
+    const dispatched = new Set(calls.map((c) => c.file));
+    expect([...dispatched].sort()).toEqual(['db-backup.yml', 'graded.yml', 'images.yml', 'level-jobs.yml', 'ops-health.yml']);
+    for (const { file, inputs } of calls) {
+      const wf = read(file);
+      // The dispatch adds trigger=cron: the workflow must declare it, or GitHub answers 422.
+      expect(wf, file).toMatch(/workflow_dispatch:\n {4}inputs:\n(?: {6}.*\n)*? {6}trigger:\n/);
+      expect(wf, file).toContain('node scripts/ci-gate.ts');
+      expect(wf, file).toMatch(/run-name: .*\[auto:/);
+      expect(wf, file).toMatch(/schedule:\n/); // GitHub's schedule stays as the backstop
+      for (const [k, v] of Object.entries(inputs)) {
+        const options = new RegExp(`\\n {6}${k}:\\n(?: {8}.*\\n)*? {8}options: \\[([^\\]]*)\\]`).exec(wf);
+        expect(options?.[1]?.split(/,\s*/), `${file} ${k}`).toContain(v);
+      }
+    }
+    // Every job that pg_cron starts waits for the gate.
+    for (const file of dispatched) {
+      const first = /\njobs:\n {2}gate:\n[\s\S]*?\n {2}([a-z-]+):\n {4}needs: gate\n {4}if: (?:\$\{\{ )?needs\.gate\.outputs\.run == 'true'[^\n]*\n/.exec(read(file));
+      expect(first, file).not.toBeNull();
+    }
   });
 
   it('name no AI model (the defaults live in model-defaults.ts)', () => {

@@ -5,6 +5,7 @@
 # Built by scripts/build-levels.ts. Sources, versions and checksums: data/levels/manifest.json.
 # Columns: lemma, zipf (empty: unknown), entries separated by "|".
 # Entry: pos:cefr:src[:cefr_tr:reason_tr]; pos n v j(adj) r(adv) p c o(pron) d i x(other); src j=CEFR-J o=Octanove.
+# reason_tr "tanidik:<word>": a familiar international word (Turkish <word>), one step easier (decision 0073).
 # Words without entries: frequency only. Lemmas: 30521; frequency-only words have Zipf >= 3.
 # @min_zipf 3
 'm		v:A1:j
@@ -121,11 +122,11 @@ ac	4.25
 aca	3.48	
 acacia	3.01	
 academia	3.54	
-academic	4.57	j:B1:j
+academic	4.57	j:B1:j:A2:tanidik:akademik
 academically	3.18	
 academics	3.78	
 academies	3.34	
-academy	4.57	n:B1:j
+academy	4.57	n:B1:j:A2:tanidik:akademi
 acc	3.67	
 accelerate	3.66	
 accelerated	3.75	
@@ -225,7 +226,7 @@ achieving	4.03
 achilles	3.47	
 aching	3.29	
 acid	4.45	n:B2:j
-acidic	3.34	j:C1:o
+acidic	3.34	j:C1:o:B2:tanidik:asidik
 acidity	3.20	
 acids	3.85	
 acknowledge	4.18	v:B1:j
@@ -240,9 +241,9 @@ acm	3.14
 acne	3.66	
 acorn	3.08	
 acosta	3.04	
-acoustic	3.98	j:C1:o
+acoustic	3.98	j:C1:o:B2:tanidik:akustik
 acoustically	2.43	r:C1:o
-acoustics	3.10	n:C1:o
+acoustics	3.10	n:C1:o:B2:tanidik:akustik
 acquaintance	3.55	n:B1:j
 acquaintances	3.40	
 acquainted	3.51	
@@ -276,7 +277,7 @@ activated	4.01
 activates	3.18	
 activating	3.26	
 activation	3.83	
-active	4.93	j:B1:j
+active	4.93	j:B1:j:A2:tanidik:aktif
 actively	4.23	r:B2:j
 activism	3.67	
 activist	4.13	
@@ -292,7 +293,7 @@ actual	4.85	j:B2:j
 actuality	3.10	
 actually	5.49	r:A2:j
 acupuncture	3.04	
-acute	4.00	j:B2:j
+acute	4.00	j:B2:j:B1:tanidik:akut
 acutely	3.13	r:C1:o
 ad	4.76	n:B1:j
 ad lib		j:C2:o
@@ -417,7 +418,7 @@ adorn	3.01	v:B2:j|v:C2:o
 adorned	3.37	
 adornment	2.47	n:C2:o
 adp	3.03	
-adrenaline	3.52	n:C1:o
+adrenaline	3.52	n:C1:o:B2:tanidik:adrenalin
 adrian	3.95	
 adriana	3.07	
 adrift	3.06	
@@ -480,7 +481,7 @@ aegis	3.06
 aerial	3.91	
 aero	3.33	
 aerobic	3.19	
-aerobics	2.75	n:B1:j
+aerobics	2.75	n:B1:j:A2:tanidik:aerobik
 aerodynamic	3.19	
 aeronautical	3.09	
 aeronautics	3.10	
@@ -575,7 +576,7 @@ aggregated	3.04
 aggregates	3.07	
 aggregation	3.25	
 aggression	3.90	
-aggressive	4.32	j:B1:j
+aggressive	4.32	j:B1:j:A2:tanidik:agresif
 aggressively	3.63	r:B2:j
 aggressor	3.01	
 aghast	2.64	j:C2:o
@@ -683,7 +684,7 @@ alam	3.10
 alameda	3.02	
 alamo	3.08	
 alan	4.45	
-alarm	4.28	n:A2:j|v:B1:j
+alarm	4.28	n:A2:j:A1:tanidik:alarm|v:B1:j:A2:tanidik:alarm
 alarm clock		n:A2:j
 alarmed	3.48	
 alarming	3.53	
@@ -789,7 +790,7 @@ allegorical	2.86	j:C2:o
 allegory	3.07	n:C2:o
 allen	4.38	
 allen's	3.09	
-allergic	3.78	j:B1:j
+allergic	3.78	j:B1:j:A2:tanidik:alerjik
 allergies	3.63	
 allergy	3.60	
 alleviate	3.52	v:C1:o
@@ -841,7 +842,7 @@ aloud	3.51	r:B1:j
 alp	3.07	
 alpha	4.25	
 alphabet	3.70	n:B1:j
-alphabetical	3.22	j:B2:j
+alphabetical	3.22	j:B2:j:B1:tanidik:alfabetik
 alphabetically	3.03	
 alpine	3.62	
 alps	3.56	
@@ -861,7 +862,7 @@ altering	3.59
 alternate	4.11	v:B2:j
 alternately	3.22	
 alternating	3.50	
-alternative	4.71	j:B1:j|n:B1:j
+alternative	4.71	j:B1:j:A2:tanidik:alternatif|n:B1:j:A2:tanidik:alternatif
 alternatively	3.81	r:B2:j
 alternatives	4.04	
 alters	3.11	
@@ -995,12 +996,12 @@ analysed	3.48
 analyses	3.79	
 analysing	3.22	
 analysis	4.91	n:B1:j
-analyst	4.03	n:B2:j
+analyst	4.03	n:B2:j:B1:tanidik:analist
 analysts	3.84	
 analytic	3.31	
 analytical	3.73	
 analytics	3.77	
-analyze	3.84	v:B1:j
+analyze	3.84	v:B1:j:A2:tanidik:analiz
 analyzed	3.90	
 analyzer	3.06	
 analyzes	3.19	
@@ -1091,7 +1092,7 @@ animals	4.84
 animate	3.14	v:B2:j
 animated	4.07	j:B1:j
 animatedly	1.89	r:C1:o
-animation	4.18	n:B1:j
+animation	4.18	n:B1:j:A2:tanidik:animasyon
 animations	3.36	
 anime	4.26	
 animosity	3.17	
@@ -1166,7 +1167,7 @@ anthropological	3.09	j:C2:o
 anthropologically	1.72	r:C2:o
 anthropologist	3.16	n:C1:o
 anthropologists	3.02	
-anthropology	3.65	n:C1:o
+anthropology	3.65	n:C1:o:B2:tanidik:antropoloji
 anti	5.01	j:B1:j
 antiaircraft	2.49	j:B2:j
 antibacterial	2.89	j:B2:j
@@ -1202,7 +1203,7 @@ antistatic	1.73	j:B2:j
 antithesis	2.96	n:C2:o
 antithetical	2.61	j:C2:o
 antitrust	3.37	
-antivirus	2.90	n:B2:j
+antivirus	2.90	n:B2:j:B1:tanidik:antivirüs
 antoine	3.39	
 anton	3.59	
 antonio	4.17	
@@ -1426,7 +1427,7 @@ area	5.46	n:A2:j
 area's	3.38	
 areas	5.15	
 aren't	5.05	
-arena	4.33	n:B2:j
+arena	4.33	n:B2:j:B1:tanidik:arena
 arenas	3.28	
 arent	3.52	
 ares	3.09	
@@ -1456,7 +1457,7 @@ arising	3.72
 aristocracy	3.21	n:B2:j
 aristocratic	3.23	
 aristotle	3.41	
-arithmetic	3.40	n:B1:j
+arithmetic	3.40	n:B1:j:A2:tanidik:aritmetik
 ariz	3.11	
 arizona	4.38	
 arjun	3.03	
@@ -1552,7 +1553,7 @@ artisan	3.26
 artisans	3.25	
 artist	4.80	n:B1:j
 artist's	3.52	
-artistic	4.17	j:B1:j
+artistic	4.17	j:B1:j:A2:tanidik:artistik
 artistically	2.92	r:C1:o
 artistry	3.12	n:B2:j
 artists	4.67	
@@ -1607,7 +1608,7 @@ asphalt	3.53
 aspiration	3.30	n:B2:j
 aspirations	3.66	
 aspire	3.47	v:B2:j
-aspirin	3.34	n:B1:j
+aspirin	3.34	n:B1:j:A2:tanidik:aspirin
 aspiring	3.56	
 ass	5.00	
 assad	3.63	
@@ -1656,7 +1657,7 @@ assignments	3.88
 assigns	3.23	
 assimilate	3.05	v:C2:o
 assimilated	3.07	
-assimilation	3.19	n:C2:o
+assimilation	3.19	n:C2:o:C1:tanidik:asimilasyon
 assist	4.42	v:B1:j
 assistance	4.59	n:B1:j
 assistant	4.72	j:A2:j|n:B1:j
@@ -1704,12 +1705,12 @@ astray	3.13	r:C1:o
 astringent	2.51	n:C2:o
 astro	3.23	
 astrology	3.38	
-astronaut	3.60	n:A2:j
+astronaut	3.60	n:A2:j:A1:tanidik:astronot
 astronauts	3.46	
 astronomer	3.16	n:B1:j
 astronomers	3.40	
 astronomical	3.49	
-astronomy	3.63	n:B2:j
+astronomy	3.63	n:B2:j:B1:tanidik:astronomi
 astros	3.35	
 astute	3.10	
 asu	3.04	
@@ -1729,26 +1730,26 @@ atheists	3.34
 athena	3.25	
 athenian	3.03	
 athens	3.92	
-athlete	4.11	n:A2:j
+athlete	4.11	n:A2:j:A1:tanidik:atlet
 athletes	4.34	
-athletic	4.12	j:B1:j
+athletic	4.12	j:B1:j:A2:tanidik:atletik
 athleticism	2.98	n:C2:o
-athletics	3.82	n:B2:j
+athletics	3.82	n:B2:j:B1:tanidik:atletik
 atk	3.01	
 atkins	3.30	
 atkinson	3.42	
 atl	3.16	
 atlanta	4.37	
-atlantic	4.39	j:B1:j
+atlantic	4.39	j:B1:j:A2:tanidik:atlantik
 atlantis	3.43	
 atlas	3.80	
 atleast	3.54	
 atletico	3.09	
 atm	3.85	
-atmosphere	4.46	n:B1:j
-atmospheric	3.84	j:C1:o
+atmosphere	4.46	n:B1:j:A2:tanidik:atmosfer
+atmospheric	3.84	j:C1:o:B2:tanidik:atmosferik
 atom	3.72	n:A2:j
-atomic	3.98	j:B1:j
+atomic	3.98	j:B1:j:A2:tanidik:atomik
 atoms	3.75	
 atonement	3.09	
 atop	3.63	
@@ -1765,7 +1766,7 @@ attaches	3.11
 attaching	3.26	
 attachment	3.88	n:B1:j
 attachments	3.38	
-attack	5.09	n:A2:j|v:A2:j
+attack	5.09	n:A2:j:A1:tanidik:atak|v:A2:j:A1:tanidik:atak
 attacked	4.52	
 attacker	3.59	
 attackers	3.51	
@@ -1892,7 +1893,7 @@ authoritarian	3.59
 authoritarianism	3.00	
 authoritative	3.40	j:B2:j
 authorities	4.63	
-authority	4.81	n:B1:j
+authority	4.81	n:B1:j:A2:tanidik:otorite
 authorization	3.74	
 authorize	3.38	v:B2:j
 authorized	4.12	
@@ -1909,7 +1910,7 @@ autographs	3.12
 autoimmune	3.17	
 automate	3.08	v:C2:o
 automated	3.91	
-automatic	4.36	j:A2:j|v:C1:o
+automatic	4.36	j:A2:j:A1:tanidik:otomatik|v:C1:o:B2:tanidik:otomatik
 automatically	4.52	r:A2:j|r:C1:o
 automation	3.80	
 automobile	3.94	
@@ -2074,7 +2075,7 @@ badger	3.48
 badgers	3.25	
 badges	3.50	
 badly	4.44	r:A2:j
-badminton	3.28	n:A2:j
+badminton	3.28	n:A2:j:A1:tanidik:badminton
 bae	3.58	
 baffled	3.36	
 baffling	3.13	
@@ -2183,7 +2184,7 @@ bank	5.16	n:A1:j|v:A2:j
 bank account		n:B1:j
 bank's	3.38	
 banked	3.00	
-banker	3.78	n:B2:j
+banker	3.78	n:B2:j:B1:tanidik:banker
 bankers	3.77	
 banking	4.35	n:A2:j
 bankrupt	3.73	v:B2:j
@@ -2210,7 +2211,7 @@ barbara	4.20
 barbarian	3.28	
 barbarians	3.30	
 barbaric	3.27	
-barbecue	3.62	n:A2:j|v:B1:j
+barbecue	3.62	n:A2:j:A1:tanidik:barbekü|v:B1:j:A2:tanidik:barbekü
 barbed	3.27	
 barber	3.81	n:A2:j
 barbershop	2.99	n:B2:j
@@ -2694,7 +2695,7 @@ biker	3.37
 bikers	3.25	
 bikes	3.89	
 biking	3.41	
-bikini	3.70	n:B2:j
+bikini	3.70	n:B2:j:B1:tanidik:bikini
 bilateral	3.72	
 bile	3.21	
 bilingual	3.52	j:B1:j
@@ -2886,7 +2887,7 @@ blm	3.38
 bloated	3.33	
 blob	3.07	
 bloc	3.60	
-block	4.88	n:A1:j|v:B1:j
+block	4.88	n:A1:j|v:B1:j:A2:tanidik:blok
 blockade	3.57	
 blockage	3.00	
 blockbuster	3.48	n:C1:o
@@ -3055,7 +3056,7 @@ bonn	3.11
 bonnet	3.35	
 bonnie	3.66	
 bono	3.37	
-bonus	4.45	n:A2:j
+bonus	4.45	n:A2:j:A1:tanidik:bonus
 bonuses	3.79	
 bony	3.25	j:B2:j
 boo	3.92	
@@ -3207,7 +3208,7 @@ bows	3.50
 bowser	3.03	
 box	5.04	n:A1:j
 boxed	3.34	
-boxer	3.74	n:B2:j
+boxer	3.74	n:B2:j:B1:tanidik:boksör
 boxers	3.41	
 boxes	4.34	
 boxing	4.17	n:B1:j
@@ -3437,7 +3438,7 @@ broadening	3.06
 broader	4.01	
 broadly	3.82	r:B2:j
 broadway	4.08	
-broccoli	3.50	n:B1:j
+broccoli	3.50	n:B1:j:A2:tanidik:brokoli
 brochure	3.37	n:B2:j
 brochures	3.08	
 brock	3.71	
@@ -3452,7 +3453,7 @@ bromwich	3.03
 broncos	3.80	
 bronson	3.09	
 bronx	3.65	
-bronze	4.20	n:B1:j
+bronze	4.20	n:B1:j:A2:tanidik:bronz
 brooch	3.04	
 brood	3.25	n:C2:o|v:C2:o
 brooding	3.11	
@@ -3643,9 +3644,9 @@ burden	4.23	n:B1:j|v:B2:j
 burdened	3.13	
 burdens	3.30	
 burdensome	2.85	j:B2:j
-bureau	4.41	n:B1:j
-bureaucracy	3.55	n:B2:j
-bureaucratic	3.40	j:C1:o
+bureau	4.41	n:B1:j:A2:tanidik:büro
+bureaucracy	3.55	n:B2:j:B1:tanidik:bürokrasi
+bureaucratic	3.40	j:C1:o:B2:tanidik:bürokratik
 bureaucratically	1.66	r:C1:o
 bureaucrats	3.18	
 burgeoning	3.12	j:C2:o
@@ -3764,7 +3765,7 @@ cab	3.95	n:A2:j
 cabal	3.04	
 cabaret	3.24	
 cabbage	3.55	n:B1:j
-cabin	4.13	n:B1:j
+cabin	4.13	n:B1:j:A2:tanidik:kabin
 cabinet	4.49	n:B2:j
 cabinets	3.46	
 cabins	3.39	
@@ -3784,7 +3785,7 @@ cadre	3.04
 caesar	3.80	
 cafe	4.09	n:A1:j
 cafes	3.33	
-cafeteria	3.44	n:A2:j
+cafeteria	3.44	n:A2:j:A1:tanidik:kafeterya
 caffeinate	1.05	v:C2:o
 caffeine	3.67	
 café	3.75	n:A1:j
@@ -3849,7 +3850,7 @@ calmer	3.05
 calming	3.35	
 calmly	3.56	r:B2:j
 calmness	2.89	n:B1:j
-calorie	3.59	n:C1:o
+calorie	3.59	n:C1:o:B2:tanidik:kalori
 calories	4.03	
 calorific	2.20	j:C2:o
 calvert	3.10	
@@ -3891,7 +3892,7 @@ campground	3.04
 camping	4.00	n:A2:j
 camps	4.19	
 campsite	3.09	n:B1:j
-campus	4.51	n:A2:j
+campus	4.51	n:A2:j:A1:tanidik:kampüs
 campuses	3.57	
 cams	3.34	
 can	6.46	n:A2:j|v:A1:j
@@ -3902,7 +3903,7 @@ canada's	3.80
 canadian	4.70	
 canadians	3.86	
 canadiens	3.07	
-canal	4.22	n:B1:j
+canal	4.22	n:B1:j:A2:tanidik:kanal
 canals	3.48	
 canary	3.44	
 canberra	3.64	
@@ -3914,7 +3915,7 @@ cancellations	3.09
 cancelled	4.22	
 cancelling	3.31	
 cancels	3.12	
-cancer	4.93	n:B1:j
+cancer	4.93	n:B1:j:A2:tanidik:kanser
 cancerous	3.15	
 cancers	3.60	
 candace	3.02	
@@ -3943,7 +3944,7 @@ cannon	4.02
 cannonball	2.87	n:B2:j
 cannons	3.44	
 cannot	5.11	
-canoe	3.50	n:C1:o
+canoe	3.50	n:C1:o:B2:tanidik:kano
 canoes	3.01	
 canon	4.11	n:B2:j
 canonical	3.32	
@@ -3951,7 +3952,7 @@ canons	3.09
 canopy	3.52	
 cans	3.80	
 cant	4.35	
-canteen	3.17	n:B1:j
+canteen	3.17	n:B1:j:A2:tanidik:kantin
 canterbury	3.74	
 canton	3.55	
 cantonese	3.07	
@@ -3989,7 +3990,7 @@ capping	3.08
 capri	3.06	
 capricorn	3.01	
 caps	4.15	
-capsule	3.70	n:B1:j
+capsule	3.70	n:B1:j:A2:tanidik:kapsül
 capsules	3.33	
 capt	3.71	
 captain	4.89	n:A2:j
@@ -4013,11 +4014,11 @@ cara	3.43
 caracas	3.29	
 caramel	3.48	
 carat	3.15	
-caravan	3.62	n:B2:j
+caravan	3.62	n:B2:j:B1:tanidik:karavan
 carb	3.33	
 carbohydrate	3.17	
 carbohydrates	3.30	
-carbon	4.55	n:B2:j
+carbon	4.55	n:B2:j:B1:tanidik:karbon
 carbon dioxide		n:B2:j
 carbon footprint		n:B2:j
 carbon monoxide		n:B2:j
@@ -4151,7 +4152,7 @@ caspian	3.03
 cass	3.51	
 cassandra	3.25	
 casserole	3.07	
-cassette	3.40	n:A2:j
+cassette	3.40	n:A2:j:A1:tanidik:kaset
 cassidy	3.48	
 cassie	3.29	
 cast	4.79	n:B2:j|n:C1:o|v:B2:j|v:C1:o
@@ -4173,9 +4174,9 @@ cat	4.78	n:A1:j
 cat's	3.35	
 catalan	3.42	
 catalina	3.07	
-catalog	3.91	n:B2:j
+catalog	3.91	n:B2:j:B1:tanidik:katalog
 catalogs	3.08	
-catalogue	3.91	n:B2:j
+catalogue	3.91	n:B2:j:B1:tanidik:katalog
 catalogues	3.05	
 catalonia	3.35	
 catalyst	3.76	n:B2:j
@@ -4197,16 +4198,16 @@ categories	4.31
 categorisation	2.26	n:B2:j
 categorise	2.28	v:B1:j
 categorization	2.82	n:B2:j
-categorize	2.92	v:B1:j
+categorize	2.92	v:B1:j:A2:tanidik:kategorize
 categorized	3.31	
-category	4.57	n:B1:j
+category	4.57	n:B1:j:A2:tanidik:kategori
 cater	3.55	
 catered	3.10	
 catering	3.64	n:B2:j
 caterpillar	3.38	
 caters	3.09	
 catfish	3.35	
-cathedral	3.99	n:B2:j
+cathedral	3.99	n:B2:j:B1:tanidik:katedral
 catherine	4.11	
 catheter	3.24	
 cathode	3.03	
@@ -4356,14 +4357,14 @@ cereals	3.20
 cerebral	3.60	
 ceremonial	3.49	
 ceremonies	3.73	
-ceremony	4.42	n:B1:j
+ceremony	4.42	n:B1:j:A2:tanidik:seremoni
 cert	3.19	
 certain	5.16	j:A2:j
 certainly	5.00	r:A2:j
 certainty	3.82	n:B1:j
 certificate	4.29	n:B2:j
 certificates	3.77	
-certification	3.97	n:B2:j
+certification	3.97	n:B2:j:B1:tanidik:sertifikasyon
 certifications	3.29	
 certified	4.23	
 certify	3.08	v:B2:j
@@ -4442,8 +4443,8 @@ chant	3.60
 chanting	3.62	
 chants	3.40	
 chao	3.06	
-chaos	4.27	n:B1:j
-chaotic	3.67	j:B2:j
+chaos	4.27	n:B1:j:A2:tanidik:kaos
+chaotic	3.67	j:B2:j:B1:tanidik:kaotik
 chaotically	1.95	r:C1:o
 chap	3.61	
 chapel	4.03	
@@ -4459,10 +4460,10 @@ character's	3.45
 characterisation	2.89	n:C1:o
 characterise	2.64	v:B1:j
 characterised	3.40	
-characteristic	3.97	j:B2:j|n:B1:j
+characteristic	3.97	j:B2:j:B1:tanidik:karakteristik|n:B1:j:A2:tanidik:karakteristik
 characteristics	4.28	
 characterization	3.53	n:C1:o
-characterize	3.32	v:B1:j
+characterize	3.32	v:B1:j:A2:tanidik:karakterize
 characterized	4.01	
 characters	4.88	
 charcoal	3.58	
@@ -4576,7 +4577,7 @@ chemist	3.51	n:B1:j
 chemistry	4.35	n:B1:j
 chemists	3.25	
 chemo	3.25	
-chemotherapy	3.56	n:B2:j
+chemotherapy	3.56	n:B2:j:B1:tanidik:kemoterapi
 chen	3.96	
 cheney	3.36	
 cheng	3.37	
@@ -4702,7 +4703,7 @@ chore	3.15
 choreographed	3.07	
 choreographer	3.13	
 choreographical		j:C2:o
-choreography	3.49	n:C2:o
+choreography	3.49	n:C2:o:C1:tanidik:koreografi
 chores	3.54	
 chorus	3.90	
 chose	4.55	
@@ -4819,7 +4820,7 @@ city's	4.23
 citywide	2.81	j:B2:j
 civ	3.25	
 civic	4.00	
-civil	4.93	j:B1:j
+civil	4.93	j:B1:j:A2:tanidik:sivil
 civilian	4.23	
 civilians	4.10	
 civilisation	3.37	n:B1:j
@@ -4873,8 +4874,8 @@ clasp	3.10
 class	5.36	n:A1:j|v:C1:o
 classed	3.31	
 classes	4.77	
-classic	4.72	j:A2:j|n:B2:j
-classical	4.26	j:B1:j
+classic	4.72	j:A2:j:A1:tanidik:klasik|n:B2:j:B1:tanidik:klasik
+classical	4.26	j:B1:j:A2:tanidik:klasik
 classical music		n:A2:j
 classics	3.90	
 classification	4.18	n:B2:j
@@ -4943,7 +4944,7 @@ clever	4.21	j:A1:j
 cleverly	3.18	
 cleverness	2.69	n:C1:o
 cliche	3.16	
-click	4.82	n:B1:j|v:A2:j
+click	4.82	n:B1:j:A2:tanidik:klik|v:A2:j:A1:tanidik:klik
 clicked	3.56	
 clicking	3.91	
 clicks	3.72	
@@ -4971,8 +4972,8 @@ clinch	3.29	v:C2:o
 clinched	3.17	
 cling	3.49	
 clinging	3.36	
-clinic	4.21	n:B1:j
-clinical	4.51	j:C1:o
+clinic	4.21	n:B1:j:A2:tanidik:klinik
+clinical	4.51	j:C1:o:B2:tanidik:klinik
 clinically	3.39	
 clinicians	3.27	
 clinics	3.79	
@@ -5000,7 +5001,7 @@ clog	2.99	v:B2:j
 clogged	3.28	
 cloister	2.75	n:C2:o
 cloistered	2.43	j:C2:o
-clone	3.68	v:A2:j
+clone	3.68	v:A2:j:A1:tanidik:klon
 cloned	3.07	
 clones	3.40	
 cloning	3.23	
@@ -5067,7 +5068,7 @@ coachella	3.14
 coaches	4.26	
 coaching	4.29	n:B2:j
 coal	4.49	n:B1:j
-coalition	4.23	n:B2:j
+coalition	4.23	n:B2:j:B1:tanidik:koalisyon
 coalitions	3.06	
 coarse	3.41	j:B2:j
 coast	4.87	n:A2:j|v:B1:j
@@ -5096,7 +5097,7 @@ cockpit	3.60
 cockroach	3.16	
 cockroaches	3.11	
 cocks	3.46	
-cocktail	3.89	n:B2:j
+cocktail	3.89	n:B2:j:B1:tanidik:kokteyl
 cocktails	3.60	
 cocky	3.39	
 coco	3.49	
@@ -5255,7 +5256,7 @@ comb	3.52	n:A2:j|v:B2:j
 combat	4.56	
 combatants	3.22	
 combating	3.25	
-combination	4.61	n:B1:j
+combination	4.61	n:B1:j:A2:tanidik:kombinasyon
 combinations	3.83	
 combine	4.13	v:B1:j
 combined	4.68	
@@ -5272,7 +5273,7 @@ comedian	3.96	n:B1:j
 comedians	3.49	
 comedic	3.38	
 comedies	3.30	
-comedy	4.51	n:B1:j
+comedy	4.51	n:B1:j:A2:tanidik:komedi
 comes	5.36	
 comet	3.64	n:B1:j
 comets	3.19	
@@ -5284,7 +5285,7 @@ comforted	3.12
 comforting	3.61	
 comforts	3.33	
 comfy	3.63	
-comic	4.42	j:A2:j|n:A2:j
+comic	4.42	j:A2:j:A1:tanidik:komik|n:A2:j
 comical	3.23	
 comics	4.17	
 comin	3.53	
@@ -5328,7 +5329,7 @@ commerce	4.37	n:B2:j
 commercial	4.92	j:B1:j|n:B2:j
 commercially	3.67	r:C1:o
 commercials	3.82	
-commission	4.91	n:B2:j|n:C1:o|v:C1:o
+commission	4.91	n:B2:j:B1:tanidik:komisyon|n:C1:o:B2:tanidik:komisyon|v:C1:o:B2:tanidik:komisyon
 commission's	3.19	
 commissioned	3.96	
 commissioner	4.43	
@@ -5340,7 +5341,7 @@ commitment	4.43	n:A2:j
 commitments	3.79	
 commits	3.49	
 committed	4.65	
-committee	5.01	n:A2:j
+committee	5.01	n:A2:j:A1:tanidik:komite
 committee's	3.09	
 committees	3.93	
 committing	3.88	
@@ -5449,7 +5450,7 @@ completeness	3.13
 completes	3.52	
 completing	4.06	
 completion	4.22	n:B2:j
-complex	4.86	j:B1:j
+complex	4.86	j:B1:j:A2:tanidik:kompleks
 complexes	3.52	
 complexion	3.29	n:B2:j
 complexities	3.28	
@@ -5538,7 +5539,7 @@ concentrates	3.19
 concentrating	3.55	
 concentration	4.27	n:B1:j
 concentrations	3.76	
-concept	4.77	n:B1:j
+concept	4.77	n:B1:j:A2:tanidik:konsept
 conception	3.75	n:B2:j
 concepts	4.26	
 conceptual	3.62	
@@ -5846,7 +5847,7 @@ contagion	3.03	n:C2:o
 contagious	3.58	
 contain	4.50	v:B1:j
 contained	4.45	
-container	4.03	n:A2:j
+container	4.03	n:A2:j:A1:tanidik:konteyner
 containers	3.86	
 containing	4.43	
 containment	3.47	
@@ -5929,7 +5930,7 @@ contradictory	3.48	j:B2:j
 contradicts	3.16	
 contraption	2.82	n:C2:o
 contrary	4.17	j:B1:j
-contrast	4.46	n:A2:j
+contrast	4.46	n:A2:j:A1:tanidik:kontrast
 contrasted	3.24	
 contrasting	3.46	
 contrasts	3.38	
@@ -6077,7 +6078,7 @@ cornish	3.34
 cornwall	3.77	
 corny	3.23	
 corolla	3.15	
-corona	3.42	n:B2:j
+corona	3.42	n:B2:j:B1:tanidik:korona
 coronary	3.41	
 coronation	3.45	
 coronavirus	3.22	
@@ -6105,7 +6106,7 @@ corrects	3.02
 correlate	3.20	n:C2:o|v:C2:o
 correlated	3.50	
 correlates	3.07	
-correlation	3.86	n:C2:o
+correlation	3.86	n:C2:o:C1:tanidik:korelasyon
 correlations	3.09	
 correspond	3.50	v:B2:j
 corresponded	3.04	
@@ -6114,7 +6115,7 @@ correspondent	3.86	n:B2:j
 correspondents	3.43	
 corresponding	4.13	j:B2:j
 corresponds	3.54	
-corridor	3.88	n:B2:j
+corridor	3.88	n:B2:j:B1:tanidik:koridor
 corridors	3.43	
 corrosion	3.48	
 corrosive	3.11	
@@ -6148,7 +6149,7 @@ costello	3.29
 costing	3.69	
 costly	3.93	j:B2:j
 costs	4.96	
-costume	4.18	n:B2:j
+costume	4.18	n:B2:j:B1:tanidik:kostüm
 costumes	3.89	
 cosy	3.31	j:B2:j
 cot	3.21	
@@ -6318,7 +6319,7 @@ crashed	4.04
 crashes	3.87	
 crashing	3.84	
 crate	3.47	
-crater	3.55	n:B2:j
+crater	3.55	n:B2:j:B1:tanidik:krater
 craters	3.03	
 crates	3.28	
 crave	3.47	v:C1:o
@@ -6389,7 +6390,7 @@ crete	3.20
 crew	4.70	n:B2:j
 crews	3.89	
 crib	3.48	
-cricket	4.39	n:A2:j
+cricket	4.39	n:A2:j:A1:tanidik:kriket
 cricketer	3.25	
 cricketers	3.09	
 crickets	3.21	
@@ -6415,10 +6416,10 @@ crisps	3.09
 crispy	3.37	
 cristiano	3.34	
 cristina	3.36	
-criteria	4.21	n:C1:o
+criteria	4.21	n:C1:o:B2:tanidik:kriteri
 criterion	3.46	
 critic	3.95	n:B1:j
-critical	4.83	j:B1:j
+critical	4.83	j:B1:j:A2:tanidik:kritik
 critically	3.88	r:B2:j
 criticise	3.20	v:A2:j
 criticised	3.66	
@@ -6976,7 +6977,7 @@ decker	3.42
 decks	3.61	
 declaration	4.10	n:B1:j
 declarations	3.23	
-declare	4.05	v:B1:j
+declare	4.05	v:B1:j:A2:tanidik:deklare
 declared	4.55	
 declares	3.71	
 declaring	3.82	
@@ -6993,9 +6994,9 @@ decor	3.65
 decorate	3.36	v:B2:j
 decorated	3.94	
 decorating	3.36	
-decoration	3.82	n:B2:j
+decoration	3.82	n:B2:j:B1:tanidik:dekorasyon
 decorations	3.76	
-decorative	3.80	j:B2:j
+decorative	3.80	j:B2:j:B1:tanidik:dekoratif
 decoy	3.04	
 decrease	4.17	n:B1:j|v:B1:j
 decreased	4.00	
@@ -7168,12 +7169,12 @@ demi	3.37
 demise	3.66	n:C1:o
 demo	4.06	n:C1:o
 democracies	3.26	
-democracy	4.51	n:B1:j
+democracy	4.51	n:B1:j:A2:tanidik:demokrasi
 democrat	4.24	
-democratic	4.73	j:B1:j
+democratic	4.73	j:B1:j:A2:tanidik:demokratik
 democratically	3.12	
 democrats	4.54	
-demographic	3.92	j:C1:o|n:C1:o
+demographic	3.92	j:C1:o:B2:tanidik:demografik|n:C1:o:B2:tanidik:demografik
 demographically	2.38	r:C1:o
 demographics	3.56	
 demography	2.84	n:C1:o
@@ -7201,7 +7202,7 @@ deng	3.20
 denial	3.99	
 denied	4.43	
 denies	3.73	
-denim	3.52	n:B2:j
+denim	3.52	n:B2:j:B1:tanidik:denim
 denis	3.62	
 denise	3.57	
 denmark	4.04	
@@ -7284,8 +7285,8 @@ deprecatingly	1.44	r:C2:o
 depreciation	3.37	
 depressed	4.14	j:B1:j
 depressing	3.83	j:B1:j
-depression	4.56	n:B1:j
-depressive	3.30	j:C2:o
+depression	4.56	n:B1:j:A2:tanidik:depresyon
+depressive	3.30	j:C2:o:C1:tanidik:depresif
 deprivation	3.44	n:C1:o
 deprive	3.19	v:B1:j
 deprived	3.69	
@@ -7545,7 +7546,7 @@ dickson	3.34
 dictate	3.58	
 dictated	3.39	
 dictates	3.32	
-dictator	3.66	n:B2:j
+dictator	3.66	n:B2:j:B1:tanidik:diktatör
 dictators	3.18	
 dictatorship	3.64	
 dictionaries	3.18	
@@ -7594,7 +7595,7 @@ digestive	3.46
 digger	3.17	
 digging	3.99	
 digit	3.77	
-digital	4.83	j:B1:j
+digital	4.83	j:B1:j:A2:tanidik:dijital
 digital camera		n:A2:j
 digitalisation	1.68	n:C1:o
 digitalise		v:C1:o
@@ -7653,10 +7654,10 @@ dior	3.15
 dioxide	3.81	n:B1:j
 dip	4.05	v:B2:j
 diphtheria	2.65	n:B2:j
-diploma	3.76	n:B2:j
+diploma	3.76	n:B2:j:B1:tanidik:diploma
 diplomacy	3.71	
 diplomas	3.01	
-diplomat	3.69	n:B2:j
+diplomat	3.69	n:B2:j:B1:tanidik:diplomat
 diplomatic	4.11	
 diplomats	3.53	
 dipped	3.54	
@@ -7664,7 +7665,7 @@ dipping	3.48
 dips	3.30	
 dir	3.56	
 dire	3.66	
-direct	4.91	j:A2:j|v:B1:j
+direct	4.91	j:A2:j:A1:tanidik:direkt|v:B1:j
 directed	4.60	
 directing	3.90	
 direction	4.93	n:A2:j
@@ -7729,7 +7730,7 @@ discharges	3.06
 disciple	3.38	n:B2:j
 disciples	3.66	
 disciplinary	3.75	
-discipline	4.23	n:B2:j
+discipline	4.23	n:B2:j:B1:tanidik:disiplin
 disciplined	3.51	
 disciplines	3.69	
 disclaimer	3.46	
@@ -7738,7 +7739,7 @@ disclosed	3.80
 disclosing	3.19	
 disclosure	4.00	
 disclosures	3.27	
-disco	3.78	n:A2:j
+disco	3.78	n:A2:j:A1:tanidik:disko
 discography	3.03	
 discomfort	3.65	n:B1:j
 disconnect	3.46	v:B2:j
@@ -8257,7 +8258,7 @@ drains	3.55
 drake	3.96	
 drama	4.67	n:A1:j
 dramas	3.55	
-dramatic	4.41	j:B1:j
+dramatic	4.41	j:B1:j:A2:tanidik:dramatik
 dramatically	3.95	r:B2:j
 dramatist	2.80	n:C1:o
 drank	3.95	
@@ -8501,7 +8502,7 @@ dyes	3.29
 dying	4.63	
 dyke	3.37	
 dylan	4.05	
-dynamic	4.31	j:B2:j
+dynamic	4.31	j:B2:j:B1:tanidik:dinamik
 dynamically	3.03	r:C1:o
 dynamics	4.08	
 dynamite	3.59	
@@ -8601,20 +8602,20 @@ eco	3.71	n:B1:j
 ecological	3.78	j:B1:j
 ecologically	2.80	r:B2:j
 ecologist	2.67	n:B2:j
-ecology	3.74	n:B1:j
+ecology	3.74	n:B1:j:A2:tanidik:ekoloji
 ecommerce	3.30	
 econ	3.11	
 economic	5.10	j:B1:j
-economical	3.59	j:B2:j
+economical	3.59	j:B2:j:B1:tanidik:ekonomik
 economically	3.83	
-economics	4.42	n:B1:j
+economics	4.42	n:B1:j:A2:tanidik:ekonomik
 economies	3.89	
 economise	1.60	v:C2:o
-economist	3.87	n:B2:j
+economist	3.87	n:B2:j:B1:tanidik:ekonomist
 economists	3.76	
 economize	2.00	v:C2:o
-economy	4.87	n:B1:j
-ecosystem	3.78	n:B1:j
+economy	4.87	n:B1:j:A2:tanidik:ekonomi
+ecosystem	3.78	n:B1:j:A2:tanidik:ekosistem
 ecosystems	3.52	
 ecotourism	2.43	n:C2:o
 ecstasy	3.48	n:B1:j|n:C1:o
@@ -8649,7 +8650,7 @@ edith	3.57
 editing	4.27	
 edition	4.80	n:B1:j
 editions	3.85	
-editor	4.62	n:A2:j
+editor	4.62	n:A2:j:A1:tanidik:editör
 editor's	3.12	
 editorial	4.11	n:B2:j
 editorials	3.02	
@@ -8733,7 +8734,7 @@ elaborate	4.06	j:C1:o|v:C1:o
 elaborated	3.15	
 elaboration	2.82	n:C1:o
 elaine	3.60	
-elastic	3.59	j:C1:o|n:C1:o
+elastic	3.59	j:C1:o:B2:tanidik:elastik|n:C1:o:B2:tanidik:elastik
 elasticity	3.10	n:C2:o
 elated	2.97	j:C2:o
 elation	2.70	n:C2:o
@@ -8753,8 +8754,8 @@ elective	3.32	j:B2:j
 electoral	4.12	
 electorate	3.64	
 electors	3.26	
-electric	4.72	j:A2:j
-electrical	4.42	j:B1:j
+electric	4.72	j:A2:j:A1:tanidik:elektrik
+electrical	4.42	j:B1:j:A2:tanidik:elektrik
 electrically	3.19	
 electrician	3.26	n:B2:j
 electricity	4.43	n:B1:j
@@ -8764,16 +8765,16 @@ electrode	3.38	n:C2:o
 electrodes	3.29	
 electrolyte	3.07	
 electromagnetic	3.58	
-electron	3.82	n:B1:j
-electronic	4.55	j:B1:j
+electron	3.82	n:B1:j:A2:tanidik:elektron
+electronic	4.55	j:B1:j:A2:tanidik:elektronik
 electronically	3.28	r:B2:j
-electronics	4.19	n:B2:j
+electronics	4.19	n:B2:j:B1:tanidik:elektronik
 electrons	3.60	
 elects	3.02	
 elegance	3.42	n:B2:j
 elegant	3.95	j:B2:j
 elegantly	2.97	r:B2:j
-element	4.46	n:B1:j
+element	4.46	n:B1:j:A2:tanidik:element
 elemental	3.38	j:B2:j
 elementary	4.33	j:A1:j
 elements	4.70	
@@ -8807,7 +8808,7 @@ eliot	3.50
 elisa	3.09	
 elisabeth	3.24	
 elise	3.26	
-elite	4.40	n:B2:j
+elite	4.40	n:B2:j:B1:tanidik:elit
 elites	3.62	
 elitist	3.07	n:C1:o
 elixir	3.16	
@@ -9047,7 +9048,7 @@ enemy's	3.16
 energetic	3.71	j:A2:j
 energies	3.54	
 energized	3.06	
-energy	5.23	n:B2:j
+energy	5.23	n:B2:j:B1:tanidik:enerji
 enfield	3.09	
 enforce	3.96	v:B2:j
 enforceable	3.02	
@@ -9383,13 +9384,13 @@ ether	3.40
 ethereal	3.20	
 ethereum	3.21	
 ethernet	3.28	
-ethic	3.54	n:B2:j
-ethical	4.07	j:C1:o
+ethic	3.54	n:B2:j:B1:tanidik:etik
+ethical	4.07	j:C1:o:B2:tanidik:etik
 ethically	3.11	r:C1:o
 ethics	4.19	
 ethiopia	3.73	
 ethiopian	3.51	
-ethnic	4.33	j:B2:j
+ethnic	4.33	j:B2:j:B1:tanidik:etnik
 ethnically	3.12	
 ethnicities	3.02	
 ethnicity	3.73	
@@ -9734,7 +9735,7 @@ exposing	3.78
 exposition	3.59	
 exposure	4.44	
 exposures	3.26	
-express	4.68	n:A2:j|v:B1:j
+express	4.68	n:A2:j:A1:tanidik:ekspres|v:B1:j
 expressed	4.52	
 expresses	3.61	
 expressing	3.99	
@@ -9765,7 +9766,7 @@ extinction	3.76	n:B1:j
 extinguish	3.04	
 extinguished	3.19	
 extortion	3.29	n:C1:o
-extra	4.98	j:A2:j|r:A2:j|n:B1:j
+extra	4.98	j:A2:j:A1:tanidik:ekstra|r:A2:j:A1:tanidik:ekstra|n:B1:j:A2:tanidik:ekstra
 extracellular	3.05	
 extract	4.02	n:B2:j|v:B2:j
 extracted	3.68	
@@ -9780,7 +9781,7 @@ extras	3.60
 extraterrestrial	3.10	
 extravagance	2.81	n:C1:o
 extravagant	3.40	
-extreme	4.60	j:B1:j
+extreme	4.60	j:B1:j:A2:tanidik:ekstrem
 extreme sports		n:B1:j
 extremely	4.79	r:A2:j
 extremes	3.47	
@@ -9858,7 +9859,7 @@ fact	5.41	n:A2:j
 faction	3.79	n:C1:o
 factions	3.76	
 facto	3.58	
-factor	4.67	n:B2:j
+factor	4.67	n:B2:j:B1:tanidik:faktör
 factories	3.95	
 factors	4.64	
 factory	4.55	n:A1:j
@@ -9935,7 +9936,7 @@ famine	3.61
 famous	4.84	j:A1:j
 famously	3.49	
 fan	4.92	n:A1:j
-fanatic	3.23	j:C1:o|n:C1:o
+fanatic	3.23	j:C1:o:B2:tanidik:fanatik|n:C1:o:B2:tanidik:fanatik
 fanatical	3.02	
 fanatically	2.17	r:C1:o
 fanatics	3.20	
@@ -10088,7 +10089,7 @@ fecal	3.01
 feces	3.22	
 fed	4.51	
 fed up		j:B2:j
-federal	5.13	j:B2:j
+federal	5.13	j:B2:j:B1:tanidik:federal
 federalist	3.04	
 federally	3.44	
 federation	4.26	
@@ -10206,7 +10207,7 @@ fiance	3.40
 fiancee	3.25	
 fiasco	3.30	
 fiat	3.63	
-fiber	4.06	n:B2:j
+fiber	4.06	n:B2:j:B1:tanidik:fiber
 fiberglass	3.04	
 fibers	3.64	
 fibre	3.67	n:B2:j
@@ -10291,14 +10292,14 @@ filth	3.41
 filthy	3.80	
 filtration	3.31	
 fin	3.70	
-final	5.28	j:A2:j|n:A2:j
+final	5.28	j:A2:j:A1:tanidik:final|n:A2:j:A1:tanidik:final
 finale	4.04	
 finalist	3.45	
 finalists	3.57	
 finalized	3.31	
 finally	5.17	r:A2:j
 finals	4.45	
-finance	4.65	n:B2:j|v:B1:j
+finance	4.65	n:B2:j:B1:tanidik:finanse|v:B1:j:A2:tanidik:finanse
 financed	3.69	
 finances	3.90	
 financial	5.08	j:B1:j
@@ -10449,7 +10450,7 @@ flaps	3.20
 flare	3.64	
 flared	3.12	
 flares	3.30	
-flash	4.45	j:B1:j|n:B2:j|v:B2:j
+flash	4.45	j:B1:j:A2:tanidik:flaş|n:B2:j:B1:tanidik:flaş|v:B2:j:B1:tanidik:flaş
 flashback	3.47	n:C1:o
 flashbacks	3.37	
 flashed	3.35	
@@ -10583,7 +10584,7 @@ flurry	3.11
 flush	3.80	
 flushed	3.27	
 flushing	3.40	
-flute	3.52	n:B1:j
+flute	3.52	n:B1:j:A2:tanidik:flüt
 flutter	3.06	n:B2:j
 flux	3.57	
 fly	4.75	n:A1:j|v:A1:j
@@ -10737,8 +10738,8 @@ form	5.31	n:A1:j|v:B1:j
 formal	4.45	j:B1:j
 formality	3.15	n:C1:o
 formally	4.01	r:B1:j
-format	4.47	n:B1:j|v:B1:j
-formation	4.49	n:B2:j
+format	4.47	n:B1:j:A2:tanidik:format|v:B1:j:A2:tanidik:format
+formation	4.49	n:B2:j:B1:tanidik:formasyon
 formations	3.62	
 formative	3.27	
 formats	3.76	
@@ -10751,7 +10752,7 @@ formidable	3.65	j:B2:j|j:C2:o
 formidably	1.79	r:C2:o
 forming	4.21	
 forms	4.73	
-formula	4.45	n:B1:j
+formula	4.45	n:B1:j:A2:tanidik:formula
 formulas	3.44	
 formulate	3.23	v:C1:o
 formulated	3.52	
@@ -10786,7 +10787,7 @@ forwarded	3.36
 forwarding	3.21	
 forwards	3.81	
 forza	3.10	
-fossil	3.99	n:C1:o
+fossil	3.99	n:C1:o:B2:tanidik:fosil
 fossils	3.54	
 foster	4.33	
 fostered	3.17	
@@ -11100,7 +11101,7 @@ fuse	3.62	v:C1:o
 fused	3.40	
 fuselage	3.09	
 fuses	3.07	
-fusion	4.02	n:C1:o
+fusion	4.02	n:C1:o:B2:tanidik:füzyon
 fuss	3.62	n:B1:j
 fussy	3.04	
 futile	3.39	
@@ -11153,10 +11154,10 @@ gall	3.30	n:B1:j
 gallagher	3.58	
 gallant	3.21	
 galleries	3.85	
-gallery	4.49	n:A2:j
+gallery	4.49	n:A2:j:A1:tanidik:galeri
 galley	3.22	
 gallo	3.05	
-gallon	3.75	n:B1:j
+gallon	3.75	n:B1:j:A2:tanidik:galon
 gallons	3.64	
 gallop	3.03	
 galloway	3.36	
@@ -11189,7 +11190,7 @@ gandhi	3.83
 gang	4.50	n:B2:j
 gangs	3.73	
 gangsta	3.01	
-gangster	3.55	n:B2:j
+gangster	3.55	n:B2:j:B1:tanidik:gangster
 gangsters	3.24	
 gao	3.46	
 gaol	2.84	n:B1:j
@@ -11310,7 +11311,7 @@ generate	4.22	v:B1:j
 generated	4.34	
 generates	3.67	
 generating	3.99	
-generation	4.82	n:A2:j
+generation	4.82	n:A2:j:A1:tanidik:jenerasyon
 generational	3.28	
 generations	4.29	
 generator	3.94	
@@ -11365,7 +11366,7 @@ geological	3.82	j:C1:o
 geologically	2.49	r:C1:o
 geologist	3.21	
 geologists	3.14	
-geology	3.76	n:B1:j
+geology	3.76	n:B1:j:A2:tanidik:jeoloji
 geometric	3.59	
 geometry	3.88	
 geophysical	3.02	
@@ -11536,7 +11537,7 @@ glitter	3.56
 glittering	3.19	
 glitz	2.66	n:C2:o
 glitzy	2.37	j:C2:o
-global	4.95	j:B1:j
+global	4.95	j:B1:j:A2:tanidik:global
 global warming		n:B2:j
 globalization	3.46	
 globally	3.82	r:B2:j
@@ -11745,7 +11746,7 @@ grains	3.70
 gram	3.76	n:A2:j
 grammar	4.17	n:A1:j
 grammatical	3.35	
-gramme	1.64	n:A2:j
+gramme	1.64	n:A2:j:A1:tanidik:gram
 grammy	3.73	
 grammys	3.04	
 grams	3.82	
@@ -11784,10 +11785,10 @@ grapefruit	3.17	n:C1:o
 grapes	3.73	
 graph	4.05	n:B1:j
 graphene	3.02	
-graphic	4.23	j:B1:j
+graphic	4.23	j:B1:j:A2:tanidik:grafik
 graphical	3.46	
 graphically	2.98	r:B2:j
-graphics	4.19	n:B1:j
+graphics	4.19	n:B1:j:A2:tanidik:grafik
 graphite	3.35	
 graphs	3.55	
 grapple	3.12	
@@ -11930,7 +11931,7 @@ grounding	3.26
 grounds	4.43	n:C1:o
 groundwater	3.44	
 groundwork	3.19	
-group	5.57	n:A1:j|v:B1:j
+group	5.57	n:A1:j|v:B1:j:A2:tanidik:grup
 group's	3.88	
 grouped	3.52	
 grouping	3.46	n:B1:j
@@ -12074,8 +12075,8 @@ gwen	3.48
 gym	4.43	n:B1:j
 gymnasium	3.19	
 gymnast	3.07	
-gymnastic	2.62	j:B2:j
-gymnastics	3.60	n:B1:j
+gymnastic	2.62	j:B2:j:B1:tanidik:jimnastik
+gymnastics	3.60	n:B1:j:A2:tanidik:jimnastik
 gyms	3.17	
 gypsies	3.10	
 gypsy	3.55	n:C1:o
@@ -12199,7 +12200,7 @@ handful	4.11
 handgun	3.35	
 handguns	3.03	
 handheld	3.36	
-handicap	3.61	n:B2:j
+handicap	3.61	n:B2:j:B1:tanidik:handikap
 handicapped	3.42	j:A2:j
 handicraft	2.65	n:B2:j
 handing	3.77	
@@ -12541,7 +12542,7 @@ held	5.24
 helen	4.19	
 helena	3.63	
 helene	3.02	
-helicopter	4.13	n:B2:j
+helicopter	4.13	n:B2:j:B1:tanidik:helikopter
 helicopters	3.72	
 helium	3.42	
 helix	3.26	
@@ -12804,7 +12805,7 @@ hobby	3.94	n:A1:j
 hobo	3.08	
 hoboken	3.06	
 hoc	3.42	
-hockey	4.42	n:A2:j
+hockey	4.42	n:A2:j:A1:tanidik:hokey
 hodge	3.27	
 hodges	3.38	
 hodgson	3.22	
@@ -13098,7 +13099,7 @@ human	5.35	j:A2:j|n:B1:j
 human rights		n:B2:j
 humane	3.62	j:B2:j
 humanise	1.66	v:B2:j
-humanist	3.07	n:B2:j
+humanist	3.07	n:B2:j:B1:tanidik:hümanist
 humanitarian	3.91	
 humanities	3.62	
 humanity	4.32	n:B1:j
@@ -13184,7 +13185,7 @@ hwang	3.06
 hwy	3.28	
 hy	3.03	
 hyatt	3.17	
-hybrid	4.11	j:B2:j
+hybrid	4.11	j:B2:j:B1:tanidik:hibrid
 hybrids	3.37	
 hyde	3.70	
 hyderabad	3.50	
@@ -13293,7 +13294,7 @@ identity card		n:B1:j
 ideological	3.77	
 ideologically	3.00	
 ideologies	3.35	
-ideology	4.02	n:B2:j
+ideology	4.02	n:B2:j:B1:tanidik:ideoloji
 idf	3.29	
 idiom	2.97	n:B1:j
 idiomatic	2.46	j:C2:o
@@ -13654,7 +13655,7 @@ independently	4.06	r:B2:j
 independents	3.38	
 indescribable	2.90	j:B2:j
 indestructible	3.06	
-index	4.57	n:B2:j
+index	4.57	n:B2:j:B1:tanidik:indeks
 indexed	3.28	
 indexes	3.32	
 indexing	3.18	
@@ -13909,7 +13910,7 @@ innocently	2.88	r:B2:j
 innocents	3.14	
 innocuous	3.06	
 innovate	3.13	v:C1:o
-innovation	4.32	n:B2:j|n:C1:o
+innovation	4.32	n:B2:j:B1:tanidik:inovasyon|n:C1:o:B2:tanidik:inovasyon
 innovations	3.73	
 innovative	4.10	j:B2:j|j:C1:o
 innovator	3.01	n:B1:j
@@ -14061,7 +14062,7 @@ intake	3.98
 intangible	3.22	
 integer	3.39	
 integers	3.02	
-integral	3.96	j:C1:o
+integral	3.96	j:C1:o:B2:tanidik:integral
 integrate	3.72	v:B2:j
 integrated	4.29	
 integrates	3.04	
@@ -14098,7 +14099,7 @@ interacted	3.11
 interacting	3.66	
 interaction	4.29	n:B1:j
 interactions	4.16	
-interactive	4.06	j:B2:j
+interactive	4.06	j:B2:j:B1:tanidik:interaktif
 interacts	3.21	
 intercept	3.57	
 intercepted	3.53	
@@ -14350,12 +14351,12 @@ irishman	3.06
 irl	3.43	
 irma	3.02	
 iron	4.74	n:B1:j|v:B1:j
-ironic	3.80	j:C2:o
+ironic	3.80	j:C2:o:C1:tanidik:ironik
 ironically	3.74	r:B2:j
 ironing	3.10	n:B1:j
 ironman	3.17	
 irons	3.32	
-irony	3.86	n:C1:o
+irony	3.86	n:C1:o:B2:tanidik:ironi
 irradiation	3.09	
 irrational	3.56	j:B2:j
 irregular	3.70	j:B1:j
@@ -14875,7 +14876,7 @@ kar	3.02
 kara	3.55	
 karachi	3.59	
 karan	3.11	
-karaoke	3.43	n:B2:j
+karaoke	3.43	n:B2:j:B1:tanidik:karaoke
 karate	3.55	
 kardashian	3.70	
 kareem	3.05	
@@ -15029,12 +15030,12 @@ killings	3.69
 kills	4.34	
 kiln	3.11	
 kilo	3.13	n:A2:j
-kilogram	3.01	n:A2:j
-kilogramme	1.66	n:A2:j
+kilogram	3.01	n:A2:j:A1:tanidik:kilogram
+kilogramme	1.66	n:A2:j:A1:tanidik:kilogram
 kilograms	3.24	
 kilometer	3.19	n:A2:j
 kilometers	3.82	
-kilometre	3.21	n:A2:j
+kilometre	3.21	n:A2:j:A1:tanidik:kilometre
 kilometres	3.77	
 kilos	3.25	
 kim	4.59	
@@ -15055,7 +15056,7 @@ kindly	4.00	j:A2:j|r:B1:j
 kindness	4.00	n:B1:j
 kindred	3.15	
 kinds	4.51	
-kinetic	3.44	j:C2:o
+kinetic	3.44	j:C2:o:C1:tanidik:kinetik
 kinetically	1.79	r:C2:o
 king	5.17	n:A1:j
 king's	4.03	
@@ -15323,7 +15324,7 @@ lap	4.18	n:B2:j|n:C1:o
 lapd	3.15	
 laps	3.66	
 lapse	3.49	n:C1:o|v:C1:o
-laptop	4.23	n:B2:j
+laptop	4.23	n:B2:j:B1:tanidik:laptop
 laptops	3.54	
 lara	3.54	
 large	5.39	j:A1:j
@@ -15683,7 +15684,7 @@ liars	3.46
 lib	3.75	
 libby	3.26	
 libel	3.34	
-liberal	4.66	j:B2:j
+liberal	4.66	j:B2:j:B1:tanidik:liberal
 liberalism	3.50	
 liberals	4.13	
 liberate	3.24	v:B1:j
@@ -15782,7 +15783,7 @@ lime	3.86
 limelight	3.11	
 limerick	3.07	
 limestone	3.75	
-limit	4.70	n:B1:j|v:B1:j
+limit	4.70	n:B1:j:A2:tanidik:limit|v:B1:j:A2:tanidik:limit
 limitation	3.71	n:B1:j
 limitations	4.05	
 limited	5.02	j:B1:j
@@ -15867,13 +15868,13 @@ literal	3.77	j:B2:j
 literally	4.91	r:B2:j
 literary	4.31	j:B1:j
 literate	3.27	
-literature	4.62	n:B1:j
+literature	4.62	n:B1:j:A2:tanidik:literatür
 liters	3.19	
 lithium	3.56	
 lithuania	3.50	
 lithuanian	3.20	
 litigation	3.93	
-litre	3.50	n:A2:j
+litre	3.50	n:A2:j:A1:tanidik:litre
 litres	3.22	
 litter	3.71	n:B2:j
 littered	3.10	
@@ -15927,7 +15928,7 @@ loans	4.51
 loathe	3.11	
 loathing	3.16	
 lobbied	3.11	
-lobby	4.03	n:B2:j
+lobby	4.03	n:B2:j:B1:tanidik:lobi
 lobbying	3.59	
 lobbyist	3.10	
 lobbyists	3.23	
@@ -15963,7 +15964,7 @@ locks	3.94
 lockwood	3.08	
 loco	3.21	
 locomotion	2.88	n:C2:o
-locomotive	3.50	n:C2:o
+locomotive	3.50	n:C2:o:C1:tanidik:lokomotif
 locomotives	3.28	
 locus	3.18	
 locust	3.00	
@@ -16223,8 +16224,8 @@ lynne	3.23
 lynx	3.06	
 lyon	3.80	
 lyons	3.46	
-lyric	3.63	j:A2:j
-lyrical	3.43	j:C2:o
+lyric	3.63	j:A2:j:A1:tanidik:lirik
+lyrical	3.43	j:C2:o:C1:tanidik:lirik
 lyrically	2.81	r:C2:o
 lyricist	2.84	n:C2:o
 lyrics	4.35	n:B2:j
@@ -16270,8 +16271,8 @@ macy	3.01
 macy's	3.20	
 mad	4.74	j:A2:j
 madagascar	3.39	
-madam	3.59	n:B2:j
-madame	3.80	n:B2:j
+madam	3.59	n:B2:j:B1:tanidik:madam
+madame	3.80	n:B2:j:B1:tanidik:madam
 madden	3.53	
 maddie	3.25	
 maddox	3.06	
@@ -16287,7 +16288,7 @@ madras	3.38
 madrid	4.30	
 mae	3.65	
 maelstrom	2.69	n:C2:o
-maestro	3.26	n:B2:j
+maestro	3.26	n:B2:j:B1:tanidik:maestro
 mafia	3.83	
 mag	3.71	
 maga	3.30	
@@ -16450,7 +16451,7 @@ maneuvers	3.26
 manga	3.97	
 manganese	3.11	
 mangle	2.39	v:C2:o
-mango	3.56	n:B2:j
+mango	3.56	n:B2:j:B1:tanidik:mango
 manhattan	4.16	
 manhood	3.16	
 manhunt	3.03	
@@ -16458,7 +16459,7 @@ mani	3.23
 mania	3.44	
 maniac	3.22	
 manic	3.32	
-manicure	2.99	n:C1:o|v:C1:o
+manicure	2.99	n:C1:o:B2:tanidik:manikür|v:C1:o:B2:tanidik:manikür
 manifest	3.68	
 manifestation	3.43	
 manifestations	3.22	
@@ -16470,7 +16471,7 @@ manila	3.88
 manipulate	3.69	v:B2:j
 manipulated	3.60	
 manipulating	3.45	
-manipulation	3.85	n:C1:o
+manipulation	3.85	n:C1:o:B2:tanidik:manipülasyon
 manipulative	3.25	
 manitoba	3.43	
 mankind	3.88	n:B1:j
@@ -16519,7 +16520,7 @@ mapping	3.88
 maps	4.42	
 mar	4.19	
 mara	3.45	
-marathon	4.16	n:B2:j
+marathon	4.16	n:B2:j:B1:tanidik:maraton
 marathons	3.09	
 marble	3.96	n:B1:j
 marbles	3.19	
@@ -16727,11 +16728,11 @@ maternalistic		j:C1:o
 maternity	3.66	
 mates	3.99	
 math	4.45	n:A1:j
-mathematical	4.04	j:B2:j
+mathematical	4.04	j:B2:j:B1:tanidik:matematik
 mathematically	3.18	
 mathematician	3.24	n:B1:j
 mathematicians	3.13	
-mathematics	4.15	n:B1:j
+mathematics	4.15	n:B1:j:A2:tanidik:matematik
 mather	3.00	
 mathew	3.13	
 mathews	3.25	
@@ -16778,7 +16779,7 @@ maximal	3.06
 maximise	3.10	
 maximize	3.63	
 maximizing	3.13	
-maximum	4.60	j:B1:j|n:B1:j
+maximum	4.60	j:B1:j:A2:tanidik:maksimum|n:B1:j:A2:tanidik:maksimum
 maximus	3.03	
 maxine	3.25	
 maxwell	3.77	
@@ -16886,13 +16887,13 @@ meaty	3.01
 mecca	3.38	
 mech	3.10	
 mechanic	3.79	n:B1:j
-mechanical	4.33	j:B1:j
+mechanical	4.33	j:B1:j:A2:tanidik:mekanik
 mechanically	3.35	
 mechanics	4.13	
 mechanise	1.07	v:B2:j
-mechanism	4.27	n:C1:o
+mechanism	4.27	n:C1:o:B2:tanidik:mekanizma
 mechanisms	4.03	
-mechanize	1.59	v:B2:j
+mechanize	1.59	v:B2:j:B1:tanidik:mekanize
 med	3.88	
 medal	4.39	n:A2:j
 medalist	3.22	
@@ -16900,7 +16901,7 @@ medallion	3.10
 medallist	3.08	
 medals	3.98	
 meddling	3.30	
-media	5.30	n:B2:j
+media	5.30	n:B2:j:B1:tanidik:medya
 media's	3.24	
 mediaeval	2.78	j:B2:j
 medial	3.21	
@@ -16911,7 +16912,7 @@ mediation	3.51	n:C2:o
 mediator	3.29	
 medic	3.42	
 medicaid	3.74	
-medical	5.16	j:A2:j
+medical	5.16	j:A2:j:A1:tanidik:medikal
 medically	3.44	
 medicare	3.94	
 medication	4.15	n:B2:j
@@ -16927,7 +16928,7 @@ mediocre	3.52	j:B2:j
 mediocrity	3.12	n:C2:o
 meditate	3.26	v:B1:j
 meditating	3.03	
-meditation	3.95	n:B1:j
+meditation	3.95	n:B1:j:A2:tanidik:meditasyon
 mediterranean	3.99	n:B1:j
 medium	4.61	j:B1:j|n:B1:j
 mediums	3.12	
@@ -16949,7 +16950,7 @@ meh	3.40
 mei	3.39	
 mein	3.29	
 mel	3.80	
-melancholy	3.39	j:C2:o|n:C2:o
+melancholy	3.39	j:C2:o:C1:tanidik:melankoli|n:C2:o:C1:tanidik:melankoli
 melanie	3.53	
 melanoma	3.18	
 melbourne	4.36	
@@ -16964,7 +16965,7 @@ melodies	3.47
 melodious	2.58	j:C2:o
 melodiously	1.40	r:C2:o
 melodrama	3.05	
-melody	3.81	n:B2:j
+melody	3.81	n:B2:j:B1:tanidik:melodi
 melon	3.32	n:A2:j
 melrose	3.09	
 melt	3.96	v:B1:j
@@ -17088,13 +17089,13 @@ metabolic	3.62
 metabolism	3.78	
 metabolites	3.08	
 metadata	3.36	
-metal	4.82	n:A2:j
+metal	4.82	n:A2:j:A1:tanidik:metal
 metalled	1.54	j:C2:o
 metallic	3.82	
 metallica	3.22	
 metals	3.95	
 metamorphosis	3.03	
-metaphor	3.73	n:B2:j
+metaphor	3.73	n:B2:j:B1:tanidik:metafor
 metaphorical	3.10	
 metaphors	3.23	
 metaphysical	3.22	
@@ -17104,7 +17105,7 @@ meteor	3.55
 meteorite	3.20	
 meteorites	3.00	
 meteorological	3.39	j:C2:o
-meteorology	3.22	n:C2:o
+meteorology	3.22	n:C2:o:C1:tanidik:meteoroloji
 meter	4.09	n:A2:j
 meters	4.21	
 meth	3.62	
@@ -17120,9 +17121,9 @@ methods	4.68
 methyl	3.22	
 meticulous	3.24	j:C2:o
 meticulously	3.08	r:C2:o
-metre	3.76	n:A2:j
+metre	3.76	n:A2:j:A1:tanidik:metre
 metres	4.17	
-metric	3.88	j:B2:j
+metric	3.88	j:B2:j:B1:tanidik:metrik
 metrics	3.51	
 metro	4.18	
 metropolis	3.57	
@@ -17160,7 +17161,7 @@ michigan	4.54
 michigan's	3.02	
 mick	3.83	
 mickey	3.86	
-micro	4.08	n:B2:j
+micro	4.08	n:B2:j:B1:tanidik:mikro
 microbe	2.63	n:B2:j
 microbes	3.18	
 microbial	3.33	
@@ -17170,9 +17171,9 @@ micrometer	2.32	n:B2:j
 micrometre	1.35	n:B2:j
 microorganism	2.32	n:B2:j
 microorganisms	3.13	
-microphone	3.72	n:B2:j
+microphone	3.72	n:B2:j:B1:tanidik:mikrofon
 microphones	3.15	
-microscope	3.50	n:B2:j
+microscope	3.50	n:B2:j:B1:tanidik:mikroskop
 microscopic	3.37	j:B2:j
 microscopy	3.26	n:B2:j
 microsoft	4.36	
@@ -17268,7 +17269,7 @@ millie	3.20
 milligrams	3.11	
 millimeter	3.13	n:B2:j
 millimeters	3.04	
-millimetre	2.60	n:B2:j
+millimetre	2.60	n:B2:j:B1:tanidik:milimetre
 milling	3.34	
 million	5.33	x:A2:j
 millionaire	3.73	n:B2:j
@@ -17305,7 +17306,7 @@ minecraft	3.76
 mined	3.41	
 minefield	2.92	n:C2:o
 miner	3.58	
-mineral	4.03	n:B1:j
+mineral	4.03	n:B1:j:A2:tanidik:mineral
 mineral water		n:A2:j
 minerals	3.93	
 miners	3.93	
@@ -17323,7 +17324,7 @@ minimise	3.17	v:B1:j
 minimize	3.80	v:B1:j
 minimized	3.05	
 minimizing	3.27	
-minimum	4.69	j:B1:j|n:B1:j
+minimum	4.69	j:B1:j:A2:tanidik:minimum|n:B1:j:A2:tanidik:minimum
 mining	4.56	
 minion	3.05	
 minions	3.29	
@@ -17400,7 +17401,7 @@ misses	3.85
 missile	4.14	n:B2:j
 missiles	3.95	
 missing	5.05	j:A2:j
-mission	4.87	n:B1:j
+mission	4.87	n:B1:j:A2:tanidik:misyon
 missionaries	3.62	
 missionary	3.83	
 missions	4.20	
@@ -17467,7 +17468,7 @@ moaning	3.43
 moans	3.13	
 moat	3.12	
 mob	4.03	
-mobile	4.85	j:A2:j|n:A1:j
+mobile	4.85	j:A2:j:A1:tanidik:mobil|n:A1:j
 mobile phone		n:A1:j
 mobiles	3.06	
 mobility	4.05	n:B2:j
@@ -17485,13 +17486,13 @@ mod	3.91
 modal	3.13	n:B1:j
 modal verb		n:B1:j
 mode	4.63	
-model	5.13	j:B1:j|n:A2:j|v:B1:j
+model	5.13	j:B1:j:A2:tanidik:model|n:A2:j:A1:tanidik:model|v:B1:j:A2:tanidik:model
 modeled	3.50	
 modeling	3.94	
 modelled	3.25	
 modelling	3.70	
 models	4.74	
-modem	3.40	n:B1:j
+modem	3.40	n:B1:j:A2:tanidik:modem
 moderate	4.27	j:B1:j
 moderated	3.14	
 moderately	3.56	
@@ -17499,14 +17500,14 @@ moderates	3.13
 moderation	3.47	
 moderator	3.41	
 moderators	3.01	
-modern	5.07	j:A2:j
-modernisation	2.97	n:B2:j
+modern	5.07	j:A2:j:A1:tanidik:modern
+modernisation	2.97	n:B2:j:B1:tanidik:modernizasyon
 modernise	2.52	v:B2:j
-modernism	3.13	n:C2:o
+modernism	3.13	n:C2:o:C1:tanidik:modernizm
 modernist	3.21	
 modernity	3.25	
-modernization	3.36	n:B2:j
-modernize	3.03	v:B2:j
+modernization	3.36	n:B2:j:B1:tanidik:modernizasyon
+modernize	3.03	v:B2:j:B1:tanidik:modernize
 modes	3.96	
 modest	4.03	j:B2:j
 modestly	3.06	
@@ -17545,7 +17546,7 @@ moldova	3.17
 molds	3.12	
 mole	3.67	
 molecular	4.11	
-molecule	3.67	n:B1:j
+molecule	3.67	n:B1:j:A2:tanidik:molekül
 molecules	3.92	
 moles	3.07	
 molested	3.15	
@@ -17590,7 +17591,7 @@ monica	3.96
 monies	3.15	
 moniker	3.06	
 monique	3.13	
-monitor	4.37	n:B1:j|v:B1:j
+monitor	4.37	n:B1:j:A2:tanidik:monitör|v:B1:j:A2:tanidik:monitör
 monitored	3.75	
 monitoring	4.34	
 monitors	3.82	
@@ -17744,7 +17745,7 @@ motivate	3.60	v:B1:j
 motivated	4.14	j:B2:j
 motivates	3.17	
 motivating	3.34	
-motivation	4.22	n:B1:j
+motivation	4.22	n:B1:j:A2:tanidik:motivasyon
 motivational	3.48	
 motivations	3.42	
 motive	3.94	n:B1:j
@@ -17752,7 +17753,7 @@ motives	3.73
 motley	3.09	j:C1:o
 moto	3.42	
 motogp	3.05	
-motor	4.53	n:B1:j
+motor	4.53	n:B1:j:A2:tanidik:motor
 motorbike	3.19	n:B2:j
 motorcycle	4.07	n:B1:j
 motorcycles	3.49	
@@ -17995,7 +17996,7 @@ myth	4.08	n:B1:j
 mythic	3.02	
 mythical	3.44	
 mythological	3.06	j:C1:o
-mythology	3.64	n:C1:o
+mythology	3.64	n:C1:o:B2:tanidik:mitoloji
 myths	3.75	
 n	5.15	
 n't	3.58	
@@ -18127,7 +18128,7 @@ navarro	3.05
 nave	3.06	
 navigate	3.68	v:B2:j
 navigating	3.29	
-navigation	4.03	n:B2:j
+navigation	4.03	n:B2:j:B1:tanidik:navigasyon
 navigator	3.29	
 navy	4.57	n:B2:j
 navy blue		j:B1:j
@@ -18171,7 +18172,7 @@ neck	4.63	n:A1:j
 necklace	3.85	n:B1:j
 necklaces	3.15	
 necks	3.40	
-nectar	3.25	n:B1:j
+nectar	3.25	n:B1:j:A2:tanidik:nektar
 ned	3.71	
 nee	3.21	
 need	5.97	n:B2:j|v:A1:j
@@ -18184,7 +18185,7 @@ needlessly	3.06
 needs	5.37	
 needy	3.58	j:B2:j
 nefarious	3.00	
-negative	4.79	j:A2:j
+negative	4.79	j:A2:j:A1:tanidik:negatif
 negatively	3.69	r:B2:j
 negatives	3.39	
 negativity	3.49	
@@ -18508,7 +18509,7 @@ nordic	3.52
 norfolk	3.84	
 norm	3.93	
 norma	3.33	
-normal	5.01	j:A2:j
+normal	5.01	j:A2:j:A1:tanidik:normal
 normalize	3.00	
 normalized	3.27	
 normally	4.57	r:B1:j
@@ -18538,7 +18539,7 @@ nose	4.51	n:A1:j
 nosed	3.14	
 noses	3.45	
 nostalgia	3.62	n:C2:o
-nostalgic	3.45	j:C2:o
+nostalgic	3.45	j:C2:o:C1:tanidik:nostaljik
 nostalgically	2.11	r:C2:o
 nostril	2.77	n:B2:j
 nostrils	3.10	
@@ -18760,7 +18761,7 @@ observing	3.75
 obsess	2.90	v:B2:j
 obsessed	4.08	
 obsession	3.90	n:B2:j
-obsessive	3.43	j:B2:j
+obsessive	3.43	j:B2:j:B1:tanidik:obsesif
 obsolete	3.65	
 obstacle	3.72	n:B1:j
 obstacles	3.88	
@@ -18911,7 +18912,7 @@ olympia	3.26	n:B2:j
 olympiad	2.60	n:B2:j
 olympian	3.29	
 olympians	3.00	
-olympic	4.49	j:A2:j
+olympic	4.49	j:A2:j:A1:tanidik:olimpik
 olympics	4.45	n:A1:j
 olympus	3.25	
 om	3.55	
@@ -18946,7 +18947,7 @@ ong	3.08
 ongoing	4.32	
 onion	3.89	n:A2:j
 onions	3.78	
-online	5.19	j:A2:j|r:A2:j
+online	5.19	j:A2:j:A1:tanidik:online|r:A2:j:A1:tanidik:online
 only	6.12	j:A1:j|r:A1:j
 ono	3.16	
 ons	3.56	
@@ -18984,7 +18985,7 @@ operate	4.50	v:A2:j
 operated	4.35	
 operates	4.13	
 operating	4.75	
-operation	4.92	n:B1:j
+operation	4.92	n:B1:j:A2:tanidik:operasyon
 operational	4.21	
 operations	4.87	
 operative	3.86	
@@ -19031,7 +19032,7 @@ optimizing	3.01
 optimum	3.54	
 optimus	3.00	
 opting	3.29	
-option	4.80	n:B1:j
+option	4.80	n:B1:j:A2:tanidik:opsiyon
 optional	3.91	j:B2:j
 options	4.71	
 opulence	2.69	n:C2:o
@@ -19054,7 +19055,7 @@ orbits	3.30
 orc	3.01	
 orchard	3.57	n:C1:o
 orchards	3.16	
-orchestra	4.01	n:B1:j
+orchestra	4.01	n:B1:j:A2:tanidik:orkestra
 orchestral	3.26	j:B2:j
 orchestrated	3.28	
 orchid	3.30	n:B2:j
@@ -19077,10 +19078,10 @@ ordnance	3.37
 ore	4.10	n:C2:o
 oregon	4.30	
 org	3.55	
-organ	4.14	n:B1:j
-organic	4.40	j:B1:j
+organ	4.14	n:B1:j:A2:tanidik:organ
+organic	4.40	j:B1:j:A2:tanidik:organik
 organically	3.03	
-organisation	4.36	n:B1:j
+organisation	4.36	n:B1:j:A2:tanidik:organizasyon
 organisational	3.20	
 organisations	4.16	
 organise	3.50	v:A2:j
@@ -19088,13 +19089,13 @@ organised	4.08	j:A2:j
 organiser	3.11	n:B2:j
 organisers	3.21	
 organising	3.49	
-organism	3.59	n:B1:j
+organism	3.59	n:B1:j:A2:tanidik:organizma
 organisms	3.80	
 organization	4.92	n:B1:j
 organization's	3.41	
 organizational	3.83	j:C1:o
 organizations	4.67	
-organize	3.98	v:A2:j
+organize	3.98	v:A2:j:A1:tanidik:organize
 organized	4.51	j:A2:j
 organizer	3.57	n:B2:j
 organizers	3.63	
@@ -19109,7 +19110,7 @@ oriental	3.73
 orientation	4.05	
 oriented	4.12	
 origin	4.55	n:B1:j
-original	5.16	j:A2:j|n:B2:j
+original	5.16	j:A2:j:A1:tanidik:orijinal|n:B2:j:B1:tanidik:orijinal
 originality	3.34	n:B2:j
 originally	4.69	r:B2:j
 originals	3.53	
@@ -19367,13 +19368,13 @@ oxfordshire	3.20
 oxidation	3.39	
 oxidative	3.07	
 oxide	3.66	
-oxygen	4.25	n:B1:j
+oxygen	4.25	n:B1:j:A2:tanidik:oksijen
 oy	3.11	
 oyster	3.54	
 oysters	3.34	
 oz	4.01	
 ozil	3.09	
-ozone	3.42	n:B2:j
+ozone	3.42	n:B2:j:B1:tanidik:ozon
 ozzy	3.06	
 p	5.13	
 p.m.		r:A1:j
@@ -19384,7 +19385,7 @@ pace	4.38	n:B1:j|v:C1:o
 paced	3.56	
 pacers	3.31	
 paces	3.17	
-pacific	4.59	j:A2:j
+pacific	4.59	j:A2:j:A1:tanidik:pasifik
 pacifist	3.07	
 pacing	3.35	
 pack	4.66	n:A2:j|v:A2:j
@@ -19396,7 +19397,7 @@ packard	3.28
 packed	4.31	j:B2:j
 packer	3.26	
 packers	3.78	
-packet	3.77	n:B2:j
+packet	3.77	n:B2:j:B1:tanidik:paket
 packets	3.52	
 packing	4.06	n:B1:j
 packs	3.94	
@@ -19463,7 +19464,7 @@ palestinians	3.75
 palette	3.74	
 palin	3.29	
 palladium	3.17	
-pallet	3.12	n:B2:j
+pallet	3.12	n:B2:j:B1:tanidik:palet
 palliative	3.10	
 palm	4.23	n:B1:j
 palmer	4.02	
@@ -19488,15 +19489,15 @@ pandas	3.14
 pandemic	3.68	j:B2:j
 pandora	3.40	
 pane	3.09	
-panel	4.55	n:B2:j
+panel	4.55	n:B2:j:B1:tanidik:panel
 panels	4.06	
 pang	3.11	
-panic	4.26	n:A2:j|v:B2:j
+panic	4.26	n:A2:j:A1:tanidik:panik|v:B2:j:B1:tanidik:panik
 panicked	3.40	
 panicking	3.22	
 panned	3.02	
-panorama	3.39	n:C1:o
-panoramic	3.21	j:C1:o
+panorama	3.39	n:C1:o:B2:tanidik:panorama
+panoramic	3.21	j:C1:o:B2:tanidik:panoramik
 pans	3.48	
 pant	3.18	
 pantheon	3.22	
@@ -19513,7 +19514,7 @@ papa	3.91
 papacy	3.02	
 papal	3.40	
 paparazzi	3.21	
-papaya	2.87	n:B2:j
+papaya	2.87	n:B2:j:B1:tanidik:papaya
 paper	5.07	n:A1:j
 paperback	3.62	
 paperless	2.43	j:B2:j
@@ -19529,7 +19530,7 @@ parade	4.16	n:B2:j
 parades	3.29	
 paradigm	3.61	
 paradise	4.16	n:B1:j
-paradox	3.63	n:B2:j
+paradox	3.63	n:B2:j:B1:tanidik:paradoks
 paradoxical	2.88	j:C2:o
 paradoxically	2.94	r:C2:o
 paragon	3.05	
@@ -19666,7 +19667,7 @@ passion	4.44	n:B1:j
 passionate	4.09	j:B2:j
 passionately	3.33	r:B2:j
 passions	3.58	
-passive	4.03	j:B1:j
+passive	4.03	j:B1:j:A2:tanidik:pasif
 passively	3.01	
 passover	3.18	
 passport	4.05	n:B1:j
@@ -19843,7 +19844,7 @@ peck	3.46
 peculiar	3.67	j:B1:j
 pedagogical	3.07	
 pedagogy	3.12	
-pedal	3.64	n:B2:j
+pedal	3.64	n:B2:j:B1:tanidik:pedal
 pedals	3.23	
 pedantic	2.66	j:B2:j
 peddling	3.01	
@@ -19853,7 +19854,7 @@ pedestrians	3.44
 pediatric	3.53	
 pediatrician	3.07	
 pediatrics	3.29	
-pedicure	2.71	n:C1:o
+pedicure	2.71	n:C1:o:B2:tanidik:pedikür
 pedigree	3.35	
 pedophile	3.30	
 pedophiles	3.03	
@@ -19912,7 +19913,7 @@ penfriend		n:A2:j
 peng	3.21	
 penguin	3.78	n:B2:j
 penguins	3.67	
-penicillin	3.04	n:B2:j
+penicillin	3.04	n:B2:j:B1:tanidik:penisilin
 peninsula	4.03	n:C1:o
 penis	4.05	
 penitentiary	3.18	
@@ -19927,7 +19928,7 @@ pensacola	3.06
 pension	4.22	n:B2:j
 pensioners	3.17	
 pensions	3.80	
-pentagon	3.70	n:B2:j
+pentagon	3.70	n:B2:j:B1:tanidik:pentagon
 penthouse	3.31	
 penultimate	3.09	
 people	6.25	n:A1:j
@@ -20048,9 +20049,9 @@ personalized	3.53
 personally	4.57	r:B1:j
 personification	2.82	n:B2:j|n:C1:o
 personify	2.21	v:B2:j
-personnel	4.56	n:B2:j
+personnel	4.56	n:B2:j:B1:tanidik:personel
 persons	4.43	
-perspective	4.56	n:B2:j
+perspective	4.56	n:B2:j:B1:tanidik:perspektif
 perspectives	3.89	
 perspiration	2.68	n:B2:j
 persuade	3.82	v:B1:j
@@ -20174,8 +20175,8 @@ phony	3.35
 phosphate	3.42	
 phosphorus	3.25	
 photo	4.97	n:A1:j
-photocopy	2.70	n:B1:j
-photograph	4.23	n:A2:j|v:B2:j
+photocopy	2.70	n:B1:j:A2:tanidik:fotokopi
+photograph	4.23	n:A2:j:A1:tanidik:fotograf|v:B2:j:B1:tanidik:fotograf
 photographed	3.72	
 photographer	4.28	n:A2:j
 photographers	3.83	
@@ -20278,7 +20279,7 @@ pillow	3.96	n:B1:j
 pillowcase	2.55	n:B2:j
 pillows	3.50	
 pills	4.05	
-pilot	4.52	n:A2:j
+pilot	4.52	n:A2:j:A1:tanidik:pilot
 pilot's	3.06	
 piloted	3.03	
 piloting	3.02	
@@ -20411,14 +20412,14 @@ plaques	3.18
 plasma	3.95	
 plaster	3.53	n:C1:o|v:C1:o
 plastered	3.18	
-plastic	4.51	j:A2:j|n:B1:j
+plastic	4.51	j:A2:j:A1:tanidik:plastik|n:B1:j:A2:tanidik:plastik
 plastics	3.58	
 plat	3.10	
 plate	4.55	n:A2:j
 plateau	3.61	
 plated	3.45	
 plates	4.22	
-platform	4.67	n:B1:j
+platform	4.67	n:B1:j:A2:tanidik:platform
 platforms	4.19	
 plating	3.14	
 platinum	4.02	
@@ -20578,7 +20579,7 @@ polarization	3.26
 polarized	3.30	
 pole	4.23	n:B1:j
 poles	3.88	
-police	5.33	n:A2:j
+police	5.33	n:A2:j:A1:tanidik:polis
 police officer		n:A2:j
 police station		n:A2:j
 policeman	3.74	n:A2:j
@@ -20595,12 +20596,12 @@ polishing	3.28
 polite	3.92	j:A2:j
 politely	3.47	r:B1:j
 politeness	2.93	n:B2:j
-political	5.29	j:A2:j
+political	5.29	j:A2:j:A1:tanidik:politik
 politically	4.06	r:B2:j
 politician	4.16	n:B1:j
 politicians	4.54	
 politico	3.16	
-politics	4.87	n:B1:j
+politics	4.87	n:B1:j:A2:tanidik:politik
 polity	2.88	n:B2:j
 polk	3.23	
 polka	3.20	
@@ -20704,7 +20705,7 @@ porten	1.11	n:C2:o
 porter	3.98	
 portfolio	4.15	
 portfolios	3.36	
-portion	4.53	n:B2:j
+portion	4.53	n:B2:j:B1:tanidik:porsiyon
 portions	3.98	
 portland	4.18	
 portman	3.06	
@@ -21159,7 +21160,7 @@ problematic	3.87
 problems	5.19	
 proc	3.21	
 procedural	3.51	j:C2:o|n:C2:o
-procedure	4.44	n:B2:j
+procedure	4.44	n:B2:j:B1:tanidik:prosedür
 procedures	4.36	
 proceed	4.18	v:B1:j
 proceeded	3.87	
@@ -21191,7 +21192,7 @@ producers	4.34
 produces	4.19	
 producing	4.45	
 product	4.95	n:A2:j
-production	5.14	n:A2:j
+production	5.14	n:A2:j:A1:tanidik:prodüksiyon
 productions	3.92	
 productive	4.22	j:B1:j
 productivity	4.15	
@@ -21206,11 +21207,11 @@ professionalism	3.40	n:C1:o
 professionally	3.76	
 professionals	4.24	
 professions	3.53	
-professor	4.90	n:B1:j
+professor	4.90	n:B1:j:A2:tanidik:profesör
 professors	3.92	
 proficiency	3.43	
 proficient	3.29	
-profile	4.82	n:B2:j
+profile	4.82	n:B2:j:B1:tanidik:profil
 profiled	3.03	
 profiles	3.89	
 profiling	3.34	
@@ -21224,10 +21225,10 @@ prog	3.15
 progeny	3.00	
 progesterone	3.01	
 prognosis	3.33	
-program	5.27	n:A1:j|v:B1:j
+program	5.27	n:A1:j|v:B1:j:A2:tanidik:program
 program's	3.18	
 programmable	3.03	
-programme	4.57	n:A1:j|v:B1:j
+programme	4.57	n:A1:j|v:B1:j:A2:tanidik:program
 programmed	3.71	
 programmer	3.56	n:B2:j
 programmers	3.45	
@@ -21255,7 +21256,7 @@ projected	3.99
 projectile	3.26	
 projectiles	3.07	
 projecting	3.58	
-projection	3.79	n:B2:j
+projection	3.79	n:B2:j:B1:tanidik:projeksiyon
 projections	3.71	
 projector	3.41	
 projects	4.81	
@@ -21424,10 +21425,10 @@ proving	4.00
 provision	4.14	n:B2:j
 provisional	3.66	
 provisions	4.12	n:C1:o
-provocation	3.19	n:C2:o
-provocative	3.44	j:C1:o
+provocation	3.19	n:C2:o:C1:tanidik:provokasyon
+provocative	3.44	j:C1:o:B2:tanidik:provokatif
 provocatively	2.40	r:C1:o
-provoke	3.50	v:C1:o
+provoke	3.50	v:C1:o:B2:tanidik:provoke
 provoked	3.51	
 provoking	3.47	
 provost	3.15	
@@ -21472,7 +21473,7 @@ psychological	4.27	j:B1:j
 psychologically	3.35	r:B2:j
 psychologist	3.80	n:A2:j
 psychologists	3.56	
-psychology	4.31	n:B2:j
+psychology	4.31	n:B2:j:B1:tanidik:psikoloji
 psychopath	3.32	
 psychosis	3.24	
 psychotherapy	3.25	
@@ -21505,7 +21506,7 @@ publishes	3.55
 publishing	4.37	
 pubs	3.56	
 puck	3.63	
-pudding	3.61	n:B2:j
+pudding	3.61	n:B2:j:B1:tanidik:puding
 puddle	3.26	
 pueblo	3.23	
 puerto	4.04	
@@ -21783,11 +21784,11 @@ racist	4.42	n:B2:j
 racists	3.43	
 rack	3.90	n:B2:j
 racked	3.03	
-racket	3.33	n:A2:j
+racket	3.33	n:A2:j:A1:tanidik:raket
 racking	3.15	
 racks	3.37	
 rad	3.50	
-radar	4.20	n:B2:j
+radar	4.20	n:B2:j:B1:tanidik:radar
 radcliffe	3.25	
 radial	3.45	
 radiance	3.04	
@@ -21796,7 +21797,7 @@ radiate	2.96	v:B2:j
 radiating	3.03	
 radiation	4.27	n:B1:j
 radiator	3.34	n:C1:o
-radical	4.33	n:B2:j
+radical	4.33	n:B2:j:B1:tanidik:radikal
 radically	3.54	r:B2:j
 radicals	3.50	
 radio	5.01	n:A1:j
@@ -22007,7 +22008,7 @@ reaching	4.46
 react	4.16	v:B1:j
 reacted	3.64	
 reacting	3.62	
-reaction	4.73	n:B2:j
+reaction	4.73	n:B2:j:B1:tanidik:reaksiyon
 reactionary	3.22	
 reactions	4.24	
 reactive	3.54	
@@ -22036,11 +22037,11 @@ realised	4.08
 realises	3.16	
 realising	3.41	
 realism	3.69	n:C1:o
-realist	3.26	n:C1:o
+realist	3.26	n:C1:o:B2:tanidik:realist
 realistic	4.16	j:B1:j
 realistically	3.33	
 realities	3.67	
-reality	4.89	n:B1:j
+reality	4.89	n:B1:j:A2:tanidik:realite
 realization	3.72	n:B2:j
 realize	4.83	v:A2:j
 realized	4.59	
@@ -22103,7 +22104,7 @@ receives	4.19
 receiving	4.59	
 recent	5.04	j:A2:j
 recently	5.02	r:A2:j
-reception	4.23	n:B1:j
+reception	4.23	n:B1:j:A2:tanidik:resepsiyon
 receptionist	3.26	n:A2:j
 receptions	3.16	
 receptive	3.32	
@@ -22188,7 +22189,7 @@ recovery	4.58	n:B1:j
 recreate	3.52	
 recreated	3.15	
 recreating	3.01	
-recreation	4.04	n:B2:j
+recreation	4.04	n:B2:j:B1:tanidik:rekreasyon
 recreational	3.91	
 recruit	3.89	v:B2:j
 recruited	3.81	
@@ -22292,7 +22293,7 @@ reflector	3.00
 reflects	4.11	
 reflex	3.44	
 reflexes	3.24	
-reform	4.53	n:B2:j
+reform	4.53	n:B2:j:B1:tanidik:reform
 reformation	3.53	
 reformed	3.61	
 reformer	3.13	
@@ -22344,7 +22345,7 @@ regent	3.45
 regents	3.28	
 reggae	3.47	n:B2:j
 reggie	3.55	
-regime	4.30	n:B2:j
+regime	4.30	n:B2:j:B1:tanidik:rejim
 regimen	3.29	
 regiment	3.93	
 regimental	3.00	
@@ -22824,9 +22825,9 @@ rested	3.59
 resting	3.89	
 restitution	3.19	
 restless	3.60	
-restoration	4.11	n:C1:o
+restoration	4.11	n:C1:o:B2:tanidik:restorasyon
 restorative	2.96	j:C1:o
-restore	4.18	v:B1:j
+restore	4.18	v:B1:j:A2:tanidik:restore
 restored	4.12	
 restores	3.05	
 restoring	3.72	
@@ -22882,7 +22883,7 @@ retell	2.24	v:B1:j
 retention	3.81	n:C1:o
 rethink	3.47	
 rethinking	3.12	
-retina	3.40	n:B2:j
+retina	3.40	n:B2:j:B1:tanidik:retina
 retinal	3.13	
 retire	4.05	v:A2:j
 retired	4.44	j:A2:j
@@ -22960,7 +22961,7 @@ revile	1.98	v:C2:o
 revise	3.48	v:B1:j
 revised	4.14	
 revising	3.18	
-revision	3.82	n:B1:j
+revision	3.82	n:B1:j:A2:tanidik:revizyon
 revisions	3.45	
 revisit	3.36	
 revisited	3.25	
@@ -23193,7 +23194,7 @@ robin	4.33	n:A2:j
 robins	3.07	
 robinson	4.21	
 robo	3.09	
-robot	4.24	n:B1:j
+robot	4.24	n:B1:j:A2:tanidik:robot
 robotic	3.54	
 robotics	3.53	
 robots	3.99	
@@ -23212,7 +23213,7 @@ rocked	3.53
 rockefeller	3.44	
 rocker	3.34	
 rockers	3.10	
-rocket	4.31	n:B2:j
+rocket	4.31	n:B2:j:B1:tanidik:roket
 rockets	3.99	
 rockford	3.16	
 rockies	3.39	
@@ -23265,7 +23266,7 @@ romania	3.78
 romanian	3.58	
 romano	3.07	
 romans	3.92	
-romantic	4.43	j:A2:j
+romantic	4.43	j:A2:j:A1:tanidik:romantik
 romantically	3.09	
 rome	4.45	
 romeo	3.71	
@@ -23362,7 +23363,7 @@ routed	3.31
 router	3.50	
 routers	3.00	
 routes	4.19	
-routine	4.37	n:B1:j
+routine	4.37	n:B1:j:A2:tanidik:rutin
 routinely	3.71	
 routines	3.50	
 routing	3.55	
@@ -23545,7 +23546,7 @@ sadly	4.18	r:A2:j
 sadness	3.88	n:B1:j
 sae	3.06	
 saeed	3.04	
-safari	3.63	n:B1:j
+safari	3.63	n:B1:j:A2:tanidik:safari
 safe	5.07	j:A2:j
 safeguard	3.55	n:B1:j|v:B2:j
 safeguarding	3.23	
@@ -23607,7 +23608,7 @@ salmonella	3.09
 salon	3.87	n:B2:j
 salons	3.02	
 saloon	3.43	n:C1:o
-salsa	3.53	n:B2:j
+salsa	3.53	n:B2:j:B1:tanidik:salsa
 salt	4.60	n:A2:j
 salted	3.28	
 salts	3.41	
@@ -23729,7 +23730,7 @@ sauces	3.19
 saudi	4.31	
 saudis	3.16	
 saul	3.65	
-sauna	3.25	n:C1:o
+sauna	3.25	n:C1:o:B2:tanidik:sauna
 saunders	3.63	
 sausage	3.80	n:A2:j
 sausages	3.30	
@@ -23773,7 +23774,7 @@ scam	3.94
 scammers	3.13	
 scams	3.37	
 scan	4.07	n:B1:j|v:B2:j
-scandal	4.17	n:B2:j
+scandal	4.17	n:B2:j:B1:tanidik:skandal
 scandalous	3.28	
 scandals	3.51	
 scandinavia	3.26	
@@ -23888,7 +23889,7 @@ scooters	3.02
 scope	4.26	n:B1:j
 scorched	3.07	
 scorching	3.08	
-score	4.83	n:B1:j|v:B1:j
+score	4.83	n:B1:j:A2:tanidik:skor|v:B1:j:A2:tanidik:skor
 scoreboard	3.21	
 scored	4.63	
 scoreless	3.12	
@@ -24057,7 +24058,7 @@ sectarian	3.27
 section	5.00	n:A1:j
 sectional	3.44	
 sections	4.36	
-sector	4.66	n:B2:j
+sector	4.66	n:B2:j:B1:tanidik:sektör
 sectors	4.07	
 sects	3.14	
 secular	3.95	j:C2:o
@@ -24174,7 +24175,7 @@ semitic	3.58
 semitism	3.45	
 sen	4.01	
 senate	4.80	
-senator	4.58	n:B2:j
+senator	4.58	n:B2:j:B1:tanidik:senatör
 senators	4.10	
 send	5.11	v:A2:j
 sender	3.21	
@@ -24272,7 +24273,7 @@ served	4.81
 server	4.46	n:B1:j
 servers	4.05	
 serves	4.39	
-service	5.49	n:B1:j|v:B1:j
+service	5.49	n:B1:j:A2:tanidik:servis|v:B1:j:A2:tanidik:servis
 serviced	3.26	
 servicemen	3.22	
 services	5.31	
@@ -24473,7 +24474,7 @@ shepherd	3.90
 shepherds	3.22	
 sheppard	3.31	
 sheridan	3.47	
-sheriff	4.16	n:B1:j
+sheriff	4.16	n:B1:j:A2:tanidik:şerif
 sheriff's	3.60	
 sheriffs	3.14	
 sherlock	3.73	
@@ -25025,7 +25026,7 @@ sliver	2.99	n:B2:j
 sloan	3.44	
 sloane	3.23	
 slob	2.77	n:C1:o
-slogan	3.72	n:B1:j
+slogan	3.72	n:B1:j:A2:tanidik:slogan
 slogans	3.33	
 slope	3.90	n:B1:j
 slopes	3.79	
@@ -25510,7 +25511,7 @@ specials	3.66
 specialties	3.31	
 specialty	3.89	n:B2:j
 species	4.85	n:B2:j
-specific	5.03	j:A2:j
+specific	5.03	j:A2:j:A1:tanidik:spesifik
 specifically	4.65	r:B2:j
 specification	3.75	n:C1:o
 specifications	3.95	
@@ -25539,8 +25540,8 @@ spectrum	4.26
 speculate	3.48	v:C1:o
 speculated	3.37	
 speculating	3.07	
-speculation	3.99	n:C1:o
-speculative	3.51	j:C1:o
+speculation	3.99	n:C1:o:B2:tanidik:spekülasyon
+speculative	3.51	j:C1:o:B2:tanidik:spekülatif
 sped	3.26	
 speech	4.85	n:A1:j
 speeches	3.93	
@@ -25599,7 +25600,7 @@ spinners	3.08
 spinning	3.98	
 spinoff	3.16	
 spins	3.51	
-spiral	3.85	j:B1:j
+spiral	3.85	j:B1:j:A2:tanidik:spiral
 spire	3.11	n:C2:o
 spirit	4.79	n:B1:j
 spirited	3.55	
@@ -25639,7 +25640,7 @@ spokeswoman	3.12	n:B2:j
 sponge	3.59	n:B1:j
 spongebob	3.23	
 sponges	3.07	
-sponsor	4.04	n:B1:j|v:B2:j
+sponsor	4.04	n:B1:j:A2:tanidik:sponsor|v:B2:j:B1:tanidik:sponsor
 sponsored	4.23	
 sponsoring	3.40	
 sponsors	3.91	
@@ -25756,7 +25757,7 @@ stabbing	3.58
 stabilise	2.70	v:C2:o
 stability	4.31	n:B2:j
 stabilization	3.30	
-stabilize	3.46	v:C2:o
+stabilize	3.46	v:C2:o:C1:tanidik:stabilize
 stabilized	3.32	
 stabilizing	3.12	
 stable	4.48	j:B1:j
@@ -26042,7 +26043,7 @@ stitched	3.22
 stitches	3.58	
 stitching	3.12	
 stochastic	3.11	
-stock	4.93	n:B2:j|v:C1:o
+stock	4.93	n:B2:j:B1:tanidik:stok|v:C1:o:B2:tanidik:stok
 stock market		n:B2:j
 stocked	3.44	
 stockholders	3.10	
@@ -26132,11 +26133,11 @@ strapping	2.89	j:C1:o
 straps	3.42	
 strasbourg	3.18	
 strata	3.25	
-strategic	4.43	j:B1:j
+strategic	4.43	j:B1:j:A2:tanidik:stratejik
 strategically	3.45	
 strategies	4.29	
 strategist	3.26	
-strategy	4.74	n:A2:j
+strategy	4.74	n:A2:j:A1:tanidik:strateji
 stratford	3.34	
 stratosphere	2.90	n:C2:o
 stratton	3.11	
@@ -26166,7 +26167,7 @@ strengthening	3.82
 strengthens	3.28	
 strengths	3.83	
 strenuous	3.12	
-stress	4.73	n:B1:j|v:B2:j
+stress	4.73	n:B1:j:A2:tanidik:stres|v:B2:j:B1:tanidik:stres
 stressed	4.18	j:B1:j
 stresses	3.62	
 stressful	3.88	j:B1:j
@@ -26281,7 +26282,7 @@ sturgeon	3.34
 sturridge	3.00	
 stuttering	3.10	
 stuttgart	3.20	
-style	5.11	n:A2:j
+style	5.11	n:A2:j:A1:tanidik:stil
 styled	3.63	
 styles	4.38	
 styling	3.48	
@@ -26455,11 +26456,11 @@ suitor	2.98	n:C1:o
 suits	4.25	
 suk	3.02	
 sulfate	3.19	
-sulfur	3.43	n:B2:j
+sulfur	3.43	n:B2:j:B1:tanidik:sülfür
 sullivan	3.93	
 sully	3.11	
-sulphur	3.18	n:B2:j|n:C2:o
-sulphuric	2.36	j:C2:o
+sulphur	3.18	n:B2:j:B1:tanidik:sülfür|n:C2:o:C1:tanidik:sülfür
+sulphuric	2.36	j:C2:o:C1:tanidik:sülfürik
 sultan	3.64	
 sum	4.34	n:A1:j
 sumatra	3.03	
@@ -26539,7 +26540,7 @@ superpower	3.22
 superpowers	3.14	
 superseded	3.17	
 supersonic	3.15	
-superstar	3.83	n:A2:j
+superstar	3.83	n:A2:j:A1:tanidik:süperstar
 superstars	3.30	
 superstition	3.21	n:B1:j
 superstitious	3.14	
@@ -26837,9 +26838,9 @@ syrian	4.14
 syrians	3.14	
 syringe	3.27	
 syrup	3.76	
-system	5.56	n:A2:j
+system	5.56	n:A2:j:A1:tanidik:sistem
 system's	3.34	
-systematic	3.87	j:B1:j
+systematic	3.87	j:B1:j:A2:tanidik:sistematik
 systematically	3.52	
 systemic	3.74	
 systems	5.07	
@@ -26855,7 +26856,7 @@ tablecloth	2.69	n:B2:j
 tables	4.29	
 tablespoon	3.15	n:A2:j
 tablespoons	3.18	
-tablet	4.05	n:B1:j
+tablet	4.05	n:B1:j:A2:tanidik:tablet
 tabletop	3.10	
 tablets	3.91	
 tabloid	3.25	j:B2:j|n:B2:j
@@ -26878,8 +26879,8 @@ tacos	3.43
 tact	3.08	n:C1:o
 tactful	2.59	j:C1:o
 tactfully	2.36	r:C1:o
-tactic	3.71	n:C2:o
-tactical	3.97	j:C2:o
+tactic	3.71	n:C2:o:C1:tanidik:taktik
+tactical	3.97	j:C2:o:C1:tanidik:taktik
 tactically	2.88	r:C2:o
 tactics	4.17	
 tactile	3.10	j:B2:j|j:C2:o
@@ -27087,7 +27088,7 @@ teasing	3.55
 teaspoon	3.30	n:B2:j
 tec	3.01	
 tech	4.69	
-technical	4.75	j:B2:j
+technical	4.75	j:B2:j:B1:tanidik:teknik
 technically	4.10	r:B2:j
 technician	3.70	
 technicians	3.57	
@@ -27123,12 +27124,12 @@ telecast	3.07
 telecom	3.58	
 telecommunication	3.16	
 telecommunications	3.83	n:B1:j
-telegram	3.55	n:B1:j
+telegram	3.55	n:B1:j:A2:tanidik:telegram
 telegraph	4.00	
 telemetry	3.00	
-telephone	4.41	n:A1:j|v:A2:j
+telephone	4.41	n:A1:j|v:A2:j:A1:tanidik:telefon
 telephones	3.18	
-telescope	3.75	n:B2:j
+telescope	3.75	n:B2:j:B1:tanidik:teleskop
 telescopes	3.23	
 telescopic	2.78	j:C2:o
 telescopically	1.27	r:C2:o
@@ -27217,7 +27218,7 @@ terence	3.20
 teresa	3.71	
 term	5.23	n:B1:j
 termed	3.62	
-terminal	4.31	n:B1:j
+terminal	4.31	n:B1:j:A2:tanidik:terminal
 terminally	3.03	
 terminals	3.61	
 terminate	3.65	
@@ -27247,9 +27248,9 @@ terrifying	3.95	j:B2:j
 territorial	3.91	
 territories	4.02	
 territory	4.60	n:B2:j
-terror	4.26	n:B1:j
-terrorism	4.24	n:B1:j
-terrorist	4.35	j:A2:j|n:B1:j
+terror	4.26	n:B1:j:A2:tanidik:terör
+terrorism	4.24	n:B1:j:A2:tanidik:terörizm
+terrorist	4.35	j:A2:j:A1:tanidik:terörist|n:B1:j:A2:tanidik:terörist
 terrorists	4.20	
 terry	4.24	
 tertiary	3.53	
@@ -27347,14 +27348,14 @@ theoretically	3.64
 theories	4.22	
 theorist	3.16	n:B2:j
 theorists	3.42	
-theory	4.88	n:B1:j
+theory	4.88	n:B1:j:A2:tanidik:teori
 ther	3.10	
 therapeutic	3.85	
 therapeutics	3.20	
 therapies	3.49	
-therapist	3.97	n:B2:j
+therapist	3.97	n:B2:j:B1:tanidik:terapist
 therapists	3.43	
-therapy	4.52	n:B2:j
+therapy	4.52	n:B2:j:B1:tanidik:terapi
 there	6.31	r:A1:j
 there'd	3.29	
 there'll	3.42	
@@ -27804,8 +27805,8 @@ tour	4.99	n:A2:j|v:B1:j
 tour guide		n:A2:j
 toured	3.40	
 touring	3.89	
-tourism	4.28	n:B1:j
-tourist	4.20	n:A2:j
+tourism	4.28	n:B1:j:A2:tanidik:turizm
+tourist	4.20	n:A2:j:A1:tanidik:turist
 tourists	4.06	
 tournament	4.56	n:B1:j
 tournaments	3.84	
@@ -27831,7 +27832,7 @@ townsend	3.51
 township	3.98	
 townships	3.23	
 townsville	3.03	
-toxic	4.24	j:B2:j
+toxic	4.24	j:B2:j:B1:tanidik:toksik
 toxicity	3.58	
 toxicology	3.13	
 toxin	3.30	
@@ -27875,7 +27876,7 @@ traditional	4.84	j:A2:j
 traditionally	4.06	r:B1:j
 traditions	4.10	
 trafalgar	3.02	
-traffic	4.85	n:A2:j
+traffic	4.85	n:A2:j:A1:tanidik:trafik
 traffic jam		n:B1:j
 traffic light		n:A2:j
 trafficked	3.07	
@@ -27883,8 +27884,8 @@ traffickers	3.01
 trafficking	3.90	
 trafford	3.35	
 tragedies	3.29	
-tragedy	4.14	n:B1:j
-tragic	4.08	j:B1:j
+tragedy	4.14	n:B1:j:A2:tanidik:trajedi
+tragic	4.08	j:B1:j:A2:tanidik:trajik
 tragically	3.26	
 trail	4.45	n:B1:j|v:B2:j
 trailed	3.12	
@@ -27928,7 +27929,7 @@ transcribed	3.16
 transcript	3.70	n:B2:j
 transcription	3.54	
 transcripts	3.41	
-transfer	4.72	n:B2:j|v:B1:j
+transfer	4.72	n:B2:j:B1:tanidik:transfer|v:B1:j:A2:tanidik:transfer
 transferable	3.06	
 transferred	4.36	
 transferring	3.74	
@@ -27949,7 +27950,7 @@ transgender	3.91
 transient	3.37	j:B2:j
 transistor	3.21	n:B2:j
 transistors	3.06	
-transit	4.20	n:C1:o
+transit	4.20	n:C1:o:B2:tanidik:transit
 transition	4.46	n:B2:j
 transitional	3.64	j:B1:j
 transitioned	3.09	
@@ -28050,7 +28051,7 @@ tremendously	3.41	r:B2:j
 tremor	3.05	n:B2:j
 trench	3.70	
 trenches	3.51	
-trend	4.51	n:B1:j
+trend	4.51	n:B1:j:A2:tanidik:trend
 trending	3.62	
 trends	4.32	
 trendy	3.47	
@@ -28135,8 +28136,8 @@ trope	3.10
 tropes	3.01	
 trophies	3.67	
 trophy	4.17	n:B2:j
-tropic	2.83	j:B2:j
-tropical	4.18	j:B1:j
+tropic	2.83	j:B2:j:B1:tanidik:tropik
+tropical	4.18	j:B1:j:A2:tanidik:tropik
 tropics	3.16	
 trot	3.21	
 trouble	4.79	n:A2:j|v:B1:j
@@ -28222,7 +28223,7 @@ tumbled	3.01
 tumbling	3.24	
 tumblr	3.74	
 tummy	3.43	
-tumor	3.97	n:B2:j
+tumor	3.97	n:B2:j:B1:tanidik:tümör
 tumors	3.62	
 tumour	3.39	n:B2:j
 tumours	3.10	
@@ -28239,7 +28240,7 @@ tuning	3.67
 tunis	3.00	
 tunisia	3.57	
 tunisian	3.20	
-tunnel	4.24	n:B2:j
+tunnel	4.24	n:B2:j:B1:tanidik:tünel
 tunnels	3.82	
 turbine	3.63	
 turbines	3.52	
@@ -28333,7 +28334,7 @@ types	4.85
 typewriter	3.26	
 typhoid	2.94	n:B2:j
 typhoon	3.59	
-typical	4.59	j:B1:j
+typical	4.59	j:B1:j:A2:tanidik:tipik
 typically	4.62	r:B1:j
 typing	3.84	
 typo	3.30	
@@ -28654,7 +28655,7 @@ universally	3.63
 universe	4.59	n:B1:j
 universes	3.10	
 universities	4.36	
-university	5.39	n:A2:j
+university	5.39	n:A2:j:A1:tanidik:üniversite
 university's	3.78	
 unix	3.31	
 unjust	3.43	
@@ -28998,7 +28999,7 @@ vampires	3.59
 van	4.78	n:B1:j
 vance	3.44	
 vancouver	4.16	
-vandal	2.79	n:C2:o
+vandal	2.79	n:C2:o:C1:tanidik:vandal
 vandalism	3.33	
 vandalize	2.19	v:C2:o
 vanderbilt	3.27	
@@ -29312,7 +29313,7 @@ virtues	3.48
 virtuosity	2.60	n:C2:o
 virtuoso	2.90	n:C2:o
 virtuous	3.23	
-virus	4.42	n:B1:j
+virus	4.42	n:B1:j:A2:tanidik:virüs
 viruses	3.73	
 vis	3.43	
 vis-a-vis		p:C2:o
@@ -29324,7 +29325,7 @@ viscount	3.16
 visibility	3.78	
 visible	4.39	j:B1:j
 visibly	3.39	r:B2:j
-vision	4.63	n:B1:j
+vision	4.63	n:B1:j:A2:tanidik:vizyon
 visionary	3.42	
 visions	3.76	
 visit	5.04	n:A1:j|v:A1:j
@@ -29343,7 +29344,7 @@ visuals	3.57
 vita	3.52	
 vital	4.38	j:B2:j
 vitality	3.41	n:C1:o
-vitamin	4.01	n:B2:j
+vitamin	4.01	n:B2:j:B1:tanidik:vitamin
 vitamins	3.59	
 vito	3.07	
 vitro	3.42	
@@ -29458,7 +29459,7 @@ wager	3.43
 wages	4.25	
 waging	3.06	
 wagner	3.71	
-wagon	3.90	n:B1:j
+wagon	3.90	n:B1:j:A2:tanidik:vagon
 wagons	3.45	
 wah	3.45	
 wai	3.13	
@@ -30480,7 +30481,7 @@ ze	3.06
 zeal	3.28	
 zealand	4.50	
 zealand's	3.28	
-zebra	3.40	n:B2:j
+zebra	3.40	n:B2:j:B1:tanidik:zebra
 zed	3.02	
 zee	3.16	
 zeke	3.19	

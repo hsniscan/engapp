@@ -21,8 +21,9 @@ A one-off system job (İP6, ADR 0014), not an edge function. It runs with
   6 example words from the frequency list. No user text is ever sent.
 - **Batches.** ${MORPHEME_BATCH} morphemes per request, about 7 requests for the current 133.
   The job uses the system budget, never a user's quota.
-- **Model.** \`GEMINI_MODEL\`, with \`GEMINI_FALLBACK_MODEL\` on quota or overload errors. Both
-  come from the environment only.
+- **Model.** The text provider chain (decision 0077): \`CLAUDE_TEXT_MODEL\` first, booked on the
+  monthly text budget and the system jobs' pool (needs the service-role database), then
+  \`GEMINI_MODEL\` and \`GEMINI_FALLBACK_MODEL\`. Defaults in \`model-defaults.ts\`.
 - **Validation.** \`validateMorphemeAnswer\`:
   - \`meaning_tr\`: at most 40 characters and 6 words;
   - only letters and punctuation are allowed;

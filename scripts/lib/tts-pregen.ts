@@ -25,6 +25,11 @@ export interface PublicRows {
   terms: readonly { lemma: string; lemma_norm: string }[];
   /** lexicon_examples (active): an example sentence is public by its exact text. */
   examples: readonly { text_en: string }[];
+  /**
+   * The word bank's example sentences (word_bank.senses[].example_en of live rows, v0.5.3
+   * decision 0073): a card made from the bank has this as its sentence, so it is voiced too.
+   */
+  bank?: readonly { example_en: string }[];
 }
 
 export interface TextSet {
@@ -64,6 +69,7 @@ export function publicTexts(rows: PublicRows): TextSet {
     if (normalizeTtsText(r.lemma) !== normalizeTtsText(r.lemma_norm)) add(words, r.lemma);
   }
   for (const r of rows.examples) add(sentences, r.text_en);
+  for (const r of rows.bank ?? []) add(sentences, r.example_en);
   add(sentences, TTS_SAMPLE_TEXT);
   for (const w of words) sentences.delete(w); // a one-word "sentence" is already a word
   const texts = [...new Set([...words, ...sentences])].sort();
@@ -72,7 +78,7 @@ export function publicTexts(rows: PublicRows): TextSet {
 
 /**
  * The graded library's sentences (decision 0047): every English sentence of an approved text,
- * normalised, unique, sorted. Read aloud in en-US only; each file is named like any other
+ * normalised, unique, sorted. Read aloud in both accents (v0.5.3); each file is named like any other
  * clip (content-addressed), so a sentence that is also a dictionary example is made once and
  * the reader plays it by the sentence's audio_key.
  */
@@ -100,9 +106,46 @@ export function parseSource(v: string): PregenSource {
   throw new Error('source must be dictionary or graded');
 }
 
-/** The graded library is read in en-US only (plan A.5). */
-export function voicesFor(source: PregenSource, asked: readonly TtsVoice[]): TtsVoice[] {
-  return source === 'graded' ? ['en-US'] : [...asked];
+/**
+ * The accents a run makes. Since v0.5.3 (decision 0073) the graded library is read in both, like
+ * the dictionary, so a reader who chose the British voice hears it there too.
+ */
+export function voicesFor(_source: PregenSource, asked: readonly TtsVoice[]): TtsVoice[] {
+  return [...asked];
+}
+
+// ------------------------------------------------------------------ free-plan guard
+
+/**
+ * Most bytes the audio may take in its bucket (decision 0073). Cloudflare R2 is free up to
+ * 10 GB per account, shared with the database backups (their own guard stops at 8 GB):
+ * 6 GB for audio leaves room for them. Supabase Storage is free up to 1 GB for everything.
+ * AUDIO_MAX_BYTES overrides both.
+ */
+export const DEFAULT_AUDIO_MAX_BYTES = { r2: 6_000_000_000, supabase: 900_000_000 } as const;
+
+export function audioMaxBytes(env: (k: string) => string | undefined, target: 'r2' | 'supabase'): number {
+  const v = Number(env('AUDIO_MAX_BYTES'));
+  return Number.isFinite(v) && v > 0 ? Math.floor(v) : DEFAULT_AUDIO_MAX_BYTES[target];
+}
+
+/**
+ * The jobs that fit in `allowanceBytes` (estimated sizes, in plan order). A run never makes
+ * more than its share of what is left under the guard.
+ */
+export function fitToBytes<J extends Pick<PregenJob, 'text'>>(
+  jobs: readonly J[],
+  allowanceBytes: number,
+): { jobs: J[]; dropped: number } {
+  const out: J[] = [];
+  let used = 0;
+  for (const j of jobs) {
+    const b = estimateBytes(j.text);
+    if (used + b > allowanceBytes) break;
+    used += b;
+    out.push(j);
+  }
+  return { jobs: out, dropped: jobs.length - out.length };
 }
 
 export interface PregenJob {

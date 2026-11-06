@@ -8,7 +8,7 @@ Never paste the database URL, the passphrase or keys into an issue, a chat or a 
 
 | Copy | When | Kept | Key in R2 |
 | --- | --- | --- | --- |
-| daily | every night 02:45 UTC (`.github/workflows/db-backup.yml`) | last 14 | `backups/daily/<stamp>.tar.gz.gpg` |
+| daily | every night 02:45 UTC (`.github/workflows/db-backup.yml`, started by pg_cron, decision 0076) | last 14 | `backups/daily/<stamp>.tar.gz.gpg` |
 | weekly | the Sunday daily copy, again | last 8 | `backups/weekly/…` |
 | pre-migration | every deploy, right before `supabase db push` | last 10 | `backups/pre-migration/…` |
 
@@ -58,12 +58,30 @@ Do it into a **new** Supabase project first; switch the app only when it looks r
 
    (`session_replication_role = replica` keeps triggers such as the sync sequence and the
    quota checks from firing while the rows go back.)
-3. Check: `select count(*) from auth.users;` equals `auth_users` in `MANIFEST`;
-   `select max(server_seq) from public.notes;` is close to production.
-4. Point the app at the new project: `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (Cloudflare
+3. **Always, right after the data** (decision 0075):
+
+   ```sh
+   psql -v ON_ERROR_STOP=1 -c 'select public.sync_after_restore();' -d "$NEW_DB_URL"
+   ```
+
+   It moves the sync sequence (and the dictionary, word bank and library sequences) a billion
+   ahead and gives the database a new "restore epoch". Without it, devices would skip new rows
+   for a while. If the function is missing (a backup from before v0.5.3), run
+   `supabase db push` against the new project first, then this step.
+4. Check: `select count(*) from auth.users;` equals `auth_users` in `MANIFEST`;
+   `select epoch, restored_at from public.sync_epoch;` shows today's time.
+5. Point the app at the new project: `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (Cloudflare
    Pages, Android build), the GitHub variables and secrets of `docs/setup-backend.md` step 4,
    Google sign-in redirect URLs (step 2/3), then run the Supabase workflow once (functions,
-   secrets, push job). Clients keep their outbox; nothing is lost on the devices.
+   secrets, push job).
+
+What happens on the devices: on their next sync they see the new epoch, pull everything again
+and **send back every row the backup is missing** — what they changed after the backup, and what
+they had pulled from other devices since then. Nothing on a device is deleted. So nothing is
+lost as long as one device that synced before the failure opens the app again (with v0.5.3 or
+newer). What can be lost: changes made only on a device that was itself lost or wiped since the
+backup. Restoring an older backup (weekly, pre-migration) works the same way; the devices send
+back more.
 
 Moving `supabase db push` back to an older migration is not possible: restoring the
 pre-migration copy **is** the rollback of a bad migration.
@@ -86,15 +104,37 @@ Never update or delete `review_logs` rows (AGENTS.md); only insert missing ones.
 
 ## 5. When the nightly check fails
 
-The **DB backup** run shows a table of `ops_health()`; a `fail` row turns it red:
+The **Health check** run (`ops-health.yml`, 06:30 UTC) shows a table of `ops_health()` and
+`ops_health_reliability()`; a `fail` row turns it red, and so does the step "Newest backup in
+R2" when the newest daily copy is older than 26 hours (the dead man's switch, decision 0076):
 
 | Check | Meaning | What to do |
 | --- | --- | --- |
+| `backup_age` / "Newest backup in R2" | no good nightly backup for more than 26 hours | open the last **Database backup** run; if there is none, look at `gh_dispatch` |
+| `gh_dispatch` | GitHub refused the job-clock token (expired?) | make a new token and save it as `GH_DISPATCH_TOKEN`, then run **Supabase** (setup step 21) |
+| `client_errors_24h` / `fn_errors_24h` (warn) | many errors in the app / in edge functions | `select * from client_errors where fingerprint = '…' order by id desc;` |
 | `text_budget` 100 % / `text_budget_refusals` | the monthly Claude text budget is used up; AI falls back or refuses | raise `CLAUDE_TEXT_MONTHLY_USD` or wait for the month; look at `text_budget_user_caps` |
 | `job_db-backup` | no good backup for 3 days | open the failed run; usually an expired key or a missing secret |
 | `pg_cron` | a scheduled database job failed | `select * from cron.job_run_details where status = 'failed' order by start_time desc limit 20;` |
-| `db_size` | near the Free plan's 500 MB | purge, or move to a paid plan before writes stop |
+| `db_size` | above 350 MB (warning, e-mails too) or 450 MB (fail) of the Free plan's 500 MB | see "Database space" below |
+| `db_guard` | above 420 MB: new texts and Anki imports wait on the devices; reviews keep syncing | see "Database space" below |
 | `stale_text_holds` (warn) | budget holds the 15-minute job did not release | `select public.text_budget_maintain();` |
+
+### Database space (stay on the Free plan)
+
+1. Look at `top_tables` in the run's table (or `select * from public.ops_storage_health();`):
+   which tables are large.
+2. Free space that holds nothing a user needs:
+   `select public.purge_image_checks(7, 30);` (old picture diagnostics and rejected drawings),
+   `select public.purge_tombstones(7);` (deleted rows older than 7 days; devices offline longer
+   than that do a full resync, which is safe),
+   `delete from cron.job_run_details where end_time < now() - interval '1 day';`.
+3. If one account grows fast, look it up:
+   `select user_id, sum(bytes) from public.sync_usage where day > current_date - 7 group by 1 order by 2 desc limit 5;`
+   and lower its limits for everyone (§6) if needed.
+4. Postgres reuses freed space; the reported size goes down only after a `vacuum full` of the
+   table, which locks it: run it at night on the large table only, e.g.
+   `vacuum full public.lexicon_images;`.
 
 ## 6. Limits and quotas
 
@@ -105,9 +145,12 @@ select * from public.sync_limits;
 update public.sync_limits set value = 4000 where name = 'texts_per_user';
 ```
 
-Names: `push_calls_per_day`, `push_rows_per_day`, `push_bytes_per_day`, `texts_per_user`,
-`text_bytes_per_user`, `image_requests_per_day`. A refused push answers SQLSTATE `53400`; the
-row stays in the device's outbox and goes out when the limit allows.
+Names and Free-plan defaults (decision 0075): `push_calls_per_day` 5,000,
+`push_rows_per_day` 50,000, `push_bytes_per_day` 20 MB, `texts_per_user` 300 (library texts
+do not count), `text_bytes_per_user` 5 MB, `image_requests_per_day`, and `db_guard_bytes`
+420 MB (above it new texts and Anki imports wait). A refused push answers SQLSTATE `53400`;
+the row stays in the device's outbox, the app says in plain words that it waits, and it goes out
+when the limit allows.
 
 AI limits are GitHub variables (`AI_DAILY_LIMIT`, `AI_DAILY_LIMIT_<FEATURE>`,
 `AI_USER_MONTHLY_USD`, `AI_USER_MAX_SHARE`); re-run the Supabase workflow after a change.

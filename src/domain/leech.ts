@@ -11,6 +11,37 @@ import { type Card, CardState, type Id, Rating, type ReviewLog, type Sense } fro
 export const LEECH_LAPSES = 6;
 
 /**
+ * v0.5.3 B5 (docs/decisions/0071): from this many lapses the card is "Zorlanıyor": its back
+ * recommends one rescue path, and its front offers the mnemonic hint. Earlier help works
+ * better than more of the same retrieval.
+ */
+export const STRUGGLING_LAPSES = 3;
+
+/** v0.5.3 B5: a card that becomes a leech rests this long (rest_until), unless the user undoes it. */
+export const LEECH_REST_DAYS = 30;
+export const LEECH_REST_MS = LEECH_REST_DAYS * 86_400_000;
+
+export const isStruggling = (lapses: number): boolean => lapses >= STRUGGLING_LAPSES;
+
+/** The card is resting now (rest_until in the future). */
+export const isResting = (card: { rest_until?: number | null }, now: number): boolean =>
+  card.rest_until != null && now < card.rest_until;
+
+export type RescuePath = 'false_friend' | 'mnemonic' | 'family';
+
+/**
+ * The one rescue path a struggling card's back recommends, from what exists for the word:
+ * a false friend first (the Turkish look-alike is the likeliest cause), then a mnemonic (the
+ * user's own or a suggestion), then the word family. Null when there is none of them.
+ */
+export function pickRescuePath(has: { falseFriend: boolean; mnemonic: boolean; family: boolean }): RescuePath | null {
+  if (has.falseFriend) return 'false_friend';
+  if (has.mnemonic) return 'mnemonic';
+  if (has.family) return 'family';
+  return null;
+}
+
+/**
  * Lapses of a card from its logs: Again answers given while the card was in Review, counted
  * over the answers that still count (undo rows and the answers they cancel removed). This is
  * the FSRS definition, so it equals `card.lapses` after a replay (invariant 3).

@@ -7,7 +7,8 @@ import { HomeScreen } from '@/features/home/HomeScreen';
 import { resetDb } from '@/test/db';
 import { renderRoute } from '@/test/ui';
 import { setAuthStateForTesting } from '@/features/auth/session';
-import { finishOnboarding, setOnboardingStep } from './state';
+import { DECK_ADD_JOB_KEY } from '@/data/deckHub';
+import { finishOnboarding, setOnboardingAdding, setOnboardingStep } from './state';
 
 beforeEach(async () => {
   await resetDb();
@@ -65,6 +66,34 @@ describe('first-run onboarding on Bugün', () => {
     const offline = await screen.findByTestId('onboarding-deck-offline', {}, { timeout: 10_000 });
     await user.click(within(offline).getByTestId('onboarding-skip-offline'));
     await waitFor(() => expect(screen.queryByTestId('onboarding-deck')).toBeNull());
+  });
+
+  it('a deck add cut short resumes on the deck step; the home never flashes (A1)', async () => {
+    const words = ['avoid', 'admit', 'afford'].map((lemma) => ({
+      id: `${lemma}|verb`,
+      lemma_norm: lemma,
+      pos: 'verb',
+      lemma,
+      cefr: 'B1' as const,
+      list_source: 'cefrj' as const,
+      zipf: 4,
+      lexicon_term_id: null,
+      senses: [{ meaning_tr: `${lemma} anlamı`, example_en: `They ${lemma} it.`, example_tr: 'Onu yaptılar.', sense_id: null }],
+    }));
+    await db.word_bank.bulkPut(words);
+    await db.settings.update('settings', { interests: [] });
+    // The app was closed after the first word went in.
+    await addNoteWithSenses({ term: 'avoid', tags: ['İlk 500'], senses: [{ meaning_tr: 'avoid anlamı' }] });
+    await db.meta.put({ key: DECK_ADD_JOB_KEY, value: { name: 'İlk 500', ids: words.map((w) => w.id), at: 1 } });
+    setOnboardingStep('deck');
+    setOnboardingAdding(true);
+    renderRoute(<HomeScreen />);
+    expect(await screen.findByTestId('onboarding-deck')).toBeInTheDocument();
+    expect(screen.queryByTestId('home-words')).toBeNull();
+    await waitFor(async () => expect([localStorage.getItem('engapp.onboarding'), JSON.stringify(await db.error_log.toArray())]).toEqual(['done', '[]']));
+    const live = (await db.notes.toArray()).filter((n) => n.deleted_at === null);
+    expect(live.map((n) => n.term).sort()).toEqual(['admit', 'afford', 'avoid']);
+    expect(await getMeta(DECK_ADD_JOB_KEY)).toBeUndefined();
   });
 
   it('an existing user never sees it', async () => {

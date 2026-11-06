@@ -54,7 +54,7 @@ describe('learning steps later today', () => {
     await act(async () => bumpStudyTickForTesting());
     const hero = await screen.findByTestId('today-hero');
     expect(within(hero).getByTestId('today-split')).toHaveTextContent('1 kart kaldı');
-    expect(within(hero).getByTestId('start-study')).toHaveAttribute('href', '/study?mode=word');
+    expect(within(hero).getByTestId('start-study')).toHaveAttribute('href', '/study?mode=mixed');
   });
 
   it('a new study day shows the new day after resume', async () => {

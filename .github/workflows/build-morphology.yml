@@ -1,7 +1,9 @@
 # Rebuilds the word-family / root reference data (İP6) from the official kaikki.org Wiktionary
 # extract, wordfreq and MorphyNet, and uploads the result as a workflow artifact for review.
-# It never commits, deploys or touches Supabase: a maintainer downloads the artifact, checks
-# the diff and commits it (see scripts/build-morphology/README.md).
+# It never commits or deploys: a maintainer downloads the artifact, checks the diff and commits
+# it (see scripts/build-morphology/README.md). The only Supabase access is the meaning job's
+# bookkeeping on the monthly text budget (decision 0077): Claude first, every call booked on
+# the system jobs' pool; without the service key the job runs on Gemini only.
 name: Build morphology data
 on:
   workflow_dispatch:
@@ -12,17 +14,27 @@ on:
         options: [kaikki, mirror]
         default: kaikki
       meanings:
-        description: Run the Turkish morpheme meaning job for new morphemes (needs GEMINI_API_KEY)
+        description: Run the Turkish morpheme meaning job for new morphemes (needs ANTHROPIC_API_KEY or GEMINI_API_KEY)
         type: boolean
         default: false
 permissions:
   contents: read
+env:
+  SUPABASE_PROJECT_REF: bikcjlomrjaxymifxogi
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      # The budget's database for Claude (decision 0077); optional: on failure Gemini only.
+      - name: Service key (the only step that may use the access token)
+        if: ${{ inputs.meanings }}
+        continue-on-error: true
+        env:
+          SERVICE_KEY_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: scripts/resolve-service-key.sh
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -33,10 +45,21 @@ jobs:
       - run: node scripts/build-morphology/index.ts --etymology ${{ inputs.etymology }}
       - if: ${{ inputs.meanings }}
         env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          CLAUDE_TEXT_MODEL: ${{ vars.CLAUDE_TEXT_MODEL }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
           GEMINI_FALLBACK_MODEL: ${{ vars.GEMINI_FALLBACK_MODEL }}
+          CLAUDE_TEXT_MONTHLY_USD: ${{ vars.CLAUDE_TEXT_MONTHLY_USD || '30' }}
+          AI_SYSTEM_MONTHLY_USD: ${{ vars.AI_SYSTEM_MONTHLY_USD || '2' }}
+          AI_SYSTEM_MAX_SHARE: ${{ vars.AI_SYSTEM_MAX_SHARE || '0.15' }}
         run: |
+          set -euo pipefail
+          # An empty variable means "use the default" (model-defaults.ts).
+          for v in CLAUDE_TEXT_MODEL GEMINI_MODEL GEMINI_FALLBACK_MODEL; do
+            if [ -z "${!v}" ]; then unset "$v"; fi
+          done
+          if [ -s "$RUNNER_TEMP/supabase-service-key" ]; then source scripts/supabase-service-env.sh; fi
           node scripts/build-morphology/meanings.ts
           node scripts/build-morphology/index.ts --etymology ${{ inputs.etymology }}
       - run: node scripts/build-morphology/load-sql.ts > reference-data.sql

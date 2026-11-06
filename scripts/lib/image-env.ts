@@ -4,7 +4,7 @@
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { claudeCall, createAnthropic } from '../../supabase/functions/_shared/image-claude.ts';
-import { imageModels, monthlyCapUsd } from '../../supabase/functions/_shared/image-models.ts';
+import { imageModels, imageMonthlyCapUsd } from '../../supabase/functions/_shared/image-models.ts';
 import { SupabaseImageStore } from '../../supabase/functions/_shared/image-store.ts';
 import type { BatchApi, BatchResult, JobDeps, Log } from './image-jobs.ts';
 import { loadRenderer } from './image-render.ts';
@@ -57,7 +57,7 @@ export async function jobDepsFromEnv(): Promise<
     claude: claudeCall(client),
     batches,
     models: imageModels(env),
-    capUsd: monthlyCapUsd(env),
+    capUsd: imageMonthlyCapUsd(env),
     render: await loadRenderer(),
     log,
   };

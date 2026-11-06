@@ -53,7 +53,8 @@
     "errorShort": "Eşitleme hatası",
     "syncNow": "Şimdi eşitle",
     "quota": "Bugünkü eşitleme sınırı doldu",
-    "quotaShort": "Sınır doldu"
+    "quotaShort": "Sınır doldu",
+    "heldShort": "Bir kısmı bekliyor"
   },
   "theme": {
     "label": "Tema",
@@ -398,7 +399,8 @@
       "typeAnswer": "Boşluğa gelen kelimeyi yaz",
       "correctTag": "Doğrusu",
       "yourPick": "Senin seçimin",
-      "pickedWord": "Seçtiğin kelime"
+      "pickedWord": "Seçtiğin kelime",
+      "pickToCheck": "Bir seçeneğe dokun; hemen kontrol edilir."
     },
     "empty": {
       "word": "Kelime çalışma bugünlük bitti",
@@ -416,7 +418,9 @@
     "learnedToday_one": "Bugün {{count}} kelime Öğrenildi'ye geçti.",
     "learnedToday_other": "Bugün {{count}} kelime Öğrenildi'ye geçti.",
     "example": "Örnek",
-    "meaning": "Anlamı"
+    "meaning": "Anlamı",
+    "continueWith": "Devam · {{rating}}",
+    "showSentence": "Cümleyi göster"
   },
   "examples": {
     "title": "Örnek cümleler",
@@ -464,7 +468,10 @@
     "emptyText": "Cümle boş olamaz.",
     "saved": "Cümle kaydedildi.",
     "saveFailed": "Kaydedilemedi. Tekrar dene.",
-    "none": "Bu anlam için henüz örnek cümle yok."
+    "none": "Bu anlam için henüz örnek cümle yok.",
+    "credit": "Tatoeba · {{authors}}",
+    "creditEdited": "Tatoeba · {{authors}} · çevirisi düzeltildi",
+    "creditLink": "Bu cümle Tatoeba’dan (CC BY 2.0 FR). Kaynağı aç"
   },
   "mnemonic": {
     "title": "Anımsatıcı",
@@ -527,7 +534,7 @@
     "sheetLead_one": "“{{term}}” kartını {{count}} kez unuttun. Aynı yoldan tekrar etmek yerine aşağıdakilerden birini dene.",
     "sheetLead_other": "“{{term}}” kartını {{count}} kez unuttun. Aynı yoldan tekrar etmek yerine aşağıdakilerden birini dene.",
     "sheetLeadCalm": "“{{term}}” kartını farklı bir yoldan çalışmak için aşağıdakilerden birini dene.",
-    "safeNote": "Kart sen istemedikçe askıya alınmaz, silinmez; geçmişin olduğu gibi kalır.",
+    "safeNote": "Kart sen istemedikçe silinmez; geçmişin olduğu gibi kalır. Altıncı kez unutulan bir kart 30 gün dinlenir, istersen hemen geri getirebilirsin.",
     "gone": "Bu kart artık yok.",
     "paths": {
       "mnemonic": "Bir anımsatıcı bul",
@@ -565,7 +572,8 @@
       "crossedAction": "Başka yoldan bakalım",
       "confused": "“{{term}}” başka bir kelimeyle mi karıştı?",
       "confusedAction": "Kelimeyi seç",
-      "suspended": "Ayarın gereği askıya alındı."
+      "suspended": "Ayarın gereği askıya alındı.",
+      "rested": "30 gün dinlenmeye aldık; bu süre başka kelimelere kalsın."
     },
     "picker": {
       "title": "Hangi kelimeyle karıştırdın?",
@@ -631,6 +639,27 @@
       "more_other": "ve {{count}} kart daha",
       "pairsTitle": "Karıştırabileceğin kelimeler",
       "pairsLead": "Birbirine benzeyen ya da aynı anlama gelen kelimelerin. Bir fark kartı ikisini ayırmana yardım eder."
+    },
+    "struggling": "Zorlanıyor",
+    "strugglingLabel_one": "Zorlanıyor: {{count}} kez unuttun",
+    "strugglingLabel_other": "Zorlanıyor: {{count}} kez unuttun",
+    "rescue": {
+      "label": "Önerilen yol",
+      "lead_one": "Bu kelimeyi {{count}} kez unuttun. Aynı yoldan tekrar etmek yerine şunu dene:",
+      "lead_other": "Bu kelimeyi {{count}} kez unuttun. Aynı yoldan tekrar etmek yerine şunu dene:",
+      "falseFriend": "Türkçedeki “{{tr}}” ile karışıyor olabilir. İkisini yan yana söyle:",
+      "mnemonicChosen": "Anımsatıcını bir kez sesli söyle:",
+      "mnemonicSuggestion": "Bu çağrışım işine yarayabilir:",
+      "useMnemonic": "Bunu kullan",
+      "mnemonicSaved": "Anımsatıcı kaydedildi",
+      "family": "Aynı aileden kelimelerle birlikte düşün:"
+    },
+    "rest": {
+      "badge": "Dinlenmede",
+      "title": "Bu kelime dinleniyor",
+      "body": "Çok kez unuttuğun bir kartı {{date}} tarihine kadar dinlenmeye aldık; o gün kendiliğinden geri gelir.",
+      "end": "Şimdi geri getir",
+      "ended": "Kart bugün yeniden çalışmaya geldi"
     }
   },
   "add": {
@@ -1025,7 +1054,7 @@
       "sessionLengthHint": "Bir oturumda en çok bu kadar kart. Bitince devam etmek sende.",
       "sessionAll": "Hepsi",
       "leechSuspend": "Zorlanılan kartı askıya al",
-      "leechSuspendHint": "Bir kart 6. kez unutulunca otomatik askıya alınır; Kelimelerim'den geri açabilirsin."
+      "leechSuspendHint": "Açıkken 6. kez unutulan kart süresiz askıya alınır (Kelimelerim'den geri açarsın). Kapalıyken 30 gün dinlenir, sonra kendiliğinden döner."
     },
     "levels": {
       "A1": "Başlangıç",
@@ -1648,7 +1677,10 @@
     "appGuestTitle": "Verilerin bu telefonda duruyor",
     "appGuest": "Uygulamayı kaldırırsan ya da verilerini temizlersen kelimelerin silinir. Hesap aç ya da yedek al.",
     "appTitle": "Verilerin nerede?",
-    "appSignedIn": "Verilerin bu telefonda ve hesabında duruyor; uygulamayı kaldırsan da hesabından geri gelir."
+    "appSignedIn": "Verilerin bu telefonda ve hesabında duruyor; uygulamayı kaldırsan da hesabından geri gelir.",
+    "noticeTitle": "Kelimelerin bu cihazda duruyor",
+    "noticeBody": "Misafir modunda veriler yalnızca bu tarayıcıda. Tarayıcı yer açmak için nadiren de olsa silebilir; ara sıra yedek al ya da hesap aç.",
+    "noticeSignIn": "Hesap aç"
   },
   "install": {
     "title": "Uygulamayı yükle",
@@ -1900,7 +1932,9 @@
     "unavailableIndicatorFull": "Verilerin bu cihazda güvende.",
     "quotaHint": "Bugün çok fazla değişiklik gönderildi. Değişikliklerin bu cihazda güvende; yarın kendiliğinden gönderilir.",
     "quotaToast": "Bugünkü eşitleme sınırı doldu. Değişikliklerin bu cihazda güvende, yarın gönderilir.",
-    "errorHint": "Değişikliklerin bu cihazda güvende; eşitleme kendiliğinden yeniden denenecek."
+    "errorHint": "Değişikliklerin bu cihazda güvende; eşitleme kendiliğinden yeniden denenecek.",
+    "heldStorage": "Sunucuda yer azaldı. Yeni kaydettiğin metinler ve Anki’den aktarılan geçmiş şimdilik yalnızca bu cihazda; tekrarların, kelimelerin ve ayarların eşitlenmeye devam ediyor. Yer açılınca kendiliğinden gönderilir.",
+    "heldTexts": "Kaydedilmiş metin sınırına ulaştın. Yeni metinler bu cihazda güvende ama başka cihazlara gönderilmiyor. Okuduğun eski metinleri silersen zamanla yer açılır."
   },
   "importer": {
     "privacy": "Gizli iş belgelerini gönderme; metin kelimeleri bulmak için sunucuya gider.",
@@ -2214,7 +2248,8 @@
     "overrideAutoUnknown": "Otomatik",
     "overrideHint": "Kendi seçtiğin seviye yalnızca sende görünür ve cihazların arasında eşitlenir.",
     "overrideFailed": "Seviye kaydedilemedi. Tekrar dene.",
-    "correction_reason": "{{list}}: {{from}} → Türk öğrenci için {{to}} (yapay zekâ: {{reason}})"
+    "correction_reason": "{{list}}: {{from}} → Türk öğrenci için {{to}} (yapay zekâ: {{reason}})",
+    "correction_familiar": "{{list}}: {{from}} → Türk öğrenci için {{to}} (Türkçede de var: {{word}})"
   },
   "sources": {
     "title": "Kaynaklar",
@@ -2246,9 +2281,23 @@
       "license": "CC BY-SA 4.0 (türetilmiş veri, aynı lisansla paylaşılır)."
     },
     "aiTitle": "Yapay zekâ tahminleri",
-    "aiBody": "Listede olmayan kelimelerin seviyesi ve Türk öğrenci düzeltmeleri Google Gemini ile üretilir. Bunlar tahmindir: düzeltme liste seviyesini en fazla bir basamak değiştirir, tahmin de kelimenin sıklığıyla sınırlanır. Bir kelimenin seviyesini her zaman kendin değiştirebilirsin.",
+    "aiBody": "Listede olmayan kelimelerin seviyesi ve Türk öğrenci düzeltmeleri yapay zekâyla (Anthropic Claude ya da Google Gemini) üretilir. Bunlar tahmindir: düzeltme liste seviyesini en fazla bir basamak değiştirir, tahmin de kelimenin sıklığıyla sınırlanır. Bir kelimenin seviyesini her zaman kendin değiştirebilirsin.",
     "wordBankTitle": "Kelime Bankası",
-    "wordBankBody": "Kelime Bankası, CEFR-J ve Octanove listelerindeki kelimeleri gösterir. Türkçe anlamları ve örnek cümleleri bir kez Claude (Anthropic) ile üretildi; ortak sözlükte anlamı zaten olan kelimelerde o anlam kullanıldı. Octanove verisinden türetildiği için Kelime Bankası da CC BY-SA 4.0 lisanslıdır."
+    "wordBankBody": "Kelime Bankası, CEFR-J ve Octanove listelerindeki kelimeleri gösterir. Türkçe anlamları ve örnek cümleleri bir kez Claude (Anthropic) ile üretildi; ortak sözlükte anlamı zaten olan kelimelerde o anlam kullanıldı. Octanove verisinden türetildiği için Kelime Bankası da CC BY-SA 4.0 lisanslıdır.",
+    "tatoeba": {
+      "name": "Tatoeba",
+      "what": "Örnek cümlelerin bir kısmı, gönüllülerin yazıp çevirdiği Tatoeba cümleleridir. Her cümlenin altında yazanların adı görünür; çevirisi düzeltilen cümlelerde bu da belirtilir.",
+      "license": "CC BY 2.0 FR",
+      "cite": "Tatoeba (tatoeba.org), cümleler ve çeviriler CC BY 2.0 FR lisansıyla."
+    },
+    "wiktionary": {
+      "name": "Wiktionary",
+      "what": "Phrasal verb listesi Wiktionary’nin “English phrasal verbs” kategorisinden alındı; hangilerinin öğretileceğine Tatoeba ve Simple English Wikipedia’daki kullanım sıklığına bakılarak karar verildi. Anlamlar ve örnekler Engapp’indir.",
+      "license": "CC BY-SA 4.0",
+      "cite": "Wiktionary, the free dictionary (en.wiktionary.org), Category:English phrasal verbs; Simple English Wikipedia (simple.wikipedia.org)."
+    },
+    "examplesTitle": "Örnek cümleler",
+    "examplesBody": "Her anlam için yaklaşık üç örnek cümle var. Önce Tatoeba’daki uygun cümleler seçildi; eksik kalanları Claude (Anthropic) bir kez yazdı. Hepsini, Türkçesinin doğal olup olmadığına ve doğru anlamı gösterip göstermediğine bakarak ikinci bir yapay zekâ kontrol etti."
   },
   "levelTest": {
     "title": "Seviye testi",
@@ -2297,7 +2346,10 @@
     "home": "Ana sayfaya dön",
     "duration": "{{count}} soru · {{time}}",
     "towardNextNone": "{{next}} kelimelerini henüz pek bilmiyorsun; {{next}} için %80 gerekir.",
-    "unreliableLevel": "Ölçülen seviye (güvenilir değil)"
+    "unreliableLevel": "Ölçülen seviye (güvenilir değil)",
+    "counter": "{{done}} / {{max}}",
+    "progressOf": "{{done}} soru cevaplandı, en çok {{max}}",
+    "continue": "Devam et"
   },
   "level": {
     "offerTitle": "Seviyeni 5 dakikada ölçelim mi?",
@@ -2514,11 +2566,11 @@
     "manual": "Kelimeleri kendim eklemek istiyorum",
     "welcome": {
       "title": "Kelimeleri kalıcı öğrenmeye başlayalım",
-      "body": "Engapp sana her gün birkaç kelime sorar ve tam unutmak üzereyken yeniden getirir. Üç kısa adımda hazırız, sonra ilk çalışman başlar:",
+      "body": "Engapp sana her gün birkaç kelime sorar ve tam unutmak üzereyken yeniden getirir. Üç kısa adımda hazırız:",
       "step1": "Seviyeni ölç: 5 dakikalık bir kelime testi, en çok 70 soru (istersen atla).",
       "step2": "İlgi alanlarını seç: örnek cümleler bu konulardan gelsin.",
       "step3": "Hazır bir deste seç: “En çok kullanılan 500 kelime” gibi.",
-      "step4": "İlk çalışmanı yap: birkaç dakika, birkaç yeni kelime.",
+      "step4": "Sonra ilk çalışman başlar: birkaç dakika, birkaç yeni kelime.",
       "start": "Başlayalım",
       "haveAccount": "Zaten hesabın var mı?",
       "signIn": "Giriş yap",
@@ -2558,7 +2610,10 @@
       "loading": "Hazır desteler yükleniyor",
       "offline": "Hazır desteleri getirmek için internet gerekiyor. Bağlanınca yeniden dene ya da kelimeleri kendin ekle.",
       "retry": "Yeniden dene",
-      "skipOffline": "Şimdilik atla, uygulamaya geç"
+      "skipOffline": "Şimdilik atla, uygulamaya geç",
+      "addingStart": "Deste hazırlanıyor…",
+      "addingLabel": "Deste ekleniyor",
+      "addingHint": "Birkaç saniye sürer. Bitince ilk çalışman açılır."
     }
   },
   "decks": {
@@ -3171,14 +3226,17 @@
       "falseFriends": "Yanıltıcı benzerler",
       "pairs": "{{count}} çift",
       "notEqual": "eşit değil",
-      "falseFriendsBody": "Türkçeye benzeyen ama başka anlama gelen kelimeler: {{examples}}…"
+      "falseFriendsBody": "Türkçeye benzeyen ama başka anlama gelen kelimeler: {{examples}}…",
+      "phrases": "Kalıplar",
+      "phrasesBody": "Tek tek kelimeler değil, birlikte öğrenilen ifadeler"
     },
     "kind": {
       "top": "En sık · içerik kelimeleri",
       "level": "Seviye",
       "pos": "Kelime türü",
       "levelPos": "Seviye · kelime türü",
-      "falseFriends": "Yanıltıcı benzerler"
+      "falseFriends": "Yanıltıcı benzerler",
+      "phrases": "Kalıplar"
     },
     "deckName": {
       "top": "En çok kullanılan {{size}} kelime",
@@ -3195,14 +3253,30 @@
         "noun": "{{level}} isimler",
         "adverb": "{{level}} zarflar"
       },
-      "falseFriends": "Yanıltıcı benzerler"
+      "falseFriends": "Yanıltıcı benzerler",
+      "phrases": {
+        "phrasal": "Phrasal verb’ler",
+        "collocation": "Kalıp ifadeler"
+      },
+      "phrasesLevel": {
+        "phrasal": "{{level}} phrasal verb’ler",
+        "collocation": "{{level}} kalıp ifadeler"
+      }
     },
     "deckBody": {
       "top": "İngilizce metinlerde en sık geçen {{size}} isim, fiil, sıfat ve zarf. Bunları bilmek, okuduğun hemen her sayfanın iskeletini tanımak demek. Sıralama wordfreq verisinden.",
       "level": "{{level}} seviyesindeki tüm kelimeler, en sık kullanılandan başlayarak.",
       "pos": "Her seviyeden {{pos}}, en sık kullanılandan başlayarak.",
       "levelPos": "{{level}} seviyesindeki {{pos}}, en sık kullanılandan başlayarak.",
-      "falseFriends": "Türkçede benzer bir kelime olduğu için yanlış anlaşılan İngilizce kelimeler. Kartın arkasında hangi Türkçe kelimeyle karıştığı da yazar."
+      "falseFriends": "Türkçede benzer bir kelime olduğu için yanlış anlaşılan İngilizce kelimeler. Kartın arkasında hangi Türkçe kelimeyle karıştığı da yazar.",
+      "phrases": {
+        "phrasal": "Bir fiille küçük bir kelimenin birleşip yeni anlam kazandığı ifadeler: give up (vazgeçmek), find out (öğrenmek). En sık kullanılandan başlayarak.",
+        "collocation": "İngilizcede birlikte söylenen kelimeler: make a decision (karar vermek), pay attention (dikkat etmek). Türkçeden çevirince kolayca yanlış kurulurlar (“do a mistake” değil, “make a mistake”)."
+      },
+      "phrasesLevel": {
+        "phrasal": "{{level}} seviyesindeki phrasal verb’ler, en sık kullanılandan başlayarak.",
+        "collocation": "{{level}} seviyesindeki kalıp ifadeler, en sık kullanılandan başlayarak."
+      }
     },
     "posPlural": {
       "verb": "fiiller",
@@ -3916,5 +3990,36 @@
     "month_other": "{{n}} ay",
     "year_one": "{{n}} yıl",
     "year_other": "{{n}} yıl"
+  },
+  "reminderOffer": {
+    "title": "Yarın sana hatırlatayım mı?",
+    "body": "Günde bir kez, seçtiğin saatte kısa bir hatırlatma. O gün çalıştıysan gelmez.",
+    "guestBody": "Tarayıcıda hatırlatma bir hesapla çalışır. Ücretsiz hesap aç, her gün seçtiğin saatte hatırlatayım.",
+    "time": "Saat",
+    "yes": "Evet, {{hour}}.00'da",
+    "no": "Hayır, teşekkürler",
+    "signIn": "Hesap aç",
+    "done": "Tamam, her gün {{hour}}.00'da hatırlatırım",
+    "declined": "Peki, sormayacağım. Ayarlar → Bildirim'den istediğin zaman açabilirsin.",
+    "denied": "Bildirim izni verilmedi. Telefonun ayarlarından açabilirsin.",
+    "failed": "Hatırlatma açılamadı. Tekrar dene."
+  },
+  "waiting": {
+    "title": "Beklerken",
+    "body_one": "Kartların {{count}} dk sonra yeniden hazır.",
+    "body_other": "Kartların {{count}} dk sonra yeniden hazır.",
+    "newTitle_one": "+{{count}} yeni kelime",
+    "newTitle_other": "+{{count}} yeni kelime",
+    "newBody": "Şimdi birkaç kelime daha öğren",
+    "readTitle": "Kısa bir metin oku",
+    "readBody": "Seviyene uygun okumalar, Keşfet'te",
+    "pingAction_one": "Hazır olunca haber ver ({{count}} dk)",
+    "pingAction_other": "Hazır olunca haber ver ({{count}} dk)",
+    "pingHint": "Kartlar hazır olunca tek bir bildirim",
+    "pingSet": "Tamam, kartlar hazır olunca haber vereceğim",
+    "pingTitle": "Kartların hazır",
+    "pingBody": "Az önce öğrendiğin kelimeleri bir kez daha gör.",
+    "reminderTitle": "Günlük hatırlatmayı aç",
+    "reminderBody": "Her gün seçtiğin saatte kısa bir hatırlatma"
   }
 }

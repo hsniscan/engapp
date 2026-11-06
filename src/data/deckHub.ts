@@ -17,12 +17,13 @@ import { deckWordStatus, type OwnedIndex } from '../domain/suggestedDecks';
 import { hasTag } from '../domain/tags';
 import { type Card, CardState, type Deck, type Id, type Millis, type Note } from '../domain/types';
 import type { WordBankEntry } from '../domain/wordBank';
-import { addNoteWithSenses } from './actions';
+import { addNotesBulk } from './actions';
 import { db } from './db';
 import { createDeck, deckContext, loadDeckFacts, setNoteTags } from './decks';
 import { getKnownTermKeys } from './knownTerms';
 import { dayConfig, getSettings } from './settings';
 import { bankNoteInput } from './wordBank';
+import { getMeta, setMeta } from './meta';
 import { scanWhere } from './scan';
 
 /** The card a word's stage comes from: its recognition card (ogrenme-modeli §2.3). */
@@ -266,12 +267,19 @@ export async function addSuggestedDeck(
   res.alreadyCarded = carded.length;
 
   const tag = name;
-  for (const [i, w] of toAdd.entries()) {
-    const r = await addNoteWithSenses({ ...bankNoteInput(w), tags: [tag] }, now + i);
+  // One transaction per 200 words (v0.5.3 A1, ADR 0072), with a job row so an add cut short
+  // (app closed, Android back) finishes on the next start (resumeDeckAdd).
+  if (toAdd.length) await setMeta(DECK_ADD_JOB_KEY, { name, ids: words.map((w) => w.id), at: now });
+  opts.onProgress?.(0, toAdd.length);
+  const results = await addNotesBulk(
+    toAdd.map((w) => ({ ...bankNoteInput(w), tags: [tag] })),
+    now,
+    { onChunk: (done, total) => opts.onProgress?.(done, total) },
+  );
+  for (const r of results) {
     if (r.status !== 'existing') res.added++;
     else carded.push(r.note.term_norm);
     res.cards += r.createdCards.length;
-    opts.onProgress?.(i + 1, toAdd.length);
   }
   if (carded.length) {
     const ids = (await db.notes.where('term_norm').anyOf(carded).toArray())
@@ -284,5 +292,39 @@ export async function addSuggestedDeck(
     (res.added + carded.length > 0
       ? await createDeck({ name, filter: { v: 1, tags: [tag] } }, now + toAdd.length + 1)
       : null);
+  if (toAdd.length) await db.meta.delete(DECK_ADD_JOB_KEY);
   return res;
+}
+
+/** Meta key of a ready-deck add that has not finished (device-local, never synced). */
+export const DECK_ADD_JOB_KEY = 'deck_add_job';
+
+export interface DeckAddJob {
+  name: string;
+  /** Word bank ids of the deck (WordBankEntry.id). */
+  ids: string[];
+  at: Millis;
+}
+
+/** The unfinished ready-deck add, if any. */
+export async function pendingDeckAdd(): Promise<DeckAddJob | null> {
+  const job = await getMeta<DeckAddJob>(DECK_ADD_JOB_KEY);
+  return job && typeof job.name === 'string' && Array.isArray(job.ids) ? job : null;
+}
+
+/**
+ * Finishes a ready-deck add that was cut short: the same add again, which skips every word that
+ * is there already. Null when there was nothing to finish (or the bank rows are gone).
+ */
+export async function resumeDeckAdd(
+  opts: { onProgress?: (done: number, total: number) => void; now?: Millis } = {},
+): Promise<SuggestedAddResult | null> {
+  const job = await pendingDeckAdd();
+  if (!job) return null;
+  const rows = (await db.word_bank.bulkGet(job.ids)).filter((r) => r !== undefined);
+  if (rows.length === 0) {
+    await db.meta.delete(DECK_ADD_JOB_KEY);
+    return null;
+  }
+  return addSuggestedDeck(rows, job.name, opts);
 }

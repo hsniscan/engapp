@@ -165,5 +165,7 @@ test('guest: "Bu cihazdaki verileri sil" wipes only this device', async ({ page,
   await expect(page.getByRole('heading', { name: 'Bu cihazdaki veriler silindi' })).toBeVisible();
   expect(await localCount(page, 'notes')).toBe(0);
   expect(calls).toHaveLength(0);
-  expect(backend.calls).toHaveLength(0); // a guest never reaches the server
+  // A guest sends nothing of theirs to the server; the only call allowed is the public word
+  // bank read the background prefetch makes (v0.5.3 A2, ADR 0072).
+  expect(backend.calls.filter((c) => c.name !== '/rest/v1/word_bank')).toHaveLength(0);
 });

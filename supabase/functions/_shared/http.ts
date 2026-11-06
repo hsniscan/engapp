@@ -81,6 +81,8 @@ export interface HandlerOptions<T> {
   authenticate: (req: Request) => Promise<string>;
   run: (body: unknown, userId: string) => Promise<T>;
   log?: (m: string, d?: Record<string, unknown>) => void;
+  /** Called with the error code of every error answer (decision 0076: counted events). */
+  onError?: (code: string) => void;
 }
 
 export function createHandler<T>(opts: HandlerOptions<T>): (req: Request) => Promise<Response> {
@@ -101,6 +103,7 @@ export function createHandler<T>(opts: HandlerOptions<T>): (req: Request) => Pro
       }
       return json(await opts.run(body, userId), 200, cors);
     } catch (e) {
+      opts.onError?.(e instanceof ApiError ? e.code : 'internal');
       return errorResponse(e, cors, opts.log);
     }
   };

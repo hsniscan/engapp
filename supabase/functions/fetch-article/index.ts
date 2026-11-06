@@ -5,6 +5,7 @@ import { SupabaseArticleStore } from '../_shared/article-store.ts';
 import { createHandler, parseOrigins } from '../_shared/http.ts';
 import { dohResolver, type Resolver } from '../_shared/net-guard.ts';
 import { log } from '../_shared/log.ts';
+import { opsEvents } from '../_shared/ops-events.ts';
 import {
   createAdminClient,
   createAuthenticator,
@@ -13,8 +14,11 @@ import {
 
 const env = (k: string) => Deno.env.get(k);
 const cfg = loadServerConfig(env);
-const store = new SupabaseArticleStore(createAdminClient(cfg));
+const admin = createAdminClient(cfg);
+const store = new SupabaseArticleStore(admin);
 const logger = log('fetch-article');
+// Failures are counted for the nightly health check (decision 0076).
+const events = opsEvents(admin, 'fetch-article', logger);
 const dailyLimit = articleDailyLimit(env);
 const doh = dohResolver(fetch);
 
@@ -41,6 +45,7 @@ Deno.serve(
     cors: { allowedOrigins: parseOrigins(env('ALLOWED_ORIGINS')) },
     authenticate: createAuthenticator(cfg),
     log: logger,
+    onError: events.onError,
     run: (body, userId) =>
       runFetchArticle(body, { userId, store, resolve, fetch, dailyLimit, log: logger }),
   }),

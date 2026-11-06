@@ -426,6 +426,24 @@ export class EngDb extends Dexie {
     this.version(38)
       .stores({})
       .upgrade((tx) => addPullBackfill(tx.table('meta'), ['settings']));
+    // v39 (v0.5.3 study, decision 0071; 40–45 belong to the other v0.5.3 packages): cards gain
+    // rest_until (the 30-day rest after a sixth lapse) and review logs answer_mode (choice /
+    // typed / flip). Both optional, absent = not resting / unknown. A device that pulled cards
+    // while it ran an older version dropped rest_until: re-pull cards once. Logs are not
+    // re-pulled (no older version ever wrote the field; a missed value only means the answer
+    // counts like a self-rated one). No new table or index.
+    this.version(39)
+      .stores({})
+      .upgrade((tx) => addPullBackfill(tx.table('meta'), ['cards']));
+    // v42 (v0.5.3 sentences/phrases, ADR 0074; 39–41 and 43–45 belong to the other v0.5.3
+    // packages): the word bank gains phrasal verbs and collocations (new part-of-speech and
+    // list values an older version skipped as invalid) and shared example sentences gain
+    // `source` / `attribution` (Tatoeba credit, which an older version dropped). Both copies are
+    // read-only system content: the cursors are cleared so the next pull reads them again. No
+    // new table or index; user data is untouched.
+    this.version(42)
+      .stores({})
+      .upgrade((tx) => tx.table('meta').bulkDelete(['word_bank_cursor', 'lexicon_examples_cursor']));
   }
 }
 

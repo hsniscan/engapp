@@ -1,44 +1,63 @@
-# Graded reading library (v0.5 İP5, decision 0047). Claude Sonnet (graded-v1) writes short
-# texts for A2–C1 learners as Message Batches (half price), each sentence with its Turkish
-# translation; the coverage check against the word lists (CEFR-J, wordfreq) runs here in Node
-# (one rewrite after a failure); Claude Haiku (gradedcheck-v1) reads every text that passes;
-# approved texts get per-sentence audio (Kokoro, en-US) through the pronunciation workflow.
-# First plan: A2, B1, B2, C1 × 10 topics × 9 = 360 texts, about 3–6 US$ in all.
+# Graded reading library (v0.5 İP5, decision 0047; v0.5.3 decision 0073). Claude Sonnet
+# (graded-v2) writes short original texts for A1–C1 learners as Message Batches (half price),
+# each sentence with its Turkish translation; the coverage check against the word lists
+# (CEFR-J, wordfreq, with the Turkish-learner levels) runs here in Node (one rewrite after a
+# failure); Claude Haiku (gradedcheck-v1) reads every text that passes and approves or rejects
+# it on its own, so nobody has to read hundreds of texts by hand; approved texts get
+# per-sentence audio in both accents (Kokoro) through the pronunciation workflow.
+# Library plan: A1 8, A2 8, B1 8, B2 7, C1 5 texts × 10 topics = 360 texts, about 5–9 US$.
 #
 # Jobs: plan (reads only: what is missing, estimated and upper-bound cost) → collect (reads
 # finished batches, checks, stores) → submit (sends the next batches) → audio → report.
-# submit NEVER runs unless the repository variable GRADED_BULK is 'true' (default off; the
-# owner turns it on). Every batch reserves its upper-bound cost on the monthly text budget
-# first (CLAUDE_TEXT_MONTHLY_USD, default 10 US$, separate from the picture budget) and the
-# run stops at the cap. Without the ANTHROPIC_API_KEY secret, collect and submit are skipped.
-# Details: docs/ai-pipeline.md ("Graded library"), docs/setup-backend.md ("Okuma kitaplığı").
+# job=bulk: collect + submit in a loop for up to 5.5 hours (the whole library in one run, as
+# far as the batches finish), then the audio. Submitting is ON by default; the plan is finite
+# (360 texts, failed slots replaced at most up to twice a cell's target), so once the library
+# is full the nightly run only collects and reports. The repository variable GRADED_BULK=false
+# stops all submitting.
+#
+# Money: every batch reserves its upper-bound cost first on the monthly Claude budget shared
+# with the picture and word-bank jobs (80 % of CLAUDE_MONTHLY_CREDIT_USD) AND on the library's
+# own monthly cap: the `cap_usd` input of a manual run, else GRADED_MONTHLY_USD, else 20 US$.
+# It never touches the text budget of the app's own AI features (CLAUDE_TEXT_MONTHLY_USD).
+# Without the ANTHROPIC_API_KEY secret, collect and submit are skipped.
+# Details: docs/ai-pipeline.md ("Graded library"), docs/decisions/0073-*.md.
 #
 # Repository secrets:
 #   ANTHROPIC_API_KEY          Claude API key (without it collect/submit are skipped)
 #   SUPABASE_SERVICE_ROLE_KEY  optional: the project's service_role (or sb_secret_) key.
 #                              Without it the key is read through the Management API with
 #   SUPABASE_ACCESS_TOKEN      (needs the "API keys: Read" permission / a full-access token).
-# Repository variables:
-#   GRADED_BULK                'true': submit new batches (nightly and manual). Default off.
-#   CLAUDE_TEXT_MONTHLY_USD    monthly cap of the text jobs in US$ (default 10)
+# Repository variables (all optional):
+#   GRADED_BULK                'false': never submit (default: submit what the plan misses)
+#   GRADED_MONTHLY_USD         the library's own monthly cap in US$ (default 20)
+#   CLAUDE_MONTHLY_CREDIT_USD  the shared monthly Claude budget is 80 % of this (default 100)
 #   CLAUDE_GRADED_MODEL        writer model (default: the Sonnet in _shared/image-models.ts)
 #   CLAUDE_CHECK_MODEL         checker model (default: the Haiku in _shared/image-models.ts)
-#   GRADED_PER_CELL            texts per level × core topic (default 9)
+#   GRADED_PER_CELL            N texts per level × core topic on every level (default: the plan's)
 #   GRADED_EXTENDED_PER_CELL   texts per level × other profile topic (default 0)
 name: Graded library
+run-name: ${{ (github.event_name == 'schedule' || inputs.trigger == 'cron') && 'Graded library [auto:nightly]' || 'Graded library' }}
 
 on:
   schedule:
-    - cron: '15 2 * * *' # 02:15 UTC: collect, then (GRADED_BULK=true only) submit, audio, report
+    - cron: '15 2 * * *' # backstop; pg_cron dispatches job=nightly at 02:15 UTC (decision 0076): collect, submit (unless GRADED_BULK=false), audio, report
   workflow_dispatch:
     inputs:
+      trigger:
+        description: 'Leave empty. "cron" = started by the database clock (decision 0076)'
+        type: string
+        default: ''
       job:
-        description: 'plan: report only; nightly: collect, submit (if GRADED_BULK), audio, report; collect / submit / audio / report: one step'
+        description: 'plan: report only; bulk: write the whole library now (up to 5.5 h), then audio; nightly: collect, submit, audio, report; collect / submit / audio / report: one step'
         type: choice
-        options: [plan, nightly, collect, submit, audio, report]
+        options: [plan, bulk, nightly, collect, submit, audio, report]
         default: plan
+      cap_usd:
+        description: "The library's own cap for this month in US$ (empty: GRADED_MONTHLY_USD or 20)"
+        type: string
+        default: ''
       max:
-        description: 'submit: at most this many requests per batch (empty: 120)'
+        description: 'submit / bulk: at most this many requests per batch (empty: 120, bulk 400)'
         type: string
         default: ''
       dry_run:
@@ -55,9 +74,42 @@ permissions:
 
 env:
   SUPABASE_PROJECT_REF: bikcjlomrjaxymifxogi
+  # The library's own monthly cap (decision 0073); validated in every step that uses it.
+  GRADED_MONTHLY_USD: ${{ inputs.cap_usd || vars.GRADED_MONTHLY_USD || '20' }}
+  CLAUDE_MONTHLY_CREDIT_USD: ${{ vars.CLAUDE_MONTHLY_CREDIT_USD }}
+  CLAUDE_GRADED_MODEL: ${{ vars.CLAUDE_GRADED_MODEL }}
+  CLAUDE_CHECK_MODEL: ${{ vars.CLAUDE_CHECK_MODEL }}
+  PER_CELL: ${{ vars.GRADED_PER_CELL }}
+  EXTENDED_PER_CELL: ${{ vars.GRADED_EXTENDED_PER_CELL || '0' }}
 
 jobs:
+  gate:
+    # Decision 0076: pg_cron starts this workflow on time (trigger=cron); GitHub's schedule is
+    # the backstop. Once per slot: skip when the other automatic run already did the work.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      run: ${{ steps.gate.outputs.run }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          sparse-checkout: scripts/ci-gate.ts
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - id: gate
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TRIGGER: ${{ inputs.trigger }}
+        run: node scripts/ci-gate.ts nightly 1200
+
   plan:
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -74,19 +126,16 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Plan (reads only)
-        env:
-          CLAUDE_GRADED_MODEL: ${{ vars.CLAUDE_GRADED_MODEL }}
-          CLAUDE_CHECK_MODEL: ${{ vars.CLAUDE_CHECK_MODEL }}
-          CLAUDE_TEXT_MONTHLY_USD: ${{ vars.CLAUDE_TEXT_MONTHLY_USD }}
-          PER_CELL: ${{ vars.GRADED_PER_CELL || '9' }}
-          EXTENDED_PER_CELL: ${{ vars.GRADED_EXTENDED_PER_CELL || '0' }}
         run: |
           set -euo pipefail
           for v in "$PER_CELL" "$EXTENDED_PER_CELL"; do
-            if ! [[ "$v" =~ ^[0-9]{1,2}$ ]]; then echo "::error::GRADED_PER_CELL / GRADED_EXTENDED_PER_CELL must be whole numbers"; exit 1; fi
+            if [ -n "$v" ] && ! [[ "$v" =~ ^[0-9]{1,2}$ ]]; then echo "::error::GRADED_PER_CELL / GRADED_EXTENDED_PER_CELL must be whole numbers"; exit 1; fi
           done
+          if ! [[ "$GRADED_MONTHLY_USD" =~ ^[0-9]{1,3}(\.[0-9]{1,2})?$ ]]; then echo "::error::cap_usd / GRADED_MONTHLY_USD must be a number of US dollars, e.g. 20"; exit 1; fi
           source scripts/supabase-service-env.sh
-          node scripts/graded-batch.ts plan --per-cell "$PER_CELL" --extended-per-cell "$EXTENDED_PER_CELL"
+          args=(plan --extended-per-cell "$EXTENDED_PER_CELL")
+          if [ -n "$PER_CELL" ]; then args+=(--per-cell "$PER_CELL"); fi
+          node scripts/graded-batch.ts "${args[@]}"
 
   collect:
     needs: plan
@@ -109,9 +158,6 @@ jobs:
       - name: Collect finished batches
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          CLAUDE_GRADED_MODEL: ${{ vars.CLAUDE_GRADED_MODEL }}
-          CLAUDE_CHECK_MODEL: ${{ vars.CLAUDE_CHECK_MODEL }}
-          CLAUDE_TEXT_MONTHLY_USD: ${{ vars.CLAUDE_TEXT_MONTHLY_USD }}
         run: |
           set -euo pipefail
           source scripts/supabase-service-env.sh
@@ -119,11 +165,11 @@ jobs:
 
   submit:
     needs: [plan, collect]
-    # Never without GRADED_BULK=true (owner's switch); a dry run is always allowed.
+    # On unless GRADED_BULK=false; a dry run is always allowed.
     if: >-
       always() && needs.plan.result == 'success' && needs.collect.result != 'failure' &&
       contains(fromJSON('["nightly", "submit"]'), inputs.job || 'nightly') &&
-      (vars.GRADED_BULK == 'true' || inputs.dry_run)
+      (vars.GRADED_BULK != 'false' || inputs.dry_run)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -142,42 +188,67 @@ jobs:
       - name: Submit the next batches
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          CLAUDE_GRADED_MODEL: ${{ vars.CLAUDE_GRADED_MODEL }}
-          CLAUDE_CHECK_MODEL: ${{ vars.CLAUDE_CHECK_MODEL }}
-          CLAUDE_TEXT_MONTHLY_USD: ${{ vars.CLAUDE_TEXT_MONTHLY_USD }}
-          PER_CELL: ${{ vars.GRADED_PER_CELL || '9' }}
-          EXTENDED_PER_CELL: ${{ vars.GRADED_EXTENDED_PER_CELL || '0' }}
           MAX: ${{ inputs.max }}
           DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
-          GRADED_BULK: ${{ vars.GRADED_BULK }}
         run: |
           set -euo pipefail
           if [ -n "$MAX" ] && ! [[ "$MAX" =~ ^[0-9]{1,4}$ ]]; then echo "::error::max must be a whole number"; exit 1; fi
           source scripts/supabase-service-env.sh
-          args=(submit --per-cell "$PER_CELL" --extended-per-cell "$EXTENDED_PER_CELL")
+          args=(submit --extended-per-cell "$EXTENDED_PER_CELL")
+          if [ -n "$PER_CELL" ]; then args+=(--per-cell "$PER_CELL"); fi
           if [ -n "$MAX" ]; then args+=(--max "$MAX"); fi
-          if [ "$DRY_RUN" = "true" ]; then
-            args+=(--dry-run)
-          elif [ "$GRADED_BULK" != "true" ]; then
-            echo "::notice::GRADED_BULK is not 'true': nothing submitted."; exit 0
-          fi
+          if [ "$DRY_RUN" = "true" ]; then args+=(--dry-run); fi
+          node scripts/graded-batch.ts "${args[@]}"
+
+  bulk:
+    needs: plan
+    if: inputs.job == 'bulk' && vars.GRADED_BULK != 'false'
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Service key (the only step that may use the access token)
+        env:
+          SERVICE_KEY_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: scripts/resolve-service-key.sh
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Write, check and approve the library (collect + submit until done)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          MAX: ${{ inputs.max }}
+        run: |
+          set -euo pipefail
+          if [ -n "$MAX" ] && ! [[ "$MAX" =~ ^[0-9]{1,4}$ ]]; then echo "::error::max must be a whole number"; exit 1; fi
+          source scripts/supabase-service-env.sh
+          args=(bulk --hours 5.5 --poll-minutes 5 --extended-per-cell "$EXTENDED_PER_CELL")
+          if [ -n "$PER_CELL" ]; then args+=(--per-cell "$PER_CELL"); fi
+          if [ -n "$MAX" ]; then args+=(--max "$MAX"); fi
           node scripts/graded-batch.ts "${args[@]}"
 
   audio:
-    needs: [plan, collect]
+    needs: [plan, collect, bulk]
+    # Both accents (v0.5.3). Free (Kokoro on the runners); after a bulk run with more shards.
     if: >-
       always() && needs.plan.result == 'success' && needs.collect.result != 'failure' &&
-      (inputs.job == 'audio' || ((inputs.job || 'nightly') == 'nightly' && vars.GRADED_BULK == 'true'))
+      needs.bulk.result != 'failure' &&
+      (inputs.job == 'audio' || inputs.job == 'bulk' ||
+       ((inputs.job || 'nightly') == 'nightly' && vars.GRADED_BULK != 'false'))
     uses: ./.github/workflows/tts-pregen.yml
     with:
       source: graded
-      voice: en-US
-      shards: '1'
+      voice: both
+      shards: ${{ (inputs.job == 'bulk' || inputs.job == 'audio') && '6' || '1' }}
     secrets: inherit
 
   report:
-    needs: [plan, collect, submit]
-    if: always() && needs.plan.result == 'success' && contains(fromJSON('["nightly", "report", "plan"]'), inputs.job || 'nightly')
+    needs: [plan, collect, submit, bulk]
+    if: always() && needs.plan.result == 'success' && contains(fromJSON('["nightly", "report", "plan", "bulk"]'), inputs.job || 'nightly')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -194,8 +265,6 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Report
-        env:
-          CLAUDE_TEXT_MONTHLY_USD: ${{ vars.CLAUDE_TEXT_MONTHLY_USD }}
         run: |
           set -euo pipefail
           source scripts/supabase-service-env.sh

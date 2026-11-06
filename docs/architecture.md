@@ -6,7 +6,7 @@
  │        ▲ live queries               │  outbox            │ push   │ Postgres + RLS           │
  │        └──────────────── sync engine ┼──────────────────▶│──────▶ │  user tables, server_seq │
  │                                      │◀──────────────────│◀────── │  lexicon (shared)        │
- │  AI client ── import jobs ───────────┼──────────────────▶│ edge   │ ai-extract / ai-enrich ──┼──▶ Gemini
+ │  AI client ── import jobs ───────────┼──────────────────▶│ edge   │ ai-extract / ai-enrich ──┼──▶ Claude (Gemini)
  │  pdf.js worker, chunking, hashing    │                   │ funcs  │ chunk cache, ai_usage    │
  └──────────────────────────────────────────────────────────┘        └──────────────────────────┘
 ```
@@ -19,7 +19,7 @@
 * `src/data/` holds Dexie repositories and transactional actions. Every change
   to a synced table writes its outbox row in the same transaction.
 * The server stores user rows for backup and cross-device sync and keeps the
-  Gemini key. The shared lexicon stores each word sense once for all users.
+  AI keys (Claude first, Gemini as the fallback, decision 0077). The shared lexicon stores each word sense once for all users.
 * Word levels (A1–C2) come from one pure rule (`supabase/functions/_shared/level.ts`,
   re-exported by `src/domain/level.ts`) over licensed reference data (`data/levels/`,
   docs/licenses.md). Edge functions store a level with each new lexicon sense, a nightly
