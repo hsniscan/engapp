@@ -99,3 +99,17 @@ Details: `docs/licenses.md`.
   bank's own single example until they sign in. Unchanged from before.
 - Deferred: a "Türkçeden yanlış kurulur" note per collocation, the Turkish-learner level check
   (`level-tr`) for phrases, and idioms.
+
+## Amendment (2026-11-06): a language check before the list is stored
+
+The first production build ranked literal verb + preposition titles ("go to", "talk to",
+"live in") and broken pairs ("have make", "make it") at the top: frequency alone cannot tell a
+phrasal verb from a verb followed by a preposition. Now:
+
+- Pronouns and similar words ("it", "this", "lot") are never a collocation's noun.
+- Twice as many candidates as wanted (1 000 phrasal verbs, 600 collocations) go through one
+  cheap text call per 60 (`scripts/lib/phrase-check.ts`): it keeps only real phrasal verbs and
+  natural, fixed collocations. The kept ones are ranked again, so levels follow the final order.
+  It uses the system jobs' text AI (decision 0077: Claude under the system pool, Gemini behind
+  it), well under 0.10 US$ per build. A group whose call fails is dropped; more than a quarter
+  failing stops the build. `--no-check` skips it (local tests only).

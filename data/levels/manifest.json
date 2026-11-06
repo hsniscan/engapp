@@ -44,7 +44,7 @@
     "ref_word_freq": 30221,
     "client_lemmas": 30521,
     "client_min_zipf": 3,
-    "tr_corrections_in_client": 0,
+    "tr_corrections_in_client": 886,
     "tr_familiar_in_client": 411,
     "calibration": {
       "words": 8545,
@@ -93,8 +93,8 @@
       "bytes": 397697
     },
     "data/levels/client-levels.tsv": {
-      "sha256": "34adacb3ee25a7ddd1b1c4e294781c32900e51339cd36bdaaf5eb955ac2c1648",
-      "bytes": 502055
+      "sha256": "525fd8bb656441b3eff83a0b7ab7597df287cbd8ae89e6a17525272e52ff2f03",
+      "bytes": 518214
     },
     "supabase/migrations/20261021001200_ref_word_data.sql": {
       "sha256": "cdc6c4d3d3175583b3bc16af5b762e8d4439777c6dffb15999e58c8e1ef05eaa",

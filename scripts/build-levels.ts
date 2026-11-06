@@ -456,7 +456,7 @@ export async function build(): Promise<BuildResult> {
   const corrections = readCorrections();
   const corr = new Map(corrections.map((c) => [`${c.lemma_norm}\t${c.pos}\t${c.source}`, c]));
   // Familiar international words (decision 0073): one step easier unless a correction for
-  // the same list level is already at least as easy.
+  // the same list level is already easier (a tie keeps the familiar label).
   const familiar = readFamiliar();
   const fam = new Map(familiar.map((f) => [`${f.lemma_norm}\t${f.pos}\t${f.source}`, f]));
   let familiarInClient = 0;
@@ -466,7 +466,7 @@ export async function build(): Promise<BuildResult> {
     let c: { cefr: Cefr; reason: string } | undefined = corr.get(key);
     if (c && corr.get(key)!.base !== r.cefr) c = undefined;
     const f = fam.get(key);
-    if (f && f.cefr === r.cefr && (!c || CEFR.indexOf(c.cefr) > CEFR.indexOf(f.cefr_tr))) {
+    if (f && f.cefr === r.cefr && (!c || CEFR.indexOf(c.cefr) >= CEFR.indexOf(f.cefr_tr))) {
       c = { cefr: f.cefr_tr, reason: `${FAMILIAR_REASON_PREFIX}${f.tr}` };
       familiarInClient++;
     }

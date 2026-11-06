@@ -1,11 +1,13 @@
 /**
  * Builds the phrasal-verb and collocation list of the Kelime Bankası (v0.5.3 C4, decision
  * 0074) and stores it in public.ref_phrases, where the word-bank job (word_bank_pending)
- * picks it up. Free: no model call. Run by .github/workflows/word-bank.yml (job `phrases`).
+ * picks it up. Run by .github/workflows/word-bank.yml (job `phrases`). Counting is free; one
+ * cheap text call per 60 candidates (scripts/lib/phrase-check.ts, the system jobs' text budget)
+ * keeps only real phrasal verbs and natural collocations. --no-check skips it (tests only).
  *
  *   node scripts/build-phrases.ts --corpus <file> [--corpus <file> ...] [--wiki <file>]
  *       [--wiktionary <titles.txt>] [--phrasal 500] [--collocations 300] [--out <dir>]
- *       [--upload] [--dry-run]
+ *       [--upload] [--dry-run] [--no-check]
  *
  *   --corpus      plain sentences, one per line (Tatoeba's eng_sentences.tsv works as is: the
  *                 text is the last tab-separated field)
@@ -22,6 +24,8 @@ import { createInterface } from 'node:readline';
 import { parseArgs } from 'node:util';
 import { parseLevelIndex } from './lib/example-match.ts';
 import { log, serviceClient } from './lib/image-env.ts';
+import { checkPhrases, type PhraseCandidate } from './lib/phrase-check.ts';
+import { createSystemTextProvider, serviceClientFromEnv, systemTextAiAvailable } from './lib/system-ai.ts';
 import {
   COLLOCATION_VERBS,
   CollocationCounter,
@@ -100,6 +104,7 @@ async function main(): Promise<void> {
       out: { type: 'string' },
       upload: { type: 'boolean', default: false },
       'dry-run': { type: 'boolean', default: false },
+      'no-check': { type: 'boolean', default: false },
     },
   });
   if (values.corpus.length === 0 && !values.wiki) throw new Error('give at least one --corpus or --wiki');
@@ -157,18 +162,51 @@ async function main(): Promise<void> {
   const totals = new Map<string, CorpusTotals>(
     phrasals.map((ph) => [ph, { counts: pv.map((p) => p.counts.get(ph) ?? 0), words: pv.map((p) => p.words) }]),
   );
-  const phrasalRows = rankPhrasals(totals, levels, {
-    size: Number(values.phrasal),
-    minCount: 5,
-    version,
+  const phrasalSize = Number(values.phrasal);
+  const collocationSize = Number(values.collocations);
+  const collocationStatsAll = collocationStats(co);
+  const exclude = new Set([...listed, ...phrasals]);
+  const rank = (keep?: (lemma: string) => boolean, grow = 1) => ({
+    phrasal: rankPhrasals(totals, levels, {
+      size: Math.round(phrasalSize * grow),
+      minCount: 5,
+      version,
+      ...(keep ? { keep } : {}),
+    }),
+    collocations: rankCollocations(collocationStatsAll, levels, {
+      size: Math.round(collocationSize * grow),
+      minCount: 8,
+      minLogDice: 6,
+      version,
+      exclude,
+      ...(keep ? { keep } : {}),
+    }),
   });
-  const collocationRows = rankCollocations(collocationStats(co), levels, {
-    size: Number(values.collocations),
-    minCount: 8,
-    minLogDice: 6,
-    version,
-    exclude: new Set([...listed, ...phrasals]),
-  });
+  let keep: ((lemma: string) => boolean) | undefined;
+  if (!values['no-check']) {
+    // Twice as many candidates as wanted go to the check; the kept ones are ranked again, so
+    // the levels follow the final list's own order.
+    const env = (k: string) => process.env[k];
+    const db = serviceClientFromEnv(env);
+    if (!systemTextAiAvailable(env, { db })) throw new Error('the phrase check needs ANTHROPIC_API_KEY or GEMINI_API_KEY (or --no-check)');
+    const pool = rank(undefined, 2);
+    const candidates: PhraseCandidate[] = [
+      ...pool.phrasal.map((r) => ({ lemma: r.lemma_norm, kind: 'phrasal verb' as const })),
+      ...pool.collocations.map((r) => ({ lemma: r.lemma_norm, kind: 'collocation' as const })),
+    ];
+    const provider = createSystemTextProvider(env, { db, purpose: 'phrases', log });
+    const res = await checkPhrases(provider, candidates, { log });
+    log('phrase check', {
+      candidates: candidates.length,
+      kept: res.kept.size,
+      rejected: res.rejected.length,
+      failed: res.failed,
+      rejected_sample: res.rejected.slice(0, 40),
+    });
+    if (res.failed > candidates.length / 4) throw new Error(`the phrase check failed for ${res.failed} of ${candidates.length} candidates`);
+    keep = (lemma) => res.kept.has(lemma);
+  }
+  const { phrasal: phrasalRows, collocations: collocationRows } = rank(keep);
   const byLevel = (rows: PhraseRow[]) =>
     rows.reduce<Record<string, number>>((m, r) => ({ ...m, [r.cefr]: (m[r.cefr] ?? 0) + 1 }), {});
   log('phrase list built', {

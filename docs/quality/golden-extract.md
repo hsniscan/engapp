@@ -19,10 +19,10 @@ wordfreq) with the model's `cefr_guess`; "known" words are simulated notes from
 | 3-sleep-science | B2 | 26 | 25 | 64 % | 8 % | 28 % | 0 | 0 | 25 / 0 / 1 / 0 |
 | 4-lighthouse-story | B1 | 11 | 6 | 100 % | 0 % | 0 % | 0 | 0 | 9 / 0 / 0 / 2 |
 | 4-lighthouse-story | B2 | 11 | 7 | 57 % | 0 % | 43 % | 0 | 0 | 9 / 2 / 0 / 0 |
-| 5-word-list | B1 | 30 | 12 | 58 % | 8 % | 33 % | 0 | 0 | 19 / 4 / 3 / 4 |
-| 5-word-list | B2 | 30 | 14 | 57 % | 7 % | 36 % | 0 | 0 | 15 / 10 / 3 / 2 |
-| **all** | **B1** | | **37** | **81 %** | **3 %** | **16 %** | **0** | **0** | |
-| **all** | **B2** | | **75** | **60 %** | **7 %** | **33 %** | **0** | **0** | |
+| 5-word-list | B1 | 30 | 10 | 60 % | 10 % | 30 % | 0 | 0 | 18 / 5 / 3 / 4 |
+| 5-word-list | B2 | 30 | 16 | 56 % | 6 % | 38 % | 0 | 0 | 17 / 8 / 3 / 2 |
+| **all** | **B1** | | **35** | **83 %** | **3 %** | **14 %** | **0** | **0** | |
+| **all** | **B2** | | **77** | **60 %** | **6 %** | **34 %** | **0** | **0** | |
 
 ## Candidates
 
@@ -78,18 +78,18 @@ wordfreq) with the model's `cefr_guess`; "known" words are simulated notes from
 
 ### 5-word-list · B1
 
-- Pre-selected: opportunity (A2), though (A2), rarely (B1), suggest (A2), essential (B1), give up (B1), outcome (B2), put off (B1*), eventually (B1), widespread (B1), comfortable (A2), deadline (B1)
-- Senin için, not selected: rely on (B2), reluctant (B2), tackle (B2), wealthy (B2), scarce (B2*), thrive (B2*), subtle (B2)
-- Kolay: house (A1), often (A1), achieve (A2), window (A1)
-- Biliyorsun: borrow (A1), decision (B1), improve (A2)
+- Pre-selected: opportunity (A2), though (A2), rarely (B1), suggest (A2), essential (B1), give up (B1), put off (B1*), eventually (B2), widespread (B1), deadline (B1)
+- Senin için, not selected: rely on (B2), reluctant (B2), tackle (B2), wealthy (B2), scarce (B2*), outcome (B2), thrive (B2*), subtle (B2)
+- Kolay: house (A1), often (A1), achieve (A2), window (A1), comfortable (A2)
+- Biliyorsun: borrow (A2), decision (B1), improve (A2)
 - Above the next level: cope with (C1), hinder (C2), ubiquitous (C1*), meticulous (C2)
 
 ### 5-word-list · B2
 
-- Pre-selected: rely on (B2), reluctant (B2), rarely (B1), essential (B1), tackle (B2), wealthy (B2), scarce (B2*), outcome (B2), thrive (B2*), subtle (B2), ubiquitous (C1*), eventually (B1), widespread (B1), deadline (B1)
+- Pre-selected: rely on (B2), reluctant (B2), rarely (B1), essential (B1), tackle (B2), give up (B1), wealthy (B2), scarce (B2*), outcome (B2), thrive (B2*), subtle (B2), put off (B1*), ubiquitous (C1*), eventually (B2), widespread (B1), deadline (B1)
 - Senin için, not selected: cope with (C1)
-- Kolay: house (A1), often (A1), achieve (A2), opportunity (A2), though (A2), suggest (A2), give up (B1), put off (B1*), window (A1), comfortable (A2)
-- Biliyorsun: borrow (A1), decision (B1), improve (A2)
+- Kolay: house (A1), often (A1), achieve (A2), opportunity (A2), though (A2), suggest (A2), window (A1), comfortable (A2)
+- Biliyorsun: borrow (A2), decision (B1), improve (A2)
 - Above the next level: hinder (C2), meticulous (C2)
 
 `*` = level from the AI guess (bounded by frequency); otherwise list, frequency or words.

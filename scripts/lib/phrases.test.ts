@@ -115,6 +115,28 @@ describe('counting', () => {
       ['make a decision', 'B1', 'phrase', 'corpus'],
       ['pay attention', 'B1', 'phrase', 'corpus'],
     ]);
+    const kept = rankCollocations(stats, LEVELS, {
+      size: 10,
+      minCount: 8,
+      minLogDice: 6,
+      version: 't',
+      exclude: new Set(),
+      keep: (l) => l === 'pay attention',
+    });
+    expect(kept.map((r) => r.lemma_norm)).toEqual(['pay attention']);
+  });
+
+  it('never takes a pronoun as the noun of a collocation', () => {
+    const c = new CollocationCounter(['make'], () => true);
+    for (let k = 0; k < 20; k++) c.add('You can make it.');
+    const rows = rankCollocations(collocationStats([c]), LEVELS, {
+      size: 10,
+      minCount: 8,
+      minLogDice: 0,
+      version: 't',
+      exclude: new Set(),
+    });
+    expect(rows).toEqual([]);
   });
 });
 
@@ -141,5 +163,17 @@ describe('levels and ranking', () => {
     expect(rows.map((r) => r.lemma_norm)).toEqual(['give up', 'turn down']);
     expect(rows[0]).toMatchObject({ pos: 'phrasal verb', source: 'wiktionary', cefr: 'A1', corpus_count: 60, source_version: 'v' });
     expect(rows[0]!.zipf).toBeCloseTo(zipfOf(300), 2);
+  });
+
+  it('ranks only the entries the language check kept; levels follow the kept order', () => {
+    const rows = rankPhrasals(
+      new Map([
+        ['go to', { counts: [900, 900], words: [1e5, 1e5] }],
+        ['give up', { counts: [50, 10], words: [1e5, 1e5] }],
+      ]),
+      LEVELS,
+      { size: 10, minCount: 5, version: 'v', keep: (l) => l !== 'go to' },
+    );
+    expect(rows.map((r) => [r.lemma_norm, r.cefr])).toEqual([['give up', 'A1']]);
   });
 });

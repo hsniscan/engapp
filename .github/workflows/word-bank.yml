@@ -115,6 +115,17 @@ jobs:
           CLAUDE_WORDBANK_REVIEW_MODEL: ${{ vars.CLAUDE_WORDBANK_REVIEW_MODEL }}
           CLAUDE_CHECK_MODEL: ${{ vars.CLAUDE_CHECK_MODEL }}
           CLAUDE_MONTHLY_CREDIT_USD: ${{ vars.CLAUDE_MONTHLY_CREDIT_USD }}
+          # The phrase list's language check (job phrases): the system jobs' text AI (decision 0077).
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          CLAUDE_TEXT_MODEL: ${{ vars.CLAUDE_TEXT_MODEL }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          GEMINI_FALLBACK_MODEL: ${{ vars.GEMINI_FALLBACK_MODEL }}
+          AI_SYSTEM_DAILY_LIMIT: ${{ vars.AI_SYSTEM_DAILY_LIMIT || '100' }}
+          CLAUDE_TEXT_MONTHLY_USD: ${{ vars.CLAUDE_TEXT_MONTHLY_USD || '30' }}
+          AI_SYSTEM_MONTHLY_USD: ${{ vars.AI_SYSTEM_MONTHLY_USD || '2' }}
+          AI_SYSTEM_MAX_SHARE: ${{ vars.AI_SYSTEM_MAX_SHARE || '0.15' }}
+          AI_CLAUDE_FALLBACK: ${{ vars.AI_CLAUDE_FALLBACK || 'on' }}
+          AI_TEXT_PRIMARY: ${{ vars.AI_TEXT_PRIMARY || 'claude' }}
           JOB: ${{ inputs.job || 'run' }}
           MAX: ${{ inputs.max }}
           DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}

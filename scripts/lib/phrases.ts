@@ -40,6 +40,12 @@ const ARTICLES: ReadonlySet<string> = new Set(['a', 'an', 'the']);
 const POSSESSIVES: ReadonlySet<string> = new Set(['my', 'your', 'his', 'her', 'our', 'their', 'its']);
 const OTHER_DETERMINERS: ReadonlySet<string> = new Set(['some', 'any', 'no', 'this', 'that', 'every']);
 
+/** Pronouns and other words the noun lists also carry ("IT"), never a collocation's noun. */
+const NOT_NOUNS: ReadonlySet<string> = new Set([
+  'it', 'this', 'that', 'one', 'ones', 'what', 'all', 'some', 'any', 'none', 'lot', 'something',
+  'anything', 'nothing', 'everything', 'someone', 'anyone', 'everyone', 'nobody', 'thing', 'things',
+]);
+
 /** Words in a Wiktionary title that make it an idiom template, not a phrasal verb. */
 const PLACEHOLDERS = /\b(one's|oneself|someone|somebody|something|sth|sb)\b/;
 
@@ -296,10 +302,10 @@ const meanRate = (t: CorpusTotals) =>
 export function rankPhrasals(
   totals: ReadonlyMap<string, CorpusTotals>,
   levels: LevelIndex,
-  opts: { size: number; minCount: number; version: string },
+  opts: { size: number; minCount: number; version: string; keep?: (lemma: string) => boolean },
 ): PhraseRow[] {
   return [...totals]
-    .filter(([, t]) => t.counts.reduce((a, b) => a + b, 0) >= opts.minCount)
+    .filter(([lemma, t]) => t.counts.reduce((a, b) => a + b, 0) >= opts.minCount && (opts.keep?.(lemma) ?? true))
     .sort((a, b) => meanRate(b[1]) - meanRate(a[1]) || a[0].localeCompare(b[0]))
     .slice(0, opts.size)
     .map(([lemma, t], k) => ({
@@ -365,7 +371,14 @@ export function collocationStats(counters: readonly CollocationCounter[]): Collo
 export function rankCollocations(
   stats: readonly CollocationStat[],
   levels: LevelIndex,
-  opts: { size: number; minCount: number; minLogDice: number; version: string; exclude: ReadonlySet<string> },
+  opts: {
+    size: number;
+    minCount: number;
+    minLogDice: number;
+    version: string;
+    exclude: ReadonlySet<string>;
+    keep?: (lemma: string) => boolean;
+  },
 ): PhraseRow[] {
   return stats
     .map((s) => ({ s, lemma: [s.verb, s.det, s.noun].filter(Boolean).join(' ') }))
@@ -374,7 +387,9 @@ export function rankCollocations(
         s.totals.counts.reduce((a, b) => a + b, 0) >= opts.minCount &&
         s.logDice >= opts.minLogDice &&
         !PARTICLES.has(s.noun) &&
+        !NOT_NOUNS.has(s.noun) &&
         !opts.exclude.has(lemma) &&
+        (opts.keep?.(lemma) ?? true) &&
         !opts.exclude.has(`${s.verb} ${s.noun}`),
     )
     .sort((a, b) => meanRate(b.s.totals) - meanRate(a.s.totals) || a.lemma.localeCompare(b.lemma))
