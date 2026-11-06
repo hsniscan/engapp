@@ -61,11 +61,15 @@ describe('learning steps later today', () => {
     await learnOne(Rating.Easy);
     renderRoute(<HomeScreen />);
     expect(await screen.findByTestId('today-hero-done')).toBeInTheDocument();
-    // Next morning, 09:00: the card graduated with Easy is not due yet, but the day changed.
+    // Next morning, 09:00: the card graduated with Easy is not due yet, but the day changed:
+    // the new date, and the word's production card (unlocked by the graduation) as today's one
+    // new card. The check waits for that end state; while the queries refresh one by one the
+    // card can briefly read "Bugün kart yok" (the new day's activity before its queue).
     vi.setSystemTime(T + 11.5 * 60 * MIN);
     await act(async () => bumpStudyTickForTesting());
-    await waitFor(() =>
-      expect(within(screen.getByTestId('today-hero-done')).getByRole('heading')).toHaveTextContent('Bugün kart yok'),
-    );
+    await waitFor(() => expect(screen.getByText('Salı, 16 Haziran')).toBeInTheDocument());
+    const hero = await screen.findByTestId('today-hero');
+    expect(within(hero).getByTestId('today-split')).toHaveTextContent('1 kart kaldı');
+    expect(within(hero).getByTestId('study-type-production')).toHaveTextContent('1');
   });
 });
