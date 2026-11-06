@@ -1,5 +1,5 @@
 import { test as base, expect, type Page } from '@playwright/test';
-import { FakeBackend } from './backend.ts';
+import { FakeBackend, SUPABASE_URL } from './backend.ts';
 
 export { expect };
 
@@ -26,6 +26,19 @@ export const test = base.extend<Fixtures>({
           // Storage blocked: the onboarding shows, as for a real new user.
         }
       });
+    // A guest's device downloads Kelime Bankası in the background. Never from the live server:
+    // its size changes with the content jobs and made timings flaky. An empty bank unless a
+    // spec serves one (serveWordBank) or installs the fake backend; later routes win.
+    await context.route(`${SUPABASE_URL}/rest/v1/word_bank**`, (route) =>
+      route.request().method() === 'OPTIONS'
+        ? route.fulfill({ status: 204 })
+        : route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            headers: { 'access-control-allow-origin': '*' },
+            body: '[]',
+          }),
+    );
     await provide(context);
   },
   backend: async ({ context }, provide) => {
