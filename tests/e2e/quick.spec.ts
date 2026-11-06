@@ -139,6 +139,8 @@ test('a long selection, guest: "Kelimeleri çıkar" shows the two choices with t
 });
 
 test('an unknown word for a guest: invited to sign in or write the meaning', async ({ page }) => {
+  // The guest's sheet first downloads Kelime Bankası; a test bank keeps that off the live server.
+  await serveWordBank(page, [row('serendipity', 'C1', 'mutlu tesadüf', 1)]);
   await page.goto('/quick?text=flibbertigibbet');
   const sheet = page.getByRole('dialog', { name: 'flibbertigibbet' });
   await expect(sheet.getByText(/Anlamını bulmak için giriş yap/)).toBeVisible();
