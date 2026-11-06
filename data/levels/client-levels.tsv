@@ -99,10 +99,10 @@ absorbs	3.18
 absorption	3.66	
 abstain	3.07	
 abstinence	3.18	
-abstract	4.14	j:B1:j
+abstract	4.14	j:B1:j:A2:Türkçede 'abstrakt' veya soyut anlamında bilinir
 abstraction	3.30	n:C1:o
 abstracts	3.11	
-absurd	3.95	j:B2:j
+absurd	3.95	j:B2:j:B1:Türkçede 'absürt'
 absurdity	3.21	
 abt	3.24	
 abu	4.01	
@@ -133,7 +133,7 @@ accelerated	3.75
 accelerating	3.46	
 acceleration	3.73	
 accelerator	3.42	
-accent	4.14	n:B1:j
+accent	4.14	n:B1:j:A2:Türkçede 'aksan' kelimesi yaygındır
 accents	3.57	
 accept	4.85	v:A2:j
 acceptable	4.27	j:A2:j
@@ -159,7 +159,7 @@ accolades	3.17
 accommodate	4.02	
 accommodated	3.16	
 accommodating	3.25	
-accommodation	4.06	n:B2:j
+accommodation	4.06	n:B2:j:B1:Türkçede 'akomodasyon'
 accommodations	3.48	
 accompanied	4.25	
 accompanies	3.20	
@@ -289,9 +289,9 @@ actors	4.40
 actress	4.45	n:B1:j
 actresses	3.49	
 acts	4.64	
-actual	4.85	j:B2:j
+actual	4.85	j:B2:j:C1:'aktüel' ile karışır, anlamı 'gerçek'
 actuality	3.10	
-actually	5.49	r:A2:j
+actually	5.49	r:A2:j:B1:'aktüel' ile karışır, anlamı 'aslında'
 acupuncture	3.04	
 acute	4.00	j:B2:j:B1:tanidik:akut
 acutely	3.13	r:C1:o
@@ -327,7 +327,7 @@ addition	5.01	n:A2:j
 additional	4.98	j:A2:j
 additionally	4.20	r:B2:j
 additions	3.80	
-additive	3.33	j:C2:o|n:C2:o
+additive	3.33	j:C2:o:C1:Türkçede 'katkı maddesi' anlamında 'katkı' veya 'additif' olarak bilinir|n:C2:o:C1:Türkçede 'additif' veya 'katkı maddesi'
 additives	3.25	
 address	4.91	n:A1:j|v:B1:j
 addressed	4.26	
@@ -373,10 +373,10 @@ administer	3.54
 administered	3.96	
 administering	3.30	
 administers	3.00	
-administration	4.93	n:B1:j
+administration	4.93	n:B1:j:A2:Türkçede 'administrasyon' olarak bilinir
 administration's	3.34	
 administrations	3.35	
-administrative	4.45	j:B2:j
+administrative	4.45	j:B2:j:B1:Türkçede 'idari' ve 'administrasyon'
 administrator	4.07	
 administrators	3.85	
 admins	3.04	
@@ -451,7 +451,7 @@ adversary	3.29	n:C1:o
 adverse	3.89	j:B2:j|j:C2:o
 adversely	3.27	r:B2:j|r:C2:o
 adversity	3.38	n:B2:j
-advert	3.46	n:B1:j
+advert	3.46	n:B1:j:A2:Türkçede 'advert'
 advertise	3.66	v:B1:j
 advertised	3.75	
 advertisement	3.84	n:A2:j
@@ -564,9 +564,9 @@ ageless	2.69	j:B2:j
 agencies	4.54	
 agency	4.87	n:A2:j|n:C2:o
 agency's	3.23	
-agenda	4.30	n:B1:j
+agenda	4.30	n:B1:j:A2:Türkçede 'ajanda'
 agendas	3.27	
-agent	4.81	n:A2:j
+agent	4.81	n:A2:j:A1:Türkçede 'ajan'
 agents	4.55	
 ages	4.53	
 aggravated	3.47	
@@ -601,7 +601,7 @@ agreement	4.88	n:B1:j
 agreements	4.12	
 agrees	4.08	
 agricultural	4.34	j:B1:j
-agriculture	4.37	n:B1:j
+agriculture	4.37	n:B1:j:A2:Türkçede 'tarım' yerine bazen 'agrikültür'
 aguero	3.11	
 ah	4.63	
 aha	3.56	
@@ -708,7 +708,7 @@ albums	4.19
 albuquerque	3.50	
 alchemist	3.07	
 alchemy	3.21	
-alcohol	4.61	n:B1:j
+alcohol	4.61	n:B1:j:A2:Türkçede 'alkol'
 alcoholic	3.91	j:B1:j|n:B2:j
 alcoholics	3.18	
 alcoholism	3.45	n:B2:j
@@ -796,7 +796,7 @@ allergy	3.60
 alleviate	3.52	v:C1:o
 alley	3.87	
 alleys	3.06	
-alliance	4.40	n:B2:j
+alliance	4.40	n:B2:j:B1:Türkçede 'alyans'
 alliances	3.57	
 allie	3.14	
 allied	4.07	
@@ -841,7 +841,7 @@ alot	3.93
 aloud	3.51	r:B1:j
 alp	3.07	
 alpha	4.25	
-alphabet	3.70	n:B1:j
+alphabet	3.70	n:B1:j:A2:Türkçede 'alfabe' olarak bilinir
 alphabetical	3.22	j:B2:j:B1:tanidik:alfabetik
 alphabetically	3.03	
 alpine	3.62	
@@ -875,8 +875,8 @@ alton	3.18
 altruism	2.94	n:C1:o
 altruistic	2.95	j:C1:o
 alum	3.25	
-aluminium	3.73	n:B2:j
-aluminum	4.01	n:B2:j
+aluminium	3.73	n:B2:j:B1:Türkçede 'alüminyum'
+aluminum	4.01	n:B2:j:B1:Türkçede 'alüminyum' olarak doğrudan bilinir
 alumni	3.89	
 alvarez	3.40	
 alves	3.09	
@@ -910,7 +910,7 @@ ambitions	3.64
 ambitious	3.95	j:B1:j
 ambivalent	3.01	
 ambrose	3.47	
-ambulance	4.06	n:B1:j
+ambulance	4.06	n:B1:j:A2:Türkçede 'ambulans'
 ambulances	3.07	
 ambush	3.55	
 ambushed	3.21	
@@ -946,7 +946,7 @@ amish	3.27
 amit	3.01	
 amman	3.08	
 ammo	3.48	
-ammonia	3.36	n:B2:j
+ammonia	3.36	n:B2:j:B1:Türkçede 'amonyak'
 ammonium	3.03	
 ammunition	3.91	
 amnesia	3.34	
@@ -991,11 +991,11 @@ analog	3.73
 analogous	3.36	
 analogue	3.28	
 analogy	3.71	n:B2:j
-analyse	3.47	v:B1:j
+analyse	3.47	v:B1:j:A2:Türkçede 'analiz etmek' yaygındır
 analysed	3.48	
 analyses	3.79	
 analysing	3.22	
-analysis	4.91	n:B1:j
+analysis	4.91	n:B1:j:A2:Türkçede 'analiz'
 analyst	4.03	n:B2:j:B1:tanidik:analist
 analysts	3.84	
 analytic	3.31	
@@ -1090,7 +1090,7 @@ anil	3.01
 animal	4.81	n:A1:j
 animals	4.84	
 animate	3.14	v:B2:j
-animated	4.07	j:B1:j
+animated	4.07	j:B1:j:A2:Türkçede 'anime'
 animatedly	1.89	r:C1:o
 animation	4.18	n:B1:j:A2:tanidik:animasyon
 animations	3.36	
@@ -1165,7 +1165,7 @@ anthony	4.41
 anthrax	3.15	
 anthropological	3.09	j:C2:o
 anthropologically	1.72	r:C2:o
-anthropologist	3.16	n:C1:o
+anthropologist	3.16	n:C1:o:B2:Türkçede 'antropolog'
 anthropologists	3.02	
 anthropology	3.65	n:C1:o:B2:tanidik:antropoloji
 anti	5.01	j:B1:j
@@ -1193,7 +1193,7 @@ antimicrobial	3.01
 antioch	3.06	
 antipollution		n:B2:j
 antiquated	3.06	j:C1:o
-antique	3.86	j:B2:j|n:B1:j
+antique	3.86	j:B2:j:B1:Türkçede 'antik'|n:B1:j:A2:Türkçede 'antik' kelimesi var
 antiques	3.48	
 antiquities	3.26	
 antiquity	3.43	n:C1:o
@@ -1394,7 +1394,7 @@ archaic	3.36
 archbishop	3.82	
 archdiocese	3.08	
 arched	3.24	
-archeologist	2.42	n:B2:j
+archeologist	2.42	n:B2:j:B1:Türkçede 'arkeolog'
 archer	3.81	
 archers	3.29	
 archery	3.25	
@@ -1407,7 +1407,7 @@ archipelago	3.33
 architect	4.08	n:B1:j
 architects	3.91	
 architectural	3.96	
-architecture	4.42	n:A2:j
+architecture	4.42	n:A2:j:A1:Türkçede 'mimari' kökenli 'arkitektör'
 architectures	3.02	
 archival	3.28	j:C2:o
 archive	3.98	
@@ -1546,12 +1546,12 @@ artie	3.14
 artifact	3.41	n:C2:o
 artifacts	3.72	
 artifice	2.58	n:C2:o
-artificial	4.24	j:A2:j
+artificial	4.24	j:A2:j:A1:Türkçede 'yapay' yerine 'artifisyel'
 artificially	3.44	r:B2:j
 artillery	3.96	
 artisan	3.26	
 artisans	3.25	
-artist	4.80	n:B1:j
+artist	4.80	n:B1:j:B2:'artist' ile karışır, anlamı 'sanatçı'
 artist's	3.52	
 artistic	4.17	j:B1:j:A2:tanidik:artistik
 artistically	2.92	r:C1:o
@@ -1707,7 +1707,7 @@ astro	3.23
 astrology	3.38	
 astronaut	3.60	n:A2:j:A1:tanidik:astronot
 astronauts	3.46	
-astronomer	3.16	n:B1:j
+astronomer	3.16	n:B1:j:A2:Türkçede 'astronom'
 astronomers	3.40	
 astronomical	3.49	
 astronomy	3.63	n:B2:j:B1:tanidik:astronomi
@@ -1748,7 +1748,7 @@ atletico	3.09
 atm	3.85	
 atmosphere	4.46	n:B1:j:A2:tanidik:atmosfer
 atmospheric	3.84	j:C1:o:B2:tanidik:atmosferik
-atom	3.72	n:A2:j
+atom	3.72	n:A2:j:A1:Türkçede 'atom'
 atomic	3.98	j:B1:j:A2:tanidik:atomik
 atoms	3.75	
 atonement	3.09	
@@ -1835,7 +1835,7 @@ audi	3.66
 audible	3.45	
 audience	4.73	n:A2:j
 audiences	4.02	
-audio	4.47	j:A2:j
+audio	4.47	j:A2:j:A1:Türkçede 'odyo'
 audiobook	3.10	
 audit	4.04	n:B2:j|n:C2:o|v:C2:o
 audited	3.13	
@@ -1919,7 +1919,7 @@ automotive	3.93
 autonomous	3.85	j:C2:o
 autonomously	2.64	r:C2:o
 autonomy	3.86	
-autopilot	3.16	n:C2:o
+autopilot	3.16	n:C2:o:C1:Türkçede 'otopilot'
 autopsy	3.57	
 autos	3.12	
 autumn	4.26	n:A1:j
@@ -1928,7 +1928,7 @@ auxiliary	3.74	j:B1:j
 av	3.63	
 ava	3.49	
 avail	3.59	
-availability	4.13	n:B2:j
+availability	4.13	n:B2:j:B1:Türkçede 'avquier' benzeri 'availability' bilinir
 available	5.28	j:B1:j
 avalanche	3.48	
 avalon	3.19	
@@ -2113,12 +2113,12 @@ bakersfield	3.12
 bakery	3.67	n:B1:j
 baking	3.92	
 bal	3.13	
-balance	4.76	n:B1:j|v:B2:j
+balance	4.76	n:B1:j:A2:Türkçede 'bakiye' ve 'balans'|v:B2:j
 balanced	4.18	j:B2:j
 balances	3.62	
 balancing	3.80	
 balconies	3.04	
-balcony	3.78	n:A2:j
+balcony	3.78	n:A2:j:A1:Türkçede 'balkon' olarak bilinir
 bald	3.83	j:B1:j|v:C1:o
 baldly	1.87	r:C1:o
 baldwin	3.79	
@@ -2134,9 +2134,9 @@ ballads	3.16
 ballard	3.25	
 ballast	3.16	
 ballerina	3.10	
-ballet	3.95	n:B2:j
+ballet	3.95	n:B2:j:B1:Türkçede 'bale'
 ballistic	3.48	
-balloon	3.90	n:A2:j
+balloon	3.90	n:A2:j:A1:Türkçede 'balon' olarak bilinir
 balloons	3.66	
 ballot	4.06	n:B2:j
 ballots	3.64	
@@ -2150,7 +2150,7 @@ baltimore	4.22
 bam	3.64	
 bama	3.17	
 bamboo	3.65	
-ban	4.55	n:B2:j|v:B2:j
+ban	4.55	n:B2:j:B1:Türkçede 'ban' yasak anlamında yaygındır|v:B2:j
 banana	4.00	n:A1:j
 bananas	3.70	
 banco	3.03	
@@ -2246,11 +2246,11 @@ barnett	3.43
 barney	3.54	
 barns	3.14	
 barnsley	3.00	
-barometer	3.18	n:B2:j|n:C2:o
+barometer	3.18	n:B2:j:B1:Türkçede 'barometre'|n:C2:o:C1:Türkçede 'barometre'
 baron	3.88	
 baroness	3.38	
 barons	3.17	
-baroque	3.32	j:C2:o
+baroque	3.32	j:C2:o:C1:Türkçede 'barok'
 barr	3.46	
 barracks	3.67	
 barrage	3.39	
@@ -2733,12 +2733,12 @@ biodiversity	3.47
 biographer	3.09	
 biographical	3.38	
 biographies	3.23	
-biography	3.89	n:B1:j
-biological	4.31	j:B2:j
+biography	3.89	n:B1:j:A2:Türkçede 'biyografi'
+biological	4.31	j:B2:j:B1:Türkçede 'biyolojik'
 biologically	3.23	
 biologist	3.35	
 biologists	3.24	
-biology	4.22	n:B1:j
+biology	4.22	n:B1:j:A2:Türkçede 'biyoloji'
 biomass	3.38	
 biomedical	3.47	
 biopic	3.03	
@@ -2897,7 +2897,7 @@ blocker	3.20
 blockers	3.13	
 blocking	4.12	
 blocks	4.43	
-blog	4.73	n:B1:j
+blog	4.73	n:B1:j:A2:Türkçede 'blog'
 blogger	3.85	n:B1:j
 bloggers	3.76	
 blogging	3.71	
@@ -3024,7 +3024,7 @@ bolted	3.25
 bolton	3.65	
 bolts	3.62	
 bom	3.34	
-bomb	4.60	n:B1:j|v:B1:j
+bomb	4.60	n:B1:j:A2:Türkçede 'bomba'|v:B1:j:A2:Türkçede 'bombalamak'
 bombard	2.74	n:B2:j
 bombarded	3.17	
 bombardment	3.34	
@@ -3080,7 +3080,7 @@ bookshelf	2.92	n:A2:j
 bookshop	3.11	n:A2:j
 bookstore	3.42	n:A1:j
 bookstores	3.03	
-boom	4.33	n:B1:j
+boom	4.33	n:B1:j:A2:Türkçede 'boom'
 boomer	3.28	
 boomerang	3.06	
 boomers	3.42	
@@ -3123,7 +3123,7 @@ borne	3.67
 borneo	3.09	
 borough	3.83	
 boroughs	3.22	
-borrow	4.00	v:A1:j
+borrow	4.00	v:A1:j:A2:Türkçede 'ödünç' kelimesi hem ödünç almak hem vermektir
 borrowed	3.91	
 borrower	3.25	
 borrowers	3.38	
@@ -3143,7 +3143,7 @@ boston's	3.05
 bot	3.82	
 botanic	3.04	
 botanical	3.49	
-botany	3.38	n:B2:j
+botany	3.38	n:B2:j:B1:Türkçede 'botanik'
 botched	3.21	
 both	5.79	r:A1:j|d:A1:j|o:A1:j
 bother	4.39	n:B1:j|v:A2:j
@@ -3177,7 +3177,7 @@ bounded	3.50
 boundless	3.04	
 bounds	3.68	
 bounty	3.74	
-bouquet	3.41	n:C1:o
+bouquet	3.41	n:C1:o:B2:Türkçede 'buket' olarak bilinir
 bourbon	3.60	n:B2:j
 bourgeois	3.40	
 bourgeoisie	3.03	
@@ -3439,7 +3439,7 @@ broader	4.01
 broadly	3.82	r:B2:j
 broadway	4.08	
 broccoli	3.50	n:B1:j:A2:tanidik:brokoli
-brochure	3.37	n:B2:j
+brochure	3.37	n:B2:j:B1:Türkçede 'broşür'
 brochures	3.08	
 brock	3.71	
 brodie	3.22	
@@ -3485,7 +3485,7 @@ brownish	3.13
 browns	3.86	
 brows	3.34	
 browse	3.59	v:B2:j
-browser	3.89	n:B2:j
+browser	3.89	n:B2:j:B1:Türkçede 'tarayıcı' anlamında 'browser'
 browsers	3.19	
 browsing	3.60	
 bruce	4.34	
@@ -3766,10 +3766,10 @@ cabal	3.04
 cabaret	3.24	
 cabbage	3.55	n:B1:j
 cabin	4.13	n:B1:j:A2:tanidik:kabin
-cabinet	4.49	n:B2:j
+cabinet	4.49	n:B2:j:B1:Türkçede 'kabin'
 cabinets	3.46	
 cabins	3.39	
-cable	4.54	n:B2:j
+cable	4.54	n:B2:j:B1:Türkçede 'kablo' olarak bilinir
 cables	3.87	
 cabot	3.01	
 cabrera	3.04	
@@ -3789,7 +3789,7 @@ cafeteria	3.44	n:A2:j:A1:tanidik:kafeterya
 caffeinate	1.05	v:C2:o
 caffeine	3.67	
 café	3.75	n:A1:j
-cage	4.13	n:B1:j
+cage	4.13	n:B1:j:A2:Türkçede 'kafeterya' gibi 'kaj' benzeri bilinir
 caged	3.06	
 cages	3.43	
 cahill	3.18	
@@ -3878,7 +3878,7 @@ camille	3.32
 camo	3.16	
 camouflage	3.42	
 camp	4.79	n:A1:j|v:A2:j
-campaign	5.00	n:B2:j|v:C1:o
+campaign	5.00	n:B2:j:B1:Türkçede 'kampanya'|v:C1:o
 campaigned	3.39	
 campaigner	3.00	
 campaigning	3.62	
@@ -3907,7 +3907,7 @@ canal	4.22	n:B1:j:A2:tanidik:kanal
 canals	3.48	
 canary	3.44	
 canberra	3.64	
-cancel	4.18	v:B1:j
+cancel	4.18	v:B1:j:A2:Türkçede 'kanal iptali' gibi 'for cancel'
 canceled	3.90	
 canceling	3.20	
 cancellation	3.76	
@@ -3975,7 +3975,7 @@ capcom	3.07
 cape	4.30	
 capes	3.00	
 capita	3.82	
-capital	5.01	n:A2:j
+capital	5.01	n:A2:j:A1:Türkçede 'kapital'
 capital letter		n:A2:j
 capitalism	3.97	
 capitalist	3.79	
@@ -3993,7 +3993,7 @@ caps	4.15
 capsule	3.70	n:B1:j:A2:tanidik:kapsül
 capsules	3.33	
 capt	3.71	
-captain	4.89	n:A2:j
+captain	4.89	n:A2:j:A1:Türkçede 'kaptan'
 captain's	3.21	
 captains	3.62	
 caption	3.72	n:B2:j
@@ -4032,7 +4032,7 @@ card	5.04	n:A1:j
 cardboard	3.66	n:B2:j
 cardiac	3.84	
 cardiff	3.92	
-cardigan	3.21	n:B2:j
+cardigan	3.21	n:B2:j:B1:Türkçede 'kardiyan'
 cardinal	3.90	
 cardinals	3.77	
 cardio	3.44	
@@ -4076,7 +4076,7 @@ carmichael	3.24
 carnage	3.30	
 carnegie	3.61	
 carney	3.14	
-carnival	3.86	n:B2:j
+carnival	3.86	n:B2:j:B1:Türkçede 'karnaval'
 carol	4.02	
 carole	3.26	
 carolina	4.52	
@@ -4101,7 +4101,7 @@ carriers	4.02
 carries	4.23	
 carrington	3.14	
 carroll	3.80	
-carrot	3.62	n:A2:j
+carrot	3.62	n:A2:j:A1:Türkçede 'havuç' benzeşir ama 'kraç' gibi değil
 carrots	3.63	
 carry	4.89	v:A1:j
 carrying	4.61	
@@ -4137,7 +4137,7 @@ cascade	3.47	n:B2:j|n:C2:o|v:C2:o
 case	5.55	n:A1:j
 cases	5.04	
 casey	3.96	
-cash	4.92	n:A2:j
+cash	4.92	n:A2:j:A1:Türkçede 'keş'
 cashed	3.10	
 cashier	3.57	
 cashing	3.08	
@@ -4183,7 +4183,7 @@ catalyst	3.76	n:B2:j
 catalysts	3.10	
 catalytic	3.22	
 catapult	3.01	
-catastrophe	3.56	n:B2:j
+catastrophe	3.56	n:B2:j:B1:Türkçede 'katastrofe' veya 'katastrofik' olarak var
 catastrophic	3.58	j:B2:j|j:C2:o
 catastrophically	2.42	r:C2:o
 catch	4.87	n:A1:j|v:A1:j
@@ -4292,7 +4292,7 @@ celebration	4.29	n:A1:j
 celebrations	3.85	
 celebratory	3.06	
 celebrities	4.08	
-celebrity	4.29	n:B1:j
+celebrity	4.29	n:B1:j:A2:Türkçede 'celebs' yerine 'selebriti'
 celebs	3.11	
 celery	3.32	
 celeste	3.19	
@@ -4303,7 +4303,7 @@ cell	4.87	n:B1:j
 cellar	3.60	n:B2:j
 cellars	3.00	
 cellist	2.71	n:B2:j
-cello	3.29	n:B2:j
+cello	3.29	n:B2:j:B1:Türkçede 'çello' olarak bilinir
 cellphone	3.65	
 cells	4.75	
 cellular	3.89	
@@ -4321,18 +4321,18 @@ censored	3.38
 censors	3.01	
 censorship	3.85	
 census	4.19	
-cent	4.83	n:A2:j
+cent	4.83	n:A2:j:A1:Türkçede 'sent'
 centenary	3.39	
 centennial	3.36	
-center	5.19	n:A2:j
+center	5.19	n:A2:j:A1:Türkçede 'santral' veya 'merkez' anlamında kullanılır
 center's	3.18	
 centered	3.99	
 centerpiece	3.10	
 centers	4.42	
-centigrade	2.47	n:B2:j
-centimeter	2.89	n:A2:j
+centigrade	2.47	n:B2:j:B1:Türkçede 'santigrat'
+centimeter	2.89	n:A2:j:A1:Türkçede 'santimetre'
 centimeters	3.24	
-centimetre	2.55	n:A2:j
+centimetre	2.55	n:A2:j:A1:Türkçede 'santimetre' olarak kullanılır
 central	5.12	j:B1:j
 central heating		n:B1:j
 centralised	2.93	j:C2:o
@@ -4362,7 +4362,7 @@ cert	3.19
 certain	5.16	j:A2:j
 certainly	5.00	r:A2:j
 certainty	3.82	n:B1:j
-certificate	4.29	n:B2:j
+certificate	4.29	n:B2:j:B1:Türkçede 'sertifika'
 certificates	3.77	
 certification	3.97	n:B2:j:B1:tanidik:sertifikasyon
 certifications	3.29	
@@ -4413,7 +4413,7 @@ chamberlain	3.59
 chambers	4.06	
 chameleon	3.10	
 champ	3.90	
-champagne	3.90	n:A2:j
+champagne	3.90	n:A2:j:A1:Türkçede 'şampanya' olarak bilinir
 champaign	3.08	
 champion	4.62	n:B1:j
 championed	3.11	
@@ -4506,7 +4506,7 @@ chases	3.22
 chasing	4.12	
 chassis	3.54	
 chastity	3.14	
-chat	4.57	n:B1:j|v:A2:j
+chat	4.57	n:B1:j:A2:Türkçede 'chat' yaygın olarak bilinir|v:A2:j
 chat show		n:B1:j
 chateau	3.30	
 chatham	3.28	
@@ -4564,13 +4564,13 @@ cheesecake	3.22
 cheeses	3.23	
 cheesy	3.58	
 cheetah	3.20	
-chef	4.23	n:A2:j
+chef	4.23	n:A2:j:A1:Türkçede 'şef'
 chefs	3.64	
 chelsea	4.35	
 chelsea's	3.03	
 cheltenham	3.34	
 chem	3.46	
-chemical	4.57	j:A2:j|n:B1:j
+chemical	4.57	j:A2:j:A1:Türkçede 'kimyasal' olarak bilinir|n:B1:j:A2:Türkçede 'kimyasal' olarak bilinir
 chemically	3.24	
 chemicals	4.17	
 chemist	3.51	n:B1:j
@@ -4582,7 +4582,7 @@ chen	3.96
 cheney	3.36	
 cheng	3.37	
 chennai	3.52	
-cheque	3.49	n:A2:j
+cheque	3.49	n:A2:j:A1:Türkçede 'çek' kelimesiyle aynı
 cheques	3.10	
 cher	3.36	
 cherish	3.52	v:B1:j
@@ -4643,7 +4643,7 @@ chilean	3.44
 chili	3.73	n:A2:j
 chill	4.18	n:C1:o|v:C1:o
 chilled	3.49	
-chilli	3.29	n:A2:j
+chilli	3.29	n:A2:j:A1:Türkçede 'çili' veya 'şili' benzeri bilinir
 chilling	3.69	
 chills	3.42	
 chilly	3.50	j:C1:o
@@ -4651,7 +4651,7 @@ chime	3.14
 chimes	3.06	
 chimney	3.55	n:B2:j
 chimneys	3.01	
-chimpanzee	2.96	n:A2:j
+chimpanzee	2.96	n:A2:j:A1:Türkçede 'şempanze'
 chin	4.00	n:A2:j
 china	5.10	
 china's	3.90	
@@ -4734,7 +4734,7 @@ chronic	4.20
 chronically	3.09	
 chronicle	3.70	
 chronicles	3.64	
-chronological	3.40	j:B1:j|j:C2:o
+chronological	3.40	j:B1:j:A2:Türkçede 'kronolojik'|j:C2:o
 chronologically	2.91	r:C2:o
 chronology	3.22	n:C2:o
 chrysalis	2.60	n:C2:o
@@ -4763,7 +4763,7 @@ cicero	3.18
 cid	3.15	
 cider	3.50	
 cigar	3.57	
-cigarette	4.06	n:A2:j
+cigarette	4.06	n:A2:j:A1:Türkçede 'sigara'
 cigarettes	4.09	
 cigars	3.37	
 cincinnati	3.96	
@@ -4787,10 +4787,10 @@ circuit	4.47	n:B2:j|n:C2:o
 circuitry	3.07	n:B2:j
 circuits	3.77	
 circular	3.96	j:B1:j
-circulate	3.17	v:C1:o
+circulate	3.17	v:C1:o:B2:Türkçede 'sirküle'
 circulated	3.55	
 circulating	3.56	
-circulation	3.96	n:C1:o
+circulation	3.96	n:C1:o:B2:Türkçede 'sirkülasyon'
 circumcision	3.21	
 circumference	3.18	
 circumnavigate	2.26	v:C2:o
@@ -4799,7 +4799,7 @@ circumstance	3.66	n:B2:j
 circumstances	4.59	
 circumstantial	3.14	
 circumvent	3.15	
-circus	3.98	n:B1:j
+circus	3.98	n:B1:j:A2:Türkçede 'sirk'
 cis	3.59	
 cisco	3.49	
 citadel	3.33	
@@ -4823,7 +4823,7 @@ civic	4.00
 civil	4.93	j:B1:j:A2:tanidik:sivil
 civilian	4.23	
 civilians	4.10	
-civilisation	3.37	n:B1:j
+civilisation	3.37	n:B1:j:A2:Türkçede 'sivilizasyon'
 civilised	3.08	
 civility	3.03	
 civilization	4.01	n:B1:j
@@ -4878,10 +4878,10 @@ classic	4.72	j:A2:j:A1:tanidik:klasik|n:B2:j:B1:tanidik:klasik
 classical	4.26	j:B1:j:A2:tanidik:klasik
 classical music		n:A2:j
 classics	3.90	
-classification	4.18	n:B2:j
+classification	4.18	n:B2:j:B1:Türkçede 'klasifikasyon'
 classifications	3.18	
 classified	4.26	
-classify	3.39	v:B1:j
+classify	3.39	v:B1:j:A2:Türkçede 'klasifiye'
 classmate	3.34	n:A1:j
 classmates	3.64	
 classroom	4.15	n:A1:j
@@ -4957,7 +4957,7 @@ clifford	3.77
 cliffs	3.66	
 clifton	3.33	
 climactic	2.87	j:C1:o
-climate	4.71	n:B1:j
+climate	4.71	n:B1:j:A2:Türkçede 'iklim' benzeri 'klimatoloji'den
 climate change		n:B2:j
 climates	3.33	
 climatic	3.20	
@@ -5101,8 +5101,8 @@ cocktail	3.89	n:B2:j:B1:tanidik:kokteyl
 cocktails	3.60	
 cocky	3.39	
 coco	3.49	
-cocoa	3.64	n:B2:j
-coconut	3.88	n:B2:j
+cocoa	3.64	n:B2:j:B1:Türkçede 'kakao' olarak bilinir
+coconut	3.88	n:B2:j:B1:Türkçede 'kokonat'
 cocoon	3.08	v:C2:o
 cod	3.89	n:B1:j
 code	5.08	n:A1:j
@@ -5147,7 +5147,7 @@ coined	3.39
 coins	4.26	
 coke	4.08	n:A1:j
 col	3.95	
-cola	3.74	n:A2:j
+cola	3.74	n:A2:j:A1:Türkçede 'kola'
 colbert	3.38	
 colby	3.25	
 colchester	3.13	
@@ -5220,7 +5220,7 @@ colombian	3.57
 colombo	3.27	
 colon	3.60	n:B2:j
 colonel	4.41	
-colonial	4.17	j:B2:j
+colonial	4.17	j:B2:j:B1:Türkçede 'kolonyal'
 colonialism	3.33	
 colonies	3.94	
 colonists	3.35	
@@ -5251,14 +5251,14 @@ column	4.33	n:A2:j
 columnist	3.58	n:B1:j
 columns	3.97	
 com	4.22	
-coma	3.74	n:B2:j
+coma	3.74	n:B2:j:B1:Türkçede 'koma'
 comb	3.52	n:A2:j|v:B2:j
 combat	4.56	
 combatants	3.22	
 combating	3.25	
 combination	4.61	n:B1:j:A2:tanidik:kombinasyon
 combinations	3.83	
-combine	4.13	v:B1:j
+combine	4.13	v:B1:j:A2:Türkçede 'kombine' kelimesi vardır
 combined	4.68	
 combines	3.73	
 combing	3.00	
@@ -5269,7 +5269,7 @@ combustion	3.57	n:C2:o
 comcast	3.48	
 come	5.78	v:A1:j
 comeback	4.05	
-comedian	3.96	n:B1:j
+comedian	3.96	n:B1:j:A2:Türkçede 'komedyen'
 comedians	3.49	
 comedic	3.38	
 comedies	3.30	
@@ -5285,7 +5285,7 @@ comforted	3.12
 comforting	3.61	
 comforts	3.33	
 comfy	3.63	
-comic	4.42	j:A2:j:A1:tanidik:komik|n:A2:j
+comic	4.42	j:A2:j:A1:tanidik:komik|n:A2:j:A1:Türkçede 'komik'
 comical	3.23	
 comics	4.17	
 comin	3.53	
@@ -5326,7 +5326,7 @@ commented	4.07
 commenting	3.83	
 comments	4.87	
 commerce	4.37	n:B2:j
-commercial	4.92	j:B1:j|n:B2:j
+commercial	4.92	j:B1:j:A2:Türkçede 'kommerçal' veya 'kommersiyel'|n:B2:j
 commercially	3.67	r:C1:o
 commercials	3.82	
 commission	4.91	n:B2:j:B1:tanidik:komisyon|n:C1:o:B2:tanidik:komisyon|v:C1:o:B2:tanidik:komisyon
@@ -5418,7 +5418,7 @@ competency	3.27
 competent	3.92	j:B2:j
 competes	3.22	
 competing	4.22	
-competition	4.91	n:A2:j
+competition	4.91	n:A2:j:A1:Türkçede 'kompetisyon' veya 'kompstit
 competitions	3.83	
 competitive	4.57	j:B1:j
 competitively	3.07	
@@ -5471,7 +5471,7 @@ complimented	3.17
 compliments	3.68	
 comply	4.04	v:C1:o
 complying	3.21	
-component	4.32	n:B2:j
+component	4.32	n:B2:j:B1:Türkçede 'komponent'
 components	4.44	
 compose	3.46	v:B1:j
 composed	4.27	
@@ -5480,7 +5480,7 @@ composers	3.45
 composing	3.44	
 composite	3.94	
 composites	3.16	
-composition	4.33	n:B1:j
+composition	4.33	n:B1:j:A2:Türkçede 'kompozisyon'
 compositions	3.64	
 compost	3.21	
 composure	3.18	
@@ -5549,7 +5549,7 @@ concerning	4.31	p:B2:j
 concerns	4.59	
 concert	4.55	n:A1:j
 concerted	3.27	
-concerto	3.26	n:C1:o
+concerto	3.26	n:C1:o:B2:Türkçede 'konçerto'
 concerts	3.97	
 concession	3.57	n:B2:j
 concessions	3.65	
@@ -5735,7 +5735,7 @@ consciousness	4.13	n:B2:j
 consecrated	3.17	
 consecutive	4.18	
 consensual	3.24	
-consensus	4.10	n:B2:j
+consensus	4.10	n:B2:j:B1:Türkçede 'konsensüs'
 consent	4.36	n:B2:j
 consented	3.12	
 consenting	3.04	
@@ -5745,7 +5745,7 @@ consequent	3.02
 consequential	3.03	
 consequently	3.94	r:B1:j
 conservancy	3.05	
-conservation	4.33	n:B1:j
+conservation	4.33	n:B1:j:A2:Türkçede 'konservasyon'
 conservatism	3.42	
 conservative	4.61	j:B1:j
 conservatives	4.14	
@@ -5832,7 +5832,7 @@ consulted	3.63
 consulting	4.06	
 consume	3.88	v:B1:j
 consumed	3.95	
-consumer	4.56	n:B1:j
+consumer	4.56	n:B1:j:A2:Türkçede 'konsümer' anlaşılır
 consumers	4.39	
 consumes	3.24	
 consuming	3.89	
@@ -5888,7 +5888,7 @@ contexts	3.58
 contextual	3.14	j:C1:o
 contextually	2.30	r:C1:o
 contiguous	3.17	
-continent	4.07	n:A2:j
+continent	4.07	n:A2:j:A1:Türkçede 'kontinenti' yani 'kıta'
 continental	4.02	
 continents	3.55	
 contingency	3.44	
@@ -5952,13 +5952,13 @@ controlling	4.17
 controls	4.41	
 controversial	4.23	j:B1:j
 controversies	3.40	
-controversy	4.26	n:B2:j
+controversy	4.26	n:B2:j:B1:Türkçede 'kontroversiyal' veya 'kontroversi' bilinir
 conundrum	3.00	
 convection	3.22	
 convene	3.04	
 convened	3.40	
-convenience	4.02	n:A2:j
-convenient	4.15	j:A2:j
+convenience	4.02	n:A2:j:A1:Türkçede 'konvenyans' kelimesi günlük dilde vardır
+convenient	4.15	j:A2:j:A1:Türkçede 'konvensiyonel' kökenli 'konveks'
 conveniently	3.58	r:B2:j
 convent	3.48	
 convention	4.50	n:B2:j
@@ -6050,7 +6050,7 @@ copyright	4.24	n:B1:j
 copyrighted	3.19	
 cor	3.32	
 cora	3.27	
-coral	3.86	n:B2:j
+coral	3.86	n:B2:j:B1:Türkçede 'mercan' yerine 'koral' bilinir
 corals	3.06	
 corbett	3.19	
 corbin	3.14	
@@ -6120,7 +6120,7 @@ corridors	3.43
 corrosion	3.48	
 corrosive	3.11	
 corrugated	3.15	
-corrupt	4.14	j:B2:j
+corrupt	4.14	j:B2:j:B1:Türkçede 'korsan' veya 'korrupt' kökeni var
 corrupted	3.49	
 corruption	4.35	n:B2:j
 corset	3.03	
@@ -6219,7 +6219,7 @@ coupon	3.86
 coupons	3.64	
 courage	4.32	n:B1:j
 courageous	3.59	j:B1:j
-courgette	2.19	n:B1:j
+courgette	2.19	n:B1:j:A2:Türkçede 'kurjet'
 courier	3.68	
 course	5.44	n:A1:j
 courses	4.46	
@@ -6424,7 +6424,7 @@ critically	3.88	r:B2:j
 criticise	3.20	v:A2:j
 criticised	3.66	
 criticising	3.09	
-criticism	4.49	n:B2:j
+criticism	4.49	n:B2:j:B1:Türkçede 'kritik'
 criticisms	3.66	
 criticize	3.63	v:A2:j
 criticized	4.00	
@@ -6440,7 +6440,7 @@ crochet	3.25
 crock	3.03	
 crocker	3.03	
 crockett	3.09	
-crocodile	3.49	n:B2:j
+crocodile	3.49	n:B2:j:B1:Türkçede 'krokodil' olarak bilinir
 crocodiles	3.12	
 croft	3.17	
 cromwell	3.36	
@@ -6553,7 +6553,7 @@ cube	3.82	n:B2:j
 cubes	3.43	
 cubic	3.71	
 cubicle	3.07	
-cubism	2.40	n:B2:j
+cubism	2.40	n:B2:j:B1:Türkçede 'kübizm'
 cubs	3.89	
 cuckoo	3.14	
 cucumber	3.41	n:B1:j
@@ -6580,7 +6580,7 @@ cultivated	3.60
 cultivating	3.29	
 cultivation	3.63	
 cults	3.15	
-cultural	4.75	j:B1:j
+cultural	4.75	j:B1:j:A2:Türkçede sıkça kullanılan 'kültürel' kelimesiyle aynı
 culturally	3.64	r:B2:j
 culture	5.03	n:A1:j
 cultured	3.30	
@@ -6627,7 +6627,7 @@ curran	3.04
 currencies	3.62	
 currency	4.37	n:B1:j
 current	5.27	j:B1:j
-currently	5.08	r:B1:j
+currently	5.08	r:B1:j:B2:'current' ile karışır, anlamı 'şu anda'
 currents	3.64	
 curricula	3.04	
 curricular	3.06	
@@ -6658,7 +6658,7 @@ custard	3.17
 custodial	3.10	
 custodian	3.12	
 custody	4.22	
-custom	4.43	n:A2:j
+custom	4.43	n:A2:j:B1:'kostüm' ile karışır, anlamı 'gelenek'
 customary	3.53	j:C1:o
 customer	4.61	n:A2:j
 customer's	3.08	
@@ -6696,7 +6696,7 @@ cyberschool		n:B2:j
 cybersecurity	3.35	
 cyberspace	2.99	n:B2:j
 cyborg	3.22	
-cycle	4.60	n:B1:j|v:B1:j
+cycle	4.60	n:B1:j:A2:Türkçede 'bisiklet' ve 'körfez' kökenli|v:B1:j
 cycles	3.93	
 cyclic	3.16	
 cyclical	3.16	
@@ -6836,7 +6836,7 @@ dashboard	3.33
 dashed	3.28	
 dashing	3.27	
 dat	3.55	
-data	5.34	n:B2:j
+data	5.34	n:B2:j:B1:Türkçede 'data'
 database	4.31	n:B2:j
 databases	3.62	
 dataset	3.03	
@@ -6975,7 +6975,7 @@ deck	4.41	n:B2:j
 decked	3.06	
 decker	3.42	
 decks	3.61	
-declaration	4.10	n:B1:j
+declaration	4.10	n:B1:j:A2:Türkçede 'deklarasyon'
 declarations	3.23	
 declare	4.05	v:B1:j:A2:tanidik:deklare
 declared	4.55	
@@ -7132,7 +7132,7 @@ deliberations	3.17
 delicacy	3.18	n:B2:j
 delicate	4.01	j:B1:j
 delicately	3.05	r:B2:j
-delicatessen	2.48	n:C2:o
+delicatessen	2.48	n:C2:o:C1:Türkçede 'delikatessem'
 delicious	4.34	j:A1:j
 delight	3.97	n:B1:j|v:B2:j
 delighted	4.09	j:B1:j
@@ -7167,7 +7167,7 @@ demeanor	3.20
 dementia	3.76	
 demi	3.37	
 demise	3.66	n:C1:o
-demo	4.06	n:C1:o
+demo	4.06	n:C1:o:B2:Türkçede 'demo'
 democracies	3.26	
 democracy	4.51	n:B1:j:A2:tanidik:demokrasi
 democrat	4.24	
@@ -7178,7 +7178,7 @@ demographic	3.92	j:C1:o:B2:tanidik:demografik|n:C1:o:B2:tanidik:demografik
 demographically	2.38	r:C1:o
 demographics	3.56	
 demography	2.84	n:C1:o
-demolish	3.18	v:B2:j
+demolish	3.18	v:B2:j:B1:Türkçede 'demolike' veya 'demolish' kökeni
 demolished	3.52	
 demolition	3.62	n:C1:o
 demon	4.06	
@@ -7188,7 +7188,7 @@ demonstrate	4.20	v:B1:j
 demonstrated	4.22	
 demonstrates	3.86	
 demonstrating	3.76	
-demonstration	4.06	n:B1:j
+demonstration	4.06	n:B1:j:A2:Türkçede 'demonstrasyon'
 demonstrations	3.78	
 demonstrators	3.28	
 demos	3.40	
@@ -7224,7 +7224,7 @@ densities	3.08
 density	4.33	
 dent	3.67	
 dental	4.11	j:B2:j
-dentist	3.86	n:A2:j
+dentist	3.86	n:A2:j:A1:Türkçede 'dişçi' yerine 'dentist' yaygın
 dentistry	3.39	
 dentists	3.32	
 denton	3.28	
@@ -7283,7 +7283,7 @@ depravity	2.86	n:C2:o
 deprecate	1.88	v:C2:o
 deprecatingly	1.44	r:C2:o
 depreciation	3.37	
-depressed	4.14	j:B1:j
+depressed	4.14	j:B1:j:A2:Türkçede 'depresif' kelimesiyle benzer
 depressing	3.83	j:B1:j
 depression	4.56	n:B1:j:A2:tanidik:depresyon
 depressive	3.30	j:C2:o:C1:tanidik:depresif
@@ -7390,7 +7390,7 @@ det	3.38
 detach	2.99	v:B2:j
 detached	3.79	
 detachment	3.46	n:B2:j
-detail	4.57	n:A2:j
+detail	4.57	n:A2:j:A1:Türkçede 'detay' olarak kullanılır
 detailed	4.51	j:B2:j
 detailing	3.62	
 details	4.91	
@@ -7505,20 +7505,20 @@ diagnosis	4.20
 diagnostic	3.83	
 diagnostics	3.21	
 diagonal	3.36	
-diagram	3.85	n:B1:j
+diagram	3.85	n:B1:j:A2:Türkçede 'diyagram'
 diagrams	3.42	
 dial	3.93	n:B1:j|v:B1:j
 dialect	3.54	
 dialects	3.26	
 dialed	3.01	
 dialing	3.06	
-dialog	3.46	n:B1:j
-dialogue	4.29	n:B1:j
+dialog	3.46	n:B1:j:A2:Türkçede 'dialog'
+dialogue	4.29	n:B1:j:A2:Türkçede ' diyalog'
 dialogues	3.22	
 dials	3.00	
 dialysis	3.27	
 diameter	4.08	n:B1:j
-diamond	4.42	n:A2:j
+diamond	4.42	n:A2:j:A1:Türkçede 'elmas' anlamında 'diyamant'
 diamondbacks	3.00	
 diamonds	4.02	
 diana	4.02	
@@ -7562,7 +7562,7 @@ diego	4.36
 diem	3.04	
 dies	4.41	
 diesel	4.05	
-diet	4.57	n:A2:j
+diet	4.57	n:A2:j:A1:Türkçede 'diyet' olarak kullanılır
 dietary	3.70	
 dieter	3.02	
 dieting	3.13	
@@ -7774,7 +7774,7 @@ discretionary	3.26
 discriminate	3.51	v:B2:j
 discriminated	3.24	
 discriminating	3.14	
-discrimination	4.31	n:B1:j
+discrimination	4.31	n:B1:j:A2:Türkçede 'diskriminasyon'
 discriminatory	3.46	
 discs	3.60	
 discuss	4.66	v:A1:j
@@ -7802,7 +7802,7 @@ dishes	4.13
 dishonest	3.52	j:A2:j
 dishonesty	3.17	n:B2:j
 dishwasher	3.29	n:B1:j
-disillusion	2.43	v:B2:j
+disillusion	2.43	v:B2:j:B1:Türkçede 'dezillüzyon'
 disillusioned	3.18	
 disillusionment	2.82	n:C1:o
 disintegration	3.02	
@@ -7830,7 +7830,7 @@ disney	4.39
 disney's	3.44	
 disneyland	3.48	
 disobedience	3.28	
-disorder	4.31	n:B2:j
+disorder	4.31	n:B2:j:B1:Türkçede 'disorder'
 disorderly	3.15	j:B2:j
 disorders	4.14	
 disorganised	2.37	j:B2:j
@@ -7981,7 +7981,7 @@ diversification	3.22
 diversified	3.44	
 diversify	3.16	
 diversion	3.51	n:B2:j
-diversity	4.32	n:C1:o
+diversity	4.32	n:C1:o:B2:Türkçede 'diversite'
 divert	3.42	v:B2:j
 diverted	3.49	
 diverting	3.08	
@@ -8009,7 +8009,7 @@ dixon	3.73
 diy	3.80	
 dizziness	3.11	
 dizzy	3.43	j:A2:j
-dj	4.23	n:B1:j
+dj	4.23	n:B1:j:A2:Türkçede 'dj'
 django	3.10	
 djokovic	3.22	
 djs	3.48	
@@ -8043,9 +8043,9 @@ doctorate	3.38
 doctors	4.55	
 doctrine	3.98	
 doctrines	3.29	
-document	4.50	n:B1:j
+document	4.50	n:B1:j:A2:Türkçede 'doküman'
 documentaries	3.48	
-documentary	4.31	n:B1:j
+documentary	4.31	n:B1:j:A2:Türkçede 'belgesel' var ama 'dokümanter' anlaşılır
 documentation	3.95	
 documented	4.00	
 documenting	3.44	
@@ -8086,7 +8086,7 @@ dollars	4.78
 dolls	3.81	
 dolly	3.54	
 dolores	3.26	
-dolphin	3.67	n:B1:j
+dolphin	3.67	n:B1:j:A2:Türkçede 'delfin' veya yunus
 dolphins	3.88	
 dom	3.78	
 domain	4.31	
@@ -8162,7 +8162,7 @@ doris	3.58
 dork	3.10	
 dorm	3.58	n:B2:j
 dormant	3.41	
-dormitory	3.12	n:B2:j
+dormitory	3.12	n:B2:j:B1:Türkçede 'dormitory' benzeri 'dormitory' yerine 'doyurucu'
 dorothy	3.78	
 dorsal	3.45	
 dorset	3.46	
@@ -8209,7 +8209,7 @@ downgrade	3.23
 downgraded	3.14	
 downhill	3.66	
 downing	3.44	
-download	4.68	n:B2:j|v:A2:j
+download	4.68	n:B2:j:B1:Türkçede 'download' ve 'daunlodyum' gibi yaygın|v:A2:j:A1:Türkçede 'download' yaygın olarak bilinir
 downloadable	3.16	
 downloaded	3.83	
 downloading	3.70	
@@ -8449,7 +8449,7 @@ duplex	3.13
 duplicate	3.59	n:B2:j
 duplicated	3.08	
 duplicates	3.05	
-duplication	3.16	n:B2:j
+duplication	3.16	n:B2:j:B1:Türkçede 'duplikasyon'
 dupont	3.27	
 durability	3.45	
 durable	3.68	j:C1:o|n:C1:o
@@ -8507,7 +8507,7 @@ dynamically	3.03	r:C1:o
 dynamics	4.08	
 dynamite	3.59	
 dynamo	3.16	
-dynasty	3.87	n:B1:j
+dynasty	3.87	n:B1:j:A2:Türkçede 'hanedan' veya 'dinasti'
 dysfunction	3.52	
 dysfunctional	3.36	
 dyslexia	3.02	
@@ -8599,9 +8599,9 @@ eclectic	3.37	j:C1:o|n:C1:o
 eclectically	1.35	r:C1:o
 eclipse	3.81	
 eco	3.71	n:B1:j
-ecological	3.78	j:B1:j
+ecological	3.78	j:B1:j:A2:Türkçede 'ekolojik'
 ecologically	2.80	r:B2:j
-ecologist	2.67	n:B2:j
+ecologist	2.67	n:B2:j:B1:Türkçede 'ekolojist'
 ecology	3.74	n:B1:j:A2:tanidik:ekoloji
 ecommerce	3.30	
 econ	3.11	
@@ -8758,10 +8758,10 @@ electric	4.72	j:A2:j:A1:tanidik:elektrik
 electrical	4.42	j:B1:j:A2:tanidik:elektrik
 electrically	3.19	
 electrician	3.26	n:B2:j
-electricity	4.43	n:B1:j
+electricity	4.43	n:B1:j:A2:Türkçede 'elektrik'
 electrification	3.00	
 electro	3.58	
-electrode	3.38	n:C2:o
+electrode	3.38	n:C2:o:C1:Türkçede 'elektrot'
 electrodes	3.29	
 electrolyte	3.07	
 electromagnetic	3.58	
@@ -8864,7 +8864,7 @@ embarrassed	4.05	j:B1:j
 embarrassing	4.15	j:A2:j
 embarrassment	3.77	n:B1:j
 embassies	3.15	
-embassy	4.13	n:B2:j
+embassy	4.13	n:B2:j:B1:Türkçede 'elçilik' yerine 'embasör' bilinir
 embed	2.94	v:C2:o
 embedded	3.89	
 embedding	3.00	
@@ -8942,7 +8942,7 @@ emphasizes	3.48
 emphasizing	3.36	
 emphatic	3.09	
 emphatically	3.07	r:B2:j
-empire	4.54	n:B1:j
+empire	4.54	n:B1:j:A2:Türkçede 'imparatorluk' kökenli 'emparyalizm' gibi bilinir
 empires	3.40	
 empirical	3.62	
 employ	3.96	v:B2:j
@@ -9008,8 +9008,8 @@ encrypted	3.42
 encryption	3.56	
 encumber	1.68	v:C2:o
 encumbrance	2.18	n:C2:o
-encyclopaedia	2.81	n:B1:j
-encyclopedia	3.52	n:B1:j
+encyclopaedia	2.81	n:B1:j:A2:Türkçede 'ansiklopedi'
+encyclopedia	3.52	n:B1:j:A2:Türkçede 'ansiklopedi' olarak bilinir
 end	5.68	n:A1:j|v:A2:j
 endanger	3.23	v:B1:j
 endangered	3.86	j:A2:j
@@ -9298,7 +9298,7 @@ errands	3.30
 erratic	3.34	
 erroneous	3.22	
 erroneously	3.08	
-error	4.55	n:A2:j
+error	4.55	n:A2:j:A1:Türkçede 'eror' veya 'hata' olarak bilinir
 errors	4.25	
 ers	3.17	
 erupt	2.97	v:B2:j
@@ -9456,7 +9456,7 @@ event	5.18	n:A1:j
 eventful	3.02	
 events	5.08	
 eventual	3.73	
-eventually	4.88	r:B1:j
+eventually	4.88	r:B1:j:B2:'eventuellement' ile karışır, anlamı 'sonunda'
 ever	5.66	r:A2:j
 everest	3.43	
 everett	3.53	
@@ -9509,8 +9509,8 @@ exaggeration	3.30	n:B2:j
 exalt	2.60	v:B2:j
 exalted	3.15	j:C2:o
 exaltedly		r:C2:o
-exam	4.26	n:A2:j
-examination	4.26	n:B1:j
+exam	4.26	n:A2:j:A1:Türkçede 'egzavör' veya sınav anlamında 'exam' bilinir
+examination	4.26	n:B1:j:A2:Türkçede 'enformasyon' veya 'eksaminasyon' benzeri var
 examinations	3.61	
 examine	4.18	v:B1:j
 examined	4.10	
@@ -9541,7 +9541,7 @@ exceptionally	3.74	r:B2:j
 exceptions	3.97	
 excerpt	3.51	
 excerpts	3.41	
-excess	4.21	n:B1:j
+excess	4.21	n:B1:j:A2:Türkçede 'ekspres' veya 'eksil' değil ama 'ekses'
 excesses	3.12	
 excessive	4.12	j:B2:j
 excessively	3.35	
@@ -9594,7 +9594,7 @@ exempt	3.78
 exempted	3.09	
 exemption	3.65	
 exemptions	3.33	
-exercise	4.68	n:A2:j|v:A1:j
+exercise	4.68	n:A2:j:A1:Türkçede 'egzersiz'|v:A1:j
 exercised	3.52	
 exercises	4.12	
 exercising	3.73	
@@ -9608,7 +9608,7 @@ exhausted	4.08	j:B1:j
 exhausting	3.60	j:B2:j
 exhaustion	3.49	n:B2:j
 exhaustive	3.30	
-exhibit	4.16	v:B2:j
+exhibit	4.16	v:B2:j:B1:Türkçede 'egzibe'
 exhibited	3.86	
 exhibiting	3.40	
 exhibition	4.37	n:A2:j
@@ -9658,7 +9658,7 @@ expected	4.96	j:B2:j
 expecting	4.42	
 expects	3.89	
 expedite	3.05	v:C1:o
-expedition	3.99	n:B2:j|n:C1:o
+expedition	3.99	n:B2:j:B1:Türkçede 'ekspedisyon'|n:C1:o:B2:Türkçede 'ekspedisyon'
 expeditions	3.36	
 expel	3.26	
 expelled	3.70	
@@ -9714,7 +9714,7 @@ explorer	3.85	n:B2:j
 explorers	3.41	
 explores	3.64	
 exploring	4.06	
-explosion	4.22	n:B1:j
+explosion	4.22	n:B1:j:A2:Türkçede 'enflasyon' veya 'eksplozyon'
 explosions	3.69	
 explosive	3.97	j:B2:j|n:B2:j
 explosively	2.47	r:C1:o
@@ -9722,7 +9722,7 @@ explosives	3.79
 expo	3.64	
 exponential	3.33	
 exponentially	3.30	
-export	4.24	n:B2:j|v:B2:j
+export	4.24	n:B2:j:B1:Türkçede 'ihracat' anlamında 'eksport'|v:B2:j
 exported	3.56	
 exporter	3.29	
 exporters	3.30	
@@ -9783,7 +9783,7 @@ extravagance	2.81	n:C1:o
 extravagant	3.40	
 extreme	4.60	j:B1:j:A2:tanidik:ekstrem
 extreme sports		n:B1:j
-extremely	4.79	r:A2:j
+extremely	4.79	r:A2:j:A1:Türkçede 'ekstrem'
 extremes	3.47	
 extremism	3.31	
 extremist	3.46	
@@ -9826,7 +9826,7 @@ fabio	3.20
 fable	3.16	
 fabled	2.89	j:C2:o
 fabregas	3.00	
-fabric	4.08	n:B2:j
+fabric	4.08	n:B2:j:C1:'fabrik' ile karışır, anlamı 'kumaş'
 fabricate	2.89	v:C2:o
 fabricated	3.51	
 fabrication	3.48	n:C2:o
@@ -9866,7 +9866,7 @@ factory	4.55	n:A1:j
 facts	4.72	
 factual	3.61	
 faculties	3.36	
-faculty	4.32	n:B2:j
+faculty	4.32	n:B2:j:B1:Türkçede 'fakülte'
 fad	3.26	
 fade	3.86	v:B1:j
 faded	3.73	
@@ -9954,7 +9954,7 @@ fanning	3.11
 fanny	3.47	
 fans	5.03	
 fantasies	3.62	
-fantastic	4.71	j:A2:j
+fantastic	4.71	j:A2:j:A1:Türkçede 'fantastik'
 fantastically	3.02	r:B2:j
 fantasy	4.52	n:B1:j
 faq	3.27	
@@ -9992,7 +9992,7 @@ fascination	3.48	n:B2:j
 fascism	3.58	
 fascist	3.79	
 fascists	3.37	
-fashion	4.82	n:A2:j
+fashion	4.82	n:A2:j:A1:Türkçede 'fason' veya 'moda'
 fashionable	3.65	j:B1:j
 fashioned	3.94	
 fashions	3.22	
@@ -10050,7 +10050,7 @@ favourite	4.57	j:A1:j|n:A1:j
 favourites	3.64	
 favours	3.32	
 fawn	3.02	
-fax	3.63	n:B1:j|v:B1:j
+fax	3.63	n:B1:j:A2:Türkçede 'faks'|v:B1:j:A2:Türkçede 'faks çekmek'
 fay	3.29	
 faye	3.17	
 fayetteville	3.04	
@@ -10275,7 +10275,7 @@ fillers	3.06
 filling	4.19	n:B1:j
 fills	3.71	
 filly	3.15	
-film	5.20	n:A2:j|v:B1:j
+film	5.20	n:A2:j:A1:Türkçede 'film'|v:B1:j:A2:Türkçede 'film çekmek'
 film's	3.58	
 film-maker		n:B1:j
 filmed	4.06	
@@ -10284,7 +10284,7 @@ filmmaker	3.62
 filmmakers	3.51	
 filmmaking	3.23	
 films	4.64	
-filter	4.28	n:B1:j
+filter	4.28	n:B1:j:A2:Türkçede 'filtre' olarak bilinir
 filtered	3.51	
 filtering	3.56	
 filters	3.88	
@@ -10364,7 +10364,7 @@ firewood	3.16
 firework	2.96	n:B1:j
 fireworks	3.83	
 firing	4.27	
-firm	4.79	j:B1:j|n:B1:j|v:C1:o
+firm	4.79	j:B1:j|n:B1:j:A2:Türkçede 'firma'|v:C1:o
 firm's	3.38	
 firmly	4.00	r:B1:j
 firmness	2.80	n:B2:j
@@ -10651,7 +10651,7 @@ fools	3.88
 foot	4.87	n:B1:j
 footage	4.31	
 football	5.11	n:A1:j
-footballer	3.69	n:A2:j
+footballer	3.69	n:A2:j:A1:Türkçede 'futbolcu'
 footballers	3.45	
 footed	3.30	
 footer	3.10	
@@ -10736,7 +10736,7 @@ forlorn	2.83	j:C2:o
 forlornly	1.86	r:C2:o
 form	5.31	n:A1:j|v:B1:j
 formal	4.45	j:B1:j
-formality	3.15	n:C1:o
+formality	3.15	n:C1:o:B2:Türkçede 'formalite'
 formally	4.01	r:B1:j
 format	4.47	n:B1:j:A2:tanidik:format|v:B1:j:A2:tanidik:format
 formation	4.49	n:B2:j:B1:tanidik:formasyon
@@ -11049,7 +11049,7 @@ fumble	3.36
 fume	2.63	n:B2:j
 fumes	3.34	
 fun	5.30	j:A1:j|n:A1:j
-function	4.78	n:B1:j|v:A2:j
+function	4.78	n:B1:j:A2:Türkçede 'fonksiyon'|v:A2:j
 functional	4.24	j:B2:j
 functionality	3.70	n:B2:j
 functionally	3.19	
@@ -11198,7 +11198,7 @@ gap	4.47	n:B1:j
 gape	2.54	v:C1:o
 gaping	3.19	
 gaps	3.86	
-garage	4.25	n:A2:j
+garage	4.25	n:A2:j:A1:Türkçede 'garaj'
 garages	3.13	
 garb	3.01	
 garbage	4.18	n:A1:j
@@ -11293,7 +11293,7 @@ gen	4.33
 gender	4.59	n:A2:j
 gendered	3.08	
 genders	3.27	
-gene	4.36	n:B1:j
+gene	4.36	n:B1:j:A2:Türkçede 'gen'
 genealogical	3.04	
 genealogy	3.35	
 genera	3.39	
@@ -11322,7 +11322,7 @@ generous	4.20	j:B1:j
 generously	3.29	r:B2:j
 genes	4.14	
 genesis	3.85	
-genetic	4.34	j:B1:j
+genetic	4.34	j:B1:j:A2:Türkçede 'genetik'
 genetically	3.66	r:B1:j
 genetics	3.84	n:B1:j
 geneva	4.00	
@@ -11339,7 +11339,7 @@ genome	3.70	n:C1:o
 genomes	3.04	
 genomic	3.11	j:C2:o
 genomically		r:C2:o
-genre	4.17	n:B2:j
+genre	4.17	n:B2:j:B1:Türkçede 'janr'
 genres	3.72	
 gent	3.15	
 gentile	3.03	
@@ -11360,7 +11360,7 @@ geoffrey	3.64
 geographic	3.97	j:B2:j
 geographical	3.85	j:B1:j
 geographically	3.35	
-geography	3.98	n:B1:j
+geography	3.98	n:B1:j:A2:Türkçede 'coğrafya'
 geologic	3.25	
 geological	3.82	j:C1:o
 geologically	2.49	r:C1:o
@@ -11413,7 +11413,7 @@ gh	3.18
 ghana	3.90	
 ghanaian	3.14	
 ghastly	3.07	
-ghetto	3.69	n:B2:j
+ghetto	3.69	n:B2:j:B1:Türkçede 'ghetto'
 ghost	4.42	n:A1:j
 ghostbusters	3.16	
 ghostly	3.14	j:C1:o
@@ -11462,7 +11462,7 @@ gingerbread	3.03
 gino	3.03	
 giorgio	3.24	
 giovanni	3.42	
-giraffe	3.32	n:B1:j
+giraffe	3.32	n:B1:j:A2:Türkçede 'zürafa'
 girl	5.38	n:A1:j
 girl's	3.96	
 girlfriend	4.68	n:A1:j
@@ -11618,7 +11618,7 @@ goldman	3.59
 golds	3.13	
 goldsmith	3.21	
 goldstein	3.25	
-golf	4.56	n:A2:j
+golf	4.56	n:A2:j:A1:Türkçede 'golf'
 golfer	3.35	n:B1:j
 golfers	3.26	
 golfing	3.21	
@@ -11683,7 +11683,7 @@ gotta	4.95
 gotten	4.47	
 gough	3.04	
 gould	3.44	
-gourmet	3.36	j:C1:o|n:C1:o
+gourmet	3.36	j:C1:o:B2:Türkçede 'gourmet' anlamında 'gürme'|n:C1:o:B2:Türkçede 'gourmet' anlamında 'gürme'
 gout	3.06	n:C2:o
 gov	4.01	
 gov't	3.01	
@@ -11743,7 +11743,7 @@ graham	4.30
 grail	3.46	
 grain	4.18	n:B2:j
 grains	3.70	
-gram	3.76	n:A2:j
+gram	3.76	n:A2:j:A1:Türkçede 'gram' olarak bilinir
 grammar	4.17	n:A1:j
 grammatical	3.35	
 gramme	1.64	n:A2:j:A1:tanidik:gram
@@ -11783,7 +11783,7 @@ granville	3.09
 grape	3.70	n:A1:j
 grapefruit	3.17	n:C1:o
 grapes	3.73	
-graph	4.05	n:B1:j
+graph	4.05	n:B1:j:A2:Türkçede 'grafik'
 graphene	3.02	
 graphic	4.23	j:B1:j:A2:tanidik:grafik
 graphical	3.46	
@@ -11971,7 +11971,7 @@ guam	3.25
 guangdong	3.00	
 guangzhou	3.26	
 guantanamo	3.25	
-guarantee	4.44	n:B1:j|v:B2:j
+guarantee	4.44	n:B1:j:A2:Türkçede 'garanti'|v:B2:j:B1:Türkçede 'garanti etmek'
 guaranteed	4.29	
 guaranteeing	3.20	
 guarantees	3.83	
@@ -11987,7 +11987,7 @@ gubernatorial	3.23
 gucci	3.33	
 guernsey	3.08	
 guerrero	3.17	
-guerrilla	3.38	n:B2:j
+guerrilla	3.38	n:B2:j:B1:Türkçede 'gerilla'
 guerrillas	3.09	
 guess	5.17	n:B1:j|v:A1:j
 guessed	3.72	
@@ -12018,7 +12018,7 @@ guineas	3.27
 guinness	3.49	
 guise	3.47	
 guitar	4.48	n:A1:j
-guitarist	3.63	n:B1:j
+guitarist	3.63	n:B1:j:A2:Türkçede 'gitarist'
 guitars	3.65	
 gujarat	3.54	
 gulf	4.28	
@@ -12072,7 +12072,7 @@ guyana	3.26
 guys	5.41	
 gw	3.27	
 gwen	3.48	
-gym	4.43	n:B1:j
+gym	4.43	n:B1:j:A2:Türkçede 'jim' veya 'spor salonu'
 gymnasium	3.19	
 gymnast	3.07	
 gymnastic	2.62	j:B2:j:B1:tanidik:jimnastik
@@ -12086,7 +12086,7 @@ haas	3.21
 habit	4.24	n:A1:j
 habitable	3.13	
 habitant	1.37	n:B2:j
-habitat	3.98	n:B1:j
+habitat	3.98	n:B1:j:A2:Türkçede 'habitat'
 habitation	2.98	n:C2:o
 habitats	3.49	
 habits	4.21	
@@ -12662,7 +12662,7 @@ hhs	3.07
 hi	5.00	i:A1:j
 hi-tech		j:B2:j
 hiatus	3.49	
-hibernate	2.70	v:C1:o
+hibernate	2.70	v:C1:o:B2:Türkçede 'hiberne etmek'
 hibernation	3.01	n:C1:o
 hiccups	3.05	
 hickey	3.11	
@@ -12743,7 +12743,7 @@ hints	3.85
 hip	4.46	n:B1:j
 hip hop		n:A2:j
 hip-hop		n:A2:j
-hiphop	2.64	n:A2:j
+hiphop	2.64	n:A2:j:A1:Türkçede 'hiphop'
 hippie	3.36	
 hippies	3.04	
 hippo	3.13	
@@ -12936,7 +12936,7 @@ horace	3.52
 horatio	3.11	
 horde	3.23	
 hordes	3.16	
-horizon	4.07	n:B1:j
+horizon	4.07	n:B1:j:A2:Türkçede 'horizont' yani 'ufuk'
 horizons	3.47	
 horizontal	3.90	
 horizontally	3.30	
@@ -12989,7 +12989,7 @@ host	4.77	n:A2:j
 hostage	3.90	
 hostages	3.64	
 hosted	4.25	
-hostel	3.43	n:B1:j
+hostel	3.43	n:B1:j:A2:Türkçede 'hostel' olarak kullanılır
 hostess	3.35	n:C1:o
 hostile	4.07	j:C1:o
 hostilities	3.44	
@@ -12999,7 +12999,7 @@ hosts	4.23
 hot	5.16	j:A1:j
 hotel	4.95	n:A1:j
 hotel's	3.12	
-hotelier	2.39	n:C2:o
+hotelier	2.39	n:C2:o:C1:Türkçede 'otelci'
 hotels	4.22	
 hotline	3.39	
 hotspot	3.17	
@@ -13102,7 +13102,7 @@ humanise	1.66	v:B2:j
 humanist	3.07	n:B2:j:B1:tanidik:hümanist
 humanitarian	3.91	
 humanities	3.62	
-humanity	4.32	n:B1:j
+humanity	4.32	n:B1:j:A2:Türkçede 'hümanite'
 humanity's	3.01	
 humanize	2.45	v:B2:j
 humankind	3.11	
@@ -13124,7 +13124,7 @@ humiliation	3.55	n:B2:j
 humility	3.59	
 humming	3.23	
 hummus	3.00	
-humor	4.19	n:B1:j
+humor	4.19	n:B1:j:A2:Türkçede 'humor' yerine 'hümor'
 humorous	3.60	j:B1:j
 humour	3.83	n:B1:j
 hump	3.36	
@@ -13200,7 +13200,7 @@ hydrocarbons	3.06
 hydroelectric	3.11	
 hydrogen	3.98	
 hye	3.22	
-hygiene	3.79	n:B2:j
+hygiene	3.79	n:B2:j:B1:Türkçede 'hijyen'
 hymn	3.61	
 hymns	3.34	
 hype	4.03	
@@ -13211,7 +13211,7 @@ hyperbolic	3.15
 hypertension	3.41	
 hyphen	2.64	n:B2:j
 hypnosis	3.25	
-hypnotherapy	2.39	n:C2:o
+hypnotherapy	2.39	n:C2:o:C1:Türkçede 'hipnoterapi'
 hypnotic	3.13	
 hypocrisy	3.65	n:C1:o
 hypocrite	3.40	n:C1:o
@@ -13223,7 +13223,7 @@ hypothesis	3.87	n:C2:o
 hypothesize	2.50	v:C2:o
 hypothesized	3.02	
 hypothetical	3.61	j:C2:o
-hysteria	3.38	n:C2:o
+hysteria	3.38	n:C2:o:C1:Türkçede 'histeri'
 hysterical	3.48	j:C2:o
 hysterically	2.94	r:C2:o
 hyun	3.37	
@@ -13260,7 +13260,7 @@ ich	3.22
 icing	3.49	
 icloud	3.08	
 ico	3.16	
-icon	4.16	n:B2:j
+icon	4.16	n:B2:j:B1:Türkçede 'ikon'
 iconic	4.13	
 icons	3.74	
 ics	3.02	
@@ -13301,14 +13301,14 @@ idiomatic	2.46	j:C2:o
 idiomatically	1.57	r:C2:o
 idiosyncrasy	1.95	n:C2:o
 idiosyncratic	2.94	j:C2:o
-idiot	4.39	n:B2:j
+idiot	4.39	n:B2:j:B1:Türkçede 'idyot' olarak kullanılır
 idiotic	3.36	
 idiots	4.02	
 idk	4.17	
 idle	3.70	j:B2:j|v:C2:o
 idol	3.94	n:B1:j
 idolise	1.83	v:B2:j
-idolize	2.48	v:B2:j
+idolize	2.48	v:B2:j:B1:Türkçede 'idol'
 idols	3.49	
 idris	3.06	
 ids	3.36	
@@ -13339,7 +13339,7 @@ ike	3.42
 ikea	3.49	
 il	4.32	
 ill	4.72	j:A2:j
-illegal	4.68	j:A2:j
+illegal	4.68	j:A2:j:A1:Türkçede 'illegal'
 illegally	3.87	r:B1:j
 illegals	3.10	
 illegitimate	3.43	
@@ -13725,7 +13725,7 @@ indulgent	3.09	j:B2:j
 indulgently	1.87	r:C2:o
 indulging	3.11	
 indus	3.08	
-industrial	4.71	j:B1:j
+industrial	4.71	j:B1:j:A2:Türkçede 'endüstriyel'
 industrialise	1.42	v:B2:j
 industrialization	3.07	
 industrialize	1.97	v:B2:j
@@ -13764,7 +13764,7 @@ infant	3.99	n:B2:j
 infantry	3.96	
 infants	3.76	
 infect	3.36	v:B2:j
-infected	4.13	j:B2:j
+infected	4.13	j:B2:j:B1:Türkçede 'enfekte' kelimesi yaygındır
 infection	4.33	n:B1:j
 infections	3.97	
 infectious	3.81	j:B2:j
@@ -13794,11 +13794,11 @@ inflammatory	3.72	j:B2:j
 inflatable	3.25	
 inflate	3.01	v:B2:j
 inflated	3.51	
-inflation	4.14	n:B2:j
+inflation	4.14	n:B2:j:B1:Türkçede 'enflasyon' yaygın bir kelimedir
 inflict	3.34	
 inflicted	3.62	
 inflicting	3.09	
-influence	4.78	n:A2:j|v:B2:j
+influence	4.78	n:A2:j:A1:Türkçede 'inflüans' veya etki|v:B2:j
 influenced	4.20	
 influencers	3.10	
 influences	4.05	
@@ -13912,7 +13912,7 @@ innocuous	3.06
 innovate	3.13	v:C1:o
 innovation	4.32	n:B2:j:B1:tanidik:inovasyon|n:C1:o:B2:tanidik:inovasyon
 innovations	3.73	
-innovative	4.10	j:B2:j|j:C1:o
+innovative	4.10	j:B2:j:B1:Türkçede 'inovatif'|j:C1:o:B2:Türkçede 'inovatif'
 innovator	3.01	n:B1:j
 innovators	3.07	
 inns	3.06	
@@ -13976,9 +13976,9 @@ inspected	3.51
 inspecting	3.16	
 inspection	4.14	n:B1:j
 inspections	3.63	
-inspector	4.25	n:B2:j
+inspector	4.25	n:B2:j:B1:Türkçede 'müfettiş' anlamında 'inspektör'
 inspectors	3.63	
-inspiration	4.41	n:A2:j
+inspiration	4.41	n:A2:j:A1:Türkçede 'inspirasyon'
 inspirational	3.75	j:B2:j
 inspirations	3.08	
 inspire	4.00	v:B1:j
@@ -13989,7 +13989,7 @@ insta	3.28
 instability	3.71	
 instagram	4.33	
 instal	2.00	v:B1:j
-install	4.14	v:B1:j
+install	4.14	v:B1:j:A2:Türkçede 'enstalasyon' olarak kullanılır
 installation	4.16	
 installations	3.78	
 installed	4.40	
@@ -14013,7 +14013,7 @@ instinctive	3.04	j:C1:o
 instinctively	3.25	r:C1:o
 instincts	3.63	
 institut	3.06	
-institute	4.80	n:B1:j|v:C1:o
+institute	4.80	n:B1:j:A2:Türkçede 'enstitü'|v:C1:o
 institute's	3.04	
 instituted	3.48	
 institutes	3.72	
@@ -14024,7 +14024,7 @@ institutions	4.58
 instruct	3.31	v:B2:j
 instructed	3.84	
 instructing	3.13	
-instruction	4.14	n:B1:j
+instruction	4.14	n:B1:j:A2:Türkçede 'enstrüksiyon' bilinir
 instructional	3.51	
 instructions	4.37	
 instructor	4.02	n:B1:j
@@ -14074,7 +14074,7 @@ intellect	3.49	n:C1:o
 intellectual	4.30	j:B2:j|n:B2:j
 intellectually	3.34	
 intellectuals	3.49	
-intelligence	4.70	n:A2:j
+intelligence	4.70	n:A2:j:A1:Türkçede 'istihbarat' ve 'entelijansiya'
 intelligent	4.29	j:A2:j
 intelligently	3.05	
 intend	4.09	v:B1:j
@@ -14139,7 +14139,7 @@ intermittently	3.05
 intern	3.67	
 internal	4.66	j:B1:j
 internally	3.75	
-international	5.36	j:A2:j
+international	5.36	j:A2:j:A1:Türkçede 'internasyonal'
 internationally	3.95	r:B1:j
 internationals	3.09	
 internet	5.06	n:A1:j
@@ -14264,7 +14264,7 @@ inverse	3.42
 inversion	3.26	
 inverted	3.42	
 inverted commas		n:B2:j
-invest	4.32	v:B1:j
+invest	4.32	v:B1:j:A2:Türkçede 'invest'
 invested	4.19	
 investigate	4.31	v:B2:j
 investigated	4.14	
@@ -14586,7 +14586,7 @@ jeffery	3.10
 jeffrey	3.90	
 jehovah	3.15	
 jehovah's	3.00	
-jelly	3.77	n:A2:j
+jelly	3.77	n:A2:j:A1:Türkçede 'jöle'
 jellyfish	3.25	
 jen	3.58	
 jenkins	3.84	
@@ -14679,7 +14679,7 @@ joel	3.97
 joey	3.92	
 joffrey	3.00	
 jog	3.30	n:B2:j|v:B1:j|v:C1:o
-jogging	3.38	n:B1:j
+jogging	3.38	n:B1:j:A2:Türkçede 'jogging'
 johan	3.27	
 johann	3.37	
 johanna	3.09	
@@ -14736,7 +14736,7 @@ joshua	3.92
 josiah	3.12	
 josie	3.18	
 joss	3.09	
-journal	4.77	n:B1:j
+journal	4.77	n:B1:j:A2:Türkçede 'jurnal'
 journalism	4.12	n:B2:j
 journalist	4.38	n:B1:j
 journalistic	3.29	
@@ -14775,7 +14775,7 @@ judgments	3.51
 judicial	4.14	
 judiciary	3.86	
 judith	3.67	
-judo	3.25	n:B2:j
+judo	3.25	n:B2:j:B1:Türkçede 'judo'
 judy	3.79	
 jug	3.30	n:B1:j
 juggle	3.02	
@@ -15029,11 +15029,11 @@ killing	4.88	n:B1:j
 killings	3.69	
 kills	4.34	
 kiln	3.11	
-kilo	3.13	n:A2:j
+kilo	3.13	n:A2:j:A1:Türkçede 'kilo'
 kilogram	3.01	n:A2:j:A1:tanidik:kilogram
 kilogramme	1.66	n:A2:j:A1:tanidik:kilogram
 kilograms	3.24	
-kilometer	3.19	n:A2:j
+kilometer	3.19	n:A2:j:A1:Türkçede 'kilometre'
 kilometers	3.82	
 kilometre	3.21	n:A2:j:A1:tanidik:kilometre
 kilometres	3.77	
@@ -15206,7 +15206,7 @@ labelling	3.15
 labels	4.08	
 labor	4.77	n:A2:j
 laboratories	3.72	
-laboratory	4.31	n:B1:j
+laboratory	4.31	n:B1:j:A2:Türkçede 'laboratuvar'
 laborer	2.89	n:B2:j
 laborers	3.29	
 labour	4.70	n:A2:j
@@ -15274,7 +15274,7 @@ lamentation	2.39	n:C2:o
 lamented	3.12	
 laminated	3.09	
 lamont	3.17	
-lamp	4.05	n:A2:j
+lamp	4.05	n:A2:j:A1:Türkçede 'lamba'
 lampard	3.03	
 lamps	3.73	
 lan	3.64	
@@ -15538,7 +15538,7 @@ legalize	3.26
 legalized	3.28	
 legalizing	3.00	
 legally	4.21	r:B1:j
-legend	4.44	n:B2:j
+legend	4.44	n:B2:j:B1:Türkçede 'lejant' ve 'efsane'
 legendary	4.23	j:B2:j
 legends	4.07	
 legged	3.50	
@@ -15547,7 +15547,7 @@ legion	3.86	n:C2:o
 legions	3.28	
 legislate	3.01	v:B2:j
 legislation	4.55	n:B2:j
-legislative	4.32	j:B2:j
+legislative	4.32	j:B2:j:B1:Türkçede 'lejislatif'
 legislator	3.20	n:B2:j
 legislators	3.65	
 legislature	4.16	n:B2:j
@@ -15574,12 +15574,12 @@ leisurely	3.05	r:B2:j
 leith	3.04	
 leland	3.19	
 lemme	3.19	
-lemon	4.10	n:A2:j
-lemonade	3.44	n:A2:j
+lemon	4.10	n:A2:j:A1:Türkçede 'limon'
+lemonade	3.44	n:A2:j:A1:Türkçede 'limonata'
 lemons	3.29	
 len	3.43	
 lena	3.62	
-lend	3.92	v:A2:j
+lend	3.92	v:A2:j:B1:Türkçede ikisi de 'ödünç vermek' olarak bilinir
 lender	3.64	
 lenders	3.67	
 lending	3.87	
@@ -15604,7 +15604,7 @@ leon	3.92
 leonard	4.01	
 leonardo	3.68	
 leone	3.64	
-leopard	3.59	n:B2:j
+leopard	3.59	n:B2:j:B1:Türkçede 'leopar'
 leopold	3.21	
 leprosy	3.00	
 lerner	3.07	
@@ -15804,7 +15804,7 @@ lindsay	3.81
 lindsey	3.60	
 line	5.49	n:A1:j|v:B2:j
 lineage	3.46	
-linear	4.12	j:C1:o
+linear	4.12	j:C1:o:B2:Türkçede 'lineer'
 linearly	2.85	r:C1:o
 linebacker	3.36	
 lined	4.08	
@@ -15839,7 +15839,7 @@ lip	4.13	n:A2:j
 lipid	3.29	
 lips	4.35	
 lipstick	3.69	
-liquid	4.39	j:B1:j|n:B1:j
+liquid	4.39	j:B1:j:A2:Türkçede 'likit' vardır|n:B1:j:A2:Türkçede 'likit' vardır
 liquidation	3.26	
 liquidity	3.45	
 liquids	3.48	
@@ -15862,7 +15862,7 @@ listings	3.90
 lists	4.38	
 lit	4.19	
 lite	3.53	
-liter	3.46	n:A2:j
+liter	3.46	n:A2:j:A1:Türkçede 'litre'
 literacy	3.90	
 literal	3.77	j:B2:j
 literally	4.91	r:B2:j
@@ -15979,14 +15979,14 @@ log	4.37	n:B1:j
 logan	4.04	
 logged	3.65	
 logging	3.76	
-logic	4.36	n:B1:j
+logic	4.36	n:B1:j:A2:Türkçede 'mantık' yerine 'lojik' de bilinir
 logical	4.14	j:A2:j
 logically	3.43	
 login	3.49	
 logistic	3.11	
 logistical	3.24	
 logistics	3.86	
-logo	4.28	n:B1:j
+logo	4.28	n:B1:j:A2:Türkçede 'logo' olarak bilinir
 logos	3.53	
 logs	3.81	
 lohan	3.01	
@@ -16073,7 +16073,7 @@ lothian	3.05
 lotion	3.45	
 lots	4.88	
 lotta	3.20	
-lottery	4.00	n:B1:j
+lottery	4.00	n:B1:j:A2:Türkçede 'loto' veya 'piyango' benzeri 'lotarya'
 lotto	3.23	
 lotus	3.62	
 lou	3.94	
@@ -16201,8 +16201,8 @@ luv	3.09
 lux	3.33	
 luxembourg	3.57	
 luxuries	3.09	
-luxurious	3.55	j:B2:j
-luxury	4.35	j:B2:j|n:B1:j
+luxurious	3.55	j:B2:j:B1:Türkçede 'lüks' ve 'lüksöz' kökeni var
+luxury	4.35	j:B2:j:B1:Türkçede 'lüks'|n:B1:j:A2:Türkçede 'lüks'
 luz	3.03	
 lv	3.39	
 lvl	3.18	
@@ -16314,7 +16314,7 @@ magnanimously	1.73	r:C2:o
 magnate	3.04	n:C2:o
 magnesium	3.49	
 magnet	3.73	
-magnetic	4.17	j:C1:o
+magnetic	4.17	j:C1:o:B2:Türkçede 'manyetik'
 magnetically	2.57	r:C1:o
 magnetism	3.03	n:C1:o
 magneto	3.04	
@@ -16383,7 +16383,7 @@ makin	3.27
 making	5.54	
 mal	3.55	
 malady	2.55	n:B2:j
-malaria	3.65	n:B2:j
+malaria	3.65	n:B2:j:B1:Türkçede 'malarya'
 malawi	3.33	
 malay	3.39	
 malaya	3.00	
@@ -16430,7 +16430,7 @@ manage	4.54	v:A2:j
 manageable	3.38	
 managed	4.76	
 management	5.13	n:B1:j
-manager	4.97	n:A2:j
+manager	4.97	n:A2:j:A1:Türkçede 'menajer'
 manager's	3.11	
 managerial	3.56	
 managers	4.47	
@@ -16497,11 +16497,11 @@ mantis	3.11
 mantle	3.62	
 mantra	3.50	
 manu	3.34	
-manual	4.32	j:B2:j|n:B2:j
+manual	4.32	j:B2:j:B1:Türkçede 'manuel'|n:B2:j:B1:Türkçede 'manuel'
 manually	3.70	
 manuals	3.38	
 manuel	3.86	
-manufacture	3.98	n:B2:j|v:B2:j
+manufacture	3.98	n:B2:j:B1:Türkçede 'manifaktür'|v:B2:j:B1:Türkçede 'manifaktür'
 manufactured	4.13	
 manufacturer	4.21	n:B2:j
 manufacturers	4.35	
@@ -16585,7 +16585,7 @@ marketability	2.39	n:C2:o
 marketable	3.06	
 marketed	3.64	
 marketers	3.36	
-marketing	4.78	n:B2:j
+marketing	4.78	n:B2:j:B1:Türkçede 'pazarlama' ve 'marketing'
 marketplace	3.82	
 markets	4.61	
 markham	3.04	
@@ -16648,7 +16648,7 @@ martyrdom	3.16
 martyrs	3.40	
 marvel	4.16	n:C2:o|v:C1:o
 marvel's	3.14	
-marvellous	3.40	j:A2:j
+marvellous	3.40	j:A2:j:A1:Türkçede 'marvelez' benzeri maraton gibi değil ama 'marjinal' gibi yaygın
 marvelous	3.53	j:A2:j
 marvin	3.66	
 marx	3.68	
@@ -16664,7 +16664,7 @@ masculine	3.71
 masculinity	3.37	
 mash	3.55	v:B1:j
 mashed	3.39	
-mask	4.31	n:B2:j
+mask	4.31	n:B2:j:B1:Türkçede 'maske'
 masked	3.65	
 masking	3.13	
 masks	3.88	
@@ -16679,7 +16679,7 @@ massachusetts	4.31
 massacre	3.91	n:B2:j
 massacred	3.12	
 massacres	3.12	
-massage	4.01	n:B2:j
+massage	4.01	n:B2:j:B1:Türkçede 'masaj' olarak günlük hayatta kullanılır
 massages	3.08	
 masse	3.15	
 masses	3.94	
@@ -16714,11 +16714,11 @@ matchup	3.40
 mate	4.55	n:B2:j
 mateo	3.23	
 mater	3.47	
-material	4.95	n:A2:j
+material	4.95	n:A2:j:A1:Türkçede 'materyal'
 materialisation	1.34	n:C2:o
 materialise	2.49	v:C2:o
 materialism	3.05	n:C2:o
-materialistic	2.99	j:C2:o
+materialistic	2.99	j:C2:o:C1:Türkçede 'materyalist' vardır
 materialization	1.89	n:C2:o
 materialize	2.99	v:C2:o
 materially	3.36	
@@ -16772,7 +16772,7 @@ mauritius	3.21
 mausoleum	2.94	n:B2:j
 maverick	3.33	n:C2:o
 mavericks	3.22	
-max	4.66	n:A2:j
+max	4.66	n:A2:j:A1:Türkçede 'maks' veya 'maksimum' olarak bilinir
 maxi	3.26	
 maxim	3.39	
 maximal	3.06	
@@ -16886,7 +16886,7 @@ meats	3.48
 meaty	3.01	
 mecca	3.38	
 mech	3.10	
-mechanic	3.79	n:B1:j
+mechanic	3.79	n:B1:j:A2:Türkçede 'mekanik' olarak kullanılır
 mechanical	4.33	j:B1:j:A2:tanidik:mekanik
 mechanically	3.35	
 mechanics	4.13	
@@ -16895,7 +16895,7 @@ mechanism	4.27	n:C1:o:B2:tanidik:mekanizma
 mechanisms	4.03	
 mechanize	1.59	v:B2:j:B1:tanidik:mekanize
 med	3.88	
-medal	4.39	n:A2:j
+medal	4.39	n:A2:j:A1:Türkçede 'madalya' vardır
 medalist	3.22	
 medallion	3.10	
 medallist	3.08	
@@ -16915,14 +16915,14 @@ medicaid	3.74
 medical	5.16	j:A2:j:A1:tanidik:medikal
 medically	3.44	
 medicare	3.94	
-medication	4.15	n:B2:j
+medication	4.15	n:B2:j:B1:Türkçede 'medikasyon'
 medications	3.76	
 medici	3.00	
 medicinal	3.53	
 medicine	4.73	n:A1:j
 medicines	3.77	
 medics	3.14	
-medieval	4.05	j:B2:j
+medieval	4.05	j:B2:j:B1:Türkçede 'medieval' kökenli 'medeni' benzerliği
 medina	3.32	
 mediocre	3.52	j:B2:j
 mediocrity	3.12	n:C2:o
@@ -17013,7 +17013,7 @@ menopause	3.16
 mens	3.45	
 menstrual	3.22	
 ment	3.14	
-mental	4.83	j:B1:j
+mental	4.83	j:B1:j:A2:Türkçede 'mental'
 mentality	3.76	
 mentally	4.20	r:B1:j
 mention	4.73	n:A2:j|v:B1:j
@@ -17023,7 +17023,7 @@ mentions	4.09
 mentor	3.93	n:B2:j
 mentoring	3.33	
 mentors	3.29	
-menu	4.26	n:A2:j
+menu	4.26	n:A2:j:A1:Türkçede 'menü'
 menus	3.44	
 meow	3.29	
 mep	3.08	
@@ -17070,7 +17070,7 @@ mes	3.00
 mesa	3.50	
 mesh	3.75	v:C2:o
 mesmeric	2.13	j:C2:o
-mess	4.57	n:B1:j|v:B2:j
+mess	4.57	n:B1:j:A2:Türkçede 'mes' olarak bilinir|v:B2:j
 message	5.00	n:A1:j
 message board		n:B1:j
 messages	4.54	
@@ -17104,13 +17104,13 @@ metastatic	3.00
 meteor	3.55	
 meteorite	3.20	
 meteorites	3.00	
-meteorological	3.39	j:C2:o
+meteorological	3.39	j:C2:o:C1:Türkçede 'meteorolojik'
 meteorology	3.22	n:C2:o:C1:tanidik:meteoroloji
-meter	4.09	n:A2:j
+meter	4.09	n:A2:j:A1:Türkçede 'metre'
 meters	4.21	
 meth	3.62	
 methane	3.54	
-method	4.80	n:A2:j
+method	4.80	n:A2:j:A1:Türkçede 'metot'
 methodical	3.02	j:C1:o
 methodist	3.65	
 methodological	3.03	j:C2:o
@@ -17169,16 +17169,16 @@ microbiology	3.25
 microcomputer	2.30	n:B2:j
 micrometer	2.32	n:B2:j
 micrometre	1.35	n:B2:j
-microorganism	2.32	n:B2:j
+microorganism	2.32	n:B2:j:B1:Türkçede 'mikroorganizma' olarak geçer
 microorganisms	3.13	
 microphone	3.72	n:B2:j:B1:tanidik:mikrofon
 microphones	3.15	
 microscope	3.50	n:B2:j:B1:tanidik:mikroskop
-microscopic	3.37	j:B2:j
+microscopic	3.37	j:B2:j:B1:Türkçede 'mikroskobik'
 microscopy	3.26	n:B2:j
 microsoft	4.36	
 microsoft's	3.33	
-microwave	3.80	n:B2:j
+microwave	3.80	n:B2:j:B1:Türkçede 'mikrodalga' benzerliğinden
 mid	4.82	
 midday	3.37	n:A2:j
 middle	5.18	j:A1:j|n:A2:j
@@ -17220,7 +17220,7 @@ migrants	3.90
 migrate	3.43	
 migrated	3.31	
 migrating	3.25	
-migration	4.14	n:B2:j
+migration	4.14	n:B2:j:B1:Türkçede 'migrasyon' kelimesi vardır
 migrations	3.03	
 migratory	3.21	
 miguel	3.77	
@@ -17267,12 +17267,12 @@ miller's	3.31
 millers	3.06	
 millie	3.20	
 milligrams	3.11	
-millimeter	3.13	n:B2:j
+millimeter	3.13	n:B2:j:B1:Türkçede 'milimetre'
 millimeters	3.04	
 millimetre	2.60	n:B2:j:B1:tanidik:milimetre
 milling	3.34	
-million	5.33	x:A2:j
-millionaire	3.73	n:B2:j
+million	5.33	x:A2:j:A1:Türkçede 'milyon'
+millionaire	3.73	n:B2:j:B1:Türkçede 'milyoner'
 millionaires	3.35	
 millions	4.64	
 mills	4.22	
@@ -17320,7 +17320,7 @@ miniatures	3.02
 minimal	4.11	
 minimalist	3.28	
 minimally	3.07	
-minimise	3.17	v:B1:j
+minimise	3.17	v:B1:j:A2:Türkçede 'minimize'
 minimize	3.80	v:B1:j
 minimized	3.05	
 minimizing	3.27	
@@ -17398,7 +17398,7 @@ misplaced	3.39
 miss	5.22	n:A1:j|v:A1:j
 missed	4.83	
 misses	3.85	
-missile	4.14	n:B2:j
+missile	4.14	n:B2:j:B1:Türkçede 'füze' veya 'müzil' benzeri 'füzel' gibi
 missiles	3.95	
 missing	5.05	j:A2:j
 mission	4.87	n:B1:j:A2:tanidik:misyon
@@ -17502,7 +17502,7 @@ moderator	3.41
 moderators	3.01	
 modern	5.07	j:A2:j:A1:tanidik:modern
 modernisation	2.97	n:B2:j:B1:tanidik:modernizasyon
-modernise	2.52	v:B2:j
+modernise	2.52	v:B2:j:B1:Türkçede 'modernize' olarak kullanılır
 modernism	3.13	n:C2:o:C1:tanidik:modernizm
 modernist	3.21	
 modernity	3.25	
@@ -17635,7 +17635,7 @@ monthly	4.50	j:B1:j|r:B1:j
 months	5.35	
 montreal	4.07	
 monty	3.55	
-monument	3.90	n:B1:j
+monument	3.90	n:B1:j:A2:Türkçede 'anıt' anlamında 'monüment' bilinir
 monumental	3.50	
 monuments	3.69	
 moo	3.15	
@@ -17742,7 +17742,7 @@ motion	4.59	n:B2:j
 motionless	2.97	j:B1:j
 motions	3.55	
 motivate	3.60	v:B1:j
-motivated	4.14	j:B2:j
+motivated	4.14	j:B2:j:B1:Türkçede 'motive' kelimesi yaygındır
 motivates	3.17	
 motivating	3.34	
 motivation	4.22	n:B1:j:A2:tanidik:motivasyon
@@ -17755,7 +17755,7 @@ moto	3.42
 motogp	3.05	
 motor	4.53	n:B1:j:A2:tanidik:motor
 motorbike	3.19	n:B2:j
-motorcycle	4.07	n:B1:j
+motorcycle	4.07	n:B1:j:A2:Türkçede 'motosiklet'
 motorcycles	3.49	
 motoring	3.00	
 motorist	3.07	n:B2:j
@@ -17925,7 +17925,7 @@ muscles	4.14
 muscular	3.67	j:C1:o
 muse	3.59	v:B2:j
 muses	3.04	
-museum	4.71	n:A2:j
+museum	4.71	n:A2:j:A1:Türkçede ' müze'
 museum's	3.24	
 museums	3.89	
 mushroom	3.63	n:A2:j
@@ -18264,7 +18264,7 @@ nets	3.81
 netsurfer		n:B2:j
 netted	3.08	
 netting	3.24	
-network	5.02	n:B1:j
+network	5.02	n:B1:j:A2:Türkçede 'netvork'
 network's	3.27	
 networking	3.94	
 networks	4.45	
@@ -18282,7 +18282,7 @@ neurosis	2.57	n:B2:j
 neurotic	3.08	
 neutral	4.24	j:B1:j
 neutralisation	1.69	n:C1:o
-neutralise	2.43	v:C1:o
+neutralise	2.43	v:C1:o:B2:Türkçede 'nötralize etmek'
 neutrality	3.67	
 neutralization	2.38	n:C1:o
 neutralize	3.12	v:C1:o
@@ -18493,7 +18493,7 @@ nonlinear	3.27
 nonprofessional	1.72	j:B2:j
 nonprofit	3.86	
 nonprofits	3.02	
-nonsense	4.21	n:B1:j
+nonsense	4.21	n:B1:j:A2:Türkçede 'nonsens'
 nonstop	3.37	
 nonviolent	3.06	
 noodle	3.42	
@@ -18538,7 +18538,7 @@ nos	3.52
 nose	4.51	n:A1:j
 nosed	3.14	
 noses	3.45	
-nostalgia	3.62	n:C2:o
+nostalgia	3.62	n:C2:o:C1:Türkçede 'nostalji'
 nostalgic	3.45	j:C2:o:C1:tanidik:nostaljik
 nostalgically	2.11	r:C2:o
 nostril	2.77	n:B2:j
@@ -18590,7 +18590,7 @@ nouveau	3.07
 nov	4.37	
 nova	3.92	
 novak	3.35	
-novel	4.63	n:A2:j
+novel	4.63	n:A2:j:B1:'novel' kelimesi 'roman' anlamında, 'novella' ile karışır
 novelist	3.61	n:B1:j
 novelists	3.01	
 novella	3.08	
@@ -18621,7 +18621,7 @@ nu	3.55
 nuance	3.09	
 nuanced	3.26	
 nuances	3.16	
-nuclear	4.73	j:B1:j
+nuclear	4.73	j:B1:j:A2:Türkçede 'nükleer' olarak bilinir
 nuclei	3.19	
 nucleotide	3.00	
 nucleus	3.59	n:B1:j
@@ -18748,7 +18748,7 @@ obscurity	3.20
 observable	3.11	
 observance	3.13	
 observant	3.05	
-observation	4.13	n:B1:j
+observation	4.13	n:B1:j:A2:Türkçede 'observasyon' bilinir
 observational	3.14	
 observations	4.02	
 observatory	3.71	
@@ -18850,7 +18850,7 @@ officer	5.03	n:A1:j
 officer's	3.24	
 officers	4.87	
 offices	4.48	
-official	5.14	j:A2:j|n:B2:j
+official	5.14	j:A2:j:A1:Türkçede 'ofis' ve 'ofiçial' kelimelerinden bilinir|n:B2:j
 officially	4.53	r:B1:j
 officials	4.68	
 officiating	3.15	
@@ -18899,7 +18899,7 @@ ole	3.73
 oleg	3.14	
 olfactory	3.03	
 olga	3.31	
-olive	4.09	n:B2:j
+olive	4.09	n:B2:j:B1:Türkçede 'zeytin' anlamında 'olivier' benzeri değil ama yaygın
 olive oil		n:A2:j
 oliver	4.22	
 olives	3.35	
@@ -18909,7 +18909,7 @@ ollie	3.30
 olsen	3.38	
 olson	3.31	
 olympia	3.26	n:B2:j
-olympiad	2.60	n:B2:j
+olympiad	2.60	n:B2:j:B1:Türkçede 'olimpiyat'
 olympian	3.29	
 olympians	3.00	
 olympic	4.49	j:A2:j:A1:tanidik:olimpik
@@ -18921,8 +18921,8 @@ oman	3.36
 omar	3.75	
 ombudsman	3.14	
 omega	3.78	
-omelet	2.63	n:A2:j
-omelette	2.85	n:A2:j
+omelet	2.63	n:A2:j:A1:Türkçede 'omlet'
+omelette	2.85	n:A2:j:A1:Türkçede 'omlet'
 omen	3.12	
 omg	4.05	
 ominous	3.40	
@@ -19023,7 +19023,7 @@ optical	4.07
 optics	3.58	
 optimal	3.94	
 optimism	3.66	n:B2:j
-optimist	3.02	n:B2:j
+optimist	3.02	n:B2:j:B1:Türkçede 'optimist' kelimesi vardır
 optimistic	3.87	j:B2:j
 optimization	3.66	
 optimize	3.33	
@@ -19084,14 +19084,14 @@ organically	3.03
 organisation	4.36	n:B1:j:A2:tanidik:organizasyon
 organisational	3.20	
 organisations	4.16	
-organise	3.50	v:A2:j
+organise	3.50	v:A2:j:A1:Türkçede 'organize' olarak kullanılır
 organised	4.08	j:A2:j
 organiser	3.11	n:B2:j
 organisers	3.21	
 organising	3.49	
 organism	3.59	n:B1:j:A2:tanidik:organizma
 organisms	3.80	
-organization	4.92	n:B1:j
+organization	4.92	n:B1:j:A2:Türkçede 'organizasyon'
 organization's	3.41	
 organizational	3.83	j:C1:o
 organizations	4.67	
@@ -19252,7 +19252,7 @@ outward	3.52	j:B1:j
 outwardly	3.02	r:B2:j
 outweigh	3.27	v:B1:j
 ova	3.17	
-oval	3.98	j:B2:j
+oval	3.98	j:B2:j:B1:Türkçede 'oval'
 ovarian	3.46	
 ovaries	3.16	
 ovation	3.29	
@@ -19444,7 +19444,7 @@ paired	3.78
 pairing	3.60	
 pairs	4.11	
 paisley	3.31	
-pajamas	3.31	n:B2:j
+pajamas	3.31	n:B2:j:B1:Türkçede 'pijama'
 pak	3.40	
 pakistan	4.55	
 pakistan's	3.33	
@@ -19486,7 +19486,7 @@ pancreas	3.14
 pancreatic	3.34	
 panda	3.65	
 pandas	3.14	
-pandemic	3.68	j:B2:j
+pandemic	3.68	j:B2:j:B1:Türkçede 'pandemi'
 pandora	3.40	
 pane	3.09	
 panel	4.55	n:B2:j:B1:tanidik:panel
@@ -19506,7 +19506,7 @@ panthers	3.83
 panties	3.67	
 pantomime	3.00	
 pantry	3.23	
-pants	4.48	n:A1:j
+pants	4.48	n:A1:j:A2:'pantolon' sanılır, anlamı 'iç çamaşırı'
 pao	3.10	
 paolo	3.40	
 pap	3.28	
@@ -19526,7 +19526,7 @@ par	4.15
 para	3.85	
 parable	3.10	n:C2:o
 parachute	3.51	n:B1:j
-parade	4.16	n:B2:j
+parade	4.16	n:B2:j:B1:Türkçede 'parat'
 parades	3.29	
 paradigm	3.61	
 paradise	4.16	n:B1:j
@@ -19541,7 +19541,7 @@ parallel	4.27
 parallels	3.57	
 paralympic	3.24	
 paralympics	3.20	
-paralyse	2.09	v:B1:j|v:C2:o
+paralyse	2.09	v:B1:j:A2:Türkçede 'paralize'|v:C2:o
 paralysingly		r:C2:o
 paralysis	3.48	n:B2:j|n:C2:o
 paralyze	2.65	v:B1:j|v:C2:o
@@ -19579,7 +19579,7 @@ parishes	3.32
 parishioners	3.06	
 parisian	3.28	
 parity	3.41	
-park	5.16	n:A1:j|v:A2:j
+park	5.16	n:A1:j|v:A2:j:A1:Türkçede 'park etmek' olarak kullanılır
 park's	3.29	
 parked	3.91	
 parker	4.23	
@@ -19590,7 +19590,7 @@ parkinson's	3.34
 parkland	3.06	
 parks	4.33	
 parkway	3.35	
-parliament	4.74	n:B2:j
+parliament	4.74	n:B2:j:B1:Türkçede 'parlamento' kelimesine çok benziyor
 parliamentary	4.18	
 parliaments	3.11	
 parlor	3.34	
@@ -19620,7 +19620,7 @@ participate	4.42	v:B1:j
 participated	4.01	
 participates	3.28	
 participating	4.19	
-participation	4.33	n:B2:j
+participation	4.33	n:B2:j:B1:Türkçede 'partisipasyon'
 participatory	3.11	
 participle	2.66	n:B1:j
 particle	3.90	n:B2:j
@@ -19670,12 +19670,12 @@ passions	3.58
 passive	4.03	j:B1:j:A2:tanidik:pasif
 passively	3.01	
 passover	3.18	
-passport	4.05	n:B1:j
+passport	4.05	n:B1:j:A2:Türkçede 'pasaport'
 passports	3.52	
 password	4.06	n:B1:j
 passwords	3.57	
 past	5.36	j:B1:j|r:A1:j|p:A1:j
-pasta	3.92	n:A2:j
+pasta	3.92	n:A2:j:A1:Türkçede 'pasta' kelimesi yaygın olarak kullanılır
 paste	3.91	
 pasted	3.02	
 pastel	3.25	
@@ -19732,7 +19732,7 @@ patriot	3.73	n:B2:j
 patriotic	3.79	j:B2:j
 patriotism	3.59	n:B2:j
 patriots	3.96	
-patrol	4.14	n:B1:j
+patrol	4.14	n:B1:j:A2:Türkçede 'devriye' veya 'patrol' bilinir
 patrolling	3.20	
 patrols	3.48	
 patron	3.73	n:B2:j
@@ -19801,7 +19801,7 @@ paywall	2.35	n:C1:o
 paz	3.12	
 pb	3.52	
 pbs	3.52	
-pc	4.53	n:A2:j
+pc	4.53	n:A2:j:A1:Türkçede 'PC' olarak bilinir
 pcb	3.15	
 pci	3.17	
 pcr	3.15	
@@ -19819,7 +19819,7 @@ peaceful	4.28	j:A2:j
 peacefully	3.63	r:B2:j
 peacekeeping	3.15	
 peacetime	3.00	
-peach	3.77	n:B2:j
+peach	3.77	n:B2:j:B1:Türkçede 'piç'
 peaches	3.50	
 peacock	3.44	n:C1:o
 peak	4.53	n:B2:j
@@ -19893,7 +19893,7 @@ penalise	2.11	v:B2:j
 penalize	2.74	v:B2:j
 penalized	3.08	
 penalties	4.08	
-penalty	4.45	n:B2:j
+penalty	4.45	n:B2:j:B1:Türkçede 'penaltı'
 penance	3.13	
 pence	3.66	n:A2:j
 penchant	3.07	
@@ -19948,8 +19948,8 @@ per	5.45	p:B1:j
 per cent		n:B1:j
 perceive	3.72	v:B2:j
 perceived	4.16	
-percent	5.04	n:B1:j
-percentage	4.48	n:B2:j
+percent	5.04	n:B1:j:A2:Türkçede 'persentaj' veya yüzde
+percentage	4.48	n:B2:j:B1:Türkçede 'yüzde' anlamında 'persentaj'
 percentages	3.41	
 percentile	3.09	
 perception	4.18	n:B2:j
@@ -19976,7 +19976,7 @@ performer	3.80	n:B1:j
 performers	3.88	
 performing	4.56	
 performs	3.97	
-perfume	3.75	n:A2:j
+perfume	3.75	n:A2:j:A1:Türkçede 'parfüm'
 perfumes	3.02	
 perhaps	5.09	r:A2:j
 peril	3.40	
@@ -20044,7 +20044,7 @@ personalised	3.17
 personalities	3.90	
 personality	4.55	n:A2:j
 personalization	2.57	n:C1:o
-personalize	2.69	v:C1:o
+personalize	2.69	v:C1:o:B2:Türkçede 'personalize etmek'
 personalized	3.53	
 personally	4.57	r:B1:j
 personification	2.82	n:B2:j|n:C1:o
@@ -20103,7 +20103,7 @@ petitioned	3.04
 petitions	3.43	
 petra	3.27	
 petrified	3.03	j:B2:j
-petrol	3.72	n:A2:j
+petrol	3.72	n:A2:j:A1:Türkçede 'petrol'
 petrol station		n:A2:j
 petroleum	3.90	
 pets	4.08	
@@ -20137,7 +20137,7 @@ phelps	3.55
 phenomena	3.74	
 phenomenal	3.76	j:C1:o
 phenomenally	2.61	r:C1:o
-phenomenon	4.13	n:B1:j
+phenomenon	4.13	n:B1:j:A2:Türkçede 'fenomen' kelimesi yaygındır
 phenotype	3.05	
 phew	3.14	
 phi	3.55	
@@ -20162,7 +20162,7 @@ philosopher	3.72	n:B1:j
 philosophers	3.62	
 philosophical	3.95	j:B2:j
 philosophies	3.23	
-philosophy	4.49	n:B1:j
+philosophy	4.49	n:B1:j:A2:Türkçede 'felsefe'
 phobia	3.10	
 phoebe	3.38	
 phoenix	4.21	n:B1:j
@@ -20183,7 +20183,7 @@ photographers	3.83
 photographic	3.76	
 photographing	3.19	
 photographs	4.34	
-photography	4.45	n:A2:j
+photography	4.45	n:A2:j:A1:Türkçede 'fotoğraf'
 photon	3.32	
 photons	3.19	
 photos	4.83	
@@ -20319,7 +20319,7 @@ piper	3.68
 pipes	3.95	
 piping	3.42	
 piracy	3.52	n:B2:j
-pirate	3.96	n:B2:j
+pirate	3.96	n:B2:j:B1:Türkçede 'korsan' ve 'pirat'
 pirates	3.99	
 pisa	3.13	
 piss	4.17	
@@ -20387,7 +20387,7 @@ planar	3.07
 planck	3.02	
 plane	4.72	n:A1:j|n:C2:o
 planes	4.16	
-planet	4.68	n:A2:j
+planet	4.68	n:A2:j:A1:Türkçede 'planet' sözcüğü 'gezegen' anlamında bilinir
 planet's	3.24	
 planetary	3.56	
 planets	4.05	
@@ -20598,7 +20598,7 @@ politely	3.47	r:B1:j
 politeness	2.93	n:B2:j
 political	5.29	j:A2:j:A1:tanidik:politik
 politically	4.06	r:B2:j
-politician	4.16	n:B1:j
+politician	4.16	n:B1:j:A2:Türkçede 'politikacı'
 politicians	4.54	
 politico	3.16	
 politics	4.87	n:B1:j:A2:tanidik:politik
@@ -20619,7 +20619,7 @@ polluted	3.32
 polluting	3.07	
 pollution	4.20	n:A1:j
 polly	3.40	
-polo	3.77	n:B2:j
+polo	3.77	n:B2:j:B1:Türkçede 'polo'
 poly	3.64	
 polyester	3.11	
 polygamy	3.07	
@@ -20658,7 +20658,7 @@ poorer	3.60
 poorest	3.45	
 poorly	4.10	
 pop	4.87	n:A1:j|v:B2:j
-popcorn	3.73	n:B1:j
+popcorn	3.73	n:B1:j:A2:Türkçede 'patlamış mısır' anlamında 'patlamış mısır' benzeri 'popcorn'
 pope	4.38	
 pope's	3.07	
 popes	3.08	
@@ -20668,11 +20668,11 @@ popping	3.83
 poppy	3.59	
 pops	3.94	
 populace	3.34	
-popular	5.07	j:A2:j
+popular	5.07	j:A2:j:A1:Türkçede 'popüler'
 popularise	2.07	v:B2:j
 popularity	4.24	n:B2:j
 popularization	2.23	n:C1:o
-popularize	2.46	v:B2:j
+popularize	2.46	v:B2:j:B1:Türkçede 'popülarize etmek'
 popularly	3.18	
 populated	3.79	
 population	5.01	n:A2:j
@@ -20695,7 +20695,7 @@ porous	3.37
 porridge	3.11	
 porsche	3.70	
 port	4.73	n:B1:j
-portable	3.97	j:C1:o|n:C1:o
+portable	3.97	j:C1:o:B2:Türkçede 'portable'|n:C1:o:B2:Türkçede 'portable'
 portage	3.00	
 portal	4.00	
 portals	3.30	
@@ -20735,7 +20735,7 @@ positional	3.00
 positioned	3.79	
 positioning	3.73	
 positions	4.63	
-positive	4.99	j:B1:j
+positive	4.99	j:B1:j:A2:Türkçede 'pozitif'
 positively	3.89	r:B1:j
 positives	3.38	
 positivity	3.33	
@@ -20942,7 +20942,7 @@ prejudge	2.05	v:B2:j
 prejudice	3.79	n:B1:j
 prejudiced	3.05	
 prejudices	3.22	
-preliminary	4.16	j:B2:j
+preliminary	4.16	j:B2:j:B1:Türkçede 'preliminer'
 prelude	3.30	
 prem	3.28	
 premature	3.70	
@@ -21009,7 +21009,7 @@ preserves	3.36
 preserving	3.73	
 presided	3.41	
 presidency	4.16	n:B2:j
-president	5.45	n:B1:j
+president	5.45	n:B1:j:A2:Türkçede 'prezidan' benzeri 'prezidan/başkan' var
 president's	3.94	
 presidential	4.52	j:B2:j
 presidents	4.08	
@@ -21026,7 +21026,7 @@ pressuring	3.13
 pressurization	2.29	n:C2:o
 pressurize	2.07	v:C2:o
 pressurized	3.03	
-prestige	3.75	n:B2:j
+prestige	3.75	n:B2:j:B1:Türkçede 'prestig'
 prestigious	3.86	j:B2:j
 preston	3.79	
 presumably	4.06	r:B2:j
@@ -21167,7 +21167,7 @@ proceeded	3.87
 proceeding	3.66	
 proceedings	4.18	
 proceeds	4.05	
-process	5.26	n:B1:j|v:B2:j
+process	5.26	n:B1:j:A2:Türkçede 'proses' veya 'proses etmek'|v:B2:j
 processed	3.96	
 processes	4.46	
 processing	4.46	
@@ -21201,8 +21201,8 @@ prof	4.12
 profanity	3.06	
 profess	2.94	v:C1:o
 professed	3.12	
-profession	4.13	n:B1:j
-professional	5.05	j:A2:j|n:B2:j
+profession	4.13	n:B1:j:A2:Türkçede 'profesyon' veya meslek anlamında
+professional	5.05	j:A2:j:A1:Türkçede 'profesyonel'|n:B2:j:B1:Türkçede 'profesyonel'
 professionalism	3.40	n:C1:o
 professionally	3.76	
 professionals	4.24	
@@ -21230,7 +21230,7 @@ program's	3.18
 programmable	3.03	
 programme	4.57	n:A1:j|v:B1:j:A2:tanidik:program
 programmed	3.71	
-programmer	3.56	n:B2:j
+programmer	3.56	n:B2:j:B1:Türkçede 'programcı' karşılığı
 programmers	3.45	
 programmes	4.07	
 programming	4.37	n:B2:j
@@ -21250,7 +21250,7 @@ prohibition	3.77	n:B1:j
 prohibitive	2.95	j:C1:o
 prohibitively	2.62	r:C1:o
 prohibits	3.42	
-project	5.22	n:B2:j|v:B2:j
+project	5.22	n:B2:j:B1:Türkçede 'proje'|v:B2:j
 project's	3.20	
 projected	3.99	
 projectile	3.26	
@@ -21269,7 +21269,7 @@ prologue	3.23
 prolong	3.21	v:C2:o
 prolonged	3.81	
 prom	3.78	n:B2:j
-promenade	3.17	n:C2:o
+promenade	3.17	n:C2:o:C1:Türkçede 'promenat'
 prometheus	3.13	
 prominence	3.54	n:B2:j
 prominent	4.33	j:B1:j
@@ -21296,7 +21296,7 @@ prompting	3.45
 promptly	3.84	r:B2:j
 prompts	3.34	
 prone	3.93	j:C2:o
-pronoun	3.17	n:B1:j
+pronoun	3.17	n:B1:j:A2:Türkçede 'zamir/pronoun'
 pronounce	3.66	v:A2:j
 pronounced	4.06	
 pronouns	3.42	
@@ -21380,7 +21380,7 @@ protectors	3.15
 protects	3.75	
 protein	4.53	
 proteins	4.10	
-protest	4.45	n:B1:j|v:B2:j
+protest	4.45	n:B1:j:A2:Türkçede 'protesto'|v:B2:j:B1:Türkçede 'protesto etmek'
 protestant	3.81	
 protestants	3.35	
 protested	3.59	
@@ -21418,7 +21418,7 @@ provider	4.10
 providers	4.13	
 provides	4.80	
 providing	4.72	
-province	4.47	n:B2:j
+province	4.47	n:B2:j:B1:Türkçede 'provins/vilayet'
 provinces	4.03	
 provincial	4.08	j:C2:o
 proving	4.00	
@@ -21490,11 +21490,11 @@ pubic	3.07
 public	5.57	j:B1:j|n:A2:j
 public transport		n:B1:j
 public's	3.22	
-publication	4.45	n:B2:j
+publication	4.45	n:B2:j:B1:Türkçede 'publikasyon' ve 'blike'
 publications	4.27	
 publicise	2.38	v:B2:j
 publicist	3.07	
-publicity	4.00	n:B2:j
+publicity	4.00	n:B2:j:B1:Türkçede 'publisite'
 publicize	2.86	v:B2:j
 publicized	3.21	
 publicly	4.28	r:B1:j
@@ -21521,7 +21521,7 @@ pull	4.82	v:A2:j
 pulled	4.67	
 pulling	4.35	
 pullman	3.10	
-pullover	2.61	n:B1:j
+pullover	2.61	n:B1:j:A2:Türkçede 'pulover'
 pulls	4.01	
 pulmonary	3.50	
 pulp	3.68	
@@ -21529,7 +21529,7 @@ pulpit	3.23
 pulse	4.06	n:B2:j
 pulses	3.37	
 puma	3.22	
-pump	4.28	n:B1:j
+pump	4.28	n:B1:j:A2:Türkçede 'pompalamak' ve 'pomp' sözcüğü vardır
 pumped	3.79	
 pumping	3.81	
 pumpkin	3.83	n:B2:j
@@ -21630,7 +21630,7 @@ pvc	3.21
 pvp	3.04	
 pvt	3.16	
 pw	3.06	
-pyjamas	2.96	n:B2:j
+pyjamas	2.96	n:B2:j:B1:Türkçede 'pijama'
 pyongyang	3.11	
 pyramid	3.75	
 pyramids	3.33	
@@ -21674,9 +21674,9 @@ qualm	1.89	n:C2:o
 quantify	3.24	v:B2:j
 quantitative	3.73	
 quantities	3.86	
-quantity	4.07	n:B1:j
+quantity	4.07	n:B1:j:A2:Türkçede 'kantite'
 quantum	4.07	
-quarantine	3.64	n:B2:j
+quarantine	3.64	n:B2:j:B1:Türkçede 'karantina' olarak bilinir
 quark	3.05	
 quarrel	3.31	n:B2:j|v:B2:j
 quarrelsome	2.22	j:B2:j
@@ -21741,7 +21741,7 @@ quite	5.29	r:A2:j
 quits	3.39	
 quitting	3.70	
 quiver	2.84	n:C2:o|v:C2:o
-quiz	3.82	n:A2:j
+quiz	3.82	n:A2:j:A1:Türkçede 'kuiz' olarak bilinir
 quizzes	3.05	
 quo	3.78	
 quorum	3.07	
@@ -21779,7 +21779,7 @@ rachel	4.15
 racial	4.30	j:B1:j
 racially	3.37	
 racing	4.50	
-racism	4.25	n:B2:j
+racism	4.25	n:B2:j:B1:Türkçede ' ırkçılık' yerine 'rasizm'
 racist	4.42	n:B2:j
 racists	3.43	
 rack	3.90	n:B2:j
@@ -21796,7 +21796,7 @@ radiant	3.49
 radiate	2.96	v:B2:j
 radiating	3.03	
 radiation	4.27	n:B1:j
-radiator	3.34	n:C1:o
+radiator	3.34	n:C1:o:B2:Türkçede 'radyatör'
 radical	4.33	n:B2:j:B1:tanidik:radikal
 radically	3.54	r:B2:j
 radicals	3.50	
@@ -22038,12 +22038,12 @@ realises	3.16
 realising	3.41	
 realism	3.69	n:C1:o
 realist	3.26	n:C1:o:B2:tanidik:realist
-realistic	4.16	j:B1:j
+realistic	4.16	j:B1:j:A2:Türkçede 'realistik'
 realistically	3.33	
 realities	3.67	
 reality	4.89	n:B1:j:A2:tanidik:realite
 realization	3.72	n:B2:j
-realize	4.83	v:A2:j
+realize	4.83	v:A2:j:B1:'realize' kelimesi 'rezil' ile karışır
 realized	4.59	
 realizes	3.75	
 realizing	3.97	
@@ -22113,7 +22113,7 @@ receptors	3.65
 recess	3.53	n:C1:o
 recession	3.85	n:B2:j
 recessive	2.91	j:C1:o
-recharge	3.40	v:C1:o
+recharge	3.40	v:C1:o:B2:Türkçede 'reçarj'
 recipe	4.23	n:B2:j
 recipes	3.99	
 recipient	3.94	
@@ -22209,7 +22209,7 @@ recuperative	1.72	j:C2:o
 recurrence	3.20	
 recurrent	3.24	
 recurring	3.71	
-recycle	3.35	v:A2:j
+recycle	3.35	v:A2:j:A1:Türkçede 'geri dönüşüm' ve 'resikle'
 recycled	3.56	j:B1:j
 recycling	3.76	n:B1:j
 red	5.32	j:A1:j|n:A2:j
@@ -22343,7 +22343,7 @@ regeneration	3.61
 regenerative	3.06	
 regent	3.45	
 regents	3.28	
-reggae	3.47	n:B2:j
+reggae	3.47	n:B2:j:B1:Türkçede 'reggae'
 reggie	3.55	
 regime	4.30	n:B2:j:B1:tanidik:rejim
 regimen	3.29	
@@ -22353,7 +22353,7 @@ regiments	3.30
 regimes	3.53	
 regina	3.61	
 reginald	3.17	
-region	5.00	n:B1:j
+region	5.00	n:B1:j:A2:Türkçede 'bölge' anlamında 'rejyon'
 region's	3.39	
 regional	4.72	j:B1:j
 regions	4.53	
@@ -22363,7 +22363,7 @@ registered	4.52
 registering	3.46	
 registers	3.51	
 registrar	3.37	
-registration	4.32	n:B1:j
+registration	4.32	n:B1:j:A2:Türkçede 'rejistrasyon'
 registrations	3.13	
 registry	3.77	
 regression	3.50	
@@ -22443,7 +22443,7 @@ relationships	4.68
 relative	4.48	j:B1:j|n:B1:j
 relatively	4.66	r:B1:j
 relatives	4.20	
-relativity	3.34	n:B2:j
+relativity	3.34	n:B2:j:B1:Türkçede 'relativite'
 relax	4.29	v:A2:j
 relaxation	3.71	n:B2:j
 relaxed	4.01	j:A2:j
@@ -22730,7 +22730,7 @@ resembling	3.52
 resent	3.38	v:C1:o
 resented	3.07	
 resentment	3.61	
-reservation	3.95	n:B1:j
+reservation	3.95	n:B1:j:A2:Türkçede 'rezervasyon' olarak kullanılır
 reservations	3.79	
 reserve	4.60	n:B1:j|v:B1:j
 reserved	4.18	
@@ -22974,7 +22974,7 @@ revoke	3.26
 revoked	3.49	
 revolt	3.73	
 revolting	3.01	
-revolution	4.56	n:B2:j
+revolution	4.56	n:B2:j:B1:Türkçede 'devrim' yerine 'revolüsyon' da bilinir
 revolutionaries	3.21	
 revolutionary	4.17	j:B2:j
 revolutionise	2.36	v:B2:j
@@ -23022,7 +23022,7 @@ rhyme	3.56	v:B2:j
 rhymes	3.49	
 rhys	3.30	
 rhythm	4.05	n:A2:j
-rhythmic	3.39	j:B2:j
+rhythmic	3.39	j:B2:j:B1:Türkçede 'ritmik'
 rhythms	3.44	
 ri	3.69	
 ria	3.03	
@@ -23451,7 +23451,7 @@ ruminative	1.55	j:C2:o
 rumor	3.73	n:A2:j
 rumored	3.39	
 rumors	4.01	
-rumour	3.38	n:A2:j
+rumour	3.38	n:A2:j:A1:Türkçede 'rumuz'
 rumoured	3.03	
 rumours	3.66	
 rump	3.05	
@@ -23605,9 +23605,9 @@ sally	3.97
 salman	3.34	
 salmon	4.01	n:B1:j
 salmonella	3.09	
-salon	3.87	n:B2:j
+salon	3.87	n:B2:j:B1:Türkçede 'salon'
 salons	3.02	
-saloon	3.43	n:C1:o
+saloon	3.43	n:C1:o:B2:Türkçede 'salon' kelimesiyle akrabadır
 salsa	3.53	n:B2:j:B1:tanidik:salsa
 salt	4.60	n:A2:j
 salted	3.28	
@@ -23653,7 +23653,7 @@ sanctions	3.95
 sanctity	3.04	n:C1:o
 sanctuary	3.93	
 sand	4.44	n:B1:j
-sandal	2.91	n:B1:j
+sandal	2.91	n:B1:j:A2:Türkçede 'sandalet'
 sandals	3.46	
 sandbox	3.02	
 sanders	3.98	
@@ -23723,7 +23723,7 @@ saturday	4.87	n:A1:j
 saturday's	3.36	
 saturdays	3.56	
 saturn	3.54	
-sauce	4.30	n:A2:j
+sauce	4.30	n:A2:j:A1:Türkçede 'sos'
 saucepan	3.01	n:B1:j
 saucer	3.06	n:B1:j
 sauces	3.19	
@@ -23765,7 +23765,7 @@ sc	4.18
 scaffold	3.03	
 scaffolding	3.10	
 scala	3.01	
-scale	4.83	n:A2:j
+scale	4.83	n:A2:j:A1:Türkçede 'skala'
 scaled	3.55	
 scales	3.98	
 scaling	3.63	
@@ -23811,7 +23811,7 @@ scatter	3.39	v:B1:j
 scattered	3.97	
 scattering	3.40	
 scavenger	3.03	n:C2:o
-scenario	4.19	n:C1:o
+scenario	4.19	n:C1:o:B2:Türkçede 'senaryo'
 scenarios	3.88	
 scene	4.97	n:A2:j
 scenery	3.68	n:A2:j
@@ -23884,7 +23884,7 @@ scold	2.81	v:B1:j
 scooby	3.31	
 scoop	3.69	
 scooped	3.04	
-scooter	3.57	n:B2:j
+scooter	3.57	n:B2:j:B1:Türkçede 'scooter' olarak bilinir
 scooters	3.02	
 scope	4.26	n:B1:j
 scorched	3.07	
@@ -23977,11 +23977,11 @@ scrum	3.25
 scrutinise	2.24	v:C1:o
 scrutinize	2.76	v:C1:o
 scrutiny	3.74	n:C1:o
-scuba	3.31	n:B2:j
+scuba	3.31	n:B2:j:B1:Türkçede 'scuba'
 scully	3.23	
 sculpted	3.14	
 sculptor	3.34	
-sculpture	3.92	n:B1:j
+sculpture	3.92	n:B1:j:A2:Türkçede 'skulpit' değil 'heykel' denir
 sculptures	3.57	
 scum	3.71	
 scumbag	3.32	
@@ -24047,7 +24047,7 @@ secrecy	3.57
 secret	4.92	j:B1:j|n:A2:j
 secretariat	3.45	
 secretaries	3.50	
-secretary	4.95	n:A2:j
+secretary	4.95	n:A2:j:A1:Türkçede 'sekreter'
 secretion	3.11	
 secretive	3.26	
 secretly	4.01	r:B1:j
@@ -24158,7 +24158,7 @@ semantic	3.40
 semantics	3.39	
 semblance	3.10	
 semen	3.38	
-semester	4.03	n:A2:j
+semester	4.03	n:A2:j:A1:Türkçede 'semester' yerine 'sömestr' olarak kullanılır
 semesters	3.00	
 semi	4.51	
 semi-final		n:B2:j
@@ -24167,7 +24167,7 @@ semiconductor	3.53
 semifinal	3.24	
 semifinals	3.34	
 seminal	3.27	
-seminar	3.77	n:B2:j
+seminar	3.77	n:B2:j:B1:Türkçede 'seminer'
 seminars	3.50	
 seminary	3.54	
 semis	3.06	
@@ -24197,9 +24197,9 @@ senseless	3.35
 senses	3.92	
 sensibilities	3.10	
 sensibility	3.20	
-sensible	3.98	j:B2:j
+sensible	3.98	j:B2:j:C1:'sensible' kelimesi 'sansasyonel' ile karışır
 sensing	3.64	
-sensitive	4.46	j:B2:j
+sensitive	4.46	j:B2:j:C1:'sansitif' ile karışır, anlamı 'duyarlı'
 sensitivity	3.95	
 sensor	3.92	
 sensors	3.93	
@@ -24212,7 +24212,7 @@ sentences	4.13
 sentencing	3.62	
 sentient	3.12	j:C1:o
 sentiment	4.03	n:C1:o
-sentimental	3.53	j:C1:o
+sentimental	3.53	j:C1:o:B2:Türkçede 'sentimental' yaygındır
 sentimentally	1.90	r:C1:o
 sentiments	3.55	
 sentinel	3.41	
@@ -24333,10 +24333,10 @@ sexiest	3.22
 sexism	3.52	n:B2:j
 sexist	3.62	
 sexton	3.08	
-sexual	4.82	j:B2:j
+sexual	4.82	j:B2:j:B1:Türkçede 'seksüel'
 sexuality	3.97	
 sexually	4.13	
-sexy	4.42	j:B2:j
+sexy	4.42	j:B2:j:B1:Türkçede 'seksi'
 seymour	3.60	
 sf	3.88	
 sg	3.54	
@@ -24383,7 +24383,7 @@ shamed	3.21
 shameful	3.57	j:B1:j
 shameless	3.39	
 shaming	3.37	
-shampoo	3.58	n:A2:j
+shampoo	3.58	n:A2:j:A1:Türkçede 'şampuan' olarak bilinir
 shan	3.25	
 shane	3.95	
 shanghai	4.04	
@@ -24745,7 +24745,7 @@ silenced	3.39
 silencing	3.08	
 silent	4.45	j:B1:j
 silently	3.58	r:A2:j
-silhouette	3.31	n:C1:o
+silhouette	3.31	n:C1:o:B2:Türkçede 'siluet'
 silica	3.27	
 silicon	4.00	
 silicone	3.40	
@@ -25219,12 +25219,12 @@ sochi	3.04
 sociable	2.97	j:B2:j
 social	5.42	j:A1:j
 social networking		n:B1:j
-socialise	2.60	v:B2:j
+socialise	2.60	v:B2:j:B1:Türkçede 'sosyalleşmek'
 socialism	3.88	
 socialist	4.22	
 socialists	3.59	
 socialization	3.02	n:C1:o
-socialize	3.16	v:B2:j
+socialize	3.16	v:B2:j:B1:Türkçede 'sosyalleşmek'
 socially	3.96	r:B1:j
 societal	3.59	
 societies	4.08	
@@ -25242,7 +25242,7 @@ sockets	3.20
 socks	4.03	
 socrates	3.27	
 sod	3.25	
-soda	4.04	n:A2:j
+soda	4.04	n:A2:j:A1:Türkçede 'soda'
 sodium	3.87	
 sofa	3.81	n:A1:j
 sofia	3.74	
@@ -25255,7 +25255,7 @@ softening	3.09
 softer	3.54	
 softly	3.77	r:A2:j
 softness	2.99	n:B2:j
-software	4.77	n:A2:j
+software	4.77	n:A2:j:A1:Türkçede 'yazılım' ve 'software'
 soggy	3.14	
 soho	3.37	
 soil	4.42	n:B2:j|v:B1:j
@@ -25419,11 +25419,11 @@ southward	3.07	r:B2:j
 southwark	3.08	
 southwest	4.10	j:B1:j|n:B1:j
 southwestern	3.64	
-souvenir	3.36	n:B1:j
+souvenir	3.36	n:B1:j:A2:Türkçede 'suvenir'
 souvenirs	3.18	
 sovereign	3.95	
 sovereignty	3.86	
-soviet	4.54	n:B2:j
+soviet	4.54	n:B2:j:B1:Türkçede 'sovyet' olarak bilinir
 soviets	3.59	
 sow	3.38	
 sowing	3.00	
@@ -25431,7 +25431,7 @@ sox	3.84
 soy	3.63	
 soybean	3.09	n:B2:j
 sp	4.03	
-spa	3.96	n:B2:j
+spa	3.96	n:B2:j:B1:Türkçede 'spa'
 space	5.23	n:A2:j
 spacecraft	3.75	
 spaced	3.44	
@@ -25442,7 +25442,7 @@ spacing	3.42
 spacious	3.41	j:C1:o
 spade	3.33	
 spades	3.14	
-spaghetti	3.65	n:A2:j
+spaghetti	3.65	n:A2:j:A1:Türkçede 'spagetti'
 spain	4.59	
 spain's	3.16	
 spam	4.05	
@@ -25509,7 +25509,7 @@ specializing	3.51
 specially	4.01	r:B1:j
 specials	3.66	
 specialties	3.31	
-specialty	3.89	n:B2:j
+specialty	3.89	n:B2:j:B1:Türkçede 'speçalite'
 species	4.85	n:B2:j
 specific	5.03	j:A2:j:A1:tanidik:spesifik
 specifically	4.65	r:B2:j
@@ -25754,7 +25754,7 @@ sta	3.32
 stab	3.78	v:B2:j
 stabbed	3.90	
 stabbing	3.58	
-stabilise	2.70	v:C2:o
+stabilise	2.70	v:C2:o:C1:Türkçede 'stabilize etmek'
 stability	4.31	n:B2:j
 stabilization	3.30	
 stabilize	3.46	v:C2:o:C1:tanidik:stabilize
@@ -25909,7 +25909,7 @@ stations	4.50
 statistic	3.45	
 statistical	4.14	
 statistically	3.67	
-statistics	4.60	n:B2:j
+statistics	4.60	n:B2:j:B1:Türkçede 'istatistik'
 stats	4.33	
 statue	4.09	n:A2:j
 statues	3.65	
@@ -25978,7 +25978,7 @@ stepped	4.20
 stepping	3.98	
 steps	4.73	
 stereo	3.77	
-stereotype	3.43	n:B2:j
+stereotype	3.43	n:B2:j:B1:Türkçede 'stereotip' olarak kullanılır
 stereotypes	3.68	
 stereotypical	3.17	
 sterile	3.43	
@@ -26019,7 +26019,7 @@ stimulated	3.37
 stimulates	3.14	
 stimulating	3.54	
 stimulation	3.70	n:B2:j
-stimuli	3.39	n:C1:o
+stimuli	3.39	n:C1:o:B2:Türkçede 'stimülüs'
 stimulus	3.82	
 sting	3.80	
 stinging	3.07	
@@ -26084,7 +26084,7 @@ stopper	3.09
 stopping	4.29	
 stops	4.40	
 stopwatch	2.59	n:B2:j
-storage	4.57	n:B1:j
+storage	4.57	n:B1:j:A2:Türkçede 'storaj' veya 'stor' benzeri kullanılır
 store	5.02	n:A1:j|v:B2:j
 stored	4.18	
 stores	4.63	
@@ -26224,7 +26224,7 @@ strongly	4.47	r:A2:j
 struck	4.42	
 structural	4.18	j:C1:o
 structurally	3.19	r:C1:o
-structure	4.84	n:A2:j
+structure	4.84	n:A2:j:A1:Türkçede 'strüktür'
 structured	3.82	
 structures	4.48	
 struggle	4.62	n:B1:j|v:B2:j
@@ -26248,7 +26248,7 @@ student's	3.32
 students	5.25	
 studied	4.49	
 studies	4.98	
-studio	4.66	n:B1:j
+studio	4.66	n:B1:j:A2:Türkçede 'stüdyo' sözcüğü yaygındır
 studios	4.10	
 studs	3.34	
 study	5.26	n:A2:j|v:A1:j
@@ -26299,7 +26299,7 @@ subaru	3.26
 subbed	3.07	
 subclass	3.02	
 subcommittee	3.46	
-subconscious	3.39	j:B1:j
+subconscious	3.39	j:B1:j:A2:Türkçede 'subkonsept' veya 'subkonsensüs' gibi 'subbilinç'
 subcontinent	2.93	n:B2:j
 subculture	2.98	n:B2:j
 subdivided	3.10	
@@ -26356,7 +26356,7 @@ substantial	4.33	j:B1:j
 substantially	3.96	r:C1:o
 substantiate	2.83	v:C2:o
 substantive	3.41	
-substitute	4.17	n:B1:j|v:B2:j
+substitute	4.17	n:B1:j:A2:Türkçede 'substitü'|v:B2:j:B1:Türkçede 'substitü'
 substituted	3.47	
 substitutes	3.32	
 substituting	3.03	
@@ -26790,7 +26790,7 @@ syllabus	3.34
 sylvester	3.25	
 sylvia	3.60	
 symbol	4.31	n:A2:j
-symbolic	3.86	j:B2:j
+symbolic	3.86	j:B2:j:B1:Türkçede 'sembolik'
 symbolism	3.46	
 symbolize	3.04	
 symbolizes	3.04	
@@ -26798,11 +26798,11 @@ symbols	4.05
 symmetric	3.21	
 symmetrical	3.28	
 symmetry	3.51	
-sympathetic	3.81	j:B2:j
+sympathetic	3.81	j:B2:j:C1:'sempatik' ile karışır, anlamı 'anlayışlı'
 sympathies	3.23	
-sympathise	2.71	v:B2:j
-sympathize	3.06	v:B2:j
-sympathy	4.01	n:B1:j
+sympathise	2.71	v:B2:j:C1:'sempatik' ile karışır, anlamı 'sempati duymak'
+sympathize	3.06	v:B2:j:B1:Türkçede 'sempati' ve 'sempatik' kelimeleri var
+sympathy	4.01	n:B1:j:B2:'sympathy' kelimesi 'sempati' ile karışır, anlamı merhamet
 symphony	3.77	n:A2:j
 symposium	3.61	
 symptom	3.64	n:B1:j
@@ -26960,7 +26960,7 @@ tangle	3.10	n:C1:o|v:C1:o
 tangled	3.46	j:C1:o
 tango	3.58	
 tania	3.00	
-tank	4.57	n:B1:j
+tank	4.57	n:B1:j:A2:Türkçede 'tank' olarak bilinir
 tanker	3.44	
 tankers	3.18	
 tanks	4.27	
@@ -26992,7 +26992,7 @@ tar	3.63
 tara	3.66	
 tarantino	3.04	
 tardis	3.15	
-target	4.82	n:A2:j
+target	4.82	n:A2:j:A1:Türkçede 'hedef' anlamında 'target'
 targeted	4.22	
 targeting	3.99	
 targets	4.29	
@@ -27024,7 +27024,7 @@ tata	3.33
 tate	3.72	
 tatiana	3.07	
 tatter	1.28	n:B2:j
-tattoo	4.14	n:B2:j
+tattoo	4.14	n:B2:j:B1:Türkçede 'dövme' anlamında 'tatoo' bilinir
 tattooed	3.40	
 tattoos	3.84	
 tatum	3.32	
@@ -27092,7 +27092,7 @@ technical	4.75	j:B2:j:B1:tanidik:teknik
 technically	4.10	r:B2:j
 technician	3.70	
 technicians	3.57	
-technique	4.47	n:B1:j
+technique	4.47	n:B1:j:A2:Türkçede 'teknik'
 techniques	4.51	
 techno	3.49	
 technological	4.06	j:B1:j
@@ -27165,7 +27165,7 @@ templeton	3.00
 tempo	3.74	
 temporal	3.63	
 temporarily	4.06	r:B2:j
-temporary	4.48	j:B1:j
+temporary	4.48	j:B1:j:A2:Türkçede 'emperör' benzeri 'temporary'
 temps	3.33	
 tempt	3.22	v:B1:j
 temptation	3.72	n:B2:j
@@ -27201,7 +27201,7 @@ tennis	4.35	n:A1:j
 tenor	3.40	
 tens	3.89	
 tense	3.95	j:B1:j|n:B1:j
-tension	4.22	n:B1:j
+tension	4.22	n:B1:j:A2:Türkçede 'tansiyon'
 tensions	3.78	
 tensor	3.03	
 tent	4.05	n:B1:j
@@ -27230,7 +27230,7 @@ terminology	3.68
 terminus	3.18	
 terms	5.10	
 terra	3.44	
-terrace	3.88	n:B2:j
+terrace	3.88	n:B2:j:B1:Türkçede 'teras'
 terraced	3.01	
 terraces	3.29	
 terrain	3.94	n:C1:o
@@ -27279,7 +27279,7 @@ tex	3.52
 texan	3.18	
 texans	3.54	
 texas	4.89	
-text	5.01	n:A2:j|v:A2:j
+text	5.01	n:A2:j:A1:Türkçede 'tekst'|v:A2:j
 text message		n:A2:j
 textbook	3.77	n:A2:j
 textbooks	3.66	
@@ -27346,7 +27346,7 @@ theorem	3.71
 theoretical	4.01	
 theoretically	3.64	
 theories	4.22	
-theorist	3.16	n:B2:j
+theorist	3.16	n:B2:j:B1:Türkçede 'teorisyen'
 theorists	3.42	
 theory	4.88	n:B1:j:A2:tanidik:teori
 ther	3.10	
@@ -27369,7 +27369,7 @@ theres	3.90
 theresa	3.71	
 thermal	4.04	
 thermodynamics	3.10	
-thermometer	3.22	n:B2:j
+thermometer	3.22	n:B2:j:B1:Türkçede 'termometre'
 thermostat	3.10	
 these	6.04	d:A1:j|o:A1:j
 theses	3.21	
@@ -27636,7 +27636,7 @@ toad	3.34
 toast	3.96	n:A2:j
 toasted	3.26	
 toaster	3.33	
-tobacco	4.19	n:B1:j
+tobacco	4.19	n:B1:j:A2:Türkçede 'tütün' ve 'tobacco'
 tobago	3.41	
 tobias	3.29	
 tobin	3.02	
@@ -27687,7 +27687,7 @@ tomography	3.03
 tomorrow	5.02	r:A1:j|n:A1:j
 tomorrow's	3.59	
 toms	3.08	
-ton	4.29	n:B2:j
+ton	4.29	n:B2:j:B1:Türkçede 'ton' ağırlık birimi
 tonal	3.09	
 tone	4.49	n:A2:j|v:C1:o
 toned	3.48	
@@ -27745,7 +27745,7 @@ tories	3.76
 torment	3.36	n:C1:o|v:C1:o
 tormented	3.17	
 torn	4.08	
-tornado	3.82	n:B1:j
+tornado	3.82	n:B1:j:A2:Türkçede 'tornado' olarak bilinir
 tornadoes	3.27	
 toro	3.24	
 toronto	4.49	
@@ -27773,7 +27773,7 @@ toss	3.91	v:B1:j
 tossed	3.75	
 tossing	3.39	
 tot	3.16	
-total	5.21	j:B1:j|n:B1:j
+total	5.21	j:B1:j:A2:Türkçede 'total' veya 'totaliter'|n:B1:j:A2:Türkçede 'total'
 totaled	3.37	
 totaling	3.30	
 totalitarian	3.21	
@@ -27801,14 +27801,14 @@ toughest	3.61
 toughness	3.31	n:C1:o
 toulon	3.03	
 toulouse	3.22	
-tour	4.99	n:A2:j|v:B1:j
+tour	4.99	n:A2:j:A1:Türkçede 'tur'|v:B1:j
 tour guide		n:A2:j
 toured	3.40	
 touring	3.89	
 tourism	4.28	n:B1:j:A2:tanidik:turizm
 tourist	4.20	n:A2:j:A1:tanidik:turist
 tourists	4.06	
-tournament	4.56	n:B1:j
+tournament	4.56	n:B1:j:A2:Türkçede 'turnuva' bilinir ama 'tournament' benzerdir
 tournaments	3.84	
 tourney	3.09	
 tours	4.14	
@@ -27856,7 +27856,7 @@ tracker	3.63
 trackers	3.10	
 tracking	4.25	
 tracks	4.45	
-tracksuit	2.70	n:B1:j
+tracksuit	2.70	n:B1:j:A2:Türkçede 'eşofman' olarak bilinir ama 'treksüt' benzer
 tract	3.71	n:C1:o
 traction	3.78	
 tractor	3.78	
@@ -27871,8 +27871,8 @@ trader	3.77	n:B2:j
 traders	3.95	
 trades	4.04	
 trading	4.63	
-tradition	4.50	n:A2:j
-traditional	4.84	j:A2:j
+tradition	4.50	n:A2:j:A1:Türkçede 'tradisyon'
+traditional	4.84	j:A2:j:A1:Türkçede 'tradisyonel'
 traditionally	4.06	r:B1:j
 traditions	4.10	
 trafalgar	3.02	
@@ -27899,18 +27899,18 @@ trainee	3.43	n:B2:j
 trainees	3.27	
 trainer	4.08	n:B2:j
 trainers	3.72	
-training	5.18	n:A2:j
+training	5.18	n:A2:j:A1:Türkçede 'antrenman' olarak bilinir
 trains	4.27	
 trait	3.69	n:B2:j
 traitor	3.69	n:B2:j
 traitors	3.44	
 traits	3.96	
 trajectory	3.61	
-tram	3.46	n:A2:j
+tram	3.46	n:A2:j:A1:Türkçede 'tramvay'
 tramp	3.21	n:B2:j
 trample	2.83	n:B2:j
 trampled	3.07	
-trampoline	3.14	n:C1:o
+trampoline	3.14	n:C1:o:B2:Türkçede 'trambolin'
 trams	3.05	
 tran	3.09	
 trance	3.49	
@@ -27948,7 +27948,7 @@ transforms	3.45
 transfusion	3.13	n:B2:j
 transgender	3.91	
 transient	3.37	j:B2:j
-transistor	3.21	n:B2:j
+transistor	3.21	n:B2:j:B1:Türkçede 'transistör'
 transistors	3.06	
 transit	4.20	n:C1:o:B2:tanidik:transit
 transition	4.46	n:B2:j
@@ -27985,7 +27985,7 @@ transplanted	3.06
 transplants	3.15	
 transponder	3.07	
 transport	4.68	n:B1:j|v:B2:j
-transportation	4.57	n:B1:j
+transportation	4.57	n:B1:j:A2:Türkçede 'transportasyon' bilinir
 transported	3.88	
 transporter	3.19	
 transporting	3.59	
@@ -28103,7 +28103,7 @@ trimmed	3.47
 trimming	3.23	
 trinidad	3.65	
 trinity	3.90	
-trio	3.94	n:B2:j
+trio	3.94	n:B2:j:B1:Türkçede 'trio'
 trip	4.90	n:A1:j|v:B2:j
 triple	4.31	
 tripled	3.09	
@@ -28124,7 +28124,7 @@ trivial	3.66	j:B2:j
 trojan	3.41	
 trojans	3.27	
 troll	3.73	
-trolley	3.44	n:B2:j
+trolley	3.44	n:B2:j:B1:Türkçede 'trolley' veya 'troleybüs' olarak bilinir
 trolling	3.44	
 trolls	3.62	
 tron	3.07	
@@ -28135,7 +28135,7 @@ troops	4.64
 trope	3.10	
 tropes	3.01	
 trophies	3.67	
-trophy	4.17	n:B2:j
+trophy	4.17	n:B2:j:B1:Türkçede 'trofe'
 tropic	2.83	j:B2:j:B1:tanidik:tropik
 tropical	4.18	j:B1:j:A2:tanidik:tropik
 tropics	3.16	
@@ -28164,7 +28164,7 @@ truly	4.87	r:A2:j
 truman	3.56	
 trump	4.93	
 trump's	4.01	
-trumpet	3.58	n:B1:j
+trumpet	3.58	n:B1:j:A2:Türkçede 'trompet' olarak bilinir
 trumpets	3.15	
 trumps	3.47	
 truncated	3.03	
@@ -28214,7 +28214,7 @@ tuesdays	3.29
 tufts	3.10	
 tug	3.50	n:B2:j
 tuition	3.97	n:B2:j
-tulip	3.18	n:B2:j
+tulip	3.18	n:B2:j:B1:Türkçede 'lale' ve 'tulip'
 tully	3.07	
 tulsa	3.48	
 tum	3.07	
@@ -28225,7 +28225,7 @@ tumblr	3.74
 tummy	3.43	
 tumor	3.97	n:B2:j:B1:tanidik:tümör
 tumors	3.62	
-tumour	3.39	n:B2:j
+tumour	3.39	n:B2:j:B1:Türkçede 'tümör'
 tumours	3.10	
 tumultuous	3.06	
 tuna	3.64	n:B1:j
@@ -28324,7 +28324,7 @@ two	6.10	x:A1:j
 tx	4.01	
 txt	3.12	
 ty	3.73	
-tycoon	3.16	n:C1:o
+tycoon	3.16	n:C1:o:B2:Türkçede 'tayfun/tycoon'
 tying	3.68	
 tyler	4.17	
 tyne	3.17	
@@ -28650,9 +28650,9 @@ uniting	3.31
 units	4.77	
 unity	4.22	
 univ	3.11	
-universal	4.49	j:B2:j
+universal	4.49	j:B2:j:B1:Türkçede 'üniversel'
 universally	3.63	
-universe	4.59	n:B1:j
+universe	4.59	n:B1:j:A2:Türkçede 'üniversite' kökeniyle benzer
 universes	3.10	
 universities	4.36	
 university	5.39	n:A2:j:A1:tanidik:üniversite
@@ -28818,7 +28818,7 @@ updated	4.55
 updates	4.31	
 updating	3.69	
 upfront	3.48	
-upgrade	4.24	n:B2:j|v:B2:j
+upgrade	4.24	n:B2:j:B1:Türkçede 'güncelleme' anlamında 'upgrade'|v:B2:j:B1:Türkçede 'güncellemek' anlamında 'upgrade'
 upgraded	3.93	
 upgrades	3.78	
 upgrading	3.62	
@@ -28896,7 +28896,7 @@ used to		v:B1:j
 useful	4.72	j:A2:j
 usefulness	3.33	
 useless	4.22	j:B1:j
-user	4.69	n:B2:j
+user	4.69	n:B2:j:B1:Türkçede 'üye' ve 'user' yaygın olarak bilinir
 user's	3.33	
 username	3.76	
 users	4.80	
@@ -28924,7 +28924,7 @@ utilise	2.96	v:B2:j
 utilised	3.15	
 utilitarian	3.05	j:C2:o
 utilities	3.89	
-utility	4.27	n:B2:j|n:C2:o
+utility	4.27	n:B2:j:B1:Türkçede 'utilite' veya 'ücret' ile benzer|n:C2:o
 utilization	3.50	n:C2:o
 utilize	3.75	v:B2:j|v:C2:o
 utilized	3.83	
@@ -29031,7 +29031,7 @@ variations	4.09
 varied	4.03	j:B2:j
 varies	3.94	
 varieties	3.95	
-variety	4.75	n:B1:j
+variety	4.75	n:B1:j:A2:Türkçede 'varyete' veya çeşit anlamında bilinir
 various	5.12	j:B1:j
 variously	3.19	
 varnish	3.03	
@@ -29068,7 +29068,7 @@ vegans	3.08
 vegas	4.42	
 vegetable	3.94	n:A1:j
 vegetables	4.15	
-vegetarian	3.78	j:B1:j|n:B1:j
+vegetarian	3.78	j:B1:j:A2:Türkçede 'vejetaryen'|n:B1:j:A2:Türkçede 'vejetaryen'
 vegetarians	3.00	
 vegetation	3.77	n:C1:o
 veggie	3.26	
@@ -29115,7 +29115,7 @@ venues	3.92
 venus	3.81	
 ver	3.42	
 vera	3.71	
-verandah	2.63	n:C1:o
+verandah	2.63	n:C1:o:B2:Türkçede 'veranda'
 verb	3.72	n:A2:j
 verbal	3.91	j:B2:j
 verbally	3.41	r:B2:j
@@ -29147,12 +29147,12 @@ versatility	3.32	n:C1:o
 verse	4.18	n:B2:j|v:B2:j
 versed	3.22	
 verses	3.82	
-version	5.07	n:B2:j
+version	5.07	n:B2:j:B1:Türkçede 'versiyon'
 versions	4.35	
 versus	4.32	p:B2:j
 vertebrae	3.21	
 vertex	3.21	
-vertical	4.15	j:C1:o
+vertical	4.15	j:C1:o:B2:Türkçede 'vertikal' kelimesi var
 vertically	3.46	
 vertigo	3.16	
 verve	2.85	n:C1:o
@@ -29190,12 +29190,12 @@ vibes	3.55
 vibrant	3.67	
 vibrate	3.06	v:B2:j
 vibrating	3.33	
-vibration	3.59	n:B2:j
+vibration	3.59	n:B2:j:B1:Türkçede 'vibrasyon'
 vibrations	3.42	
 vibrator	3.11	
 vic	3.84	
 vicar	3.37	
-vice	4.71	j:B1:j
+vice	4.71	j:B1:j:B2:'vise' ile karışır, anlamı 'yardımcı'
 vice president		n:B1:j
 vicente	3.06	
 viceroy	3.08	
@@ -29207,7 +29207,7 @@ vick	3.10
 vickers	3.10	
 vicki	3.22	
 vicky	3.35	
-victim	4.56	n:B1:j
+victim	4.56	n:B1:j:A2:Türkçede 'viktim' veya 'victim' anlaşılır
 victim's	3.55	
 victimized	3.04	
 victims	4.56	
@@ -29258,7 +29258,7 @@ viking	3.60
 vikings	3.83	
 viktor	3.55	
 vile	3.62	
-villa	4.20	n:B2:j
+villa	4.20	n:B2:j:B1:Türkçede 'villa'
 village	4.82	n:A2:j
 villager	2.90	n:B2:j
 villagers	3.75	
@@ -29317,7 +29317,7 @@ virus	4.42	n:B1:j:A2:tanidik:virüs
 viruses	3.73	
 vis	3.43	
 vis-a-vis		p:C2:o
-visa	4.13	n:B1:j
+visa	4.13	n:B1:j:A2:Türkçede 'vize'
 visas	3.47	
 visceral	3.26	
 viscosity	3.13	
@@ -29332,11 +29332,11 @@ visit	5.04	n:A1:j|v:A1:j
 visitation	3.34	
 visited	4.50	
 visiting	4.44	
-visitor	4.01	n:A2:j
+visitor	4.01	n:A2:j:A1:Türkçede 'vizitör' veya turizmden bilinir
 visitors	4.49	
 visits	4.30	
 vista	3.71	
-visual	4.50	j:B1:j
+visual	4.50	j:B1:j:A2:Türkçede 'vizyon'
 visualization	3.32	
 visualize	3.27	
 visually	3.68	r:B1:j
@@ -29360,7 +29360,7 @@ vm	3.22
 vo	3.09	
 vocabulary	3.82	n:A2:j
 vocal	4.16	
-vocalist	3.40	n:B2:j|n:C2:o
+vocalist	3.40	n:B2:j:B1:Türkçede 'vokalist'|n:C2:o
 vocals	3.91	
 vocation	3.20	
 vocational	3.65	j:C2:o
@@ -29379,7 +29379,7 @@ vol	4.41
 volatile	3.72	
 volatility	3.49	
 volcanic	3.71	
-volcano	3.76	n:B1:j
+volcano	3.76	n:B1:j:A2:Türkçede 'volkan'
 volcanoes	3.34	
 voldemort	3.01	
 volkswagen	3.50	
@@ -29390,7 +29390,7 @@ volt	3.32
 voltage	4.02	
 voltaire	3.05	
 volts	3.20	
-volume	4.76	n:B1:j
+volume	4.76	n:B1:j:A2:Türkçede yaygın olarak 'volüm' şeklinde kullanılır
 volumes	4.20	
 voluntarily	3.72	r:C1:o
 voluntary	4.01	j:C1:o
@@ -29710,7 +29710,7 @@ weber	3.60
 webinar	3.25	
 webpage	3.36	
 webs	3.08	
-website	5.09	n:A2:j
+website	5.09	n:A2:j:A1:Türkçede 'website'
 website's	3.01	
 websites	4.20	
 webster	3.76	
@@ -30404,7 +30404,7 @@ ying	3.28
 ymca	3.16	
 yo	4.45	
 yoda	3.11	
-yoga	4.20	n:B1:j
+yoga	4.20	n:B1:j:A2:Türkçede 'yoga'
 yoghurt	3.01	n:A1:j
 yogi	3.16	
 yogurt	3.63	n:A1:j
@@ -30520,7 +30520,7 @@ zoning	3.52
 zoo	4.14	n:A1:j
 zoological	3.03	
 zoologist	2.51	n:C2:o
-zoology	3.19	n:C2:o
+zoology	3.19	n:C2:o:C1:Türkçede 'zooloji'
 zoom	3.83	n:B2:j
 zoos	3.13	
 zu	3.20	

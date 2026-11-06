@@ -1,0 +1,890 @@
+# Turkish-learner corrections of the word lists (level-tr-v1), exported from
+# public.ref_word_levels by `node scripts/system-jobs.ts export-tr`. CC BY-SA 4.0 (derived
+# from the lists; see docs/licenses.md). Read by scripts/build-levels.ts.
+# Columns: lemma_norm, pos, source, list cefr, corrected cefr, reason_tr
+abstract	adjective	cefrj	B1	A2	Türkçede 'abstrakt' veya soyut anlamında bilinir
+absurd	adjective	cefrj	B2	B1	Türkçede 'absürt'
+academic	adjective	cefrj	B1	A2	Türkçede 'akademik'
+academy	noun	cefrj	B1	A2	Türkçede 'akademi'
+accent	noun	cefrj	B1	A2	Türkçede 'aksan' kelimesi yaygındır
+accommodation	noun	cefrj	B2	B1	Türkçede 'akomodasyon'
+acidic	adjective	octanove	C1	B2	Türkçede 'asidik'
+acoustic	adjective	octanove	C1	B2	Türkçede 'akustik'
+acoustics	noun	octanove	C1	B2	tanidik:akustik
+active	adjective	cefrj	B1	A2	tanidik:aktif
+actual	adjective	cefrj	B2	C1	'aktüel' ile karışır, anlamı 'gerçek'
+actually	adverb	cefrj	A2	B1	'aktüel' ile karışır, anlamı 'aslında'
+acute	adjective	cefrj	B2	B1	tanidik:akut
+additive	adjective	octanove	C2	C1	Türkçede 'katkı maddesi' anlamında 'katkı' veya 'additif' olarak bilinir
+additive	noun	octanove	C2	C1	Türkçede 'additif' veya 'katkı maddesi'
+administration	noun	cefrj	B1	A2	Türkçede 'administrasyon' olarak bilinir
+administrative	adjective	cefrj	B2	B1	Türkçede 'idari' ve 'administrasyon'
+adrenaline	noun	octanove	C1	B2	Türkçede 'adrenalin' olarak bilinir
+advert	noun	cefrj	B1	A2	Türkçede 'advert'
+aerobics	noun	cefrj	B1	A2	Türkçede 'aerobik'
+agenda	noun	cefrj	B1	A2	Türkçede 'ajanda'
+agent	noun	cefrj	A2	A1	Türkçede 'ajan'
+aggressive	adjective	cefrj	B1	A2	Türkçede 'agresif'
+agriculture	noun	cefrj	B1	A2	Türkçede 'tarım' yerine bazen 'agrikültür'
+alarm	noun	cefrj	A2	A1	tanidik:alarm
+alarm	verb	cefrj	B1	A2	tanidik:alarm
+alcohol	noun	cefrj	B1	A2	Türkçede 'alkol'
+allergic	adjective	cefrj	B1	A2	tanidik:alerjik
+alliance	noun	cefrj	B2	B1	Türkçede 'alyans'
+alphabet	noun	cefrj	B1	A2	Türkçede 'alfabe' olarak bilinir
+alphabetical	adjective	cefrj	B2	B1	tanidik:alfabetik
+alternative	adjective	cefrj	B1	A2	Türkçede 'alternatif'
+alternative	noun	cefrj	B1	A2	Türkçede 'alternatif'
+aluminium	noun	cefrj	B2	B1	Türkçede 'alüminyum'
+aluminum	noun	cefrj	B2	B1	Türkçede 'alüminyum' olarak doğrudan bilinir
+ambulance	noun	cefrj	B1	A2	Türkçede 'ambulans'
+ammonia	noun	cefrj	B2	B1	Türkçede 'amonyak'
+analyse	verb	cefrj	B1	A2	Türkçede 'analiz etmek' yaygındır
+analysis	noun	cefrj	B1	A2	Türkçede 'analiz'
+analyst	noun	cefrj	B2	B1	tanidik:analist
+analyze	verb	cefrj	B1	A2	tanidik:analiz
+animated	adjective	cefrj	B1	A2	Türkçede 'anime'
+animation	noun	cefrj	B1	A2	tanidik:animasyon
+anthropologist	noun	octanove	C1	B2	Türkçede 'antropolog'
+anthropology	noun	octanove	C1	B2	tanidik:antropoloji
+antique	adjective	cefrj	B2	B1	Türkçede 'antik'
+antique	noun	cefrj	B1	A2	Türkçede 'antik' kelimesi var
+antivirus	noun	cefrj	B2	B1	tanidik:antivirüs
+archeologist	noun	cefrj	B2	B1	Türkçede 'arkeolog'
+architecture	noun	cefrj	A2	A1	Türkçede 'mimari' kökenli 'arkitektör'
+arena	noun	cefrj	B2	B1	Türkçede 'arena'
+arithmetic	noun	cefrj	B1	A2	tanidik:aritmetik
+artificial	adjective	cefrj	A2	A1	Türkçede 'yapay' yerine 'artifisyel'
+artist	noun	cefrj	B1	B2	'artist' ile karışır, anlamı 'sanatçı'
+artistic	adjective	cefrj	B1	A2	Türkçede 'artistik'
+aspirin	noun	cefrj	B1	A2	Türkçede 'aspirin'
+assimilation	noun	octanove	C2	C1	tanidik:asimilasyon
+astronaut	noun	cefrj	A2	A1	Türkçede 'astronot'
+astronomer	noun	cefrj	B1	A2	Türkçede 'astronom'
+astronomy	noun	cefrj	B2	B1	Türkçede 'astronomi'
+athlete	noun	cefrj	A2	A1	Türkçede 'atlet'
+athletic	adjective	cefrj	B1	A2	Türkçede 'atletik'
+athletics	noun	cefrj	B2	B1	tanidik:atletik
+atlantic	adjective	cefrj	B1	A2	tanidik:atlantik
+atmosphere	noun	cefrj	B1	A2	Türkçede 'atmosfer'
+atmospheric	adjective	octanove	C1	B2	tanidik:atmosferik
+atom	noun	cefrj	A2	A1	Türkçede 'atom'
+atomic	adjective	cefrj	B1	A2	Türkçede 'atomik'
+attack	noun	cefrj	A2	A1	tanidik:atak
+attack	verb	cefrj	A2	A1	tanidik:atak
+audio	adjective	cefrj	A2	A1	Türkçede 'odyo'
+authority	noun	cefrj	B1	A2	tanidik:otorite
+automatic	adjective	cefrj	A2	A1	Türkçede 'otomatik'
+automatic	verb	octanove	C1	B2	tanidik:otomatik
+autopilot	noun	octanove	C2	C1	Türkçede 'otopilot'
+availability	noun	cefrj	B2	B1	Türkçede 'avquier' benzeri 'availability' bilinir
+badminton	noun	cefrj	A2	A1	tanidik:badminton
+balance	noun	cefrj	B1	A2	Türkçede 'bakiye' ve 'balans'
+balcony	noun	cefrj	A2	A1	Türkçede 'balkon' olarak bilinir
+ballet	noun	cefrj	B2	B1	Türkçede 'bale'
+balloon	noun	cefrj	A2	A1	Türkçede 'balon' olarak bilinir
+ban	noun	cefrj	B2	B1	Türkçede 'ban' yasak anlamında yaygındır
+banker	noun	cefrj	B2	B1	tanidik:banker
+barbecue	noun	cefrj	A2	A1	Türkçede 'barbekü' olarak bilinir
+barbecue	verb	cefrj	B1	A2	Türkçede 'barbekü yapmak'
+barometer	noun	cefrj	B2	B1	Türkçede 'barometre'
+barometer	noun	octanove	C2	C1	Türkçede 'barometre'
+baroque	adjective	octanove	C2	C1	Türkçede 'barok'
+bikini	noun	cefrj	B2	B1	tanidik:bikini
+biography	noun	cefrj	B1	A2	Türkçede 'biyografi'
+biological	adjective	cefrj	B2	B1	Türkçede 'biyolojik'
+biology	noun	cefrj	B1	A2	Türkçede 'biyoloji'
+block	verb	cefrj	B1	A2	tanidik:blok
+blog	noun	cefrj	B1	A2	Türkçede 'blog'
+bomb	noun	cefrj	B1	A2	Türkçede 'bomba'
+bomb	verb	cefrj	B1	A2	Türkçede 'bombalamak'
+bonus	noun	cefrj	A2	A1	Türkçede 'bonus'
+boom	noun	cefrj	B1	A2	Türkçede 'boom'
+borrow	verb	cefrj	A1	A2	Türkçede 'ödünç' kelimesi hem ödünç almak hem vermektir
+botany	noun	cefrj	B2	B1	Türkçede 'botanik'
+bouquet	noun	octanove	C1	B2	Türkçede 'buket' olarak bilinir
+boxer	noun	cefrj	B2	B1	tanidik:boksör
+broccoli	noun	cefrj	B1	A2	Türkçede 'brokoli' olarak bilinir
+brochure	noun	cefrj	B2	B1	Türkçede 'broşür'
+bronze	noun	cefrj	B1	A2	tanidik:bronz
+browser	noun	cefrj	B2	B1	Türkçede 'tarayıcı' anlamında 'browser'
+bureau	noun	cefrj	B1	A2	Türkçede 'büro'
+bureaucracy	noun	cefrj	B2	B1	Türkçede 'bürokrasi' olarak var
+bureaucratic	adjective	octanove	C1	B2	Türkçede 'bürokratik'
+cabin	noun	cefrj	B1	A2	Türkçede 'kabin' kelimesi yaygındır
+cabinet	noun	cefrj	B2	B1	Türkçede 'kabin'
+cable	noun	cefrj	B2	B1	Türkçede 'kablo' olarak bilinir
+cafeteria	noun	cefrj	A2	A1	Türkçede 'kafeterya'
+cage	noun	cefrj	B1	A2	Türkçede 'kafeterya' gibi 'kaj' benzeri bilinir
+calorie	noun	octanove	C1	B2	Türkçede 'kalori'
+campaign	noun	cefrj	B2	B1	Türkçede 'kampanya'
+campus	noun	cefrj	A2	A1	Türkçede 'kampüs'
+canal	noun	cefrj	B1	A2	Türkçede 'kanal'
+cancel	verb	cefrj	B1	A2	Türkçede 'kanal iptali' gibi 'for cancel'
+cancer	noun	cefrj	B1	A2	tanidik:kanser
+canoe	noun	octanove	C1	B2	tanidik:kano
+canteen	noun	cefrj	B1	A2	Türkçede 'kantin'
+capital	noun	cefrj	A2	A1	Türkçede 'kapital'
+capsule	noun	cefrj	B1	A2	tanidik:kapsül
+captain	noun	cefrj	A2	A1	Türkçede 'kaptan'
+caravan	noun	cefrj	B2	B1	Türkçede 'karavan'
+carbon	noun	cefrj	B2	B1	Türkçede 'karbon' olarak bilinir
+cardigan	noun	cefrj	B2	B1	Türkçede 'kardiyan'
+carnival	noun	cefrj	B2	B1	Türkçede 'karnaval'
+carrot	noun	cefrj	A2	A1	Türkçede 'havuç' benzeşir ama 'kraç' gibi değil
+cash	noun	cefrj	A2	A1	Türkçede 'keş'
+cassette	noun	cefrj	A2	A1	Türkçede 'kaset'
+catalog	noun	cefrj	B2	B1	tanidik:katalog
+catalogue	noun	cefrj	B2	B1	tanidik:katalog
+catastrophe	noun	cefrj	B2	B1	Türkçede 'katastrofe' veya 'katastrofik' olarak var
+categorize	verb	cefrj	B1	A2	tanidik:kategorize
+category	noun	cefrj	B1	A2	Türkçede 'kategori' olarak kullanılır
+cathedral	noun	cefrj	B2	B1	Türkçede 'katedral'
+celebrity	noun	cefrj	B1	A2	Türkçede 'celebs' yerine 'selebriti'
+cello	noun	cefrj	B2	B1	Türkçede 'çello' olarak bilinir
+cent	noun	cefrj	A2	A1	Türkçede 'sent'
+center	noun	cefrj	A2	A1	Türkçede 'santral' veya 'merkez' anlamında kullanılır
+centigrade	noun	cefrj	B2	B1	Türkçede 'santigrat'
+centimeter	noun	cefrj	A2	A1	Türkçede 'santimetre'
+centimetre	noun	cefrj	A2	A1	Türkçede 'santimetre' olarak kullanılır
+ceremony	noun	cefrj	B1	A2	tanidik:seremoni
+certificate	noun	cefrj	B2	B1	Türkçede 'sertifika'
+certification	noun	cefrj	B2	B1	tanidik:sertifikasyon
+champagne	noun	cefrj	A2	A1	Türkçede 'şampanya' olarak bilinir
+chaos	noun	cefrj	B1	A2	Türkçede 'kaos' olarak bilinir
+chaotic	adjective	cefrj	B2	B1	tanidik:kaotik
+characteristic	adjective	cefrj	B2	B1	tanidik:karakteristik
+characteristic	noun	cefrj	B1	A2	tanidik:karakteristik
+characterize	verb	cefrj	B1	A2	tanidik:karakterize
+chat	noun	cefrj	B1	A2	Türkçede 'chat' yaygın olarak bilinir
+chef	noun	cefrj	A2	A1	Türkçede 'şef'
+chemical	adjective	cefrj	A2	A1	Türkçede 'kimyasal' olarak bilinir
+chemical	noun	cefrj	B1	A2	Türkçede 'kimyasal' olarak bilinir
+chemotherapy	noun	cefrj	B2	B1	Türkçede 'kemoterapi' olarak var
+cheque	noun	cefrj	A2	A1	Türkçede 'çek' kelimesiyle aynı
+chilli	noun	cefrj	A2	A1	Türkçede 'çili' veya 'şili' benzeri bilinir
+chimpanzee	noun	cefrj	A2	A1	Türkçede 'şempanze'
+choreography	noun	octanove	C2	C1	Türkçede 'koreografi' olarak bilinir
+chronological	adjective	cefrj	B1	A2	Türkçede 'kronolojik'
+cigarette	noun	cefrj	A2	A1	Türkçede 'sigara'
+circulate	verb	octanove	C1	B2	Türkçede 'sirküle'
+circulation	noun	octanove	C1	B2	Türkçede 'sirkülasyon'
+circus	noun	cefrj	B1	A2	Türkçede 'sirk'
+civil	adjective	cefrj	B1	A2	tanidik:sivil
+civilisation	noun	cefrj	B1	A2	Türkçede 'sivilizasyon'
+classic	adjective	cefrj	A2	A1	Türkçede 'klasik' kelimesiyle aynı
+classic	noun	cefrj	B2	B1	Türkçede 'klasik' kelimesiyle aynı
+classical	adjective	cefrj	B1	A2	tanidik:klasik
+classification	noun	cefrj	B2	B1	Türkçede 'klasifikasyon'
+classify	verb	cefrj	B1	A2	Türkçede 'klasifiye'
+click	noun	cefrj	B1	A2	tanidik:klik
+click	verb	cefrj	A2	A1	tanidik:klik
+climate	noun	cefrj	B1	A2	Türkçede 'iklim' benzeri 'klimatoloji'den
+clinic	noun	cefrj	B1	A2	Türkçede 'klinik'
+clinical	adjective	octanove	C1	B2	tanidik:klinik
+clone	verb	cefrj	A2	A1	Türkçede 'klon'
+coalition	noun	cefrj	B2	B1	tanidik:koalisyon
+cocktail	noun	cefrj	B2	B1	Türkçede 'kokteyl'
+cocoa	noun	cefrj	B2	B1	Türkçede 'kakao' olarak bilinir
+coconut	noun	cefrj	B2	B1	Türkçede 'kokonat'
+cola	noun	cefrj	A2	A1	Türkçede 'kola'
+colonial	adjective	cefrj	B2	B1	Türkçede 'kolonyal'
+coma	noun	cefrj	B2	B1	Türkçede 'koma'
+combination	noun	cefrj	B1	A2	tanidik:kombinasyon
+combine	verb	cefrj	B1	A2	Türkçede 'kombine' kelimesi vardır
+comedian	noun	cefrj	B1	A2	Türkçede 'komedyen'
+comedy	noun	cefrj	B1	A2	Türkçede 'komedi'
+comic	adjective	cefrj	A2	A1	Türkçede 'komik'
+comic	noun	cefrj	A2	A1	Türkçede 'komik'
+commercial	adjective	cefrj	B1	A2	Türkçede 'kommerçal' veya 'kommersiyel'
+commission	noun	cefrj	B2	B1	tanidik:komisyon
+commission	noun	octanove	C1	B2	tanidik:komisyon
+commission	verb	octanove	C1	B2	tanidik:komisyon
+committee	noun	cefrj	A2	A1	tanidik:komite
+competition	noun	cefrj	A2	A1	Türkçede 'kompetisyon' veya 'kompstit
+complex	adjective	cefrj	B1	A2	tanidik:kompleks
+component	noun	cefrj	B2	B1	Türkçede 'komponent'
+composition	noun	cefrj	B1	A2	Türkçede 'kompozisyon'
+concept	noun	cefrj	B1	A2	Türkçede 'konsept'
+concerto	noun	octanove	C1	B2	Türkçede 'konçerto'
+consensus	noun	cefrj	B2	B1	Türkçede 'konsensüs'
+conservation	noun	cefrj	B1	A2	Türkçede 'konservasyon'
+consumer	noun	cefrj	B1	A2	Türkçede 'konsümer' anlaşılır
+container	noun	cefrj	A2	A1	tanidik:konteyner
+continent	noun	cefrj	A2	A1	Türkçede 'kontinenti' yani 'kıta'
+contrast	noun	cefrj	A2	A1	tanidik:kontrast
+controversy	noun	cefrj	B2	B1	Türkçede 'kontroversiyal' veya 'kontroversi' bilinir
+convenience	noun	cefrj	A2	A1	Türkçede 'konvenyans' kelimesi günlük dilde vardır
+convenient	adjective	cefrj	A2	A1	Türkçede 'konvensiyonel' kökenli 'konveks'
+coral	noun	cefrj	B2	B1	Türkçede 'mercan' yerine 'koral' bilinir
+corona	noun	cefrj	B2	B1	Türkçede 'korona' olarak bilinir
+correlation	noun	octanove	C2	C1	tanidik:korelasyon
+corridor	noun	cefrj	B2	B1	Türkçede 'koridor'
+corrupt	adjective	cefrj	B2	B1	Türkçede 'korsan' veya 'korrupt' kökeni var
+costume	noun	cefrj	B2	B1	Türkçede 'kostüm'
+courgette	noun	cefrj	B1	A2	Türkçede 'kurjet'
+crater	noun	cefrj	B2	B1	tanidik:krater
+cricket	noun	cefrj	A2	A1	tanidik:kriket
+criteria	noun	octanove	C1	B2	tanidik:kriteri
+critical	adjective	cefrj	B1	A2	tanidik:kritik
+criticism	noun	cefrj	B2	B1	Türkçede 'kritik'
+crocodile	noun	cefrj	B2	B1	Türkçede 'krokodil' olarak bilinir
+cubism	noun	cefrj	B2	B1	Türkçede 'kübizm'
+cultural	adjective	cefrj	B1	A2	Türkçede sıkça kullanılan 'kültürel' kelimesiyle aynı
+currently	adverb	cefrj	B1	B2	'current' ile karışır, anlamı 'şu anda'
+custom	noun	cefrj	A2	B1	'kostüm' ile karışır, anlamı 'gelenek'
+cycle	noun	cefrj	B1	A2	Türkçede 'bisiklet' ve 'körfez' kökenli
+data	noun	cefrj	B2	B1	Türkçede 'data'
+declaration	noun	cefrj	B1	A2	Türkçede 'deklarasyon'
+declare	verb	cefrj	B1	A2	tanidik:deklare
+decoration	noun	cefrj	B2	B1	tanidik:dekorasyon
+decorative	adjective	cefrj	B2	B1	tanidik:dekoratif
+delicatessen	noun	octanove	C2	C1	Türkçede 'delikatessem'
+demo	noun	octanove	C1	B2	Türkçede 'demo'
+democracy	noun	cefrj	B1	A2	Türkçede 'demokrasi'
+democratic	adjective	cefrj	B1	A2	Türkçede 'demokratik' kelimesiyle aynı
+demographic	adjective	octanove	C1	B2	tanidik:demografik
+demographic	noun	octanove	C1	B2	tanidik:demografik
+demolish	verb	cefrj	B2	B1	Türkçede 'demolike' veya 'demolish' kökeni
+demonstration	noun	cefrj	B1	A2	Türkçede 'demonstrasyon'
+denim	noun	cefrj	B2	B1	tanidik:denim
+dentist	noun	cefrj	A2	A1	Türkçede 'dişçi' yerine 'dentist' yaygın
+depressed	adjective	cefrj	B1	A2	Türkçede 'depresif' kelimesiyle benzer
+depression	noun	cefrj	B1	A2	Türkçede 'depresyon' bilinir
+depressive	adjective	octanove	C2	C1	tanidik:depresif
+detail	noun	cefrj	A2	A1	Türkçede 'detay' olarak kullanılır
+diagram	noun	cefrj	B1	A2	Türkçede 'diyagram'
+dialog	noun	cefrj	B1	A2	Türkçede 'dialog'
+dialogue	noun	cefrj	B1	A2	Türkçede ' diyalog'
+diamond	noun	cefrj	A2	A1	Türkçede 'elmas' anlamında 'diyamant'
+dictator	noun	cefrj	B2	B1	Türkçede 'diktatör'
+diet	noun	cefrj	A2	A1	Türkçede 'diyet' olarak kullanılır
+digital	adjective	cefrj	B1	A2	Türkçede 'dijital'
+diploma	noun	cefrj	B2	B1	Türkçede 'diploma'
+diplomat	noun	cefrj	B2	B1	Türkçede 'diplomat'
+direct	adjective	cefrj	A2	A1	tanidik:direkt
+discipline	noun	cefrj	B2	B1	tanidik:disiplin
+disco	noun	cefrj	A2	A1	Türkçede 'disko'
+discrimination	noun	cefrj	B1	A2	Türkçede 'diskriminasyon'
+disillusion	verb	cefrj	B2	B1	Türkçede 'dezillüzyon'
+disorder	noun	cefrj	B2	B1	Türkçede 'disorder'
+diversity	noun	octanove	C1	B2	Türkçede 'diversite'
+dj	noun	cefrj	B1	A2	Türkçede 'dj'
+document	noun	cefrj	B1	A2	Türkçede 'doküman'
+documentary	noun	cefrj	B1	A2	Türkçede 'belgesel' var ama 'dokümanter' anlaşılır
+dolphin	noun	cefrj	B1	A2	Türkçede 'delfin' veya yunus
+dormitory	noun	cefrj	B2	B1	Türkçede 'dormitory' benzeri 'dormitory' yerine 'doyurucu'
+download	noun	cefrj	B2	B1	Türkçede 'download' ve 'daunlodyum' gibi yaygın
+download	verb	cefrj	A2	A1	Türkçede 'download' yaygın olarak bilinir
+dramatic	adjective	cefrj	B1	A2	tanidik:dramatik
+duplication	noun	cefrj	B2	B1	Türkçede 'duplikasyon'
+dynamic	adjective	cefrj	B2	B1	Türkçede 'dinamik'
+dynasty	noun	cefrj	B1	A2	Türkçede 'hanedan' veya 'dinasti'
+ecological	adjective	cefrj	B1	A2	Türkçede 'ekolojik'
+ecologist	noun	cefrj	B2	B1	Türkçede 'ekolojist'
+ecology	noun	cefrj	B1	A2	Türkçede 'ekoloji'
+economical	adjective	cefrj	B2	B1	Türkçede 'ekonomik'
+economics	noun	cefrj	B1	A2	Türkçede 'ekonomi'
+economist	noun	cefrj	B2	B1	Türkçede 'ekonomist'
+economy	noun	cefrj	B1	A2	Türkçede 'ekonomi'
+ecosystem	noun	cefrj	B1	A2	Türkçede 'ekosistem'
+editor	noun	cefrj	A2	A1	tanidik:editör
+elastic	adjective	octanove	C1	B2	Türkçede 'elastik'
+elastic	noun	octanove	C1	B2	Türkçede 'elastik'
+electric	adjective	cefrj	A2	A1	Türkçede 'elektrik' kelimesine çok benziyor
+electrical	adjective	cefrj	B1	A2	tanidik:elektrik
+electricity	noun	cefrj	B1	A2	Türkçede 'elektrik'
+electrode	noun	octanove	C2	C1	Türkçede 'elektrot'
+electron	noun	cefrj	B1	A2	tanidik:elektron
+electronic	adjective	cefrj	B1	A2	Türkçede 'elektronik' olarak bilinir
+electronics	noun	cefrj	B2	B1	Türkçede 'elektronik'
+element	noun	cefrj	B1	A2	tanidik:element
+elite	noun	cefrj	B2	B1	Türkçede 'elit'
+embassy	noun	cefrj	B2	B1	Türkçede 'elçilik' yerine 'embasör' bilinir
+empire	noun	cefrj	B1	A2	Türkçede 'imparatorluk' kökenli 'emparyalizm' gibi bilinir
+encyclopaedia	noun	cefrj	B1	A2	Türkçede 'ansiklopedi'
+encyclopedia	noun	cefrj	B1	A2	Türkçede 'ansiklopedi' olarak bilinir
+energy	noun	cefrj	B2	B1	Türkçede 'enerji'
+error	noun	cefrj	A2	A1	Türkçede 'eror' veya 'hata' olarak bilinir
+ethic	noun	cefrj	B2	B1	tanidik:etik
+ethical	adjective	octanove	C1	B2	Türkçede 'etik'
+ethnic	adjective	cefrj	B2	B1	Türkçede 'etnik'
+eventually	adverb	cefrj	B1	B2	'eventuellement' ile karışır, anlamı 'sonunda'
+exam	noun	cefrj	A2	A1	Türkçede 'egzavör' veya sınav anlamında 'exam' bilinir
+examination	noun	cefrj	B1	A2	Türkçede 'enformasyon' veya 'eksaminasyon' benzeri var
+excess	noun	cefrj	B1	A2	Türkçede 'ekspres' veya 'eksil' değil ama 'ekses'
+exercise	noun	cefrj	A2	A1	Türkçede 'egzersiz'
+exhibit	verb	cefrj	B2	B1	Türkçede 'egzibe'
+expedition	noun	cefrj	B2	B1	Türkçede 'ekspedisyon'
+expedition	noun	octanove	C1	B2	Türkçede 'ekspedisyon'
+explosion	noun	cefrj	B1	A2	Türkçede 'enflasyon' veya 'eksplozyon'
+export	noun	cefrj	B2	B1	Türkçede 'ihracat' anlamında 'eksport'
+express	noun	cefrj	A2	A1	tanidik:ekspres
+extra	adjective	cefrj	A2	A1	tanidik:ekstra
+extra	adverb	cefrj	A2	A1	tanidik:ekstra
+extra	noun	cefrj	B1	A2	tanidik:ekstra
+extreme	adjective	cefrj	B1	A2	Türkçede 'ekstrem'
+extremely	adverb	cefrj	A2	A1	Türkçede 'ekstrem'
+fabric	noun	cefrj	B2	C1	'fabrik' ile karışır, anlamı 'kumaş'
+factor	noun	cefrj	B2	B1	Türkçede 'faktör' sözcüğü yaygındır
+faculty	noun	cefrj	B2	B1	Türkçede 'fakülte'
+fanatic	adjective	octanove	C1	B2	tanidik:fanatik
+fanatic	noun	octanove	C1	B2	tanidik:fanatik
+fantastic	adjective	cefrj	A2	A1	Türkçede 'fantastik'
+fashion	noun	cefrj	A2	A1	Türkçede 'fason' veya 'moda'
+fax	noun	cefrj	B1	A2	Türkçede 'faks'
+fax	verb	cefrj	B1	A2	Türkçede 'faks çekmek'
+federal	adjective	cefrj	B2	B1	tanidik:federal
+fiber	noun	cefrj	B2	B1	tanidik:fiber
+film	noun	cefrj	A2	A1	Türkçede 'film'
+film	verb	cefrj	B1	A2	Türkçede 'film çekmek'
+filter	noun	cefrj	B1	A2	Türkçede 'filtre' olarak bilinir
+final	adjective	cefrj	A2	A1	Türkçede 'final'
+final	noun	cefrj	A2	A1	Türkçede 'final'
+finance	noun	cefrj	B2	B1	Türkçede 'finans' sözcüğü yaygındır
+finance	verb	cefrj	B1	A2	Türkçede 'finanse etmek' yaygındır
+firm	noun	cefrj	B1	A2	Türkçede 'firma'
+flash	adjective	cefrj	B1	A2	tanidik:flaş
+flash	noun	cefrj	B2	B1	tanidik:flaş
+flash	verb	cefrj	B2	B1	tanidik:flaş
+flute	noun	cefrj	B1	A2	tanidik:flüt
+footballer	noun	cefrj	A2	A1	Türkçede 'futbolcu'
+formality	noun	octanove	C1	B2	Türkçede 'formalite'
+format	noun	cefrj	B1	A2	Türkçede 'format'
+format	verb	cefrj	B1	A2	Türkçede 'formatlamak'
+formation	noun	cefrj	B2	B1	tanidik:formasyon
+formula	noun	cefrj	B1	A2	Türkçede 'formül'
+fossil	noun	octanove	C1	B2	Türkçede 'fosil'
+function	noun	cefrj	B1	A2	Türkçede 'fonksiyon'
+fusion	noun	octanove	C1	B2	tanidik:füzyon
+gallery	noun	cefrj	A2	A1	Türkçede 'galeri'
+gallon	noun	cefrj	B1	A2	tanidik:galon
+gangster	noun	cefrj	B2	B1	tanidik:gangster
+garage	noun	cefrj	A2	A1	Türkçede 'garaj'
+gene	noun	cefrj	B1	A2	Türkçede 'gen'
+generation	noun	cefrj	A2	A1	tanidik:jenerasyon
+genetic	adjective	cefrj	B1	A2	Türkçede 'genetik'
+genre	noun	cefrj	B2	B1	Türkçede 'janr'
+geography	noun	cefrj	B1	A2	Türkçede 'coğrafya'
+geology	noun	cefrj	B1	A2	Türkçede 'jeoloji'
+ghetto	noun	cefrj	B2	B1	Türkçede 'ghetto'
+giraffe	noun	cefrj	B1	A2	Türkçede 'zürafa'
+global	adjective	cefrj	B1	A2	Türkçede 'global'
+golf	noun	cefrj	A2	A1	Türkçede 'golf'
+gourmet	adjective	octanove	C1	B2	Türkçede 'gourmet' anlamında 'gürme'
+gourmet	noun	octanove	C1	B2	Türkçede 'gourmet' anlamında 'gürme'
+gram	noun	cefrj	A2	A1	Türkçede 'gram' olarak bilinir
+gramme	noun	cefrj	A2	A1	tanidik:gram
+graph	noun	cefrj	B1	A2	Türkçede 'grafik'
+graphic	adjective	cefrj	B1	A2	tanidik:grafik
+graphics	noun	cefrj	B1	A2	tanidik:grafik
+group	verb	cefrj	B1	A2	tanidik:grup
+guarantee	noun	cefrj	B1	A2	Türkçede 'garanti'
+guarantee	verb	cefrj	B2	B1	Türkçede 'garanti etmek'
+guerrilla	noun	cefrj	B2	B1	Türkçede 'gerilla'
+guitarist	noun	cefrj	B1	A2	Türkçede 'gitarist'
+gym	noun	cefrj	B1	A2	Türkçede 'jim' veya 'spor salonu'
+gymnastic	adjective	cefrj	B2	B1	tanidik:jimnastik
+gymnastics	noun	cefrj	B1	A2	Türkçede 'jimnastik' olarak bilinir
+habitat	noun	cefrj	B1	A2	Türkçede 'habitat'
+handicap	noun	cefrj	B2	B1	tanidik:handikap
+helicopter	noun	cefrj	B2	B1	Türkçede 'helikopter'
+hibernate	verb	octanove	C1	B2	Türkçede 'hiberne etmek'
+hiphop	noun	cefrj	A2	A1	Türkçede 'hiphop'
+hockey	noun	cefrj	A2	A1	Türkçede 'hokey'
+horizon	noun	cefrj	B1	A2	Türkçede 'horizont' yani 'ufuk'
+hostel	noun	cefrj	B1	A2	Türkçede 'hostel' olarak kullanılır
+hotelier	noun	octanove	C2	C1	Türkçede 'otelci'
+humanist	noun	cefrj	B2	B1	tanidik:hümanist
+humanity	noun	cefrj	B1	A2	Türkçede 'hümanite'
+humor	noun	cefrj	B1	A2	Türkçede 'humor' yerine 'hümor'
+hybrid	adjective	cefrj	B2	B1	Türkçede 'hibrit'
+hygiene	noun	cefrj	B2	B1	Türkçede 'hijyen'
+hypnotherapy	noun	octanove	C2	C1	Türkçede 'hipnoterapi'
+hysteria	noun	octanove	C2	C1	Türkçede 'histeri'
+icon	noun	cefrj	B2	B1	Türkçede 'ikon'
+ideology	noun	cefrj	B2	B1	tanidik:ideoloji
+idiot	noun	cefrj	B2	B1	Türkçede 'idyot' olarak kullanılır
+idolize	verb	cefrj	B2	B1	Türkçede 'idol'
+illegal	adjective	cefrj	A2	A1	Türkçede 'illegal'
+index	noun	cefrj	B2	B1	Türkçede 'indeks' olarak kullanılır
+industrial	adjective	cefrj	B1	A2	Türkçede 'endüstriyel'
+infected	adjective	cefrj	B2	B1	Türkçede 'enfekte' kelimesi yaygındır
+inflation	noun	cefrj	B2	B1	Türkçede 'enflasyon' yaygın bir kelimedir
+influence	noun	cefrj	A2	A1	Türkçede 'inflüans' veya etki
+innovation	noun	cefrj	B2	B1	tanidik:inovasyon
+innovation	noun	octanove	C1	B2	tanidik:inovasyon
+innovative	adjective	cefrj	B2	B1	Türkçede 'inovatif'
+innovative	adjective	octanove	C1	B2	Türkçede 'inovatif'
+inspector	noun	cefrj	B2	B1	Türkçede 'müfettiş' anlamında 'inspektör'
+inspiration	noun	cefrj	A2	A1	Türkçede 'inspirasyon'
+install	verb	cefrj	B1	A2	Türkçede 'enstalasyon' olarak kullanılır
+institute	noun	cefrj	B1	A2	Türkçede 'enstitü'
+instruction	noun	cefrj	B1	A2	Türkçede 'enstrüksiyon' bilinir
+integral	adjective	octanove	C1	B2	tanidik:integral
+intelligence	noun	cefrj	A2	A1	Türkçede 'istihbarat' ve 'entelijansiya'
+interactive	adjective	cefrj	B2	B1	Türkçede 'interaktif'
+international	adjective	cefrj	A2	A1	Türkçede 'internasyonal'
+invest	verb	cefrj	B1	A2	Türkçede 'invest'
+ironic	adjective	octanove	C2	C1	tanidik:ironik
+irony	noun	octanove	C1	B2	tanidik:ironi
+jelly	noun	cefrj	A2	A1	Türkçede 'jöle'
+jogging	noun	cefrj	B1	A2	Türkçede 'jogging'
+journal	noun	cefrj	B1	A2	Türkçede 'jurnal'
+judo	noun	cefrj	B2	B1	Türkçede 'judo'
+karaoke	noun	cefrj	B2	B1	Türkçede 'karaoke' olarak bilinir
+kilo	noun	cefrj	A2	A1	Türkçede 'kilo'
+kilogram	noun	cefrj	A2	A1	Türkçede 'kilogram'
+kilogramme	noun	cefrj	A2	A1	tanidik:kilogram
+kilometer	noun	cefrj	A2	A1	Türkçede 'kilometre'
+kilometre	noun	cefrj	A2	A1	Türkçede 'kilometre'
+kinetic	adjective	octanove	C2	C1	tanidik:kinetik
+laboratory	noun	cefrj	B1	A2	Türkçede 'laboratuvar'
+lamp	noun	cefrj	A2	A1	Türkçede 'lamba'
+laptop	noun	cefrj	B2	B1	Türkçede 'laptop'
+legend	noun	cefrj	B2	B1	Türkçede 'lejant' ve 'efsane'
+legislative	adjective	cefrj	B2	B1	Türkçede 'lejislatif'
+lemon	noun	cefrj	A2	A1	Türkçede 'limon'
+lemonade	noun	cefrj	A2	A1	Türkçede 'limonata'
+lend	verb	cefrj	A2	B1	Türkçede ikisi de 'ödünç vermek' olarak bilinir
+leopard	noun	cefrj	B2	B1	Türkçede 'leopar'
+liberal	adjective	cefrj	B2	B1	tanidik:liberal
+limit	noun	cefrj	B1	A2	tanidik:limit
+limit	verb	cefrj	B1	A2	tanidik:limit
+linear	adjective	octanove	C1	B2	Türkçede 'lineer'
+liquid	adjective	cefrj	B1	A2	Türkçede 'likit' vardır
+liquid	noun	cefrj	B1	A2	Türkçede 'likit' vardır
+liter	noun	cefrj	A2	A1	Türkçede 'litre'
+literature	noun	cefrj	B1	A2	tanidik:literatür
+litre	noun	cefrj	A2	A1	Türkçede 'litre' olarak kullanılır
+lobby	noun	cefrj	B2	B1	Türkçede 'lobi' olarak geçer
+locomotive	noun	octanove	C2	C1	tanidik:lokomotif
+logic	noun	cefrj	B1	A2	Türkçede 'mantık' yerine 'lojik' de bilinir
+logo	noun	cefrj	B1	A2	Türkçede 'logo' olarak bilinir
+lottery	noun	cefrj	B1	A2	Türkçede 'loto' veya 'piyango' benzeri 'lotarya'
+luxurious	adjective	cefrj	B2	B1	Türkçede 'lüks' ve 'lüksöz' kökeni var
+luxury	adjective	cefrj	B2	B1	Türkçede 'lüks'
+luxury	noun	cefrj	B1	A2	Türkçede 'lüks'
+lyric	adjective	cefrj	A2	A1	tanidik:lirik
+lyrical	adjective	octanove	C2	C1	tanidik:lirik
+madam	noun	cefrj	B2	B1	tanidik:madam
+madame	noun	cefrj	B2	B1	tanidik:madam
+maestro	noun	cefrj	B2	B1	Türkçede 'maestro'
+magnetic	adjective	octanove	C1	B2	Türkçede 'manyetik'
+malaria	noun	cefrj	B2	B1	Türkçede 'malarya'
+manager	noun	cefrj	A2	A1	Türkçede 'menajer'
+mango	noun	cefrj	B2	B1	tanidik:mango
+manicure	noun	octanove	C1	B2	tanidik:manikür
+manicure	verb	octanove	C1	B2	tanidik:manikür
+manipulation	noun	octanove	C1	B2	tanidik:manipülasyon
+manual	adjective	cefrj	B2	B1	Türkçede 'manuel'
+manual	noun	cefrj	B2	B1	Türkçede 'manuel'
+manufacture	noun	cefrj	B2	B1	Türkçede 'manifaktür'
+manufacture	verb	cefrj	B2	B1	Türkçede 'manifaktür'
+marathon	noun	cefrj	B2	B1	Türkçede 'maraton'
+marketing	noun	cefrj	B2	B1	Türkçede 'pazarlama' ve 'marketing'
+marvellous	adjective	cefrj	A2	A1	Türkçede 'marvelez' benzeri maraton gibi değil ama 'marjinal' gibi yaygın
+mask	noun	cefrj	B2	B1	Türkçede 'maske'
+massage	noun	cefrj	B2	B1	Türkçede 'masaj' olarak günlük hayatta kullanılır
+material	noun	cefrj	A2	A1	Türkçede 'materyal'
+materialistic	adjective	octanove	C2	C1	Türkçede 'materyalist' vardır
+mathematical	adjective	cefrj	B2	B1	tanidik:matematik
+mathematics	noun	cefrj	B1	A2	Türkçede 'matematik'
+max	noun	cefrj	A2	A1	Türkçede 'maks' veya 'maksimum' olarak bilinir
+maximum	adjective	cefrj	B1	A2	Türkçede 'maksimum'
+maximum	noun	cefrj	B1	A2	Türkçede 'maksimum'
+mechanic	noun	cefrj	B1	A2	Türkçede 'mekanik' olarak kullanılır
+mechanical	adjective	cefrj	B1	A2	Türkçede 'mekanik'
+mechanism	noun	octanove	C1	B2	Türkçede 'mekanizma' olarak bilinir
+mechanize	verb	cefrj	B2	B1	tanidik:mekanize
+medal	noun	cefrj	A2	A1	Türkçede 'madalya' vardır
+media	noun	cefrj	B2	B1	Türkçede 'medya'
+medical	adjective	cefrj	A2	A1	tanidik:medikal
+medication	noun	cefrj	B2	B1	Türkçede 'medikasyon'
+medieval	adjective	cefrj	B2	B1	Türkçede 'medieval' kökenli 'medeni' benzerliği
+meditation	noun	cefrj	B1	A2	tanidik:meditasyon
+melancholy	adjective	octanove	C2	C1	tanidik:melankoli
+melancholy	noun	octanove	C2	C1	tanidik:melankoli
+melody	noun	cefrj	B2	B1	tanidik:melodi
+mental	adjective	cefrj	B1	A2	Türkçede 'mental'
+menu	noun	cefrj	A2	A1	Türkçede 'menü'
+mess	noun	cefrj	B1	A2	Türkçede 'mes' olarak bilinir
+metal	noun	cefrj	A2	A1	Türkçede 'metal'
+metaphor	noun	cefrj	B2	B1	tanidik:metafor
+meteorological	adjective	octanove	C2	C1	Türkçede 'meteorolojik'
+meteorology	noun	octanove	C2	C1	tanidik:meteoroloji
+meter	noun	cefrj	A2	A1	Türkçede 'metre'
+method	noun	cefrj	A2	A1	Türkçede 'metot'
+metre	noun	cefrj	A2	A1	tanidik:metre
+metric	adjective	cefrj	B2	B1	Türkçede 'metrik'
+micro	noun	cefrj	B2	B1	tanidik:mikro
+microorganism	noun	cefrj	B2	B1	Türkçede 'mikroorganizma' olarak geçer
+microphone	noun	cefrj	B2	B1	Türkçede 'mikrofon' olarak bilinir
+microscope	noun	cefrj	B2	B1	Türkçede 'mikroskop' olarak kullanılır
+microscopic	adjective	cefrj	B2	B1	Türkçede 'mikroskobik'
+microwave	noun	cefrj	B2	B1	Türkçede 'mikrodalga' benzerliğinden
+migration	noun	cefrj	B2	B1	Türkçede 'migrasyon' kelimesi vardır
+millimeter	noun	cefrj	B2	B1	Türkçede 'milimetre'
+millimetre	noun	cefrj	B2	B1	Türkçede 'milimetre'
+million	other	cefrj	A2	A1	Türkçede 'milyon'
+millionaire	noun	cefrj	B2	B1	Türkçede 'milyoner'
+mineral	noun	cefrj	B1	A2	Türkçede 'mineral'
+minimise	verb	cefrj	B1	A2	Türkçede 'minimize'
+minimum	adjective	cefrj	B1	A2	Türkçede 'minimum'
+minimum	noun	cefrj	B1	A2	Türkçede 'minimum'
+missile	noun	cefrj	B2	B1	Türkçede 'füze' veya 'müzil' benzeri 'füzel' gibi
+mission	noun	cefrj	B1	A2	tanidik:misyon
+mobile	adjective	cefrj	A2	A1	tanidik:mobil
+model	adjective	cefrj	B1	A2	tanidik:model
+model	noun	cefrj	A2	A1	Türkçede yaygın kullanılan 'model' kelimesi var
+model	verb	cefrj	B1	A2	tanidik:model
+modem	noun	cefrj	B1	A2	Türkçede 'modem'
+modern	adjective	cefrj	A2	A1	Türkçede 'modern'
+modernisation	noun	cefrj	B2	B1	Türkçede 'modernizasyon'
+modernise	verb	cefrj	B2	B1	Türkçede 'modernize' olarak kullanılır
+modernism	noun	octanove	C2	C1	Türkçede 'modernizm'
+modernization	noun	cefrj	B2	B1	Türkçede 'modernizasyon'
+modernize	verb	cefrj	B2	B1	Türkçede 'modernize' kelimesi var
+molecule	noun	cefrj	B1	A2	Türkçede 'molekül'
+monitor	noun	cefrj	B1	A2	tanidik:monitör
+monitor	verb	cefrj	B1	A2	tanidik:monitör
+monument	noun	cefrj	B1	A2	Türkçede 'anıt' anlamında 'monüment' bilinir
+motivated	adjective	cefrj	B2	B1	Türkçede 'motive' kelimesi yaygındır
+motivation	noun	cefrj	B1	A2	Türkçede 'motivasyon'
+motor	noun	cefrj	B1	A2	Türkçede 'motor' olarak bilinir
+motorcycle	noun	cefrj	B1	A2	Türkçede 'motosiklet'
+museum	noun	cefrj	A2	A1	Türkçede ' müze'
+mythology	noun	octanove	C1	B2	Türkçede 'mitoloji'
+navigation	noun	cefrj	B2	B1	tanidik:navigasyon
+nectar	noun	cefrj	B1	A2	tanidik:nektar
+negative	adjective	cefrj	A2	A1	Türkçede 'negatif'
+network	noun	cefrj	B1	A2	Türkçede 'netvork'
+neutralise	verb	octanove	C1	B2	Türkçede 'nötralize etmek'
+nonsense	noun	cefrj	B1	A2	Türkçede 'nonsens'
+normal	adjective	cefrj	A2	A1	Türkçede 'normal'
+nostalgia	noun	octanove	C2	C1	Türkçede 'nostalji'
+nostalgic	adjective	octanove	C2	C1	tanidik:nostaljik
+novel	noun	cefrj	A2	B1	'novel' kelimesi 'roman' anlamında, 'novella' ile karışır
+nuclear	adjective	cefrj	B1	A2	Türkçede 'nükleer' olarak bilinir
+observation	noun	cefrj	B1	A2	Türkçede 'observasyon' bilinir
+obsessive	adjective	cefrj	B2	B1	tanidik:obsesif
+official	adjective	cefrj	A2	A1	Türkçede 'ofis' ve 'ofiçial' kelimelerinden bilinir
+olive	noun	cefrj	B2	B1	Türkçede 'zeytin' anlamında 'olivier' benzeri değil ama yaygın
+olympiad	noun	cefrj	B2	B1	Türkçede 'olimpiyat'
+olympic	adjective	cefrj	A2	A1	tanidik:olimpik
+omelet	noun	cefrj	A2	A1	Türkçede 'omlet'
+omelette	noun	cefrj	A2	A1	Türkçede 'omlet'
+online	adjective	cefrj	A2	A1	tanidik:online
+online	adverb	cefrj	A2	A1	tanidik:online
+operation	noun	cefrj	B1	A2	tanidik:operasyon
+optimist	noun	cefrj	B2	B1	Türkçede 'optimist' kelimesi vardır
+option	noun	cefrj	B1	A2	tanidik:opsiyon
+orchestra	noun	cefrj	B1	A2	Türkçede 'orkestra' olarak doğrudan kullanılır
+organ	noun	cefrj	B1	A2	Türkçede 'organ' kelimesi birebir aynıdır
+organic	adjective	cefrj	B1	A2	Türkçede 'organik'
+organisation	noun	cefrj	B1	A2	Türkçede 'organizasyon'
+organise	verb	cefrj	A2	A1	Türkçede 'organize' olarak kullanılır
+organism	noun	cefrj	B1	A2	Türkçede 'organizma'
+organization	noun	cefrj	B1	A2	Türkçede 'organizasyon'
+organize	verb	cefrj	A2	A1	tanidik:organize
+original	adjective	cefrj	A2	A1	Türkçede 'orijinal' olarak bilinir
+original	noun	cefrj	B2	B1	tanidik:orijinal
+oval	adjective	cefrj	B2	B1	Türkçede 'oval'
+oxygen	noun	cefrj	B1	A2	Türkçede 'oksijen'
+ozone	noun	cefrj	B2	B1	tanidik:ozon
+pacific	adjective	cefrj	A2	A1	tanidik:pasifik
+packet	noun	cefrj	B2	B1	Türkçede 'paketsel'
+pajamas	noun	cefrj	B2	B1	Türkçede 'pijama'
+pallet	noun	cefrj	B2	B1	tanidik:palet
+pandemic	adjective	cefrj	B2	B1	Türkçede 'pandemi'
+panel	noun	cefrj	B2	B1	Türkçede 'panel' olarak bilinir
+panic	noun	cefrj	A2	A1	Türkçede 'panik' olarak bilinir
+panic	verb	cefrj	B2	B1	Türkçede 'paniklemek' olarak bilinir
+panorama	noun	octanove	C1	B2	Türkçede 'panorama'
+panoramic	adjective	octanove	C1	B2	tanidik:panoramik
+pants	noun	cefrj	A1	A2	'pantolon' sanılır, anlamı 'iç çamaşırı'
+papaya	noun	cefrj	B2	B1	tanidik:papaya
+parade	noun	cefrj	B2	B1	Türkçede 'parat'
+paradox	noun	cefrj	B2	B1	tanidik:paradoks
+paralyse	verb	cefrj	B1	A2	Türkçede 'paralize'
+park	verb	cefrj	A2	A1	Türkçede 'park etmek' olarak kullanılır
+parliament	noun	cefrj	B2	B1	Türkçede 'parlamento' kelimesine çok benziyor
+participation	noun	cefrj	B2	B1	Türkçede 'partisipasyon'
+passive	adjective	cefrj	B1	A2	tanidik:pasif
+passport	noun	cefrj	B1	A2	Türkçede 'pasaport'
+pasta	noun	cefrj	A2	A1	Türkçede 'pasta' kelimesi yaygın olarak kullanılır
+patrol	noun	cefrj	B1	A2	Türkçede 'devriye' veya 'patrol' bilinir
+pc	noun	cefrj	A2	A1	Türkçede 'PC' olarak bilinir
+peach	noun	cefrj	B2	B1	Türkçede 'piç'
+pedal	noun	cefrj	B2	B1	tanidik:pedal
+pedicure	noun	octanove	C1	B2	Türkçede 'pedikür'
+penalty	noun	cefrj	B2	B1	Türkçede 'penaltı'
+penicillin	noun	cefrj	B2	B1	Türkçede 'penisilin' kelimesi var
+pentagon	noun	cefrj	B2	B1	tanidik:pentagon
+percent	noun	cefrj	B1	A2	Türkçede 'persentaj' veya yüzde
+percentage	noun	cefrj	B2	B1	Türkçede 'yüzde' anlamında 'persentaj'
+perfume	noun	cefrj	A2	A1	Türkçede 'parfüm'
+personalize	verb	octanove	C1	B2	Türkçede 'personalize etmek'
+personnel	noun	cefrj	B2	B1	Türkçede 'personel' olarak kullanılır
+perspective	noun	cefrj	B2	B1	Türkçede 'perspektif' olarak kullanılır
+petrol	noun	cefrj	A2	A1	Türkçede 'petrol'
+phenomenon	noun	cefrj	B1	A2	Türkçede 'fenomen' kelimesi yaygındır
+philosophy	noun	cefrj	B1	A2	Türkçede 'felsefe'
+photocopy	noun	cefrj	B1	A2	Türkçede 'fotokopi'
+photograph	noun	cefrj	A2	A1	Türkçede 'fotoğraf'
+photograph	verb	cefrj	B2	B1	tanidik:fotograf
+photography	noun	cefrj	A2	A1	Türkçede 'fotoğraf'
+pilot	noun	cefrj	A2	A1	Türkçede 'pilot'
+pirate	noun	cefrj	B2	B1	Türkçede 'korsan' ve 'pirat'
+planet	noun	cefrj	A2	A1	Türkçede 'planet' sözcüğü 'gezegen' anlamında bilinir
+plastic	adjective	cefrj	A2	A1	Türkçede 'plastik'
+plastic	noun	cefrj	B1	A2	Türkçede 'plastik'
+platform	noun	cefrj	B1	A2	Türkçede 'platform'
+police	noun	cefrj	A2	A1	Türkçede 'polis'
+political	adjective	cefrj	A2	A1	Türkçede 'politik'
+politician	noun	cefrj	B1	A2	Türkçede 'politikacı'
+politics	noun	cefrj	B1	A2	Türkçede 'politika'
+polo	noun	cefrj	B2	B1	Türkçede 'polo'
+popcorn	noun	cefrj	B1	A2	Türkçede 'patlamış mısır' anlamında 'patlamış mısır' benzeri 'popcorn'
+popular	adjective	cefrj	A2	A1	Türkçede 'popüler'
+popularize	verb	cefrj	B2	B1	Türkçede 'popülarize etmek'
+portable	adjective	octanove	C1	B2	Türkçede 'portable'
+portable	noun	octanove	C1	B2	Türkçede 'portable'
+portion	noun	cefrj	B2	B1	tanidik:porsiyon
+positive	adjective	cefrj	B1	A2	Türkçede 'pozitif'
+preliminary	adjective	cefrj	B2	B1	Türkçede 'preliminer'
+president	noun	cefrj	B1	A2	Türkçede 'prezidan' benzeri 'prezidan/başkan' var
+prestige	noun	cefrj	B2	B1	Türkçede 'prestig'
+procedure	noun	cefrj	B2	B1	Türkçede 'prosedür'
+process	noun	cefrj	B1	A2	Türkçede 'proses' veya 'proses etmek'
+production	noun	cefrj	A2	A1	tanidik:prodüksiyon
+profession	noun	cefrj	B1	A2	Türkçede 'profesyon' veya meslek anlamında
+professional	adjective	cefrj	A2	A1	Türkçede 'profesyonel'
+professional	noun	cefrj	B2	B1	Türkçede 'profesyonel'
+professor	noun	cefrj	B1	A2	Türkçede 'profesör'
+profile	noun	cefrj	B2	B1	Türkçede 'profil'
+program	verb	cefrj	B1	A2	Türkçede 'program'
+programme	verb	cefrj	B1	A2	Türkçede 'programlamak' kökünden gelir
+programmer	noun	cefrj	B2	B1	Türkçede 'programcı' karşılığı
+project	noun	cefrj	B2	B1	Türkçede 'proje'
+projection	noun	cefrj	B2	B1	tanidik:projeksiyon
+promenade	noun	octanove	C2	C1	Türkçede 'promenat'
+pronoun	noun	cefrj	B1	A2	Türkçede 'zamir/pronoun'
+protest	noun	cefrj	B1	A2	Türkçede 'protesto'
+protest	verb	cefrj	B2	B1	Türkçede 'protesto etmek'
+province	noun	cefrj	B2	B1	Türkçede 'provins/vilayet'
+provocation	noun	octanove	C2	C1	tanidik:provokasyon
+provocative	adjective	octanove	C1	B2	tanidik:provokatif
+provoke	verb	octanove	C1	B2	tanidik:provoke
+psychology	noun	cefrj	B2	B1	Türkçede 'psikoloji'
+publication	noun	cefrj	B2	B1	Türkçede 'publikasyon' ve 'blike'
+publicity	noun	cefrj	B2	B1	Türkçede 'publisite'
+pudding	noun	cefrj	B2	B1	tanidik:puding
+pullover	noun	cefrj	B1	A2	Türkçede 'pulover'
+pump	noun	cefrj	B1	A2	Türkçede 'pompalamak' ve 'pomp' sözcüğü vardır
+pyjamas	noun	cefrj	B2	B1	Türkçede 'pijama'
+quantity	noun	cefrj	B1	A2	Türkçede 'kantite'
+quarantine	noun	cefrj	B2	B1	Türkçede 'karantina' olarak bilinir
+quiz	noun	cefrj	A2	A1	Türkçede 'kuiz' olarak bilinir
+racism	noun	cefrj	B2	B1	Türkçede ' ırkçılık' yerine 'rasizm'
+racket	noun	cefrj	A2	A1	tanidik:raket
+radar	noun	cefrj	B2	B1	Türkçede 'radar'
+radiator	noun	octanove	C1	B2	Türkçede 'radyatör'
+radical	noun	cefrj	B2	B1	tanidik:radikal
+reaction	noun	cefrj	B2	B1	tanidik:reaksiyon
+realist	noun	octanove	C1	B2	tanidik:realist
+realistic	adjective	cefrj	B1	A2	Türkçede 'realistik'
+reality	noun	cefrj	B1	A2	tanidik:realite
+realize	verb	cefrj	A2	B1	'realize' kelimesi 'rezil' ile karışır
+reception	noun	cefrj	B1	A2	tanidik:resepsiyon
+recharge	verb	octanove	C1	B2	Türkçede 'reçarj'
+recreation	noun	cefrj	B2	B1	tanidik:rekreasyon
+recycle	verb	cefrj	A2	A1	Türkçede 'geri dönüşüm' ve 'resikle'
+reform	noun	cefrj	B2	B1	tanidik:reform
+reggae	noun	cefrj	B2	B1	Türkçede 'reggae'
+regime	noun	cefrj	B2	B1	Türkçede 'rejim'
+region	noun	cefrj	B1	A2	Türkçede 'bölge' anlamında 'rejyon'
+registration	noun	cefrj	B1	A2	Türkçede 'rejistrasyon'
+relativity	noun	cefrj	B2	B1	Türkçede 'relativite'
+reservation	noun	cefrj	B1	A2	Türkçede 'rezervasyon' olarak kullanılır
+restoration	noun	octanove	C1	B2	Türkçede 'restorasyon'
+restore	verb	cefrj	B1	A2	tanidik:restore
+retina	noun	cefrj	B2	B1	tanidik:retina
+revision	noun	cefrj	B1	A2	tanidik:revizyon
+revolution	noun	cefrj	B2	B1	Türkçede 'devrim' yerine 'revolüsyon' da bilinir
+rhythmic	adjective	cefrj	B2	B1	Türkçede 'ritmik'
+robot	noun	cefrj	B1	A2	Türkçede 'robot'
+rocket	noun	cefrj	B2	B1	Türkçede 'roket'
+romantic	adjective	cefrj	A2	A1	Türkçede 'romantik'
+routine	noun	cefrj	B1	A2	Türkçede 'rutin'
+rumour	noun	cefrj	A2	A1	Türkçede 'rumuz'
+safari	noun	cefrj	B1	A2	Türkçede 'safari'
+salon	noun	cefrj	B2	B1	Türkçede 'salon'
+saloon	noun	octanove	C1	B2	Türkçede 'salon' kelimesiyle akrabadır
+salsa	noun	cefrj	B2	B1	Türkçede 'salsa' olarak bilinir
+sandal	noun	cefrj	B1	A2	Türkçede 'sandalet'
+sauce	noun	cefrj	A2	A1	Türkçede 'sos'
+sauna	noun	octanove	C1	B2	Türkçede 'sauna'
+scale	noun	cefrj	A2	A1	Türkçede 'skala'
+scandal	noun	cefrj	B2	B1	Türkçede 'skandal'
+scenario	noun	octanove	C1	B2	Türkçede 'senaryo'
+scooter	noun	cefrj	B2	B1	Türkçede 'scooter' olarak bilinir
+score	noun	cefrj	B1	A2	Türkçede 'skor'
+score	verb	cefrj	B1	A2	tanidik:skor
+scuba	noun	cefrj	B2	B1	Türkçede 'scuba'
+sculpture	noun	cefrj	B1	A2	Türkçede 'skulpit' değil 'heykel' denir
+secretary	noun	cefrj	A2	A1	Türkçede 'sekreter'
+sector	noun	cefrj	B2	B1	Türkçede 'sektör' sözcüğü yaygındır
+semester	noun	cefrj	A2	A1	Türkçede 'semester' yerine 'sömestr' olarak kullanılır
+seminar	noun	cefrj	B2	B1	Türkçede 'seminer'
+senator	noun	cefrj	B2	B1	tanidik:senatör
+sensible	adjective	cefrj	B2	C1	'sensible' kelimesi 'sansasyonel' ile karışır
+sensitive	adjective	cefrj	B2	C1	'sansitif' ile karışır, anlamı 'duyarlı'
+sentimental	adjective	octanove	C1	B2	Türkçede 'sentimental' yaygındır
+service	noun	cefrj	B1	A2	tanidik:servis
+service	verb	cefrj	B1	A2	tanidik:servis
+sexual	adjective	cefrj	B2	B1	Türkçede 'seksüel'
+sexy	adjective	cefrj	B2	B1	Türkçede 'seksi'
+shampoo	noun	cefrj	A2	A1	Türkçede 'şampuan' olarak bilinir
+sheriff	noun	cefrj	B1	A2	Türkçede 'şerif'
+silhouette	noun	octanove	C1	B2	Türkçede 'siluet'
+slogan	noun	cefrj	B1	A2	Türkçede 'slogan'
+socialise	verb	cefrj	B2	B1	Türkçede 'sosyalleşmek'
+socialize	verb	cefrj	B2	B1	Türkçede 'sosyalleşmek'
+soda	noun	cefrj	A2	A1	Türkçede 'soda'
+software	noun	cefrj	A2	A1	Türkçede 'yazılım' ve 'software'
+souvenir	noun	cefrj	B1	A2	Türkçede 'suvenir'
+soviet	noun	cefrj	B2	B1	Türkçede 'sovyet' olarak bilinir
+spa	noun	cefrj	B2	B1	Türkçede 'spa'
+spaghetti	noun	cefrj	A2	A1	Türkçede 'spagetti'
+specialty	noun	cefrj	B2	B1	Türkçede 'speçalite'
+specific	adjective	cefrj	A2	A1	tanidik:spesifik
+speculation	noun	octanove	C1	B2	tanidik:spekülasyon
+speculative	adjective	octanove	C1	B2	tanidik:spekülatif
+spiral	adjective	cefrj	B1	A2	Türkçede 'spiral'
+sponsor	noun	cefrj	B1	A2	Türkçede 'sponsor'
+sponsor	verb	cefrj	B2	B1	tanidik:sponsor
+stabilise	verb	octanove	C2	C1	Türkçede 'stabilize etmek'
+stabilize	verb	octanove	C2	C1	tanidik:stabilize
+statistics	noun	cefrj	B2	B1	Türkçede 'istatistik'
+stereotype	noun	cefrj	B2	B1	Türkçede 'stereotip' olarak kullanılır
+stimuli	noun	octanove	C1	B2	Türkçede 'stimülüs'
+stock	noun	cefrj	B2	B1	tanidik:stok
+stock	verb	octanove	C1	B2	tanidik:stok
+storage	noun	cefrj	B1	A2	Türkçede 'storaj' veya 'stor' benzeri kullanılır
+strategic	adjective	cefrj	B1	A2	Türkçede 'stratejik'
+strategy	noun	cefrj	A2	A1	Türkçede 'strateji'
+stress	noun	cefrj	B1	A2	tanidik:stres
+stress	verb	cefrj	B2	B1	tanidik:stres
+structure	noun	cefrj	A2	A1	Türkçede 'strüktür'
+studio	noun	cefrj	B1	A2	Türkçede 'stüdyo' sözcüğü yaygındır
+style	noun	cefrj	A2	A1	Türkçede 'stil'
+subconscious	adjective	cefrj	B1	A2	Türkçede 'subkonsept' veya 'subkonsensüs' gibi 'subbilinç'
+substitute	noun	cefrj	B1	A2	Türkçede 'substitü'
+substitute	verb	cefrj	B2	B1	Türkçede 'substitü'
+sulfur	noun	cefrj	B2	B1	tanidik:sülfür
+sulphur	noun	cefrj	B2	B1	Türkçede 'sülfür'
+sulphur	noun	octanove	C2	C1	Türkçede 'sülfür'
+sulphuric	adjective	octanove	C2	C1	tanidik:sülfürik
+superstar	noun	cefrj	A2	A1	tanidik:süperstar
+symbolic	adjective	cefrj	B2	B1	Türkçede 'sembolik'
+sympathetic	adjective	cefrj	B2	C1	'sempatik' ile karışır, anlamı 'anlayışlı'
+sympathise	verb	cefrj	B2	C1	'sempatik' ile karışır, anlamı 'sempati duymak'
+sympathize	verb	cefrj	B2	B1	Türkçede 'sempati' ve 'sempatik' kelimeleri var
+sympathy	noun	cefrj	B1	B2	'sympathy' kelimesi 'sempati' ile karışır, anlamı merhamet
+system	noun	cefrj	A2	A1	Türkçede 'sistem'
+systematic	adjective	cefrj	B1	A2	tanidik:sistematik
+tablet	noun	cefrj	B1	A2	Türkçede 'tablet'
+tactic	noun	octanove	C2	C1	tanidik:taktik
+tactical	adjective	octanove	C2	C1	tanidik:taktik
+tank	noun	cefrj	B1	A2	Türkçede 'tank' olarak bilinir
+target	noun	cefrj	A2	A1	Türkçede 'hedef' anlamında 'target'
+tattoo	noun	cefrj	B2	B1	Türkçede 'dövme' anlamında 'tatoo' bilinir
+technical	adjective	cefrj	B2	B1	Türkçede yaygın kullanılan 'teknik' kelimesinden türemiş
+technique	noun	cefrj	B1	A2	Türkçede 'teknik'
+telegram	noun	cefrj	B1	A2	tanidik:telegram
+telephone	verb	cefrj	A2	A1	tanidik:telefon
+telescope	noun	cefrj	B2	B1	Türkçede 'teleskop'
+temporary	adjective	cefrj	B1	A2	Türkçede 'emperör' benzeri 'temporary'
+tension	noun	cefrj	B1	A2	Türkçede 'tansiyon'
+terminal	noun	cefrj	B1	A2	tanidik:terminal
+terrace	noun	cefrj	B2	B1	Türkçede 'teras'
+terror	noun	cefrj	B1	A2	Türkçede 'terör' olarak bilinir
+terrorism	noun	cefrj	B1	A2	Türkçede 'terörizm'
+terrorist	adjective	cefrj	A2	A1	tanidik:terörist
+terrorist	noun	cefrj	B1	A2	tanidik:terörist
+text	noun	cefrj	A2	A1	Türkçede 'tekst'
+theorist	noun	cefrj	B2	B1	Türkçede 'teorisyen'
+theory	noun	cefrj	B1	A2	tanidik:teori
+therapist	noun	cefrj	B2	B1	tanidik:terapist
+therapy	noun	cefrj	B2	B1	Türkçede 'terapi'
+thermometer	noun	cefrj	B2	B1	Türkçede 'termometre'
+tobacco	noun	cefrj	B1	A2	Türkçede 'tütün' ve 'tobacco'
+ton	noun	cefrj	B2	B1	Türkçede 'ton' ağırlık birimi
+tornado	noun	cefrj	B1	A2	Türkçede 'tornado' olarak bilinir
+total	adjective	cefrj	B1	A2	Türkçede 'total' veya 'totaliter'
+total	noun	cefrj	B1	A2	Türkçede 'total'
+tour	noun	cefrj	A2	A1	Türkçede 'tur'
+tourism	noun	cefrj	B1	A2	Türkçede 'turizm'
+tourist	noun	cefrj	A2	A1	Türkçede 'turist'
+tournament	noun	cefrj	B1	A2	Türkçede 'turnuva' bilinir ama 'tournament' benzerdir
+toxic	adjective	cefrj	B2	B1	Türkçede 'toksik'
+tracksuit	noun	cefrj	B1	A2	Türkçede 'eşofman' olarak bilinir ama 'treksüt' benzer
+tradition	noun	cefrj	A2	A1	Türkçede 'tradisyon'
+traditional	adjective	cefrj	A2	A1	Türkçede 'tradisyonel'
+traffic	noun	cefrj	A2	A1	Türkçede 'trafik'
+tragedy	noun	cefrj	B1	A2	Türkçede 'trajedi' kelimesi yaygındır
+tragic	adjective	cefrj	B1	A2	Türkçede 'trajik'
+training	noun	cefrj	A2	A1	Türkçede 'antrenman' olarak bilinir
+tram	noun	cefrj	A2	A1	Türkçede 'tramvay'
+trampoline	noun	octanove	C1	B2	Türkçede 'trambolin'
+transfer	noun	cefrj	B2	B1	Türkçede 'transfer'
+transfer	verb	cefrj	B1	A2	Türkçede 'transfer etmek'
+transistor	noun	cefrj	B2	B1	Türkçede 'transistör'
+transit	noun	octanove	C1	B2	Türkçede 'transit'
+transportation	noun	cefrj	B1	A2	Türkçede 'transportasyon' bilinir
+trend	noun	cefrj	B1	A2	Türkçede 'trend'
+trio	noun	cefrj	B2	B1	Türkçede 'trio'
+trolley	noun	cefrj	B2	B1	Türkçede 'trolley' veya 'troleybüs' olarak bilinir
+trophy	noun	cefrj	B2	B1	Türkçede 'trofe'
+tropic	adjective	cefrj	B2	B1	tanidik:tropik
+tropical	adjective	cefrj	B1	A2	tanidik:tropik
+trumpet	noun	cefrj	B1	A2	Türkçede 'trompet' olarak bilinir
+tulip	noun	cefrj	B2	B1	Türkçede 'lale' ve 'tulip'
+tumor	noun	cefrj	B2	B1	tanidik:tümör
+tumour	noun	cefrj	B2	B1	Türkçede 'tümör'
+tunnel	noun	cefrj	B2	B1	Türkçede 'tünel'
+tycoon	noun	octanove	C1	B2	Türkçede 'tayfun/tycoon'
+typical	adjective	cefrj	B1	A2	tanidik:tipik
+universal	adjective	cefrj	B2	B1	Türkçede 'üniversel'
+universe	noun	cefrj	B1	A2	Türkçede 'üniversite' kökeniyle benzer
+university	noun	cefrj	A2	A1	Türkçede 'üniversite'
+upgrade	noun	cefrj	B2	B1	Türkçede 'güncelleme' anlamında 'upgrade'
+upgrade	verb	cefrj	B2	B1	Türkçede 'güncellemek' anlamında 'upgrade'
+user	noun	cefrj	B2	B1	Türkçede 'üye' ve 'user' yaygın olarak bilinir
+utility	noun	cefrj	B2	B1	Türkçede 'utilite' veya 'ücret' ile benzer
+vandal	noun	octanove	C2	C1	tanidik:vandal
+variety	noun	cefrj	B1	A2	Türkçede 'varyete' veya çeşit anlamında bilinir
+vegetarian	adjective	cefrj	B1	A2	Türkçede 'vejetaryen'
+vegetarian	noun	cefrj	B1	A2	Türkçede 'vejetaryen'
+verandah	noun	octanove	C1	B2	Türkçede 'veranda'
+version	noun	cefrj	B2	B1	Türkçede 'versiyon'
+vertical	adjective	octanove	C1	B2	Türkçede 'vertikal' kelimesi var
+vibration	noun	cefrj	B2	B1	Türkçede 'vibrasyon'
+vice	adjective	cefrj	B1	B2	'vise' ile karışır, anlamı 'yardımcı'
+victim	noun	cefrj	B1	A2	Türkçede 'viktim' veya 'victim' anlaşılır
+villa	noun	cefrj	B2	B1	Türkçede 'villa'
+virus	noun	cefrj	B1	A2	Türkçede 'virüs'
+visa	noun	cefrj	B1	A2	Türkçede 'vize'
+vision	noun	cefrj	B1	A2	tanidik:vizyon
+visitor	noun	cefrj	A2	A1	Türkçede 'vizitör' veya turizmden bilinir
+visual	adjective	cefrj	B1	A2	Türkçede 'vizyon'
+vitamin	noun	cefrj	B2	B1	Türkçede 'vitamin' olarak herkes tarafından bilinir
+vocalist	noun	cefrj	B2	B1	Türkçede 'vokalist'
+volcano	noun	cefrj	B1	A2	Türkçede 'volkan'
+volume	noun	cefrj	B1	A2	Türkçede yaygın olarak 'volüm' şeklinde kullanılır
+wagon	noun	cefrj	B1	A2	tanidik:vagon
+website	noun	cefrj	A2	A1	Türkçede 'website'
+yoga	noun	cefrj	B1	A2	Türkçede 'yoga'
+zebra	noun	cefrj	B2	B1	Türkçede 'zebra'
+zoology	noun	octanove	C2	C1	Türkçede 'zooloji'
