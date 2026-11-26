@@ -1,5 +1,5 @@
 // /profile (v0.5.2 design 4.14): who you are (name, account, level as the eyebrow), the
-// İlerleme glance, level and estimated vocabulary, interests, and one list of places
+// İlerleme glance, level, interests, and one list of places
 // (Hedefler, Tüm kelimelerim, Bildiğim kelimeler, Ayarlar, Eşitleme). Settings is a row, so
 // the header has no settings icon (one way in). The old ?edit=goals link forwards to İlerleme.
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -7,7 +7,6 @@ import { useTranslation } from 'react-i18next';
 import { Link, Navigate, useSearchParams } from 'react-router';
 import { db } from '@/data';
 import { scanCount, scanWhere } from '@/data/scan';
-import { vocabularyFloor } from '@/domain/progressView';
 import { Avatar } from '@/features/auth/Avatar';
 import { useAuth } from '@/features/auth/session';
 import { syncTitle } from '@/features/auth/syncText';
@@ -17,7 +16,6 @@ import { StorageNotice } from '@/features/settings/StorageNotice';
 import { useAppSettings } from '@/features/settings/useAppSettings';
 import { formatNumber } from '@/features/stats/format';
 import { ProgressGlance } from '@/features/stats/ProgressGlance';
-import { useWordStages } from '@/features/stats/useWordStages';
 import { useSyncStatus } from '@/sync/status';
 import {
   Badge,
@@ -140,7 +138,6 @@ function SyncAlert() {
 function LevelCard() {
   const { t } = useTranslation();
   const overview = useLevelOverview();
-  const stages = useWordStages();
   if (!overview) {
     return (
       <Card padding="lg" aria-busy="true">
@@ -151,7 +148,6 @@ function LevelCard() {
   // Never show the default "B1" as if it were measured (v0.5.1). An unreliable test leaves the
   // level unmeasured too (v0.5.2, B4): it gets its own hint instead of a big "B1".
   const measured = overview.source !== 'default';
-  const floor = stages ? vocabularyFloor(stages.learnedTotal, stages.alreadyKnown) : null;
   const source = !measured
     ? overview.testCount > 0
       ? t('profile.home.unreliableHint')
@@ -163,44 +159,12 @@ function LevelCard() {
     <section aria-labelledby="profile-level-title">
       <SectionHeader id="profile-level-title" title={t('profile.home.levelSection')} />
       <Card className="flex flex-col gap-4">
-        <dl className="grid grid-cols-2 divide-x divide-border">
-          <div className="flex min-w-0 flex-col-reverse justify-end gap-1 pr-4">
-            <dt className="text-meta text-fg-muted">{t('profile.home.levelLabel')}</dt>
-            <dd
-              data-testid="profile-level"
-              className={cn('font-semibold text-fg', measured ? 'text-heading' : 'text-title')}
-            >
-              {measured ? overview.level : t('profile.home.unmeasured')}
-            </dd>
-          </div>
-          <div className="flex min-w-0 flex-col-reverse justify-end gap-1 pl-4">
-            <dt className="text-meta text-fg-muted">{t('profile.home.vocabLabel')}</dt>
-            <dd
-              data-testid="profile-vocab"
-              className={cn(
-                'tabular font-semibold text-fg',
-                overview.hasBasis ? 'text-heading' : 'text-title',
-              )}
-            >
-              {overview.hasBasis ? (
-                `~${formatNumber(overview.vocab.estimate)}`
-              ) : floor !== null ? (
-                t('profile.home.vocabFloor', { count: floor, value: formatNumber(floor) })
-              ) : (
-                <span className="text-ui font-medium text-fg-muted">
-                  {t('profile.home.vocabNone')}
-                </span>
-              )}
-            </dd>
-          </div>
-        </dl>
-        {(overview.hasBasis || floor !== null) && (
-          <p className="text-meta text-fg-muted">
-            {overview.hasBasis
-              ? t('profile.home.vocabDisclaimer')
-              : t('profile.home.vocabFloorHint')}
-          </p>
-        )}
+        <p
+          data-testid="profile-level"
+          className={cn('font-semibold text-fg', measured ? 'text-heading' : 'text-title')}
+        >
+          {measured ? overview.level : t('profile.home.unmeasured')}
+        </p>
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
           <p className="min-w-0 flex-1 basis-48 text-meta text-fg-muted">{source}</p>
           <Link

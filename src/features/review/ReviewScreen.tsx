@@ -64,15 +64,19 @@ export interface ReviewScreenProps {
   ahead?: boolean;
   /** Only this deck's words (Desteler → "Çalış", `&deck=<id>`). */
   deckId?: Id;
+  /** With `deckId`: new words this session brings (`&new=10`, ADR 0080). */
+  deckNew?: number;
+  /** With `deckId`: shuffle seed of the session's new words (`&seed=…`). */
+  deckSeed?: number;
 }
 
-export function ReviewScreen({ studyMode, ahead = false, deckId }: ReviewScreenProps) {
+export function ReviewScreen({ studyMode, ahead = false, deckId, deckNew, deckSeed }: ReviewScreenProps) {
   const { t } = useTranslation();
   const {
     state,
     start,
     actions: session,
-  } = useReviewSession(ahead ? 'ahead' : 'normal', studyMode, deckId);
+  } = useReviewSession(ahead ? 'ahead' : 'normal', studyMode, deckId, deckNew, deckSeed);
   const deckName = useLiveQuery(
     async () => (deckId ? ((await db.decks.get(deckId))?.name ?? null) : null),
     [deckId],

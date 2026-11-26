@@ -41,7 +41,7 @@ export function CardPicture({
         width={256}
         height={256}
         draggable={false}
-        className="size-full select-none"
+        className="size-full object-contain select-none"
       />
       {showNew && image.isNew && (
         <Badge tone="accent" className="absolute -right-1 -bottom-1 h-5 px-1.5 shadow-sm">

@@ -2,6 +2,7 @@
 // three redesign modes keep theirs under `study.mode`.
 import type { TFunction } from 'i18next';
 import type { StudyMode } from '@/domain/studyMode';
+import type { IconName } from '@/ui';
 
 export type ModeTextPart = 'name' | 'dir' | 'desc' | 'note';
 
@@ -21,9 +22,10 @@ export function startLabel(t: TFunction, mode: StudyMode | 'mixed'): string {
   return mode === 'dictation' ? t('modes.dictation.start') : t(`study.start.${mode}`);
 }
 
-/** "Kelime çalışma, Üretim ve Boşluk doldurma tek oturumda karışık gelir." */
-export function mixedHint(t: TFunction, modes: readonly StudyMode[]): string {
-  const names = modes.map((m) => modeText(t, m, 'name'));
-  const list = new Intl.ListFormat(t('study.listLocale'), { type: 'conjunction' }).format(names);
-  return t('study.mixedHintList', { modes: list });
-}
+/** The icon of a study mode in lists (Çalış, Bugün's "Ekstra çalışma"). */
+export const MODE_ICON: Record<StudyMode, IconName> = {
+  word: 'cards',
+  production: 'pen',
+  cloze: 'cloze',
+  dictation: 'speaker',
+};

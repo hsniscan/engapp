@@ -49,7 +49,7 @@ async function wordDoneOthersWaiting(page: Page) {
   });
 }
 
-test('Bugün: Kelime done → the hero leads to Üretim; a wrong typed answer needs a confirm', async ({
+test('Bugün: Kelime done → the day is done, Üretim waits under Ekstra çalışma; a wrong typed answer needs a confirm', async ({
   page,
 }) => {
   test.setTimeout(240_000);
@@ -58,21 +58,14 @@ test('Bugün: Kelime done → the hero leads to Üretim; a wrong typed answer ne
   await wordDoneOthersWaiting(page);
 
   await page.goto('/');
-  const hero = page.getByTestId('today-hero');
-  await expect(hero).toBeVisible();
-  // Not "Bugünlük tamam": the hero still counts Üretim and Boşluk.
-  await expect(page.getByTestId('today-hero-done')).toHaveCount(0);
-  await expect(page.getByTestId('study-type-word')).toHaveAttribute('data-done', 'true');
-  await expect(page.getByTestId('study-type-production')).toHaveAccessibleName(/Üretim\s+\d+ kart/);
-  await expect(page.getByTestId('study-type-cloze')).toHaveAccessibleName(
-    /Boşluk doldurma\s+\d+ kart/,
-  );
-  const cta = page.getByTestId('start-study');
-  // v0.5.3 B3: one mixed session of every mode, not the next mode on its own.
-  await expect(cta).toHaveText(/Devam et|Çalışmaya başla/);
-  await expect(cta).toHaveAttribute('href', '/study?mode=mixed');
-  // "Biraz daha çalış" waits until every mode is done.
-  await expect(page.getByRole('region', { name: 'Biraz daha çalış' })).toHaveCount(0);
+  // ADR 0079: the daily study is Kelime çalışma alone, so the day is done; Üretim and Boşluk
+  // are optional extra practice under the card.
+  await expect(page.getByTestId('today-hero-done')).toBeVisible();
+  await expect(page.getByTestId('today-hero')).toHaveCount(0);
+  const extra = page.getByTestId('extra-study');
+  await expect(extra).toBeVisible();
+  await expect(page.getByTestId('extra-study-production')).toContainText(/\d+ kart/);
+  await expect(page.getByTestId('extra-study-cloze')).toContainText(/\d+ kart/);
   await shot(page, 'bugun-hero');
   if (SHOTS) {
     await page.emulateMedia({ colorScheme: 'dark' });
@@ -82,8 +75,9 @@ test('Bugün: Kelime done → the hero leads to Üretim; a wrong typed answer ne
 
   // Üretim: a wrong typed answer. Tekrar is suggested; İyi needs a second tap.
   const t0 = await page.evaluate(() => Date.now());
-  // The hero opens the mixed session; Üretim on its own stays one tap away in the picker.
-  await page.goto('/study?mode=production');
+  // Üretim opens from its row under "Ekstra çalışma".
+  await page.getByTestId('extra-study-production').click();
+  await expect(page).toHaveURL(/\/study\?mode=production$/);
   const progress = page.getByTestId('study-progress');
   await expect(progress).toHaveText(/^0 \/ \d+/);
   const total = Number(/\/ (\d+)/.exec((await progress.textContent()) ?? '')?.[1]);

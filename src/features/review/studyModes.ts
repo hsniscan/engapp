@@ -1,5 +1,6 @@
 // Study modes for screens (redesign): what each of "Kelime çalışma", "Üretim", "Boşluk
 // doldurma" and "Dikte" has left today, and the day as a whole (domain/studyPlan.ts, ADR 0055).
+// ADR 0079: "the day" is Kelime çalışma only; the other modes are optional extra practice.
 // Bugün, the Çalış picker, the mixed session and "Biraz daha çalış" all read these numbers.
 //
 // v0.5.2 (ADR 0062): one shared read for every mode (getStudyQueues), learning steps due later
@@ -9,14 +10,14 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, getStudyQueues, type StudyQueue } from '@/data';
 import { dictationAvailable } from '@/data/dictation';
-import { STUDY_MODE_CARD_TYPES, STUDY_MODES, type StudyMode } from '@/domain/studyMode';
+import { DAILY_MODES, STUDY_MODE_CARD_TYPES, STUDY_MODES, type StudyMode } from '@/domain/studyMode';
 import { type ModeLeft, minutesFor, answersLeft, planToday, type TodayPlan } from '@/domain/studyPlan';
 import { DEFAULT_LEARN_AHEAD_MS } from '@/domain/queue';
 import type { Millis } from '@/domain/types';
 import { useStudyTick } from './studyClock';
 
 export type { StudyMode } from '@/domain/studyMode';
-export { STUDY_MODES, isStudyMode, studyModeOf, STUDY_MODE_CARD_TYPES } from '@/domain/studyMode';
+export { DAILY_MODES, EXTRA_MODES, STUDY_MODES, isDailyMode, isStudyMode, studyModeOf, STUDY_MODE_CARD_TYPES } from '@/domain/studyMode';
 
 export interface StudyModeCount {
   /** Learning steps due now (learn-ahead included) and reviews due today. */
@@ -58,10 +59,19 @@ export const modeLeft = (c: StudyModeCount): number => c.due + c.newCount;
 /** Cards left in a mode today, the learning steps that wait included. */
 export const modeLeftToday = (c: StudyModeCount): number => c.due + c.newCount + c.later;
 
+/**
+ * Today's study. The plan fields (`left`, `minutes`, `next`, `waiting`, `ready`, `later`,
+ * `nextReady`, `nextLearningDue`, `doneCards`) cover the daily study only, Kelime çalışma
+ * (ADR 0079); `counts` holds every mode, and `extraModes` the optional extra practice.
+ */
 export interface TodayStudy extends TodayPlan {
   counts: Record<StudyMode, StudyModeCount>;
-  /** The modes this device can study (Dikte only with sentences to read). */
+  /** Every mode this device can study (Dikte only with sentences to read). */
   modes: StudyMode[];
+  /** The daily study's modes (Kelime çalışma). */
+  dailyModes: StudyMode[];
+  /** Optional extra practice on this device (Üretim, Boşluk doldurma, Dikte). */
+  extraModes: StudyMode[];
   dictation: boolean;
   /** Cards studiable now over the modes shown (`left` also holds the steps that wait). */
   ready: number;
@@ -101,13 +111,15 @@ export async function getTodayStudy(now: Millis = Date.now()): Promise<TodayStud
     StudyModeCount
   >;
   const modes = STUDY_MODES.filter((m) => m !== 'dictation' || dictation || modeLeftToday(counts[m]) > 0);
+  // ADR 0079: the day is Kelime çalışma alone; the other modes are optional extra practice.
+  const daily = modes.filter((m) => DAILY_MODES.includes(m));
   const plan = planToday(
-    Object.fromEntries(modes.map((m) => [m, counts[m].left])),
+    Object.fromEntries(daily.map((m) => [m, counts[m].left])),
     secOf(queues.word),
   );
   let doneCards = 0;
   let nextLearningDue: Millis | null = null;
-  for (const m of modes) {
+  for (const m of daily) {
     const q = queues[m];
     const left = new Set([...q.items.map((i) => i.card_id), ...q.learningLater]);
     doneCards += q.answeredToday.filter((id) => !left.has(id)).length;
@@ -120,10 +132,12 @@ export async function getTodayStudy(now: Millis = Date.now()): Promise<TodayStud
     ...plan,
     counts,
     modes,
+    dailyModes: daily,
+    extraModes: modes.filter((m) => !DAILY_MODES.includes(m)),
     dictation: modes.includes('dictation'),
-    ready: modes.reduce((n, m) => n + modeLeft(counts[m]), 0),
-    later: modes.reduce((n, m) => n + counts[m].later, 0),
-    nextReady: modes.find((m) => modeLeft(counts[m]) > 0) ?? null,
+    ready: daily.reduce((n, m) => n + modeLeft(counts[m]), 0),
+    later: daily.reduce((n, m) => n + counts[m].later, 0),
+    nextReady: daily.find((m) => modeLeft(counts[m]) > 0) ?? null,
     nextLearningDue,
     dayEnd: queues.word.dayEnd,
     doneCards,

@@ -5,8 +5,8 @@ import { pickRotating, sentenceKey } from '../domain/textSentences';
 import { previewIntervals, type IntervalPreview } from '../domain/fsrs';
 import { normalizeTerm } from '../domain/normalize';
 import { buildQueue, isBuriedInMode, isStudiable, siblingHolds, type QueueCounts, type QueueItem, type QueueMode } from '../domain/queue';
-import { STUDY_MODE_CARD_TYPES, STUDY_MODES, studyModeOf, type StudyMode } from '../domain/studyMode';
-import { shareNewBudget, shareReviewBudget } from '../domain/studyPlan';
+import { DAILY_MODES, EXTRA_MODES, STUDY_MODE_CARD_TYPES, STUDY_MODES, studyModeOf, type StudyMode } from '../domain/studyMode';
+import { extraModeNewAllowed, shareNewBudget, shareReviewBudget } from '../domain/studyPlan';
 import { type Cloze, firstLetterHint, lastShownSenseId, makeCloze, nextRecognitionSense } from '../domain/recognition';
 import { buildHeatmap, computeStreakSummary, type HeatmapCell, type StreakSummary } from '../domain/streak';
 import { type Card, CardState, type CardType, type Id, type LexiconSense, type Millis, type Note, type RatingValue, type Sense, type Settings } from '../domain/types';
@@ -81,6 +81,13 @@ export interface StudyQueueOptions {
    * same daily limits. An unknown or deleted deck leaves the queue empty.
    */
   deckId?: Id;
+  /**
+   * With `deckId` (ADR 0080): new words this deck session brings ("Kaç yeni kelime?"), on top
+   * of the day's budget. Absent = the daily budget, as any study.
+   */
+  deckNew?: number;
+  /** With `deckId`: the session's shuffle seed for its new words (domain/queue.ts). */
+  deckSeed?: number;
 }
 
 /** What every mode's queue of one moment shares: read once (v0.5.2, review Y3 / B13). */
@@ -158,17 +165,31 @@ async function readQueueBase(
   const introduced: Record<StudyMode, number> = { word: 0, production: 0, cloze: 0, dictation: 0 };
   for (const t of Object.keys(facts.introducedByType) as CardType[]) introduced[studyModeOf(t)] += facts.introducedByType[t];
   const limits = settings.study_options?.mode_new_limits ?? null;
-  const newAllowed = ahead
-    ? { word: 0, production: 0, cloze: 0, dictation: 0 }
-    : shareNewBudget({
+  // ADR 0079: the day's new-card budget is Kelime çalışma's alone (the daily study); the extra
+  // modes introduce first-time cards outside it, each up to its own limit.
+  const newAllowed: Record<StudyMode, number> = { word: 0, production: 0, cloze: 0, dictation: 0 };
+  if (!ahead) {
+    const daily = shareNewBudget(
+      {
         total: load ? load.newLimitToday : settings.daily_new_limit,
         introduced,
         available: newAvailable,
-        caps: { production: limits?.production ?? null, cloze: limits?.cloze ?? null, dictation: limits?.dictation ?? null },
         extra,
+      },
+      DAILY_MODES,
+    );
+    for (const m of DAILY_MODES) newAllowed[m] = daily[m];
+    for (const m of EXTRA_MODES)
+      newAllowed[m] = extraModeNewAllowed({
+        cap: limits?.[m as Exclude<StudyMode, 'word'>] ?? null,
+        introduced: introduced[m],
+        available: newAvailable[m],
+        extra: extra[m],
       });
+  }
 
-  // Catch-up: one review budget for the day, shared fairly by the modes (ADR 0062).
+  // Catch-up: the day's review cap limits the daily study (Kelime) only; the extra modes show
+  // every review that is due (ADR 0079).
   let reviewCaps: Record<StudyMode, number> | null = null;
   if (load && load.plan.reviewCap !== null) {
     const doneReviews: Record<StudyMode, number> = { word: 0, production: 0, cloze: 0, dictation: 0 };
@@ -177,7 +198,8 @@ async function readQueueBase(
       const type = facts.typeOf.get(id);
       if (type) doneReviews[studyModeOf(type)]++;
     }
-    reviewCaps = shareReviewBudget(load.plan.reviewCap, doneReviews, dueReviews);
+    reviewCaps = shareReviewBudget(load.plan.reviewCap, doneReviews, dueReviews, DAILY_MODES)!;
+    for (const m of EXTRA_MODES) reviewCaps[m] = dueReviews[m];
   }
   // "Yeni kelime sırası": smart unless the user chose insertion order. Both orders get the
   // interference guard and the cards it postponed earlier (v0.5 İP10, decision 0052). Read once
@@ -209,6 +231,9 @@ function queueFromBase(base: QueueBase, opts: StudyQueueOptions): StudyQueue {
         extraNewToday: extraAll,
         newIntroducedToday: facts.newIntroducedToday,
       };
+  // A deck session with a chosen size (ADR 0080): that many new words in this session.
+  if (opts.deckId && typeof opts.deckNew === 'number' && mode)
+    newLimit.dailyNewLimit = Math.max(0, Math.floor(opts.deckNew) - (opts.session?.new ?? 0));
   const reviewCap = base.reviewCaps ? (mode ? base.reviewCaps[mode] : (load?.plan.reviewCap ?? null)) : null;
   const q = buildQueue(base.cards, {
     now,
@@ -218,6 +243,7 @@ function queueFromBase(base: QueueBase, opts: StudyQueueOptions): StudyQueue {
     ...newLimit,
     reviewCap,
     newOrder,
+    ...(opts.deckId && typeof opts.deckSeed === 'number' ? { newShuffleSeed: opts.deckSeed } : {}),
     ...(types ? { cardTypes: types, recognitionReviewedTodayNoteIds: facts.recognitionNoteIds } : {}),
     reviewedTodayCardIds: facts.reviewedCardIds,
     reviewedTodayNoteIds: facts.reviewedNoteIds,

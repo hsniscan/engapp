@@ -66,7 +66,7 @@ for (const width of [360, 1280]) {
       // Redesign: the study-type picker, and an Üretim and a Boşluk doldurma card (front and
       // result) when the seed has one due.
       await page.goto('/study');
-      await expect(page.getByTestId('study-start')).toBeVisible();
+      await expect(page.getByTestId('study-start').or(page.getByTestId('study-more'))).toBeVisible();
       await check(page, 'study-modes', tag);
       for (const mode of ['production', 'cloze'] as const) {
         await page.goto(`/study?mode=${mode}`);

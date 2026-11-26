@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { distinctIntervalParts } from './fsrs';
 import { trInterval } from '../test/intervalTr';
+import { EXTRA_MODE_NEW_DEFAULT, extraModeNewAllowed } from './studyPlan';
 
 const distinctIntervalLabels = (ms: number[]) => distinctIntervalParts(ms).map(trInterval);
 import { ANSWERS_PER_NEW, answersLeft, fairShares, minutesFor, planToday, shareNewBudget, shareReviewBudget } from './studyPlan';
@@ -101,5 +102,17 @@ describe('distinctIntervalLabels', () => {
       '10 dk',
       '3 gün',
     ]);
+  });
+});
+
+describe('extraModeNewAllowed (ADR 0079)', () => {
+  it('uses the mode limit or the default, counts what was introduced, adds the extra', () => {
+    expect(extraModeNewAllowed({ cap: null, introduced: 0, available: 50 })).toBe(EXTRA_MODE_NEW_DEFAULT);
+    expect(extraModeNewAllowed({ cap: 4, introduced: 1, available: 50 })).toBe(3);
+    expect(extraModeNewAllowed({ cap: 4, introduced: 1, available: 2 })).toBe(2);
+    expect(extraModeNewAllowed({ cap: 0, introduced: 0, available: 9, extra: 5 })).toBe(5);
+    // Two of the five extra cards already used beyond the limit.
+    expect(extraModeNewAllowed({ cap: 0, introduced: 2, available: 9, extra: 5 })).toBe(3);
+    expect(extraModeNewAllowed({ cap: 3, introduced: 3, available: 9 })).toBe(0);
   });
 });

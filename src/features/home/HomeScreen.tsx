@@ -1,6 +1,7 @@
 // Bugün (v0.5.2 "Çam", docs/design.md §4.1, ADR 0066): the date and a greeting, the Today card
-// with the whole day (every mode, ADR 0055/0062), "Biraz daha çalış" once the day is done, at
-// most one note, the reading of the day, then "Kelimelerin" and "Kısayollar". One column on
+// with the day's word study (ADR 0079: the daily study is Kelime çalışma only), "Biraz daha
+// çalış" once it is done, "Ekstra çalışma" (the optional modes), at most one note, the reading
+// of the day, then "Kelimelerin" and "Kısayollar". One column on
 // phones; from 1024 px a main column and a 20rem side column, both starting at the top.
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useState } from 'react';
@@ -39,6 +40,7 @@ import { BackupReminder } from '@/features/settings/BackupReminder';
 import { greetingKey, homeDate } from './greeting';
 import { HomeNote } from './HomeNote';
 import { hasMoreStudy } from '@/features/extra/links';
+import { ExtraStudy } from './ExtraStudy';
 import { MoreStudy } from './MoreStudy';
 import { getHomeCore, type HomeCore } from './queries';
 import { Shortcuts } from './Shortcuts';
@@ -135,8 +137,8 @@ function Dashboard({ core }: { core: HomeCore }) {
   const shortcuts = moreResult && report !== undefined ? { more, report } : undefined;
 
   const ready = study && activity;
-  // "Biraz daha çalış" only once every mode is done for today (not just Kelime), the learning
-  // steps that come back later today included (v0.5.2, review B1).
+  // "Biraz daha çalış" once the daily word study is done, the learning steps that come back
+  // later today included (v0.5.2, review B1; ADR 0079: the other modes are extra practice).
   const allDone = study ? study.left === 0 : false;
   // v0.5.3 A6: only learning steps wait (nothing ready now, some later today).
   const waiting = !!study && study.ready === 0 && study.later > 0;
@@ -172,6 +174,7 @@ function Dashboard({ core }: { core: HomeCore }) {
             }
           />
         )}
+        {study && heroReady && <ExtraStudy study={study} />}
         {/* Below the card: one note at most, then the reading. Space is held while they load,
             so the page does not jump (v0.5.3 A7). */}
         {heroReady && goals !== undefined ? (

@@ -1,4 +1,4 @@
-// Level tests, known terms, the weekly update and the counter, on the real Dexie schema.
+// Level tests, known terms, the weekly update and the level overview, on the real Dexie schema.
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { parseClientLevels } from '@/domain/level';
 import { LEVELS } from '@/domain/levelTest';
@@ -10,7 +10,7 @@ import { getKnownTermKeys, listKnownTerms, markKnown, unmarkKnown } from './know
 import { setLevelDataForTests } from './levelData';
 import {
   applyTestLevel,
-  BAND_SIZES,
+  countOutsideWords,
   dismissLevelChange,
   getLevelOverview,
   runWeeklyLevelUpdate,
@@ -163,8 +163,8 @@ describe('weekly update', () => {
   });
 });
 
-describe('vocabulary counter', () => {
-  it('Σ size × ratio plus learned words outside the list; "to next" from the next level', async () => {
+describe('level overview', () => {
+  it('has a basis after a test; learned or known words outside the list are counted', async () => {
     // Before the test: outside the list, but no evidence after the prior.
     await learnWord('quokka', MON - 20 * D);
     await markKnown('zzyzx', 'manual', MON - D);
@@ -183,12 +183,8 @@ describe('vocabulary counter', () => {
     );
     const o = await getLevelOverview(MON + 5 * D);
     expect(o.hasBasis).toBe(true);
-    const expected =
-      BAND_SIZES.A1 * 1 + BAND_SIZES.A2 * 0.95 + BAND_SIZES.B1 * 0.85 + BAND_SIZES.B2 * 0.5 + BAND_SIZES.C1 * 0.2 + BAND_SIZES.C2 * 0.1 + 2;
-    expect(o.vocab.estimate).toBe(Math.round(expected / 10) * 10);
-    expect(o.vocab.outside).toBe(2);
-    expect(o.vocab.next).toBe('B2');
-    expect(o.vocab.toNext).toBe(Math.ceil(Math.ceil((0.8 - 0.5) * BAND_SIZES.B2) / 10) * 10);
+    expect(o.level).toBe('B1');
+    expect(await countOutsideWords(MON + 5 * D)).toBe(2);
   });
 
   it('has no basis before a test or a chosen level', async () => {

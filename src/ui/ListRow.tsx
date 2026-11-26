@@ -51,6 +51,8 @@ interface ListRowBase {
   term?: boolean;
   destructive?: boolean;
   className?: string;
+  /** data-testid of the row. */
+  testId?: string;
 }
 
 type ListRowAs =
@@ -76,6 +78,7 @@ export function ListRow(props: ListRowProps) {
     term,
     destructive,
     className,
+    testId,
   } = props;
   const interactive =
     'to' in props && props.to ? 'link' : 'onClick' in props && props.onClick ? 'button' : null;
@@ -110,7 +113,7 @@ export function ListRow(props: ListRowProps) {
   );
   if (interactive === 'link') {
     return (
-      <Link to={(props as { to: string }).to} className={rowClass}>
+      <Link to={(props as { to: string }).to} className={rowClass} data-testid={testId}>
         {body}
       </Link>
     );
@@ -123,12 +126,17 @@ export function ListRow(props: ListRowProps) {
         onClick={p.onClick}
         disabled={p.disabled}
         className={cn(rowClass, 'disabled:opacity-45')}
+        data-testid={testId}
       >
         {body}
       </button>
     );
   }
-  return <div className={rowClass}>{body}</div>;
+  return (
+    <div className={rowClass} data-testid={testId}>
+      {body}
+    </div>
+  );
 }
 
 export interface ListGroupProps extends Omit<ComponentPropsWithRef<'ul'>, 'title'> {

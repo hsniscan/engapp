@@ -13,7 +13,8 @@ import { dayConfig, getSettings, schedulerFor } from './settings';
 /** Live check used on the current day: nothing studied is left due before the day ends. */
 export async function isTodayComplete(cfg: DayConfig, now: Millis): Promise<boolean> {
   const facts = await loadTodayFacts(cfg, now);
-  const due = await dueStudiedCards(facts.bounds.end);
+  // ADR 0079: the day is complete when Kelime çalışma is; the extra modes are optional.
+  const due = (await dueStudiedCards(facts.bounds.end)).filter((c) => c.card_type === 'recognition');
   return isDayComplete(due, {
     now,
     dayEnd: facts.bounds.end,

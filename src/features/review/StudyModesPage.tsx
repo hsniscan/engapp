@@ -1,17 +1,17 @@
-// "Çalış" (v0.5.2 "Çam", docs/design.md §4.2, ADR 0066): the study modes as one list — icon,
-// name, what it asks, what is left today (the same numbers as Bugün, ADR 0055) — the
-// "Karışık çalış" switch, and one sticky button that starts the next mode. "Dikte" (v0.5 İP9)
+// "Çalış" (v0.5.2 "Çam", docs/design.md §4.2, ADR 0066): the study modes — icon, name, what it
+// asks, what is left today (the same numbers as Bugün, ADR 0055). ADR 0079: the daily study is
+// Kelime çalışma alone, on top with the one sticky button; Üretim, Boşluk doldurma and Dikte
+// follow under "Ekstra çalışma" as optional practice. "Dikte" (v0.5 İP9)
 // is listed only when this device can read the example sentences. A new user with no words
 // gets a real empty state instead of a start button with nothing to study.
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { db } from '@/data';
 import type { StudyMode } from '@/domain/studyMode';
 import { openAddSheet } from '@/features/add/addSheetStore';
 import { DISCOVER_DECKS_HREF } from '@/features/decks/deckUi';
-import { flags } from '@/features/settings/platform';
 import {
   Badge,
   Button,
@@ -20,26 +20,16 @@ import {
   EmptyState,
   Icon,
   IconTile,
-  type IconName,
   ListGroup,
   PageFrame,
+  SectionHeader,
   Skeleton,
-  Switch,
 } from '@/ui';
 import { reconcileDictationCards } from '@/data/dictation';
-import { mixedHint, modeText, startLabel } from './modeText';
+import { MODE_ICON, modeText, startLabel } from './modeText';
 import { type StudyModeCount, useTodayStudy } from './studyModes';
 
-const MIXED_FLAG = 'study.mixed';
-
 const left = (c: StudyModeCount) => c.due + c.newCount;
-
-const MODE_ICON: Record<StudyMode, IconName> = {
-  word: 'cards',
-  production: 'pen',
-  cloze: 'cloze',
-  dictation: 'speaker',
-};
 
 function ModeRow({ mode, count, main }: { mode: StudyMode; count: StudyModeCount; main: boolean }) {
   const { t } = useTranslation();
@@ -82,8 +72,6 @@ export function StudyModesPage() {
     async () => (await db.notes.filter((n) => n.deleted_at === null).first()) !== undefined,
     [],
   );
-  // v0.5.3 B3 (ADR 0071): one mixed session is the default; only a stored '0' turns it off.
-  const [mixed, setMixed] = useState(() => flags.get(MIXED_FLAG) !== '0');
   // Dictation cards of words whose example sentences arrived since the last visit (cheap
   // when nothing changed; the counts follow through the live query).
   useEffect(() => {
@@ -94,8 +82,8 @@ export function StudyModesPage() {
   const counts = study?.counts;
   const total = study?.left ?? 0;
   const minutes = study?.minutes ?? 0;
-  const main: StudyMode = study?.nextReady ?? study?.next ?? 'word';
-  const startTo = mixed ? '/study?mode=mixed' : `/study?mode=${main}`;
+  const main: StudyMode = 'word';
+  const startTo = `/study?mode=${main}`;
   const done = !!study && total === 0;
 
   return (
@@ -116,11 +104,27 @@ export function StudyModesPage() {
     >
       <div className="flex flex-1 flex-col gap-6">
         {study && counts ? (
-          <ListGroup aria-label={t('study.empty.pickMode')}>
-            {study.modes.map((m) => (
-              <ModeRow key={m} mode={m} count={counts[m]} main={m === main && !mixed} />
-            ))}
-          </ListGroup>
+          <>
+            <ListGroup aria-label={t('study.dailyTitle')}>
+              {study.dailyModes.map((m) => (
+                <ModeRow key={m} mode={m} count={counts[m]} main />
+              ))}
+            </ListGroup>
+            {study.extraModes.length > 0 && (
+              <section aria-labelledby="study-extra-title" className="flex flex-col">
+                <SectionHeader
+                  id="study-extra-title"
+                  title={t('extraStudy.title')}
+                  description={t('extraStudy.body')}
+                />
+                <ListGroup>
+                  {study.extraModes.map((m) => (
+                    <ModeRow key={m} mode={m} count={counts[m]} main={false} />
+                  ))}
+                </ListGroup>
+              </section>
+            )}
+          </>
         ) : (
           <Card aria-busy="true" padding="none" className="flex flex-col divide-y divide-border">
             {[0, 1, 2, 3].map((i) => (
@@ -131,18 +135,6 @@ export function StudyModesPage() {
             ))}
           </Card>
         )}
-
-        <Card padding="none" className="px-4 py-1">
-          <Switch
-            label={t('study.mixed')}
-            description={study ? mixedHint(t, study.modes) : t('study.mixedHint')}
-            checked={mixed}
-            onCheckedChange={(v) => {
-              setMixed(v);
-              flags.set(MIXED_FLAG, v ? '1' : '0');
-            }}
-          />
-        </Card>
 
         {/* Above the tab bar on phones (AppShell pads the page for it), 16 px clear of it. */}
         <div className="sticky bottom-[calc(var(--nav-height)+env(safe-area-inset-bottom))] -mx-4 mt-auto bg-canvas px-4 pt-3 pb-4 sm:-mx-6 sm:px-6 md:bottom-0 md:pb-[max(1.5rem,env(safe-area-inset-bottom))]">
@@ -166,7 +158,7 @@ export function StudyModesPage() {
                 className: !study ? 'pointer-events-none opacity-45' : undefined,
               })}
             >
-              {startLabel(t, mixed ? 'mixed' : main)}
+              {startLabel(t, main)}
               <Icon name="arrow-right" size={20} />
             </Link>
           )}

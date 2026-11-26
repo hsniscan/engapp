@@ -176,11 +176,14 @@ export function WordSheet({
           ? t('reader.word.lemma', { lemma: pick.lemma })
           : undefined
       }
+      centerTitle
       className="max-h-[70dvh]"
     >
       {pick && (
         <SheetBody
-          key={`${pick.lemma}|${pick.written}|${pick.sentence}`}
+          // The guess mode is part of the key: a "Hep tahmin ettir" setting that arrives after the
+          // sheet opened starts it again in the right mode.
+          key={`${pick.lemma}|${pick.written}|${pick.sentence}|${alwaysGuess || pick.noteId === null}`}
           pick={pick}
           glosses={glosses}
           voice={voice}
@@ -283,7 +286,7 @@ function SheetBody({
 
   return (
     <div className="flex flex-col gap-4 pb-1">
-      <div className="flex min-h-11 flex-wrap items-center gap-2">
+      <div className="flex min-h-11 flex-wrap items-center justify-center gap-2">
         {pick.stage && <StagePill stage={pick.stage} />}
         {pos && (
           <Badge tone="outline">{t(`reader.pos.${pos}`, { defaultValue: pos })}</Badge>
@@ -299,7 +302,7 @@ function SheetBody({
           size="sm"
           label={t('reader.word.listen')}
           aria-busy={speaker.busy}
-          className={cn('ml-auto', speaker.busy && 'motion-safe:animate-pulse')}
+          className={cn(speaker.busy && 'motion-safe:animate-pulse')}
           onClick={() =>
             speaker.run(
               // The form the user tapped ("went"), as the title shows it, not the lemma (B12).
@@ -396,12 +399,6 @@ function SheetBody({
         </div>
       ) : (
         <div className="flex flex-col gap-4" aria-live="polite">
-          {lookup.info.picture && (
-            <CardPicture
-              image={lookup.info.picture}
-              className="max-h-40 w-auto max-w-full self-start rounded-inner"
-            />
-          )}
           <h3 id={listId} className="sr-only">
             {t('reader.word.meanings')}
           </h3>
@@ -413,15 +410,7 @@ function SheetBody({
             onChoose={setChosen}
           />
           {lookup.online && <p className="text-meta text-fg-muted">{t('reader.word.fromOnline')}</p>}
-          {noteId ? (
-            <div className="flex flex-col gap-1">
-              <p className="flex items-center gap-2 text-ui font-medium text-success-text">
-                <Icon name="check" size={18} />
-                {t('reader.word.inCards')}
-              </p>
-              <EncounterLine noteId={noteId} />
-            </div>
-          ) : (
+          {!noteId && (
             <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
               <Button
                 size="lg"
@@ -440,6 +429,24 @@ function SheetBody({
               >
                 {t('reader.word.markKnown')}
               </Button>
+            </div>
+          )}
+          {/* The picture last, across the whole sheet (never over the meaning). */}
+          {lookup.info.picture && (
+            <CardPicture
+              image={lookup.info.picture}
+              showNew={false}
+              className="h-[min(15rem,32dvh)] w-full justify-center overflow-hidden rounded-inner bg-surface-sunken p-2"
+            />
+          )}
+          {/* Where the word stands, last (under the picture). */}
+          {noteId && (
+            <div className="flex flex-col items-center gap-1 text-center">
+              <p className="flex items-center gap-2 text-ui font-medium text-success-text">
+                <Icon name="check" size={18} />
+                {t('reader.word.inCards')}
+              </p>
+              <EncounterLine noteId={noteId} />
             </div>
           )}
         </div>
@@ -467,11 +474,15 @@ function Meanings({
   const shown = meanings.slice(0, 4);
   if (!selectable)
     return (
-      <ul aria-labelledby={labelledBy} className="flex flex-col gap-1" data-testid="reader-meanings">
+      <ul
+        aria-labelledby={labelledBy}
+        className="flex flex-col items-center gap-1 py-1 text-center"
+        data-testid="reader-meanings"
+      >
         {shown.map((m, i) => (
           <li
             key={`${m.lexicon_sense_id ?? ''}${i}`}
-            className={cn('text-fg', i === 0 ? 'text-title font-semibold' : 'text-lead')}
+            className={cn('text-fg', i === 0 ? 'text-page font-semibold text-accent-text' : 'text-lead')}
           >
             {m.meaning_tr}
             {i > 0 && m.pos && (

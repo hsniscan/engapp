@@ -21,6 +21,8 @@ export interface DialogProps {
    */
   variant?: 'responsive' | 'sheet' | 'dialog';
   hideClose?: boolean;
+  /** Centre the title and description (the reader's word sheet). */
+  centerTitle?: boolean;
   /**
    * false: no scrim and the page stays usable behind (the reader's word sheet: tap the next
    * word while it is open). Default true.
@@ -50,6 +52,7 @@ export function Dialog({
   footer,
   variant = 'responsive',
   hideClose,
+  centerTitle = false,
   modal = true,
   className,
 }: DialogProps) {
@@ -85,7 +88,14 @@ export function Dialog({
             />
           )}
           <div className="flex items-start gap-3">
-            <div className="flex min-w-0 flex-1 flex-col gap-1.5 pt-1.5">
+            {/* Balances the close button so a centred title sits in the middle. */}
+            {centerTitle && !hideClose && <span aria-hidden="true" className="size-11 shrink-0" />}
+            <div
+              className={cn(
+                'flex min-w-0 flex-1 flex-col gap-1.5 pt-1.5',
+                centerTitle && 'items-center text-center',
+              )}
+            >
               <RadixDialog.Title className="text-title font-semibold text-fg">
                 {title}
               </RadixDialog.Title>

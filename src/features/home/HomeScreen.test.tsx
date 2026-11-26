@@ -47,29 +47,29 @@ describe('Bugün', () => {
     expect(await getMeta(STAGE_RULE_NOTE_KEY)).toBe(true);
   });
 
-  it('shows the whole day with a chip per mode and updates live after answers', async () => {
+  it('shows the day\'s word study, the extra modes apart, and updates live after answers', async () => {
     await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] });
     await addNoteWithSenses({ term: 'light', senses: [{ meaning_tr: 'hafif' }] });
     renderRoute(<HomeScreen />);
 
     const hero = await screen.findByTestId('today-hero');
-    expect(within(hero).getByRole('heading', { name: 'Bugünün çalışması' })).toBeInTheDocument();
+    expect(within(hero).getByRole('heading', { name: 'Bugünün kelime çalışması' })).toBeInTheDocument();
     expect(within(hero).getByTestId('today-split')).toHaveTextContent('2 kart kaldı · 0 tekrar · 2 yeni');
-    expect(within(hero).getByRole('progressbar', { name: 'Bugünün çalışması' })).toHaveAttribute(
+    expect(within(hero).getByRole('progressbar', { name: 'Bugünün kelime çalışması' })).toHaveAttribute(
       'aria-valuetext',
       'Bugün 0 / 2 kart',
     );
     expect(within(hero).getByRole('link', { name: /Çalışmaya başla/ })).toHaveAttribute(
       'href',
-      '/study?mode=mixed',
+      '/study?mode=word',
     );
-    // One chip per mode on the Today card: the whole day at a glance (ADR 0055).
-    expect(within(hero).getByTestId('study-type-word')).toHaveAccessibleName(/^Kelime\s*2 kart$/);
-    // A new user's Üretim has no card open yet: the card says when it opens (v0.5.2).
-    expect(within(hero).getByTestId('study-type-production')).toHaveAccessibleName(
-      /^Üretim\s*henüz açılmadı$/,
-    );
-    expect(within(hero).getByTestId('today-locked-hint')).toHaveTextContent('Pekişiyor');
+    // ADR 0079: the other modes are not on the Today card but under "Ekstra çalışma".
+    expect(within(hero).queryByTestId('study-type-production')).toBeNull();
+    const extra = await screen.findByTestId('extra-study');
+    expect(extra).toHaveTextContent('Ekstra çalışma');
+    expect(extra).toHaveTextContent('Günlük çalışmana sayılmaz');
+    // A new user's Üretim has no card open yet: the row says when it opens.
+    expect(within(extra).getByTestId('extra-study-production')).toHaveTextContent('Kelime çalışmada oturan');
     expect(await screen.findByTestId('home-words')).toHaveTextContent('/ 2 kelimenden');
 
     // Answer every word card (Easy graduates them): the calm "done" state takes over.
@@ -84,18 +84,17 @@ describe('Bugün', () => {
     expect(await db.daily_activity.count()).toBe(1);
   });
 
-  it('is not done while another mode still has cards; the button starts one mixed session (B3)', async () => {
+  it('is done when the word study is, even while an extra mode still has cards (ADR 0079)', async () => {
     await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] });
     // Kelime has nothing today; Üretim has one card open.
     await db.cards.where('card_type').equals('recognition').modify({ suspended: true });
     await db.cards.where('card_type').equals('production').modify({ unlocked: true });
     renderRoute(<HomeScreen />);
-    const hero = await screen.findByTestId('today-hero');
-    expect(screen.queryByTestId('today-hero-done')).toBeNull();
-    expect(within(hero).getByTestId('today-split')).toHaveTextContent('1 kart kaldı');
-    expect(within(hero).getByTestId('start-study')).toHaveTextContent('Çalışmaya başla');
-    expect(within(hero).getByTestId('start-study')).toHaveAttribute('href', '/study?mode=mixed');
-    expect(screen.queryByTestId('more-study')).toBeNull();
+    await screen.findByTestId('today-hero-done');
+    expect(screen.queryByTestId('today-hero')).toBeNull();
+    const extra = await screen.findByTestId('extra-study');
+    expect(within(extra).getByTestId('extra-study-production')).toHaveTextContent('1 kart');
+    expect(within(extra).getByTestId('extra-study-production')).toHaveAttribute('href', '/study?mode=production');
   });
 
   it('offers daily-goal presets when no goal is set, then shows the goal under Kısayollar', async () => {

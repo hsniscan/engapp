@@ -54,7 +54,7 @@ describe('learning steps later today', () => {
     await act(async () => bumpStudyTickForTesting());
     const hero = await screen.findByTestId('today-hero');
     expect(within(hero).getByTestId('today-split')).toHaveTextContent('1 kart kaldı');
-    expect(within(hero).getByTestId('start-study')).toHaveAttribute('href', '/study?mode=mixed');
+    expect(within(hero).getByTestId('start-study')).toHaveAttribute('href', '/study?mode=word');
   });
 
   it('a new study day shows the new day after resume', async () => {
@@ -62,14 +62,15 @@ describe('learning steps later today', () => {
     renderRoute(<HomeScreen />);
     expect(await screen.findByTestId('today-hero-done')).toBeInTheDocument();
     // Next morning, 09:00: the card graduated with Easy is not due yet, but the day changed:
-    // the new date, and the word's production card (unlocked by the graduation) as today's one
-    // new card. The check waits for that end state; while the queries refresh one by one the
-    // card can briefly read "Bugün kart yok" (the new day's activity before its queue).
+    // the new date, and the word's production card (unlocked by the graduation) waits under
+    // "Ekstra çalışma" (ADR 0079: not part of the daily word study, which has nothing today).
     vi.setSystemTime(T + 11.5 * 60 * MIN);
     await act(async () => bumpStudyTickForTesting());
     await waitFor(() => expect(screen.getByText('Salı, 16 Haziran')).toBeInTheDocument());
-    const hero = await screen.findByTestId('today-hero');
-    expect(within(hero).getByTestId('today-split')).toHaveTextContent('1 kart kaldı');
-    expect(within(hero).getByTestId('study-type-production')).toHaveTextContent('1');
+    await waitFor(() =>
+      expect(screen.getByTestId('extra-study-production')).toHaveTextContent('1 kart'),
+    );
+    const done = await screen.findByTestId('today-hero-done');
+    expect(within(done).getByRole('heading')).toHaveTextContent('Bugün kart yok');
   });
 });

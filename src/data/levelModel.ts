@@ -1,7 +1,6 @@
-// The user's level, data side (v0.2 İP3 + the İP8 counter): saving level tests, the weekly
-// update, the vocabulary counter and the level settings. Rules live in domain/levelTest.ts,
-// domain/levelUpdate.ts and domain/vocabSize.ts; this module only reads and writes Dexie.
-import bandSizesJson from '../../data/level-test/band-sizes.json';
+// The user's level, data side (v0.2 İP3): saving level tests, the weekly update, the level
+// overview and the level settings. Rules live in domain/levelTest.ts and
+// domain/levelUpdate.ts; this module only reads and writes Dexie.
 import { type DayConfig } from '../domain/day';
 import { type LevelData, noteLevel } from '../domain/level';
 import { LEVELS } from '../domain/levelTest';
@@ -17,7 +16,6 @@ import {
   type WeeklyOutcome,
   weekStartMs,
 } from '../domain/levelUpdate';
-import { type VocabSize, vocabSize } from '../domain/vocabSize';
 import { replayCard } from '../domain/recompute';
 import { cardStage, isLearnedStage } from '../domain/stages';
 import {
@@ -37,9 +35,6 @@ import { getCurrentUserId, getMeta, setMeta } from './meta';
 import { dayConfig, defaultSettings, getSettings, schedulerFor, SETTINGS_ID } from './settings';
 import { writeTx } from './writer';
 import { scanWhere } from './scan';
-
-/** Lemmas per level in the word list (data/level-test/band-sizes.json, built with the bank). */
-export const BAND_SIZES = bandSizesJson as Record<CefrLevel, number>;
 
 const MAX_TEST_DURATION_MS = 60 * 60_000;
 
@@ -198,19 +193,14 @@ export interface LevelOverview {
   /** Latest test (reliable or not). */
   lastTest: LevelTest | null;
   testCount: number;
-  /** A level test or a level chosen by hand: the counter has a real starting point. */
+  /** A level test or a level chosen by hand: the level has a real starting point. */
   hasBasis: boolean;
   ratios: Record<CefrLevel, BandEstimate>;
-  vocab: VocabSize;
 }
 
 export async function getLevelOverview(now: Millis = Date.now()): Promise<LevelOverview> {
   const m = await loadModel(now);
   const ratios = ratiosAt(m.input, now);
-  const flat = Object.fromEntries(LEVELS.map((b) => [b, ratios[b].ratio])) as Record<
-    CefrLevel,
-    number
-  >;
   return {
     level: m.settings.level,
     source: m.settings.level_source,
@@ -221,7 +211,6 @@ export async function getLevelOverview(now: Millis = Date.now()): Promise<LevelO
     testCount: m.tests.length,
     hasBasis: m.tests.some((t) => t.reliable) || m.settings.level_source !== 'default',
     ratios,
-    vocab: vocabSize(m.settings.level, flat, BAND_SIZES, m.outside),
   };
 }
 

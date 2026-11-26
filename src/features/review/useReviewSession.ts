@@ -109,14 +109,34 @@ function loadQueue(
   studyMode: StudyMode | undefined,
   deckId: Id | undefined,
   session?: { reviews: number; new: number },
+  deck?: DeckSessionOptions,
 ) {
-  const base = { ...(session ? { session } : {}), ...(deckId ? { deckId } : {}) };
+  const base = {
+    ...(session ? { session } : {}),
+    ...(deckId ? { deckId } : {}),
+    ...(deckId && deck?.newCount !== undefined ? { deckNew: deck.newCount } : {}),
+    ...(deckId && deck?.seed !== undefined ? { deckSeed: deck.seed } : {}),
+  };
   if (mode === 'normal' && !studyMode) return getMixedStudyQueue(base);
   return getStudyQueue({ ...base, mode, ...(studyMode ? { studyMode } : {}) });
 }
 
+/** A deck session's size and shuffle (Desteler → "Çalış", ADR 0080). */
+export interface DeckSessionOptions {
+  /** New words this session brings ("&new=10"). */
+  newCount?: number;
+  /** Shuffle seed of its new words ("&seed=…"). */
+  seed?: number;
+}
+
 /** `studyMode` absent: the mixed queue of every card type ("Karışık çalış", review ahead). */
-export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMode, deckId?: Id) {
+export function useReviewSession(
+  mode: QueueMode = 'normal',
+  studyMode?: StudyMode,
+  deckId?: Id,
+  deckNew?: number,
+  deckSeed?: number,
+) {
   const [state, setState] = useState<SessionState>({
     phase: 'loading',
     current: null,
@@ -261,7 +281,7 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
   /** Rebuild the queue; applied only if nothing newer happened in the meantime. */
   const rebuild = useCallback(
     async (mySeq: number) => {
-      const q = await loadQueue(mode, studyMode, deckId, { ...counts.current });
+      const q = await loadQueue(mode, studyMode, deckId, { ...counts.current }, { newCount: deckNew, seed: deckSeed });
       carryPostponed(q.postponed);
       if (mySeq !== seq.current || !alive.current) return;
       const currentId = stateRef.current.current?.view.card.id;
@@ -276,7 +296,7 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
         prefetch();
       }
     },
-    [advance, finish, patch, prefetch, capItems, mode, studyMode, deckId],
+    [advance, finish, patch, prefetch, capItems, mode, studyMode, deckId, deckNew, deckSeed],
   );
 
   const enqueue = useCallback((job: () => Promise<void>) => {
@@ -292,7 +312,7 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
     let cancelled = false;
     void (async () => {
       const [q, streak, settings] = await Promise.all([
-        loadQueue(mode, studyMode, deckId),
+        loadQueue(mode, studyMode, deckId, undefined, { newCount: deckNew, seed: deckSeed }),
         getStreakSummary(),
         getSettings(),
       ]);
@@ -310,7 +330,7 @@ export function useReviewSession(mode: QueueMode = 'normal', studyMode?: StudyMo
       cancelled = true;
       alive.current = false;
     };
-  }, [advance, finish, capItems, mode, studyMode, deckId]);
+  }, [advance, finish, capItems, mode, studyMode, deckId, deckNew, deckSeed]);
 
   /** Show the answer side; `mode` says how it was reached (default: a self-rated flip). */
   const flip = useCallback(

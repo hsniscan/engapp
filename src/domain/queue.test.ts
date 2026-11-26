@@ -98,9 +98,9 @@ describe('buildQueue', () => {
       makeCard({ id: 'clozeZ', note_id: 'Z', card_type: 'cloze', state: CardState.Learning, due: NOW + 5 * MIN }),
     ];
     const ids = buildQueue(cards, ctx()).items.map((i) => i.card_id);
-    // v0.5.3 B1: the hardest due format of a note comes (X's production, not its recognition);
-    // Z's recognition waits for tomorrow because its cloze is due later today.
-    expect(ids).toEqual(['prod', 'revY']);
+    // ADR 0079: a recognition card is never held for a harder sibling that is only due (the
+    // other formats are optional), so X and Z show their recognition; X's production is buried.
+    expect(ids).toEqual(['rec', 'revY', 'revZ']);
 
     // revZ answered earlier today; its sibling in learning is buried, X's production too.
     const today = ctx({ reviewedTodayCardIds: new Set(['rec']), reviewedTodayNoteIds: new Set(['X', 'Z']), learnAheadMs: 20 * MIN });
@@ -281,15 +281,18 @@ describe('one card per word per day, hardest first (B1, ADR 0071)', () => {
     makeCard({ id, note_id: 'n', card_type: type, state, due, unlocked: true });
   const base = (p: Partial<QueueContext> = {}) => ctx({ dayStart: DAY_START, ...p });
 
-  it('holds the easier due siblings and shows only the hardest format', () => {
+  it('holds the easier due siblings and shows only the hardest format (recognition excepted)', () => {
     const cards = [
       typed('rec', 'recognition', NOW - MIN),
       typed('pro', 'production', NOW - MIN),
       typed('clo', 'cloze', NOW - MIN),
       typed('dic', 'dictation', NOW - MIN),
     ];
-    expect([...siblingHolds(cards, base())].sort()).toEqual(['clo', 'pro', 'rec']);
-    for (const types of [['recognition'], ['production', 'image'], ['cloze']] as const) {
+    // ADR 0079: Kelime çalışma (recognition) is the daily study and never waits for an
+    // optional format that is only due.
+    expect([...siblingHolds(cards, base())].sort()).toEqual(['clo', 'pro']);
+    expect(buildQueue(cards, base({ cardTypes: ['recognition'] })).items.map((i) => i.card_id)).toEqual(['rec']);
+    for (const types of [['production', 'image'], ['cloze']] as const) {
       expect(buildQueue(cards, base({ cardTypes: types })).items).toEqual([]);
     }
     expect(buildQueue(cards, base({ cardTypes: ['dictation'] })).items.map((i) => i.card_id)).toEqual(['dic']);
@@ -362,5 +365,22 @@ describe('resting cards (B5, ADR 0071)', () => {
     expect(isStudiable(c)).toBe(true);
     expect(isStudiable(c, NOW)).toBe(false);
     expect(isDayComplete([c], { ...ctx(), now: NOW })).toBe(true);
+  });
+});
+
+describe('deck session shuffle (ADR 0080)', () => {
+  const fresh10 = () =>
+    Array.from({ length: 10 }, (_, i) =>
+      makeCard({ id: `n${i}`, note_id: `note${i}`, state: CardState.New, created_at: i, due: 0 }),
+    );
+  it('takes the new cards in a seed-fixed random order; another seed gives other words', () => {
+    const pick = (seed: number) =>
+      buildQueue(fresh10(), ctx({ dailyNewLimit: 3, newShuffleSeed: seed })).items.map((i) => i.card_id);
+    expect(pick(1)).toEqual(pick(1));
+    expect(pick(1)).toHaveLength(3);
+    const seen = new Set([1, 2, 3, 4, 5, 6].flatMap(pick));
+    expect(seen.size).toBeGreaterThan(3);
+    // Without a seed: insertion order.
+    expect(buildQueue(fresh10(), ctx({ dailyNewLimit: 3 })).items.map((i) => i.card_id)).toEqual(['n0', 'n1', 'n2']);
   });
 });

@@ -290,7 +290,8 @@ describe('own words, the colour legend and the new words (v0.5.1)', () => {
     await updateSettings({ reader_always_guess: true });
     await user.click(word('cope'));
     sheet = await screen.findByRole('dialog');
-    expect(within(sheet).getByTestId('reader-reveal')).toBeInTheDocument();
+    // The setting reaches the reader through a live query: wait for it rather than read at once.
+    expect(await within(sheet).findByTestId('reader-reveal')).toBeInTheDocument();
     expect(within(sheet).queryByText('başa çıkmak')).toBeNull();
   });
 
