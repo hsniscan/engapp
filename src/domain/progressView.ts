@@ -101,12 +101,3 @@ export function newLimitAction(
   if (current > suggested) return 'lower';
   return current === suggested ? 'done' : 'already';
 }
-
-/**
- * The vocabulary floor shown before any level test: words learned in the app plus words marked
- * "Biliyorum". Null when there is nothing to count.
- */
-export function vocabularyFloor(learnedWords: number, knownWords: number): number | null {
-  const n = Math.max(0, learnedWords) + Math.max(0, knownWords);
-  return n > 0 ? n : null;
-}

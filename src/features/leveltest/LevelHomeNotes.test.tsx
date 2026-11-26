@@ -8,7 +8,7 @@ import { resetDb } from '@/test/db';
 import { renderRoute } from '@/test/ui';
 import { LevelChangeLine, LevelTestOffer } from './LevelHomeNotes';
 import { levelDative } from './levelText';
-import { VocabTile } from './VocabTile';
+import { LevelTile } from './LevelTile';
 
 const ratios = (r: Partial<Record<CefrLevel, number>>) =>
   Object.fromEntries(LEVELS.map((b) => [b, r[b] ?? 0])) as Record<CefrLevel, number>;
@@ -42,22 +42,24 @@ describe('level test offer', () => {
     renderRoute(
       <>
         <LevelTestOffer />
-        <VocabTile />
+        <LevelTile />
       </>,
     );
-    expect(await screen.findByTestId('vocab-tile')).toBeInTheDocument();
+    const tile = await screen.findByTestId('level-tile');
     expect(screen.queryByTestId('level-offer')).toBeNull();
-    expect(screen.getByTestId('vocab-next')).toHaveTextContent(/^C1'e ~[\d.]+ kelime kaldı$/);
+    expect(screen.getByTestId('level-next')).toHaveTextContent(/^C1 kelimelerinin %\d+ kadarını biliyorsun$/);
+    // Only the level and shares: no word-count estimate.
+    expect(tile).not.toHaveTextContent(/~\d/);
   });
 });
 
-describe('vocabulary counter', () => {
+describe('level tile', () => {
   it('without a test or a chosen level it invites to the test, unless the offer already does', async () => {
-    renderRoute(<VocabTile />);
+    renderRoute(<LevelTile />);
     // The offer is visible (fresh user): no second invitation.
-    await waitFor(() => expect(screen.queryByTestId('vocab-cta')).toBeNull());
+    await waitFor(() => expect(screen.queryByTestId('level-cta')).toBeNull());
     await db.meta.put({ key: 'level_test_offer_dismissed', value: true });
-    expect(await screen.findByTestId('vocab-cta')).toHaveTextContent('Kaç kelime biliyorsun?');
+    expect(await screen.findByTestId('level-cta')).toHaveTextContent('Seviyeni öğren');
   });
 });
 

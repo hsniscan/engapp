@@ -33,7 +33,7 @@ describe('profile page', { timeout: 20_000 }, () => {
     expect(settings).toHaveLength(1);
     expect(settings[0]).toHaveAttribute('href', '/settings');
     expect(await screen.findByTestId('profile-level')).toHaveTextContent('B1');
-    expect(screen.getByText('Tahmini kelime hazinen')).toBeInTheDocument();
+    expect(screen.queryByText(/kelime hazinen/)).toBeNull();
     const chips = screen.getByRole('list', { name: 'Seçili ilgi alanları' });
     expect(
       within(chips)
@@ -69,7 +69,8 @@ describe('profile page', { timeout: 20_000 }, () => {
       'href',
       '/level-test',
     );
-    expect(screen.getByTestId('profile-vocab')).toHaveTextContent('Henüz tahmin yok');
+    // The word-count estimate was removed: no "Tahmini kelime hazinen" anywhere.
+    expect(screen.queryByText(/kelime hazinen/)).toBeNull();
   });
 
   it('after an unreliable test the level stays unmeasured, with its own hint (B4)', async () => {
@@ -96,27 +97,7 @@ describe('profile page', { timeout: 20_000 }, () => {
     expect(level).not.toHaveTextContent('B1');
     expect(screen.getByText(/güvenilir bir sonuç vermedi/)).toBeInTheDocument();
     // One heading, not "Seviye, Seviye" for a screen reader (B11).
-    expect(screen.getByRole('heading', { name: 'Seviye ve kelime hazinen' })).toBeInTheDocument();
-  });
-
-  it('a long-time user without a test sees a floor, not "no estimate"', async () => {
-    // A learned word: its recognition card reached Öğrenildi.
-    const { note } = await addNoteWithSenses({ term: 'tide', senses: [{ meaning_tr: 'gelgit' }] });
-    const rec = (await db.cards.where('note_id').equals(note.id).toArray()).find(
-      (c) => c.card_type === 'recognition',
-    )!;
-    await db.cards.update(rec.id, {
-      state: 2,
-      ramp_step: 3,
-      stability: 30,
-      learned_at: Date.now() - 86_400_000,
-    });
-    await markKnown('give up', 'manual');
-    renderRoute(<ProfilePage />, { path: '/profile' });
-    await waitFor(() => expect(screen.getByTestId('profile-vocab')).toHaveTextContent('en az'), {
-      timeout: 8000,
-    });
-    expect(screen.queryByText('Henüz tahmin yok')).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Seviyen' })).toBeInTheDocument();
   });
 
   it('stats and goals live on İlerleme: no streak or goals card here, ?edit=goals forwards', async () => {

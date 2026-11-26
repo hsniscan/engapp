@@ -4,7 +4,7 @@ import { addWord, dumpTables, expect, test } from './support/app.ts';
 import { FakeBackend } from './support/backend.ts';
 
 // v0.2 İP3: the level test (offered once on the home screen, redoable from Settings), its
-// result, the vocabulary counter and the known words. Guests take it offline.
+// result, the level ladder and the known words. Guests take it offline.
 
 interface BankWord {
   w: string;
@@ -80,7 +80,7 @@ test('guest, offline: the offered level test sets the level, the counter and the
   await expect(result).toHaveAttribute('data-reliable', 'true');
   await expect(page.getByTestId('result-level')).toHaveText('B2');
   await expect(result.getByText('Seviyen B1 → B2 oldu.')).toBeVisible();
-  await expect(page.getByTestId('result-vocab')).toHaveText(/^~\d/);
+  await expect(page.getByTestId('level-ladder')).toBeVisible();
   await expect(page.getByTestId('result-unreliable')).toHaveCount(0);
 
   const tables = await dumpTables(page, ['level_tests', 'known_terms', 'settings']);

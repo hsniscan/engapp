@@ -213,7 +213,6 @@ export {
   type BankAddResult,
 } from './wordBank';
 export {
-  BAND_SIZES,
   countOutsideWords,
   dismissLevelChange,
   getLevelOverview,

@@ -1,5 +1,5 @@
 // /progress, "İlerleme" (v0.5.2 design 4.15). Three tabs:
-//   Genel          words by stage, estimated vocabulary + level path, continuity (streak,
+//   Genel          words by stage, level + level path, continuity (streak,
 //                  heatmap), goals, the next 30 days, struggling words, recall, weekly report link
 //   Gelişim        (?tab=gelisim) recognition–production gap, retention by group, 12-week series,
 //                  and the full struggling-words list
@@ -17,7 +17,7 @@ import {
 import type { HeatmapCell, StreakSummary } from '@/domain/streak';
 import { practiceHref } from '@/features/extra/links';
 import { LeechStatsSection } from '@/features/leech';
-import { VocabTile } from '@/features/leveltest/VocabTile';
+import { LevelTile } from '@/features/leveltest/LevelTile';
 import { WorkloadSection } from '@/features/load/WorkloadChart';
 import { GoalsSection } from '@/features/report/GoalsSection';
 import { REPORT_TAB_PARAM } from '@/features/report/links';
@@ -146,7 +146,7 @@ function General({ onReport }: { onReport: () => void }) {
   return (
     <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-2 lg:items-start">
       <StagesSection />
-      <VocabTile measureRow />
+      <LevelTile measureRow />
       <Continuity weeks={data.weeks} streak={data.streak} className="lg:col-span-2" />
       <GoalsSection />
       <WorkloadSection />
