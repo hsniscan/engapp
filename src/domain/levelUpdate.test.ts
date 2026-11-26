@@ -13,7 +13,6 @@ import {
   type LevelTestRecord,
   type WeeklyInput,
 } from './levelUpdate';
-import { vocabSize } from './vocabSize';
 import { Rating, type CefrLevel, type RatingValue } from './types';
 
 const cfg: DayConfig = { timezone: 'Europe/Istanbul', day_start_hour: 4 };
@@ -177,29 +176,5 @@ describe('weekly update', () => {
     expect(weeklyLevelUpdate(base({})).status).toBe('kept');
     expect(weeklyLevelUpdate(base({ level: 'C2' })).status).toBe('kept');
     expect(weeklyLevelUpdate(base({ level: 'A1' })).status).toBe('kept');
-  });
-});
-
-describe('vocabulary size', () => {
-  const sizes = { A1: 1084, A2: 1272, B1: 2174, B2: 2490, C1: 929, C2: 896 } as const;
-
-  it('sums size × ratio, adds outside words and rounds to tens', () => {
-    const v = vocabSize('B1', { A1: 1, A2: 0.9, B1: 0.8, B2: 0.5, C1: 0.2, C2: 0 }, sizes, 37);
-    const exact = 1084 + 1272 * 0.9 + 2174 * 0.8 + 2490 * 0.5 + 929 * 0.2 + 37;
-    expect(v.estimate).toBe(Math.round(exact / 10) * 10);
-    expect(v.next).toBe('B2');
-    // 80 % of B2 = 1992; known 1245 → 747 to go, rounded up to tens.
-    expect(v.toNext).toBe(750);
-    expect(v.nextRatio).toBe(0.5);
-  });
-
-  it('nothing left when the next level is already at 80 %; no next level at C2', () => {
-    expect(vocabSize('B1', { A1: 1, A2: 1, B1: 1, B2: 0.85, C1: 0, C2: 0 }, sizes, 0).toNext).toBe(0);
-    const top = vocabSize('C2', { A1: 1, A2: 1, B1: 1, B2: 1, C1: 1, C2: 1 }, sizes, 0);
-    expect(top).toMatchObject({ next: null, toNext: null });
-  });
-
-  it('a few missing words still show as ~10, never 0', () => {
-    expect(vocabSize('B1', { A1: 1, A2: 1, B1: 1, B2: 0.799, C1: 0, C2: 0 }, sizes, 0).toNext).toBe(10);
   });
 });

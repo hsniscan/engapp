@@ -6,7 +6,6 @@ import {
   newLimitAction,
   progressUnlocks,
   shouldNudgeGap,
-  vocabularyFloor,
 } from './progressView';
 
 describe('progressive İlerleme', () => {
@@ -83,10 +82,3 @@ describe('no call to action when there is nothing to do', () => {
   });
 });
 
-describe('vocabulary floor', () => {
-  it('learned + "Biliyorum" words; nothing → null', () => {
-    expect(vocabularyFloor(231, 0)).toBe(231);
-    expect(vocabularyFloor(231, 19)).toBe(250);
-    expect(vocabularyFloor(0, 0)).toBeNull();
-  });
-});

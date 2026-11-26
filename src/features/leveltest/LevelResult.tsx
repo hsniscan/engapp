@@ -1,5 +1,5 @@
-// Result of a level test: the level, how near the next one is, the vocabulary estimate, the
-// per-level ladder, and a warning (with "use it anyway" / "take it again") when the answers to
+// Result of a level test: the level, how near the next one is, the per-level
+// ladder, and a warning (with "use it anyway" / "take it again") when the answers to
 // the made-up words or the meaning questions make the result unreliable.
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -7,11 +7,11 @@ import { Link, useNavigate, useSearchParams } from 'react-router';
 import { applyTestLevel, logError } from '@/data';
 import { LEVELS, levelIndex, type TestResult } from '@/domain/levelTest';
 import type { CefrLevel } from '@/domain/types';
-import { formatDuration, formatNumber, formatPercent } from '@/features/stats/format';
+import { formatDuration, formatPercent } from '@/features/stats/format';
 import { requestSync } from '@/sync';
 import { Button, buttonClasses, Card, cn, Icon, toast } from '@/ui';
 import { levelDative, pct } from './levelText';
-import { LevelLadder } from './VocabTile';
+import { LevelLadder } from './LevelTile';
 
 export interface LevelTestOutcome {
   result: TestResult;
@@ -133,20 +133,9 @@ export function LevelResult({ outcome }: { outcome: LevelTestOutcome }) {
       )}
 
       {(result.reliable || applied) && (
-        <Card className="flex flex-col gap-5">
-          <div className="flex flex-col gap-1">
-            <span className="text-meta text-fg-muted">{t('levelTest.vocab')}</span>
-            <span
-              className="tabular text-numeral font-semibold text-fg"
-              data-testid="result-vocab"
-            >
-              ~{formatNumber(result.vocabEstimate)}
-            </span>
-          </div>
-          <div className="flex flex-col gap-2">
-            <span className="text-meta text-fg-muted">{t('levelTest.ladder')}</span>
-            <LevelLadder level={result.level} ratios={result.ratios} />
-          </div>
+        <Card className="flex flex-col gap-2">
+          <span className="text-meta text-fg-muted">{t('levelTest.ladder')}</span>
+          <LevelLadder level={result.level} ratios={result.ratios} />
         </Card>
       )}
 
