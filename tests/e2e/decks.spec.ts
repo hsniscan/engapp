@@ -80,7 +80,7 @@ test('phone: bulk tag two words, make a deck of them, filter Cards and practise 
   // today, and a new word outside the deck does not come up there (it does in word study).
   await addWord(page, { term: 'harsh', meaning: 'sert' });
   await page.goto(deckUrl);
-  await page.getByRole('link', { name: 'Bu desteyi çalış' }).click();
+  await page.getByRole('button', { name: 'Bu desteyi çalış' }).click();
   await expect(page).toHaveURL(/\/study\?mode=word&deck=[^&]+$/);
   await expect(
     page.getByRole('heading', { name: '“İş kelimeleri” destesinde bugünlük kart kalmadı' }),
@@ -104,8 +104,12 @@ test('phone: bulk tag two words, make a deck of them, filter Cards and practise 
     await page.locator('body').press('2');
   }
   expect(answers).toBe(2);
-  const { practice_logs } = await dumpTables(page, ['practice_logs']);
-  expect((practice_logs as { mode: string }[]).map((p) => p.mode)).toEqual(['deck', 'deck']);
+  // The last answer's log is written right after the round ends: wait for it.
+  await expect
+    .poll(async () =>
+      ((await dumpTables(page, ['practice_logs'])).practice_logs as { mode: string }[]).map((p) => p.mode),
+    )
+    .toEqual(['deck', 'deck']);
 
   // No horizontal scroll at phone width on the screens touched here.
   for (const path of ['/library', '/decks']) {

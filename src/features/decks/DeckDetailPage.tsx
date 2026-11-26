@@ -27,6 +27,7 @@ import {
   ListRow,
   PageFrame,
   SectionHeader,
+  SegmentedControl,
   Skeleton,
   StageBar,
   StagePill,
@@ -39,7 +40,16 @@ import {
 import { useLevelData } from '@/features/levels/useLevelData';
 import { DeckEditorDialog } from './DeckEditorDialog';
 import { describeDeckFilter } from './describe';
-import { deckStudyHref, nf, soleTag } from './deckUi';
+import {
+  DECK_NEW_CHOICES,
+  DECK_NEW_FLAG,
+  type DeckNewChoice,
+  deckStudyHref,
+  newDeckSeed,
+  nf,
+  soleTag,
+} from './deckUi';
+import { flags } from '@/features/settings/platform';
 import { ChipCount } from './parts';
 import { specHref, titleIndex } from './suggested';
 import { exportWordsCsv } from './exportWords';
@@ -230,12 +240,11 @@ export function DeckDetailPage() {
           )}
           <div className="flex flex-col gap-2">
             {words.length > 0 && (
-              <Link
-                to={deckStudyHref(deck.id)}
-                className={buttonClasses({ size: 'lg', fullWidth: true })}
-              >
-                {studied > 0 ? t('deckHub.detail.studyDeck') : t('deckHub.detail.startDeck')}
-              </Link>
+              <DeckStudy
+                deckId={deck.id}
+                newWords={counts.new}
+                label={studied > 0 ? t('deckHub.detail.studyDeck') : t('deckHub.detail.startDeck')}
+              />
             )}
             {tag && !suggested && (
               <Button
@@ -442,5 +451,42 @@ function WordPicker({
         )}
       </div>
     </Dialog>
+  );
+}
+
+/**
+ * "Bu desteyi çalış" (ADR 0080): how many new words this session brings (5 / 10 / 20,
+ * remembered), on top of the words due today; the new words come in a fresh random order each
+ * time, so a deck does not start with the same words every session.
+ */
+function DeckStudy({ deckId, newWords, label }: { deckId: string; newWords: number; label: string }) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const [size, setSize] = useState<DeckNewChoice>(() => {
+    const saved = Number(flags.get(DECK_NEW_FLAG));
+    return (DECK_NEW_CHOICES as readonly number[]).includes(saved) ? (saved as DeckNewChoice) : 10;
+  });
+  const start = () =>
+    void navigate(
+      newWords > 0 ? deckStudyHref(deckId, { newCount: size, seed: newDeckSeed() }) : deckStudyHref(deckId),
+    );
+  return (
+    <div className="flex flex-col gap-3">
+      {newWords > 0 && (
+        <SegmentedControl
+          legend={t('deckHub.detail.newCountLegend')}
+          options={DECK_NEW_CHOICES.map((n) => ({ value: String(n), label: String(n) }))}
+          value={String(size)}
+          onValueChange={(v) => {
+            setSize(Number(v) as DeckNewChoice);
+            flags.set(DECK_NEW_FLAG, v);
+          }}
+        />
+      )}
+      <Button size="lg" fullWidth onClick={start} data-testid="deck-study">
+        {label}
+      </Button>
+      {newWords > 0 && <p className="text-meta text-fg-muted">{t('deckHub.detail.newCountHint')}</p>}
+    </div>
   );
 }

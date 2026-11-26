@@ -3331,7 +3331,9 @@
       "wordsTitle": "Kelimeler",
       "emptyTitle": "Henüz kelime yok",
       "studyDeck": "Bu desteyi çalış",
-      "startDeck": "Bu desteye başla"
+      "startDeck": "Bu desteye başla",
+      "newCountLegend": "Bu çalışmada kaç yeni kelime?",
+      "newCountHint": "Sırası gelen tekrarlar da gelir. Yeni kelimeler her seferinde karışık seçilir."
     },
     "picker": {
       "title": "“{{name}}” destesine kelime ekle",

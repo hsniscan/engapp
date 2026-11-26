@@ -367,3 +367,20 @@ describe('resting cards (B5, ADR 0071)', () => {
     expect(isDayComplete([c], { ...ctx(), now: NOW })).toBe(true);
   });
 });
+
+describe('deck session shuffle (ADR 0080)', () => {
+  const fresh10 = () =>
+    Array.from({ length: 10 }, (_, i) =>
+      makeCard({ id: `n${i}`, note_id: `note${i}`, state: CardState.New, created_at: i, due: 0 }),
+    );
+  it('takes the new cards in a seed-fixed random order; another seed gives other words', () => {
+    const pick = (seed: number) =>
+      buildQueue(fresh10(), ctx({ dailyNewLimit: 3, newShuffleSeed: seed })).items.map((i) => i.card_id);
+    expect(pick(1)).toEqual(pick(1));
+    expect(pick(1)).toHaveLength(3);
+    const seen = new Set([1, 2, 3, 4, 5, 6].flatMap(pick));
+    expect(seen.size).toBeGreaterThan(3);
+    // Without a seed: insertion order.
+    expect(buildQueue(fresh10(), ctx({ dailyNewLimit: 3 })).items.map((i) => i.card_id)).toEqual(['n0', 'n1', 'n2']);
+  });
+});

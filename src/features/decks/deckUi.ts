@@ -12,8 +12,18 @@ export const pct = (part: number, total: number) => (total ? Math.round((part / 
  * "Çalış" of a deck: today's word study of its words only (due and new cards, under the daily
  * limits). A practice round over the deck stays on the old address (practiceHref).
  */
-export const deckStudyHref = (deckId: string) =>
-  `/study?mode=word&deck=${encodeURIComponent(deckId)}`;
+export const deckStudyHref = (deckId: string, opts: { newCount?: number; seed?: number } = {}) =>
+  `/study?mode=word&deck=${encodeURIComponent(deckId)}` +
+  (opts.newCount !== undefined ? `&new=${opts.newCount}` : '') +
+  (opts.seed !== undefined ? `&seed=${opts.seed}` : '');
+
+/** "Kaç yeni kelime?" choices of a deck session (ADR 0080). */
+export const DECK_NEW_CHOICES = [5, 10, 20] as const;
+export type DeckNewChoice = (typeof DECK_NEW_CHOICES)[number];
+export const DECK_NEW_FLAG = 'deck.newCount';
+
+/** A new random seed for a deck session's shuffle. */
+export const newDeckSeed = () => Math.floor(Math.random() * 0xffffffff);
 
 /** The single tag of a hand-picked or suggested deck, if the filter is just that. */
 export function soleTag(f: DeckFilter | null): string | null {

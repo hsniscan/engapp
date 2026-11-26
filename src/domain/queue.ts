@@ -82,6 +82,19 @@ function harder(a: Pick<QueueCard, 'id' | 'card_type'>, b: Pick<QueueCard, 'id' 
  * miss is a relearning aid. Learning steps and new cards are never held here (new cards have
  * isBuriedInMode). The card's FSRS state is not changed; it is simply not shown today.
  */
+/** A stable pseudo-random rank of `id` under `seed` (FNV-1a, 32-bit). */
+export function shuffleKey(seed: number, id: string): number {
+  let h = (0x811c9dc5 ^ (seed >>> 0)) >>> 0;
+  for (let i = 0; i < id.length; i++) {
+    h ^= id.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  h ^= h >>> 15;
+  h = Math.imul(h, 0x2c1b3c6d) >>> 0;
+  h ^= h >>> 12;
+  return h >>> 0;
+}
+
 export function siblingHolds(
   cards: Iterable<QueueCard>,
   ctx: Pick<QueueContext, 'now' | 'dayEnd' | 'dayStart' | 'reviewedTodayCardIds' | 'againTodayCardIds'>,
@@ -160,6 +173,12 @@ export interface QueueContext {
   reviewCap?: number | null;
   /** Smart new-card order (domain/newOrder.ts); absent/null = insertion order. */
   newOrder?: NewOrderInput | null;
+  /**
+   * A deck session's shuffle (ADR 0080): new cards in a random order fixed by this seed, so
+   * each "Çalış" of a deck brings different new words while the order holds within the
+   * session. Takes the place of `newOrder`.
+   */
+  newShuffleSeed?: number | null;
   /** Study mode: only these card types (see the header). Absent = every type, old burying. */
   cardTypes?: readonly CardType[] | null;
   /** Study mode: notes whose recognition card was answered today (non-undone). */
@@ -285,7 +304,11 @@ export function buildQueue(cards: Iterable<QueueCard>, ctx: QueueContext): Queue
     const od = new Map(reviews.map((c) => [c.id, relativeOverdueness(c, ctx.now)]));
     reviews.sort((a, b) => od.get(b.id)! - od.get(a.id)! || byDue(a, b));
   } else reviews.sort(byDue);
-  fresh.sort(byCreated);
+  const seed = ctx.newShuffleSeed;
+  if (typeof seed === 'number') {
+    const key = new Map(fresh.map((c) => [c.id, shuffleKey(seed, c.id)]));
+    fresh.sort((a, b) => key.get(a.id)! - key.get(b.id)! || byCreated(a, b));
+  } else fresh.sort(byCreated);
 
   // One card per note per day. Cards already answered today (learning steps) always pass.
   const notesInQueue = new Set<Id>();
@@ -305,7 +328,7 @@ export function buildQueue(cards: Iterable<QueueCard>, ctx: QueueContext): Queue
   let nw: QueueCard[];
   let newReasons: Map<Id, NewReason> | undefined;
   let postponed: Id[] | undefined;
-  if (ctx.newOrder && !ahead) {
+  if (ctx.newOrder && !ahead && typeof seed !== 'number') {
     const blocked = (c: QueueCard) => notesInQueue.has(c.note_id) && !ctx.reviewedTodayCardIds.has(c.id);
     const sel = selectNewCards(fresh, newAllowed, blocked, ctx.newOrder);
     nw = sel.cards;

@@ -81,6 +81,13 @@ export interface StudyQueueOptions {
    * same daily limits. An unknown or deleted deck leaves the queue empty.
    */
   deckId?: Id;
+  /**
+   * With `deckId` (ADR 0080): new words this deck session brings ("Kaç yeni kelime?"), on top
+   * of the day's budget. Absent = the daily budget, as any study.
+   */
+  deckNew?: number;
+  /** With `deckId`: the session's shuffle seed for its new words (domain/queue.ts). */
+  deckSeed?: number;
 }
 
 /** What every mode's queue of one moment shares: read once (v0.5.2, review Y3 / B13). */
@@ -224,6 +231,9 @@ function queueFromBase(base: QueueBase, opts: StudyQueueOptions): StudyQueue {
         extraNewToday: extraAll,
         newIntroducedToday: facts.newIntroducedToday,
       };
+  // A deck session with a chosen size (ADR 0080): that many new words in this session.
+  if (opts.deckId && typeof opts.deckNew === 'number' && mode)
+    newLimit.dailyNewLimit = Math.max(0, Math.floor(opts.deckNew) - (opts.session?.new ?? 0));
   const reviewCap = base.reviewCaps ? (mode ? base.reviewCaps[mode] : (load?.plan.reviewCap ?? null)) : null;
   const q = buildQueue(base.cards, {
     now,
@@ -233,6 +243,7 @@ function queueFromBase(base: QueueBase, opts: StudyQueueOptions): StudyQueue {
     ...newLimit,
     reviewCap,
     newOrder,
+    ...(opts.deckId && typeof opts.deckSeed === 'number' ? { newShuffleSeed: opts.deckSeed } : {}),
     ...(types ? { cardTypes: types, recognitionReviewedTodayNoteIds: facts.recognitionNoteIds } : {}),
     reviewedTodayCardIds: facts.reviewedCardIds,
     reviewedTodayNoteIds: facts.reviewedNoteIds,

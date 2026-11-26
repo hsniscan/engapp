@@ -3331,7 +3331,9 @@
       "wordsTitle": "Words",
       "emptyTitle": "No words yet",
       "studyDeck": "Study this deck",
-      "startDeck": "Start this deck"
+      "startDeck": "Start this deck",
+      "newCountLegend": "How many new words this time?",
+      "newCountHint": "Words due for review come too. New words are picked in a different order each time."
     },
     "picker": {
       "title": "Add words to “{{name}}”",
