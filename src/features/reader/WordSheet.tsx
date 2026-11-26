@@ -396,13 +396,6 @@ function SheetBody({
         </div>
       ) : (
         <div className="flex flex-col gap-4" aria-live="polite">
-          {lookup.info.picture && (
-            <CardPicture
-              image={lookup.info.picture}
-              showNew={false}
-              className="size-28 self-start overflow-hidden rounded-inner bg-surface-sunken sm:size-32"
-            />
-          )}
           <h3 id={listId} className="sr-only">
             {t('reader.word.meanings')}
           </h3>
@@ -442,6 +435,14 @@ function SheetBody({
                 {t('reader.word.markKnown')}
               </Button>
             </div>
+          )}
+          {/* The picture last, across the whole sheet (never over the meaning). */}
+          {lookup.info.picture && (
+            <CardPicture
+              image={lookup.info.picture}
+              showNew={false}
+              className="h-[min(15rem,32dvh)] w-full justify-center overflow-hidden rounded-inner bg-surface-sunken p-2"
+            />
           )}
         </div>
       )}
