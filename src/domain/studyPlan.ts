@@ -125,6 +125,31 @@ function fitTotal(shares: Record<StudyMode, number>, total: number, order: reado
  */
 export const NEW_BUDGET_WEIGHTS: ModeNumbers = { word: 2, production: 1, cloze: 1, dictation: 1 };
 
+/**
+ * First-time cards an extra mode (Üretim, Boşluk, Dikte) may introduce a day when the user set
+ * no limit of its own (ADR 0079). Extra modes are outside the daily budget.
+ */
+export const EXTRA_MODE_NEW_DEFAULT = 10;
+
+/**
+ * New cards an extra mode may still introduce today, outside the daily budget (ADR 0079): its
+ * own limit (or EXTRA_MODE_NEW_DEFAULT) minus what it introduced today, plus today's extra
+ * allowance, never more than it has waiting.
+ */
+export function extraModeNewAllowed(input: {
+  cap: number | null | undefined;
+  introduced: number;
+  available: number;
+  extra?: number;
+}): number {
+  const cap = typeof input.cap === 'number' && input.cap >= 0 ? Math.floor(input.cap) : EXTRA_MODE_NEW_DEFAULT;
+  const extra = nonNeg(input.extra);
+  const introduced = nonNeg(input.introduced);
+  // Cards introduced beyond the limit came from today's extra allowance first.
+  const extraLeft = Math.max(0, extra - Math.max(0, introduced - cap));
+  return Math.min(nonNeg(input.available), Math.max(0, cap - introduced) + extraLeft);
+}
+
 export interface NewBudgetInput {
   /** "Günlük yeni kart": first-time cards a day over every mode together (after the ramp). */
   total: number;

@@ -35,11 +35,11 @@ async function todaySplit(page: Page): Promise<{ due: number; fresh: number }> {
   return { due: Number(m?.[1]), fresh: Number(m?.[2]) };
 }
 
-/** Cards waiting today summed over the hero's mode chips, "Kelime 7" (a finished chip counts 0). */
-async function studyTypesTotal(page: Page): Promise<number> {
+/** Cards waiting now in the extra modes under "Ekstra çalışma" (ADR 0079), "1 kart" each. */
+async function extraStudyTotal(page: Page): Promise<number> {
   let total = 0;
-  for (const text of await page.locator('[data-testid^="study-type-"]').allTextContents()) {
-    total += Number(/(\d+)/.exec(text)?.[1] ?? 0);
+  for (const text of await page.locator('[data-testid^="extra-study-"]').allTextContents()) {
+    total += Number(/(\d+) kart/.exec(text)?.[1] ?? 0);
   }
   return total;
 }
@@ -74,9 +74,9 @@ test('5-day break: catch-up caps today at the daily capacity and pauses new card
 
   // Building and opening the capped queue writes nothing; each answer writes one review log.
   const before = await dumpTables(page, ['cards', 'review_logs']);
-  // v0.5.3 B3: Bugün's button opens one mixed session, so any study type may come first.
+  // ADR 0079: Bugün's button opens the daily word study.
   await page.getByTestId('start-study').click();
-  await expect(page).toHaveURL(/\/study\?mode=mixed$/);
+  await expect(page).toHaveURL(/\/study\?mode=word$/);
   const flip = page.getByRole('button', { name: 'Cevabı göster', disabled: false });
   const dontKnow = page.getByRole('button', { name: 'Bilmiyorum, göster' });
   const choices = page.getByRole('group', { name: 'Seçenekler' }).getByRole('button');
@@ -174,8 +174,8 @@ test('vacation: no new cards, streak frozen, new cards ramp back 0 → ½ → fu
   const recognitionDueToday = recognition.due < at('2026-11-09').getTime();
   expect(recognitionDueToday).toBe(true);
   await expect.poll(() => todaySplit(page)).toEqual({ due: 1, fresh: 6 });
-  // Nothing in the other study types yet: production waits for Pekişiyor, cloze too.
-  await expect.poll(() => studyTypesTotal(page)).toBe(7);
+  // Nothing in the extra study types yet: production waits for Pekişiyor, cloze too.
+  await expect.poll(() => extraStudyTotal(page)).toBe(0);
   await expect(page.getByTestId('load-ramp')).toHaveCount(0);
 });
 

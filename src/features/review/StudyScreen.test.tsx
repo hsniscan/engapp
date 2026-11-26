@@ -179,19 +179,20 @@ describe('Boşluk doldurma session', () => {
 });
 
 describe('study modes picker', () => {
-  it('lists the three types with what each has left today', async () => {
+  it('shows Kelime çalışma as the daily study and the others as extra practice (ADR 0079)', async () => {
     renderRoute(<StudyModesPage />, { path: '/study' });
     const production = await screen.findByTestId('study-mode-production');
     expect(production).toHaveAttribute('href', '/study?mode=production');
     await waitFor(() => expect(production).toHaveTextContent('1'));
     expect(screen.getByTestId('study-mode-word')).toHaveTextContent('0');
-    // v0.5.3 B3: "Karışık çalış" is on by default: the start button runs one mixed session.
-    expect(screen.getByTestId('study-start')).toHaveAttribute('href', '/study?mode=mixed');
+    expect(screen.getByTestId('study-mode-word')).toHaveTextContent('Günlük');
+    expect(screen.getByRole('heading', { name: 'Ekstra çalışma' })).toBeInTheDocument();
+    // The daily word study is done: Üretim's card does not keep the day open.
+    expect(screen.getByText('Bugünlük kelime çalışman bitti')).toBeInTheDocument();
+    expect(screen.getByTestId('study-more')).toHaveAttribute('href', '/study/more');
+    expect(screen.queryByTestId('study-start')).toBeNull();
     // Dikte cannot give cards on this device (no dictation cards): not listed (ADR 0055).
     expect(screen.queryByTestId('study-mode-dictation')).toBeNull();
-    expect(screen.getByText(/tek oturumda karışık gelir/)).toHaveTextContent(
-      'Kelime çalışma, Üretim ve Boşluk doldurma tek oturumda karışık gelir',
-    );
   });
 
   it('a new user gets first steps, not a start button with no cards', async () => {
@@ -200,7 +201,7 @@ describe('study modes picker', () => {
     renderRoute(<StudyModesPage />, { path: '/study' });
     expect(await screen.findByTestId('study-welcome')).toBeInTheDocument();
     expect(screen.queryByTestId('study-start')).toBeNull();
-    expect(screen.queryByText('Bugünlük bütün türler bitti')).toBeNull();
+    expect(screen.queryByText('Bugünlük kelime çalışman bitti')).toBeNull();
     expect(screen.getByRole('button', { name: /İlk kelimeni ekle/ })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Hazır desteye göz at' })).toHaveAttribute(
       'href',

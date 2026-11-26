@@ -98,9 +98,9 @@ describe('buildQueue', () => {
       makeCard({ id: 'clozeZ', note_id: 'Z', card_type: 'cloze', state: CardState.Learning, due: NOW + 5 * MIN }),
     ];
     const ids = buildQueue(cards, ctx()).items.map((i) => i.card_id);
-    // v0.5.3 B1: the hardest due format of a note comes (X's production, not its recognition);
-    // Z's recognition waits for tomorrow because its cloze is due later today.
-    expect(ids).toEqual(['prod', 'revY']);
+    // ADR 0079: a recognition card is never held for a harder sibling that is only due (the
+    // other formats are optional), so X and Z show their recognition; X's production is buried.
+    expect(ids).toEqual(['rec', 'revY', 'revZ']);
 
     // revZ answered earlier today; its sibling in learning is buried, X's production too.
     const today = ctx({ reviewedTodayCardIds: new Set(['rec']), reviewedTodayNoteIds: new Set(['X', 'Z']), learnAheadMs: 20 * MIN });
@@ -281,15 +281,18 @@ describe('one card per word per day, hardest first (B1, ADR 0071)', () => {
     makeCard({ id, note_id: 'n', card_type: type, state, due, unlocked: true });
   const base = (p: Partial<QueueContext> = {}) => ctx({ dayStart: DAY_START, ...p });
 
-  it('holds the easier due siblings and shows only the hardest format', () => {
+  it('holds the easier due siblings and shows only the hardest format (recognition excepted)', () => {
     const cards = [
       typed('rec', 'recognition', NOW - MIN),
       typed('pro', 'production', NOW - MIN),
       typed('clo', 'cloze', NOW - MIN),
       typed('dic', 'dictation', NOW - MIN),
     ];
-    expect([...siblingHolds(cards, base())].sort()).toEqual(['clo', 'pro', 'rec']);
-    for (const types of [['recognition'], ['production', 'image'], ['cloze']] as const) {
+    // ADR 0079: Kelime çalışma (recognition) is the daily study and never waits for an
+    // optional format that is only due.
+    expect([...siblingHolds(cards, base())].sort()).toEqual(['clo', 'pro']);
+    expect(buildQueue(cards, base({ cardTypes: ['recognition'] })).items.map((i) => i.card_id)).toEqual(['rec']);
+    for (const types of [['production', 'image'], ['cloze']] as const) {
       expect(buildQueue(cards, base({ cardTypes: types })).items).toEqual([]);
     }
     expect(buildQueue(cards, base({ cardTypes: ['dictation'] })).items.map((i) => i.card_id)).toEqual(['dic']);

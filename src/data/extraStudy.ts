@@ -47,7 +47,7 @@ export interface MoreStudyOverview {
   newWaiting: number;
   /** The same per mode. */
   newWaitingByMode: Record<StudyMode, number>;
-  /** The mode "+5 yeni kart" adds to: the one with the most waiting cards (Kelime on a tie). */
+  /** The mode "+5 yeni kart" adds to: Kelime when it has words waiting, else the fullest mode. */
   extraMode: StudyMode | null;
   /** Catch-up, a vacation or the ramp after one pauses new cards today (no "+5" then). */
   newPaused: boolean;
@@ -65,7 +65,9 @@ export async function getMoreStudyOverview(now: Millis = Date.now()): Promise<Mo
   ]);
   const byMode = Object.fromEntries(STUDY_MODES.map((m) => [m, queues[m].newWaiting])) as Record<StudyMode, number>;
   let extraMode: StudyMode | null = null;
-  for (const m of STUDY_MODES) if (byMode[m] > 0 && (extraMode === null || byMode[m] > byMode[extraMode])) extraMode = m;
+  // Kelime çalışma first (ADR 0079: new words start there); otherwise the fullest extra mode.
+  if (byMode.word > 0) extraMode = 'word';
+  else for (const m of STUDY_MODES) if (byMode[m] > 0 && (extraMode === null || byMode[m] > byMode[extraMode])) extraMode = m;
   const load = queues.word.load;
   return {
     dailyNewLimit: settings.daily_new_limit,

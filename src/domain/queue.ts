@@ -76,6 +76,8 @@ function harder(a: Pick<QueueCard, 'id' | 'card_type'>, b: Pick<QueueCard, 'id' 
  *   - was answered today without an Again (the answer would prime `c`), or
  *   - is itself due today and not answered yet, and `c` fell due today (so `c` moves at most
  *     one day: a card already carried over is not held again by a sibling still waiting).
+ *     Never for a recognition card: Kelime çalışma is the daily study, the harder formats are
+ *     optional extra practice (ADR 0079).
  * A harder sibling answered Again today never holds `c`: seeing the easier format after a
  * miss is a relearning aid. Learning steps and new cards are never held here (new cards have
  * isBuriedInMode). The card's FSRS state is not changed; it is simply not shown today.
@@ -107,7 +109,9 @@ export function siblingHolds(
           held.add(c.id);
           break;
         }
-        if (s.due < ctx.dayEnd && c.due >= start) {
+        // A Kelime çalışma card is not held for a harder sibling that is only waiting: the
+        // other formats are optional extra practice (ADR 0079) and may never be studied.
+        if (c.card_type !== 'recognition' && s.due < ctx.dayEnd && c.due >= start) {
           held.add(c.id);
           break;
         }

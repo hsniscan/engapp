@@ -399,7 +399,8 @@ function SheetBody({
           {lookup.info.picture && (
             <CardPicture
               image={lookup.info.picture}
-              className="max-h-40 w-auto max-w-full self-start rounded-inner"
+              showNew={false}
+              className="size-28 self-start overflow-hidden rounded-inner bg-surface-sunken sm:size-32"
             />
           )}
           <h3 id={listId} className="sr-only">

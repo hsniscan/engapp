@@ -92,12 +92,9 @@
       "cloze": "Fill the gap",
       "dictation": "Dictation"
     },
-    "typesTitle": "Study types",
-    "typeDone": "Done for today",
-    "typeNone": "None today",
     "chipCount_one": "{{count}} card",
     "chipCount_other": "{{count}} cards",
-    "heroCaption": "Today's study",
+    "heroCaption": "Today's word study",
     "ringLabel": "Today {{done}} / {{total}} cards",
     "cardsLeft_one": "{{count}} card left",
     "cardsLeft_other": "{{count}} cards left",
@@ -178,11 +175,6 @@
     "deckLevelVerbs": "{{level}} verbs",
     "deckHave": "{{have}} / {{size}} yours",
     "deckReady": "Ready-made deck",
-    "typeDeferred": "postponed",
-    "typeDeferredLong_one": "catch-up: {{count}} review moved to the next days",
-    "typeDeferredLong_other": "catch-up: {{count}} reviews moved to the next days",
-    "typeLocked": "not open yet",
-    "lockedHint": "Production and Fill in the blank open once your words reach Strengthening.",
     "splitSteps_one": "{{count}} learning step",
     "splitSteps_other": "{{count}} learning steps",
     "waitingTitle_one": "{{count}} card in {{time}}",
@@ -321,14 +313,11 @@
     "title": "Study",
     "pickerTitle": "Study",
     "leftToday": "{{count}} cards left today · about {{min}} min",
-    "allDone": "Every study type is done for today",
-    "mainBadge": "Main",
+    "allDone": "Today's word study is done",
+    "mainBadge": "Daily",
     "cardsUnit": "cards",
     "split": "{{due}} reviews · {{new}} new",
     "minutes": "~{{count}} min",
-    "mixed": "Mixed study",
-    "mixedHint": "Mixes the three types in one session",
-    "mixedHintList": "{{modes}} come mixed in one session",
     "listLocale": "en",
     "welcomeTitle": "No words to study yet",
     "welcomeBody": "Add your first word or take words from a ready deck; studying starts here.",
@@ -407,7 +396,7 @@
       "production": "No production cards today",
       "cloze": "No fill-in-the-blank cards today",
       "productionBody": "Words you also know on another day in word study open up here.",
-      "others": "Other study types have cards waiting",
+      "others": "Extra practice, if you like",
       "otherCount": "{{mode}}: {{count}} cards",
       "pickMode": "Study types",
       "deck": "Nothing left today in “{{name}}”",
@@ -420,7 +409,8 @@
     "example": "Example",
     "meaning": "Meaning",
     "continueWith": "Continue · {{rating}}",
-    "showSentence": "Show the sentence"
+    "showSentence": "Show the sentence",
+    "dailyTitle": "Daily study"
   },
   "examples": {
     "title": "Example sentences",
@@ -4021,5 +4011,10 @@
     "pingBody": "Have one more look at the words you just learned.",
     "reminderTitle": "Turn on the daily reminder",
     "reminderBody": "A short reminder every day at your time"
+  },
+  "extraStudy": {
+    "title": "Extra practice",
+    "body": "Optional. It doesn't count towards your daily study; do it if you feel like it.",
+    "none": "None today"
   }
 }

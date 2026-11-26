@@ -17,8 +17,8 @@ test('first open: add 3 words, review with the keyboard (Space, 1–4, Z), strea
   await page.getByRole('link', { name: 'Bugün', exact: true }).first().click();
   await expect(page.getByTestId('today-hero')).toBeVisible();
   await page.getByTestId('start-study').click();
-  // v0.5.3 B3: Bugün's button starts one mixed session (new words begin with recognition).
-  await expect(page).toHaveURL(/\/study\?mode=mixed$/);
+  // ADR 0079: Bugün's button starts the daily word study (recognition cards).
+  await expect(page).toHaveURL(/\/study\?mode=word$/);
   await expect(page.locator('[data-card-type]')).toHaveAttribute('data-card-type', 'recognition');
 
   // First card: answer, then undo with Z and answer again.

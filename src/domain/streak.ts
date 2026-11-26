@@ -5,7 +5,7 @@ import type { ReplayStep } from './recompute';
 import { type Card, CardState, type DailyActivity, type Id, Rating } from './types';
 
 export interface CardHistory {
-  card: Pick<Card, 'id' | 'note_id' | 'suspended' | 'deleted_at'>;
+  card: Pick<Card, 'id' | 'note_id' | 'suspended' | 'deleted_at'> & Partial<Pick<Card, 'card_type'>>;
   /** Replay steps (effective logs only), in order. */
   steps: ReplayStep[];
 }
@@ -58,6 +58,8 @@ export function buildDailyActivity(histories: Iterable<CardHistory>, cfg: DayCon
 
   for (const h of list) {
     if (h.card.deleted_at !== null || h.card.suspended) continue;
+    // ADR 0079: only Kelime çalışma decides whether a day was completed (extras are optional).
+    if (h.card.card_type !== undefined && h.card.card_type !== 'recognition') continue;
     const steps = h.steps;
     for (let i = 0; i < steps.length; i++) {
       const s = steps[i]!;

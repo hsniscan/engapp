@@ -6,6 +6,15 @@ export type StudyMode = 'word' | 'production' | 'cloze' | 'dictation';
 
 export const STUDY_MODES: readonly StudyMode[] = ['word', 'production', 'cloze', 'dictation'];
 
+/**
+ * The daily study (ADR 0079): only "Kelime çalışma". Bugün's card, "Bugünlük tamam" and the
+ * day's new-card budget count this mode alone; the others are optional extra practice.
+ */
+export const DAILY_MODES: readonly StudyMode[] = ['word'];
+/** Optional extra practice: never part of the daily study (ADR 0079). */
+export const EXTRA_MODES: readonly StudyMode[] = ['production', 'cloze', 'dictation'];
+export const isDailyMode = (m: StudyMode): boolean => DAILY_MODES.includes(m);
+
 /** "Kelime çalışma" = EN→TR recognition; "Üretim" = TR→EN (and picture cards); "Boşluk doldurma" = cloze. */
 export const STUDY_MODE_CARD_TYPES: Record<StudyMode, readonly CardType[]> = {
   word: ['recognition'],

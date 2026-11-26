@@ -74,7 +74,7 @@ test.describe('picture on the card', () => {
     await context.setOffline(true);
     await page.goto('/');
     // Loaded from the service worker (Bugün has no sync pill since v0.5.2; it lives in the rail and on Profil).
-    await expect(page.getByRole('heading', { name: 'Bugünün çalışması' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Bugünün kelime çalışması' })).toBeVisible();
     expect(await page.evaluate(() => navigator.onLine)).toBe(false);
     await page.getByTestId('start-study').click();
 

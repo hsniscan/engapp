@@ -3,6 +3,7 @@ import fc from 'fast-check';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { addDays, dayKeyOf } from '../domain/day';
 import { applyRating, emptyFsrs } from '../domain/fsrs';
+import { EXTRA_MODE_NEW_DEFAULT } from '../domain/studyPlan';
 import { CardState, Rating, type Card, type RatingValue } from '../domain/types';
 import { resetDb } from '../test/db';
 import { addNoteWithSenses, answerCard, undoAnswer } from './actions';
@@ -364,14 +365,14 @@ describe('overview', () => {
   }, 60_000);
 });
 
-describe('one new-card budget over the modes (v0.5.2, ADR 0062)', () => {
-  it('shares the daily limit fairly, honours per-mode limits, and "+5" goes to the mode', async () => {
+describe('the daily new-card budget is Kelime çalışma\'s (ADR 0079)', () => {
+  it('gives the daily limit to Kelime alone; extra modes have their own limits, and "+5" goes to the mode', async () => {
     await addWords(10);
     await db.cards.where('card_type').anyOf(['production', 'cloze']).modify({ unlocked: true });
     const q = await getStudyQueues({ learnAheadMs: 0 }, T);
-    // Limit 3: Kelime weighted 2, then the others in turn (never 3 per mode).
-    expect(q.word.counts.new + q.production.counts.new + q.cloze.counts.new).toBe(3);
-    expect(q.word.counts.new).toBe(2);
+    // Limit 3: all of it for Kelime; Üretim introduces up to EXTRA_MODE_NEW_DEFAULT on its own.
+    expect(q.word.counts.new).toBe(3);
+    expect(q.production.counts.new).toBe(Math.min(10, EXTRA_MODE_NEW_DEFAULT));
     await updateSettings({ study_options: { mode_new_limits: { production: 0, cloze: 0 } } }, T);
     const capped = await getStudyQueues({ learnAheadMs: 0 }, T);
     expect([capped.word.counts.new, capped.production.counts.new, capped.cloze.counts.new]).toEqual([3, 0, 0]);

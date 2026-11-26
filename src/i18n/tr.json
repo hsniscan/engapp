@@ -92,12 +92,9 @@
       "cloze": "Boşluk doldurma",
       "dictation": "Dikte"
     },
-    "typesTitle": "Çalışma türleri",
-    "typeDone": "Bugünlük bitti",
-    "typeNone": "Bugün yok",
     "chipCount_one": "{{count}} kart",
     "chipCount_other": "{{count}} kart",
-    "heroCaption": "Bugünün çalışması",
+    "heroCaption": "Bugünün kelime çalışması",
     "ringLabel": "Bugün {{done}} / {{total}} kart",
     "cardsLeft_one": "{{count}} kart kaldı",
     "cardsLeft_other": "{{count}} kart kaldı",
@@ -178,11 +175,6 @@
     "deckLevelVerbs": "{{level}} fiiller",
     "deckHave": "{{have}} / {{size}} sende",
     "deckReady": "Hazır deste",
-    "typeDeferred": "ertelendi",
-    "typeDeferredLong_one": "telafi: {{count}} tekrar sonraki günlere kaldı",
-    "typeDeferredLong_other": "telafi: {{count}} tekrar sonraki günlere kaldı",
-    "typeLocked": "henüz açılmadı",
-    "lockedHint": "Üretim ve Boşluk doldurma, kelimelerin Pekişiyor'a gelince açılır.",
     "splitSteps_one": "{{count}} öğrenme adımı",
     "splitSteps_other": "{{count}} öğrenme adımı",
     "waitingTitle_one": "{{count}} kart {{time}} sonra",
@@ -321,14 +313,11 @@
     "title": "Çalış",
     "pickerTitle": "Çalış",
     "leftToday": "Bugün {{count}} kart kaldı · yaklaşık {{min}} dk",
-    "allDone": "Bugünlük bütün türler bitti",
-    "mainBadge": "Ana",
+    "allDone": "Bugünlük kelime çalışman bitti",
+    "mainBadge": "Günlük",
     "cardsUnit": "kart",
     "split": "{{due}} tekrar · {{new}} yeni",
     "minutes": "~{{count}} dk",
-    "mixed": "Karışık çalış",
-    "mixedHint": "Üç türü tek oturumda sırayla karıştırır",
-    "mixedHintList": "{{modes}} tek oturumda karışık gelir",
     "listLocale": "tr",
     "welcomeTitle": "Çalışacak kelimen yok",
     "welcomeBody": "İlk kelimeni ekle ya da hazır bir desteden kelimeler al; çalışma burada başlar.",
@@ -407,7 +396,7 @@
       "production": "Üretimde bugün kart yok",
       "cloze": "Boşluk doldurmada bugün kart yok",
       "productionBody": "Kelime çalışmada başka bir günde de doğru bildiğin kelimeler burada açılır.",
-      "others": "Başka türlerde bekleyen kartlar var",
+      "others": "İstersen ekstra çalışma",
       "otherCount": "{{mode}}: {{count}} kart",
       "pickMode": "Çalışma türleri",
       "deck": "“{{name}}” destesinde bugünlük kart kalmadı",
@@ -420,7 +409,8 @@
     "example": "Örnek",
     "meaning": "Anlamı",
     "continueWith": "Devam · {{rating}}",
-    "showSentence": "Cümleyi göster"
+    "showSentence": "Cümleyi göster",
+    "dailyTitle": "Günlük çalışma"
   },
   "examples": {
     "title": "Örnek cümleler",
@@ -4021,5 +4011,10 @@
     "pingBody": "Az önce öğrendiğin kelimeleri bir kez daha gör.",
     "reminderTitle": "Günlük hatırlatmayı aç",
     "reminderBody": "Her gün seçtiğin saatte kısa bir hatırlatma"
+  },
+  "extraStudy": {
+    "title": "Ekstra çalışma",
+    "body": "İsteğe bağlı. Günlük çalışmana sayılmaz, canın isterse çalış.",
+    "none": "Bugün yok"
   }
 }

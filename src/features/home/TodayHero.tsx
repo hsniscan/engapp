@@ -1,23 +1,21 @@
-// The Today card of Bugün (v0.5.2 "Çam", docs/design.md §4.1, ADR 0066): the whole day in one
-// card — a ring with what is left, "Bugünün çalışması" with the split and the time estimate, a
-// chip per study mode, the one primary button, and the week strip with the streak. Three states
-// (ADR 0062): ready (cards now), waiting (learning steps later today) and done.
+// The Today card of Bugün (v0.5.2 "Çam", docs/design.md §4.1, ADR 0066): the day's word study
+// in one card — a ring with what is left, "Bugünün kelime çalışması" with the split and the time
+// estimate, the one primary button, and the week strip with the streak. Three states (ADR 0062):
+// ready (cards now), waiting (learning steps later today) and done. ADR 0079: the day is Kelime
+// çalışma only; the other modes live in the "Ekstra çalışma" section below (ExtraStudy.tsx).
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router';
+import { Link } from 'react-router';
 import { getStreakFreezeView } from '@/data';
 import type { StreakSummary } from '@/domain/streak';
-import type { StudyMode } from '@/domain/studyMode';
-import { modeLeftToday, type TodayStudy } from '@/features/review/studyModes';
+import type { TodayStudy } from '@/features/review/studyModes';
 import { durationText } from '@/features/review/intervalText';
 import { useNow } from '@/features/settings/useNow';
 import { formatClock, formatDayLong } from '@/features/stats/format';
 import {
   buttonClasses,
   Card,
-  Chip,
-  ChipRow,
   Dialog,
   HeatStrip,
   Icon,
@@ -28,11 +26,8 @@ import { nextDueText } from './nextDueText';
 import type { NextDue } from './queries';
 import type { TodayActivity, WeekDot } from './todayQueries';
 
+/** Bugün's primary button: the daily word study (ADR 0079). */
 export const WORD_STUDY_HREF = '/study?mode=word';
-/** v0.5.3 B3: Bugün's primary button, one interleaved session of every mode. */
-export const MIXED_STUDY_HREF = '/study?mode=mixed';
-
-const studyHref = (mode: StudyMode) => `/study?mode=${mode}`;
 
 export interface HeroData {
   study: TodayStudy;
@@ -56,9 +51,9 @@ export function TodayHero({ data, moreBelow = false }: TodayHeroProps) {
   return <DoneCard data={data} moreBelow={moreBelow} />;
 }
 
-/** Answers given today over the modes shown. */
+/** Answers given today in the daily study (Kelime çalışma, ADR 0079). */
 function answeredToday(data: HeroData): number {
-  return data.study.modes.reduce((n, m) => n + data.activity.answers[m], 0);
+  return data.study.dailyModes.reduce((n, m) => n + data.activity.answers[m], 0);
 }
 
 /** The card itself: one layout for every state, so nothing jumps when the day moves on. */
@@ -205,70 +200,6 @@ function StreakSheet({
   );
 }
 
-/** "Kelime 12 · Üretim ✓ · Boşluk doldurma 3": a chip per mode; each starts that mode. */
-function ModeChips({ data }: { data: HeroData }) {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  const { study, activity } = data;
-  const lockedHint = study.locked.some((m) => m === 'production' || m === 'cloze');
-  return (
-    <div className="flex flex-col gap-2">
-      <ChipRow label={t('today.typesTitle')} bleed={false} className="flex-wrap overflow-visible">
-        {study.modes.map((m) => {
-          const c = study.counts[m];
-          const n = modeLeftToday(c);
-          const done = n === 0;
-          // Catch-up moved this mode's reviews to later days: not "done", "ertelendi".
-          const deferred = done && c.deferred > 0;
-          const studied = activity.answers[m] > 0;
-          const spoken = deferred
-            ? t('today.typeDeferredLong', { count: c.deferred })
-            : done
-              ? studied
-                ? t('today.typeDone')
-                : study.locked.includes(m)
-                  ? t('today.typeLocked')
-                  : t('today.typeNone')
-              : t('today.chipCount', { count: n });
-          return (
-            <Chip
-              key={m}
-              data-testid={`study-type-${m}`}
-              data-done={done || undefined}
-              onClick={() => void navigate(studyHref(m))}
-              className={done ? 'text-fg-muted' : undefined}
-            >
-              {/* The name is "Kelime 2 kart" / "Üretim Bugün yok"; the eye sees "Kelime 2". */}
-              <span>{t(`today.mode.${m}`)}</span>
-              <span className="sr-only"> {spoken}</span>
-              {deferred ? (
-                <span aria-hidden="true" className="font-medium">
-                  {t('today.typeDeferred')}
-                </span>
-              ) : done ? (
-                studied ? (
-                  <Icon name="check" size={16} strokeWidth={2} className="text-accent-text" />
-                ) : (
-                  <span aria-hidden="true">–</span>
-                )
-              ) : (
-                <span aria-hidden="true" className="tabular text-fg-muted">
-                  {n}
-                </span>
-              )}
-            </Chip>
-          );
-        })}
-      </ChipRow>
-      {lockedHint && (
-        <p data-testid="today-locked-hint" className="text-meta text-fg-muted">
-          {t('today.lockedHint')}
-        </p>
-      )}
-    </div>
-  );
-}
-
 function ReadyCard({ data }: { data: HeroData }) {
   const { t } = useTranslation();
   const { study } = data;
@@ -276,11 +207,10 @@ function ReadyCard({ data }: { data: HeroData }) {
   const done = study.doneCards;
   const planned = done + study.left;
   const answered = answeredToday(data);
-  const review = study.modes.reduce((n, m) => n + study.counts[m].left.review, 0);
-  const steps = study.modes.reduce((n, m) => n + study.counts[m].left.learning, 0);
-  const fresh = study.modes.reduce((n, m) => n + study.counts[m].newCount, 0);
-  // v0.5.3 B3 (ADR 0071): the one button starts one mixed session of every mode (formats
-  // interleaved, one card per word a day); single modes stay on the Çalış picker.
+  const review = study.dailyModes.reduce((n, m) => n + study.counts[m].left.review, 0);
+  const steps = study.dailyModes.reduce((n, m) => n + study.counts[m].left.learning, 0);
+  const fresh = study.dailyModes.reduce((n, m) => n + study.counts[m].newCount, 0);
+  // ADR 0079: the one button starts the daily word study; the other modes are extra practice.
   const cta = answered > 0 ? t('today.continue') : t('today.start');
   const ringText = t('today.ringLabel', { done, total: planned });
   return (
@@ -308,9 +238,8 @@ function ReadyCard({ data }: { data: HeroData }) {
         </p>
       }
     >
-      <ModeChips data={data} />
       <Link
-        to={MIXED_STUDY_HREF}
+        to={WORD_STUDY_HREF}
         data-testid="start-study"
         className={buttonClasses({ size: 'lg', fullWidth: true })}
       >
@@ -357,7 +286,6 @@ function WaitingCard({ data }: { data: HeroData }) {
         </p>
       }
     >
-      <ModeChips data={data} />
       <StreakFooter data={data} done={data.streak.todayActive} />
     </TodayFrame>
   );
@@ -387,8 +315,8 @@ function DoneCard({ data, moreBelow }: { data: HeroData; moreBelow: boolean }) {
         <p className="text-ui text-fg-muted">
           {studied
             ? t('today.doneSplit', {
-                reviewed: activity.all.reviewed,
-                fresh: activity.all.fresh,
+                reviewed: activity.word.reviewed,
+                fresh: activity.word.fresh,
               })
             : t('today.nothingBody')}
           {studied && (
@@ -400,7 +328,6 @@ function DoneCard({ data, moreBelow }: { data: HeroData; moreBelow: boolean }) {
         </p>
       }
     >
-      {studied && <ModeChips data={data} />}
       {data.next && (
         <p className="flex items-center gap-2 text-meta text-fg-muted" role="status">
           <Icon name="calendar" size={16} className="shrink-0" />
