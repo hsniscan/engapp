@@ -181,7 +181,9 @@ export function WordSheet({
     >
       {pick && (
         <SheetBody
-          key={`${pick.lemma}|${pick.written}|${pick.sentence}`}
+          // The guess mode is part of the key: a "Hep tahmin ettir" setting that arrives after the
+          // sheet opened starts it again in the right mode.
+          key={`${pick.lemma}|${pick.written}|${pick.sentence}|${alwaysGuess || pick.noteId === null}`}
           pick={pick}
           glosses={glosses}
           voice={voice}
