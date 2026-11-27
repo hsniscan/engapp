@@ -12,6 +12,7 @@ import {
   dayEndMs,
   isValidTimeZone,
 } from '@/domain/day';
+import { availableAt } from '@/domain/leech';
 import type { StreakSummary } from '@/domain/streak';
 import { type Card, CardState, type CardType, type Millis, type Settings } from '@/domain/types';
 
@@ -24,6 +25,8 @@ export function cfgOf(s: Pick<Settings, 'timezone' | 'day_start_hour'>): DayConf
   };
 }
 
+// A resting card (rest_until, ADR 0071) stays studiable here, but every due comparison uses
+// availableAt: it comes back when its rest ends, not at its short relearning due.
 const studiable = (c: Card) => c.deleted_at === null && !c.suspended && c.unlocked;
 
 /** When the next card is waiting, once today's queue is empty. */
@@ -56,13 +59,13 @@ async function nextDueFrom(
   let later: Millis | null = null;
   for (const c of soon) {
     const learning = c.state === CardState.Learning || c.state === CardState.Relearning;
-    if (learning && c.due > now && c.due < today.end && (later === null || c.due < later))
-      later = c.due;
+    const at = availableAt(c);
+    if (learning && at > now && at < today.end && (later === null || at < later)) later = at;
   }
   if (later !== null) return { kind: 'later', at: later };
 
   const tomorrowEnd = dayEndMs(addDays(today.key, 1), cfg);
-  const dueTomorrow = soon.filter((c) => c.due < tomorrowEnd).length;
+  const dueTomorrow = soon.filter((c) => availableAt(c) < tomorrowEnd).length;
   // getAll, then filter: a Dexie .filter() walks a cursor, one IndexedDB round trip per row.
   const fresh = (
     await db.cards
@@ -73,16 +76,21 @@ async function nextDueFrom(
   const count = dueTomorrow + Math.min(fresh, settings.daily_new_limit);
   if (count > 0) return { kind: 'tomorrow', count };
 
-  let first: Millis | null = null;
+  const best: { at: Millis | null } = { at: null };
   for (const s of STUDIED_STATES) {
-    const c = await db.cards
+    // The first non-resting card in due order; resting cards met on the way count with their
+    // rest end (they are few, so the walk stays short).
+    await db.cards
       .where('[state+due]')
       .between([s, Dexie.minKey], [s, Dexie.maxKey])
-      .filter((c) => studiable(c) && ofTypes(c))
-      .first();
-    if (c && (first === null || c.due < first)) first = c.due;
+      .until((c) => best.at !== null && c.due >= best.at)
+      .each((c) => {
+        if (!studiable(c) || !ofTypes(c)) return;
+        const at = availableAt(c);
+        if (best.at === null || at < best.at) best.at = at;
+      });
   }
-  return first === null ? { kind: 'none' } : { kind: 'date', day: dayKeyOf(first, cfg) };
+  return best.at === null ? { kind: 'none' } : { kind: 'date', day: dayKeyOf(best.at, cfg) };
 }
 
 /** `types`: only these card types (one study mode's empty screen counts its own cards). */

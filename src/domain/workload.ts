@@ -35,6 +35,20 @@ export function expectedDailyReviews(
   return sum + Math.max(0, newPerDay) * NEW_CARD_REVIEWS;
 }
 
+/**
+ * Long-run change in review load (percent) from retention `from` to `to`: reviews only, so the
+ * day's new cards (the same at every target) do not hide the difference. Once the learning
+ * ramp is over, intervals follow the target retention alone; this is that steady state.
+ */
+export function longRunReviewChangePct(
+  stabilities: readonly number[],
+  w: readonly number[],
+  from: number,
+  to: number,
+): number {
+  return changePct(expectedDailyReviews(stabilities, w, from, 0), expectedDailyReviews(stabilities, w, to, 0));
+}
+
 /** Relative change from `before` to `after`, in percent (0 when before is 0). */
 export function changePct(before: number, after: number): number {
   return before > 0 ? ((after - before) / before) * 100 : 0;

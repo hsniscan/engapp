@@ -2,11 +2,12 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { default_w } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { db, ensureSettings, getSettings, updateSettings } from '@/data';
+import { computeWorkload, db, ensureSettings, getSettings, getWorkloadInput, updateSettings } from '@/data';
+import { averagePerDay } from '@/domain/forecast';
 import { clipToBounds, type OptimizeResult } from '@/domain/fsrsOptimizer';
-import type { RatingValue } from '@/domain/types';
+import { CardState, type RatingValue } from '@/domain/types';
 import { resetDb } from '@/test/db';
-import { makeLog } from '@/test/factories';
+import { makeCard, makeLog } from '@/test/factories';
 import { simulateLogs } from '@/test/fsrsSim';
 import { renderRoute } from '@/test/ui';
 import { FsrsOptimizerRow, RetentionHelper } from './FsrsSettings';
@@ -100,27 +101,73 @@ describe('Settings → Kart zamanlamasını hafızama göre ayarla', { timeout: 
 });
 
 describe('retention helper', () => {
-  it('shows expected daily reviews at 85 / 90 / 95 %, more at a higher target', async () => {
-    await db.cards.bulkAdd(
-      Array.from({ length: 40 }, (_, i) => ({
-        id: `c${i}`,
+  const NOW = Date.now();
+  const DAY = 86_400_000;
+  const studied = (n: number) =>
+    Array.from({ length: n }, (_, i) =>
+      makeCard({
         note_id: `n${i}`,
-        state: 2,
-        stability: 5 + i,
-        deleted_at: null,
-        suspended: false,
-      })) as never,
+        state: CardState.Review,
+        stability: 3 + (i % 20),
+        difficulty: 5,
+        last_review: NOW - (i % 5) * DAY,
+        due: NOW + (i % 7) * DAY,
+        reps: 3,
+      }),
     );
+  const numbers = (list: HTMLElement) =>
+    [...list.querySelectorAll('li')].map((li) => Number(/~(\d+)/.exec(li.textContent ?? '')?.[1]));
+
+  it('runs İlerleme’s forecast at 85 / 90 / 95 %: the current one equals its average', async () => {
+    await db.cards.bulkAdd(studied(120));
     await updateSettings({ daily_new_limit: 0 });
     renderRoute(<RetentionHelper settings={await getSettings()} />);
     const list = await screen.findByTestId('retention-helper');
-    const counts = [...list.querySelectorAll('li')].map((li) =>
-      Number(/~(\d+)/.exec(li.textContent ?? '')?.[1]),
-    );
+    const counts = numbers(list);
     expect(counts).toHaveLength(3);
-    expect(counts[0]!).toBeLessThan(counts[2]!);
+    // A real spread, not a few percent on top of a fixed new-card figure.
+    expect(counts[0]!).toBeLessThanOrEqual(counts[1]!);
+    expect(counts[1]!).toBeLessThanOrEqual(counts[2]!);
+    const ilerleme = averagePerDay(computeWorkload(await getWorkloadInput()).totals);
+    expect(counts[1]).toBe(ilerleme);
     expect(list).toHaveTextContent('%90 hatırlama');
     expect(list).toHaveTextContent('Şu anki hedefin');
+    // The long-run difference is large, not a few percent on top of a fixed new-card figure.
+    const [low = '', , high = ''] = [...list.querySelectorAll('li')].map((li) => li.textContent ?? '');
+    const pctOf = (text: string) => Number(/%(\d+) daha/.exec(text)?.[1]);
+    expect(low).toMatch(/Uzun vadede %\d+ daha az tekrar/);
+    expect(high).toMatch(/Uzun vadede %\d+ daha çok tekrar/);
+    expect(pctOf(low)).toBeGreaterThanOrEqual(20);
+    expect(pctOf(high)).toBeGreaterThanOrEqual(40);
+    expect(screen.getByText(/bekleyen yeni kelimen yok/)).toBeInTheDocument();
+  });
+
+  it('counts the word-only new budget only when new words are waiting', async () => {
+    await db.cards.bulkAdd([
+      ...studied(30),
+      // Only extra-mode first-time cards wait: outside the daily budget (ADR 0079).
+      ...Array.from({ length: 50 }, (_, i) => makeCard({ note_id: `x${i}`, card_type: 'production' })),
+    ]);
+    await updateSettings({ daily_new_limit: 40 });
+    renderRoute(<RetentionHelper settings={await getSettings()} />);
+    const list = await screen.findByTestId('retention-helper');
+    expect(numbers(list)[1]!).toBeLessThan(40);
+    expect(screen.getByText(/bekleyen yeni kelimen yok/)).toBeInTheDocument();
+  });
+
+  it('with new words waiting, says how many a day are included', async () => {
+    await db.cards.bulkAdd([
+      ...studied(30),
+      ...Array.from({ length: 200 }, (_, i) => makeCard({ note_id: `w${i}` })),
+    ]);
+    await updateSettings({ daily_new_limit: 10 });
+    renderRoute(<RetentionHelper settings={await getSettings()} />);
+    expect(await screen.findByText(/günde 10 yeni kelime dahil/)).toBeInTheDocument();
+  });
+
+  it('asks to study first when no card was studied yet', async () => {
+    renderRoute(<RetentionHelper settings={await getSettings()} />);
+    expect(await screen.findByText(/Kartlarını çalışmaya başlayınca/)).toBeInTheDocument();
   });
 });
 

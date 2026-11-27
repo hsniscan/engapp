@@ -2,11 +2,15 @@
 // Service worker registration (registerType 'prompt'). A new version never reloads the page
 // on its own: the user taps "Yenile" on the toast, and the toast is held back while a review
 // session (/study, or its old address /review) is open so a session is never interrupted.
+// "Yenile" activates the waiting worker itself and reloads once it has taken over
+// (src/app/swUpdate.ts): Workbox's own updateSW(true) could reload with the old worker still
+// waiting, so a web user stayed on an old version (review 2026-11-26, #13).
 import { registerSW } from 'virtual:pwa-register';
 import { watchDbReplaced } from '@/data';
 import i18n from '@/i18n';
 import { toast } from '@/ui';
 import { router } from './router';
+import { activateWaitingAndReload, watchForUpdates } from './swUpdate';
 
 const inReview = (path: string) =>
   ['/study', '/review', '/practice'].some((p) => path === p || path.startsWith(`${p}/`));
@@ -40,6 +44,12 @@ export function registerServiceWorker(): void {
   if (!('serviceWorker' in navigator)) return;
   let waiting = false;
   let toastId: string | null = null;
+  let registration: ServiceWorkerRegistration | null = null;
+
+  const applyUpdate = async () => {
+    const reg = registration ?? (await navigator.serviceWorker.getRegistration().catch(() => undefined));
+    activateWaitingAndReload(reg);
+  };
 
   const show = () => {
     if (!waiting || toastId || inReview(router.state.location.pathname)) return;
@@ -50,7 +60,7 @@ export function registerServiceWorker(): void {
       action: {
         label: i18n.t('pwa.reload'),
         altText: i18n.t('pwa.reloadAlt'),
-        onClick: () => void updateSW(true),
+        onClick: () => void applyUpdate(),
       },
     });
   };
@@ -73,7 +83,7 @@ export function registerServiceWorker(): void {
     } else show();
   });
 
-  const updateSW = registerSW({
+  registerSW({
     onNeedRefresh() {
       waiting = true;
       show();
@@ -81,17 +91,18 @@ export function registerServiceWorker(): void {
     onOfflineReady() {
       toast({ title: i18n.t('pwa.offlineReady'), tone: 'success' });
     },
-    onRegisteredSW(_url, registration) {
-      if (!registration) return;
-      // Look for a new version every hour while the app stays open.
-      setInterval(() => void registration.update().catch(() => {}), 60 * 60 * 1000);
+    onRegisteredSW(_url, reg) {
+      if (!reg) return;
+      registration = reg;
+      // Now, every hour, and whenever the app comes back to the foreground.
+      watchForUpdates(reg);
     },
     onRegisterError(e: unknown) {
       console.warn('Service worker registration failed', e);
     },
   });
   reloadToLatest = () => {
-    if (waiting) void updateSW(true);
+    if (waiting) void applyUpdate();
     else window.location.reload();
   };
 }
