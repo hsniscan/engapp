@@ -36,13 +36,18 @@ export function routeQuick(raw: string | null | undefined): QuickRoute {
 /**
  * The spellings to look a selected term up under, best first: the term itself, then (for one
  * word) its likely base forms ("postponed" → "postpone"), so an inflected word in an article
- * still finds its word-bank entry. Normalised like notes.term_norm.
+ * still finds its word-bank entry. A phrase tries its first word's base forms too ("gave up" →
+ * "give up", "looking after" → "look after"), so a phrasal verb in the bank is found in any
+ * tense. Normalised like notes.term_norm.
  */
 export function lookupForms(term: string): string[] {
   const norm = normalizeTerm(term);
   if (!norm) return [];
-  if (norm.includes(' ')) return [norm];
-  return [...new Set([norm, ...lemmaForms(norm).map(normalizeTerm)])].filter(Boolean);
+  const [first = '', ...rest] = norm.split(' ');
+  const tail = rest.length ? ` ${rest.join(' ')}` : '';
+  return [...new Set([norm, ...lemmaForms(first).map((f) => normalizeTerm(f + tail))])].filter(
+    Boolean,
+  );
 }
 
 /** The in-app address of the quick sheet for a selection. */

@@ -98,6 +98,38 @@ describe('quickPreview: on the device first', () => {
     expect((await preview('postponing')).owned).toBe('carded');
   });
 
+  it('marks the meanings the user already has (ekle.md #8)', async () => {
+    await db.word_bank.put(entryFromRow(bankRow()));
+    await addNoteWithSenses({ term: 'postpone', senses: [{ meaning_tr: 'Ertelemek' }] }, T);
+    const p = await preview('postpone');
+    expect(p.senses.map((s) => !!s.owned)).toEqual([true, false]);
+  });
+
+  it('finds an inflected phrasal verb in the bank (ekle.md #6)', async () => {
+    await db.word_bank.put(
+      entryFromRow(
+        bankRow({
+          lemma_norm: 'give up',
+          lemma: 'give up',
+          pos: 'phrasal verb',
+          list_source: 'wiktionary',
+          senses: [
+            {
+              meaning_tr: 'vazgeçmek',
+              example_en: 'Never give up.',
+              example_tr: '',
+              sense_id: null,
+            },
+          ],
+        }),
+      ),
+    );
+    const p = await preview('gave up');
+    expect(p.origin).toBe('bank');
+    expect(p.term).toBe('give up');
+    expect(p.senses[0]!.meaning_tr).toBe('vazgeçmek');
+  });
+
   it('a carded word nobody else knows shows the meaning on the user’s card (v0.5.1)', async () => {
     await addNoteWithSenses(
       {

@@ -147,7 +147,9 @@ describe('Add sheet (v0.5.2): three groups', () => {
       '/add?term=zyzzyva',
     );
     // A real Google button, and "Elle ekle" when nothing was found (B4).
-    expect(within(sheet()).getByRole('button', { name: /Google ile giriş yap/ })).toBeInTheDocument();
+    expect(
+      within(sheet()).getByRole('button', { name: /Google ile giriş yap/ }),
+    ).toBeInTheDocument();
     expect(within(sheet()).getByTestId('add-word-manual')).toHaveTextContent('Elle ekle');
   });
 
@@ -159,6 +161,35 @@ describe('Add sheet (v0.5.2): three groups', () => {
     fireEvent.click(within(sheet()).getByRole('button', { name: 'Anlamını bul' }));
     expect(await within(sheet()).findByTestId('quick-mine')).toHaveTextContent('bir böcek');
     expect(within(sheet()).queryByText(/giriş yap/)).toBeNull();
+  });
+
+  it('an already-carded meaning is shown but not picked; the button says so (ekle.md #8)', async () => {
+    await db.word_bank.put(entryFromRow(bankRow));
+    await addNoteWithSenses({ term: 'postpone', senses: [{ meaning_tr: 'ertelemek' }] });
+    renderShell();
+    fireEvent.click(screen.getByTestId('nav-add'));
+    fireEvent.change(screen.getByTestId('add-word-input'), { target: { value: 'postpone' } });
+    fireEvent.click(within(sheet()).getByRole('button', { name: 'Anlamını bul' }));
+    const sense = await within(sheet()).findByTestId('quick-sense');
+    expect(sense).toHaveAttribute('aria-pressed', 'false');
+    expect(sense).toBeDisabled();
+    expect(sense).toHaveTextContent('Kartlarında');
+    expect(within(sheet()).getByText('Kartlarında var')).toBeInTheDocument();
+    const save = within(sheet()).getByTestId('add-word-save');
+    expect(save).toBeDisabled();
+    expect(save).toHaveTextContent('Hepsi kartlarında');
+  });
+
+  it('a Turkish word: the field wants English, no sign-in wall (ekle.md #9)', async () => {
+    renderShell();
+    fireEvent.click(screen.getByTestId('nav-add'));
+    // A guest is not promised an AI lookup (3.11).
+    expect(within(sheet()).getByText(/Giriş yaparsan yapay zekâ da bulur/)).toBeInTheDocument();
+    fireEvent.change(screen.getByTestId('add-word-input'), { target: { value: 'çalışmak' } });
+    fireEvent.click(within(sheet()).getByRole('button', { name: 'Anlamını bul' }));
+    expect(await within(sheet()).findByText(/“çalışmak” Türkçe görünüyor/)).toBeInTheDocument();
+    expect(within(sheet()).queryByText(/giriş yap/)).toBeNull();
+    expect(within(sheet()).queryByTestId('add-word-signin')).toBeNull();
   });
 
   it('an empty word stays in the sheet', () => {

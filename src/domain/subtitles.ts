@@ -78,9 +78,14 @@ export function cleanCueLine(raw: string): string {
   s = s.replace(/<\/?[a-z][^>]*>/gi, ''); // <i>, </b>, <font color=…>, <c.yellow>, <ruby>
   s = decodeEntities(s);
   s = s.replace(/\[[^\]]*\]/g, ' '); // [MUSIC], [door slams]
-  s = s.replace(/\(([^)]*)\)/g, (m, inner: string) =>
-    // (LAUGHS), (sighs) — a whole-line or all-capital aside; keep "(in 1990)" in a sentence
-    inner === inner.toUpperCase() || raw.trim() === m ? ' ' : m,
+  s = s.replace(/\(([^)]*)\)/g, (m, inner: string, at: number, whole: string) =>
+    // (LAUGHS), (sighs) — a whole-line or all-capital aside, or a short one that opens the line
+    // ("(laughs) You look tired."); keep "(in 1990)" in a sentence
+    inner === inner.toUpperCase() ||
+    raw.trim() === m ||
+    (whole.slice(0, at).trim() === '' && inner.trim().split(/\s+/).length <= 3)
+      ? ' '
+      : m,
   );
   s = s.replace(/[♪♫♬]+/g, ' ');
   s = s.replace(/^\s*>>+\s*/, ''); // ">> " speaker change of auto-captions
@@ -91,6 +96,22 @@ export function cleanCueLine(raw: string): string {
   // A line that is only punctuation (left over after removing a sound description).
   return /\p{L}|\p{N}/u.test(s) ? s : '';
 }
+
+/**
+ * An SDH scene heading or caption card, not speech: "KITCHEN - MORNING", "INT. OFFICE – DAY",
+ * "THREE YEARS LATER", "PARIS, 1942". All capitals with no sentence end, and either a heading
+ * prefix, a dash between parts or at least two words (a lone "STOP" stays). Only used when the
+ * file is not written in capitals throughout (review 2026-11-26, ekle.md #10).
+ */
+export function isSceneHeading(line: string): boolean {
+  const s = line.trim();
+  if (!/\p{Lu}.*\p{Lu}/u.test(s) || /\p{Ll}/u.test(s)) return false;
+  if (/^(INT|EXT|INT\/EXT)\.\s/.test(s)) return true;
+  if (/[.!?…]["'”’)]*$/.test(s)) return false;
+  return /\s[-–—]\s/.test(s) || /^\S+(?:,?\s+\S+)+$/.test(s);
+}
+
+const isAllCaps = (line: string) => /\p{Lu}/u.test(line) && !/\p{Ll}/u.test(line);
 
 function parseCues(text: string, format: SubtitleFormat): Cue[] {
   const blocks = text
@@ -127,11 +148,16 @@ export function parseSubtitles(text: string, fileName = ''): SubtitleText {
   if (!format) throw new Error('not a subtitle file');
   const cues = parseCues(text, format);
 
+  // Scene headings go, unless the whole file is in capitals (old SRTs often are).
+  const cleaned = cues.map((c) => c.lines.map(cleanCueLine).filter(Boolean));
+  const speech = cleaned.flat().filter((l) => !isSceneHeading(l));
+  const capsFile = !speech.length || speech.filter(isAllCaps).length > speech.length / 2;
+
   // Lines in speaking order, each with the time it starts; repeats dropped.
   const out: { text: string; start: number; end: number }[] = [];
   let withText = 0;
-  for (const cue of cues) {
-    const lines = cue.lines.map(cleanCueLine).filter(Boolean);
+  for (const [i, cue] of cues.entries()) {
+    const lines = cleaned[i]!.filter((l) => capsFile || !isSceneHeading(l));
     if (lines.length) withText++;
     for (const line of lines) {
       const key = norm(line);

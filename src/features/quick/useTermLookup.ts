@@ -15,6 +15,7 @@ import {
 } from '@/data/quick';
 import { startAuth, useAuth } from '@/features/auth/session';
 import { lookupLexicon, type LexiconSuggestion } from '@/features/import/lexicon';
+import { looksTurkishTerm } from '@/domain/textLanguage';
 import { useOnline } from '@/lib/online';
 import { fetchWordBank } from '@/features/wordbank/fetcher';
 import { useWordBankEpoch } from '@/features/wordbank/prefetch';
@@ -70,8 +71,12 @@ export function useTermLookup(term: string): TermLookup {
   } | null>(null);
   const mine = answer?.term === term ? answer : null;
   const aiSenses = mine?.senses ?? null;
-  const missing =
+  const nothingHere =
     !!term && local !== undefined && local.origin === 'none' && local.mine.length === 0;
+  // A Turkish word ("çalışmak") that nothing on the device knows is not sent to the AI and
+  // never asks a guest to sign in: the field wants the English word (ekle.md #9).
+  const turkish = nothingHere && looksTurkishTerm(term);
+  const missing = nothingHere && !turkish;
   // Outside the shell nothing has started the session yet; only needed when the device has
   // nothing (an offline word-bank hit never touches the backend).
   useEffect(() => {
@@ -92,19 +97,21 @@ export function useTermLookup(term: string): TermLookup {
   const bankPending = missing && online && bankTriedFor !== term;
   const signedIn = auth.status === 'signed_in';
   const shouldAsk = missing && online && signedIn && mine === null;
-  const lookup: LookupState = !missing
-    ? 'idle'
-    : mine
-      ? mine.state
-      : !online
-        ? 'offline'
-        : signedIn || bankPending
-          ? 'searching'
-          : auth.status === 'loading'
+  const lookup: LookupState = turkish
+    ? 'turkish'
+    : !missing
+      ? 'idle'
+      : mine
+        ? mine.state
+        : !online
+          ? 'offline'
+          : signedIn || bankPending
             ? 'searching'
-            : auth.status === 'unavailable'
-              ? 'notfound'
-              : 'signin';
+            : auth.status === 'loading'
+              ? 'searching'
+              : auth.status === 'unavailable'
+                ? 'notfound'
+                : 'signin';
 
   useEffect(() => {
     if (!shouldAsk) return;
@@ -126,22 +133,24 @@ export function useTermLookup(term: string): TermLookup {
     [local, aiSenses],
   );
 
-  // The first meaning is picked by default (the most common one).
+  // The first meaning the user's card does not have yet is picked by default (the most common
+  // one); a meaning already on a card is never picked (ekle.md #8).
   const [chosen, setChosen] = useState<{ term: string; keys: Set<string> } | null>(null);
   const picked = useMemo(() => {
-    const keys = new Set(preview?.senses.map((s) => s.key) ?? []);
+    const keys = new Set(preview?.senses.filter((s) => !s.owned).map((s) => s.key) ?? []);
     if (chosen && chosen.term === term) return new Set([...chosen.keys].filter((k) => keys.has(k)));
-    const first = preview?.senses[0]?.key;
+    const first = preview?.senses.find((s) => !s.owned)?.key;
     return new Set(first ? [first] : []);
   }, [chosen, preview, term]);
   const toggle = useCallback(
     (key: string) => {
+      if (preview?.senses.find((s) => s.key === key)?.owned) return;
       const next = new Set(picked);
       if (next.has(key)) next.delete(key);
       else next.add(key);
       setChosen({ term, keys: next });
     },
-    [picked, term],
+    [picked, preview, term],
   );
 
   const [saving, setSaving] = useState(false);

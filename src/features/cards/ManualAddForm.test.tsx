@@ -65,6 +65,30 @@ describe('manual add (Elle)', () => {
     expect(senses.map((s) => s.meaning_tr)).toEqual(['banka', 'kıyı']);
   });
 
+  it('warns, but still saves, when the English term has Turkish letters (ekle.md #9)', async () => {
+    const user = userEvent.setup();
+    renderRoute(<AddPage />, { path: '/add' });
+    await user.type(screen.getByLabelText('İngilizce kelime ya da kalıp'), 'şemsiye');
+    expect(screen.getByTestId('term-turkish')).toHaveTextContent('Bu Türkçe görünüyor');
+    await user.type(screen.getByLabelText('Türkçe anlamı'), 'umbrella');
+    await user.click(screen.getByRole('button', { name: 'Kartı kaydet' }));
+    await waitFor(async () => expect(await db.notes.count()).toBe(1));
+  });
+
+  it('caps a typed term at 80 and counts characters near a limit (ekle.md #13)', async () => {
+    const user = userEvent.setup();
+    renderRoute(<AddPage />, { path: '/add' });
+    const term = screen.getByLabelText('İngilizce kelime ya da kalıp');
+    expect(term).toHaveAttribute('maxLength', '80');
+    expect(screen.queryByTestId('char-count')).toBeNull();
+    await user.type(term, 'x'.repeat(70));
+    expect(screen.getByTestId('char-count')).toHaveTextContent('70 / 80');
+    const meaning = screen.getByLabelText('Türkçe anlamı');
+    await user.click(meaning);
+    await user.paste('a'.repeat(450));
+    expect(screen.getAllByTestId('char-count')[1]).toHaveTextContent('450 / 500');
+  });
+
   it('picks "phrase" for a multi-word term', async () => {
     const user = userEvent.setup();
     renderRoute(<AddPage />, { path: '/add' });
