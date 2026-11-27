@@ -16,7 +16,7 @@ export const REMINDER_OFFER_KEY = 'reminderOffer';
 export const STEP_PING_ID = 1090;
 
 export type OfferAnswer = 'yes' | 'no';
-export type OfferKind = 'native' | 'web' | 'webGuest';
+export type OfferKind = 'native' | 'web';
 
 const listeners = new Set<() => void>();
 const answerSnapshot = (): string => flags.get(REMINDER_OFFER_KEY) ?? '';
@@ -56,7 +56,10 @@ export function offerKind(input: {
   if (input.answered !== null || input.answers === 0 || !input.sessionOver) return null;
   if (input.native) return input.nativeEnabled ? null : 'native';
   if (!input.backend || !input.webSupported || input.accountEnabled) return null;
-  return input.signedIn ? 'web' : 'webGuest';
+  // A web guest is not pitched an account here: Bugün's reading row already asks a guest to
+  // sign in, and two sign-in prompts on one screen read as nagging (2026-11-26, 3.2/3.11;
+  // ADR 0086). Ayarlar → Bildirim still explains reminders need an account.
+  return input.signedIn ? 'web' : null;
 }
 
 /** The hour the offer suggests: the hour the user just studied, inside the allowed window. */

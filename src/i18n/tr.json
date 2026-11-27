@@ -3984,11 +3984,9 @@
   "reminderOffer": {
     "title": "Yarın sana hatırlatayım mı?",
     "body": "Günde bir kez, seçtiğin saatte kısa bir hatırlatma. O gün çalıştıysan gelmez.",
-    "guestBody": "Tarayıcıda hatırlatma bir hesapla çalışır. Ücretsiz hesap aç, her gün seçtiğin saatte hatırlatayım.",
     "time": "Saat",
     "yes": "Evet, {{hour}}.00'da",
     "no": "Hayır, teşekkürler",
-    "signIn": "Hesap aç",
     "done": "Tamam, her gün {{hour}}.00'da hatırlatırım",
     "declined": "Peki, sormayacağım. Ayarlar → Bildirim'den istediğin zaman açabilirsin.",
     "denied": "Bildirim izni verilmedi. Telefonun ayarlarından açabilirsin.",

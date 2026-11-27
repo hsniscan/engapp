@@ -3984,11 +3984,9 @@
   "reminderOffer": {
     "title": "Shall I remind you tomorrow?",
     "body": "One short reminder a day at the time you pick. None on a day you already studied.",
-    "guestBody": "In the browser, reminders need an account. Create a free one and I will remind you every day at your time.",
     "time": "Time",
     "yes": "Yes, at {{hour}}:00",
     "no": "No, thanks",
-    "signIn": "Create an account",
     "done": "Done: a reminder every day at {{hour}}:00",
     "declined": "Okay, I won't ask again. You can turn it on any time in Settings → Notifications.",
     "denied": "Notifications were not allowed. You can allow them in your phone settings.",
