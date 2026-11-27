@@ -47,7 +47,7 @@ export function SegmentedControl<V extends string>({
             <label
               key={opt.value}
               className={cn(
-                'relative flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-sm px-3 text-ui font-semibold whitespace-nowrap',
+                'relative flex min-h-11 min-w-0 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-sm px-3 py-1 text-center text-ui leading-tight font-semibold',
                 'transition-[background-color,color,box-shadow] duration-(--duration-micro) ease-standard',
                 'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-1 has-[:focus-visible]:outline-focus',
                 selected ? 'bg-surface-raised text-fg shadow-sm' : 'text-fg-muted hover:text-fg',

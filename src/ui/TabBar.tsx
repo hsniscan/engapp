@@ -18,6 +18,12 @@ export interface TabBarProps {
  * The (+) is a calm tonal pill in the middle slot with its "Ekle" label, the same height as
  * its neighbours — it never competes with a screen's primary button (review O-4).
  */
+/**
+ * Tab labels grow with the user's text size only up to 13 px: five slots of a 360 px phone
+ * leave ~70 px each, and "Kelimelerim" must still fit on one line at 160 % (review #10).
+ */
+const tabLabel = 'max-w-full text-[min(0.75rem,13px)] leading-tight whitespace-nowrap';
+
 export function TabBar({ isActive, onAdd, addOpen, addSection }: TabBarProps) {
   const { t } = useTranslation();
   return (
@@ -37,17 +43,21 @@ export function TabBar({ isActive, onAdd, addOpen, addSection }: TabBarProps) {
                 aria-expanded={addOpen ?? false}
                 aria-current={addSection ? 'page' : undefined}
                 data-testid="nav-add"
-                className="group flex flex-1 flex-col items-center justify-center gap-1 text-caption font-semibold text-accent-text focus-visible:outline-offset-[-4px]"
+                className="group flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-0.5 text-caption font-semibold text-accent-text focus-visible:outline-offset-[-4px]"
               >
                 <span
                   className={cn(
-                    'flex h-8 w-14 items-center justify-center rounded-full bg-accent-soft transition-[background-color,transform] duration-(--duration-micro) group-active:scale-95',
-                    (addSection || addOpen) && 'bg-accent text-accent-fg',
+                    'flex h-8 w-full max-w-14 items-center justify-center rounded-full transition-[background-color,transform] duration-(--duration-micro) group-active:scale-95',
+                    // One background only: cn is plain clsx, so with both classes the one later
+                    // in the built CSS won and the white (+) sat on mint in light mode (#6).
+                    addSection || addOpen ? 'bg-accent text-accent-fg' : 'bg-accent-soft',
                   )}
                 >
                   <Icon name={item.icon} size={22} strokeWidth={2} />
                 </span>
-                <span aria-hidden="true">{t(item.labelKey)}</span>
+                <span aria-hidden="true" className={tabLabel}>
+                  {t(item.labelKey)}
+                </span>
               </button>
             </li>
           ) : (
@@ -56,20 +66,20 @@ export function TabBar({ isActive, onAdd, addOpen, addSection }: TabBarProps) {
                 to={item.to}
                 aria-current={isActive(item) ? 'page' : undefined}
                 className={cn(
-                  'flex flex-1 flex-col items-center justify-center gap-1 text-caption',
+                  'flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-0.5 text-caption',
                   'transition-colors duration-(--duration-micro) focus-visible:outline-offset-[-4px]',
                   isActive(item) ? 'font-semibold text-fg' : 'font-medium text-fg-muted',
                 )}
               >
                 <span
                   className={cn(
-                    'flex h-8 w-14 items-center justify-center rounded-full transition-colors duration-(--duration-micro)',
+                    'flex h-8 w-full max-w-14 items-center justify-center rounded-full transition-colors duration-(--duration-micro)',
                     isActive(item) && 'bg-selected',
                   )}
                 >
                   <Icon name={item.icon} size={22} strokeWidth={isActive(item) ? 2 : 1.6} />
                 </span>
-                <span>{t(item.labelKey)}</span>
+                <span className={tabLabel}>{t(item.labelKey)}</span>
               </Link>
             </li>
           ),

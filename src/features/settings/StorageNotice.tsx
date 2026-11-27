@@ -33,10 +33,12 @@ export function StorageNotice({ native = isNativeApp() }: { native?: boolean }) 
       as="section"
       aria-labelledby="storage-notice-title"
       data-testid="storage-notice"
-      className="mb-8 flex flex-col gap-4 pr-2 sm:pr-3"
+      className="@container mb-8 flex flex-col gap-4 pr-2 sm:pr-3"
     >
       <div className="flex items-start gap-3">
-        <IconTile icon="info" />
+        {/* With very large text (the card is under 15 rem wide) the tile goes, so the words keep
+            their width instead of one word per line (review 2026-11-26 #10). */}
+        <IconTile icon="info" className="@max-[15rem]:hidden" />
         <div className="flex min-w-0 flex-1 flex-col gap-1 pt-0.5">
           <h2 id="storage-notice-title" className="text-ui font-semibold text-fg">
             {native ? t('storage.appGuestTitle') : t('storage.noticeTitle')}
