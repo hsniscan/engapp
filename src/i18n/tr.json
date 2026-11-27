@@ -1127,7 +1127,14 @@
       "C2": "Ustalık"
     },
     "appearance": {
-      "hint": "“Sistem”, cihazının açık ya da koyu ayarını izler."
+      "hint": "“Sistem”, cihazının açık ya da koyu ayarını izler.",
+      "textSize": "Yazı boyutu",
+      "textSizes": {
+        "normal": "Normal",
+        "large": "Büyük",
+        "larger": "En büyük"
+      },
+      "textSizeHint": "Uygulamadaki bütün yazılar için, yalnızca bu cihazda. Okuma ekranındaki yazı boyutu bunun üstüne eklenir."
     },
     "voice": {
       "accent": "Telaffuz",
@@ -1231,7 +1238,7 @@
     "pages": {
       "calisma": {
         "title": "Çalışma",
-        "keywords": "yeni kart günlük sınır sıra akıllı eklenme hedef hatırlama oranı algoritma fsrs hafıza kişisel gün başlangıcı saat kolay adaylar",
+        "keywords": "yeni kart günlük sınır sıra akıllı eklenme hedef hatırlama oranı algoritma fsrs hafıza kişisel gün başlangıcı saat kolay adaylar okuma yazı boyutu metin",
         "lead": "Her gün ne kadar yeni kelime göreceğini ve tekrarların ne sıklıkla geleceğini belirler."
       },
       "yuk": {
@@ -1252,7 +1259,7 @@
       },
       "gorunum": {
         "title": "Görünüm",
-        "keywords": "tema karanlık koyu açık sistem görsel resim ön yüz resimli kart"
+        "keywords": "tema karanlık koyu açık sistem görsel resim ön yüz resimli kart yazı boyutu büyük yazı harf boyutu yakınlaştır"
       },
       "hesap": {
         "title": "Hesap ve eşitleme",

@@ -1127,7 +1127,14 @@
       "C2": "Proficient"
     },
     "appearance": {
-      "hint": "“System” follows your device's light or dark setting."
+      "hint": "“System” follows your device's light or dark setting.",
+      "textSize": "Text size",
+      "textSizes": {
+        "normal": "Normal",
+        "large": "Large",
+        "larger": "Largest"
+      },
+      "textSizeHint": "For all text in the app, on this device only. The reader's own text size adds on top."
     },
     "voice": {
       "accent": "Accent",
@@ -1231,7 +1238,7 @@
     "pages": {
       "calisma": {
         "title": "Study",
-        "keywords": "new cards daily limit order smart added target retention algorithm fsrs day start easy candidates",
+        "keywords": "new cards daily limit order smart added target retention algorithm fsrs day start easy candidates reading text size",
         "lead": "How many new words you see each day and how often reviews come back."
       },
       "yuk": {
@@ -1252,7 +1259,7 @@
       },
       "gorunum": {
         "title": "Appearance",
-        "keywords": "theme dark light system picture image cards"
+        "keywords": "theme dark light system picture image cards text size font size large text zoom"
       },
       "hesap": {
         "title": "Account and sync",
