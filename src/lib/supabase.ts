@@ -118,6 +118,10 @@ export async function getUserId(): Promise<string | null> {
  * user back to `redirectTo`, which must be listed under Auth > URL Configuration.
  */
 export async function signInWithGoogle(redirectTo: string = window.location.origin): Promise<void> {
+  // Offline, the redirect would land on the browser's own "no internet" page; the callers
+  // show "Google ile giriş başlatılamadı…" for a thrown error instead.
+  if (typeof navigator !== 'undefined' && navigator.onLine === false)
+    throw new Error('offline: sign-in needs a connection');
   const { error } = await (
     await requireSupabase()
   ).auth.signInWithOAuth({

@@ -49,15 +49,22 @@ export function WorkloadChart({ view }: { view: WorkloadView }) {
   counts.forEach((c, i) => {
     if (c > counts[peak]!) peak = i;
   });
+  // days[0] is the study day (day start setting), so after midnight "Bugün" is still the
+  // evening's day and the next one is "Yarın", as on Bugün.
   const longDay = (i: number) =>
-    i === 0 ? t('load.forecastToday') : formatDayLong(view.days[i]!);
+    i === 0
+      ? t('load.forecastToday')
+      : i === 1
+        ? t('load.forecastTomorrow')
+        : formatDayLong(view.days[i]!);
 
   return (
     <div className="flex flex-col gap-4">
       <p className="text-ui text-fg">
         {t('load.forecastSummary', {
           avg,
-          peakDay: longDay(peak),
+          // Mid-sentence: "En yoğun gün yarın".
+          peakDay: peak <= 1 ? longDay(peak).toLocaleLowerCase('tr') : longDay(peak),
           peak: counts[peak],
         })}{' '}
         {over ? t('load.forecastOverDays', { count: over }) : t('load.forecastUnder')}

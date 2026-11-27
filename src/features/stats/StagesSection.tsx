@@ -5,7 +5,7 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { Badge, Card, cn, Icon, SectionHeader, Skeleton, StageBar, stageBg } from '@/ui';
-import { formatNumber } from './format';
+import { formatNumber, formatPercent } from './format';
 import { useWordStages } from './useWordStages';
 
 const STAGES = ['learning', 'consolidating', 'learned', 'mastered'] as const;
@@ -62,7 +62,7 @@ export function StagesSection() {
                       {formatNumber(s[k])}
                       <span className="sr-only">
                         {' '}
-                        ({Math.round((s[k] / started) * 100)}%) ·{' '}
+                        ({formatPercent(s[k] / started)}) ·{' '}
                         {t(`stats.overview.stageHint.${k}`)}
                       </span>
                     </span>

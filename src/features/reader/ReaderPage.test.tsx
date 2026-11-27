@@ -193,7 +193,9 @@ describe('ReaderPage', () => {
 
   it('an unknown text id says so', async () => {
     openReader('nope');
-    expect(await screen.findByText('Metin bulunamadı')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Metin bulunamadı' }),
+    ).toBeInTheDocument();
   });
 });
 

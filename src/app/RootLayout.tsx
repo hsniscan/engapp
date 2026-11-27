@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useMatches, useOutlet } from 'react-router';
 import { AddSheet } from '@/features/add/AddSheet';
@@ -5,7 +6,7 @@ import { openAddSheet, useAddSheetOpen } from '@/features/add/addSheetStore';
 import { ImportJobNotices } from '@/features/import/ImportJobNotices';
 import { IosInstallGuide } from '@/features/settings/IosInstallGuide';
 import { AppShell } from '@/ui';
-import { isImmersive, isRouteHandle, navSectionOf } from './routeHandle';
+import { isImmersive, isRouteHandle, navSectionOf, pageTitleOf } from './routeHandle';
 import { SyncIndicator, SyncServices } from './SyncIndicator';
 
 export type { RouteHandle } from './routeHandle';
@@ -17,6 +18,10 @@ export function RootLayout() {
   const addOpen = useAddSheetOpen();
   const { t } = useTranslation();
   const handles = matches.map((m) => m.handle);
+  const title = pageTitleOf(matches, t);
+  useEffect(() => {
+    document.title = title;
+  }, [title]);
   const immersive = isImmersive(handles, new URLSearchParams(location.search));
   const ownTopBar = handles.filter(isRouteHandle).some((h) => h.ownTopBar === true);
   const exitHandle = handles.filter(isRouteHandle).findLast((h) => h.exitTo !== undefined);

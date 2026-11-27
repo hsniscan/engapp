@@ -24,3 +24,31 @@ export function groupLabel(
       return t(`cards.pos.${g.key}` as 'cards.pos.noun', { defaultValue: g.key });
   }
 }
+
+/**
+ * The group as "En zayıf noktan: …" names it: plural where the dimension has one
+ * ("deyimsel fiiller (phrasal verb)", "söz öbekleri", "B2 kelimeler"), else the list label.
+ */
+export function weakestGroupLabel(
+  t: TFunction,
+  g: Pick<GroupRetention, 'dimension' | 'key'>,
+  sourceTitles: Record<string, string>,
+): string {
+  const label = groupLabel(t, g, sourceTitles);
+  if (g.key === NONE_KEY) return label;
+  switch (g.dimension) {
+    case 'term_type':
+    case 'pos':
+    case 'card_type':
+      return t(
+        `progress.groups.plural.${g.dimension}.${g.key}` as 'progress.groups.plural.pos.noun',
+        {
+          defaultValue: label,
+        },
+      );
+    case 'level':
+      return t('progress.groups.plural.level', { level: label });
+    default:
+      return label;
+  }
+}

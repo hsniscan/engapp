@@ -13,6 +13,39 @@
     "profile": "Profil",
     "addLong": "Ekle"
   },
+  "pageTitle": {
+    "app": "{{title}} · Engapp",
+    "home": "Bugün",
+    "study": "Çalış",
+    "more": "Biraz daha çalış",
+    "practice": "Pratik",
+    "decks": "Kelimelerim",
+    "themes": "Temalar",
+    "suggestedDeck": "Önerilen deste",
+    "deck": "Deste",
+    "discover": "Keşfet",
+    "library": "Tüm kelimelerim",
+    "reader": "Okuma",
+    "add": "Kelime ekle",
+    "article": "Makaleden ekle",
+    "subtitle": "Altyazıdan ekle",
+    "photo": "Fotoğraftan metin",
+    "compose": "Metin oluştur",
+    "ankiImport": "Anki’den içe aktar",
+    "csvImport": "Listeden içe aktar",
+    "imports": "İçe aktarmalar",
+    "importPreview": "İçe aktarma",
+    "progress": "İlerleme",
+    "profile": "Profil",
+    "settings": "Ayarlar",
+    "knownWords": "Bildiğin kelimeler",
+    "sources": "Kaynaklar",
+    "levelTest": "Seviye testi",
+    "adminImages": "Görsel inceleme",
+    "auth": "Giriş yap",
+    "share": "Paylaş",
+    "notFound": "Sayfa bulunamadı"
+  },
   "common": {
     "save": "Kaydet",
     "cancel": "Vazgeç",
@@ -163,7 +196,7 @@
     "recallGoal": "hedefin {{goal}}",
     "ruleTitle": "Öğrenilmiş sayma kuralı değişti",
     "ruleBody": "Artık bir kelime üç ayrı günde doğru bilinince öğrenildi sayılıyor. Kelimelerin silinmedi; Pekişiyor'dakiler tekrarlarla birkaç hafta içinde yerine gelecek.",
-    "shortcuts": "Kısa yollar",
+    "shortcuts": "Kısayollar",
     "hardBody": "Hızlı pratik, takvimi değiştirmez",
     "reportTitle": "Geçen haftanın raporu hazır",
     "reportBody_one": "{{count}} gün çalıştın, {{fresh}} yeni kelime",
@@ -957,7 +990,7 @@
       "overall": "Tutma oranı, son 90 gün",
       "dimension": "Kategori",
       "dimensions": {
-        "term_type": "Kelime türü",
+        "term_type": "Kelime / öbek / kalıp",
         "level": "Seviye",
         "topic": "Konu",
         "source": "Kaynak",
@@ -967,6 +1000,40 @@
       "listLabel": "{{dimension}}: tutma oranları",
       "weakest": "En zayıf noktan: {{group}}, {{rate}}",
       "noWeakest": "En zayıf noktanı göstermek için bir kategoride en az 20 cevap gerekiyor.",
+      "showWeakest": "{{dimension}} listesinde göster",
+      "plural": {
+        "term_type": {
+          "word": "kelimeler",
+          "phrase": "söz öbekleri",
+          "pattern": "kalıplar",
+          "affix": "kökler ve ekler",
+          "contrast": "fark kartları"
+        },
+        "pos": {
+          "noun": "isimler",
+          "verb": "fiiller",
+          "adjective": "sıfatlar",
+          "adverb": "zarflar",
+          "phrasal verb": "deyimsel fiiller (phrasal verb)",
+          "idiom": "deyimler",
+          "preposition": "edatlar",
+          "conjunction": "bağlaçlar",
+          "pronoun": "zamirler",
+          "interjection": "ünlemler",
+          "phrase": "kalıp ifadeler",
+          "determiner": "belirleyiciler",
+          "root": "kökler",
+          "prefix": "ön ekler",
+          "suffix": "son ekler"
+        },
+        "card_type": {
+          "recognition": "tanıma kartları",
+          "production": "üretme kartları",
+          "cloze": "boşluk doldurma kartları",
+          "image": "görselden hatırlama kartları"
+        },
+        "level": "{{level}} kelimeler"
+      },
       "row": "{{label}}: {{rate}}, {{answers}}. Büyük olasılıkla {{low}} ile {{high}} arasında.",
       "rowFew": "{{label}}: veri az, {{answers}}.",
       "interval": "Büyük olasılıkla {{low}} ile {{high}} arasında",
@@ -990,6 +1057,7 @@
       "retentionTitle": "Haftalık tutma oranı",
       "retentionLabel": "Her haftanın tutma oranı, son 12 hafta",
       "retentionHint": "Çizgideki boşluklar, 20'den az cevap olan haftalar.",
+      "notEnough": "Henüz yeterli veri yok",
       "pointLearned_one": "{{week}}: {{count}} kelime",
       "pointLearned_other": "{{week}}: {{count}} kelime",
       "pointRetention": "{{week}}: {{rate}}, {{answers}}",
@@ -1069,7 +1137,14 @@
       "C2": "Ustalık"
     },
     "appearance": {
-      "hint": "“Sistem”, cihazının açık ya da koyu ayarını izler."
+      "hint": "“Sistem”, cihazının açık ya da koyu ayarını izler.",
+      "textSize": "Yazı boyutu",
+      "textSizes": {
+        "normal": "Normal",
+        "large": "Büyük",
+        "larger": "En büyük"
+      },
+      "textSizeHint": "Uygulamadaki bütün yazılar için, yalnızca bu cihazda. Okuma ekranındaki yazı boyutu bunun üstüne eklenir."
     },
     "voice": {
       "accent": "Telaffuz",
@@ -1167,13 +1242,13 @@
         "account": "Hesap ve veri",
         "app": "Uygulama"
       },
-      "version": "engapp · sürüm {{version}}",
+      "version": "Engapp · sürüm {{version}}",
       "savedNote": "Değişiklikler hemen kaydedilir; giriş yaptıysan diğer cihazlarına da geçer."
     },
     "pages": {
       "calisma": {
         "title": "Çalışma",
-        "keywords": "yeni kart günlük sınır sıra akıllı eklenme hedef hatırlama oranı algoritma fsrs hafıza kişisel gün başlangıcı saat kolay adaylar",
+        "keywords": "yeni kart günlük sınır sıra akıllı eklenme hedef hatırlama oranı algoritma fsrs hafıza kişisel gün başlangıcı saat kolay adaylar okuma yazı boyutu metin",
         "lead": "Her gün ne kadar yeni kelime göreceğini ve tekrarların ne sıklıkla geleceğini belirler."
       },
       "yuk": {
@@ -1194,7 +1269,7 @@
       },
       "gorunum": {
         "title": "Görünüm",
-        "keywords": "tema karanlık koyu açık sistem görsel resim ön yüz resimli kart"
+        "keywords": "tema karanlık koyu açık sistem görsel resim ön yüz resimli kart yazı boyutu büyük yazı harf boyutu yakınlaştır"
       },
       "hesap": {
         "title": "Hesap ve eşitleme",
@@ -1849,6 +1924,8 @@
     "errorBody": "Bağlantını kontrol edip tekrar dene ya da şimdilik misafir olarak devam et. Verilerin bu cihazda güvende.",
     "continueAsGuest": "Misafir olarak devam et",
     "done": "Hesabına bağlandın",
+    "doneMoved_one": "{{count}} kelimen hesabına taşındı, artık eşitleniyor",
+    "doneMoved_other": "{{count}} kelimen hesabına taşındı, artık eşitleniyor",
     "doneCopied": "{{count}} kelime yeni kart olarak kopyalandı.",
     "doneDuplicates": "{{count}} kelime “olası kopya” olarak işaretlendi; Kelimelerim'de gözden geçirebilirsin.",
     "discardAccountConfirm": "Anladım: hesabımdaki kartlar bütün cihazlarımda silinecek."
@@ -2208,6 +2285,7 @@
     "forecastLoading": "Tahmin hesaplanıyor…",
     "forecastNote": "Tahmin, her kartı hatırlama olasılığına ve günlük yeni kart limitine göre hesaplanır.",
     "forecastToday": "Bugün",
+    "forecastTomorrow": "Yarın",
     "forecastChartLabel": "Önümüzdeki 30 günün beklenen tekrar sayısı, kapasite çizgisiyle",
     "vacationStartPast": "Tatil bugünden önce başlayamaz. Başlangıcı bugün ya da sonraki bir gün seç.",
     "forecastCapacityShort": "Kapasite {{cards}}"
@@ -2988,6 +3066,7 @@
     "shortcuts": "Klavyeyle: → onayla, ← reddet, ↓ yeniden çizdir, Z geri al.",
     "signIn": "Bu sayfa için Google ile giriş yapmalısın.",
     "notAdmin": "Bu sayfa yalnızca yöneticiler için.",
+    "back": "Ayarlara dön",
     "offline": "İnternet bağlantısı yok. Bağlanınca kaldığın yerden devam edebilirsin.",
     "loading": "Görseller yükleniyor…",
     "loadFailed": "Görseller alınamadı.",

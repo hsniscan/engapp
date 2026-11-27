@@ -1,7 +1,27 @@
-import { exportBackup, logError, recordBackup } from '@/data';
+import {
+  compactOutbox,
+  exportBackup,
+  getSettings,
+  logError,
+  recordBackup,
+  updateSettings,
+} from '@/data';
 import i18n from '@/i18n';
 import { toast } from '@/ui';
 import { backupFileName, saveTextFile, type SaveDeps, type SaveResult } from './download';
+
+/**
+ * After a restore, this device holds a backed-up copy: "Son yedek" is the file's own date
+ * (never moved back), so Bugün stops saying "Henüz yedek almadın" (calisma #11). The restore
+ * itself (backup → data) stays untouched.
+ */
+export async function noteRestoredBackup(exportedAt: number, now = Date.now()): Promise<void> {
+  const last = (await getSettings()).last_backup_at ?? 0;
+  if (exportedAt <= last) return;
+  await updateSettings({ last_backup_at: exportedAt }, now);
+  // The restore already queued the settings row: keep one outbox entry per row.
+  await compactOutbox();
+}
 
 export interface BackupDeps {
   save?: SaveDeps;

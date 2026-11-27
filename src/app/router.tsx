@@ -281,6 +281,48 @@ const children: RouteObject[] = [
 
 children.push({ path: '*', element: <NotFoundPage /> });
 
+/** document.title per route ("Bugün · Engapp", RootLayout); keys under pageTitle in tr.json. */
+const TITLES: Record<string, RouteHandle['title']> = {
+  '': 'home',
+  study: 'study',
+  'study/more': 'more',
+  practice: 'practice',
+  decks: 'decks',
+  'decks/themes': 'themes',
+  'decks/suggested/:key': 'suggestedDeck',
+  'decks/:id': 'deck',
+  kesfet: 'discover',
+  library: 'library',
+  'oku/:textId': 'reader',
+  add: 'add',
+  makale: 'article',
+  altyazi: 'subtitle',
+  fotograf: 'photo',
+  'metin-olustur': 'compose',
+  'import/anki': 'ankiImport',
+  'import/csv': 'csvImport',
+  import: 'imports',
+  'import/:jobId': 'importPreview',
+  progress: 'progress',
+  profile: 'profile',
+  settings: 'settings',
+  'settings/bilinen-kelimeler': 'knownWords',
+  'settings/kaynaklar': 'sources',
+  'settings/:section': ({ section }, t) =>
+    t(`settings.pages.${section}.title` as 'settings.pages.calisma.title', {
+      defaultValue: t('pageTitle.settings'),
+    }),
+  'level-test': 'levelTest',
+  'admin/images': 'adminImages',
+  auth: 'auth',
+  share: 'share',
+  '*': 'notFound',
+};
+for (const r of children) {
+  const title = TITLES[r.index ? '' : (r.path ?? '')];
+  if (title) r.handle = { ...(r.handle as RouteHandle | undefined), title } satisfies RouteHandle;
+}
+
 // The pathless child keeps the shell (navigation) around a screen that failed to render or load;
 // the root errorElement is the last resort if the shell itself fails.
 const routes: RouteObject[] = [

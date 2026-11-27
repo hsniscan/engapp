@@ -13,6 +13,39 @@
     "profile": "Profile",
     "addLong": "Add"
   },
+  "pageTitle": {
+    "app": "{{title}} · Engapp",
+    "home": "Today",
+    "study": "Study",
+    "more": "Study a bit more",
+    "practice": "Practice",
+    "decks": "My words",
+    "themes": "Themes",
+    "suggestedDeck": "Suggested deck",
+    "deck": "Deck",
+    "discover": "Discover",
+    "library": "All my words",
+    "reader": "Reading",
+    "add": "Add a word",
+    "article": "Add from an article",
+    "subtitle": "Add from subtitles",
+    "photo": "Text from a photo",
+    "compose": "Write a text",
+    "ankiImport": "Import from Anki",
+    "csvImport": "Import a list",
+    "imports": "Imports",
+    "importPreview": "Import",
+    "progress": "Progress",
+    "profile": "Profile",
+    "settings": "Settings",
+    "knownWords": "Words you know",
+    "sources": "Sources",
+    "levelTest": "Level test",
+    "adminImages": "Image review",
+    "auth": "Sign in",
+    "share": "Share",
+    "notFound": "Page not found"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
@@ -957,7 +990,7 @@
       "overall": "Retention, last 90 days",
       "dimension": "Category",
       "dimensions": {
-        "term_type": "Term type",
+        "term_type": "Word / phrase / pattern",
         "level": "Level",
         "topic": "Topic",
         "source": "Source",
@@ -967,6 +1000,40 @@
       "listLabel": "{{dimension}}: retention",
       "weakest": "Your weakest spot: {{group}}, {{rate}}",
       "noWeakest": "Showing your weakest spot needs at least 20 answers in a category.",
+      "showWeakest": "Show in the {{dimension}} list",
+      "plural": {
+        "term_type": {
+          "word": "words",
+          "phrase": "phrases",
+          "pattern": "patterns",
+          "affix": "roots and affixes",
+          "contrast": "contrast cards"
+        },
+        "pos": {
+          "noun": "nouns",
+          "verb": "verbs",
+          "adjective": "adjectives",
+          "adverb": "adverbs",
+          "phrasal verb": "phrasal verbs",
+          "idiom": "idioms",
+          "preposition": "prepositions",
+          "conjunction": "conjunctions",
+          "pronoun": "pronouns",
+          "interjection": "interjections",
+          "phrase": "phrases",
+          "determiner": "determiners",
+          "root": "roots",
+          "prefix": "prefixes",
+          "suffix": "suffixes"
+        },
+        "card_type": {
+          "recognition": "recognition cards",
+          "production": "production cards",
+          "cloze": "cloze cards",
+          "image": "picture cards"
+        },
+        "level": "{{level}} words"
+      },
       "row": "{{label}}: {{rate}}, {{answers}}. Most likely between {{low}} and {{high}}.",
       "rowFew": "{{label}}: too little data, {{answers}}.",
       "interval": "Most likely between {{low}} and {{high}} (95% interval)",
@@ -990,6 +1057,7 @@
       "retentionTitle": "Weekly retention",
       "retentionLabel": "Retention of each week, last 12 weeks",
       "retentionHint": "Gaps in the line are weeks with fewer than 20 answers.",
+      "notEnough": "Not enough data yet",
       "pointLearned_one": "{{week}}: {{count}} word",
       "pointLearned_other": "{{week}}: {{count}} words",
       "pointRetention": "{{week}}: {{rate}}, {{answers}}",
@@ -1069,7 +1137,14 @@
       "C2": "Proficient"
     },
     "appearance": {
-      "hint": "“System” follows your device's light or dark setting."
+      "hint": "“System” follows your device's light or dark setting.",
+      "textSize": "Text size",
+      "textSizes": {
+        "normal": "Normal",
+        "large": "Large",
+        "larger": "Largest"
+      },
+      "textSizeHint": "For all text in the app, on this device only. The reader's own text size adds on top."
     },
     "voice": {
       "accent": "Accent",
@@ -1167,13 +1242,13 @@
         "account": "Account and data",
         "app": "App"
       },
-      "version": "engapp · version {{version}}",
+      "version": "Engapp · version {{version}}",
       "savedNote": "Changes are saved at once; when signed in they reach your other devices too."
     },
     "pages": {
       "calisma": {
         "title": "Study",
-        "keywords": "new cards daily limit order smart added target retention algorithm fsrs day start easy candidates",
+        "keywords": "new cards daily limit order smart added target retention algorithm fsrs day start easy candidates reading text size",
         "lead": "How many new words you see each day and how often reviews come back."
       },
       "yuk": {
@@ -1194,7 +1269,7 @@
       },
       "gorunum": {
         "title": "Appearance",
-        "keywords": "theme dark light system picture image cards"
+        "keywords": "theme dark light system picture image cards text size font size large text zoom"
       },
       "hesap": {
         "title": "Account and sync",
@@ -1849,6 +1924,8 @@
     "errorBody": "Check your connection and try again, or continue as a guest for now. Your data is safe on this device.",
     "continueAsGuest": "Continue as guest",
     "done": "Connected to your account",
+    "doneMoved_one": "{{count}} word moved to your account and now syncs",
+    "doneMoved_other": "{{count}} words moved to your account and now sync",
     "doneCopied": "{{count}} words were copied as new cards.",
     "doneDuplicates": "{{count}} words were marked “possible duplicate”; you can review them in Kelimelerim (My words).",
     "discardAccountConfirm": "I understand: my account's cards will be deleted on all my devices."
@@ -2208,6 +2285,7 @@
     "forecastLoading": "Calculating the forecast…",
     "forecastNote": "The forecast uses how likely you are to remember each card and your daily new-card limit.",
     "forecastToday": "Today",
+    "forecastTomorrow": "Tomorrow",
     "forecastChartLabel": "Expected reviews for the next 30 days, with the capacity line",
     "vacationStartPast": "A holiday cannot start before today. Pick today or a later day.",
     "forecastCapacityShort": "Capacity {{cards}}"
@@ -2988,6 +3066,7 @@
     "shortcuts": "Keyboard: → approve, ← reject, ↓ redraw, Z undo.",
     "signIn": "Sign in with Google to open this page.",
     "notAdmin": "This page is for admins only.",
+    "back": "Back to settings",
     "offline": "No internet connection. You can continue where you left off once you are online.",
     "loading": "Loading pictures…",
     "loadFailed": "Could not load the pictures.",
