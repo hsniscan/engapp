@@ -12,7 +12,7 @@ import { CardBackExtras } from '@/features/family/CardBackExtras';
 import { ContrastBack, ContrastFront, LeechBadge, LeechHint } from '@/features/leech';
 import { CardPicture } from '@/features/images';
 import { CardMnemonic } from '@/features/mnemonics';
-import { Badge, cn, IconButton } from '@/ui';
+import { Badge, cn, Eyebrow, IconButton } from '@/ui';
 import { usePronunciationBusy } from './pronunciation';
 
 const meaningOf = (s: Pick<Sense, 'meaning_tr' | 'meaning_tr_override'>) =>
@@ -46,15 +46,18 @@ export function Sentence({
   span,
   term,
   className,
+  size = 'text-lead',
 }: {
   sentence: string;
   span: [number, number] | null;
   term: string;
   className?: string;
+  /** Text size class (cn does not merge two sizes, so a smaller sentence passes its own). */
+  size?: string;
 }) {
   const at = span && isValidSpan(sentence, span) ? span : findSpan(sentence, term);
   return (
-    <p lang="en" className={cn('font-serif text-lead text-fg italic', className)}>
+    <p lang="en" className={cn('font-serif text-fg italic', size, className)}>
       {at ? (
         <>
           {sentence.slice(0, at[0])}
@@ -171,6 +174,50 @@ export function BackSentence({
             {sentence.tr}
           </p>
         ))}
+    </div>
+  );
+}
+
+/**
+ * 2026-11-26 #5: the user's own sentence under the word bank's example that took its place
+ * ("Senin örneğin"): smaller, with the user's translation when there is one.
+ */
+export function OwnSentence({
+  view,
+  speech,
+  align = 'center',
+}: {
+  view: Pick<CardView, 'ownSentence' | 'note'>;
+  speech: SpeakProps;
+  align?: 'center' | 'start';
+}) {
+  const { t } = useTranslation();
+  const own = view.ownSentence;
+  if (!own) return null;
+  const { speakText } = speech;
+  const start = align === 'start';
+  return (
+    <div
+      data-testid="own-sentence"
+      className={cn('flex w-full flex-col gap-1', start ? 'mt-3 items-start text-left' : 'max-w-md items-center text-center')}
+    >
+      <Eyebrow>{t('study.ownExample')}</Eyebrow>
+      <div className={cn('flex items-start gap-1', start ? 'w-full justify-between' : 'justify-center')}>
+        <Sentence sentence={own.text} span={own.span} term={view.note.term} size="text-ui" className="min-w-0 text-fg-muted" />
+        {speakText && (
+          <SpeakButton
+            available={speech.available}
+            onSpeak={() => speakText(own.text)}
+            label={t('review.speakSentence')}
+            className="shrink-0"
+          />
+        )}
+      </div>
+      {own.tr && (
+        <p lang="tr" className="text-meta text-fg-muted">
+          {own.tr}
+        </p>
+      )}
     </div>
   );
 }
@@ -476,8 +523,9 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
           <CardMnemonic key={s.id} senseId={s.id} className="text-center" />
         ))}
         {sentence && (
-          <div className="flex w-full max-w-md justify-center border-t border-border pt-4">
+          <div className="flex w-full max-w-md flex-col items-center gap-4 border-t border-border pt-4">
             {sentence}
+            <OwnSentence view={view} speech={speech} />
           </div>
         )}
         {examples}
@@ -522,6 +570,7 @@ export const CardBack = memo(function CardBack({ view, isNew, speech }: FaceProp
       </div>
       <CardMnemonic senseId={sense.id} className="text-center" />
       {(card.card_type === 'production' || card.card_type === 'image') && sentence}
+      <OwnSentence view={view} speech={speech} />
       {examples}
       <CardBackExtras note={note} />
     </Face>

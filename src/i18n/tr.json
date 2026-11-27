@@ -409,6 +409,7 @@
     "learnedToday_one": "Bugün {{count}} kelime Öğrenildi'ye geçti.",
     "learnedToday_other": "Bugün {{count}} kelime Öğrenildi'ye geçti.",
     "example": "Örnek",
+    "ownExample": "Senin örneğin",
     "meaning": "Anlamı",
     "continueWith": "Devam · {{rating}}",
     "showSentence": "Cümleyi göster",
@@ -754,6 +755,7 @@
       "listenSentence": "Cümleyi dinle",
       "meaning": "Anlamı",
       "ownExample": "Senin örneğin",
+      "bankExample": "Örnek",
       "memory": "Hafıza",
       "next": "Sıradaki tekrar",
       "interval": "Aralık",
@@ -3673,7 +3675,7 @@
       "other": "diğer"
     },
     "encounters": {
-      "none": "Bu kelimeyle henüz bir kartta ya da metinde karşılaşmadın.",
+      "none": "Bu kelimeyi henüz çalışmadın, bir metinde de görmedin.",
       "line_one": "Bu kelimeyi {{count}} kez gördün: {{cards}} kez kartta, {{texts}} metinde",
       "line_other": "Bu kelimeyi {{count}} kez gördün: {{cards}} kez kartta, {{texts}} metinde",
       "cardsOnly_one": "Bu kelimeyi {{count}} kez kartta gördün",

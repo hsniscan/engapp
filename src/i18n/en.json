@@ -409,6 +409,7 @@
     "learnedToday_one": "{{count}} word reached Learned today.",
     "learnedToday_other": "{{count}} words reached Learned today.",
     "example": "Example",
+    "ownExample": "Your example",
     "meaning": "Meaning",
     "continueWith": "Continue · {{rating}}",
     "showSentence": "Show the sentence",
@@ -754,6 +755,7 @@
       "listenSentence": "Listen to the sentence",
       "meaning": "Meaning",
       "ownExample": "Your example",
+      "bankExample": "Example",
       "memory": "Memory",
       "next": "Next review",
       "interval": "Interval",
@@ -3673,7 +3675,7 @@
       "other": "other"
     },
     "encounters": {
-      "none": "You have not met this word in a card or a text yet.",
+      "none": "You have not studied this word or seen it in a text yet.",
       "line_one": "You have seen this word {{count}} time: {{cards}} in cards, in {{texts}} texts",
       "line_other": "You have seen this word {{count}} times: {{cards}} in cards, in {{texts}} texts",
       "cardsOnly_one": "You have seen this word {{count}} time in cards",

@@ -407,18 +407,21 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
     });
   }, [showTr, sentenceRows, tokens]);
 
-  // ---- encounters: once per note per opening (the location key survives re-renders).
-  const counted = useRef(false);
+  // ---- encounters: once per note per text (recordReaderEncounters keeps the per-text list).
+  // The knowledge model reloads when a card is added, so a word added while reading (from the
+  // word sheet or "Yeni kelimeler") is counted for this text too, not only the words that
+  // were cards when it opened (2026-11-26 #11).
+  const counted = useRef(new Set<Id>());
   useEffect(() => {
-    if (!view || !k || counted.current) return;
-    counted.current = true;
+    if (!view || !k) return;
     const ids = [
       ...new Set([
         ...view.metTerms.map((term) => k.noteIdOf(term)).filter((x): x is Id => x !== null),
         // A daily story counts its target words (İP8) even where a form was not recognised.
         ...storyEncounterNotes(text.story),
       ]),
-    ];
+    ].filter((id) => !counted.current.has(id));
+    for (const id of ids) counted.current.add(id);
     const source = text.kind === 'story' ? 'story' : 'reader';
     if (ids.length)
       void recordReaderEncounters(text.id, openingKey(location.key), ids, undefined, source).catch(

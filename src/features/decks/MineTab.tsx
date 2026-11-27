@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 import { createDeck, getThemePreview, logError } from '@/data';
 import { findTagDeck, getMyDecks, type MyDeck } from '@/data/deckHub';
-import { cleanDeckName, MAX_DECK_NAME } from '@/domain/deckFilter';
+import { cleanDeckName, type DeckKind, deckKind, MAX_DECK_NAME } from '@/domain/deckFilter';
 import { cleanTag } from '@/domain/tags';
 import {
   Badge,
@@ -38,21 +38,12 @@ import { DeckInitial } from './parts';
 import { titleIndex } from './suggested';
 import { TagsDialog } from './TagsDialog';
 
-type Kind = 'suggested' | 'struggling' | 'tag' | 'smart';
+/** The deck's kind for its label; "Zorlandıklarım" decks also get a warning-toned badge. */
+type Kind = DeckKind | 'struggling';
 
 function kindOf(d: MyDeck, titles: Map<string, unknown>): Kind {
-  const f = d.filter;
-  if (!f) return 'smart';
-  const tagOnly =
-    f.tags?.length === 1 &&
-    !f.states?.length &&
-    !f.stages?.length &&
-    !f.levels?.length &&
-    !f.topics?.length &&
-    !f.addedWithinDays;
-  if (tagOnly && titles.has(f.tags![0]!.toLocaleLowerCase('tr'))) return 'suggested';
-  if (f.states?.includes('struggling')) return 'struggling';
-  return tagOnly ? 'tag' : 'smart';
+  const kind = deckKind(d.deck.name, d.filter, (tag) => titles.has(tag.toLocaleLowerCase('tr')));
+  return kind === 'rules' && d.filter?.states?.includes('struggling') ? 'struggling' : kind;
 }
 
 export function MineTab() {
@@ -217,7 +208,7 @@ function DeckRow({ d, kind }: { d: MyDeck; kind: Kind }) {
   const kindLabel =
     kind === 'suggested'
       ? t('deckHub.mine.fromSuggestion')
-      : kind === 'tag'
+      : kind === 'manual'
         ? t('deckHub.mine.kindTag')
         : t('deckHub.mine.kindSmart');
   return (

@@ -1,6 +1,6 @@
 // Constants and helpers shared by the Kelimelerim screens (no components here, for fast refresh).
 // Colours come only from the design tokens (stage scale, docs/design.md); none are defined here.
-import type { DeckFilter } from '@/domain/deckFilter';
+import { type DeckFilter, soleDeckTag } from '@/domain/deckFilter';
 import { openAddSheet } from '@/features/add/addSheetStore';
 import type { CefrLevel } from '@/domain/types';
 import { stageColor, type UiStage } from '@/ui';
@@ -26,11 +26,7 @@ export const DECK_NEW_FLAG = 'deck.newCount';
 export const newDeckSeed = () => Math.floor(Math.random() * 0xffffffff);
 
 /** The single tag of a hand-picked or suggested deck, if the filter is just that. */
-export function soleTag(f: DeckFilter | null): string | null {
-  if (!f || f.tags?.length !== 1) return null;
-  if (f.states?.length || f.stages?.length || f.levels?.length || f.topics?.length || f.addedWithinDays) return null;
-  return f.tags[0]!;
-}
+export const soleTag = (f: DeckFilter | null): string | null => soleDeckTag(f);
 
 /** Kelimelerim's segments (v0.5.1): the old discover / reading segments are in Keşfet. */
 export const DECK_TABS = ['mine', 'bank'] as const;

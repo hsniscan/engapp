@@ -204,6 +204,7 @@ export {
   applyWordBankPage,
   bankNoteInput,
   countWordBank,
+  getLeadingBankExamples,
   getOwnedTerms,
   getWordBankCursor,
   getWordBankSyncedAt,

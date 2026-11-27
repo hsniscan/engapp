@@ -10,6 +10,7 @@ import { db, deleteDeck, listDecks, logError, moveDeck, restoreDeck, setNoteTags
 import { getDeckWords } from '@/data/deckHub';
 import { foldForSearch } from '@/features/cards/libraryFilter';
 import type { WordStage } from '@/domain/stages';
+import { deckKind } from '@/domain/deckFilter';
 import { hasTag } from '@/domain/tags';
 import {
   Badge,
@@ -119,6 +120,8 @@ export function DeckDetailPage() {
   const { deck, filter, words } = data;
   const tag = soleTag(filter);
   const suggested = tag ? titles.get(tag.toLocaleLowerCase('tr')) : undefined;
+  // "Elle seç" decks are a tag named like the deck; a "Kurallarla" deck with one tag is a rules deck.
+  const kind = deckKind(deck.name, filter, (x) => titles.has(x.toLocaleLowerCase('tr')));
   const counts = { studying: 0, learned: 0, new: 0 };
   const byStage: Record<WordStage, number> = {
     new: 0,
@@ -199,9 +202,9 @@ export function DeckDetailPage() {
     <PageFrame
       back={back}
       eyebrow={
-        suggested
+        kind === 'suggested'
           ? t('deckHub.mine.fromSuggestion')
-          : tag
+          : kind === 'manual'
             ? t('deckHub.mine.kindTag')
             : t('deckHub.mine.kindSmart')
       }
