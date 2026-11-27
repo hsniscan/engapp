@@ -179,9 +179,11 @@ function Dashboard({ core }: { core: HomeCore }) {
         {study && heroReady && <ExtraStudy study={study} />}
         {/* Below the card: one note at most, then the reading. Space is held while they load,
             so the page does not jump (v0.5.3 A7). */}
-        {heroReady && goals !== undefined ? (
+        {/* The notes do not wait for the goals (a whole-history read): only the goal prompt,
+            last in the slot, does. A holiday note came ~3 s late behind it (2026-11-26 L2). */}
+        {heroReady ? (
           <>
-            <Notes sessionOver={!!study && study.ready === 0} goalPrompt={goals.dayTarget === null} />
+            <Notes sessionOver={!!study && study.ready === 0} goalPrompt={goals?.dayTarget === null} />
             <TodayReadingCard />
           </>
         ) : (
@@ -253,12 +255,9 @@ function Notes({ sessionOver, goalPrompt }: { sessionOver: boolean; goalPrompt: 
 }
 
 /** Holds the place of the note and the reading card while they load. */
+/** Space held for the notes while the page settles: empty, not a grey block (2026-11-26 L2). */
 function BelowHeroSkeleton() {
-  return (
-    <div aria-hidden="true" className="flex flex-col gap-8" data-testid="below-hero-skeleton">
-      <Skeleton className="h-28 rounded-card" />
-    </div>
-  );
+  return <div aria-hidden="true" className="h-28" data-testid="below-hero-skeleton" />;
 }
 
 /** Shown once after the update (docs/plan "Öğrenme modeli" 6), until closed. */
