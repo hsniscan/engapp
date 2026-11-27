@@ -743,7 +743,7 @@
       "duplicateTerm": "Another word already has this term.",
       "noteDeleted": "“{{term}}” deleted",
       "markKnown": "I know this",
-      "markKnownHint": "The word moves to Known words and its cards leave study. Its history is kept.",
+      "markKnownHint": "Choose “I know this” in the ⋯ menu and the word moves to Known words; its cards leave study. Its history is kept.",
       "knownDone": "“{{term}}” moved to Known words",
       "reset": "Reset progress",
       "resetDone": "“{{term}}” starts over",

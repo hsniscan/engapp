@@ -66,4 +66,40 @@ describe('NoteDetailSheet examples', () => {
     expect(await screen.findByRole('heading', { name: 'Senin örneğin' })).toBeInTheDocument();
     expect(screen.queryByTestId('bank-example')).toBeNull();
   });
+
+  it('a word with several meanings: every part of speech, numbered sentences, no empty "Örnek cümleler"', async () => {
+    const lex = (n: number) => `00000000-0000-4000-8000-00000000000${n}`;
+    const { note } = await addNoteWithSenses({
+      term: 'run',
+      senses: [
+        {
+          meaning_tr: 'koşmak',
+          pos: 'verb',
+          lexicon_sense_id: lex(1),
+          source_sentence: 'She runs every morning before work.',
+          source_sentence_tr: 'Her sabah işten önce koşar.',
+        },
+        { meaning_tr: 'yönetmek', pos: 'verb', lexicon_sense_id: lex(2) },
+        {
+          meaning_tr: 'koşu',
+          pos: 'noun',
+          lexicon_sense_id: lex(3),
+          source_sentence: 'I went for a run in the park.',
+          source_sentence_tr: 'Parkta koşuya çıktım.',
+        },
+      ],
+    });
+    renderRoute(<NoteDetailSheet noteId={note.id} onClose={vi.fn()} />);
+    const own = (await screen.findByRole('heading', { name: 'Senin örneğin' })).closest('section')!;
+    const items = within(own).getAllByRole('listitem');
+    expect(items[0]).toHaveTextContent(/^1\./);
+    expect(items[1]).toHaveTextContent(/^3\./);
+    // Header: both parts of speech, once each (the meaning list repeats them per meaning).
+    expect(screen.getAllByText('fiil').length).toBeGreaterThanOrEqual(3);
+    expect(screen.getAllByText('isim').length).toBeGreaterThanOrEqual(2);
+    // No shipped sentences for these meanings: no "Örnek cümleler" block saying so.
+    await screen.findByText('Hafıza');
+    expect(screen.queryByRole('heading', { name: 'Örnek cümleler' })).toBeNull();
+    expect(screen.queryByText('Bu anlam için henüz örnek cümle yok.')).toBeNull();
+  });
 });

@@ -743,7 +743,7 @@
       "duplicateTerm": "Bu terimle başka bir kelime var.",
       "noteDeleted": "“{{term}}” silindi",
       "markKnown": "Biliyorum",
-      "markKnownHint": "Kelime Bildiğim kelimeler'e taşınır, kartları çalışmaya gelmez. Geçmişi korunur.",
+      "markKnownHint": "⋯ menüsünden “Biliyorum” dersen kelime Bildiğim kelimeler'e taşınır, kartları artık çalışmaya gelmez. Geçmişi korunur.",
       "knownDone": "“{{term}}” Bildiğim kelimeler'e taşındı",
       "reset": "İlerlemeyi sıfırla",
       "resetDone": "“{{term}}” baştan başlıyor",

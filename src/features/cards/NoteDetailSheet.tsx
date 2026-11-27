@@ -15,6 +15,7 @@ import {
   editSense,
   getLeadingBankExamples,
   getNoteDetail,
+  getSenseExamples,
   listTags,
   bulkSoftDeleteNotes,
   logError,
@@ -248,8 +249,21 @@ function ReadView({
   const stage = noteStage(detail);
   const allSuspended = cards.length > 0 && cards.every((c) => c.suspended);
   const main = mainCard(cards);
-  const pos = senses.find((s) => s.pos)?.pos ?? null;
+  // 2026-11-26 #11: every part of speech of a multi-sense word ("run": fiil, isim), once each.
+  const posList = [...new Set(senses.flatMap((s) => (s.pos ? [s.pos] : [])))];
   const ownSentences = senses.filter((s) => s.source_sentence?.trim());
+  // With several meanings each sentence carries the number of its meaning in the list above.
+  const senseNo = (s: Sense) => (senses.length > 1 ? senses.indexOf(s) + 1 : null);
+  // "Örnek cümleler" only when a linked meaning has shipped sentences: an empty block under
+  // "Senin örneğin" read as a contradiction (2026-11-26 #11).
+  const linkedIds = senses.flatMap((s) => (s.lexicon_sense_id ? [s.lexicon_sense_id] : []));
+  const hasExamples = useLiveQuery(async () => {
+    for (const lexId of linkedIds) {
+      const ex = (await getSenseExamples(lexId)).examples;
+      if (ex.contexts.some((c) => (ex.byContext.get(c)?.length ?? 0) > 0)) return true;
+    }
+    return false;
+  }, [linkedIds.join('|')]);
   // 2026-11-26 #5: the word bank's example leads where the user's sentence is missing or weak.
   const bank = useLiveQuery(() => getLeadingBankExamples(note, senses), [note, senses]);
   const bankSenses = bank ? senses.filter((s) => bank.has(s.id)) : [];
@@ -332,7 +346,11 @@ function ReadView({
           ) : (
             stage && <StagePill stage={stage} />
           )}
-          {pos && <Badge tone="outline">{posLabel(t, pos)}</Badge>}
+          {posList.map((p) => (
+            <Badge key={p} tone="outline">
+              {posLabel(t, p)}
+            </Badge>
+          ))}
         </div>
         {speech.available && (
           <IconButton
@@ -385,8 +403,8 @@ function ReadView({
               const ex = bank.get(s.id)!;
               return (
                 <li key={s.id} className="flex items-start gap-2">
-                  {senses.length > 1 && (
-                    <span className="tabular pt-0.5 text-ui font-semibold text-fg-muted">{s.sense_no}.</span>
+                  {senseNo(s) && (
+                    <span className="tabular pt-0.5 text-ui font-semibold text-fg-muted">{senseNo(s)}.</span>
                   )}
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <Sentence sentence={ex.text} span={ex.span} term={note.term} />
@@ -417,6 +435,9 @@ function ReadView({
           <ul className="flex flex-col gap-3">
             {ownSentences.map((s) => (
               <li key={s.id} className="flex items-start gap-2">
+                {senseNo(s) && (
+                  <span className="tabular pt-0.5 text-ui font-semibold text-fg-muted">{senseNo(s)}.</span>
+                )}
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <Term italic className="text-fg">
                     {s.source_sentence}
@@ -439,7 +460,7 @@ function ReadView({
         </section>
       )}
 
-      {senses.some((s) => s.lexicon_sense_id) && (
+      {hasExamples && (
         <ExamplesSection
           term={note.term}
           senses={senses}
