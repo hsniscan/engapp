@@ -947,7 +947,7 @@
       "overall": "Tutma oranı, son 90 gün",
       "dimension": "Kategori",
       "dimensions": {
-        "term_type": "Kelime türü",
+        "term_type": "Kelime / öbek / kalıp",
         "level": "Seviye",
         "topic": "Konu",
         "source": "Kaynak",
@@ -957,6 +957,40 @@
       "listLabel": "{{dimension}}: tutma oranları",
       "weakest": "En zayıf noktan: {{group}}, {{rate}}",
       "noWeakest": "En zayıf noktanı göstermek için bir kategoride en az 20 cevap gerekiyor.",
+      "showWeakest": "{{dimension}} listesinde göster",
+      "plural": {
+        "term_type": {
+          "word": "kelimeler",
+          "phrase": "söz öbekleri",
+          "pattern": "kalıplar",
+          "affix": "kökler ve ekler",
+          "contrast": "fark kartları"
+        },
+        "pos": {
+          "noun": "isimler",
+          "verb": "fiiller",
+          "adjective": "sıfatlar",
+          "adverb": "zarflar",
+          "phrasal verb": "deyimsel fiiller (phrasal verb)",
+          "idiom": "deyimler",
+          "preposition": "edatlar",
+          "conjunction": "bağlaçlar",
+          "pronoun": "zamirler",
+          "interjection": "ünlemler",
+          "phrase": "kalıp ifadeler",
+          "determiner": "belirleyiciler",
+          "root": "kökler",
+          "prefix": "ön ekler",
+          "suffix": "son ekler"
+        },
+        "card_type": {
+          "recognition": "tanıma kartları",
+          "production": "üretme kartları",
+          "cloze": "boşluk doldurma kartları",
+          "image": "görselden hatırlama kartları"
+        },
+        "level": "{{level}} kelimeler"
+      },
       "row": "{{label}}: {{rate}}, {{answers}}. Büyük olasılıkla {{low}} ile {{high}} arasında.",
       "rowFew": "{{label}}: veri az, {{answers}}.",
       "interval": "Büyük olasılıkla {{low}} ile {{high}} arasında",

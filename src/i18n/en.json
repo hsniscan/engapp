@@ -947,7 +947,7 @@
       "overall": "Retention, last 90 days",
       "dimension": "Category",
       "dimensions": {
-        "term_type": "Term type",
+        "term_type": "Word / phrase / pattern",
         "level": "Level",
         "topic": "Topic",
         "source": "Source",
@@ -957,6 +957,40 @@
       "listLabel": "{{dimension}}: retention",
       "weakest": "Your weakest spot: {{group}}, {{rate}}",
       "noWeakest": "Showing your weakest spot needs at least 20 answers in a category.",
+      "showWeakest": "Show in the {{dimension}} list",
+      "plural": {
+        "term_type": {
+          "word": "words",
+          "phrase": "phrases",
+          "pattern": "patterns",
+          "affix": "roots and affixes",
+          "contrast": "contrast cards"
+        },
+        "pos": {
+          "noun": "nouns",
+          "verb": "verbs",
+          "adjective": "adjectives",
+          "adverb": "adverbs",
+          "phrasal verb": "phrasal verbs",
+          "idiom": "idioms",
+          "preposition": "prepositions",
+          "conjunction": "conjunctions",
+          "pronoun": "pronouns",
+          "interjection": "interjections",
+          "phrase": "phrases",
+          "determiner": "determiners",
+          "root": "roots",
+          "prefix": "prefixes",
+          "suffix": "suffixes"
+        },
+        "card_type": {
+          "recognition": "recognition cards",
+          "production": "production cards",
+          "cloze": "cloze cards",
+          "image": "picture cards"
+        },
+        "level": "{{level}} words"
+      },
       "row": "{{label}}: {{rate}}, {{answers}}. Most likely between {{low}} and {{high}}.",
       "rowFew": "{{label}}: too little data, {{answers}}.",
       "interval": "Most likely between {{low}} and {{high}} (95% interval)",

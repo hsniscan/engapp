@@ -19,7 +19,7 @@ import { shouldNudgeGap } from '@/domain/progressView';
 import { practiceHref } from '@/features/extra/links';
 import { buttonClasses, Card, Select, Skeleton, Tooltip } from '@/ui';
 import { formatPercent } from './format';
-import { groupLabel } from './groupLabel';
+import { groupLabel, weakestGroupLabel } from './groupLabel';
 import { useWordStages } from './useWordStages';
 import { LearnedChart, RetentionBar, RetentionLineChart, SeriesTable } from './ProgressCharts';
 
@@ -175,7 +175,7 @@ function PictureSection({ view }: { view: ProgressView }) {
     <Card
       as="section"
       aria-labelledby="picture-recall-title"
-     
+
       data-testid="picture-recall"
     >
       <h2 id="picture-recall-title" className="text-title font-semibold">
@@ -225,8 +225,11 @@ function PictureSection({ view }: { view: ProgressView }) {
 
 function GroupsSection({ view }: { view: ProgressView }) {
   const { t } = useTranslation();
-  const [dimension, setDimension] = useState<RetentionDimension>('term_type');
   const { report } = view;
+  // Open on the weakest group's list, so the group the line names is in the list below it.
+  const [dimension, setDimension] = useState<RetentionDimension>(
+    () => report.weakest?.dimension ?? 'term_type',
+  );
   const groups = report.groups[dimension];
   const label = (g: GroupRetention) => groupLabel(t, g, view.sourceTitles);
   const dimLabel = t(`progress.groups.dimensions.${dimension}`);
@@ -248,10 +251,24 @@ function GroupsSection({ view }: { view: ProgressView }) {
       <p className="mt-4 text-ui text-fg">
         {report.weakest
           ? t('progress.groups.weakest', {
-              group: `${label(report.weakest)} (${t(`progress.groups.dimensions.${report.weakest.dimension}`).toLocaleLowerCase('tr')})`,
+              group: weakestGroupLabel(t, report.weakest, view.sourceTitles),
               rate: formatPercent(report.weakest.rate!),
             })
           : t('progress.groups.noWeakest')}
+        {report.weakest && report.weakest.dimension !== dimension && (
+          <>
+            {' '}
+            <button
+              type="button"
+              className="font-medium text-accent-text underline underline-offset-2"
+              onClick={() => setDimension(report.weakest!.dimension)}
+            >
+              {t('progress.groups.showWeakest', {
+                dimension: t(`progress.groups.dimensions.${report.weakest.dimension}`),
+              })}
+            </button>
+          </>
+        )}
       </p>
       <Select
         className="mt-4 max-w-72"
