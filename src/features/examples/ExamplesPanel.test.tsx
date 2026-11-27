@@ -154,12 +154,14 @@ describe('example sentences on the back of a card', () => {
     expect((await db.lexicon_examples.get('e1'))!.text_en).toBe('We had to cope with the delay.');
   });
 
-  it('a sense without shipped sentences says so, with no AI button', async () => {
+  it('a sense without shipped sentences: the card back has no empty "Örnek cümleler" (2026-11-26 #9)', async () => {
     await db.lexicon_examples.clear();
     localStorage.setItem('engapp.examples.open', '1');
     renderRoute(<CardBack view={await view()} isNew={false} speech={speech} />);
-    expect(await screen.findByText('Bu anlam için henüz örnek cümle yok.')).toBeInTheDocument();
-    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+    expect(await screen.findByText('başa çıkmak')).toBeInTheDocument();
+    await new Promise((r) => setTimeout(r, 200));
+    expect(screen.queryByText('Örnek cümleler')).not.toBeInTheDocument();
+    expect(screen.queryByText('Bu anlam için henüz örnek cümle yok.')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Yenisini üret' })).not.toBeInTheDocument();
   });
 

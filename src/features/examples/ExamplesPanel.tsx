@@ -46,14 +46,28 @@ function Marked({ text, span, term }: { text: string; span: [number, number] | n
   );
 }
 
+/** Whether any of these lexicon senses has a sentence to show (a tab in SenseExamplesPanel). */
+async function anyExamples(lexiconSenseIds: readonly Id[]): Promise<boolean> {
+  for (const id of lexiconSenseIds) {
+    const { examples } = await getSenseExamples(id);
+    if (examples.contexts.some((c) => (examples.byContext.get(c)?.length ?? 0) > 0)) return true;
+  }
+  return false;
+}
+
 /**
  * Collapsible section for the back of a card. Closed by default; the open/closed choice is
- * remembered on this device. Clicks inside never reach the card.
+ * remembered on this device. Clicks inside never reach the card. Left out when there is no
+ * sentence to show: an accordion that opens to "henüz örnek cümle yok" is noise (2026-11-26 #9).
  */
 export function CardExamples(props: ExamplesProps) {
   const { t } = useTranslation();
   const id = useId();
   const [open, setOpen] = useState(() => flags.get(OPEN_FLAG) === '1');
+  const lexiconIds = props.senses.flatMap((s) => (s.lexicon_sense_id ? [s.lexicon_sense_id] : []));
+  const key = lexiconIds.join(',');
+  const hasExamples = useLiveQuery(() => anyExamples(key ? key.split(',') : []), [key]);
+  if (!hasExamples) return null;
   const toggle = () => {
     setOpen(!open);
     flags.set(OPEN_FLAG, open ? '0' : '1');
