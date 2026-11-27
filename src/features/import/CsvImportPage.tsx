@@ -8,7 +8,12 @@ import { Link } from 'react-router';
 import { logError } from '@/data';
 import { importWordList, type WordListResult } from '@/data/wordList';
 import { decodeTextBytes } from '@/domain/textEncoding';
-import { MAX_LIST_ROWS, parseWordList } from '@/domain/wordList';
+import {
+  listLooksReversed,
+  MAX_LIST_ROWS,
+  parseWordList,
+  swapListColumns,
+} from '@/domain/wordList';
 import { locateTerm } from '@/features/cards/locateTerm';
 import { AddFlowPage, StickyBar } from '@/features/add/ui';
 import {
@@ -37,7 +42,13 @@ export function CsvImportPage() {
   const [result, setResult] = useState<WordListResult | null>(null);
 
   const parsed = useMemo(() => parseWordList(text), [text]);
-  const rows = parsed.rows;
+  // A Turkish-first list is offered a column swap before anything is saved (ekle.md #7).
+  const [swapped, setSwapped] = useState(false);
+  const reversed = useMemo(() => listLooksReversed(parsed.rows), [parsed.rows]);
+  const rows = useMemo(
+    () => (swapped ? swapListColumns(parsed.rows) : parsed.rows),
+    [parsed.rows, swapped],
+  );
 
   const pick = async (file: File | undefined) => {
     if (fileRef.current) fileRef.current.value = '';
@@ -51,6 +62,7 @@ export function CsvImportPage() {
     try {
       // Turkish Excel saves CSV in Windows-1254, Notepad may save UTF-16 (review 2026-11-26 #1).
       setText(decodeTextBytes(new Uint8Array(await file.arrayBuffer())));
+      setSwapped(false);
       setFileName(file.name);
     } catch (e) {
       void logError(e, 'wordList.read');
@@ -68,6 +80,7 @@ export function CsvImportPage() {
       const res = await importWordList(withSpans, (n) => setBusy(n));
       setResult(res);
       setText('');
+      setSwapped(false);
       setFileName(null);
     } catch (e) {
       void logError(e, 'wordList.import');
@@ -143,6 +156,7 @@ export function CsvImportPage() {
           value={text}
           onChange={(e) => {
             setText(e.target.value);
+            setSwapped(false);
             setResult(null);
           }}
           rows={8}
@@ -155,6 +169,30 @@ export function CsvImportPage() {
             <Eyebrow as="h2" className="px-1">
               <span id="word-list-preview">{t('wordList.preview', { count: rows.length })}</span>
             </Eyebrow>
+            {(reversed || swapped) && (
+              <Card
+                tone="sunken"
+                inset
+                padding="sm"
+                role="status"
+                className="flex flex-col items-start gap-2 px-4"
+                data-testid="word-list-reversed"
+              >
+                <p className="flex items-start gap-2 text-ui text-fg">
+                  <Icon name="info" size={18} className="mt-0.5 shrink-0 text-accent-text" />
+                  {swapped ? t('wordList.swapped') : t('wordList.reversed')}
+                </p>
+                <Button
+                  variant={swapped ? 'ghost' : 'secondary'}
+                  size="sm"
+                  leadingIcon={swapped ? 'undo' : 'refresh'}
+                  onClick={() => setSwapped((v) => !v)}
+                  data-testid="word-list-swap"
+                >
+                  {swapped ? t('wordList.unswap') : t('wordList.swap')}
+                </Button>
+              </Card>
+            )}
             <ul className="flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
               {rows.slice(0, SHOWN).map((r, i) => (
                 <li key={i} className="flex min-h-14 flex-col justify-center gap-0.5 px-4 py-3">
