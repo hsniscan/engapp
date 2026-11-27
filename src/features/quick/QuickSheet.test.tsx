@@ -155,6 +155,18 @@ describe('QuickSheet (presentational)', () => {
     expect(onOpenReader).toHaveBeenCalled();
     expect(onExtract).toHaveBeenCalled();
   });
+
+  it('a guest is told before the tap that extraction needs an account (ekle.md #13)', () => {
+    installDomPolyfills();
+    render(
+      <QuickSheet
+        route={{ kind: 'text', text: 'One two three four five.', words: 5 }}
+        extractNeedsSignIn
+        onClose={() => {}}
+      />,
+    );
+    expect(screen.getByTestId('quick-extract')).toHaveTextContent(/bunun için giriş yap/);
+  });
 });
 
 describe('QuickPage (web)', () => {

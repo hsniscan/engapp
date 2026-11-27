@@ -40,6 +40,8 @@ export interface QuickSheetProps {
   onWriteOwn?: () => void;
   onOpenReader?: () => void;
   onExtract?: () => void;
+  /** "Kelimeleri çıkar" needs an account the user does not have: said before the tap (#13). */
+  extractNeedsSignIn?: boolean;
   onOpenLink?: () => void;
   /** Which hand-over is under way (its button shows a spinner). */
   busy?: 'reader' | 'extract' | 'link' | 'write' | null;
@@ -386,6 +388,7 @@ function TextBody({
   words,
   onOpenReader,
   onExtract,
+  extractNeedsSignIn,
   busy,
   error,
 }: QuickSheetProps & { text: string; words: number }) {
@@ -420,7 +423,7 @@ function TextBody({
         <ChoiceButton
           icon="search"
           title={t('quick.extract')}
-          hint={t('quick.extractHint')}
+          hint={extractNeedsSignIn ? t('capture.extractSignIn') : t('quick.extractHint')}
           loading={busy === 'extract'}
           disabled={!!busy}
           onClick={onExtract}

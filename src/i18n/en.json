@@ -2034,7 +2034,7 @@
       "meaning": "Turkish meaning: {{term}}",
       "meaningEdited": "Edited",
       "resetMeaning": "Back to the dictionary meaning",
-      "source": "{{title}} · {{count}} candidates",
+      "source": "{{title}} ·\u00a0{{count}}\u00a0candidates",
       "confirm_one": "Add {{count}} word",
       "confirm_other": "Add {{count}} words",
       "confirmNone": "Select candidates to add",

@@ -131,6 +131,8 @@ test('a long selection, guest: "Kelimeleri çıkar" shows the two choices with t
 }) => {
   const text = 'The committee reluctantly postponed the decision until the spring.';
   await page.goto(`/quick?text=${encodeURIComponent(text)}`);
+  // Said before the tap (review 2026-11-26 ekle.md #13).
+  await expect(page.getByTestId('quick-extract')).toContainText('bunun için giriş yap');
   await page.getByTestId('quick-extract').click();
   await expect(page.getByRole('heading', { name: 'Paylaşılan metin' })).toBeVisible();
   await expect(page.getByTestId('shared-text')).toHaveText(text);

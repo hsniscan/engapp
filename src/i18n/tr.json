@@ -2034,7 +2034,7 @@
       "meaning": "Türkçe anlamı: {{term}}",
       "meaningEdited": "Düzeltildi",
       "resetMeaning": "Sözlükteki anlama dön",
-      "source": "{{title}} · {{count}} aday",
+      "source": "{{title}} ·\u00a0{{count}}\u00a0aday",
       "confirm_one": "{{count}} kelimeyi ekle",
       "confirm_other": "{{count}} kelimeyi ekle",
       "confirmNone": "Eklenecek aday seç",
