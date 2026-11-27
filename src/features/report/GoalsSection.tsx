@@ -17,7 +17,7 @@ import {
   type Goals,
 } from '@/domain/goals';
 import type { CefrLevel } from '@/domain/types';
-import { formatNumber } from '@/features/stats/format';
+import { formatNumber, formatPercent } from '@/features/stats/format';
 import {
   Button,
   Card,
@@ -118,7 +118,7 @@ function GoalRing({ progress: p }: { progress: GoalProgress }) {
           <Icon name="check" size={22} className="text-accent-text" />
         ) : (
           <span className="tabular text-meta font-semibold text-fg">
-            {Math.round(Math.min(1, p.ratio) * 100)}%
+            {formatPercent(Math.min(1, p.ratio))}
           </span>
         )}
       </ProgressRing>

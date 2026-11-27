@@ -1191,7 +1191,7 @@
         "account": "Account and data",
         "app": "App"
       },
-      "version": "engapp · version {{version}}",
+      "version": "Engapp · version {{version}}",
       "savedNote": "Changes are saved at once; when signed in they reach your other devices too."
     },
     "pages": {

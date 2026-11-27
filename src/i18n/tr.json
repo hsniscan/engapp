@@ -162,7 +162,7 @@
     "recallGoal": "hedefin {{goal}}",
     "ruleTitle": "Öğrenilmiş sayma kuralı değişti",
     "ruleBody": "Artık bir kelime üç ayrı günde doğru bilinince öğrenildi sayılıyor. Kelimelerin silinmedi; Pekişiyor'dakiler tekrarlarla birkaç hafta içinde yerine gelecek.",
-    "shortcuts": "Kısa yollar",
+    "shortcuts": "Kısayollar",
     "hardBody": "Hızlı pratik, takvimi değiştirmez",
     "reportTitle": "Geçen haftanın raporu hazır",
     "reportBody_one": "{{count}} gün çalıştın, {{fresh}} yeni kelime",
@@ -1191,7 +1191,7 @@
         "account": "Hesap ve veri",
         "app": "Uygulama"
       },
-      "version": "engapp · sürüm {{version}}",
+      "version": "Engapp · sürüm {{version}}",
       "savedNote": "Değişiklikler hemen kaydedilir; giriş yaptıysan diğer cihazlarına da geçer."
     },
     "pages": {
