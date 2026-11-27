@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { db, deleteDeck, listDecks, logError, moveDeck, restoreDeck, setNoteTags } from '@/data';
 import { getDeckWords } from '@/data/deckHub';
-import { foldForSearch } from '@/features/cards/libraryFilter';
+import { foldForSearch, searchRank } from '@/features/cards/libraryFilter';
 import type { WordStage } from '@/domain/stages';
 import { deckKind } from '@/domain/deckFilter';
 import { hasTag } from '@/domain/tags';
@@ -369,7 +369,9 @@ function WordPicker({
   const [busy, setBusy] = useState(false);
   const fq = foldForSearch(q.trim());
   const list = (notes ?? [])
-    .filter((n) => !fq || foldForSearch(n.term).includes(fq))
+    .filter(
+      (n) => !fq || searchRank({ term: foldForSearch(n.term), meanings: '', gloss: '' }, fq) !== null,
+    )
     .sort((a, b) => a.term.localeCompare(b.term, 'en'))
     .slice(0, 200);
 

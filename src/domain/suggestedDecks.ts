@@ -155,6 +155,143 @@ export const AUXILIARY_FORMS: ReadonlySet<string> = new Set([
   "'ll",
 ]);
 
+/** Modal verbs: tagged as verbs in the lists ("might"), but grammar, not a verb to learn. */
+export const MODALS: ReadonlySet<string> = new Set([
+  'can',
+  'could',
+  'will',
+  'would',
+  'shall',
+  'should',
+  'may',
+  'might',
+  'must',
+  'ought',
+]);
+
+/**
+ * Irregular past and participle forms the bank also carries as verbs of their own ("done",
+ * "gone"), each with its base verb. Forms that are verbs in their own right ("found", "saw",
+ * "lay", "fell") are left out on purpose.
+ */
+const IRREGULAR_FORMS: Readonly<Record<string, string>> = Object.fromEntries(
+  Object.entries({
+    do: 'did done',
+    go: 'went gone',
+    get: 'got gotten',
+    make: 'made',
+    take: 'took taken',
+    come: 'came',
+    know: 'knew known',
+    give: 'gave given',
+    think: 'thought',
+    tell: 'told',
+    become: 'became',
+    leave: 'left',
+    feel: 'felt',
+    bring: 'brought',
+    begin: 'began begun',
+    keep: 'kept',
+    hold: 'held',
+    write: 'wrote written',
+    stand: 'stood',
+    hear: 'heard',
+    mean: 'meant',
+    meet: 'met',
+    run: 'ran',
+    pay: 'paid',
+    sit: 'sat',
+    speak: 'spoke spoken',
+    lead: 'led',
+    grow: 'grew grown',
+    lose: 'lost',
+    send: 'sent',
+    build: 'built',
+    understand: 'understood',
+    draw: 'drew drawn',
+    break: 'broke broken',
+    spend: 'spent',
+    drive: 'drove driven',
+    buy: 'bought',
+    wear: 'wore worn',
+    choose: 'chose chosen',
+    throw: 'threw thrown',
+    catch: 'caught',
+    win: 'won',
+    forget: 'forgot forgotten',
+    sell: 'sold',
+    fight: 'fought',
+    teach: 'taught',
+    eat: 'ate eaten',
+    sleep: 'slept',
+    fly: 'flew flown',
+    swim: 'swam swum',
+    sing: 'sang sung',
+    drink: 'drank drunk',
+    shake: 'shook shaken',
+    hide: 'hid hidden',
+    steal: 'stole stolen',
+    freeze: 'froze frozen',
+    see: 'seen',
+  }).flatMap(([base, forms]) => forms.split(' ').map((f) => [f, base])),
+);
+
+/** Base forms an "-ing", "-ed" or "-s" form could come from ("running" → "run", "used" → "use"). */
+function regularBases(w: string): string[] {
+  const out: string[] = [];
+  const undouble = (stem: string) =>
+    stem.length >= 3 && stem.at(-1) === stem.at(-2) ? [stem.slice(0, -1)] : [];
+  if (w.endsWith('ing') && w.length >= 5) {
+    const stem = w.slice(0, -3);
+    out.push(stem, `${stem}e`, ...undouble(stem));
+    if (w.endsWith('ying')) out.push(`${w.slice(0, -4)}ie`);
+  } else if (w.endsWith('ied')) out.push(`${w.slice(0, -3)}y`);
+  else if (w.endsWith('ed')) {
+    const stem = w.slice(0, -2);
+    out.push(stem, ...undouble(stem));
+    // "used" → "use", "agreed" → "agree"; not "bed" → "be" or "seed" → "see".
+    const eStem = w.slice(0, -1);
+    if (eStem.length >= (w.endsWith('eed') ? 4 : 3)) out.push(eStem);
+  } else if (w.endsWith('ies')) out.push(`${w.slice(0, -3)}y`);
+  else if (w.endsWith('s') && !w.endsWith('ss'))
+    out.push(w.slice(0, -1), ...(w.endsWith('es') ? [w.slice(0, -2)] : []));
+  return out.filter((b) => b.length >= 2 && b !== w);
+}
+
+const notLemmaCache = new WeakMap<readonly WordBankEntry[], ReadonlySet<string>>();
+
+/**
+ * Verb rows that are not a verb to learn on their own: modals ("might"), auxiliary forms
+ * ("been") and inflected forms of another verb in the bank ("done" from do, "running" from
+ * run). The bank (CEFR-J) lists some of these as separate verbs; suggested decks and Keşfet's
+ * daily words skip them (the base verb is the card). The word bank itself is left as it is.
+ */
+export function nonLemmaVerbs(entries: readonly WordBankEntry[]): ReadonlySet<string> {
+  const hit = notLemmaCache.get(entries);
+  if (hit) return hit;
+  const verbs = new Set<string>();
+  for (const e of entries) if (e.pos === 'verb') verbs.add(e.lemma_norm);
+  const out = new Set<string>();
+  for (const w of verbs) {
+    if (MODALS.has(w) || AUXILIARY_FORMS.has(w)) out.add(w);
+    else {
+      const irregular = Object.hasOwn(IRREGULAR_FORMS, w) ? IRREGULAR_FORMS[w] : undefined;
+      if ((irregular && verbs.has(irregular)) || regularBases(w).some((b) => verbs.has(b)))
+        out.add(w);
+    }
+  }
+  notLemmaCache.set(entries, out);
+  return out;
+}
+
+/** A bank row that is a modal or an inflected form listed as a verb (nonLemmaVerbs). */
+export function isNonLemmaVerb(
+  e: Pick<WordBankEntry, 'pos' | 'lemma_norm'>,
+  set: ReadonlySet<string>,
+): boolean {
+  return e.pos === 'verb' && set.has(e.lemma_norm);
+}
+
 /**
  * Lemmas that never count as content words for the frequency decks: any word the lists also
  * give a function-word reading (so "in" as an adverb does not top the list) and auxiliaries.
@@ -218,6 +355,7 @@ export function deckWords(
   opts: DeckWordOptions = {},
 ): WordBankEntry[] {
   const fn = spec.kind === 'top' ? functionLemmas(entries) : null;
+  const notLemma = nonLemmaVerbs(entries);
   // Part-of-speech decks: each word in the reading taught first (firstLevels).
   const first = spec.kind === 'pos' || spec.kind === 'levelPos' ? firstLevels(entries) : null;
   const seen = new Set<string>();
@@ -225,6 +363,7 @@ export function deckWords(
   const kept = entries.filter(
     (x) =>
       !AUXILIARY_FORMS.has(x.lemma_norm) &&
+      !isNonLemmaVerb(x, notLemma) &&
       matches(spec, x, opts, fn) &&
       (!first || isFirstReading(x, first)),
   );
@@ -307,9 +446,16 @@ export function posLevelCounts(
   } satisfies Record<ContentPos, Record<CefrLevel, number>>;
   // Counted like the decks: each word in the reading taught first (firstLevels).
   const first = firstLevels(entries);
+  const notLemma = nonLemmaVerbs(entries);
   const seen = new Set<string>();
   for (const e of entries) {
-    if (!isPos(e.pos) || AUXILIARY_FORMS.has(e.lemma_norm) || !isFirstReading(e, first)) continue;
+    if (
+      !isPos(e.pos) ||
+      AUXILIARY_FORMS.has(e.lemma_norm) ||
+      isNonLemmaVerb(e, notLemma) ||
+      !isFirstReading(e, first)
+    )
+      continue;
     const key = `${e.pos}|${e.lemma_norm}`;
     if (seen.has(key)) continue;
     seen.add(key);

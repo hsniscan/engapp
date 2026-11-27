@@ -4,8 +4,9 @@ import type { WordLevel } from '@/domain/level';
 import { cn } from '@/ui';
 import { useLevelLabel } from './levelText';
 
+// The same height and full radius as StagePill: one badge shape on a row (tasarım M4).
 const base =
-  'tabular inline-flex h-5 shrink-0 items-center rounded-xs px-1.5 text-[0.6875rem] leading-none font-semibold tracking-[0.04em] whitespace-nowrap';
+  'tabular inline-flex h-6 shrink-0 items-center rounded-full px-2 text-caption leading-none font-semibold tracking-[0.04em] whitespace-nowrap';
 
 /** Solid for a list, frequency or the user's own level; dashed for an AI guess. */
 function tone(level: WordLevel): string {

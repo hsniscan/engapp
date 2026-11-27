@@ -81,6 +81,33 @@ describe('libraryFilter', () => {
     ).toBe(true);
   });
 
+  it('searches the term and the meanings by word start, the gloss only as a whole word (2026-11-26)', () => {
+    const terms = ['hat', 'that', 'what', 'hatch', 'top hat', 'umbrella', 'wolf', 'give up'];
+    const notes = terms.map((t, i) => note(`n${i + 1}`, t));
+    const senses = notes.map((n) => sense(`s${n.id}`, n.id, 'x'));
+    // "wolf" has a gloss with "that" in it; "umbrella" is "şemsiye"; "give up" is "vazgeçmek".
+    senses[5] = sense('s6', 'n6', 'şemsiye, güneşlik');
+    senses[6] = { ...sense('s7', 'n7', 'kurt'), gloss_en: 'an animal that hunts in packs' };
+    senses[7] = sense('s8', 'n8', 'vazgeçmek, bırakmak');
+    senses.push({ ...sense('s9', 'n1', 'şapka'), sense_no: 2, gloss_en: 'a covering for the head; a hat' });
+    const rows = buildRows(notes, senses, []);
+    const found = (q: string) => filterRows(rows, { ...EMPTY_FILTERS, q }).map((r) => r.note.term);
+    // Not "that" or "what" (infix), not "wolf" (its gloss says "that").
+    expect(found('hat')).toEqual(['hat', 'hatch', 'top hat']);
+    expect(found('HAT')).toEqual(['hat', 'hatch', 'top hat']);
+    expect(found('SEMSIYE')).toEqual(['umbrella']);
+    expect(found('Umbrella ')).toEqual(['umbrella']);
+    expect(found('güneş')).toEqual(['umbrella']);
+    expect(found('birak')).toEqual(['give up']);
+    expect(found('up')).toEqual(['give up']);
+    // The gloss counts as whole words only.
+    expect(found('hunts')).toEqual(['wolf']);
+    expect(found('hunt')).toEqual([]);
+    expect(found('head')).toEqual(['hat']);
+    // Long enough for an infix of the term.
+    expect(found('atch')).toEqual(['hatch']);
+  });
+
   it('filters by the five word stages and compares tags case-insensitively (B5, B9)', () => {
     const notes = [note('n1', 'apple', { tags: ['İş'] }), note('n2', 'bread', { tags: ['ev'] })];
     const cards = [

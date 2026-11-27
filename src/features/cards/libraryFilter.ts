@@ -11,8 +11,8 @@ export interface LibraryRow {
   senses: Sense[];
   /** Live cards. */
   cards: Card[];
-  /** Folded "term ipa meanings glosses" for search. */
-  haystack: string;
+  /** Folded fields for search (searchRank). */
+  search: SearchFields;
   suspendedCards: number;
   /** The note's level (src/domain/level.ts); null when unknown. */
   level: WordLevel | null;
@@ -71,6 +71,38 @@ export function foldForSearch(s: string): string {
     .trim();
 }
 
+/** A row's folded search fields: the term, the Turkish meanings, the English glosses. */
+export interface SearchFields {
+  term: string;
+  meanings: string;
+  gloss: string;
+}
+
+/** Punctuation inside a field counts as a word break ("vazgeçmek, bırakmak", "take-off"). */
+const words = (s: string) => ` ${s.replace(/[^\p{L}\p{N}']+/gu, ' ').trim()} `;
+
+/** A term infix ("bank" in "riverbank") only counts from this many letters ("hat" ≠ "that"). */
+export const MIN_INFIX_QUERY = 4;
+
+/**
+ * How well a row matches a folded query, lower is better; null when it does not match
+ * (2026-11-26: "hat" listed 98 words through hidden glosses such as "that"). 0 the term
+ * itself, 1 the term starts with it, 2 a word of the term starts with it ("up" → "give up"),
+ * 3 the term contains it (long queries only), 4 a word of a Turkish meaning starts with it,
+ * 5 the English gloss has it as a whole word.
+ */
+export function searchRank(f: SearchFields, q: string): number | null {
+  if (!q) return 0;
+  if (f.term === q) return 0;
+  if (f.term.startsWith(q)) return 1;
+  const wq = words(q).trimEnd();
+  if (words(f.term).includes(wq)) return 2;
+  if (q.length >= MIN_INFIX_QUERY && f.term.includes(q)) return 3;
+  if (words(f.meanings).includes(wq)) return 4;
+  if (words(f.gloss).includes(`${wq} `)) return 5;
+  return null;
+}
+
 export function senseText(s: Pick<Sense, 'meaning_tr' | 'meaning_tr_override'>): string {
   return s.meaning_tr_override?.trim() || s.meaning_tr;
 }
@@ -105,11 +137,11 @@ export function buildRows(
       note,
       senses: ss,
       cards: cs,
-      haystack: foldForSearch(
-        [note.term, ...ss.flatMap((s) => [senseText(s), s.meaning_tr, s.gloss_en ?? ''])].join(
-          ' \u0000 ',
-        ),
-      ),
+      search: {
+        term: foldForSearch(note.term),
+        meanings: foldForSearch(ss.flatMap((s) => [senseText(s), s.meaning_tr]).join(' ; ')),
+        gloss: foldForSearch(ss.map((s) => s.gloss_en ?? '').join(' ; ')),
+      },
       suspendedCards: cs.filter((c) => c.suspended).length,
       level: levelOf(note, ss),
     });
@@ -137,8 +169,13 @@ export function rowStage(r: Pick<LibraryRow, 'cards'>): WordStage | null {
 export function filterRows(rows: LibraryRow[], f: LibraryFilters): LibraryRow[] {
   const q = foldForSearch(f.q);
   const cardLevel = f.type !== 'all' || f.suspended !== 'all';
+  const rank = new Map<LibraryRow, number>();
   const out = rows.filter((r) => {
-    if (q && !r.haystack.includes(q)) return false;
+    if (q) {
+      const k = searchRank(r.search, q);
+      if (k === null) return false;
+      rank.set(r, k);
+    }
     // Tags compare case-insensitively everywhere ("İş" = "iş").
     if (f.tag && !hasTag(r.note.tags, f.tag)) return false;
     if (f.state !== 'all' && rowStage(r) !== f.state) return false;
@@ -166,12 +203,8 @@ export function filterRows(rows: LibraryRow[], f: LibraryFilters): LibraryRow[] 
     });
   } else
     out.sort((a, b) => b.note.created_at - a.note.created_at || (a.note.id < b.note.id ? 1 : -1));
-  // A term match ranks above a meaning-only match while searching.
-  if (q) {
-    const termHit = (r: LibraryRow) =>
-      foldForSearch(r.note.term).startsWith(q) ? 0 : foldForSearch(r.note.term).includes(q) ? 1 : 2;
-    out.sort((a, b) => termHit(a) - termHit(b));
-  }
+  // While searching: the exact word, then words starting with it, then meaning matches.
+  if (q) out.sort((a, b) => rank.get(a)! - rank.get(b)!);
   return out;
 }
 
