@@ -4,6 +4,8 @@ import {
   criteriaCount,
   DECK_FILTER_VERSION,
   DECK_STATES,
+  type DeckFilter,
+  deckKind,
   type DeckCard,
   deckNoteIds,
   type DeckNoteFacts,
@@ -271,5 +273,30 @@ describe('orderDecks', () => {
     expect(
       orderDecks([d('c', 2, 1), d('a', 1, 5), d('b', 1, 2), d('x', 0, 0, 9)]).map((x) => x.id),
     ).toEqual(['b', 'a', 'c']);
+  });
+});
+
+describe('deckKind (2026-11-26 #12)', () => {
+  const noTitles = () => false;
+  const f = (x: Omit<DeckFilter, 'v'>): DeckFilter => ({ v: 1, ...x });
+
+  it('a "Kurallarla" deck that only asks for one tag is a rules deck, not hand-picked', () => {
+    expect(deckKind('Çok uzun bir deste adı: iş toplantıları', f({ tags: ['iş'] }), noTitles)).toBe('rules');
+  });
+
+  it('an "Elle seç" deck (one tag named like the deck) is hand-picked, case- and spacing-tolerant', () => {
+    expect(deckKind('Seyahat', f({ tags: ['Seyahat'] }), noTitles)).toBe('manual');
+    expect(deckKind('  seyahat ', f({ tags: ['Seyahat'] }), noTitles)).toBe('manual');
+  });
+
+  it('a one-tag deck with more criteria, or no readable filter, is a rules deck', () => {
+    expect(deckKind('Seyahat', f({ tags: ['Seyahat'], stages: ['new'] }), noTitles)).toBe('rules');
+    expect(deckKind('Zorlandıklarım', f({ states: ['struggling'] }), noTitles)).toBe('rules');
+    expect(deckKind('X', null, noTitles)).toBe('rules');
+  });
+
+  it('a deck whose one tag is a suggestion title is "from a suggestion"', () => {
+    const titles = (t: string) => t === 'Phrasal verbler';
+    expect(deckKind('Phrasal verbler', f({ tags: ['Phrasal verbler'] }), titles)).toBe('suggested');
   });
 });

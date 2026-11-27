@@ -2,9 +2,9 @@
 // filter itself is evaluated on the device (domain/deckFilter.ts) over the live notes.
 import {
   cleanDeckName,
-  criteriaCount,
   type DeckContext,
   deckNoteIds,
+  isHandPickedDeck,
   type DeckNoteFacts,
   normalizeDeckFilter,
   orderDecks,
@@ -188,15 +188,6 @@ export async function countDeckFilter(
   return ids ? ids.size : null;
 }
 
-/** A deck made with "Elle seç": its only criterion is one tag spelled like its name. */
-function isHandPicked(f: DeckFilter, name: string): boolean {
-  return (
-    f.tags?.length === 1 &&
-    criteriaCount(f) === 1 &&
-    sameTag(f.tags[0]!, cleanTag(name))
-  );
-}
-
 function sameFilter(a: DeckFilter, b: DeckFilter | null): boolean {
   return b !== null && JSON.stringify(a) === JSON.stringify(normalizeDeckFilter(b));
 }
@@ -241,7 +232,7 @@ export async function updateDeck(
     // A hand-picked deck is a tag of its own name: renaming it renames the tag on its words
     // too, so "Elle seç" with the old name is free again (B11).
     const old = parseDeckFilter(deck.filter);
-    const oldTag = old.ok && isHandPicked(old.filter, deck.name) ? old.filter.tags![0]! : null;
+    const oldTag = old.ok && isHandPickedDeck(old.filter, deck.name) ? old.filter.tags![0]! : null;
     const kept = patch.filter === undefined || sameFilter(normalizeDeckFilter(patch.filter), old.ok ? old.filter : null);
     const newTag = cleanTag(next.name);
     if (oldTag && kept && newTag && !sameTag(oldTag, newTag)) {
