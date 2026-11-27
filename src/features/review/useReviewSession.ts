@@ -68,8 +68,9 @@ export interface SessionState {
   /** Cards left, including the one on screen. */
   remaining: number;
   /**
-   * Progress in cards, not answers (ADR 0055): `cardsTotal` is every card of the session (it
-   * only grows when a card joins later), `cardsDone` the cards answered at least once, and
+   * Progress in cards, not answers (ADR 0055): `cardsTotal` is the cards answered plus the
+   * cards still to come (it grows only when a card really joins later, ADR 0086), `cardsDone`
+   * the cards answered at least once, and
    * `repeatsLeft` the answered cards that come back for another learning step.
    */
   cardsTotal: number;
@@ -167,8 +168,6 @@ export function useReviewSession(
   const answers = useRef<SessionAnswer[]>([]);
   const shownAt = useRef(now());
   const alive = useRef(true);
-  /** Every card the session has held (for the fixed progress denominator). */
-  const seen = useRef(new Set<Id>());
   /**
    * v0.5.2 "Oturum uzunluğu" (settings.study_options.session_cards): the session takes at most
    * this many cards (their learning steps included); null = the whole queue.
@@ -195,13 +194,18 @@ export function useReviewSession(
     const pending = new Set(upcoming.current.map((i) => i.card_id));
     if (merged.current) pending.add(merged.current.view.card.id);
     const answeredIds = new Set(answers.current.map((a) => a.cardId));
-    for (const id of pending) seen.current.add(id);
-    for (const id of answeredIds) seen.current.add(id);
+    // The total is the cards answered plus the cards still to come, not every card the queue
+    // ever held: a new card the queue swapped for another after an answer (the smart order's
+    // mix and interference guard) used to stay counted, so 0/37 became 1/38 (2026-11-26, 3.8).
+    let cardsTotal = answeredIds.size;
     let repeatsLeft = 0;
-    for (const id of pending) if (answeredIds.has(id)) repeatsLeft++;
+    for (const id of pending) {
+      if (answeredIds.has(id)) repeatsLeft++;
+      else cardsTotal++;
+    }
     const next = {
       ...merged,
-      cardsTotal: seen.current.size,
+      cardsTotal,
       cardsDone: answeredIds.size,
       repeatsLeft,
     };
@@ -266,7 +270,6 @@ export function useReviewSession(
       const view = cached !== undefined ? cached : await loadView(item.card_id);
       if (!view || !canShow(view)) {
         if (view?.card.card_type === 'image') skipped.current.add(view.card.id);
-        seen.current.delete(item.card_id);
         continue;
       }
       show({ view, kind: item.kind });
@@ -321,7 +324,6 @@ export function useReviewSession(
       if (cancelled) return;
       setStart({ todayActive: streak.todayActive, streak: streak.currentStreak });
       skipped.current.clear();
-      seen.current.clear();
       chosen.current.clear();
       sessionCap.current = sessionCards(settings);
       upcoming.current = capItems(q.items).map(({ card_id, note_id, kind }) => ({ card_id, note_id, kind }));
@@ -486,7 +488,6 @@ export function useReviewSession(
     await chain.current;
     await setSuspended({ card_ids: [cur.view.card.id] }, true);
     forget(cur.view.card.id);
-    seen.current.delete(cur.view.card.id);
     if (!(await advance())) {
       patch({ phase: 'waiting', current: null });
       await rebuild(mySeq);
@@ -515,7 +516,6 @@ export function useReviewSession(
     const cur = stateRef.current.current;
     if (!cur) return;
     forget(cur.view.card.id);
-    seen.current.delete(cur.view.card.id);
     const mySeq = ++seq.current;
     if (!(await advance())) {
       patch({ phase: 'waiting', current: null });
@@ -549,7 +549,6 @@ export function useReviewSession(
         return;
       }
       forget(cardId);
-      seen.current.delete(cardId);
       upcoming.current = upcoming.current.filter((i) => i.card_id !== cardId);
       patch({ remaining: remainingCount(stateRef.current.current) });
     },
