@@ -177,7 +177,9 @@ export function WordSheet({
           : undefined
       }
       centerTitle
-      className="max-h-[70dvh]"
+      // On wide screens the sheet floats above the window's bottom edge with all its corners,
+      // so it never looks cut off (2026-11-26 #11).
+      className="sm:bottom-4 sm:max-h-[calc(100dvh-6rem)] sm:rounded-sheet sm:border-b"
     >
       {pick && (
         <SheetBody
@@ -286,7 +288,14 @@ function SheetBody({
 
   return (
     <div className="flex flex-col gap-4 pb-1">
-      <div className="flex min-h-11 flex-wrap items-center justify-center gap-2">
+      {/* While guessing there are no chips yet: the row is just the speaker, pulled up under
+          the word instead of leaving a gap (2026-11-26 #11). */}
+      <div
+        className={cn(
+          'flex flex-wrap items-center justify-center gap-2',
+          pick.stage || pos || info?.ipa ? 'min-h-11' : '-mt-2',
+        )}
+      >
         {pick.stage && <StagePill stage={pick.stage} />}
         {pos && (
           <Badge tone="outline">{t(`reader.pos.${pos}`, { defaultValue: pos })}</Badge>
