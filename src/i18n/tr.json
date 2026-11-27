@@ -116,6 +116,7 @@
     "weekDots_one": "Bu hafta: {{count}} gün çalışıldı",
     "weekDots_other": "Bu hafta: {{count}} gün çalışıldı",
     "dayActive": "çalışıldı",
+    "dayKept": "çalışılmadı, seri korundu",
     "dayIdle": "çalışılmadı",
     "streakStart": "Seriyi bugün başlat",
     "streakDays_one": "{{count}} günlük seri",

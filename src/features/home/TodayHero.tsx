@@ -104,9 +104,10 @@ function RingCentre({ children, caption }: { children: ReactNode; caption?: stri
 function WeekStrip({ week }: { week: WeekDot[] }) {
   const { t } = useTranslation();
   const active = week.filter((d) => d.active).length;
+  // A kept day (vacation, streak protection) is the lighter shade: the streak went on.
   const days = week.map((d) => ({
-    level: (d.active ? 'completed' : 'empty') satisfies HeatLevel as HeatLevel,
-    label: `${formatDayLong(d.date)}: ${d.active ? t('today.dayActive') : t('today.dayIdle')}`,
+    level: (d.active ? 'completed' : d.kept ? 'active' : 'empty') satisfies HeatLevel as HeatLevel,
+    label: `${formatDayLong(d.date)}: ${d.active ? t('today.dayActive') : d.kept ? t('today.dayKept') : t('today.dayIdle')}`,
   }));
   return (
     <HeatStrip

@@ -116,6 +116,7 @@
     "weekDots_one": "This week: {{count}} day studied",
     "weekDots_other": "This week: {{count}} days studied",
     "dayActive": "studied",
+    "dayKept": "not studied, streak kept",
     "dayIdle": "not studied",
     "streakStart": "Start your streak today",
     "streakDays_one": "{{count}}-day streak",

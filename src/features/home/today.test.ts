@@ -38,6 +38,11 @@ describe('week dots', () => {
     expect(dots.findIndex((d) => d.today)).toBe(3);
     expect(dots.filter((d) => d.future)).toHaveLength(3);
   });
+  it('marks the days a protection or a vacation kept the streak (M3), never today or later', () => {
+    const kept = new Set(['2026-11-24', '2026-11-25', '2026-11-27']);
+    const dots = weekDots('2026-11-26', new Set(['2026-11-23', '2026-11-26']), (d) => kept.has(d));
+    expect(dots.map((d) => (d.active ? 'x' : d.kept ? 'k' : '.')).join('')).toBe('xkkx...');
+  });
 });
 
 describe('level goal', () => {
