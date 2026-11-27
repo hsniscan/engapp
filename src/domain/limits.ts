@@ -15,6 +15,25 @@ export const LIMITS = {
   file_name: 500,
 } as const;
 
+/**
+ * Longest term the add forms let the user type (review 2026-11-26, ekle.md #13). The column
+ * takes 200 (`LIMITS.term`, for imports and long patterns), but a word, phrasal verb or
+ * pattern typed by hand is far shorter; past this the field stops and its counter shows why.
+ */
+export const TYPED_TERM_MAX = 80;
+
+/**
+ * "12 / 500" once a typed value is near its limit (the last fifth), else null: a field that
+ * silently stops taking characters looks broken.
+ */
+export function charCountNearLimit(
+  value: string,
+  max: number,
+): { count: number; max: number } | null {
+  const count = codePoints(value);
+  return count >= Math.ceil(max * 0.8) ? { count, max } : null;
+}
+
 export function codePoints(s: string): number {
   let n = 0;
   for (const _ of s) n++;
@@ -22,7 +41,9 @@ export function codePoints(s: string): number {
 }
 
 /** Name of the first field over its limit, or null. `null`/`undefined` values pass. */
-export function overLimit(fields: Record<string, { value: string | null | undefined; max: number }>): string | null {
+export function overLimit(
+  fields: Record<string, { value: string | null | undefined; max: number }>,
+): string | null {
   for (const [name, { value, max }] of Object.entries(fields)) {
     if (typeof value === 'string' && codePoints(value) > max) return name;
   }
