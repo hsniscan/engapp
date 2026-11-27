@@ -1,6 +1,6 @@
 // End of a study session (v0.5.2 "Çam", docs/design.md §4.4, ADR 0066): a full ring with a
 // check, what was studied ("15 kelime çalıştın · 3 kelime Pekişiyor'a geçti"), Kelime · Süre ·
-// Hatırlama (recall on reviews only, ADR 0055), the answers per rating from the one rating map,
+// Tekrarlarda hatırlama (recall on reviews only, ADR 0055; from 5 reviews), the answers per rating from the one rating map,
 // the words that moved up a stage, the streak, and the next step: the next mode that still has
 // cards today, else "Bitir"; "Biraz daha çalış" only once the whole day is done.
 import { motion, useReducedMotion } from 'motion/react';
@@ -32,7 +32,7 @@ import {
   StatTile,
   type Rating as RatingName,
 } from '@/ui';
-import { sessionFacts, stageChanges } from './study';
+import { MIN_RECALL_REVIEWS, sessionFacts, stageChanges } from './study';
 import { modeLeft, useTodayStudy } from './studyModes';
 import { durationText } from './intervalText';
 import { useNow } from '@/features/settings/useNow';
@@ -174,11 +174,13 @@ export function SessionSummary({
         <StatRow>
           <StatTile bare label={t('review.summary.words')} value={String(facts.words)} />
           <StatTile bare label={t('review.summary.time')} value={formatDuration(timeMs)} />
-          <StatTile
-            bare
-            label={t('review.summary.retention')}
-            value={facts.reviews ? formatPercent(facts.recalled / facts.reviews) : '—'}
-          />
+          {facts.reviews >= MIN_RECALL_REVIEWS && (
+            <StatTile
+              bare
+              label={t('review.summary.retention')}
+              value={formatPercent(facts.recalled / facts.reviews)}
+            />
+          )}
         </StatRow>
       </motion.div>
 
