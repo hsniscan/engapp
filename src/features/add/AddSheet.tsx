@@ -349,7 +349,7 @@ function WordResult({
   // with their part of speech and example (review 2026-11-26 #7).
   const carried = senses.some((s) => picked.has(s.key))
     ? senses.filter((s) => picked.has(s.key))
-    : senses.slice(0, 1);
+    : senses.filter((s) => !s.owned).slice(0, 1);
 
   const manual = (
     <Link

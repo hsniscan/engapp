@@ -149,6 +149,30 @@ export function CsvImportPage() {
             </p>
           )}
         </div>
+        {(reversed || swapped) && (
+          <Card
+            tone="sunken"
+            inset
+            padding="sm"
+            role="status"
+            className="flex flex-col items-start gap-2 px-4"
+            data-testid="word-list-reversed"
+          >
+            <p className="flex items-start gap-2 text-ui text-fg">
+              <Icon name="info" size={18} className="mt-0.5 shrink-0 text-accent-text" />
+              {swapped ? t('wordList.swapped') : t('wordList.reversed')}
+            </p>
+            <Button
+              variant={swapped ? 'ghost' : 'secondary'}
+              size="sm"
+              leadingIcon={swapped ? 'undo' : 'refresh'}
+              onClick={() => setSwapped((v) => !v)}
+              data-testid="word-list-swap"
+            >
+              {swapped ? t('wordList.unswap') : t('wordList.swap')}
+            </Button>
+          </Card>
+        )}
         <TextArea
           label={t('wordList.pasteLabel')}
           placeholder={t('wordList.placeholder')}
@@ -169,30 +193,6 @@ export function CsvImportPage() {
             <Eyebrow as="h2" className="px-1">
               <span id="word-list-preview">{t('wordList.preview', { count: rows.length })}</span>
             </Eyebrow>
-            {(reversed || swapped) && (
-              <Card
-                tone="sunken"
-                inset
-                padding="sm"
-                role="status"
-                className="flex flex-col items-start gap-2 px-4"
-                data-testid="word-list-reversed"
-              >
-                <p className="flex items-start gap-2 text-ui text-fg">
-                  <Icon name="info" size={18} className="mt-0.5 shrink-0 text-accent-text" />
-                  {swapped ? t('wordList.swapped') : t('wordList.reversed')}
-                </p>
-                <Button
-                  variant={swapped ? 'ghost' : 'secondary'}
-                  size="sm"
-                  leadingIcon={swapped ? 'undo' : 'refresh'}
-                  onClick={() => setSwapped((v) => !v)}
-                  data-testid="word-list-swap"
-                >
-                  {swapped ? t('wordList.unswap') : t('wordList.swap')}
-                </Button>
-              </Card>
-            )}
             <ul className="flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
               {rows.slice(0, SHOWN).map((r, i) => (
                 <li key={i} className="flex min-h-14 flex-col justify-center gap-0.5 px-4 py-3">

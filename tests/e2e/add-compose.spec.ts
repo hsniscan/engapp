@@ -94,6 +94,60 @@ test('Add sheet: four groups; a typed word is looked up and becomes a card in th
   expect(notes).toEqual([expect.objectContaining({ term: 'postpone' })]);
   expect(senses).toEqual([expect.objectContaining({ meaning_tr: 'ertelemek' })]);
   await axe(page, 'add sheet');
+
+  // The same word again: the owned meaning is not picked, the button says so (ekle.md #8).
+  await sheet.getByRole('button', { name: 'Başka kelime ekle' }).click();
+  await sheet.getByTestId('add-word-input').fill('postpone');
+  await sheet.getByRole('button', { name: 'Anlamını bul' }).click();
+  await expect(sheet.getByTestId('quick-sense')).toBeDisabled();
+  await expect(sheet.getByTestId('add-word-save')).toHaveText('Hepsi kartlarında');
+  await expect(sheet.getByText('Kartlarında var')).toBeVisible();
+  await noSideScroll(page);
+  await shot(page, 'ekle-word-owned', true);
+  await axe(page, 'add sheet, owned word');
+
+  // A Turkish word: the field wants English; no sign-in card (#9).
+  await sheet.getByTestId('add-word-input').fill('çalışmak');
+  await sheet.getByRole('button', { name: 'Anlamını bul' }).click();
+  await expect(sheet.getByText(/“çalışmak” Türkçe görünüyor/)).toBeVisible();
+  await expect(sheet.getByTestId('add-word-signin')).toHaveCount(0);
+  await shot(page, 'ekle-word-turkish', true);
+});
+
+test('CSV: a Turkish-first list offers a column swap (ekle.md #7)', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 780 });
+  await page.goto('/import/csv');
+  await page
+    .getByLabel('Ya da listeyi buraya yapıştır')
+    .fill('vazgeçmek,give up\nısrar etmek,insist\nşemsiye;umbrella');
+  await expect(page.getByTestId('word-list-reversed')).toBeVisible();
+  await noSideScroll(page);
+  await page.getByTestId('word-list-swap').scrollIntoViewIfNeeded();
+  await shot(page, 'ekle-csv-ters', true);
+  await page.getByTestId('word-list-swap').click();
+  await expect(page.getByTestId('word-list-reversed')).toContainText('Sütunlar değiştirildi');
+  await page.getByTestId('word-list-add').click();
+  await expect(page.getByTestId('word-list-done')).toContainText('3 yeni kelime eklendi');
+  const { notes } = await dumpTables(page, ['notes']);
+  expect(notes!.map((n) => (n as { term: string }).term).sort()).toEqual([
+    'give up',
+    'insist',
+    'umbrella',
+  ]);
+});
+
+test('Paste screen: "Panodan yapıştır" fills the box (review 3.10)', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/add?tab=paste');
+  await page.evaluate(() =>
+    navigator.clipboard.writeText('The committee reluctantly postponed the decision.'),
+  );
+  await page.getByTestId('paste-clipboard').click();
+  await expect(page.getByRole('textbox', { name: 'İngilizce metin' })).toHaveValue(
+    'The committee reluctantly postponed the decision.',
+  );
+  await noSideScroll(page);
+  await shot(page, 'ekle-panodan', true);
 });
 
 /** A picked-v1 answer built from the request's own words (no live model). */
