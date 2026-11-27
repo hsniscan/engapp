@@ -126,8 +126,10 @@ function StreakText({ streak, done }: { streak: StreakSummary; done: boolean }) 
     : streak.longestStreak > streak.currentStreak
       ? t('today.streakLongest', { count: streak.longestStreak })
       : null;
+  // One line: "· en uzun 10" wrapped under the streak at 360 px (2026-11-26 M2); the whole
+  // button moves below the week strip instead.
   return (
-    <span>
+    <span className="whitespace-nowrap">
       <span className="font-semibold text-fg">
         {t('today.streakDays', { count: streak.currentStreak })}
       </span>

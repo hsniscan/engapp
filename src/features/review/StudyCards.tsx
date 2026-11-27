@@ -137,7 +137,8 @@ export function MnemonicCard({ senseId }: { senseId: string | null | undefined }
 export function ExamplesCard({ view, speech }: StudyCardProps) {
   if (!view.senses.some((s) => s.lexicon_sense_id)) return null;
   return (
-    <Card padding="sm" className="px-3">
+    // empty:hidden: CardExamples renders nothing when no sense has a sentence (2026-11-26 #9).
+    <Card padding="sm" className="px-3 empty:hidden">
       <CardExamples
         term={view.note.term}
         senses={view.senses}
