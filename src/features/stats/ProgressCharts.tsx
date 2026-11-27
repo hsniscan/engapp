@@ -205,7 +205,7 @@ export function RetentionLineChart({ series }: { series: WeekPoint[] }) {
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 flex items-center justify-center px-4 text-center text-meta text-fg-muted"
           >
-            {t('progress.series.notEnough')}
+            <span className="bg-surface px-2">{t('progress.series.notEnough')}</span>
           </span>
         ) : (
           segments

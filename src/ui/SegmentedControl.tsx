@@ -36,18 +36,19 @@ export function SegmentedControl<V extends string>({
   const autoName = useId();
   const groupName = name ?? autoName;
   return (
-    <fieldset className={cn('flex flex-col gap-1.5', className)}>
+    <fieldset className={cn('flex min-w-0 flex-col gap-1.5', className)}>
       <legend className={cn('mb-1.5 text-meta font-semibold text-fg', hideLegend && 'sr-only')}>
         {legend}
       </legend>
-      <div className="flex gap-1 rounded-control bg-surface-sunken p-1">
+      {/* Equal segments; with large text a segment keeps its words and the row wraps. */}
+      <div className="flex flex-wrap gap-1 rounded-control bg-surface-sunken p-1">
         {options.map((opt) => {
           const selected = opt.value === value;
           return (
             <label
               key={opt.value}
               className={cn(
-                'relative flex min-h-11 min-w-0 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-sm px-3 py-1 text-center text-ui leading-tight font-semibold',
+                'relative flex min-h-11 min-w-fit flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-sm px-3 py-1 text-center text-ui leading-tight font-semibold',
                 'transition-[background-color,color,box-shadow] duration-(--duration-micro) ease-standard',
                 'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-1 has-[:focus-visible]:outline-focus',
                 selected ? 'bg-surface-raised text-fg shadow-sm' : 'text-fg-muted hover:text-fg',
