@@ -14,7 +14,7 @@ import { ConfirmDialog } from '@/features/cards/ConfirmDialog';
 import { Link } from 'react-router';
 import { isNativeApp } from '@/native/platform';
 import { Badge, Button, buttonClasses, Dialog, DialogClose, Icon, toast } from '@/ui';
-import { downloadBackup, saveFileWithToast } from './backupActions';
+import { downloadBackup, noteRestoredBackup, saveFileWithToast } from './backupActions';
 import { csvFileName, formatBytes, relativeDays } from './download';
 import { refreshStorageInfo, requestPersistence, useStorageInfo } from './platform';
 import { SettingsRow, SettingsSection } from './SettingsLayout';
@@ -141,6 +141,7 @@ export function DataSection() {
     try {
       const res = await restoreBackup(pending.json, mode);
       timing('engapp:restore-apply', started);
+      await noteRestoredBackup(pending.exportedAt);
       setPending(null);
       toast({
         title: t('restore.done'),
@@ -324,7 +325,11 @@ export function DataSection() {
         }
       />
       <SettingsRow label={t('resetHistory.title')} description={t('resetHistory.hint')}>
-        <Button variant="secondary" className="text-danger-text" onClick={() => setConfirmReset(true)}>
+        <Button
+          variant="secondary"
+          className="text-danger-text"
+          onClick={() => setConfirmReset(true)}
+        >
           {t('resetHistory.button')}
         </Button>
       </SettingsRow>
@@ -354,7 +359,11 @@ export function DataSection() {
               </Button>
             </DialogClose>
             {pending?.foreign ? (
-              <Button loading={busy === 'cards'} onClick={() => void importCards()} data-testid="restore-cards">
+              <Button
+                loading={busy === 'cards'}
+                onClick={() => void importCards()}
+                data-testid="restore-cards"
+              >
                 {t('restore.cardsOnly')}
               </Button>
             ) : (
@@ -392,7 +401,10 @@ export function DataSection() {
               })}
             </p>
             {pending.foreign && (
-              <p className="rounded-control border border-border px-4 py-3 text-meta text-fg" data-testid="restore-foreign">
+              <p
+                className="rounded-control border border-border px-4 py-3 text-meta text-fg"
+                data-testid="restore-foreign"
+              >
                 {t('restore.foreign')}
               </p>
             )}
@@ -419,22 +431,24 @@ export function DataSection() {
                 </Button>
               )}
             </div>
-            {!pending.foreign && <dl className="flex flex-col gap-3 text-meta">
-              <div className="flex gap-3">
-                <Icon name="check" size={18} className="mt-0.5 shrink-0 text-success-text" />
-                <div>
-                  <dt className="font-medium text-fg">{t('restore.merge')}</dt>
-                  <dd className="text-fg-muted">{t('restore.mergeHint')}</dd>
+            {!pending.foreign && (
+              <dl className="flex flex-col gap-3 text-meta">
+                <div className="flex gap-3">
+                  <Icon name="check" size={18} className="mt-0.5 shrink-0 text-success-text" />
+                  <div>
+                    <dt className="font-medium text-fg">{t('restore.merge')}</dt>
+                    <dd className="text-fg-muted">{t('restore.mergeHint')}</dd>
+                  </div>
                 </div>
-              </div>
-              <div className="flex gap-3">
-                <Icon name="alert" size={18} className="mt-0.5 shrink-0 text-danger-text" />
-                <div>
-                  <dt className="font-medium text-fg">{t('restore.overwrite')}</dt>
-                  <dd className="text-fg-muted">{t('restore.overwriteHint')}</dd>
+                <div className="flex gap-3">
+                  <Icon name="alert" size={18} className="mt-0.5 shrink-0 text-danger-text" />
+                  <div>
+                    <dt className="font-medium text-fg">{t('restore.overwrite')}</dt>
+                    <dd className="text-fg-muted">{t('restore.overwriteHint')}</dd>
+                  </div>
                 </div>
-              </div>
-            </dl>}
+              </dl>
+            )}
           </div>
         )}
       </Dialog>

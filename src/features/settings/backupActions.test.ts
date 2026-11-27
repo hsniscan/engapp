@@ -1,9 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { addNoteWithSenses, ensureSettings, getSettings } from '@/data';
+import {
+  addNoteWithSenses,
+  ensureSettings,
+  exportBackup,
+  getSettings,
+  restoreBackup,
+  updateSettings,
+} from '@/data';
 import type { NativeSaveResult } from '@/native/files';
 import { resetDb } from '@/test/db';
 import { getToasts, resetToasts } from '@/ui/toast-store';
-import { saveBackup, downloadBackup } from './backupActions';
+import { saveBackup, downloadBackup, noteRestoredBackup } from './backupActions';
 import { saveTextFile, type SaveDeps } from './download';
 
 const T = Date.UTC(2026, 9, 26, 9);
@@ -100,5 +107,23 @@ describe('saveBackup: last_backup_at only after the file is written', () => {
     await downloadBackup({ save: d, now: () => T });
     const titles = getToasts().map((x) => x.title);
     expect(titles).toContain('Yedek kaydedildi: Documents/engapp-yedek-2026-10-26.json');
+  });
+});
+
+describe('noteRestoredBackup (calisma #11)', () => {
+  it('after a restore, "Son yedek" is the file date, so Bugün does not ask for a first backup', async () => {
+    await addNoteWithSenses({ term: 'cope', senses: [{ meaning_tr: 'başa çıkmak' }] }, T - 500);
+    const file = JSON.stringify(await exportBackup(T));
+    await resetDb();
+    await ensureSettings(T + 1000);
+    await restoreBackup(file, 'overwrite', T + 2000);
+    await noteRestoredBackup(T, T + 2000);
+    expect((await getSettings()).last_backup_at).toBe(T);
+  });
+
+  it('never moves a newer backup date back', async () => {
+    await updateSettings({ last_backup_at: T + 5000 }, T + 5000);
+    await noteRestoredBackup(T, T + 6000);
+    expect((await getSettings()).last_backup_at).toBe(T + 5000);
   });
 });
