@@ -135,6 +135,9 @@ export function ReaderBody({
       <span id={MARK_DESCRIPTION_ID.new} className="sr-only">
         {t('reader.mark.new')}
       </span>
+      <span id={MARK_DESCRIPTION_ID.fresh} className="sr-only">
+        {t('reader.mark.fresh')}
+      </span>
       <span id={MARK_DESCRIPTION_ID.learning} className="sr-only">
         {t('reader.mark.learning')}
       </span>

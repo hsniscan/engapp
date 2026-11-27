@@ -46,7 +46,7 @@ function view(body: string, stages: [string, WordStage][] = []) {
 
 describe('markOf', () => {
   it('marks by stage, plain once learned, new for a likely unknown word', () => {
-    expect(markOf('new', 0, true)).toBe('learning');
+    expect(markOf('new', 0, true)).toBe('fresh'); // a card not studied yet looks new (2026-11-26 #11)
     expect(markOf('learning', 0, true)).toBe('learning');
     expect(markOf('consolidating', 1, true)).toBe('consolidating');
     expect(markOf('learned', 1, true)).toBe('plain');

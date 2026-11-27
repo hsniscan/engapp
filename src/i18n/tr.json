@@ -3589,7 +3589,7 @@
     },
     "legend": {
       "sample": "word",
-      "new": "Muhtemelen yeni",
+      "new": "Muhtemelen yeni ya da kartında henüz çalışmadın",
       "learning": "Öğreniyorsun",
       "consolidating": "Pekişiyor",
       "known": "Biliyorsun ya da öğrendin: işaret yok",
@@ -3762,6 +3762,7 @@
     "coverageStory": "Hedef kelimeler dışında hikâyenin %{{pct}}'{{suffix}} biliyorsun",
     "mark": {
       "new": "yeni kelime",
+      "fresh": "kartında var, henüz çalışmadın",
       "learning": "öğrendiğin kelime",
       "consolidating": "pekişen kelime",
       "target": "hikâyedeki tekrar kelimen"

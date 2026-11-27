@@ -3589,7 +3589,7 @@
     },
     "legend": {
       "sample": "word",
-      "new": "Probably new",
+      "new": "Probably new, or a card you have not studied yet",
       "learning": "Learning",
       "consolidating": "Consolidating",
       "known": "Known or learned: no mark",
@@ -3762,6 +3762,7 @@
     "coverageStory": "Apart from the target words, you know {{pct}}% of this story",
     "mark": {
       "new": "new word",
+      "fresh": "in your cards, not studied yet",
       "learning": "word you are learning",
       "consolidating": "word settling in",
       "target": "one of your review words in the story"

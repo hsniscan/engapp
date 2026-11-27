@@ -12,8 +12,12 @@ import { lemmaCounts, type ReaderToken, type TokenizedText } from './readerToken
 import type { WordStage } from './stages';
 import type { CoverageResult } from './texts';
 
-/** How a word is drawn. 'plain' = no mark (known, learned, a name, a number). */
-export type WordMark = 'new' | 'learning' | 'consolidating' | 'plain';
+/**
+ * How a word is drawn. 'plain' = no mark (known, learned, a name, a number). 'fresh' is a card
+ * the user has not studied yet (stage "Yeni"): drawn like 'new' (the legend's "yeni" row), but
+ * it is not one of the text's new words to add (decision 0089).
+ */
+export type WordMark = 'new' | 'fresh' | 'learning' | 'consolidating' | 'plain';
 
 /** Below this the reader marks an unknown word as new. */
 export const NEW_MARK_BELOW = 0.5;
@@ -92,7 +96,8 @@ export function findPhrases(
 }
 
 export function markOf(stage: WordStage | null, p: number, counted: boolean): WordMark {
-  if (stage === 'new' || stage === 'learning') return 'learning';
+  if (stage === 'new') return 'fresh';
+  if (stage === 'learning') return 'learning';
   if (stage === 'consolidating') return 'consolidating';
   if (stage) return 'plain';
   return counted && p < NEW_MARK_BELOW ? 'new' : 'plain';

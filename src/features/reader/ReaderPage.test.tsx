@@ -89,7 +89,8 @@ describe('ReaderPage', () => {
       ),
     );
     await waitFor(() => expect(word('serendipity')).toHaveAttribute('data-mark', 'new'));
-    expect(word('cope')).toHaveAttribute('data-mark', 'learning');
+    // A card not studied yet is drawn as new, not as being learned (2026-11-26 #11).
+    expect(word('cope')).toHaveAttribute('data-mark', 'fresh');
     expect(word('walk')).not.toHaveAttribute('data-mark');
     await waitFor(async () =>
       expect(await db.encounters.where('note_id').equals(cope.note.id).count()).toBe(1),
@@ -132,9 +133,9 @@ describe('ReaderPage', () => {
       source_sentence: 'One day I found serendipity in the park.',
       span: [16, 27],
     });
-    // The word now shows as a card being learned.
+    // The word now shows as a card not studied yet.
     await user.keyboard('{Escape}');
-    await waitFor(() => expect(word('serendipity')).toHaveAttribute('data-mark', 'learning'));
+    await waitFor(() => expect(word('serendipity')).toHaveAttribute('data-mark', 'fresh'));
   });
 
   it('selects a phrase by growing the selection', async () => {
@@ -313,7 +314,7 @@ describe('own words, the colour legend and the new words (v0.5.1)', () => {
     await addNoteWithSenses({ term: 'cope', senses: [{ meaning_tr: 'başa çıkmak' }] });
     const id = await saveText({ kind: 'paste', title: 'A walk', body: BODY });
     openReader(id);
-    await waitFor(() => expect(word('cope')).toHaveAttribute('data-mark', 'learning'));
+    await waitFor(() => expect(word('cope')).toHaveAttribute('data-mark', 'fresh'));
     await user.click(word('cope'));
     let sheet = await screen.findByRole('dialog');
     expect(await within(sheet).findByText('başa çıkmak')).toBeInTheDocument();
