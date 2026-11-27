@@ -198,14 +198,28 @@ export function RetentionLineChart({ series }: { series: WeekPoint[] }) {
               answers: t('progress.answers', { count: p.n }),
             })
       }
-      overlay={segments.flat().map(({ i, r }) => (
-        <span
-          key={i}
-          aria-hidden="true"
-          className="pointer-events-none absolute size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-text ring-2 ring-surface"
-          style={{ left: `${((i + 0.5) / n) * 100}%`, top: `${(1 - y(r)) * 100}%` }}
-        />
-      ))}
+      overlay={
+        segments.length === 0 ? (
+          // No week has 20 answers yet: say so inside the chart instead of empty axes.
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 flex items-center justify-center px-4 text-center text-meta text-fg-muted"
+          >
+            {t('progress.series.notEnough')}
+          </span>
+        ) : (
+          segments
+            .flat()
+            .map(({ i, r }) => (
+              <span
+                key={i}
+                aria-hidden="true"
+                className="pointer-events-none absolute size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-text ring-2 ring-surface"
+                style={{ left: `${((i + 0.5) / n) * 100}%`, top: `${(1 - y(r)) * 100}%` }}
+              />
+            ))
+        )
+      }
     >
       {segments
         .filter((s) => s.length > 1)

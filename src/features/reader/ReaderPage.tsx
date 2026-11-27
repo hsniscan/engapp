@@ -216,6 +216,7 @@ function NotFound() {
   return (
     <>
       <TopBar title="" />
+      <h1 className="sr-only">{t('reader.notFound.title')}</h1>
       <div className="mx-auto max-w-(--page-reading) px-4 pt-10 sm:px-6">
         <EmptyState
           icon="file"
