@@ -28,6 +28,7 @@ import { locateTerm } from './locateTerm';
 import { SentencePreview } from './SentencePreview';
 import { TagInput } from './TagInput';
 import { useLexiconLookup, type LexiconSuggestion } from './useLexiconLookup';
+import { readQuickAddSenses, type QuickAddSense } from '@/features/add/addSheetStore';
 
 interface SenseDraft {
   key: string;
@@ -52,6 +53,24 @@ const blankSense = (): SenseDraft => ({
   lexicon_sense_id: null,
   showDetails: false,
 });
+
+/** A meaning the Add sheet found, brought by "Elle düzenle" (review 2026-11-26 #7). */
+const fromCarried = (s: QuickAddSense): SenseDraft => ({
+  key: s.lexicon_sense_id ? `l-${s.lexicon_sense_id}` : `s${++draftCounter}`,
+  meaning: s.meaning_tr,
+  gloss: s.gloss_en ?? '',
+  pos: s.pos && (POS_VALUES as readonly string[]).includes(s.pos) ? s.pos : '',
+  sentence: s.example_en ?? '',
+  sentenceTr: '',
+  lexicon_sense_id: s.lexicon_sense_id ?? null,
+  showDetails: !!s.example_en,
+});
+
+/** The form's first senses: what /add?term=…&m=… carried, else one empty sense. */
+function initialSenses(params: URLSearchParams): SenseDraft[] {
+  const carried = readQuickAddSenses(params).map(fromCarried);
+  return carried.length ? carried : [blankSense()];
+}
 
 const fromSuggestion = (s: LexiconSuggestion): SenseDraft => ({
   key: `l-${s.lexicon_sense_id}`,
@@ -92,7 +111,7 @@ export function ManualAddForm() {
   const termType: TermType = chosenType ?? (term.trim().includes(' ') ? 'phrase' : 'word');
   const [ipa, setIpa] = useState('');
   const [tags, setTags] = useState<string[]>([]);
-  const [senses, setSenses] = useState<SenseDraft[]>(() => [blankSense()]);
+  const [senses, setSenses] = useState<SenseDraft[]>(() => initialSenses(params));
   const [errors, setErrors] = useState<{ term?: string; senses?: Record<string, string> }>({});
   if (termParam !== shownParam) {
     setShownParam(termParam);
@@ -100,7 +119,7 @@ export function ManualAddForm() {
       setTerm(termParam);
       setChosenType(null);
       setIpa('');
-      setSenses([blankSense()]);
+      setSenses(initialSenses(params));
       setErrors({});
     }
   }

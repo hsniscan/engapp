@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { db, findNoteByTerm } from '@/data';
 import { resetDb } from '@/test/db';
 import { renderRoute } from '@/test/ui';
+import { quickAddHref } from '@/features/add/addSheetStore';
 import { AddPage } from './AddPage';
 
 beforeEach(resetDb);
@@ -79,6 +80,24 @@ describe('manual add (Elle)', () => {
     await act(() => router.navigate('/add?term=run%20out'));
     await waitFor(() => expect(term).toHaveValue('run out'));
     expect(screen.getByRole('radio', { name: 'Söz öbeği' })).toBeChecked();
+  });
+
+  it('"Elle düzenle" opens with the meaning the sheet found (review 2026-11-26 #7)', async () => {
+    const user = userEvent.setup();
+    renderRoute(<AddPage />, {
+      path: '/add',
+      url: quickAddHref('postpone', [
+        { meaning_tr: 'ertelemek', pos: 'verb', example_en: 'They postponed the meeting.' },
+      ]),
+    });
+    expect(screen.getByLabelText('İngilizce kelime ya da kalıp')).toHaveValue('postpone');
+    expect(screen.getByLabelText('Türkçe anlamı')).toHaveValue('ertelemek');
+    expect(screen.getByLabelText(/Örnek cümle/)).toHaveValue('They postponed the meeting.');
+    await user.click(screen.getByRole('button', { name: 'Kartı kaydet' }));
+    await waitFor(async () => expect(await db.notes.count()).toBe(1));
+    const sense = (await findNoteByTerm('postpone'))!.senses[0]!;
+    expect(sense).toMatchObject({ meaning_tr: 'ertelemek', pos: 'verb' });
+    expect(sense.source_sentence).toBe('They postponed the meeting.');
   });
 
   it('/add?tab=paste is the text page: paste and the other ways, no word form', () => {

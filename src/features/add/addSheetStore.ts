@@ -64,8 +64,53 @@ export function useAddSheetOpen(): boolean {
   return useAddSheetState().open;
 }
 
-/** The full add form with the word filled in ("Elle düzenle"); it looks the word up too. */
-export function quickAddHref(term: string): string {
+/** A meaning the lookup found, carried into the full form by "Elle düzenle" (review 2026-11-26 #7). */
+export interface QuickAddSense {
+  meaning_tr: string;
+  pos?: string | null;
+  gloss_en?: string | null;
+  /** The word bank's / lexicon's own example sentence (never the user's text). */
+  example_en?: string | null;
+  lexicon_sense_id?: string | null;
+}
+
+/** At most this many found meanings travel in the address. */
+const MAX_CARRIED = 3;
+
+/**
+ * The full add form with the word filled in ("Elle düzenle"); it looks the word up too. The
+ * meanings the sheet found (and picked) come along, so the form opens filled, not empty:
+ * one m / pos / gl / ex / lid each per meaning, in the same order.
+ */
+export function quickAddHref(term: string, senses: readonly QuickAddSense[] = []): string {
   const clean = term.trim().slice(0, LIMITS.term);
-  return clean ? `/add?term=${encodeURIComponent(clean)}` : '/add';
+  if (!clean) return '/add';
+  let href = `/add?term=${encodeURIComponent(clean)}`;
+  const add = (key: string, value: string) => {
+    href += `&${key}=${encodeURIComponent(value)}`;
+  };
+  for (const s of senses.filter((x) => x.meaning_tr.trim()).slice(0, MAX_CARRIED)) {
+    add('m', s.meaning_tr.trim().slice(0, LIMITS.meaning_tr));
+    add('pos', s.pos ?? '');
+    add('gl', (s.gloss_en ?? '').slice(0, LIMITS.gloss_en));
+    add('ex', (s.example_en ?? '').slice(0, LIMITS.source_sentence));
+    add('lid', s.lexicon_sense_id ?? '');
+  }
+  return href;
+}
+
+/** The meanings quickAddHref put in the address (none for a plain /add?term=…). */
+export function readQuickAddSenses(params: URLSearchParams): QuickAddSense[] {
+  const at = (key: string, i: number) => params.getAll(key)[i]?.trim() || null;
+  return params
+    .getAll('m')
+    .slice(0, MAX_CARRIED)
+    .map((meaning, i) => ({
+      meaning_tr: meaning.trim().slice(0, LIMITS.meaning_tr),
+      pos: at('pos', i),
+      gloss_en: at('gl', i)?.slice(0, LIMITS.gloss_en) ?? null,
+      example_en: at('ex', i)?.slice(0, LIMITS.source_sentence) ?? null,
+      lexicon_sense_id: at('lid', i),
+    }))
+    .filter((s) => s.meaning_tr);
 }

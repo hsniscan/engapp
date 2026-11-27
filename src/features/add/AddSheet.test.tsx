@@ -10,7 +10,13 @@ import { resetDb } from '@/test/db';
 import { installDomPolyfills } from '@/test/ui';
 import { AppShell, TooltipProvider } from '@/ui';
 import { AddSheet } from './AddSheet';
-import { closeAddSheet, openAddSheet, quickAddHref, useAddSheetOpen } from './addSheetStore';
+import {
+  closeAddSheet,
+  openAddSheet,
+  quickAddHref,
+  readQuickAddSenses,
+  useAddSheetOpen,
+} from './addSheetStore';
 
 beforeEach(async () => {
   await resetDb();
@@ -106,11 +112,20 @@ describe('Add sheet (v0.5.2): three groups', () => {
     fireEvent.change(screen.getByTestId('add-word-input'), { target: { value: ' postponed ' } });
     fireEvent.click(within(sheet()).getByRole('button', { name: 'Anlamını bul' }));
     expect(await within(sheet()).findByText('ertelemek')).toBeInTheDocument();
-    // The long form stays one tap away, with the dictionary form filled in.
-    expect(within(sheet()).getByTestId('add-word-manual')).toHaveAttribute(
-      'href',
-      '/add?term=postpone',
-    );
+    // The long form stays one tap away, with the dictionary form and the found meaning
+    // (part of speech, example) filled in (review 2026-11-26 #7).
+    const href = within(sheet()).getByTestId('add-word-manual').getAttribute('href')!;
+    const q = new URLSearchParams(href.split('?')[1]);
+    expect(q.get('term')).toBe('postpone');
+    expect(readQuickAddSenses(q)).toEqual([
+      {
+        meaning_tr: 'ertelemek',
+        pos: 'verb',
+        gloss_en: null,
+        example_en: 'They postponed the meeting.',
+        lexicon_sense_id: SID(11),
+      },
+    ]);
     fireEvent.click(within(sheet()).getByTestId('add-word-save'));
     expect(await within(sheet()).findByTestId('add-word-saved')).toHaveTextContent(
       '“postpone” kartlarına eklendi',
@@ -179,6 +194,21 @@ describe('Add sheet (v0.5.2): three groups', () => {
   it('builds the hand-written form’s address', () => {
     expect(quickAddHref(' run out ')).toBe('/add?term=run%20out');
     expect(quickAddHref('   ')).toBe('/add');
+    const href = quickAddHref('bank', [
+      { meaning_tr: 'kıyı, sahil', pos: 'noun', example_en: 'We sat on the bank & rested.' },
+      { meaning_tr: 'banka' },
+      { meaning_tr: '  ' },
+    ]);
+    expect(readQuickAddSenses(new URLSearchParams(href.split('?')[1]))).toEqual([
+      {
+        meaning_tr: 'kıyı, sahil',
+        pos: 'noun',
+        gloss_en: null,
+        example_en: 'We sat on the bank & rested.',
+        lexicon_sense_id: null,
+      },
+      { meaning_tr: 'banka', pos: null, gloss_en: null, example_en: null, lexicon_sense_id: null },
+    ]);
   });
 });
 
