@@ -233,7 +233,9 @@ test('CSV: a Turkish Excel file (Windows-1254) keeps its Turkish letters and hea
   await page
     .getByTestId('word-list-file')
     .setInputFiles({ name: 'kelimeler.csv', mimeType: 'text/csv', buffer });
+  await expect(page.getByLabel('Ya da listeyi buraya yapıştır')).toHaveValue(text.replace(/\r\n/g, '\n'));
+  // The header row is not a word; the two rows keep their Turkish letters.
   await expect(page.getByText('2 kelime bulundu')).toBeVisible();
-  await expect(page.getByText('gelişmek, büyümek')).toBeVisible();
-  await expect(page.getByText('İngilizce')).toHaveCount(0);
+  await expect(page.getByText('gelişmek, büyümek', { exact: true })).toBeVisible();
+  await expect(page.getByText('kıyı', { exact: true })).toBeVisible();
 });
