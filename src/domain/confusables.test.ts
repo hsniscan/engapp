@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import {
+  asksConfusion,
   cleanContrastText,
   confusionRowId,
   contrastKey,
@@ -15,7 +16,7 @@ import {
   suggestedPairs,
   type ConfusableTerm,
 } from './confusables';
-import type { NoteTermType } from './types';
+import { CardState, type NoteTermType } from './types';
 
 let n = 0;
 function term(t: string, meanings: string[], type: NoteTermType = t.includes(' ') ? 'phrase' : 'word'): ConfusableTerm {
@@ -187,5 +188,16 @@ describe('pairs, keys and the picker', () => {
     expect(ranked.map((p) => p.a.term)).toEqual(['affect', 'accept']);
     const reported = { ...scanned.find((p) => p.a.term === 'acorn')!, reason: 'reported' as const };
     expect(rankPairs([...scanned, reported], (id) => lapses[id] ?? 0)[0]!.a.term).toBe('acorn');
+  });
+});
+
+describe('asksConfusion', () => {
+  it('asks only for a word the learner once knew, never for affix or contrast cards', () => {
+    expect(asksConfusion('word', CardState.New)).toBe(false);
+    expect(asksConfusion('word', CardState.Learning)).toBe(false);
+    expect(asksConfusion('word', CardState.Review)).toBe(true);
+    expect(asksConfusion('phrase', CardState.Relearning)).toBe(true);
+    expect(asksConfusion('affix', CardState.Review)).toBe(false);
+    expect(asksConfusion('contrast', CardState.Review)).toBe(false);
   });
 });

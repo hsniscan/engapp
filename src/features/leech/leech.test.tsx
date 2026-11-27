@@ -165,7 +165,17 @@ describe('leech in the review session', () => {
     expect(rescue).not.toHaveTextContent('para koyduğun bank');
   });
 
+  it('after the first Again on a brand-new word: no "mixed it up?" question (2026-11-26 #2)', async () => {
+    renderRoute(<ReviewScreen />, { path: '/review' });
+    await answerWhen('bank', '1');
+    await screen.findByText(/^(bank|light)$/, { selector: 'p[lang="en"]' });
+    await new Promise((r) => setTimeout(r, 300));
+    expect(screen.queryByTestId('confusion-prompt')).not.toBeInTheDocument();
+  });
+
   it('after Again: "mixed it up?" → pick a word → a contrast card written by the user', async () => {
+    // A word the learner once knew (a Review card): only then the question comes.
+    await forget(bankRecognition, 0);
     const user = userEvent.setup();
     renderRoute(
       <>

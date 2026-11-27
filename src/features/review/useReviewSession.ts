@@ -18,6 +18,7 @@ import {
   undoAnswer,
   type CardView,
 } from '@/data';
+import { asksConfusion } from '@/domain/confusables';
 import type { QueueItem, QueueKind, QueueMode } from '@/domain/queue';
 import type { StudyMode } from '@/domain/studyMode';
 import { sessionCards } from '@/domain/studyOptions';
@@ -383,7 +384,6 @@ export function useReviewSession(
             const leech = await leechAfterAnswer(entry.cardId, res.log.id);
             // Only while this is still the session's last answer.
             if (answers.current.at(-1) === entry && alive.current) {
-              const type = view.note.term_type;
               patch({
                 notice: {
                   cardId: entry.cardId,
@@ -391,7 +391,7 @@ export function useReviewSession(
                   term: view.note.term,
                   lapses: leech.lapses,
                   crossed: leech.crossed,
-                  confusable: type !== 'affix' && type !== 'contrast',
+                  confusable: asksConfusion(view.note.term_type, view.card.state),
                   suspended: leech.suspended,
                   restUntil: leech.restUntil,
                 },
