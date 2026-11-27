@@ -81,7 +81,7 @@ export function AccountLinkDialog() {
       s.duplicates > 0 ? t('account.doneDuplicates', { count: s.duplicates }) : null,
     ].filter(Boolean);
     toast({
-      title: t('account.done'),
+      title: s.moved ? t('account.doneMoved', { count: s.moved }) : t('account.done'),
       description: notes.length ? notes.join(' ') : undefined,
       tone: 'success',
       duration: s.duplicates > 0 ? 10_000 : 5000,

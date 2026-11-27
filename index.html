@@ -24,6 +24,12 @@
             });
           }
         } catch (e) {}
+        // App-wide text size (ADR 0090). Mirrors src/ui/theme/textSize.ts.
+        try {
+          var s = localStorage.getItem('engapp.textSize');
+          if (s === 'large') document.documentElement.style.fontSize = '115%';
+          else if (s === 'larger') document.documentElement.style.fontSize = '130%';
+        } catch (e) {}
         // Android text-selection sheet (docs/decisions/0046): its activity starts on /quick and
         // is see-through, so the page must not paint the canvas over the calling app.
         try {

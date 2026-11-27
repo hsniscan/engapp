@@ -3,7 +3,6 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
 import { db, logError } from '@/data';
 import { FIRST_NOTIFY_HOUR, LAST_NOTIFY_HOUR, parseNotify } from '@/domain/notify';
 import { useAuth } from '@/features/auth/session';
@@ -11,7 +10,7 @@ import { HomeNote } from '@/features/home/HomeNote';
 import { useAppSettings } from '@/features/settings/useAppSettings';
 import { backendConfig } from '@/lib/supabase';
 import { isNativeApp } from '@/native/platform';
-import { Button, buttonClasses, Select, toast } from '@/ui';
+import { Button, Select, toast } from '@/ui';
 import { useReminderState } from './nativeReminder';
 import {
   answerOffer,
@@ -68,7 +67,6 @@ export function ReminderOffer({
   };
 
   const yes = async () => {
-    if (kind === 'webGuest') return;
     setBusy(true);
     try {
       const r = await turnOnReminder(kind, hour, {
@@ -103,33 +101,21 @@ export function ReminderOffer({
           <Button variant="ghost" size="sm" disabled={busy} onClick={no}>
             {t('reminderOffer.no')}
           </Button>
-          {kind === 'webGuest' ? (
-            <Link
-              to="/auth"
-              onClick={() => answerOffer('yes')}
-              className={buttonClasses({ variant: 'tonal', size: 'sm' })}
-            >
-              {t('reminderOffer.signIn')}
-            </Link>
-          ) : (
-            <Button variant="tonal" size="sm" loading={busy} onClick={() => void yes()}>
-              {t('reminderOffer.yes', { hour: pad(hour) })}
-            </Button>
-          )}
+          <Button variant="tonal" size="sm" loading={busy} onClick={() => void yes()}>
+            {t('reminderOffer.yes', { hour: pad(hour) })}
+          </Button>
         </>
       }
     >
-      <p>{kind === 'webGuest' ? t('reminderOffer.guestBody') : t('reminderOffer.body')}</p>
-      {kind !== 'webGuest' && (
-        <div className="mt-2 max-w-48">
-          <Select
-            label={t('reminderOffer.time')}
-            options={hours}
-            value={String(hour)}
-            onValueChange={(v) => setChosen(Number(v))}
-          />
-        </div>
-      )}
+      <p>{t('reminderOffer.body')}</p>
+      <div className="mt-2 max-w-48">
+        <Select
+          label={t('reminderOffer.time')}
+          options={hours}
+          value={String(hour)}
+          onValueChange={(v) => setChosen(Number(v))}
+        />
+      </div>
     </HomeNote>
   );
 }

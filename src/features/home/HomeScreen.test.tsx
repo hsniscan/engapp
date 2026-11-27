@@ -70,7 +70,10 @@ describe('Bugün', () => {
     expect(extra).toHaveTextContent('Günlük çalışmana sayılmaz');
     // A new user's Üretim has no card open yet: the row says when it opens.
     expect(within(extra).getByTestId('extra-study-production')).toHaveTextContent('Kelime çalışmada oturan');
-    expect(await screen.findByTestId('home-words')).toHaveTextContent('/ 2 kelimenden');
+    const words = await screen.findByTestId('home-words');
+    expect(words).toHaveTextContent('/ 2 kelimenden');
+    // 2026-11-26 #5: the bar and legend count the words not started yet, so it is not "full".
+    expect(within(words).getByRole('img')).toHaveAccessibleName(/Yeni 2/);
 
     // Answer every word card (Easy graduates them): the calm "done" state takes over.
     for (const item of (await getStudyQueue()).items)

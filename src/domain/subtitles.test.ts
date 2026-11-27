@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  isSceneHeading,
   cleanCueLine,
   detectSubtitleFormat,
   parseSubtitles,
@@ -75,6 +76,32 @@ describe('parseSubtitles fixtures', () => {
     expect(r.body).toContain('We met in 2019 (in London) at a conference.');
     expect(r.body).toContain('Note: the meeting starts at nine.');
     expect(r.body).toContain('Here comes the sun');
+  });
+
+  it('SDH: scene headings go, speech in capitals stays (ekle.md #10)', () => {
+    const srt = [
+      '1\n00:00:01,000 --> 00:00:02,000\nKITCHEN - MORNING',
+      '2\n00:00:02,500 --> 00:00:04,000\n[music]\nGood morning.',
+      '3\n00:00:04,500 --> 00:00:06,000\n(laughs) You look tired.',
+      '4\n00:00:06,500 --> 00:00:08,000\nINT. OFFICE – DAY',
+      '5\n00:00:08,500 --> 00:00:09,000\nTHREE YEARS LATER',
+      '6\n00:00:09,500 --> 00:00:10,000\nSTOP!\nI said NO.',
+    ].join('\n\n');
+    const r = parseSubtitles(srt, 'x.srt');
+    expect(r.body).toBe('Good morning. You look tired.\n\nSTOP! I said NO.');
+    expect(isSceneHeading('KITCHEN - MORNING')).toBe(true);
+    expect(isSceneHeading('PARIS, 1942')).toBe(true);
+    expect(isSceneHeading('HELP!')).toBe(false);
+    expect(isSceneHeading('STOP')).toBe(false);
+    expect(isSceneHeading('I')).toBe(false);
+  });
+
+  it('a file written in capitals throughout keeps its lines', () => {
+    const srt = [
+      '1\n00:00:01,000 --> 00:00:02,000\nWHERE ARE YOU GOING',
+      '2\n00:00:02,500 --> 00:00:04,000\nTO THE SHOP.',
+    ].join('\n\n');
+    expect(parseSubtitles(srt, 'x.srt').body).toBe('WHERE ARE YOU GOING TO THE SHOP.');
   });
 
   it('YouTube auto-captions: rolling repeats kept once, inline timestamps removed', () => {

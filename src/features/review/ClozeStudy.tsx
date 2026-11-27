@@ -309,7 +309,13 @@ export function ClozeStudy(kp: KindProps) {
       )}
       <BackExtras view={view} speech={speech} />
     </BackRegion>,
-    <RatingBar ref={ratingRef} view={ratingView} onAnswer={onAnswer} suggested={suggested} />,
+    <RatingBar
+      ref={ratingRef}
+      view={ratingView}
+      onAnswer={onAnswer}
+      suggested={suggested}
+      reason={choice && right ? t('study.choiceHint') : null}
+    />,
     t('study.scrollCard'),
   );
 }

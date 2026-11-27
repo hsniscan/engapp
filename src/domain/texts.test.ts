@@ -25,7 +25,12 @@ describe('readingProgress', () => {
     expect(readingProgress(text({ finished_at: 1 }))).toEqual({ state: 'finished', pct: 100 });
   });
 
+  it('keeps a text opened for a few seconds unread (decision 0089)', () => {
+    expect(readingProgress(text({ read_ms: 5_000 }))).toEqual({ state: 'unread', pct: 0 });
+    expect(readingProgress(text({ read_ms: 20_000 })).state).toBe('started');
+  });
+
   it('copes with an empty body', () => {
-    expect(readingProgress(text({ body: '', read_ms: 5 }))).toEqual({ state: 'started', pct: 0 });
+    expect(readingProgress(text({ body: '', read_ms: 25_000 }))).toEqual({ state: 'started', pct: 0 });
   });
 });

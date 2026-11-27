@@ -1,6 +1,13 @@
 // "CSV ya da kelime listesi" (decision 0056): files and typed lists become term / meaning rows.
 import { describe, expect, it } from 'vitest';
-import { detectSeparator, MAX_LIST_ROWS, parseWordList, splitCsvLine } from './wordList';
+import {
+  detectSeparator,
+  listLooksReversed,
+  MAX_LIST_ROWS,
+  parseWordList,
+  splitCsvLine,
+  swapListColumns,
+} from './wordList';
 
 describe('splitCsvLine', () => {
   it('honours quotes and doubled quotes', () => {
@@ -67,7 +74,9 @@ describe('parseWordList', () => {
 
 describe('v0.5.2 fixes (B5)', () => {
   it('a three-word Turkish meaning stays a meaning, not an example sentence', () => {
-    const r = parseWordList('put up with, katlanmak, tahammül etmek zorunda kalmak\nbank, kıyı, nehir kenarı kıyısı');
+    const r = parseWordList(
+      'put up with, katlanmak, tahammül etmek zorunda kalmak\nbank, kıyı, nehir kenarı kıyısı',
+    );
     expect(r.rows).toEqual([
       { term: 'put up with', meaning: 'katlanmak, tahammül etmek zorunda kalmak', sentence: null },
       { term: 'bank', meaning: 'kıyı, nehir kenarı kıyısı', sentence: null },
@@ -76,12 +85,35 @@ describe('v0.5.2 fixes (B5)', () => {
 
   it('an English sentence with the term is still the example', () => {
     const r = parseWordList('bank;kıyı;We sat on the bank of the river');
-    expect(r.rows[0]).toEqual({ term: 'bank', meaning: 'kıyı', sentence: 'We sat on the bank of the river' });
+    expect(r.rows[0]).toEqual({
+      term: 'bank',
+      meaning: 'kıyı',
+      sentence: 'We sat on the bank of the river',
+    });
   });
 
   it('a Turkish header row (İngilizce, Türkçe) is skipped', () => {
     const r = parseWordList('İngilizce,Türkçe\nbank,kıyı');
     expect(r.rows).toEqual([{ term: 'bank', meaning: 'kıyı', sentence: null }]);
     expect(r.skipped).toBe(0);
+  });
+});
+
+describe('listLooksReversed (ekle.md #7)', () => {
+  const rows = (text: string) => parseWordList(text).rows;
+  it('a Turkish-first list is caught', () => {
+    expect(listLooksReversed(rows('vazgeçmek,give up\nısrar etmek,insist\nkitap,book'))).toBe(true);
+    expect(listLooksReversed(rows('şemsiye;umbrella'))).toBe(true);
+  });
+  it('a normal list, or one stray English word with ç, is not', () => {
+    expect(listLooksReversed(rows('give up - vazgeçmek\nbank;kıyı\nrun;koşmak'))).toBe(false);
+    expect(listLooksReversed(rows('façade;cephe\nbank;kıyı\nrun;koşmak'))).toBe(false);
+    expect(listLooksReversed(rows('kitap;book'))).toBe(false);
+    expect(listLooksReversed([])).toBe(false);
+  });
+  it('swapping keeps the sentence', () => {
+    expect(
+      swapListColumns([{ term: 'şemsiye', meaning: 'umbrella', sentence: 'Take an umbrella.' }]),
+    ).toEqual([{ term: 'umbrella', meaning: 'şemsiye', sentence: 'Take an umbrella.' }]);
   });
 });

@@ -61,8 +61,15 @@ describe('lookupForms', () => {
     expect(lookupForms('running')).toContain('run');
   });
 
-  it('a phrase is looked up as typed only', () => {
-    expect(lookupForms('Give  Up')).toEqual(['give up']);
+  it('a phrase is looked up as typed first', () => {
+    expect(lookupForms('Give  Up')[0]).toBe('give up');
+  });
+
+  it('an inflected phrasal verb finds its base form (ekle.md #6)', () => {
+    expect(lookupForms('gave up')).toContain('give up');
+    expect(lookupForms('Looking after')).toContain('look after');
+    expect(lookupForms('puts off')).toContain('put off');
+    expect(lookupForms('gave up')[0]).toBe('gave up');
   });
 
   it('folds typographic apostrophes like term_norm', () => {

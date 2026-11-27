@@ -28,6 +28,17 @@ beforeEach(async () => {
 });
 
 describe('settings', () => {
+  it('scales the app text on this device only (Görünüm › Yazı boyutu)', async () => {
+    const user = userEvent.setup();
+    renderSection('gorunum');
+    await user.click(await screen.findByRole('radio', { name: 'En büyük' }));
+    expect(document.documentElement.style.fontSize).toBe('130%');
+    expect(localStorage.getItem('engapp.textSize')).toBe('larger');
+    await user.click(screen.getByRole('radio', { name: 'Normal' }));
+    expect(document.documentElement.style.fontSize).toBe('');
+    expect(localStorage.getItem('engapp.textSize')).toBeNull();
+  });
+
   it('persists study, voice and theme settings to the settings table', async () => {
     const user = userEvent.setup();
     const appearance = renderSection('gorunum');
@@ -220,6 +231,12 @@ describe('settings index and sub-pages', () => {
     const results = screen.getByRole('list', { name: 'Arama sonuçları' });
     expect(within(results).getAllByRole('link')).toHaveLength(1);
     expect(within(results).getByRole('link', { name: /Kartlar ve içerik/ })).toBeInTheDocument();
+    // The reader's size (Çalışma › Okuma) and the app-wide one (Görünüm).
+    await user.clear(box);
+    await user.type(box, 'yazı boyutu');
+    const sized = screen.getByRole('list', { name: 'Arama sonuçları' });
+    expect(within(sized).getByRole('link', { name: /Çalışma/ })).toBeInTheDocument();
+    expect(within(sized).getByRole('link', { name: /Görünüm/ })).toBeInTheDocument();
     await user.clear(box);
     await user.type(box, 'zzz');
     expect(screen.getByText('“zzz” ile ilgili bir ayar bulunamadı.')).toBeInTheDocument();

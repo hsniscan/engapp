@@ -1,7 +1,8 @@
 // Okuma (v0.5 İP1; Keşfet → Okuma from v0.5.1; Çam look v0.5.2): "Metinlerim" (continue where
 // you left off, delete with "Geri al") and the graded library below it (İP5's
-// GradedLibraryList). A library text the user opened is listed once, here, with its progress
-// (decision 0054); the library list below leaves it out.
+// GradedLibraryList). A library text the user started is listed once, here, with its progress
+// (decision 0054); the library list below leaves it out. One opened but not started yet stays
+// in the library list (decision 0089).
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useTranslation } from 'react-i18next';
 import { deleteText, listTexts, logError, restoreText } from '@/data';
@@ -25,7 +26,13 @@ import { progressLabel } from './progressLabel';
 export function ReadingTab() {
   const { t } = useTranslation();
   const kindLabel = useTextKindLabel();
-  const texts = useLiveQuery(() => listTexts(), []);
+  // A library text opened but not started yet stays in the library list below, not here
+  // (decision 0089): a mistaken tap does not move it.
+  const texts = useLiveQuery(
+    async () =>
+      (await listTexts()).filter((x) => x.kind !== 'graded' || readingProgress(x).state !== 'unread'),
+    [],
+  );
 
   // Deleting is reversible: done at once, with "Geri al" (docs/design.md §4.19).
   const remove = async (text: ReaderText) => {

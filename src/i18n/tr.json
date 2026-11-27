@@ -13,6 +13,39 @@
     "profile": "Profil",
     "addLong": "Ekle"
   },
+  "pageTitle": {
+    "app": "{{title}} · Engapp",
+    "home": "Bugün",
+    "study": "Çalış",
+    "more": "Biraz daha çalış",
+    "practice": "Pratik",
+    "decks": "Kelimelerim",
+    "themes": "Temalar",
+    "suggestedDeck": "Önerilen deste",
+    "deck": "Deste",
+    "discover": "Keşfet",
+    "library": "Tüm kelimelerim",
+    "reader": "Okuma",
+    "add": "Kelime ekle",
+    "article": "Makaleden ekle",
+    "subtitle": "Altyazıdan ekle",
+    "photo": "Fotoğraftan metin",
+    "compose": "Metin oluştur",
+    "ankiImport": "Anki’den içe aktar",
+    "csvImport": "Listeden içe aktar",
+    "imports": "İçe aktarmalar",
+    "importPreview": "İçe aktarma",
+    "progress": "İlerleme",
+    "profile": "Profil",
+    "settings": "Ayarlar",
+    "knownWords": "Bildiğin kelimeler",
+    "sources": "Kaynaklar",
+    "levelTest": "Seviye testi",
+    "adminImages": "Görsel inceleme",
+    "auth": "Giriş yap",
+    "share": "Paylaş",
+    "notFound": "Sayfa bulunamadı"
+  },
   "common": {
     "save": "Kaydet",
     "cancel": "Vazgeç",
@@ -116,6 +149,7 @@
     "weekDots_one": "Bu hafta: {{count}} gün çalışıldı",
     "weekDots_other": "Bu hafta: {{count}} gün çalışıldı",
     "dayActive": "çalışıldı",
+    "dayKept": "çalışılmadı, seri korundu",
     "dayIdle": "çalışılmadı",
     "streakStart": "Seriyi bugün başlat",
     "streakDays_one": "{{count}} günlük seri",
@@ -162,7 +196,7 @@
     "recallGoal": "hedefin {{goal}}",
     "ruleTitle": "Öğrenilmiş sayma kuralı değişti",
     "ruleBody": "Artık bir kelime üç ayrı günde doğru bilinince öğrenildi sayılıyor. Kelimelerin silinmedi; Pekişiyor'dakiler tekrarlarla birkaç hafta içinde yerine gelecek.",
-    "shortcuts": "Kısa yollar",
+    "shortcuts": "Kısayollar",
     "hardBody": "Hızlı pratik, takvimi değiştirmez",
     "reportTitle": "Geçen haftanın raporu hazır",
     "reportBody_one": "{{count}} gün çalıştın, {{fresh}} yeni kelime",
@@ -195,12 +229,14 @@
     "word": {
       "title": "Kelime ekle",
       "label": "Anlamı kartlarından, Kelime Bankası'ndan ya da sözlükten gelir; yoksa yapay zekâ bulur",
+      "labelGuest": "Anlamı kartlarından, Kelime Bankası'ndan ya da sözlükten gelir. Giriş yaparsan yapay zekâ da bulur.",
+      "labelLocal": "Anlamı kartlarından, Kelime Bankası'ndan ya da sözlükten gelir.",
       "submit": "Anlamını bul",
       "manual": "Elle ekle",
       "edit": "Elle düzenle",
       "another": "Başka kelime ekle",
-      "offline": "Bu kelime telefonunda yok. İnternete bağlanınca anlamını bulabilirim; istersen elle ekle.",
-      "signIn": "Bu kelime telefonunda yok. Yapay zekânın anlamını bulması için giriş yap ya da elle ekle.",
+      "offline": "Bu kelime bu cihazda yok. İnternete bağlanınca anlamını bulabilirim; istersen elle ekle.",
+      "signIn": "Bu kelime bu cihazda yok. Yapay zekânın anlamını bulması için giriş yap ya da elle ekle.",
       "notFound": "Bu kelimenin anlamını bulamadım. Elle ekleyebilirsin.",
       "field": "Kelime ya da ifade yaz",
       "placeholder": "Bir kelime yaz"
@@ -260,6 +296,7 @@
     "noVoice": "Sesli okuma yok: bu cihazda İngilizce ses bulunamadı",
     "voiceFailed": "Ses çıkmadı",
     "voiceFailedHelp": "Telefonun metin okuma motoru İngilizce okuyamıyor. Android'de: Ayarlar → Erişilebilirlik (veya Genel yönetim) → Metin okuma çıkışı → Tercih edilen motor: Google ses tanıma ve sentez hizmetleri. Ardından İngilizce (ABD) ses verisini indir. Sessiz modu ve medya ses düzeyini de kontrol et.",
+    "voiceFailedHelpWeb": "Bu tarayıcı İngilizce okuyacak bir ses bulamadı. Cihazının ayarlarından İngilizce bir metin okuma sesi ekleyebilir ya da başka bir tarayıcı deneyebilirsin. Ses düzeyini de kontrol et.",
     "speakSentence": "Cümleyi seslendir",
     "menu": "Kart seçenekleri",
     "undoLast": "Son cevabı geri al",
@@ -294,7 +331,7 @@
       "consolidated_other": "{{count}} kelime Pekişiyor'a geçti",
       "continueMode": "Devam et",
       "time": "Süre",
-      "retention": "Hatırlama",
+      "retention": "Tekrarlarda hatırlama",
       "ratings": "Cevapların",
       "streakExtended": "Bugün serine eklendi.",
       "streakKept": "Bugünkü çalışman kaydedildi.",
@@ -358,6 +395,8 @@
     "answerShown": "Cevap gösterildi",
     "scrollCard": "Kart, kaydırılabilir",
     "suggested": "Önerimiz:",
+    "posPhrasalVerb": "deyimsel fiil",
+    "choiceHint": "Seçenekten bildin; yazarak bilirsen İyi olur.",
     "wrongHint": "Cevabın yanlıştı; Tekrar öneriyoruz. Başka bir düğme için iki kez dokun.",
     "confirmRating": "Yine de “{{rating}}” mi? Onaylamak için bir kez daha dokun.",
     "confirmTap": "emin misin?",
@@ -455,6 +494,7 @@
     "speak": "Cümleyi dinle",
     "editTitle": "Cümleyi düzenle",
     "editHint": "Düzenlediğin cümle yalnızca senin hesabında durur; ortak sözlüğe yazılmaz.",
+    "editHint_device": "Düzenlediğin cümle yalnızca bu cihazda durur; ortak sözlüğe yazılmaz.",
     "editLabel": "Cümle",
     "termMissing": "Cümlede “{{term}}” bulunamadı; kelime vurgulanmayacak ve boşluk doldurma kartında kullanılmayacak.",
     "tooLong": "Cümle en fazla {{max}} karakter olabilir.",
@@ -512,6 +552,7 @@
     "writeTitle": "Kendi anımsatıcını yaz",
     "editTitle": "Anımsatıcıyı düzenle",
     "dialogHint": "Yazdığın yalnızca senin hesabında durur; kimseyle paylaşılmaz.",
+    "dialogHint_device": "Yazdığın yalnızca bu cihazda durur; kimseyle paylaşılmaz.",
     "textLabel": "Anımsatıcı",
     "emptyText": "Anımsatıcı boş olamaz.",
     "tooLong": "En fazla {{max}} karakter olabilir.",
@@ -571,6 +612,7 @@
     "picker": {
       "title": "Hangi kelimeyle karıştırdın?",
       "description": "“{{term}}” ile karıştırdığın kelimeyi seç. Bu bilgi yalnızca senin hesabında durur.",
+      "description_device": "“{{term}}” ile karıştırdığın kelimeyi seç. Bu bilgi yalnızca bu cihazda durur.",
       "search": "Kelimelerinde ara",
       "near": {
         "spelling": "Yazılışı benziyor",
@@ -589,6 +631,7 @@
       "existing": "Bu iki kelime için zaten bir fark kartın var.",
       "differenceLabel": "Fark",
       "differenceHint": "İkisini ayıran kısa bir açıklama. Yazdığın yalnızca senin hesabında durur.",
+      "differenceHint_device": "İkisini ayıran kısa bir açıklama. Yazdığın yalnızca bu cihazda durur.",
       "ask": "Farkı açıklat",
       "asking": "Açıklama hazırlanıyor…",
       "ready": "Açıklama hazır; istersen değiştirebilirsin.",
@@ -743,7 +786,7 @@
       "duplicateTerm": "Bu terimle başka bir kelime var.",
       "noteDeleted": "“{{term}}” silindi",
       "markKnown": "Biliyorum",
-      "markKnownHint": "Kelime Bildiğim kelimeler'e taşınır, kartları çalışmaya gelmez. Geçmişi korunur.",
+      "markKnownHint": "⋯ menüsünden “Biliyorum” dersen kelime Bildiğim kelimeler'e taşınır, kartları artık çalışmaya gelmez. Geçmişi korunur.",
       "knownDone": "“{{term}}” Bildiğim kelimeler'e taşındı",
       "reset": "İlerlemeyi sıfırla",
       "resetDone": "“{{term}}” baştan başlıyor",
@@ -947,7 +990,7 @@
       "overall": "Tutma oranı, son 90 gün",
       "dimension": "Kategori",
       "dimensions": {
-        "term_type": "Kelime türü",
+        "term_type": "Kelime / öbek / kalıp",
         "level": "Seviye",
         "topic": "Konu",
         "source": "Kaynak",
@@ -957,6 +1000,40 @@
       "listLabel": "{{dimension}}: tutma oranları",
       "weakest": "En zayıf noktan: {{group}}, {{rate}}",
       "noWeakest": "En zayıf noktanı göstermek için bir kategoride en az 20 cevap gerekiyor.",
+      "showWeakest": "{{dimension}} listesinde göster",
+      "plural": {
+        "term_type": {
+          "word": "kelimeler",
+          "phrase": "söz öbekleri",
+          "pattern": "kalıplar",
+          "affix": "kökler ve ekler",
+          "contrast": "fark kartları"
+        },
+        "pos": {
+          "noun": "isimler",
+          "verb": "fiiller",
+          "adjective": "sıfatlar",
+          "adverb": "zarflar",
+          "phrasal verb": "deyimsel fiiller (phrasal verb)",
+          "idiom": "deyimler",
+          "preposition": "edatlar",
+          "conjunction": "bağlaçlar",
+          "pronoun": "zamirler",
+          "interjection": "ünlemler",
+          "phrase": "kalıp ifadeler",
+          "determiner": "belirleyiciler",
+          "root": "kökler",
+          "prefix": "ön ekler",
+          "suffix": "son ekler"
+        },
+        "card_type": {
+          "recognition": "tanıma kartları",
+          "production": "üretme kartları",
+          "cloze": "boşluk doldurma kartları",
+          "image": "görselden hatırlama kartları"
+        },
+        "level": "{{level}} kelimeler"
+      },
       "row": "{{label}}: {{rate}}, {{answers}}. Büyük olasılıkla {{low}} ile {{high}} arasında.",
       "rowFew": "{{label}}: veri az, {{answers}}.",
       "interval": "Büyük olasılıkla {{low}} ile {{high}} arasında",
@@ -980,6 +1057,7 @@
       "retentionTitle": "Haftalık tutma oranı",
       "retentionLabel": "Her haftanın tutma oranı, son 12 hafta",
       "retentionHint": "Çizgideki boşluklar, 20'den az cevap olan haftalar.",
+      "notEnough": "Henüz yeterli veri yok",
       "pointLearned_one": "{{week}}: {{count}} kelime",
       "pointLearned_other": "{{week}}: {{count}} kelime",
       "pointRetention": "{{week}}: {{rate}}, {{answers}}",
@@ -1059,7 +1137,14 @@
       "C2": "Ustalık"
     },
     "appearance": {
-      "hint": "“Sistem”, cihazının açık ya da koyu ayarını izler."
+      "hint": "“Sistem”, cihazının açık ya da koyu ayarını izler.",
+      "textSize": "Yazı boyutu",
+      "textSizes": {
+        "normal": "Normal",
+        "large": "Büyük",
+        "larger": "En büyük"
+      },
+      "textSizeHint": "Uygulamadaki bütün yazılar için, yalnızca bu cihazda. Okuma ekranındaki yazı boyutu bunun üstüne eklenir."
     },
     "voice": {
       "accent": "Telaffuz",
@@ -1157,13 +1242,13 @@
         "account": "Hesap ve veri",
         "app": "Uygulama"
       },
-      "version": "engapp · sürüm {{version}}",
+      "version": "Engapp · sürüm {{version}}",
       "savedNote": "Değişiklikler hemen kaydedilir; giriş yaptıysan diğer cihazlarına da geçer."
     },
     "pages": {
       "calisma": {
         "title": "Çalışma",
-        "keywords": "yeni kart günlük sınır sıra akıllı eklenme hedef hatırlama oranı algoritma fsrs hafıza kişisel gün başlangıcı saat kolay adaylar",
+        "keywords": "yeni kart günlük sınır sıra akıllı eklenme hedef hatırlama oranı algoritma fsrs hafıza kişisel gün başlangıcı saat kolay adaylar okuma yazı boyutu metin",
         "lead": "Her gün ne kadar yeni kelime göreceğini ve tekrarların ne sıklıkla geleceğini belirler."
       },
       "yuk": {
@@ -1184,7 +1269,7 @@
       },
       "gorunum": {
         "title": "Görünüm",
-        "keywords": "tema karanlık koyu açık sistem görsel resim ön yüz resimli kart"
+        "keywords": "tema karanlık koyu açık sistem görsel resim ön yüz resimli kart yazı boyutu büyük yazı harf boyutu yakınlaştır"
       },
       "hesap": {
         "title": "Hesap ve eşitleme",
@@ -1555,6 +1640,8 @@
       "manualTitle": "Elle kart ekle",
       "term": "İngilizce kelime ya da kalıp",
       "termHint": "Sözlük biçimiyle yaz: “gave up” değil “give up”.",
+      "termTurkish": "Bu Türkçe görünüyor. Buraya İngilizce kelimeyi yaz; Türkçe anlamı aşağıdaki alana gelir.",
+      "charCount": "{{count}} / {{max}}",
       "termRequired": "Kelimeyi ya da kalıbı yaz.",
       "termType": "Tür",
       "exists": "Bu kelime zaten var; yeni anlam ekle",
@@ -1837,6 +1924,8 @@
     "errorBody": "Bağlantını kontrol edip tekrar dene ya da şimdilik misafir olarak devam et. Verilerin bu cihazda güvende.",
     "continueAsGuest": "Misafir olarak devam et",
     "done": "Hesabına bağlandın",
+    "doneMoved_one": "{{count}} kelimen hesabına taşındı, artık eşitleniyor",
+    "doneMoved_other": "{{count}} kelimen hesabına taşındı, artık eşitleniyor",
     "doneCopied": "{{count}} kelime yeni kart olarak kopyalandı.",
     "doneDuplicates": "{{count}} kelime “olası kopya” olarak işaretlendi; Kelimelerim'de gözden geçirebilirsin.",
     "discardAccountConfirm": "Anladım: hesabımdaki kartlar bütün cihazlarımda silinecek."
@@ -1951,7 +2040,10 @@
       "titleLabel": "Başlık",
       "titlePlaceholder": "Örn. The Guardian — iklim yazısı",
       "tooShort": "En az üç kelimelik bir cümle yapıştır.",
-      "tooLong": "Metin çok uzun (en fazla {{max}} karakter). Bölüp ayrı ayrı yükle."
+      "tooLong": "Metin çok uzun (en fazla {{max}} karakter). Bölüp ayrı ayrı yükle.",
+      "fromClipboard": "Panodan yapıştır",
+      "clipboardEmpty": "Panoda metin yok. Önce metni kopyala.",
+      "clipboardDenied": "Panoya erişilemedi. Kutuya basılı tutup “Yapıştır”a dokun."
     },
     "pdf": {
       "drop": "PDF dosyasını buraya bırak",
@@ -2030,7 +2122,7 @@
       "meaning": "Türkçe anlamı: {{term}}",
       "meaningEdited": "Düzeltildi",
       "resetMeaning": "Sözlükteki anlama dön",
-      "source": "{{title}} · {{count}} aday",
+      "source": "{{title}} ·\u00a0{{count}}\u00a0aday",
       "confirm_one": "{{count}} kelimeyi ekle",
       "confirm_other": "{{count}} kelimeyi ekle",
       "confirmNone": "Eklenecek aday seç",
@@ -2161,7 +2253,8 @@
     "catchupDays_one": "Telafi bugün biter",
     "catchupDays_other": "Telafi: {{count}} günde biter",
     "catchupLong": "Telafi bir aydan uzun sürebilir. Günlük süreni artırmayı düşünebilirsin.",
-    "rampZero": "Tekrar hoş geldin! Bugün yalnızca eski kartlarını çalışıyoruz; yeni kartlar yarından itibaren yavaş yavaş gelecek.",
+    "rampTitle": "Tekrar hoş geldin",
+    "rampZero": "Bugün yalnızca eski kartlarını çalışıyoruz; yeni kartlar yarından itibaren yavaş yavaş gelecek.",
     "rampHalf_one": "Yeni kartlar yavaş yavaş dönüyor: bugün {{count}} yeni kart.",
     "rampHalf_other": "Yeni kartlar yavaş yavaş dönüyor: bugün {{count}} yeni kart.",
     "vacationNow": "Tatildesin (son gün: {{end}}). Yeni kart açılmıyor ve serin korunuyor.",
@@ -2192,6 +2285,7 @@
     "forecastLoading": "Tahmin hesaplanıyor…",
     "forecastNote": "Tahmin, her kartı hatırlama olasılığına ve günlük yeni kart limitine göre hesaplanır.",
     "forecastToday": "Bugün",
+    "forecastTomorrow": "Yarın",
     "forecastChartLabel": "Önümüzdeki 30 günün beklenen tekrar sayısı, kapasite çizgisiyle",
     "vacationStartPast": "Tatil bugünden önce başlayamaz. Başlangıcı bugün ya da sonraki bir gün seç.",
     "forecastCapacityShort": "Kapasite {{cards}}"
@@ -2324,6 +2418,7 @@
     "resultTitle": "Test sonucu",
     "resultLevel": "Seviyen",
     "resultChanged": "Seviyen {{from}} → {{to}} oldu.",
+    "resultFirst": "Seviyen: {{level}}. Kelime önerileri buna göre seçilecek.",
     "resultSame": "Seviyen {{level}} olarak kaldı.",
     "nearNext": "{{nextTo}} yakınsın: {{next}} kelimelerinin %{{pct}} kadarını biliyorsun.",
     "towardNext": "{{next}} kelimelerinin %{{pct}} kadarını biliyorsun; {{next}} için %80 gerekir.",
@@ -2971,6 +3066,7 @@
     "shortcuts": "Klavyeyle: → onayla, ← reddet, ↓ yeniden çizdir, Z geri al.",
     "signIn": "Bu sayfa için Google ile giriş yapmalısın.",
     "notAdmin": "Bu sayfa yalnızca yöneticiler için.",
+    "back": "Ayarlara dön",
     "offline": "İnternet bağlantısı yok. Bağlanınca kaldığın yerden devam edebilirsin.",
     "loading": "Görseller yükleniyor…",
     "loadFailed": "Görseller alınamadı.",
@@ -3045,7 +3141,8 @@
     "continue": {
       "eyebrow": "Devam et",
       "start": "Açtın, henüz okumaya başlamadın",
-      "action": "Kaldığın yerden oku"
+      "action": "Kaldığın yerden oku",
+      "begin": "Okumaya başla"
     },
     "suggestions": {
       "eyebrow": "Sana uygun metinler",
@@ -3298,6 +3395,7 @@
       "fAll": "Tümü {{count}}",
       "fNew": "Yeni {{count}}",
       "fCarded": "Çalışıyorsun {{count}}",
+      "fLearned": "Öğrendin {{count}}",
       "fKnown": "Biliyorsun {{count}}",
       "sLearned": "Öğrendin",
       "sStudying": "Çalışıyorsun",
@@ -3509,13 +3607,16 @@
     "mine": "Kartlarındaki anlam",
     "pickHint": "Karta girecek anlamlara dokun.",
     "picked": "Seçili",
+    "ownedSense": "Kartlarında",
+    "allOwned": "Hepsi kartlarında",
     "owned": {
       "carded": "Kartlarında var",
       "known": "Biliyorum dediğin kelime"
     },
     "searching": "Anlamı aranıyor…",
-    "offline": "Bu kelime telefonunda yok. İnternete bağlanınca anlamını bulabilirim.",
-    "signIn": "Bu kelime telefonunda yok. Anlamını bulmak için giriş yap ya da kendin yaz.",
+    "offline": "Bu kelime bu cihazda yok. İnternete bağlanınca anlamını bulabilirim.",
+    "signIn": "Bu kelime bu cihazda yok. Anlamını bulmak için giriş yap ya da kendin yaz.",
+    "turkish": "“{{term}}” Türkçe görünüyor. Buraya İngilizce kelimeyi yaz; Türkçe anlamı kartın arkasına gelir.",
     "notFound": "Bu kelimenin anlamını bulamadım.",
     "failed": "Anlam aranamadı. İstersen kendin yaz.",
     "writeOwn": "Anlamını kendim yazayım",
@@ -3588,7 +3689,7 @@
     },
     "legend": {
       "sample": "word",
-      "new": "Muhtemelen yeni",
+      "new": "Muhtemelen yeni ya da kartında henüz çalışmadın",
       "learning": "Öğreniyorsun",
       "consolidating": "Pekişiyor",
       "known": "Biliyorsun ya da öğrendin: işaret yok",
@@ -3703,7 +3804,7 @@
     },
     "alwaysGuess": {
       "label": "Hep tahmin ettir",
-      "hint": "Kartlarında olan kelimelerde de anlam gösterilmeden önce tahmin etmen istenir. Kapalıyken bu kelimelerin anlamı hemen görünür."
+      "hint": "Dokunduğun her kelimede anlam gösterilmeden önce tahmin etmen istenir. Kapalıyken anlam hemen görünür."
     },
     "settings": {
       "title": "Okuma"
@@ -3723,7 +3824,7 @@
       "title": "Metinlerim",
       "add": "Metin ekle",
       "empty": "Bir metin yapıştır ya da PDF yükle; okuyucuda kelimeler bildiğine göre işaretlenir.",
-      "unread": "Okunmadı",
+      "unread": "Başlanmadı",
       "progress": "%{{pct}} okundu",
       "continue": "Devam et",
       "finished": "Bitti",
@@ -3761,6 +3862,7 @@
     "coverageStory": "Hedef kelimeler dışında hikâyenin %{{pct}}'{{suffix}} biliyorsun",
     "mark": {
       "new": "yeni kelime",
+      "fresh": "kartında var, henüz çalışmadın",
       "learning": "öğrendiğin kelime",
       "consolidating": "pekişen kelime",
       "target": "hikâyedeki tekrar kelimen"
@@ -3863,7 +3965,11 @@
     "otherFile": "Başka dosya seç",
     "pasteLabel": "Ya da listeyi buraya yapıştır",
     "placeholder": "give up - vazgeçmek\nbank;kıyı;We sat on the bank of the river.",
-    "hint": "Ayraç olarak sekme, noktalı virgül, virgül ya da “ - ” kullanabilirsin.",
+    "hint": "Ayraç olarak sekme, noktalı virgül, virgül ya da iki yanı boşluklu tire kullanabilirsin.",
+    "reversed": "Bu listede Türkçe kelimeler ilk sütunda görünüyor. Kartın ön yüzüne İngilizce kelime gelmeli.",
+    "swap": "Sütunları değiştir",
+    "swapped": "Sütunlar değiştirildi: İngilizce kelime önde, Türkçe anlamı arkada.",
+    "unswap": "Geri al",
     "preview_one": "{{count}} kelime bulundu",
     "preview_other": "{{count}} kelime bulundu",
     "more_one": "ve {{count}} kelime daha",
@@ -3975,11 +4081,9 @@
   "reminderOffer": {
     "title": "Yarın sana hatırlatayım mı?",
     "body": "Günde bir kez, seçtiğin saatte kısa bir hatırlatma. O gün çalıştıysan gelmez.",
-    "guestBody": "Tarayıcıda hatırlatma bir hesapla çalışır. Ücretsiz hesap aç, her gün seçtiğin saatte hatırlatayım.",
     "time": "Saat",
     "yes": "Evet, {{hour}}.00'da",
     "no": "Hayır, teşekkürler",
-    "signIn": "Hesap aç",
     "done": "Tamam, her gün {{hour}}.00'da hatırlatırım",
     "declined": "Peki, sormayacağım. Ayarlar → Bildirim'den istediğin zaman açabilirsin.",
     "denied": "Bildirim izni verilmedi. Telefonun ayarlarından açabilirsin.",

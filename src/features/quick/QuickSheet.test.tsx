@@ -131,7 +131,7 @@ describe('QuickSheet (presentational)', () => {
         onClose={() => {}}
       />,
     );
-    expect(screen.getByRole('status')).toHaveTextContent(/telefonunda yok/);
+    expect(screen.getByRole('status')).toHaveTextContent(/bu cihazda yok/);
     expect(screen.queryByRole('button', { name: 'Karta ekle' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Anlamını kendim yazayım' }));
     expect(onWriteOwn).toHaveBeenCalled();
@@ -154,6 +154,18 @@ describe('QuickSheet (presentational)', () => {
     fireEvent.click(screen.getByTestId('quick-extract'));
     expect(onOpenReader).toHaveBeenCalled();
     expect(onExtract).toHaveBeenCalled();
+  });
+
+  it('a guest is told before the tap that extraction needs an account (ekle.md #13)', () => {
+    installDomPolyfills();
+    render(
+      <QuickSheet
+        route={{ kind: 'text', text: 'One two three four five.', words: 5 }}
+        extractNeedsSignIn
+        onClose={() => {}}
+      />,
+    );
+    expect(screen.getByTestId('quick-extract')).toHaveTextContent(/bunun için giriş yap/);
   });
 });
 

@@ -1,4 +1,5 @@
-import { LIMITS } from '@/domain/limits';
+import { charCountNearLimit, LIMITS, TYPED_TERM_MAX } from '@/domain/limits';
+import { looksTurkishTerm } from '@/domain/textLanguage';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -256,10 +257,19 @@ export function ManualAddForm() {
 
       <div className="flex flex-col gap-3">
         <TextField
-          maxLength={LIMITS.term}
+          maxLength={TYPED_TERM_MAX}
           ref={termRef}
           label={t('cards.add.term')}
-          hint={t('cards.add.termHint')}
+          hint={
+            // Soft check: a Turkish word in the English field is said, never refused (#9).
+            looksTurkishTerm(term) ? (
+              <span className="text-warn-text" data-testid="term-turkish">
+                {t('cards.add.termTurkish')}
+              </span>
+            ) : (
+              <FieldHint text={t('cards.add.termHint')} value={term} max={TYPED_TERM_MAX} />
+            )
+          }
           error={errors.term}
           value={term}
           onChange={(e) => {
@@ -404,6 +414,24 @@ export function ManualAddForm() {
   );
 }
 
+/** A field's hint, with "76 / 80" after it once the value nears its limit (#13). */
+function FieldHint({ text, value, max }: { text: string; value: string; max: number }) {
+  const { t } = useTranslation();
+  const near = charCountNearLimit(value, max);
+  if (!near) return <>{text}</>;
+  return (
+    <span className="flex items-baseline justify-between gap-3">
+      <span>{text}</span>
+      <span
+        className={cn('shrink-0 tabular', near.count >= max && 'font-medium text-warn-text')}
+        data-testid="char-count"
+      >
+        {t('cards.add.charCount', near)}
+      </span>
+    </span>
+  );
+}
+
 function SenseEditor({
   idBase,
   index,
@@ -453,7 +481,13 @@ function SenseEditor({
           maxLength={LIMITS.meaning_tr}
           id={`${idBase}-meaning`}
           label={t('cards.add.meaning')}
-          hint={t('cards.add.meaningHint')}
+          hint={
+            <FieldHint
+              text={t('cards.add.meaningHint')}
+              value={draft.meaning}
+              max={LIMITS.meaning_tr}
+            />
+          }
           error={error}
           value={draft.meaning}
           onChange={(e) => onChange({ meaning: e.target.value })}

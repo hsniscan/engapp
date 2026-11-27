@@ -9,7 +9,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { getSettings, logError, setMeta } from '@/data';
 import { STAGE_RULE_NOTICE_KEY } from '@/data/db';
 import { useAuth } from '@/features/auth/session';
-import { nextOnboardingStep, ONBOARDING_STEPS, type OnboardingStep } from '@/domain/onboarding';
+import { nextOnboardingStep, ONBOARDING_STEPS, recommendsLevelDeck, type OnboardingStep } from '@/domain/onboarding';
 import { deckWords, suggestedKey, type SuggestedSpec } from '@/domain/suggestedDecks';
 import type { TopicKey } from '@/domain/topics';
 import { openAddSheet } from '@/features/add/addSheetStore';
@@ -313,7 +313,14 @@ function DeckStep() {
         : [],
     [data, specs],
   );
-  const [chosen, setChosen] = useState<string>(suggestedKey({ kind: 'top', size: 500 }));
+  // 3.1: a measured B1+ level starts on its own verb deck; others on the 500 most used words.
+  const levelDeck = specs[2]!;
+  const recommended =
+    recommendsLevelDeck(!!measured, data?.level) && decks.some((d) => d.spec === levelDeck)
+      ? suggestedKey(levelDeck)
+      : suggestedKey({ kind: 'top', size: 500 });
+  const [picked, setChosen] = useState<string | null>(null);
+  const chosen = picked ?? recommended;
   const progress = useDeckAddProgress();
   // A flagged add (cut short by a restart) starts at once, below.
   const [starting, setStarting] = useState(() => flags.get(ONBOARDING_ADDING_KEY) === '1');
@@ -426,7 +433,7 @@ function DeckStep() {
                     )}
                   </span>
                 </span>
-                {i === 0 && (
+                {key === recommended && (
                   <Badge tone={on ? 'outline' : 'accent'} className="shrink-0">
                     {t('onboarding.deck.recommended')}
                   </Badge>

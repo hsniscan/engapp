@@ -1,14 +1,18 @@
 // /share — "Paylaş → Engapp" (v0.4 İP6, docs/decisions/0034-share-target.md). Reached from the
 // Android share sheet (src/native/share.ts) and from the installed PWA's Web Share Target
 // (manifest share_target, GET). Where the text goes is decided by routeShared (route.ts).
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Navigate, useSearchParams } from 'react-router';
+import { logError } from '@/data';
+import { quickPreview } from '@/data/quick';
 import { CaptureActions } from '@/features/add/CaptureActions';
+import { quickAddHref } from '@/features/add/addSheetStore';
 import { SignInNeeded } from '@/features/add/SignInNeeded';
 import { ArticleFetch } from '@/features/article/ArticleFetch';
 import { useAuth } from '@/features/auth/session';
 import { firstWords } from '@/features/import/shared';
+import { lookupForms } from '@/features/quick/route';
 import { Card, EmptyState, Icon, PageFrame, Spinner, buttonClasses } from '@/ui';
 import { countWords, MAX_TERM_WORDS, routeShared, shareHref } from './route';
 
@@ -38,6 +42,39 @@ function SharedText({ text, title }: { text: string; title: string | null }) {
       />
     </PageFrame>
   );
+}
+
+/**
+ * A shared word (1–3 words): the full form, filled with what this device knows. Kelime Bankası
+ * or the lexicon cache give the dictionary form and the first meaning the user's card does not
+ * have yet, like the Add sheet's "Elle düzenle", so "postpone" never lands on an empty meaning
+ * (review 2026-11 3.5). Nothing known (or a Turkish word): the form with only the word.
+ */
+function SharedTerm({ term }: { term: string }) {
+  const { t } = useTranslation();
+  const [to, setTo] = useState<string | null>(null);
+  useEffect(() => {
+    let live = true;
+    quickPreview(term, lookupForms(term))
+      .then((p) => {
+        const fresh = p.senses.filter((s) => !s.owned);
+        if (live) setTo(quickAddHref(p.senses.length ? p.term : term, fresh.slice(0, 1)));
+      })
+      .catch((e: unknown) => {
+        void logError(e, 'share.term');
+        if (live) setTo(quickAddHref(term));
+      });
+    return () => {
+      live = false;
+    };
+  }, [term]);
+  if (!to)
+    return (
+      <p role="status" className="flex items-center gap-2 p-5 text-ui text-fg-muted">
+        <Spinner size={16} /> {t('quick.searching')}
+      </p>
+    );
+  return <Navigate to={to} replace />;
 }
 
 /** The title-only actions of a shared link: the fallback when the article cannot be fetched. */
@@ -129,8 +166,8 @@ export function SharePage() {
 
   switch (route.kind) {
     case 'term':
-      // The manual form looks the term up in the lexicon and shows its meanings: the card preview.
-      return <Navigate to={`/add?term=${encodeURIComponent(route.term)}`} replace />;
+      // The manual form, filled with the meaning this device knows (3.5).
+      return <SharedTerm key={route.term} term={route.term} />;
     case 'text':
       return <SharedText text={route.text} title={route.title} />;
     case 'link':

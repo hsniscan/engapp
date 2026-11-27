@@ -52,4 +52,12 @@ describe('stageChanges', () => {
       { noteId: hinder.note.id, term: 'hinder', from: 'new', to: 'consolidating' },
     ]);
   });
+
+  it('leaves out a first look at a new word (Yeni → Öğreniyor, 2026-11-26 3.3)', async () => {
+    const hinder = await viewOf('hinder');
+    const cope = await viewOf('cope');
+    expect(stageChanges([answer(hinder, Rating.Good, 'learning'), answer(cope, Rating.Easy, 'consolidating')])).toEqual([
+      { noteId: cope.note.id, term: 'cope', from: 'new', to: 'consolidating' },
+    ]);
+  });
 });

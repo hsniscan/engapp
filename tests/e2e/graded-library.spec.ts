@@ -103,13 +103,13 @@ test('Okuma kitaplığı: catalogue, filters, coverage chip, open and cache', as
     sentences: [expect.objectContaining({ en: 'The train was late.', audio_key: 'en-US/aaa.mp3' }), expect.anything()],
   });
 
-  // Back in Okuma offline: the opened text is listed once, under Metinlerim (v0.5.1), and opens
-  // from the device with the same reading row.
+  // Back in Okuma offline: opened for a moment, not started, so it stays in the library list
+  // (decision 0089), and opens from the device with the same reading row.
   backend.offline = true;
   await page.goto('/kitaplik');
-  await expect(list.getByRole('listitem')).toHaveCount(2);
-  await expect(list).not.toContainText('The Late Train');
-  await page.getByTestId('my-texts').getByRole('link', { name: /The Late Train/ }).click();
+  await expect(list.getByRole('listitem')).toHaveCount(3);
+  await expect(page.getByTestId('my-texts')).toHaveCount(0);
+  await list.getByRole('button', { name: /^The Late Train/ }).click();
   await expect(page).toHaveURL(new RegExp(`/oku/${(texts![0] as { id: string }).id}$`));
   expect((await dumpTables(page, ['texts'])).texts).toHaveLength(1);
 });
@@ -139,13 +139,13 @@ test('Okuma: an opened library text is listed once, with its progress, and a sug
     await page.emulateMedia({ colorScheme: 'light' });
   }
   await expect(page).not.toHaveURL(new RegExp(`/oku/${ID(1)}$`));
+  // Opened for a moment but not started: it stays in the library and is not in Metinlerim
+  // (decision 0089).
   await page.goto('/decks?tab=reading');
-  const mine = page.getByTestId('my-texts');
-  await expect(mine.getByRole('link', { name: /The Late Train/ })).toContainText('Okunmadı');
   const library = page.getByRole('list', { name: 'Metinler', exact: true });
-  await expect(library.getByRole('listitem')).toHaveCount(1);
-  await expect(library).toContainText('Why the Sky Is Blue');
-  await expect(library).not.toContainText('The Late Train');
+  await expect(library.getByRole('listitem')).toHaveCount(2);
+  await expect(library).toContainText('The Late Train');
+  await expect(page.getByTestId('my-texts')).toHaveCount(0);
 });
 
 test('Okuma: the full library (360 texts, A1 to C1) lists in pages, filters by A1 and works offline', async ({

@@ -4,6 +4,7 @@ import {
   dailyPick,
   dailyPickWhere,
   dailyPicksWhere,
+  dailySpreadPicks,
   type FeedEntry,
   feedEntry,
   hash32,
@@ -155,9 +156,49 @@ describe('picks of the day', () => {
     expect(dailyPicksWhere(words, day, 'w', () => true, 0)).toEqual([]);
   });
 
-  it('hashes stably', () => {
+  it('hashes stably (spread picks below)', () => {
     expect(hash32('')).toBe(0x811c9dc5);
     expect(hash32('a')).toBe(hash32('a'));
     expect(hash32('a')).not.toBe(hash32('b'));
+  });
+});
+
+describe('spread daily picks', () => {
+  // 200 words, most frequent first; the old code took six neighbours of this list.
+  const list = Array.from({ length: 200 }, (_, i) => `w${String(i).padStart(3, '0')}`);
+  const key = (w: string) => w;
+  const yes = () => true;
+
+  it('is stable within a day and changes across days', () => {
+    const a = dailySpreadPicks(list, days[0]!, 'word', yes, 6, key);
+    expect(a).toHaveLength(6);
+    expect(new Set(a).size).toBe(6);
+    expect(dailySpreadPicks(list, days[0]!, 'word', yes, 6, key)).toEqual(a);
+    const firsts = new Set(days.map((d) => dailySpreadPicks(list, d, 'word', yes, 6, key)[0]));
+    expect(firsts.size).toBeGreaterThan(10);
+  });
+
+  it('does not pick a run of neighbours and prefers the frequent part', () => {
+    for (const day of days) {
+      const idx = dailySpreadPicks(list, day, 'word', yes, 6, key)
+        .map((w) => list.indexOf(w))
+        .sort((x, y) => x - y);
+      // From the first quarter (the most frequent words) only.
+      expect(idx.every((i) => i < 50)).toBe(true);
+      // Not six consecutive positions.
+      expect(idx[5]! - idx[0]!).toBeGreaterThan(5);
+    }
+  });
+
+  it('skips what ok refuses, and taking one keeps the others', () => {
+    const day = days[3]!;
+    const before = dailySpreadPicks(list, day, 'word', yes, 6, key);
+    const taken = before[0]!;
+    const after = dailySpreadPicks(list, day, 'word', (w) => w !== taken, 6, key);
+    expect(after).not.toContain(taken);
+    expect(after.slice(0, 5)).toEqual(before.slice(1));
+    expect(dailySpreadPicks(list, day, 'word', () => false, 6, key)).toEqual([]);
+    expect(dailySpreadPicks(list, day, 'word', yes, 0, key)).toEqual([]);
+    expect(dailySpreadPicks(list.slice(0, 3), day, 'word', yes, 6, key)).toHaveLength(3);
   });
 });

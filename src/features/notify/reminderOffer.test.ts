@@ -65,10 +65,10 @@ describe('offerKind (A4)', () => {
     expect(offerKind({ ...base, answered: 'yes' })).toBeNull();
   });
 
-  it('web: push where supported; a guest gets the account offer; nothing without push', () => {
+  it('web: push where supported; no second sign-in prompt for a guest (ADR 0086); nothing without push', () => {
     const web = { ...base, native: false, webSupported: true };
     expect(offerKind({ ...web, signedIn: true })).toBe('web');
-    expect(offerKind(web)).toBe('webGuest');
+    expect(offerKind(web)).toBeNull();
     expect(offerKind({ ...web, webSupported: false })).toBeNull();
     expect(offerKind({ ...web, signedIn: true, accountEnabled: true })).toBeNull();
     expect(offerKind({ ...web, backend: false })).toBeNull();

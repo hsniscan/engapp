@@ -1,13 +1,14 @@
 // "Kelimelerin" on Bugün (v0.5.2 "Çam", docs/design.md §4.1): the words learned under the
 // stricter rule (recalled on three separate days, holding for two weeks), recall over the last
-// 30 days and the stage bar (Öğreniyor … Kalıcı) from the one stage scale.
+// 30 days and the stage bar (Öğreniyor … Kalıcı, then Yeni) from the one stage scale. The bar
+// covers every word, so on day 1 it is not "full" under "/ 500" (2026-11-26 #5).
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { formatNumber, formatPercent } from '@/features/stats/format';
 import type { WordStages } from '@/features/stats/useWordStages';
 import { buttonClasses, Card, SectionHeader, StageBar } from '@/ui';
 
-const STAGES = ['learning', 'consolidating', 'learned', 'mastered'] as const;
+const STAGES = ['learning', 'consolidating', 'learned', 'mastered', 'new'] as const;
 
 export function WordsCard({
   stages,

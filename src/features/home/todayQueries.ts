@@ -6,6 +6,7 @@ import {
   getReportNotice,
   getSettings,
   stageRuleNoticePending,
+  streakFrozenDay,
   type MoreStudyOverview,
 } from '@/data';
 import { STAGE_RULE_NOTICE_KEY } from '@/data/db';
@@ -24,6 +25,11 @@ export interface WeekDot {
   date: DayKey;
   /** At least one answer that day. */
   active: boolean;
+  /**
+   * Not studied, but the streak went on: a vacation day or one a streak protection covered.
+   * Shown apart, so the dots agree with "5 günlük seri" (2026-11-26 M3).
+   */
+  kept: boolean;
   today: boolean;
   future: boolean;
 }
@@ -53,11 +59,17 @@ const MODE_OF: Record<CardType, StudyMode> = {
 };
 
 /** Monday-to-Sunday dots of the week `today` falls in. */
-export function weekDots(today: DayKey, activeDays: ReadonlySet<DayKey>): WeekDot[] {
+export function weekDots(
+  today: DayKey,
+  activeDays: ReadonlySet<DayKey>,
+  isKeptDay: (day: DayKey) => boolean = () => false,
+): WeekDot[] {
   const monday = mondayOf(today);
   return Array.from({ length: 7 }, (_, i) => {
     const date = addDays(monday, i);
-    return { date, active: activeDays.has(date), today: date === today, future: date > today };
+    const active = activeDays.has(date);
+    const kept = !active && date < today && isKeptDay(date);
+    return { date, active, kept, today: date === today, future: date > today };
   });
 }
 
@@ -105,7 +117,7 @@ export async function getTodayActivity(now: Millis = Date.now()): Promise<TodayA
 
   return {
     today: bounds.key,
-    week: weekDots(bounds.key, active),
+    week: weekDots(bounds.key, active, streakFrozenDay(settings)),
     minutes,
     weekMinutes,
     answers,

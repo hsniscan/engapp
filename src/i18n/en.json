@@ -13,6 +13,39 @@
     "profile": "Profile",
     "addLong": "Add"
   },
+  "pageTitle": {
+    "app": "{{title}} · Engapp",
+    "home": "Today",
+    "study": "Study",
+    "more": "Study a bit more",
+    "practice": "Practice",
+    "decks": "My words",
+    "themes": "Themes",
+    "suggestedDeck": "Suggested deck",
+    "deck": "Deck",
+    "discover": "Discover",
+    "library": "All my words",
+    "reader": "Reading",
+    "add": "Add a word",
+    "article": "Add from an article",
+    "subtitle": "Add from subtitles",
+    "photo": "Text from a photo",
+    "compose": "Write a text",
+    "ankiImport": "Import from Anki",
+    "csvImport": "Import a list",
+    "imports": "Imports",
+    "importPreview": "Import",
+    "progress": "Progress",
+    "profile": "Profile",
+    "settings": "Settings",
+    "knownWords": "Words you know",
+    "sources": "Sources",
+    "levelTest": "Level test",
+    "adminImages": "Image review",
+    "auth": "Sign in",
+    "share": "Share",
+    "notFound": "Page not found"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
@@ -116,6 +149,7 @@
     "weekDots_one": "This week: {{count}} day studied",
     "weekDots_other": "This week: {{count}} days studied",
     "dayActive": "studied",
+    "dayKept": "not studied, streak kept",
     "dayIdle": "not studied",
     "streakStart": "Start your streak today",
     "streakDays_one": "{{count}}-day streak",
@@ -195,12 +229,14 @@
     "word": {
       "title": "Add a word",
       "label": "Its meaning comes from your cards, the Word Bank or the dictionary; otherwise AI finds it",
+      "labelGuest": "Its meaning comes from your cards, the Word Bank or the dictionary. Sign in and AI finds it too.",
+      "labelLocal": "Its meaning comes from your cards, the Word Bank or the dictionary.",
       "submit": "Find the meaning",
       "manual": "Add by hand",
       "edit": "Edit by hand",
       "another": "Add another word",
-      "offline": "This word is not on your phone. Once online I can find its meaning; or add it by hand.",
-      "signIn": "This word is not on your phone. Sign in so AI can find its meaning, or add it by hand.",
+      "offline": "This word is not on this device. Once online I can find its meaning; or add it by hand.",
+      "signIn": "This word is not on this device. Sign in so AI can find its meaning, or add it by hand.",
       "notFound": "I couldn't find this word's meaning. You can add it by hand.",
       "field": "Type a word or phrase",
       "placeholder": "Type a word"
@@ -260,6 +296,7 @@
     "noVoice": "No speech: this device has no English voice",
     "voiceFailed": "No sound",
     "voiceFailedHelp": "Your phone's text-to-speech engine can't read English. On Android: Settings → Accessibility (or General management) → Text-to-speech output → Preferred engine: Speech Services by Google, then download the English (US) voice data. Also check silent mode and media volume.",
+    "voiceFailedHelpWeb": "This browser found no English voice. Add an English text-to-speech voice in your device settings or try another browser. Check the volume too.",
     "speakSentence": "Play sentence",
     "menu": "Card options",
     "undoLast": "Undo last answer",
@@ -294,7 +331,7 @@
       "consolidated_other": "{{count}} words moved to Consolidating",
       "continueMode": "Continue",
       "time": "Time",
-      "retention": "Recall",
+      "retention": "Recall on reviews",
       "ratings": "Your answers",
       "streakExtended": "Today was added to your streak.",
       "streakKept": "Today's reviews are saved.",
@@ -358,6 +395,8 @@
     "answerShown": "Answer shown",
     "scrollCard": "Card, scrollable",
     "suggested": "Our suggestion:",
+    "posPhrasalVerb": "phrasal verb",
+    "choiceHint": "You picked it from the options; type it to get Good.",
     "wrongHint": "Your answer was wrong; we suggest Again. Tap another button twice to pick it.",
     "confirmRating": "“{{rating}}” anyway? Tap it once more to confirm.",
     "confirmTap": "sure?",
@@ -455,6 +494,7 @@
     "speak": "Listen to the sentence",
     "editTitle": "Edit sentence",
     "editHint": "Your edit stays in your account only; it is never written to the shared dictionary.",
+    "editHint_device": "Your edit stays on this device only; it is never written to the shared dictionary.",
     "editLabel": "Sentence",
     "termMissing": "“{{term}}” is not in the sentence; it won't be highlighted or used for fill-in-the-blank cards.",
     "tooLong": "At most {{max}} characters.",
@@ -512,6 +552,7 @@
     "writeTitle": "Write your own mnemonic",
     "editTitle": "Edit the mnemonic",
     "dialogHint": "What you write stays in your account only; it is not shared with anyone.",
+    "dialogHint_device": "What you write stays on this device only; it is not shared with anyone.",
     "textLabel": "Mnemonic",
     "emptyText": "The mnemonic cannot be empty.",
     "tooLong": "At most {{max}} characters.",
@@ -571,6 +612,7 @@
     "picker": {
       "title": "Which word did you mix it up with?",
       "description": "Pick the word you confused with “{{term}}”. This stays in your account only.",
+      "description_device": "Pick the word you confused with “{{term}}”. This stays on this device only.",
       "search": "Search your words",
       "near": {
         "spelling": "Looks similar",
@@ -589,6 +631,7 @@
       "existing": "You already have a contrast card for these two words.",
       "differenceLabel": "Difference",
       "differenceHint": "A short line that tells them apart. What you write stays in your account only.",
+      "differenceHint_device": "A short line that tells them apart. What you write stays on this device only.",
       "ask": "Explain the difference",
       "asking": "Preparing an explanation…",
       "ready": "The explanation is ready; change it if you like.",
@@ -743,7 +786,7 @@
       "duplicateTerm": "Another word already has this term.",
       "noteDeleted": "“{{term}}” deleted",
       "markKnown": "I know this",
-      "markKnownHint": "The word moves to Known words and its cards leave study. Its history is kept.",
+      "markKnownHint": "Choose “I know this” in the ⋯ menu and the word moves to Known words; its cards leave study. Its history is kept.",
       "knownDone": "“{{term}}” moved to Known words",
       "reset": "Reset progress",
       "resetDone": "“{{term}}” starts over",
@@ -947,7 +990,7 @@
       "overall": "Retention, last 90 days",
       "dimension": "Category",
       "dimensions": {
-        "term_type": "Term type",
+        "term_type": "Word / phrase / pattern",
         "level": "Level",
         "topic": "Topic",
         "source": "Source",
@@ -957,6 +1000,40 @@
       "listLabel": "{{dimension}}: retention",
       "weakest": "Your weakest spot: {{group}}, {{rate}}",
       "noWeakest": "Showing your weakest spot needs at least 20 answers in a category.",
+      "showWeakest": "Show in the {{dimension}} list",
+      "plural": {
+        "term_type": {
+          "word": "words",
+          "phrase": "phrases",
+          "pattern": "patterns",
+          "affix": "roots and affixes",
+          "contrast": "contrast cards"
+        },
+        "pos": {
+          "noun": "nouns",
+          "verb": "verbs",
+          "adjective": "adjectives",
+          "adverb": "adverbs",
+          "phrasal verb": "phrasal verbs",
+          "idiom": "idioms",
+          "preposition": "prepositions",
+          "conjunction": "conjunctions",
+          "pronoun": "pronouns",
+          "interjection": "interjections",
+          "phrase": "phrases",
+          "determiner": "determiners",
+          "root": "roots",
+          "prefix": "prefixes",
+          "suffix": "suffixes"
+        },
+        "card_type": {
+          "recognition": "recognition cards",
+          "production": "production cards",
+          "cloze": "cloze cards",
+          "image": "picture cards"
+        },
+        "level": "{{level}} words"
+      },
       "row": "{{label}}: {{rate}}, {{answers}}. Most likely between {{low}} and {{high}}.",
       "rowFew": "{{label}}: too little data, {{answers}}.",
       "interval": "Most likely between {{low}} and {{high}} (95% interval)",
@@ -980,6 +1057,7 @@
       "retentionTitle": "Weekly retention",
       "retentionLabel": "Retention of each week, last 12 weeks",
       "retentionHint": "Gaps in the line are weeks with fewer than 20 answers.",
+      "notEnough": "Not enough data yet",
       "pointLearned_one": "{{week}}: {{count}} word",
       "pointLearned_other": "{{week}}: {{count}} words",
       "pointRetention": "{{week}}: {{rate}}, {{answers}}",
@@ -1059,7 +1137,14 @@
       "C2": "Proficient"
     },
     "appearance": {
-      "hint": "“System” follows your device's light or dark setting."
+      "hint": "“System” follows your device's light or dark setting.",
+      "textSize": "Text size",
+      "textSizes": {
+        "normal": "Normal",
+        "large": "Large",
+        "larger": "Largest"
+      },
+      "textSizeHint": "For all text in the app, on this device only. The reader's own text size adds on top."
     },
     "voice": {
       "accent": "Accent",
@@ -1157,13 +1242,13 @@
         "account": "Account and data",
         "app": "App"
       },
-      "version": "engapp · version {{version}}",
+      "version": "Engapp · version {{version}}",
       "savedNote": "Changes are saved at once; when signed in they reach your other devices too."
     },
     "pages": {
       "calisma": {
         "title": "Study",
-        "keywords": "new cards daily limit order smart added target retention algorithm fsrs day start easy candidates",
+        "keywords": "new cards daily limit order smart added target retention algorithm fsrs day start easy candidates reading text size",
         "lead": "How many new words you see each day and how often reviews come back."
       },
       "yuk": {
@@ -1184,7 +1269,7 @@
       },
       "gorunum": {
         "title": "Appearance",
-        "keywords": "theme dark light system picture image cards"
+        "keywords": "theme dark light system picture image cards text size font size large text zoom"
       },
       "hesap": {
         "title": "Account and sync",
@@ -1555,6 +1640,8 @@
       "manualTitle": "Add a card by hand",
       "term": "English word or phrase",
       "termHint": "Use the dictionary form: “give up”, not “gave up”.",
+      "termTurkish": "This looks Turkish. Type the English word here; the Turkish meaning goes in the field below.",
+      "charCount": "{{count}} / {{max}}",
       "termRequired": "Type the word or phrase.",
       "termType": "Type",
       "exists": "This word already exists; add a new meaning",
@@ -1837,6 +1924,8 @@
     "errorBody": "Check your connection and try again, or continue as a guest for now. Your data is safe on this device.",
     "continueAsGuest": "Continue as guest",
     "done": "Connected to your account",
+    "doneMoved_one": "{{count}} word moved to your account and now syncs",
+    "doneMoved_other": "{{count}} words moved to your account and now sync",
     "doneCopied": "{{count}} words were copied as new cards.",
     "doneDuplicates": "{{count}} words were marked “possible duplicate”; you can review them in Kelimelerim (My words).",
     "discardAccountConfirm": "I understand: my account's cards will be deleted on all my devices."
@@ -1951,7 +2040,10 @@
       "titleLabel": "Title",
       "titlePlaceholder": "e.g. The Guardian — climate piece",
       "tooShort": "Paste at least one sentence of three words.",
-      "tooLong": "The text is too long (at most {{max}} characters). Split it and upload the parts separately."
+      "tooLong": "The text is too long (at most {{max}} characters). Split it and upload the parts separately.",
+      "fromClipboard": "Paste from clipboard",
+      "clipboardEmpty": "The clipboard has no text. Copy the text first.",
+      "clipboardDenied": "Couldn't read the clipboard. Long-press the box and tap “Paste”."
     },
     "pdf": {
       "drop": "Drop a PDF file here",
@@ -2030,7 +2122,7 @@
       "meaning": "Turkish meaning: {{term}}",
       "meaningEdited": "Edited",
       "resetMeaning": "Back to the dictionary meaning",
-      "source": "{{title}} · {{count}} candidates",
+      "source": "{{title}} ·\u00a0{{count}}\u00a0candidates",
       "confirm_one": "Add {{count}} word",
       "confirm_other": "Add {{count}} words",
       "confirmNone": "Select candidates to add",
@@ -2161,7 +2253,8 @@
     "catchupDays_one": "Catch-up ends today",
     "catchupDays_other": "Catch-up: done in {{count}} days",
     "catchupLong": "Catching up may take more than a month. Consider a longer daily time.",
-    "rampZero": "Welcome back! Reviews only today; new cards return gradually from tomorrow.",
+    "rampTitle": "Welcome back",
+    "rampZero": "Reviews only today; new cards return gradually from tomorrow.",
     "rampHalf_one": "New cards are coming back gradually: {{count}} new card today.",
     "rampHalf_other": "New cards are coming back gradually: {{count}} new cards today.",
     "vacationNow": "You are on vacation (until {{end}}). No new cards open and your streak is kept.",
@@ -2192,6 +2285,7 @@
     "forecastLoading": "Calculating the forecast…",
     "forecastNote": "The forecast uses how likely you are to remember each card and your daily new-card limit.",
     "forecastToday": "Today",
+    "forecastTomorrow": "Tomorrow",
     "forecastChartLabel": "Expected reviews for the next 30 days, with the capacity line",
     "vacationStartPast": "A holiday cannot start before today. Pick today or a later day.",
     "forecastCapacityShort": "Capacity {{cards}}"
@@ -2324,6 +2418,7 @@
     "resultTitle": "Your result",
     "resultLevel": "Your level",
     "resultChanged": "Your level went from {{from}} to {{to}}.",
+    "resultFirst": "Your level: {{level}}. Word suggestions will follow it.",
     "resultSame": "Your level stays {{level}}.",
     "nearNext": "You are close to {{next}}: you know about {{pct}}% of the {{next}} words.",
     "towardNext": "You know about {{pct}}% of the {{next}} words; {{next}} needs 80%.",
@@ -2971,6 +3066,7 @@
     "shortcuts": "Keyboard: → approve, ← reject, ↓ redraw, Z undo.",
     "signIn": "Sign in with Google to open this page.",
     "notAdmin": "This page is for admins only.",
+    "back": "Back to settings",
     "offline": "No internet connection. You can continue where you left off once you are online.",
     "loading": "Loading pictures…",
     "loadFailed": "Could not load the pictures.",
@@ -3045,7 +3141,8 @@
     "continue": {
       "eyebrow": "Continue",
       "start": "Opened, not started yet",
-      "action": "Continue reading"
+      "action": "Continue reading",
+      "begin": "Start reading"
     },
     "suggestions": {
       "eyebrow": "Texts for you",
@@ -3298,6 +3395,7 @@
       "fAll": "All {{count}}",
       "fNew": "New {{count}}",
       "fCarded": "In cards {{count}}",
+      "fLearned": "Learned {{count}}",
       "fKnown": "Known {{count}}",
       "sLearned": "Learned",
       "sStudying": "In cards",
@@ -3509,13 +3607,16 @@
     "mine": "Meaning on your card",
     "pickHint": "Tap the meanings the card should have.",
     "picked": "Selected",
+    "ownedSense": "On your cards",
+    "allOwned": "All on your cards",
     "owned": {
       "carded": "Already in your cards",
       "known": "You marked this word as known"
     },
     "searching": "Looking up the meaning…",
-    "offline": "This word is not on your phone yet. Connect to the internet to look it up.",
-    "signIn": "This word is not on your phone yet. Sign in to look it up, or write it yourself.",
+    "offline": "This word is not on this device yet. Connect to the internet to look it up.",
+    "signIn": "This word is not on this device yet. Sign in to look it up, or write it yourself.",
+    "turkish": "“{{term}}” looks Turkish. Type the English word here; the Turkish meaning goes on the back of the card.",
     "notFound": "No meaning found for this word.",
     "failed": "The lookup failed. You can write the meaning yourself.",
     "writeOwn": "I'll write the meaning",
@@ -3588,7 +3689,7 @@
     },
     "legend": {
       "sample": "word",
-      "new": "Probably new",
+      "new": "Probably new, or a card you have not studied yet",
       "learning": "Learning",
       "consolidating": "Consolidating",
       "known": "Known or learned: no mark",
@@ -3703,7 +3804,7 @@
     },
     "alwaysGuess": {
       "label": "Always guess first",
-      "hint": "Words already in your cards ask for a guess too before their meaning shows. When off, their meaning shows at once."
+      "hint": "Every word you tap asks for a guess before its meaning shows. When off, the meaning shows at once."
     },
     "settings": {
       "title": "Reading"
@@ -3723,7 +3824,7 @@
       "title": "My texts",
       "add": "Add a text",
       "empty": "Paste a text or upload a PDF; the reader marks its words by what you know.",
-      "unread": "Not read",
+      "unread": "Not started",
       "progress": "{{pct}}% read",
       "continue": "Continue",
       "finished": "Finished",
@@ -3761,6 +3862,7 @@
     "coverageStory": "Apart from the target words, you know {{pct}}% of this story",
     "mark": {
       "new": "new word",
+      "fresh": "in your cards, not studied yet",
       "learning": "word you are learning",
       "consolidating": "word settling in",
       "target": "one of your review words in the story"
@@ -3863,7 +3965,11 @@
     "otherFile": "Choose another file",
     "pasteLabel": "Or paste the list here",
     "placeholder": "give up - vazgeçmek\nbank;kıyı;We sat on the bank of the river.",
-    "hint": "Separate with a tab, semicolon, comma or “ - ”.",
+    "hint": "Separate with a tab, semicolon, comma or a dash with spaces around it.",
+    "reversed": "The Turkish words seem to be in the first column of this list. The English word belongs on the front of the card.",
+    "swap": "Swap columns",
+    "swapped": "Columns swapped: the English word in front, the Turkish meaning on the back.",
+    "unswap": "Undo",
     "preview_one": "{{count}} word found",
     "preview_other": "{{count}} words found",
     "more_one": "and {{count}} more word",
@@ -3975,11 +4081,9 @@
   "reminderOffer": {
     "title": "Shall I remind you tomorrow?",
     "body": "One short reminder a day at the time you pick. None on a day you already studied.",
-    "guestBody": "In the browser, reminders need an account. Create a free one and I will remind you every day at your time.",
     "time": "Time",
     "yes": "Yes, at {{hour}}:00",
     "no": "No, thanks",
-    "signIn": "Create an account",
     "done": "Done: a reminder every day at {{hour}}:00",
     "declined": "Okay, I won't ask again. You can turn it on any time in Settings → Notifications.",
     "denied": "Notifications were not allowed. You can allow them in your phone settings.",

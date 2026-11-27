@@ -127,7 +127,7 @@ function CatchupNote({ status }: { status: LoadStatus }) {
 function RampNote({ status }: { status: LoadStatus }) {
   const { t } = useTranslation();
   return (
-    <Note id="load-ramp" icon="info" title={t('load.catchupTitle')}>
+    <Note id="load-ramp" icon="info" title={t('load.rampTitle')}>
       <p>
         {status.plan.newFactor === 0
           ? t('load.rampZero')

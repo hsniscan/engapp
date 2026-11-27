@@ -110,6 +110,12 @@ export function learnedInSession(answers: readonly SessionAnswer[]): number {
   return reached.size;
 }
 
+/**
+ * Below this many review answers the summary leaves out "Tekrarlarda hatırlama": one or two
+ * reviews give %0 or %100, which reads oddly next to "Tekrar 11" (2026-11-26 #4).
+ */
+export const MIN_RECALL_REVIEWS = 5;
+
 /** Words of the session, words that reached Pekişiyor or higher, and recall on reviews. */
 export function sessionFacts(answers: readonly SessionAnswer[]): {
   words: number;
@@ -157,7 +163,9 @@ export interface StageChange {
 /**
  * Words whose stage went up in this session ("Aşama değişenler" on the summary). The word's
  * stage is its recognition card's (ADR 0041), so only those answers count; a word that went up
- * and came back down is left out. Order: first answered first.
+ * and came back down is left out. A first look at a new word (Yeni → Öğreniyor) is not a
+ * change worth listing: every new word of the session would be there (2026-11-26, 3.3); the
+ * summary's "N kelime çalıştın" already counts them. Order: first answered first.
  */
 export function stageChanges(answers: readonly SessionAnswer[]): StageChange[] {
   const byNote = new Map<Id, StageChange>();
@@ -169,7 +177,9 @@ export function stageChanges(answers: readonly SessionAnswer[]): StageChange[] {
     if (!seen) byNote.set(a.view.note.id, { noteId: a.view.note.id, term: a.view.note.term, from: before, to: after });
     else seen.to = after;
   }
-  return [...byNote.values()].filter((c) => STAGE_RANK[c.to] > STAGE_RANK[c.from]);
+  return [...byNote.values()].filter(
+    (c) => STAGE_RANK[c.to] > STAGE_RANK[c.from] && !(c.from === 'new' && c.to === 'learning'),
+  );
 }
 
 // ------------------------------------------------------------------ cloze choices

@@ -11,7 +11,7 @@ import { storyInputs, todayStory } from '@/data/story';
 import { dayKeyOf } from '@/domain/day';
 import {
   dailyPick,
-  dailyPicksWhere,
+  dailySpreadPicks,
   type FeedEntry,
   feedEntry,
   type FeedFilter,
@@ -19,9 +19,9 @@ import {
 import { stretchTexts, suggestTexts, type ScoredGradedText } from '@/domain/library';
 import type { FalseFriendNote } from '@/domain/pairNotes';
 import { MIN_STORY_TARGETS } from '@/domain/story';
-import { deckWordStatus } from '@/domain/suggestedDecks';
+import { deckWordStatus, isNonLemmaVerb, nonLemmaVerbs } from '@/domain/suggestedDecks';
 import type { ReaderText } from '@/domain/texts';
-import type { WordBankEntry } from '@/domain/wordBank';
+import { byFrequency, type WordBankEntry } from '@/domain/wordBank';
 import { useAuth } from '@/features/auth/session';
 import { type DeckCard, useDeckView } from '@/features/decks/deckView';
 import {
@@ -128,12 +128,14 @@ export function useDiscoverFeed(filter: FeedFilter): DiscoverData {
     void kickGradedCatalogPull({ force: true }).then(setLibrary);
   }, [retryBank]);
 
-  // Word-bank words at the user's level, in a fixed order (the daily pick walks it).
+  // Word-bank words at the user's level, most frequent first (the daily pick prefers those);
+  // modals and inflected forms listed as verbs ("might", "done") are not words to add.
   const levelWords = useMemo(() => {
     if (!bank) return [];
+    const notLemma = nonLemmaVerbs(bank.entries);
     return bank.entries
-      .filter((e) => e.cefr === bank.level && e.senses.length > 0)
-      .sort((a, b) => a.id.localeCompare(b.id));
+      .filter((e) => e.cefr === bank.level && e.senses.length > 0 && !isNonLemmaVerb(e, notLemma))
+      .sort(byFrequency);
   }, [bank]);
 
   const items = useMemo((): FeedItem[] | undefined => {
@@ -174,12 +176,13 @@ export function useDiscoverFeed(filter: FeedFilter): DiscoverData {
 
     // Kelimeler
     if (bank && levelWords.length > 0) {
-      const open = dailyPicksWhere(
+      const open = dailySpreadPicks(
         levelWords,
         day,
         'word',
         (e) => deckWordStatus(e, bank.idx) === 'new',
         1 + WORDS_AT_LEVEL,
+        (e) => e.id,
       );
       if (open[0]) out.push({ ...feedEntry('wordOfDay'), entry: open[0] });
       if (open.length > 1) out.push({ ...feedEntry('wordsAtLevel'), entries: open.slice(1) });

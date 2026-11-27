@@ -4,7 +4,14 @@
 // The queue is optimistic: the next picture shows at once, the decision is sent in the
 // background, and the last one is held back until the next decision so "Geri al" can take it
 // back. Admin-only on the server too (every function checks public.app_admins).
-import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from 'react';
 import { useReducedMotion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { decideReview, fetchReviewQueue, type ReviewQueueRow } from '@/ai/image';
@@ -30,11 +37,16 @@ import { CardPicture } from '@/features/images/CardPicture';
 import { preloadPicture } from '@/features/images/picture';
 import { useIsAdmin } from '@/features/images/useIsAdmin';
 import { useOnline } from '@/lib/online';
-import { Button, cn, Icon, Kbd, Spinner, toast } from '@/ui';
+import { Link } from 'react-router';
+import { Button, buttonClasses, cn, Icon, Kbd, Spinner, toast } from '@/ui';
 
 export interface ReviewApi {
   fetch: (limit: number) => Promise<ReviewQueueRow[]>;
-  decide: (imageId: string, decision: ReviewDecisionKind, reason: ImageRejectReason | null) => Promise<void>;
+  decide: (
+    imageId: string,
+    decision: ReviewDecisionKind,
+    reason: ImageRejectReason | null,
+  ) => Promise<void>;
 }
 
 const defaultApi: ReviewApi = {
@@ -58,16 +70,41 @@ export function ImageReviewRoute() {
   return <ImageReviewPage />;
 }
 
-export function ImageReviewPage({ api = defaultApi, ask }: { api?: ReviewApi; ask?: () => Promise<boolean> }) {
+export function ImageReviewPage({
+  api = defaultApi,
+  ask,
+}: {
+  api?: ReviewApi;
+  ask?: () => Promise<boolean>;
+}) {
   const { t } = useTranslation();
   const auth = useAuth();
   const online = useOnline();
   const admin = useIsAdmin(ask);
 
   let body: ReactNode;
-  if (auth.status !== 'signed_in') body = <Notice text={t('imageReview.signIn')} />;
-  else if (admin === undefined) body = online ? <Notice text={t('imageReview.loading')} busy /> : <Notice text={t('imageReview.offline')} />;
-  else if (!admin) body = <Notice text={t('imageReview.notAdmin')} />;
+  // A guest or a non-admin gets a way on (sign in) and back (Ayarlar › Gelişmiş), not a bare line.
+  const backToSettings = (
+    <Link to="/settings/gelismis" className={buttonClasses({ variant: 'ghost' })}>
+      {t('imageReview.back')}
+    </Link>
+  );
+  if (auth.status !== 'signed_in')
+    body = (
+      <Notice text={t('imageReview.signIn')}>
+        <Link to="/auth" className={buttonClasses({ variant: 'primary' })}>
+          {t('auth.google')}
+        </Link>
+        {backToSettings}
+      </Notice>
+    );
+  else if (admin === undefined)
+    body = online ? (
+      <Notice text={t('imageReview.loading')} busy />
+    ) : (
+      <Notice text={t('imageReview.offline')} />
+    );
+  else if (!admin) body = <Notice text={t('imageReview.notAdmin')}>{backToSettings}</Notice>;
   else body = <Reviewer api={api} online={online} />;
 
   return (
@@ -77,18 +114,21 @@ export function ImageReviewPage({ api = defaultApi, ask }: { api?: ReviewApi; as
     >
       {/* The close control is the shell's ✕ (route handle exitTo), as on every immersive screen. */}
       <header className="flex min-h-11 items-center gap-2">
-        <h1 className="font-serif text-xl font-semibold text-fg sm:text-2xl">{t('imageReview.title')}</h1>
+        <h1 className="font-serif text-xl font-semibold text-fg sm:text-2xl">
+          {t('imageReview.title')}
+        </h1>
       </header>
       {body}
     </div>
   );
 }
 
-function Notice({ text, busy }: { text: string; busy?: boolean }) {
+function Notice({ text, busy, children }: { text: string; busy?: boolean; children?: ReactNode }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
       {busy && <Spinner />}
       <p className="max-w-sm text-[0.9375rem] text-fg-muted">{text}</p>
+      {children && <div className="mt-2 flex flex-col items-center gap-2">{children}</div>}
     </div>
   );
 }
@@ -308,7 +348,8 @@ function Reviewer({ api, online }: { api: ReviewApi; online: boolean }) {
               transform: offset
                 ? `translate(${offset.x}px, ${Math.max(0, offset.y)}px)${reduce ? '' : ` rotate(${offset.x / 24}deg)`}`
                 : undefined,
-              transition: offset || reduce ? 'none' : 'transform var(--duration-micro, 150ms) ease-out',
+              transition:
+                offset || reduce ? 'none' : 'transform var(--duration-micro, 150ms) ease-out',
             }}
             className="relative flex max-h-full w-full max-w-sm touch-none flex-col items-center gap-2 rounded-card border border-border bg-surface-raised px-4 pt-4 pb-4 shadow-md select-none"
           >
@@ -353,11 +394,19 @@ function Reviewer({ api, online }: { api: ReviewApi; online: boolean }) {
       </p>
 
       {rejecting && current && (
-        <fieldset className="flex flex-col gap-2 rounded-card border border-border bg-surface p-3" data-testid="reject-reasons">
+        <fieldset
+          className="flex flex-col gap-2 rounded-card border border-border bg-surface p-3"
+          data-testid="reject-reasons"
+        >
           <legend className="px-1 text-sm font-medium text-fg">{t('imageReview.whyReject')}</legend>
           <div className="grid grid-cols-2 gap-2">
             {IMAGE_REJECT_REASONS.map((r, i) => (
-              <Button key={r} variant="secondary" className="h-auto min-h-12 py-2 whitespace-normal" onClick={() => decide('reject', r)}>
+              <Button
+                key={r}
+                variant="secondary"
+                className="h-auto min-h-12 py-2 whitespace-normal"
+                onClick={() => decide('reject', r)}
+              >
                 <span className="hidden sm:inline">
                   <Kbd>{i + 1}</Kbd>
                 </span>
@@ -372,7 +421,13 @@ function Reviewer({ api, online }: { api: ReviewApi; online: boolean }) {
       )}
 
       <div className="flex items-center justify-between gap-2">
-        <Button variant="ghost" size="sm" leadingIcon="undo" disabled={!state.pending} onClick={undo}>
+        <Button
+          variant="ghost"
+          size="sm"
+          leadingIcon="undo"
+          disabled={!state.pending}
+          onClick={undo}
+        >
           {t('imageReview.undo')}
         </Button>
       </div>
@@ -388,11 +443,22 @@ function Reviewer({ api, online }: { api: ReviewApi; online: boolean }) {
           <Icon name="arrow-left" />
           {t('imageReview.reject')}
         </Button>
-        <Button variant="secondary" size="lg" className="flex-col gap-0.5 px-2" disabled={!current} onClick={() => decide('redraw')}>
+        <Button
+          variant="secondary"
+          size="lg"
+          className="flex-col gap-0.5 px-2"
+          disabled={!current}
+          onClick={() => decide('redraw')}
+        >
           <Icon name="chevron-down" />
           {t('imageReview.redraw')}
         </Button>
-        <Button size="lg" className="flex-col gap-0.5 px-2" disabled={!current} onClick={() => decide('approve')}>
+        <Button
+          size="lg"
+          className="flex-col gap-0.5 px-2"
+          disabled={!current}
+          onClick={() => decide('approve')}
+        >
           <Icon name="arrow-right" />
           {t('imageReview.approve')}
         </Button>

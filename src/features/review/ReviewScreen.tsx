@@ -26,6 +26,7 @@ import {
   IconButton,
   ProgressBar,
   Skeleton,
+  setToastLimit,
   toast,
   Tooltip,
 } from '@/ui';
@@ -106,6 +107,8 @@ export function ReviewScreen({ studyMode, ahead = false, deckId, deckNew, deckSe
   const focusAfter = useRef<'ratings' | 'show' | null>(null);
 
   useEffect(() => resetChoiceCandidates(), []);
+  // One toast at a time over the card: two stacked ones covered its sentence (2026-11-26 #6).
+  useEffect(() => setToastLimit(1), []);
 
   const current = state.current;
   const currentId = current?.view.card.id ?? null;

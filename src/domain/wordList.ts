@@ -88,7 +88,14 @@ export function looksLikeExample(cell: string, term: string): boolean {
   if (words.length < 3) return false;
   const head = term.toLowerCase().split(/\s+/)[0] ?? '';
   const stem = head.length > 4 ? head.slice(0, -1) : head;
-  if (stem && cell.toLowerCase().split(/[^\p{L}']+/u).some((w) => w.startsWith(stem))) return true;
+  if (
+    stem &&
+    cell
+      .toLowerCase()
+      .split(/[^\p{L}']+/u)
+      .some((w) => w.startsWith(stem))
+  )
+    return true;
   return /[.?!]["'”’)]?$/u.test(cell) && !TR_ONLY.test(cell);
 }
 
@@ -125,4 +132,29 @@ export function parseWordList(text: string): WordListParse {
     rows.push({ term, meaning, sentence: /\p{L}/u.test(sentence) ? sentence : null });
   });
   return { rows, skipped, truncated };
+}
+
+/**
+ * Is the list Turkish-first ("vazgeçmek,give up", "şemsiye;umbrella")? Rows whose term has a
+ * letter only Turkish uses while the meaning has none point that way; rows the other way round
+ * ("bank;kıyı") point the right way. Reversed when the Turkish-first rows clearly win and are at
+ * least a third of the list. Rows without such letters ("kitap;book") say nothing, so a reversed
+ * list with only those is not caught (review 2026-11-26, ekle.md #7).
+ */
+export function listLooksReversed(rows: readonly WordListRow[]): boolean {
+  if (!rows.length) return false;
+  let reversed = 0;
+  let straight = 0;
+  for (const r of rows.slice(0, 200)) {
+    const termTr = TR_ONLY.test(r.term);
+    const meaningTr = TR_ONLY.test(r.meaning);
+    if (termTr && !meaningTr) reversed++;
+    else if (meaningTr && !termTr) straight++;
+  }
+  return reversed > straight * 2 && reversed >= Math.ceil(Math.min(rows.length, 200) / 3);
+}
+
+/** The list with its first two columns swapped (the example sentence stays). */
+export function swapListColumns(rows: readonly WordListRow[]): WordListRow[] {
+  return rows.map((r) => ({ term: r.meaning, meaning: r.term, sentence: r.sentence }));
 }

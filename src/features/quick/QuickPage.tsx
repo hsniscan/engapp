@@ -13,7 +13,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router';
-import { getAuthState } from '@/features/auth/session';
+import { getAuthState, startAuth, useAuth } from '@/features/auth/session';
 import { getSettings, logError } from '@/data';
 import { readerPath } from '@/domain/texts';
 import {
@@ -42,6 +42,12 @@ export function QuickPage() {
   const [params] = useSearchParams();
   const text = params.get('text');
   const route = useMemo(() => routeQuick(text), [text]);
+  const auth = useAuth();
+  // A text's "Kelimeleri çıkar" says up front when it needs an account (#13); outside the shell
+  // nothing has started the session yet.
+  useEffect(() => {
+    if (route.kind === 'text') startAuth();
+  }, [route.kind]);
 
   // In the Android sheet the selection arrives a moment after the page (cold start).
   const [waited, setWaited] = useState(false);
@@ -111,6 +117,7 @@ export function QuickPage() {
       <QuickSheet
         route={route}
         {...common}
+        extractNeedsSignIn={auth.status === 'guest'}
         onOpenReader={() =>
           void handOver('reader', async () => {
             const id = await saveCapture({

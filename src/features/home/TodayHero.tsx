@@ -104,9 +104,10 @@ function RingCentre({ children, caption }: { children: ReactNode; caption?: stri
 function WeekStrip({ week }: { week: WeekDot[] }) {
   const { t } = useTranslation();
   const active = week.filter((d) => d.active).length;
+  // A kept day (vacation, streak protection) is the lighter shade: the streak went on.
   const days = week.map((d) => ({
-    level: (d.active ? 'completed' : 'empty') satisfies HeatLevel as HeatLevel,
-    label: `${formatDayLong(d.date)}: ${d.active ? t('today.dayActive') : t('today.dayIdle')}`,
+    level: (d.active ? 'completed' : d.kept ? 'active' : 'empty') satisfies HeatLevel as HeatLevel,
+    label: `${formatDayLong(d.date)}: ${d.active ? t('today.dayActive') : d.kept ? t('today.dayKept') : t('today.dayIdle')}`,
   }));
   return (
     <HeatStrip
@@ -125,8 +126,10 @@ function StreakText({ streak, done }: { streak: StreakSummary; done: boolean }) 
     : streak.longestStreak > streak.currentStreak
       ? t('today.streakLongest', { count: streak.longestStreak })
       : null;
+  // One line: "· en uzun 10" wrapped under the streak at 360 px (2026-11-26 M2); the whole
+  // button moves below the week strip instead.
   return (
-    <span>
+    <span className="whitespace-nowrap">
       <span className="font-semibold text-fg">
         {t('today.streakDays', { count: streak.currentStreak })}
       </span>

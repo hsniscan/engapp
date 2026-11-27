@@ -89,7 +89,8 @@ describe('ReaderPage', () => {
       ),
     );
     await waitFor(() => expect(word('serendipity')).toHaveAttribute('data-mark', 'new'));
-    expect(word('cope')).toHaveAttribute('data-mark', 'learning');
+    // A card not studied yet is drawn as new, not as being learned (2026-11-26 #11).
+    expect(word('cope')).toHaveAttribute('data-mark', 'fresh');
     expect(word('walk')).not.toHaveAttribute('data-mark');
     await waitFor(async () =>
       expect(await db.encounters.where('note_id').equals(cope.note.id).count()).toBe(1),
@@ -106,17 +107,16 @@ describe('ReaderPage', () => {
     await waitFor(() => expect(word('serendipity')).not.toHaveAttribute('data-mark'));
   });
 
-  it('a tapped word: guess first, then the meaning offline, then a card with the sentence', async () => {
+  it('a tapped word: the meaning offline at once, then a card with the sentence', async () => {
     const user = userEvent.setup();
     const id = await saveText({ kind: 'paste', title: 'A walk', body: BODY });
     openReader(id);
     await waitFor(() => expect(word('serendipity')).toHaveAttribute('data-mark', 'new'));
     await user.click(word('serendipity'));
     const sheet = await screen.findByRole('dialog');
-    expect(within(sheet).getByText(/Önce cümleye bak/)).toBeInTheDocument();
-    expect(within(sheet).queryByText('mutlu tesadüf')).toBeNull();
-    await user.click(within(sheet).getByTestId('reader-reveal'));
+    // "Hep tahmin ettir" is off by default: no guess step, even for a new word (decision 0089).
     expect(await within(sheet).findByText('mutlu tesadüf')).toBeInTheDocument();
+    expect(within(sheet).queryByTestId('reader-reveal')).toBeNull();
     await user.click(within(sheet).getByTestId('reader-add-card'));
     await within(sheet).findByText('Bu kelime kartlarında var.');
     // Met in this text (2026-11-26 #11): counted at once, not "henüz karşılaşmadın".
@@ -133,9 +133,9 @@ describe('ReaderPage', () => {
       source_sentence: 'One day I found serendipity in the park.',
       span: [16, 27],
     });
-    // The word now shows as a card being learned.
+    // The word now shows as a card not studied yet.
     await user.keyboard('{Escape}');
-    await waitFor(() => expect(word('serendipity')).toHaveAttribute('data-mark', 'learning'));
+    await waitFor(() => expect(word('serendipity')).toHaveAttribute('data-mark', 'fresh'));
   });
 
   it('selects a phrase by growing the selection', async () => {
@@ -193,7 +193,9 @@ describe('ReaderPage', () => {
 
   it('an unknown text id says so', async () => {
     openReader('nope');
-    expect(await screen.findByText('Metin bulunamadı')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Metin bulunamadı' }),
+    ).toBeInTheDocument();
   });
 });
 
@@ -309,12 +311,12 @@ describe('reading position (v0.5.1)', () => {
 });
 
 describe('own words, the colour legend and the new words (v0.5.1)', () => {
-  it('a word in the user’s cards shows its meaning at once; "Hep tahmin ettir" asks first', async () => {
+  it('a word shows its meaning at once; "Hep tahmin ettir" asks first for every word', async () => {
     const user = userEvent.setup();
     await addNoteWithSenses({ term: 'cope', senses: [{ meaning_tr: 'başa çıkmak' }] });
     const id = await saveText({ kind: 'paste', title: 'A walk', body: BODY });
     openReader(id);
-    await waitFor(() => expect(word('cope')).toHaveAttribute('data-mark', 'learning'));
+    await waitFor(() => expect(word('cope')).toHaveAttribute('data-mark', 'fresh'));
     await user.click(word('cope'));
     let sheet = await screen.findByRole('dialog');
     expect(await within(sheet).findByText('başa çıkmak')).toBeInTheDocument();
@@ -328,6 +330,15 @@ describe('own words, the colour legend and the new words (v0.5.1)', () => {
     // The setting reaches the reader through a live query: wait for it rather than read at once.
     expect(await within(sheet).findByTestId('reader-reveal')).toBeInTheDocument();
     expect(within(sheet).queryByText('başa çıkmak')).toBeNull();
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    // A new word asks too, and shows the meaning after "Anlamı göster".
+    await user.click(word('serendipity'));
+    sheet = await screen.findByRole('dialog');
+    expect(within(sheet).getByText(/Önce cümleye bak/)).toBeInTheDocument();
+    expect(within(sheet).queryByText('mutlu tesadüf')).toBeNull();
+    await user.click(within(sheet).getByTestId('reader-reveal'));
+    expect(await within(sheet).findByText('mutlu tesadüf')).toBeInTheDocument();
   });
 
   it('shows the colour legend once', async () => {
@@ -465,7 +476,7 @@ describe('Okuma tab and Bugünün okuması', () => {
       `/oku/${a}`,
     );
     expect(within(list).getByRole('link', { name: /Book/ })).toHaveTextContent('PDF · Bitti');
-    expect(within(list).getByRole('link', { name: /First text/ })).toHaveTextContent('Okunmadı');
+    expect(within(list).getByRole('link', { name: /First text/ })).toHaveTextContent('Başlanmadı');
     // Reversible, so no confirm: it goes at once, with "Geri al" in a toast.
     await user.click(within(list).getByRole('button', { name: '“First text” metnini sil' }));
     await waitFor(() => expect(screen.queryByRole('link', { name: /First text/ })).toBeNull());

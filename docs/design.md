@@ -60,8 +60,8 @@ learned = more contrast"). `Yeni` is neutral and drawn with a hairline ring.
 
 | Stage     | Token                 | Light              | Dark               |
 | --------- | --------------------- | ------------------ | ------------------ |
-| Yeni      | `stage-new`           | `#d5d9d2` (+ ring) | `#3a413d` (+ ring) |
-| Öğreniyor | `stage-learning`      | `#b6d6cb`          | `#2a4f45`          |
+| Yeni      | `stage-new`           | `#d5d9d2` (+ ring) | `#59625d` (+ ring) |
+| Öğreniyor | `stage-learning`      | `#b6d6cb`          | `#3d6e61`          |
 | Pekişiyor | `stage-consolidating` | `#73ad9c`          | `#3b8771`          |
 | Öğrenildi | `stage-learned`       | `#2b7563`          | `#6cc0a8`          |
 | Kalıcı    | `stage-mastered`      | `#143a32`          | `#c4ebde`          |

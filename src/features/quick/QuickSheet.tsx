@@ -12,7 +12,15 @@ import { ChoiceButton, Notice } from '@/features/add/ui';
 import { Badge, Button, cn, Eyebrow, Icon, IconButton, Skeleton } from '@/ui';
 import type { QuickRoute } from './route';
 
-export type LookupState = 'idle' | 'searching' | 'offline' | 'signin' | 'notfound' | 'failed';
+export type LookupState =
+  | 'idle'
+  | 'searching'
+  | 'offline'
+  | 'signin'
+  | 'notfound'
+  | 'failed'
+  /** Nothing knows the word and it looks Turkish: the field wants the English word (#9). */
+  | 'turkish';
 
 export interface QuickSheetProps {
   /** null: the selection has not arrived yet (Android cold start). */
@@ -32,6 +40,8 @@ export interface QuickSheetProps {
   onWriteOwn?: () => void;
   onOpenReader?: () => void;
   onExtract?: () => void;
+  /** "Kelimeleri çıkar" needs an account the user does not have: said before the tap (#13). */
+  extractNeedsSignIn?: boolean;
   onOpenLink?: () => void;
   /** Which hand-over is under way (its button shows a spinner). */
   busy?: 'reader' | 'extract' | 'link' | 'write' | null;
@@ -232,13 +242,15 @@ function TermBody({
         <SignInNeeded title={t('quick.signIn')} testId="quick-signin" />
       ) : (
         <Notice tone={lookup === 'failed' ? 'danger' : 'muted'}>
-          {t(
-            lookup === 'offline'
-              ? 'quick.offline'
-              : lookup === 'failed'
-                ? 'quick.failed'
-                : 'quick.notFound',
-          )}
+          {lookup === 'turkish'
+            ? t('quick.turkish', { term })
+            : t(
+                lookup === 'offline'
+                  ? 'quick.offline'
+                  : lookup === 'failed'
+                    ? 'quick.failed'
+                    : 'quick.notFound',
+              )}
         </Notice>
       )}
 
@@ -248,13 +260,14 @@ function TermBody({
         <Button
           size="lg"
           fullWidth
-          leadingIcon="plus"
+          variant={senses.every((s) => s.owned) ? 'secondary' : 'primary'}
+          leadingIcon={senses.every((s) => s.owned) ? 'check' : 'plus'}
           loading={saving}
           disabled={loading || !picked?.size}
           onClick={onAdd}
           data-testid="quick-add"
         >
-          {t('quick.add')}
+          {senses.every((s) => s.owned) ? t('quick.allOwned') : t('quick.add')}
         </Button>
       ) : (
         !loading &&
@@ -319,14 +332,19 @@ export function SenseChoices({
               <button
                 type="button"
                 aria-pressed={on}
+                // A meaning already on a card is shown but cannot be picked again (ekle.md #8).
+                disabled={s.owned}
                 onClick={() => onToggle?.(s.key)}
                 data-testid="quick-sense"
+                data-owned={s.owned ? 'true' : undefined}
                 className={cn(
                   'flex min-h-14 w-full items-start gap-3 rounded-inner border px-4 py-3 text-left',
                   'transition-colors duration-(--duration-micro)',
-                  on
-                    ? 'border-accent bg-accent-soft'
-                    : 'border-border bg-surface hover:border-border-strong/60 hover:bg-surface-hover',
+                  s.owned
+                    ? 'cursor-default border-border bg-surface-sunken'
+                    : on
+                      ? 'border-accent bg-accent-soft'
+                      : 'border-border bg-surface hover:border-border-strong/60 hover:bg-surface-hover',
                 )}
               >
                 <span
@@ -339,7 +357,10 @@ export function SenseChoices({
                   {on && <Icon name="check" size={14} strokeWidth={2.4} />}
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="text-lead font-medium text-fg">{s.meaning_tr}</span>
+                  <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="text-lead font-medium text-fg">{s.meaning_tr}</span>
+                    {s.owned && <Badge tone="neutral">{t('quick.ownedSense')}</Badge>}
+                  </span>
                   {(s.pos || s.gloss_en) && (
                     <span className="text-meta text-fg-muted">
                       {s.pos && posLabel(t, s.pos)}
@@ -367,6 +388,7 @@ function TextBody({
   words,
   onOpenReader,
   onExtract,
+  extractNeedsSignIn,
   busy,
   error,
 }: QuickSheetProps & { text: string; words: number }) {
@@ -401,7 +423,7 @@ function TextBody({
         <ChoiceButton
           icon="search"
           title={t('quick.extract')}
-          hint={t('quick.extractHint')}
+          hint={extractNeedsSignIn ? t('capture.extractSignIn') : t('quick.extractHint')}
           loading={busy === 'extract'}
           disabled={!!busy}
           onClick={onExtract}

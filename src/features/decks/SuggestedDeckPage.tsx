@@ -54,7 +54,8 @@ import {
 
 const PAGE = 50;
 
-type Filter = 'all' | 'new' | 'carded' | 'known';
+/** One chip per row badge (STATUS), so a chip counts exactly the rows that carry its badge. */
+type Filter = 'all' | DeckWordStatus;
 
 const STATUS: Record<
   DeckWordStatus,
@@ -148,14 +149,7 @@ function SuggestedBody({
   const visibleAll = words.filter((w) => {
     const s = statusOf(w);
     const f: Filter = scan ? 'new' : filter;
-    return (
-      f === 'all' ||
-      (f === 'new'
-        ? s === 'new'
-        : f === 'known'
-          ? s === 'known'
-          : s === 'learned' || s === 'studying')
-    );
+    return f === 'all' || s === f;
   });
   const visible = visibleAll.slice(0, shown);
   const carded = progress.learned + progress.studying;
@@ -205,7 +199,10 @@ function SuggestedBody({
   const filters: [Filter, string][] = [
     ['all', t('deckHub.suggested.fAll', { count: progress.total })],
     ['new', t('deckHub.suggested.fNew', { count: progress.fresh })],
-    ['carded', t('deckHub.suggested.fCarded', { count: carded })],
+    ['studying', t('deckHub.suggested.fCarded', { count: progress.studying })],
+    ...(progress.learned > 0
+      ? ([['learned', t('deckHub.suggested.fLearned', { count: progress.learned })]] as [Filter, string][])
+      : []),
     ...(progress.known > 0
       ? ([['known', t('deckHub.suggested.fKnown', { count: progress.known })]] as [Filter, string][])
       : []),

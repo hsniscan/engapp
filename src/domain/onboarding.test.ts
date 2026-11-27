@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { needsOnboarding, nextOnboardingStep, parseOnboardingStep } from './onboarding';
+import { needsOnboarding, nextOnboardingStep, parseOnboardingStep, recommendsLevelDeck } from './onboarding';
 
 const base = { done: false, words: 0, interestsAsked: false, inProgress: false };
 
@@ -35,5 +35,15 @@ describe('first-run onboarding: who sees it', () => {
     expect(parseOnboardingStep('deck')).toBe('deck');
     expect(parseOnboardingStep('nope')).toBeNull();
     expect(parseOnboardingStep(null)).toBeNull();
+  });
+});
+
+describe('the deck the onboarding recommends', () => {
+  it('a measured B1 or higher gets the level deck; A1/A2 or an unmeasured level the top 500', () => {
+    expect(recommendsLevelDeck(true, 'B1')).toBe(true);
+    expect(recommendsLevelDeck(true, 'C2')).toBe(true);
+    expect(recommendsLevelDeck(true, 'A2')).toBe(false);
+    expect(recommendsLevelDeck(false, 'B2')).toBe(false);
+    expect(recommendsLevelDeck(true, null)).toBe(false);
   });
 });

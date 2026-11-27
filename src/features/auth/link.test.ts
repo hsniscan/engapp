@@ -54,7 +54,8 @@ async function accountWithData() {
   )!;
   await answerCard({ card_id: rec.id, rating: Rating.Good, duration_ms: 2000 }, T);
   await linkAccount(USER);
-  expect(getLinkState()).toMatchObject({ phase: 'done' });
+  // The guest's word went into the empty account: the toast says so (profil-genel #9).
+  expect(getLinkState()).toMatchObject({ phase: 'done', moved: 1 });
   expect(server.rowsOf('notes')).toHaveLength(1);
 }
 
@@ -186,6 +187,7 @@ describe('account linking', () => {
     configureLink({ transport: server, engine: engine() });
     await linkAccount(USER);
     expect(getLinkState()).toMatchObject({ phase: 'done' });
+    expect(getLinkState()).not.toHaveProperty('moved');
     expect((await db.settings.get('settings'))!.daily_new_limit).toBe(25);
     expect(await db.notes.count()).toBe(1);
   });
@@ -388,8 +390,14 @@ describe('account linking', () => {
     // "bridge" with its picture hidden.
     await resetDb();
     await db.transaction('rw', db.meta, () => setMeta(META.userId, OTHER));
-    const apple = await addNoteWithSenses({ term: 'apple', senses: [{ meaning_tr: 'elma', lexicon_sense_id: LEX }] }, T);
-    const bridge = await addNoteWithSenses({ term: 'bridge', senses: [{ meaning_tr: 'köprü', lexicon_sense_id: LEX2 }] }, T);
+    const apple = await addNoteWithSenses(
+      { term: 'apple', senses: [{ meaning_tr: 'elma', lexicon_sense_id: LEX }] },
+      T,
+    );
+    const bridge = await addNoteWithSenses(
+      { term: 'bridge', senses: [{ meaning_tr: 'köprü', lexicon_sense_id: LEX2 }] },
+      T,
+    );
     for (const p of [pic(P0, LEX, 0), pic(P1, LEX, 1), pic(P2, LEX2, 0)]) await storeImage(p);
     const appleSense = (await db.senses.where('note_id').equals(apple.note.id).toArray())[0]!;
     const bridgeSense = (await db.senses.where('note_id').equals(bridge.note.id).toArray())[0]!;
@@ -413,9 +421,14 @@ describe('account linking', () => {
     const kinds = (rows: { kind?: unknown }[]) => rows.map((r) => r.kind);
     expect(kinds(await db.user_content.toArray())).not.toContain(IMAGE_CHOICE_KIND);
     expect(kinds(await db.user_content.toArray())).not.toContain(IMAGE_REASON_KIND);
-    expect((await db.content_feedback.toArray()).filter((f) => f.target_kind === IMAGE_TARGET)).toEqual([]);
-    for (const r of server.rowsOf('user_content')) expect([IMAGE_CHOICE_KIND, IMAGE_REASON_KIND]).not.toContain(r.kind);
-    expect(server.rowsOf('content_feedback').filter((f) => f.target_kind === IMAGE_TARGET)).toEqual([]);
+    expect(
+      (await db.content_feedback.toArray()).filter((f) => f.target_kind === IMAGE_TARGET),
+    ).toEqual([]);
+    for (const r of server.rowsOf('user_content'))
+      expect([IMAGE_CHOICE_KIND, IMAGE_REASON_KIND]).not.toContain(r.kind);
+    expect(server.rowsOf('content_feedback').filter((f) => f.target_kind === IMAGE_TARGET)).toEqual(
+      [],
+    );
 
     // The shared picture cache stays; the copied words show the default picture, not hidden.
     expect(await db.images.count()).toBe(3);
@@ -431,7 +444,10 @@ describe('account linking', () => {
     const LEX = '0199f0a0-0000-7000-8000-00000000a001';
     await resetDb();
     await db.transaction('rw', db.meta, () => setMeta(META.userId, OTHER));
-    await addNoteWithSenses({ term: 'apple', senses: [{ meaning_tr: 'elma', lexicon_sense_id: LEX }] }, T);
+    await addNoteWithSenses(
+      { term: 'apple', senses: [{ meaning_tr: 'elma', lexicon_sense_id: LEX }] },
+      T,
+    );
     await storeImage({
       id: '0199f0a0-0000-7000-8000-0000000b0000',
       sense_id: LEX,
@@ -457,12 +473,21 @@ describe('account linking', () => {
     expect(getLinkState()).toMatchObject({ phase: 'done' });
     await reconcileImageCards({}, T + 2000);
 
-    const pictureCards = (await db.cards.toArray()).filter((c) => c.card_type === 'image' && c.deleted_at === null);
+    const pictureCards = (await db.cards.toArray()).filter(
+      (c) => c.card_type === 'image' && c.deleted_at === null,
+    );
     expect(pictureCards).toHaveLength(1);
-    expect(pictureCards[0]).toMatchObject({ state: CardState.New, reps: 0, unlocked: false, user_id: USER });
+    expect(pictureCards[0]).toMatchObject({
+      state: CardState.New,
+      reps: 0,
+      unlocked: false,
+      user_id: USER,
+    });
     expect(pictureCards[0]!.id).not.toBe(old.id);
     const logs = await db.review_logs.toArray();
-    expect(logs.filter((l) => l.card_id === old.id || l.card_id === pictureCards[0]!.id)).toEqual([]);
+    expect(logs.filter((l) => l.card_id === old.id || l.card_id === pictureCards[0]!.id)).toEqual(
+      [],
+    );
   });
 
   it('"bu hesabın verisiyle başla" keeps only the account on this device', async () => {
@@ -486,7 +511,14 @@ describe('account linking', () => {
     await resetDb();
     await db.transaction('rw', db.meta, () => setMeta(META.userId, OTHER));
     // v0.3 İP8: the other account's reminder setting stays behind as well.
-    await updateSettings({ daily_new_limit: 3, notify: { enabled: true, mode: 'fixed', hour: 9 }, streak_freezes: ['2026-10-21'] }, T);
+    await updateSettings(
+      {
+        daily_new_limit: 3,
+        notify: { enabled: true, mode: 'fixed', hour: 9 },
+        streak_freezes: ['2026-10-21'],
+      },
+      T,
+    );
     // v0.3 İP7: and so do its goals.
     await setGoals({ week_active_days: 6 }, T);
     configureLink({ transport: server, engine: engine() });
@@ -512,7 +544,10 @@ describe('account linking', () => {
     await linkAccount(USER);
     expect(getLinkState()).toMatchObject({ phase: 'done' });
     expect(server.rowsOf('weekly_reports').map((r) => r.user_id)).toEqual([USER]);
-    expect((await db.settings.get('settings'))!.goals).toEqual({ week_active_days: 6, week_minutes: 120 });
+    expect((await db.settings.get('settings'))!.goals).toEqual({
+      week_active_days: 6,
+      week_minutes: 120,
+    });
     // The waiting report stays on the device and gets its comment later.
     expect(await db.report_drafts.count()).toBe(1);
   });
@@ -526,13 +561,23 @@ describe('account linking', () => {
     await linkAccount(USER);
     expect(getLinkState()).toMatchObject({ phase: 'done' });
     expect(server.rowsOf('texts').map((r) => [r.id, r.user_id])).toEqual([[textId, USER]]);
-    expect(server.rowsOf('encounters').map((r) => [r.note_id, r.user_id, r.n])).toEqual([[note.id, USER, 1]]);
+    expect(server.rowsOf('encounters').map((r) => [r.note_id, r.user_id, r.n])).toEqual([
+      [note.id, USER, 1],
+    ]);
   });
 
   it("v0.5: another account's texts and encounters are never copied with its cards", async () => {
     await otherAccountDevice();
-    const textId = await saveText({ kind: 'paste', title: 'Private', body: 'My diary: I cope.' }, T + 5);
-    await recordReaderEncounters(textId, 'open-1', (await db.notes.toArray()).map((n) => n.id), T + 6);
+    const textId = await saveText(
+      { kind: 'paste', title: 'Private', body: 'My diary: I cope.' },
+      T + 5,
+    );
+    await recordReaderEncounters(
+      textId,
+      'open-1',
+      (await db.notes.toArray()).map((n) => n.id),
+      T + 6,
+    );
     expect(await db.encounters.count()).toBeGreaterThan(0);
     const img = await saveDevice();
     await accountWithData();
@@ -544,7 +589,9 @@ describe('account linking', () => {
     expect(await db.texts.count()).toBe(0);
     expect(server.rowsOf('texts')).toHaveLength(0);
     expect(JSON.stringify(server.rowsOf('encounters'))).not.toContain('reader');
-    expect((await db.encounters.toArray()).every((r) => r.source === 'review' && r.user_id === USER)).toBe(true);
+    expect(
+      (await db.encounters.toArray()).every((r) => r.source === 'review' && r.user_id === USER),
+    ).toBe(true);
   });
 
   it("another account's data is never copied silently into an empty account", async () => {

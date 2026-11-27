@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import type { ReaderView, WordMark } from '@/domain/readerView';
 import type { ReaderParagraph, TokenizedText } from '@/domain/readerTokens';
 import { cn } from '@/ui';
+import { splitGap } from './glue';
 import { MARK_CLASS, MARK_DESCRIPTION_ID } from './marks';
 
 export interface Selection {
@@ -134,6 +135,9 @@ export function ReaderBody({
       <span id={MARK_DESCRIPTION_ID.new} className="sr-only">
         {t('reader.mark.new')}
       </span>
+      <span id={MARK_DESCRIPTION_ID.fresh} className="sr-only">
+        {t('reader.mark.fresh')}
+      </span>
       <span id={MARK_DESCRIPTION_ID.learning} className="sr-only">
         {t('reader.mark.learning')}
       </span>
@@ -195,16 +199,36 @@ const Paragraph = memo(function Paragraph({
           break;
         }
     const words: React.ReactNode[] = [];
+    // A word button is an atomic inline, so a line may break right before or after it. The
+    // punctuation glued to a word (an opening quote or bracket before it, a comma or closing
+    // quote after it) goes into one nowrap group with the word, so `he says, "` never ends a
+    // line with the quote of the next one.
+    let group: React.ReactNode[] | null = null;
+    let groupKey = 0;
+    const flush = (trail: string) => {
+      if (!group) return;
+      if (trail) group.push(trail);
+      words.push(
+        <span key={`g${groupKey}`} className="whitespace-nowrap">
+          {group}
+        </span>,
+      );
+      group = null;
+    };
     let at = sen.start;
     for (let i = sen.firstToken; i < sen.endToken; i++) {
       const tok = text.tokens[i]!;
-      if (tok.start > at) words.push(body.slice(at, tok.start));
+      const [trail, middle, lead] = splitGap(body.slice(at, tok.start), group !== null);
+      flush(trail);
+      if (middle) words.push(middle);
+      group = lead ? [lead] : [];
+      groupKey = i;
       // What the word is (spoken even when the colours are off) and how it is drawn.
       const state = view ? view.marks[i]! : 'plain';
       const mark = highlight ? state : 'plain';
       const selected = selection !== null && i >= selection.first && i < selection.end;
       const target = targets?.has(i) === true;
-      words.push(
+      group.push(
         <button
           key={i}
           type="button"
@@ -215,7 +239,7 @@ const Paragraph = memo(function Paragraph({
           aria-describedby={describedBy(state, target)}
           aria-expanded={selected || undefined}
           className={cn(
-            'inline cursor-pointer rounded-xs text-left transition-colors duration-(--duration-micro) hover:bg-hover',
+            'inline cursor-pointer rounded-xs text-left whitespace-normal transition-colors duration-(--duration-micro) hover:bg-hover',
             MARK_CLASS[mark],
             target && 'font-semibold',
             selected && 'ring-2 ring-focus',
@@ -226,7 +250,9 @@ const Paragraph = memo(function Paragraph({
       );
       at = tok.end;
     }
-    if (sen.end > at) words.push(body.slice(at, sen.end));
+    const [trail, middle, lead] = splitGap(body.slice(at, sen.end), true);
+    flush(trail);
+    if (middle + lead) words.push(middle + lead);
     parts.push(
       <span
         key={`s${s}`}

@@ -6,7 +6,7 @@ import { meaningAlternatives } from '../../supabase/functions/_shared/text';
 import { contrastKey } from '../../supabase/functions/_shared/contrast-contracts';
 import { contentRowId } from './examples';
 import { normalizeTerm } from './normalize';
-import type { Id, NoteTermType } from './types';
+import { CardState, type CardStateValue, type Id, type NoteTermType } from './types';
 
 export { contrastKey };
 
@@ -312,6 +312,17 @@ export function suggestedPairs(
     out.set(p.key, p);
   }
   return [...out.values()];
+}
+
+/**
+ * Whether "başka bir kelimeyle mi karıştı?" is asked after an Again (2026-11-26 #2). Only for a
+ * word the learner once knew: a Review or Relearning card (it has lapsed). A brand-new word
+ * forgotten on its first sight has nothing to be confused with yet. Roots/affixes and contrast
+ * cards never ask.
+ */
+export function asksConfusion(termType: NoteTermType | null | undefined, stateBefore: CardStateValue): boolean {
+  if (termType === 'affix' || termType === CONTRAST_TERM_TYPE) return false;
+  return stateBefore === CardState.Review || stateBefore === CardState.Relearning;
 }
 
 /** A scanned pair is worth offering only when its words gave this many lapses together. */

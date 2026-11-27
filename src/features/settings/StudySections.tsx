@@ -13,6 +13,7 @@ import {
   studyOptionsOf,
 } from '@/domain/studyOptions';
 import { setTheme } from './themeSync';
+import { getTextSize, setTextSize, TEXT_SIZES, type TextSize } from '@/ui/theme';
 import { useAppSettings } from './useAppSettings';
 import type { SettingsPatch } from '@/data';
 import { useAuth } from '@/features/auth/session';
@@ -160,7 +161,13 @@ type LimitedMode = 'production' | 'cloze' | 'dictation';
  * v0.5.2 (ADR 0062): each of Üretim, Boşluk doldurma and Dikte may have its own daily limit of
  * first-time cards inside the shared "Günlük yeni kart" budget ("Ortak" = no own limit).
  */
-function ModeLimitRows({ settings, update }: { settings: Settings; update: (p: SettingsPatch) => Promise<void> }) {
+function ModeLimitRows({
+  settings,
+  update,
+}: {
+  settings: Settings;
+  update: (p: SettingsPatch) => Promise<void>;
+}) {
   const { t } = useTranslation();
   const options = [
     { value: 'shared', label: t('settings.study.modeLimitShared') },
@@ -189,7 +196,10 @@ function ModeLimitRows({ settings, update }: { settings: Settings; update: (p: S
             options={
               v === null || (MODE_LIMIT_CHOICES as readonly number[]).includes(v)
                 ? options
-                : [...options, { value: String(v), label: t('settings.study.cardsPerDay', { count: v }) }]
+                : [
+                    ...options,
+                    { value: String(v), label: t('settings.study.cardsPerDay', { count: v }) },
+                  ]
             }
           />
         );
@@ -199,11 +209,20 @@ function ModeLimitRows({ settings, update }: { settings: Settings; update: (p: S
 }
 
 /** "Oturum uzunluğu" (v0.5.2): a session of 10/20/30 cards, or the whole mode. */
-function SessionLengthRow({ settings, update }: { settings: Settings; update: (p: SettingsPatch) => Promise<void> }) {
+function SessionLengthRow({
+  settings,
+  update,
+}: {
+  settings: Settings;
+  update: (p: SettingsPatch) => Promise<void>;
+}) {
   const { t } = useTranslation();
   const v = sessionCards(settings);
   return (
-    <SettingsRow label={t('settings.study.sessionLength')} description={t('settings.study.sessionLengthHint')}>
+    <SettingsRow
+      label={t('settings.study.sessionLength')}
+      description={t('settings.study.sessionLengthHint')}
+    >
       <Select
         label={t('settings.study.sessionLength')}
         hideLabel
@@ -211,12 +230,18 @@ function SessionLengthRow({ settings, update }: { settings: Settings; update: (p
         value={v === null ? 'all' : String(v)}
         onValueChange={(x) =>
           void update({
-            study_options: { ...studyOptionsOf(settings), session_cards: x === 'all' ? null : Number(x) },
+            study_options: {
+              ...studyOptionsOf(settings),
+              session_cards: x === 'all' ? null : Number(x),
+            },
           })
         }
         options={[
           { value: 'all', label: t('settings.study.sessionAll') },
-          ...SESSION_CARD_CHOICES.map((n) => ({ value: String(n), label: t('settings.study.cardsPerDay', { count: n }) })),
+          ...SESSION_CARD_CHOICES.map((n) => ({
+            value: String(n),
+            label: t('settings.study.cardsPerDay', { count: n }),
+          })),
           ...(v !== null && !(SESSION_CARD_CHOICES as readonly number[]).includes(v)
             ? [{ value: String(v), label: t('settings.study.cardsPerDay', { count: v }) }]
             : []),
@@ -227,7 +252,13 @@ function SessionLengthRow({ settings, update }: { settings: Settings; update: (p
 }
 
 /** "Yeni kelime sırası" (docs/decisions/0039): smart by default, or the order added. */
-function NewOrderRow({ value, onChange }: { value: NewCardOrder; onChange: (v: NewCardOrder) => Promise<void> }) {
+function NewOrderRow({
+  value,
+  onChange,
+}: {
+  value: NewCardOrder;
+  onChange: (v: NewCardOrder) => Promise<void>;
+}) {
   const { t } = useTranslation();
   // The choice shows at once; the stored value takes over once it changes (or on a failed save).
   const [pending, setPending] = useState<{ from: NewCardOrder; to: NewCardOrder } | null>(null);
@@ -247,7 +278,9 @@ function NewOrderRow({ value, onChange }: { value: NewCardOrder; onChange: (v: N
         ]}
       />
       <p className="-mt-1 text-meta text-fg-muted" aria-live="polite">
-        {shown === 'smart' ? t('settings.study.newOrderSmartHint') : t('settings.study.newOrderAddedHint')}
+        {shown === 'smart'
+          ? t('settings.study.newOrderSmartHint')
+          : t('settings.study.newOrderAddedHint')}
       </p>
     </SettingsRow>
   );
@@ -276,8 +309,32 @@ export function AppearanceSection() {
         />
         <p className="-mt-1 text-meta text-fg-muted">{t('settings.appearance.hint')}</p>
       </SettingsRow>
+      <TextSizeRow />
       <ImageSettingsRows />
     </SettingsSection>
+  );
+}
+
+/** App-wide text size, this device only (ADR 0090). The reader keeps its own size on top. */
+function TextSizeRow() {
+  const { t } = useTranslation();
+  const [size, setSize] = useState<TextSize>(getTextSize);
+  return (
+    <SettingsRow stack>
+      <SegmentedControl<TextSize>
+        legend={t('settings.appearance.textSize')}
+        value={size}
+        onValueChange={(v) => {
+          setSize(v);
+          setTextSize(v);
+        }}
+        options={TEXT_SIZES.map((v) => ({
+          value: v,
+          label: t(`settings.appearance.textSizes.${v}`),
+        }))}
+      />
+      <p className="-mt-1 text-meta text-fg-muted">{t('settings.appearance.textSizeHint')}</p>
+    </SettingsRow>
   );
 }
 

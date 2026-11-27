@@ -6,6 +6,8 @@
 // `done` is the device's own "finished or left" flag; `inProgress` keeps the flow going after
 // its interests step has answered the question.
 
+import type { CefrLevel } from './types';
+
 export const ONBOARDING_STEPS = ['welcome', 'level', 'interests', 'deck'] as const;
 export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
 
@@ -36,4 +38,15 @@ export function parseOnboardingStep(raw: string | null | undefined): OnboardingS
 export function nextOnboardingStep(step: OnboardingStep): OnboardingStep | null {
   const i = ONBOARDING_STEPS.indexOf(step);
   return ONBOARDING_STEPS[i + 1] ?? null;
+}
+
+const B1_AND_UP: readonly CefrLevel[] = ['B1', 'B2', 'C1', 'C2'];
+
+/**
+ * Whether the deck step recommends (and preselects) the level's verb deck instead of the 500
+ * most used words (2026-11-26, 3.1): only for a measured level of B1 or higher, who already
+ * knows most of the top 500. An unmeasured level is not "your level" (B10).
+ */
+export function recommendsLevelDeck(measured: boolean, level: CefrLevel | null | undefined): boolean {
+  return measured && !!level && B1_AND_UP.includes(level);
 }

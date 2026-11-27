@@ -1,8 +1,8 @@
 // The sheet a tapped word opens (v0.5 İP1, plan "dokununca önce tahmin et"; Çam look v0.5.2,
 // docs/design.md §4.13). A non-modal bottom sheet, so the text stays tappable behind it: the
 // word, its stage and part of speech, the sentence it is in (with its Turkish for library
-// texts), then a guess first and the meaning. A word the user already has a card for shows its
-// meaning at once unless "Hep tahmin ettir" is on (decision 0054). Actions: "Kelimelerime ekle"
+// texts), then the meaning. With "Hep tahmin ettir" on, every word asks for a guess first; off
+// (the default) every word shows its meaning at the first tap (decisions 0054, 0089). Actions: "Kelimelerime ekle"
 // (the sentence becomes the card's source sentence) and "Biliyorum" (leaves the marks, with an
 // undo). Meanings come from this device first (the user's card, the text's own gloss, Kelime
 // Bankası, the cached shared lexicon: offline and instant); only when none of these has the
@@ -69,7 +69,7 @@ interface Props {
   /** The text's own glosses (library texts, stories). */
   glosses?: readonly TextGloss[];
   voice: VoicePref;
-  /** "Hep tahmin ettir": ask for a guess even for the user's own words. */
+  /** "Hep tahmin ettir": ask for a guess before every meaning (off: the meaning at once). */
   alwaysGuess?: boolean;
   onClose: () => void;
   onExtend: (side: 'before' | 'after') => void;
@@ -177,17 +177,19 @@ export function WordSheet({
           : undefined
       }
       centerTitle
-      className="max-h-[70dvh]"
+      // On wide screens the sheet floats above the window's bottom edge with all its corners,
+      // so it never looks cut off (2026-11-26 #11).
+      className="sm:bottom-4 sm:max-h-[calc(100dvh-6rem)] sm:rounded-sheet sm:border-b"
     >
       {pick && (
         <SheetBody
           // The guess mode is part of the key: a "Hep tahmin ettir" setting that arrives after the
           // sheet opened starts it again in the right mode.
-          key={`${pick.lemma}|${pick.written}|${pick.sentence}|${alwaysGuess || pick.noteId === null}`}
+          key={`${pick.lemma}|${pick.written}|${pick.sentence}|${alwaysGuess}`}
           pick={pick}
           glosses={glosses}
           voice={voice}
-          guessFirst={alwaysGuess || pick.noteId === null}
+          guessFirst={alwaysGuess}
           onExtend={onExtend}
           onListenHere={onListenHere}
           onDone={onClose}
@@ -286,7 +288,14 @@ function SheetBody({
 
   return (
     <div className="flex flex-col gap-4 pb-1">
-      <div className="flex min-h-11 flex-wrap items-center justify-center gap-2">
+      {/* While guessing there are no chips yet: the row is just the speaker, pulled up under
+          the word instead of leaving a gap (2026-11-26 #11). */}
+      <div
+        className={cn(
+          'flex flex-wrap items-center justify-center gap-2',
+          pick.stage || pos || info?.ipa ? 'min-h-11' : '-mt-2',
+        )}
+      >
         {pick.stage && <StagePill stage={pick.stage} />}
         {pos && (
           <Badge tone="outline">{t(`reader.pos.${pos}`, { defaultValue: pos })}</Badge>

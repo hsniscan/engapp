@@ -90,7 +90,8 @@ describe('review session', () => {
     expect(screen.getByTestId('summary-words')).toHaveTextContent('2 kelime çalıştın');
     const words = screen.getByText('Kelime').previousElementSibling;
     expect(words).toHaveTextContent('2');
-    expect(screen.getByText('Hatırlama').previousElementSibling).toHaveTextContent('—');
+    // Fewer than 5 reviews: no recall tile at all (2026-11-26 #4).
+    expect(screen.queryByText('Tekrarlarda hatırlama')).not.toBeInTheDocument();
     expect(await screen.findByText('Günlük seri')).toBeInTheDocument();
     expect(screen.getByText('Bugün serine eklendi.')).toBeInTheDocument();
   }, 20_000);

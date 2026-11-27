@@ -142,6 +142,8 @@ describe('Boşluk doldurma session', () => {
     await user.click(right);
     expect(await screen.findByTestId('rating-continue')).toHaveAttribute('data-rating', 'hard');
     expect(screen.getByText(/Önerimiz:/)).toHaveTextContent('Zor');
+    // 2026-11-26 #3: the reason is said, so "Zor" does not read as "you were wrong".
+    expect(screen.getByTestId('rating-reason')).toHaveTextContent('Seçenekten bildin; yazarak bilirsen İyi olur.');
     fireEvent.keyDown(document.body, { key: 'Enter' });
     await waitFor(async () => expect(await db.review_logs.count()).toBe(1));
     expect((await db.review_logs.toArray())[0]).toMatchObject({ rating: Rating.Hard, answer_mode: 'choice' });

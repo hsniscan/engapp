@@ -11,6 +11,7 @@ import {
   knownShare,
   levelSpread,
   multiPosLemmas,
+  nonLemmaVerbs,
   type OwnedIndex,
   parseSuggestedKey,
   posLevelCounts,
@@ -297,5 +298,42 @@ describe('multiPosLemmas', () => {
     const rows = [entry('go', 'A1', 6, 'verb'), entry('go', 'A2', 6, 'noun'), entry('table', 'A1', 5, 'noun'), entry('table', 'B1', 4, 'noun')];
     expect([...multiPosLemmas(rows)]).toEqual(['go']);
     expect(multiPosLemmas([])).toEqual(new Set());
+  });
+});
+
+describe('verbs that are not lemmas (2026-11-26: "might · done" in A2 verbs)', () => {
+  const rows = [
+    entry('do', 'A1', 6.5, 'verb'),
+    entry('done', 'A2', 5.5, 'verb'),
+    entry('might', 'A2', 6, 'verb'),
+    entry('run', 'A1', 5.5, 'verb'),
+    entry('running', 'A2', 4.5, 'verb'),
+    entry('use', 'A1', 5.8, 'verb'),
+    entry('used', 'A2', 5.2, 'verb'),
+    entry('be', 'A1', 7, 'verb'),
+    entry('see', 'A1', 6, 'verb'),
+    entry('seed', 'A2', 4, 'verb'),
+    entry('bed', 'A2', 4.8, 'verb'),
+    entry('found', 'B2', 4.5, 'verb'),
+    entry('decide', 'A2', 5, 'verb'),
+    entry('hit', 'A2', 5, 'verb'),
+    entry('running', 'A2', 4.6, 'noun'),
+  ];
+
+  it('finds modals and inflected forms of a verb the bank has', () => {
+    expect([...nonLemmaVerbs(rows)].sort()).toEqual(['done', 'might', 'running', 'used']);
+    // Same array, same answer (cached).
+    expect(nonLemmaVerbs(rows)).toBe(nonLemmaVerbs(rows));
+    // Without the base verb there is nothing to point to: keep the row.
+    expect(nonLemmaVerbs([entry('done', 'A2', 5, 'verb')]).size).toBe(0);
+  });
+
+  it('keeps them out of the verb decks, not out of other parts of speech', () => {
+    const a2 = deckWords(rows, { kind: 'levelPos', level: 'A2', pos: 'verb' }).map((e) => e.lemma);
+    expect(a2).toEqual(['decide', 'hit', 'bed', 'seed']);
+    const level = deckWords(rows, { kind: 'level', level: 'A2' }).map((e) => `${e.lemma}|${e.pos}`);
+    expect(level).toContain('running|noun');
+    expect(level).not.toContain('done|verb');
+    expect(posLevelCounts(rows).verb.A2).toBe(4);
   });
 });

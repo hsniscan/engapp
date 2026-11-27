@@ -65,7 +65,7 @@ describe('Keşfet', () => {
 
     const cont = await screen.findByTestId('kesfet-continue');
     expect(within(cont).getByText('A walk in the park')).toBeInTheDocument();
-    expect(within(cont).getByRole('link', { name: /Kaldığın yerden oku/ })).toHaveAttribute(
+    expect(within(cont).getByRole('link', { name: /Okumaya başla/ })).toHaveAttribute(
       'href',
       expect.stringMatching(/^\/oku\//),
     );

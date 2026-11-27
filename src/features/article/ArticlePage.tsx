@@ -23,6 +23,9 @@ export function ArticlePage() {
     const url = normaliseArticleUrl(input);
     setInvalid(!url);
     if (url) setParams({ url }, { replace: !!current });
+    // A bad address also clears the last fetch: its old error card would contradict the new
+    // message (review 2026-11-26, ekle.md #11).
+    else if (current) setParams({}, { replace: true });
   };
 
   const url = current ? normaliseArticleUrl(current) : null;
