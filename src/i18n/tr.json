@@ -1955,7 +1955,10 @@
       "titleLabel": "Başlık",
       "titlePlaceholder": "Örn. The Guardian — iklim yazısı",
       "tooShort": "En az üç kelimelik bir cümle yapıştır.",
-      "tooLong": "Metin çok uzun (en fazla {{max}} karakter). Bölüp ayrı ayrı yükle."
+      "tooLong": "Metin çok uzun (en fazla {{max}} karakter). Bölüp ayrı ayrı yükle.",
+      "fromClipboard": "Panodan yapıştır",
+      "clipboardEmpty": "Panoda metin yok. Önce metni kopyala.",
+      "clipboardDenied": "Panoya erişilemedi. Kutuya basılı tutup “Yapıştır”a dokun."
     },
     "pdf": {
       "drop": "PDF dosyasını buraya bırak",

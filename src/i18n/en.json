@@ -1955,7 +1955,10 @@
       "titleLabel": "Title",
       "titlePlaceholder": "e.g. The Guardian — climate piece",
       "tooShort": "Paste at least one sentence of three words.",
-      "tooLong": "The text is too long (at most {{max}} characters). Split it and upload the parts separately."
+      "tooLong": "The text is too long (at most {{max}} characters). Split it and upload the parts separately.",
+      "fromClipboard": "Paste from clipboard",
+      "clipboardEmpty": "The clipboard has no text. Copy the text first.",
+      "clipboardDenied": "Couldn't read the clipboard. Long-press the box and tap “Paste”."
     },
     "pdf": {
       "drop": "Drop a PDF file here",

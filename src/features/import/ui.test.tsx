@@ -1,7 +1,7 @@
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import '@/i18n';
 import { db, getImportJob, setKnownTermsProvider, type ImportJobRecord } from '@/data';
 import { setAuthStateForTesting } from '@/features/auth/session';
@@ -60,6 +60,26 @@ describe('import panels', () => {
       'Kelimeleri çıkarmayı yapay zekâ yapar; bunun için giriş yap.',
     );
     expect(screen.getByRole('button', { name: /Google ile giriş yap/ })).toBeInTheDocument();
+  });
+
+  it('"Panodan yapıştır" fills the box; a refused read says how to paste (3.10)', async () => {
+    setAuthStateForTesting({ status: 'guest', user: null });
+    const readText = vi.fn(async () => 'The committee postponed the decision.\r\nAgain.');
+    Object.defineProperty(navigator, 'clipboard', { value: { readText }, configurable: true });
+    try {
+      renderAt('/', [{ path: '/', element: <TextImportPanel /> }]);
+      await userEvent.click(screen.getByTestId('paste-clipboard'));
+      expect(screen.getByRole('textbox', { name: 'İngilizce metin' })).toHaveValue(
+        'The committee postponed the decision.\nAgain.',
+      );
+      readText.mockRejectedValueOnce(new DOMException('denied', 'NotAllowedError'));
+      await userEvent.click(screen.getByTestId('paste-clipboard'));
+      expect(await screen.findByTestId('paste-clipboard-note')).toHaveTextContent(
+        'Panoya erişilemedi',
+      );
+    } finally {
+      Reflect.deleteProperty(navigator, 'clipboard');
+    }
   });
 
   it('without a backend extraction says it is off; reading still works', () => {

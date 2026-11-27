@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CaptureInput } from '@/features/add/capture';
 import { CaptureActions } from '@/features/add/CaptureActions';
-import { TextArea, TextField } from '@/ui';
+import { Button, TextArea, TextField } from '@/ui';
 import { ActiveJobs } from './JobCard';
 import { MAX_IMPORT_CHARS } from './shared';
 
@@ -29,6 +29,53 @@ export function TextImportPanel(_props: ImportPanelProps) {
 export const MIN_CAPTURE_WORDS = 3;
 
 const countWords = (s: string) => s.split(/\s+/).filter((w) => /\p{L}/u.test(w)).length;
+
+/** The browser can read the clipboard on a tap (not every WebView or browser can). */
+const canReadClipboard = () =>
+  typeof navigator !== 'undefined' && typeof navigator.clipboard?.readText === 'function';
+
+/**
+ * "Panodan yapıştır" (review 2026-11 3.10): one tap instead of a long press. When the browser
+ * says no (permission denied, nothing to read), a line says how to paste by hand.
+ */
+function PasteFromClipboard({ onText }: { onText: (text: string) => void }) {
+  const { t } = useTranslation();
+  const [note, setNote] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  if (!canReadClipboard()) return null;
+  const paste = async () => {
+    setBusy(true);
+    setNote(null);
+    try {
+      const text = (await navigator.clipboard.readText()).replace(/\r\n?/g, '\n');
+      if (text.trim()) onText(text);
+      else setNote(t('importer.paste.clipboardEmpty'));
+    } catch {
+      setNote(t('importer.paste.clipboardDenied'));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="flex flex-col items-start gap-1.5">
+      <Button
+        variant="secondary"
+        size="sm"
+        leadingIcon="file"
+        loading={busy}
+        onClick={() => void paste()}
+        data-testid="paste-clipboard"
+      >
+        {t('importer.paste.fromClipboard')}
+      </Button>
+      {note && (
+        <p role="status" className="text-meta text-fg-muted" data-testid="paste-clipboard-note">
+          {note}
+        </p>
+      )}
+    </div>
+  );
+}
 
 function TextImportForm() {
   const { t } = useTranslation();
@@ -57,6 +104,12 @@ function TextImportForm() {
 
   return (
     <form onSubmit={(e) => e.preventDefault()} className="flex flex-col gap-5" noValidate>
+      <PasteFromClipboard
+        onText={(clip) => {
+          setText(clip);
+          if (error) setError(null);
+        }}
+      />
       <TextArea
         label={t('importer.paste.label')}
         placeholder={t('importer.paste.placeholder')}
