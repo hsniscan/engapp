@@ -56,7 +56,7 @@ export function HighlightSwitch() {
 }
 
 /**
- * "Hep tahmin ettir" (v0.5.1, decision 0054): off by default, so a word the user has a card for
+ * "Hep tahmin ettir" (v0.5.1, decisions 0054 and 0089): off by default, so every tapped word
  * shows its meaning at once; on, every tapped word asks for a guess first.
  */
 export function AlwaysGuessSwitch() {

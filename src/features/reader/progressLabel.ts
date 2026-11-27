@@ -1,4 +1,4 @@
-// One progress wording for a text on every screen (v0.5.2, B14): "Okunmadı", "Başladın",
+// One progress wording for a text on every screen (v0.5.2, B14): "Başlanmadı", "Başladın",
 // "%40 okundu", "Bitti" (Metinlerim, Keşfet "Devam et", the feed's text rows).
 import type { TFunction } from 'i18next';
 import { readingProgress, type ReaderText } from '@/domain/texts';

@@ -139,13 +139,13 @@ test('Okuma: an opened library text is listed once, with its progress, and a sug
     await page.emulateMedia({ colorScheme: 'light' });
   }
   await expect(page).not.toHaveURL(new RegExp(`/oku/${ID(1)}$`));
+  // Opened for a moment but not started: it stays in the library and is not in Metinlerim
+  // (decision 0089).
   await page.goto('/decks?tab=reading');
-  const mine = page.getByTestId('my-texts');
-  await expect(mine.getByRole('link', { name: /The Late Train/ })).toContainText('Okunmadı');
   const library = page.getByRole('list', { name: 'Metinler', exact: true });
-  await expect(library.getByRole('listitem')).toHaveCount(1);
-  await expect(library).toContainText('Why the Sky Is Blue');
-  await expect(library).not.toContainText('The Late Train');
+  await expect(library.getByRole('listitem')).toHaveCount(2);
+  await expect(library).toContainText('The Late Train');
+  await expect(page.getByTestId('my-texts')).toHaveCount(0);
 });
 
 test('Okuma: the full library (360 texts, A1 to C1) lists in pages, filters by A1 and works offline', async ({

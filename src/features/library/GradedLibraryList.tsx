@@ -94,7 +94,14 @@ export function GradedLibraryList({
   }, [lib]);
   // The texts listed: all of them, or (under "Metinlerim") those the user has not opened.
   const listed = useMemo(
-    () => (lib ? (hideOwn ? lib.texts.filter((s) => !lib.rows.has(s.entry.id)) : lib.texts) : []),
+    // A text opened but not started yet stays here (decision 0089); Metinlerim lists it once
+    // it is started or finished.
+    () =>
+      lib
+        ? hideOwn
+          ? lib.texts.filter((s) => !lib.started.has(s.entry.id) && !lib.finished.has(s.entry.id))
+          : lib.texts
+        : [],
     [lib, hideOwn],
   );
   const filtered = useMemo(

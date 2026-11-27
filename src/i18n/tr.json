@@ -3045,7 +3045,8 @@
     "continue": {
       "eyebrow": "Devam et",
       "start": "Açtın, henüz okumaya başlamadın",
-      "action": "Kaldığın yerden oku"
+      "action": "Kaldığın yerden oku",
+      "begin": "Okumaya başla"
     },
     "suggestions": {
       "eyebrow": "Sana uygun metinler",
@@ -3703,7 +3704,7 @@
     },
     "alwaysGuess": {
       "label": "Hep tahmin ettir",
-      "hint": "Kartlarında olan kelimelerde de anlam gösterilmeden önce tahmin etmen istenir. Kapalıyken bu kelimelerin anlamı hemen görünür."
+      "hint": "Dokunduğun her kelimede anlam gösterilmeden önce tahmin etmen istenir. Kapalıyken anlam hemen görünür."
     },
     "settings": {
       "title": "Okuma"
@@ -3723,7 +3724,7 @@
       "title": "Metinlerim",
       "add": "Metin ekle",
       "empty": "Bir metin yapıştır ya da PDF yükle; okuyucuda kelimeler bildiğine göre işaretlenir.",
-      "unread": "Okunmadı",
+      "unread": "Başlanmadı",
       "progress": "%{{pct}} okundu",
       "continue": "Devam et",
       "finished": "Bitti",

@@ -25,7 +25,7 @@ import {
   type GradedCatalogEntry,
   type ScoredGradedText,
 } from '../domain/library';
-import { DEFAULT_DIFFICULTY, DIFFICULTY_BANDS, type ReaderText, type ReadingDifficulty } from '../domain/texts';
+import { DEFAULT_DIFFICULTY, DIFFICULTY_BANDS, readingProgress, type ReaderText, type ReadingDifficulty } from '../domain/texts';
 import type { Id, Millis } from '../domain/types';
 import { db } from './db';
 import { logError } from './errorLog';
@@ -352,8 +352,9 @@ export async function scoreLibrary(difficulty?: ReadingDifficulty): Promise<Scor
   const finished = new Set<string>();
   const started = new Set<string>();
   for (const [gid, r] of rows) {
-    if (r.finished_at !== null) finished.add(gid);
-    else if (r.progress_offset > 0 || r.read_ms > 0) started.add(gid);
+    const state = readingProgress(r).state;
+    if (state === 'finished') finished.add(gid);
+    else if (state === 'started') started.add(gid);
   }
   return { difficulty: chosen, texts, finished, started, rows };
 }

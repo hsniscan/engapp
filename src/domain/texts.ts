@@ -139,14 +139,18 @@ export const readerPath = (id: Id): string => `/oku/${id}`;
 /**
  * Where the user is in a text, one wording everywhere (v0.5.2, B14): unread, started (with the
  * percent read, which can be 0 when the first screen was read without scrolling) or finished.
- * A text counts as started once it has a resume point or any reading time, the same rule the
- * library list uses.
+ * A text counts as started once it has a resume point or STARTED_READ_MS of reading time, the
+ * same rule the library list uses: a text opened for a few seconds (a mistaken tap) is still
+ * "Başlanmadı" and stays in Kitaplık (decision 0089).
  */
 export interface ReadingProgress {
   state: 'unread' | 'started' | 'finished';
   /** Share of the body before the resume point, 0..100 (100 when finished, ≤ 99 otherwise). */
   pct: number;
 }
+
+/** Reading time after which a text with no resume point counts as started (decision 0089). */
+export const STARTED_READ_MS = 20_000;
 
 export function readingProgress(
   t: Pick<ReaderText, 'finished_at' | 'progress_offset' | 'read_ms' | 'body'>,
@@ -155,6 +159,6 @@ export function readingProgress(
   const pct = t.body.length
     ? Math.max(0, Math.min(99, Math.round((t.progress_offset / t.body.length) * 100)))
     : 0;
-  if (t.progress_offset > 0 || t.read_ms > 0) return { state: 'started', pct };
+  if (t.progress_offset > 0 || t.read_ms >= STARTED_READ_MS) return { state: 'started', pct };
   return { state: 'unread', pct: 0 };
 }

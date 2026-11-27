@@ -1,8 +1,8 @@
 // The sheet a tapped word opens (v0.5 İP1, plan "dokununca önce tahmin et"; Çam look v0.5.2,
 // docs/design.md §4.13). A non-modal bottom sheet, so the text stays tappable behind it: the
 // word, its stage and part of speech, the sentence it is in (with its Turkish for library
-// texts), then a guess first and the meaning. A word the user already has a card for shows its
-// meaning at once unless "Hep tahmin ettir" is on (decision 0054). Actions: "Kelimelerime ekle"
+// texts), then the meaning. With "Hep tahmin ettir" on, every word asks for a guess first; off
+// (the default) every word shows its meaning at the first tap (decisions 0054, 0089). Actions: "Kelimelerime ekle"
 // (the sentence becomes the card's source sentence) and "Biliyorum" (leaves the marks, with an
 // undo). Meanings come from this device first (the user's card, the text's own gloss, Kelime
 // Bankası, the cached shared lexicon: offline and instant); only when none of these has the
@@ -69,7 +69,7 @@ interface Props {
   /** The text's own glosses (library texts, stories). */
   glosses?: readonly TextGloss[];
   voice: VoicePref;
-  /** "Hep tahmin ettir": ask for a guess even for the user's own words. */
+  /** "Hep tahmin ettir": ask for a guess before every meaning (off: the meaning at once). */
   alwaysGuess?: boolean;
   onClose: () => void;
   onExtend: (side: 'before' | 'after') => void;
@@ -183,11 +183,11 @@ export function WordSheet({
         <SheetBody
           // The guess mode is part of the key: a "Hep tahmin ettir" setting that arrives after the
           // sheet opened starts it again in the right mode.
-          key={`${pick.lemma}|${pick.written}|${pick.sentence}|${alwaysGuess || pick.noteId === null}`}
+          key={`${pick.lemma}|${pick.written}|${pick.sentence}|${alwaysGuess}`}
           pick={pick}
           glosses={glosses}
           voice={voice}
-          guessFirst={alwaysGuess || pick.noteId === null}
+          guessFirst={alwaysGuess}
           onExtend={onExtend}
           onListenHere={onListenHere}
           onDone={onClose}
