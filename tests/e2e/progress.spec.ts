@@ -22,7 +22,11 @@ test('progress tab: categories, gap practice and the 12-week series on a phone',
   const groups = page.getByRole('region', { name: 'Kategorilere göre tutma oranı' });
   await expect(groups).toBeVisible();
   await expect(groups.getByText(/Tutma oranı, son 90 gün:/)).toContainText('%');
+  // The list opens on the weakest group's category; "Kelime / öbek / kalıp" through the picker.
+  await groups.getByRole('combobox', { name: 'Kategori' }).click();
+  await page.getByRole('option', { name: 'Kelime / öbek / kalıp' }).click();
   await expect(groups.getByRole('listitem', { name: /^Kelime: %\d+, \d+ cevap\./ })).toBeVisible();
+  await expect(groups.getByText(/^En zayıf noktan: [^()]*(\([^()]*\))?[^()]*, %\d+/)).toBeVisible();
 
   // Another category through the picker.
   await groups.getByRole('combobox', { name: 'Kategori' }).click();
