@@ -19,10 +19,12 @@ Browser review 2026-11-26 (profil-genel #2 and #6, ekle #12):
   the router sees no change. Menus and select lists push nothing.
 - Back pops that entry. If an overlay is open, the top one is closed with the same Escape
   dispatch the native back button uses (`closeTopOverlay`).
-- Closing another way (×, Escape, a button) takes the entry off with `history.go(-n)`. This
-  runs one tick later and is skipped while the router is navigating. A button that closes the
-  sheet and opens a page therefore keeps its new page. The old entry stays under that page, and
-  Back from the page steps over it, so no Back press is wasted.
+- Closing another way (×, Escape, a button) leaves the entry where it is. Taking it off at once
+  with `history.go` would race whatever comes next: a link inside the sheet, or a typed address.
+  Instead, a later Back that lands on such a leftover entry, on the same page with nothing open,
+  goes on through the leftovers and leaves the page. Back from a page opened inside the sheet
+  lands on the page itself. Either way the learner's one Back press does what they meant, and
+  history only moves inside a Back gesture.
 - The Capacitor path is unchanged.
 
 **Text size (`src/ui/theme/textSize.ts`, Ayarlar › Görünüm › Yazı boyutu).**

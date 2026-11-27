@@ -66,9 +66,7 @@ for (const width of [360, 1280]) {
       // Redesign: the study-type picker, and an Üretim and a Boşluk doldurma card (front and
       // result) when the seed has one due.
       await page.goto('/study');
-      await expect(
-        page.getByTestId('study-start').or(page.getByTestId('study-more')),
-      ).toBeVisible();
+      await expect(page.getByTestId('study-start').or(page.getByTestId('study-more'))).toBeVisible();
       await check(page, 'study-modes', tag);
       for (const mode of ['production', 'cloze'] as const) {
         await page.goto(`/study?mode=${mode}`);
@@ -113,11 +111,6 @@ for (const width of [360, 1280]) {
       await expect(page.getByTestId('add-sheet-word')).toBeVisible();
       await check(page, 'add-sheet', tag);
       await page.keyboard.press('Escape');
-      // Closing takes the sheet's Back entry off (ADR 0090); let that finish before navigating.
-      await expect(page.getByTestId('add-sheet-word')).toBeHidden();
-      await page.waitForFunction(
-        () => !(history.state as { engappOverlay?: number } | null)?.engappOverlay,
-      );
       await page.goto('/metin-olustur');
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
       await check(page, 'compose', tag);

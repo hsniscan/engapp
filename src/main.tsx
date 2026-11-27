@@ -27,7 +27,6 @@ if (isNativeApp()) {
   registerServiceWorker();
   // Browser/PWA Back closes an open dialog or sheet first (ADR 0090), like the app's back button.
   startWebBack({
-    navigating: () => router.state.navigation.state !== 'idle',
     subscribe: (fn) => router.subscribe(fn),
   });
 }

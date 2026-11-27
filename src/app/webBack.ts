@@ -2,9 +2,12 @@
 // overlay on its back button (src/native/start.ts); the web has no back-button event, only
 // history. So each dialog or sheet that opens pushes one entry for the same URL (a copy of
 // react-router's state plus a depth mark, so the router sees no change), and Back pops it: we
-// close the top overlay instead of leaving the page. Closing it another way (×, Escape, a
-// button) takes its entry back off, unless the close came with a navigation, whose own entry
-// then sits on top.
+// close the top overlay instead of leaving the page.
+//
+// An overlay closed another way (×, Escape, a button) leaves its entry behind. Taking it off
+// right away (history.go) would race whatever comes next (a link inside the sheet, a typed
+// address), so we never move history on our own; instead a later Back that lands on a leftover
+// entry carries on to where the learner meant to go, in the same gesture.
 import { closeTopOverlay } from '@/native/backButton';
 
 /** Dialogs and sheets only: menus and select lists stay a plain Escape/tap-outside affair. */
@@ -13,8 +16,6 @@ const MARK = 'engappOverlay';
 
 export interface WebBackDeps {
   win?: Window;
-  /** True while the router is loading or submitting a navigation. */
-  navigating: () => boolean;
   /** Called on every router change, so pushes (which fire no popstate) are seen too. */
   subscribe: (fn: () => void) => () => void;
 }
@@ -27,41 +28,28 @@ export function overlayDepth(state: unknown): number {
   return typeof v === 'number' ? v : 0;
 }
 
-export function startWebBack({ win = window, navigating, subscribe }: WebBackDeps): () => void {
+export function startWebBack({ win = window, subscribe }: WebBackDeps): () => void {
   const doc = win.document;
   const state = () => (win.history.state ?? null) as HistState | null;
   const count = () => doc.querySelectorAll(SELECTOR).length;
   let open = count();
-  let toRemove = 0;
-  let timer: ReturnType<typeof setTimeout> | undefined;
   /** Our own history.go() calls, whose popstate is not a Back press. */
   let ownPops = 0;
+  /** Router index and our depth of the entry we are on (react-router keeps idx in the state). */
   let lastIdx = state()?.idx ?? 0;
+  let lastDepth = overlayDepth(state());
 
   const goBack = (n: number) => {
     ownPops++;
     win.history.go(-n);
   };
 
-  // Deferred a tick and checked again: a button that closes the sheet and then navigates must
-  // not have its new page undone by our back step.
-  const removeEntries = () => {
-    timer = undefined;
-    const n = Math.min(toRemove, overlayDepth(state()));
-    toRemove = 0;
-    if (n > 0 && !navigating()) goBack(n);
-  };
-
   const sync = () => {
     const now = count();
-    if (now > open) {
-      for (let i = open; i < now; i++) {
-        const s = state() ?? {};
-        win.history.pushState({ ...s, [MARK]: overlayDepth(s) + 1 }, '', win.location.href);
-      }
-    } else if (now < open && overlayDepth(state()) > 0) {
-      toRemove += open - now;
-      timer ??= setTimeout(removeEntries, 0);
+    for (let i = open; i < now; i++) {
+      const s = state() ?? {};
+      lastDepth = overlayDepth(s) + 1;
+      win.history.pushState({ ...s, [MARK]: lastDepth }, '', win.location.href);
     }
     open = now;
   };
@@ -69,23 +57,29 @@ export function startWebBack({ win = window, navigating, subscribe }: WebBackDep
   const onPop = () => {
     const s = state();
     const idx = s?.idx ?? 0;
-    const from = lastIdx;
+    const depth = overlayDepth(s);
+    const fromIdx = lastIdx;
+    const fromDepth = lastDepth;
     lastIdx = idx;
+    lastDepth = depth;
     if (ownPops > 0) {
       ownPops--;
       return;
     }
     if (count() > 0) {
       // Back with a dialog or sheet open: this pop took its entry off; close the top one.
-      // Counting it closed now keeps its close from going back a second time.
       closeTopOverlay(doc);
       open = Math.max(0, count() - 1);
       return;
     }
-    // Back from a page opened inside an overlay lands on the overlay's old entry (same page,
-    // nothing open): step over it, so the next Back is not a dead press.
-    const depth = overlayDepth(s);
-    if (depth > 0 && idx < from) goBack(depth);
+    if (idx === fromIdx && depth < fromDepth) {
+      // Back on the same page with nothing open: it only took off an entry left by an overlay
+      // that was closed another way. Go on through the rest and leave the page, as asked.
+      goBack(depth + 1);
+    } else if (idx < fromIdx && depth > 0) {
+      // Back from a page opened inside an overlay: land on the page itself, not its leftovers.
+      goBack(depth);
+    }
   };
 
   const observer = new MutationObserver(sync);
@@ -100,13 +94,13 @@ export function startWebBack({ win = window, navigating, subscribe }: WebBackDep
   const unsubscribe = subscribe(() => {
     setTimeout(() => {
       lastIdx = state()?.idx ?? lastIdx;
+      lastDepth = overlayDepth(state());
     }, 0);
   });
   win.addEventListener('popstate', onPop, true);
   return () => {
     observer.disconnect();
     unsubscribe();
-    if (timer) clearTimeout(timer);
     win.removeEventListener('popstate', onPop, true);
   };
 }

@@ -11,16 +11,21 @@ function openDialog(): HTMLElement {
   return el;
 }
 
+/** What the browser does on Back: the entry below becomes current, then popstate. */
+function browserBack(state: unknown) {
+  window.history.replaceState(state, '');
+  window.dispatchEvent(new PopStateEvent('popstate', { state }));
+}
+
 describe('startWebBack', () => {
   let stop: () => void;
-  let navigating = false;
   let go: ReturnType<typeof vi.spyOn>;
+  const page = { idx: 3, key: 'k' };
 
   beforeEach(() => {
-    navigating = false;
-    window.history.replaceState({ idx: 3, key: 'k' }, '');
+    window.history.replaceState(page, '');
     go = vi.spyOn(window.history, 'go').mockImplementation(() => {});
-    stop = startWebBack({ navigating: () => navigating, subscribe: () => () => {} });
+    stop = startWebBack({ subscribe: () => () => {} });
   });
   afterEach(() => {
     stop();
@@ -33,7 +38,7 @@ describe('startWebBack', () => {
     openDialog();
     await tick();
     expect(window.history.length).toBe(before + 1);
-    expect(window.history.state).toMatchObject({ idx: 3, key: 'k' });
+    expect(window.history.state).toMatchObject(page);
     expect(overlayDepth(window.history.state)).toBe(1);
   });
 
@@ -44,29 +49,39 @@ describe('startWebBack', () => {
     dialog.addEventListener('keydown', (e) => e.key === 'Escape' && escape());
     dialog.tabIndex = -1;
     dialog.focus();
-    // The browser popped our entry: the page's own entry is current again.
-    window.history.replaceState({ idx: 3, key: 'k' }, '');
-    window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }));
+    browserBack(page);
     expect(escape).toHaveBeenCalledOnce();
     dialog.remove();
     await tick();
     expect(go).not.toHaveBeenCalled();
   });
 
-  it('takes its entry off when the dialog is closed another way (×)', async () => {
+  it('never moves history when the dialog is closed another way (×)', async () => {
     const dialog = openDialog();
     await tick();
     dialog.dataset.state = 'closed';
     await tick();
+    expect(go).not.toHaveBeenCalled();
+  });
+
+  it('a later Back over a closed dialog’s entry goes on and leaves the page', async () => {
+    const dialog = openDialog();
+    await tick();
+    dialog.remove();
+    await tick();
+    browserBack(page); // took off the leftover entry: same page, nothing open
     expect(go).toHaveBeenCalledWith(-1);
   });
 
-  it('leaves history alone when the close comes with a navigation', async () => {
+  it('Back from a page opened inside the sheet lands on the page, not its leftover', async () => {
     const dialog = openDialog();
     await tick();
-    navigating = true;
     dialog.remove();
-    await tick();
-    expect(go).not.toHaveBeenCalled();
+    // The router pushed the new page (idx 4); its subscribers fire.
+    stop();
+    window.history.replaceState({ idx: 4, key: 'n' }, '');
+    stop = startWebBack({ subscribe: () => () => {} });
+    browserBack({ ...page, engappOverlay: 1 });
+    expect(go).toHaveBeenCalledWith(-1);
   });
 });
