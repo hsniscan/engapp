@@ -18,6 +18,22 @@ describe('reader lookup with text glosses', () => {
     expect(glossFor([{ word: 'net', tr: ' ' }], ['net'])).toBeNull();
   });
 
+  it('finds the gloss of the base form for an irregular or regular plural the lemmatiser kept', () => {
+    const g = [
+      { word: 'fisherman', tr: 'balıkçı' },
+      { word: 'ferry', tr: 'feribot' },
+      { word: 'child', tr: 'çocuk' },
+      { word: 'knife', tr: 'bıçak' },
+    ];
+    expect(glossFor(g, ['fishermen', 'fishermen'])?.tr).toBe('balıkçı');
+    expect(glossFor(g, ['ferries'])?.tr).toBe('feribot');
+    expect(glossFor(g, ['children'])?.tr).toBe('çocuk');
+    expect(glossFor(g, ['knives'])?.tr).toBe('bıçak');
+    expect(glossFor(g, ['boats'])).toBeNull();
+    // An exact gloss wins over a base-form one.
+    expect(glossFor([...g, { word: 'fishermen', tr: 'balıkçılar' }], ['fishermen'])?.tr).toBe('balıkçılar');
+  });
+
   it('shows the text gloss when the device has nothing else (offline, guests)', async () => {
     const info = await lookupReaderWord('fisherman', 'Fishermen', [{ word: 'fishermen', tr: 'balıkçılar' }]);
     expect(info.source).toBe('gloss');
