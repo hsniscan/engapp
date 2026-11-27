@@ -119,3 +119,12 @@ export function useAuth(): UseAuth {
   const s = useSyncExternalStore(subscribeAuth, getAuthState, getAuthState);
   return { ...s, available: s.status !== 'unavailable', signIn, signOut };
 }
+
+/**
+ * i18n context for copy that says where the user's own text is kept: 'device' for a guest (or
+ * a build without a backend), none when signed in ("…senin hesabında durur"). 2026-11-26 #8.
+ */
+export function useKeptWhere(): 'device' | undefined {
+  const { status } = useSyncExternalStore(subscribeAuth, getAuthState, getAuthState);
+  return status === 'guest' || status === 'unavailable' ? 'device' : undefined;
+}

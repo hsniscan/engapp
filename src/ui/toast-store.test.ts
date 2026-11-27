@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { getToasts, resetToasts, toast } from './toast-store';
+import { getToasts, resetToasts, setToastLimit, toast } from './toast-store';
 
 afterEach(() => resetToasts());
 
@@ -14,5 +14,20 @@ describe('toast.undo', () => {
     expect(t?.action?.altText).toBe('Geri al: Kelime silindi');
     t?.action?.onClick();
     expect(onUndo).toHaveBeenCalledOnce();
+  });
+});
+
+describe('setToastLimit', () => {
+  it('shows one toast at a time while set, then three again', () => {
+    toast('a');
+    toast('b');
+    const restore = setToastLimit(1);
+    expect(getToasts().map((t) => t.title)).toEqual(['b']);
+    toast('c');
+    expect(getToasts().map((t) => t.title)).toEqual(['c']);
+    restore();
+    toast('d');
+    toast('e');
+    expect(getToasts().map((t) => t.title)).toEqual(['c', 'd', 'e']);
   });
 });

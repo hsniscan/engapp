@@ -17,6 +17,8 @@ export interface LevelTestOutcome {
   result: TestResult;
   /** The user's level before the test. */
   from: CefrLevel;
+  /** The level before was only the default (no test, not chosen): "kaldı" / "→" would mislead. */
+  firstTest?: boolean;
   /** "Biliyorum" words now in the known words. */
   marked: number;
   questions: number;
@@ -77,9 +79,11 @@ export function LevelResult({ outcome }: { outcome: LevelTestOutcome }) {
         </p>
         {applied && (
           <p className="mt-3 text-ui font-medium text-fg" role="status">
-            {from === result.level
-              ? t('levelTest.resultSame', { level: result.level })
-              : t('levelTest.resultChanged', { from, to: result.level })}
+            {outcome.firstTest
+              ? t('levelTest.resultFirst', { level: result.level })
+              : from === result.level
+                ? t('levelTest.resultSame', { level: result.level })
+                : t('levelTest.resultChanged', { from, to: result.level })}
           </p>
         )}
         {result.reliable && (

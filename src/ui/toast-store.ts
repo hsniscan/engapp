@@ -22,6 +22,8 @@ type Listener = () => void;
 let toasts: ToastRecord[] = [];
 const listeners = new Set<Listener>();
 let counter = 0;
+/** How many toasts are shown at once (setToastLimit). */
+let limit = 3;
 
 function emit() {
   for (const l of listeners) l();
@@ -46,11 +48,29 @@ function dismiss(id: string) {
   }, 400);
 }
 
-/** Shows a toast and returns its id. At most 3 are kept; the oldest goes first. */
+/**
+ * Shows at most `n` toasts at once until the returned function is called (which restores 3).
+ * The study screen uses 1, so stacked toasts do not cover the card (2026-11-26 #6).
+ */
+export function setToastLimit(n: number): () => void {
+  limit = Math.max(1, n);
+  const open = toasts.filter((t) => t.open);
+  if (open.length > limit) {
+    const keep = new Set(open.slice(-limit));
+    toasts = toasts.filter((t) => !t.open || keep.has(t));
+    emit();
+  }
+  return () => {
+    limit = 3;
+  };
+}
+
+/** Shows a toast and returns its id. At most 3 (setToastLimit) are kept; the oldest goes first. */
 export function toast(options: ToastOptions | string): string {
   const opts = typeof options === 'string' ? { title: options } : options;
   const id = `t${++counter}`;
-  toasts = [...toasts.filter((t) => t.open).slice(-2), { ...opts, id, open: true }];
+  const older = limit > 1 ? toasts.filter((t) => t.open).slice(-(limit - 1)) : [];
+  toasts = [...older, { ...opts, id, open: true }];
   emit();
   return id;
 }

@@ -8,7 +8,7 @@ import type { CardView } from '@/data';
 import { type AnswerCheck, checkAnswer, diffLetters, suggestRating } from '@/domain/answerCheck';
 import { cardFormat } from '@/domain/formatLadder';
 import { Rating } from '@/domain/types';
-import { posLabel } from '@/features/cards/labels';
+import { studyPosLabel } from './posText';
 import { CardPicture } from '@/features/images';
 import { LeechHint } from '@/features/leech';
 import { Button, cn, Eyebrow, Icon, type IconName } from '@/ui';
@@ -18,7 +18,6 @@ import type { KindProps } from './kinds';
 import { RatingBar } from './RatingBar';
 import {
   BackExtras,
-  BackPicture,
   BackRegion,
   CardHeader,
   CardSurface,
@@ -330,14 +329,14 @@ export function ProductionStudy({
               {sense?.pos && (
                 <p className="text-ui text-fg-muted">
                   <span className="sr-only">
-                    {t('imageCard.pos', { pos: posLabel(t, sense.pos) })}
+                    {t('imageCard.pos', { pos: studyPosLabel(t, sense.pos) })}
                   </span>
-                  <span aria-hidden="true">{posLabel(t, sense.pos)}</span>
+                  <span aria-hidden="true">{studyPosLabel(t, sense.pos)}</span>
                 </p>
               )}
             </div>
           ) : (
-            <MeaningBlock view={view} />
+            <MeaningBlock view={view} gloss={false} />
           )}
           {!picture && view.sentence && (!sentenceAsHint || sentenceShown) && <BlankedSentenceBox view={view} />}
           {hintShown && view.hint && (
@@ -423,7 +422,22 @@ export function ProductionStudy({
           className="flex flex-1 flex-col justify-center gap-5 pt-4"
           data-testid={view.image ? 'meaning-with-picture' : undefined}
         >
-          <MeaningBlock view={view} size="md" />
+          {view.image ? (
+            // The picture sits next to the meaning, small: below the sentence it fell under the
+            // rating bar on a 360 px phone (2026-11-26 #10).
+            <div className="flex items-start gap-4">
+              <div className="min-w-0 flex-1">
+                <MeaningBlock view={view} size="md" />
+              </div>
+              <CardPicture
+                image={view.image}
+                showNew={!picture}
+                className="size-20 overflow-hidden rounded-inner bg-surface-sunken sm:size-28"
+              />
+            </div>
+          ) : (
+            <MeaningBlock view={view} size="md" />
+          )}
           <div className={cn('flex flex-col gap-3', unchecked ? 'rounded-inner bg-surface-sunken p-4' : verdictBox(result.verdict))}>
             {unchecked ? (
               <p
@@ -443,7 +457,6 @@ export function ProductionStudy({
             <Ipa ipa={note.ipa} />
           </div>
           <SentencePanel view={view} speech={speech} />
-          <BackPicture view={view} showNew={!picture} />
         </div>
       </CardSurface>
       <BackExtras view={view} speech={speech} />

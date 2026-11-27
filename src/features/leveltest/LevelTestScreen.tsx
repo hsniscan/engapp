@@ -105,6 +105,8 @@ export function LevelTestScreen() {
     try {
       const extra = await countOutsideWords();
       const result = scoreTest(state.items, bank!.band_sizes, extra);
+      // Nobody set a level yet (not a test, not the user): this is the learner's first level.
+      const firstTest = (await getSettings()).level_source === 'default';
       await saveLevelTest({
         items: state.items,
         level: result.level,
@@ -125,6 +127,7 @@ export function LevelTestScreen() {
         outcome: {
           result,
           from,
+          firstTest,
           marked,
           questions: answeredCount(state),
           durationMs: Date.now() - startedAt,

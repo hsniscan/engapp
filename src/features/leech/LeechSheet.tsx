@@ -4,6 +4,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useId, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useKeptWhere } from '@/features/auth/session';
 import {
   getConfusables,
   getContrastCard,
@@ -51,6 +52,7 @@ export interface LeechSheetProps {
 
 export function LeechSheet({ cardId, onOpenChange, startWith = 'paths', onCardSuspended, onCardsChanged, speech }: LeechSheetProps) {
   const { t } = useTranslation();
+  const kept = useKeptWhere();
   const data = useLeechSheet(cardId);
   // A new card (or a new opening) starts on the requested view.
   const viewKey = `${cardId}:${startWith}`;
@@ -67,7 +69,7 @@ export function LeechSheet({ cardId, onOpenChange, startWith = 'paths', onCardSu
     : null;
   if (view.kind === 'picker' || view.kind === 'reported') {
     title = t('leech.picker.title');
-    description = t('leech.picker.description', { term });
+    description = t('leech.picker.description', { term, context: kept });
   } else if (view.kind === 'contrast') {
     title = t('leech.contrast.title');
     description = t('leech.contrast.description', { a: view.pair.a.term, b: view.pair.b.term });
@@ -515,6 +517,7 @@ function RestartPath({
 /** A contrast card's difference line, edited in the user's own table. */
 export function DifferenceEditor({ noteId, onSaved }: { noteId: Id; onSaved?: () => void }) {
   const { t } = useTranslation();
+  const kept = useKeptWhere();
   const view = useLiveQuery(() => getContrastCard(noteId), [noteId]);
   const [text, setText] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -540,7 +543,7 @@ export function DifferenceEditor({ noteId, onSaved }: { noteId: Id; onSaved?: ()
     <div className="flex flex-col gap-3">
       <TextArea
         label={t('leech.contrast.differenceLabel')}
-        hint={t('leech.contrast.differenceHint')}
+        hint={t('leech.contrast.differenceHint', { context: kept })}
         error={error ?? undefined}
         rows={3}
         lang="tr"

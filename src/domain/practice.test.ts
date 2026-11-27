@@ -48,10 +48,13 @@ describe('selectPracticeCards', () => {
     const cards = [
       cand('easy'),
       cand('lapsed', { lapses: 2 }),
-      cand('difficult', { difficulty: 8 }),
-      cand('again', { lastAgainAt: NOW - 3 * DAY }),
-      cand('oldAgain', { lastAgainAt: NOW - 20 * DAY }),
+      cand('difficult', { difficulty: 8, lapses: 1 }),
+      cand('again', { lastAgainAt: NOW - 3 * DAY, lapses: 1 }),
+      cand('oldAgain', { lastAgainAt: NOW - 20 * DAY, lapses: 1 }),
       cand('missed', { lastPracticeMissAt: NOW - DAY }),
+      // 3.7: Agains while a new word is first learned (no lapse yet) are not "zorlandıkların",
+      // nor is the difficulty a first Again sets.
+      cand('firstDay', { lastAgainAt: NOW - DAY, difficulty: 7.2, lapses: 0 }),
     ];
     const ids = selectPracticeCards(cards, { source: 'hard' }, { now: NOW, size: 10, seed: 's' });
     expect(new Set(ids)).toEqual(new Set(['lapsed', 'difficult', 'again', 'missed']));
@@ -159,7 +162,7 @@ describe('countPracticeSources', () => {
     const c = countPracticeSources(
       [
         cand('a1', { note: 'A', lapses: 2, tags: ['iş'] }),
-        cand('a2', { note: 'A', difficulty: 9, tags: ['iş'] }),
+        cand('a2', { note: 'A', difficulty: 9, lapses: 1, tags: ['iş'] }),
         cand('b', { firstReviewAt: NOW - DAY, tags: ['iş', 'ev'] }),
         cand('c', { state: CardState.New, lapses: 4, tags: ['ev'] }),
       ],

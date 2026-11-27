@@ -4,6 +4,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useKeptWhere } from '@/features/auth/session';
 import { ActionError, createContrastCard, getContrastDraft, logError, type ContrastDraftSide } from '@/data';
 import { MAX_CONTRAST_TEXT, type ConfusablePair } from '@/domain/confusables';
 import type { Id } from '@/domain/types';
@@ -47,6 +48,7 @@ function Side({ side }: { side: ContrastDraftSide }) {
 
 export function ContrastEditor({ pair, onAdded, requestDeps = defaultContrastDeps }: ContrastEditorProps) {
   const { t } = useTranslation();
+  const kept = useKeptWhere();
   const id = useId();
   const key = [pair.a.note_id, pair.a.sense_id, pair.b.note_id, pair.b.sense_id].join(':');
   const draft = useLiveQuery(() => getContrastDraft(pair).catch(() => null), [key]);
@@ -120,7 +122,7 @@ export function ContrastEditor({ pair, onAdded, requestDeps = defaultContrastDep
           <TextArea
             id={`${id}-difference`}
             label={t('leech.contrast.differenceLabel')}
-            hint={t('leech.contrast.differenceHint')}
+            hint={t('leech.contrast.differenceHint', { context: kept })}
             error={error ?? undefined}
             rows={3}
             lang="tr"

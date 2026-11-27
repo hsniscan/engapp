@@ -78,6 +78,6 @@ export { Tabs, type TabItem, type TabsProps } from './Tabs';
 export { TextArea, type TextAreaProps } from './TextArea';
 export { TextField, type TextFieldProps } from './TextField';
 export { Toaster } from './Toast';
-export { toast, type ToastOptions, type ToastTone, type UndoToastOptions } from './toast-store';
+export { setToastLimit, toast, type ToastOptions, type ToastTone, type UndoToastOptions } from './toast-store';
 export { Tooltip, TooltipProvider, type TooltipProps } from './Tooltip';
 export { ThemeSwitcher } from './ThemeSwitcher';
