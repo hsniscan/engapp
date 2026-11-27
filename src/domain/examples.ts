@@ -195,15 +195,20 @@ export interface CardSentence {
   context: string | null;
   /** Show the translation only on tap (example sentences, unless settings say otherwise). */
   trOnTap?: boolean;
-  /** v0.5 İP10: 'text' = a sentence from one of the user's own reading texts (device only). */
-  origin?: 'text';
+  /**
+   * v0.5 İP10: 'text' = a sentence from one of the user's own reading texts (device only).
+   * 'bank' = the word bank's example, leading instead of a weak source sentence (2026-11-26 #5).
+   */
+  origin?: 'text' | 'bank';
 }
 
 /**
  * The sentences a card rotates through: the source sentence first, then sentences from the
  * user's own texts (v0.5 İP10, `own`), then the example sentences of the selected contexts
  * taken in turn (one per context, then the next one…), without skipped ones. `needSpan`
- * (cloze) keeps only sentences where the term is located.
+ * (cloze) keeps only sentences where the term is located. `lead` (the word bank's example,
+ * domain/bankExample.ts) takes the source sentence's place when that one is weak; the back
+ * of the card then shows the source sentence as "Senin örneğin".
  */
 export function rotationSentences(
   sense: Pick<Sense, 'source_sentence' | 'source_sentence_tr' | 'span'>,
@@ -211,9 +216,12 @@ export function rotationSentences(
   selected: readonly string[],
   needSpan: boolean,
   own: readonly { text: string; span: Span; tr: string | null }[] = [],
+  lead: { text: string; span: Span; tr: string } | null = null,
 ): CardSentence[] {
   const out: CardSentence[] = [];
-  if (sense.source_sentence && (!needSpan || isValidSpan(sense.source_sentence, sense.span))) {
+  if (lead) {
+    out.push({ text: lead.text, span: lead.span, tr: lead.tr, exampleId: null, context: null, origin: 'bank' });
+  } else if (sense.source_sentence && (!needSpan || isValidSpan(sense.source_sentence, sense.span))) {
     out.push({
       text: sense.source_sentence,
       span: sense.span,
@@ -234,6 +242,7 @@ export function rotationSentences(
   for (let round = 0; lists.some((l) => l.length > round); round++) {
     for (const l of lists) {
       const item = l[round];
+      if (item && lead && item.text.trim().toLowerCase() === lead.text.trim().toLowerCase()) continue;
       if (item) out.push({ text: item.text, span: item.span, tr: item.tr, exampleId: item.id, context: item.context });
     }
   }

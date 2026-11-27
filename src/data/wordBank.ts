@@ -8,7 +8,8 @@ import {
   wordBankRowSchema,
   type WordBankRow,
 } from '../../supabase/functions/_shared/wordbank-contract';
-import type { Id, Millis } from '../domain/types';
+import { type BankExample, leadingBankExample } from '../domain/bankExample';
+import type { Id, Millis, Note, Sense } from '../domain/types';
 import { entryFromRow, type OwnedTerms, type WordBankEntry } from '../domain/wordBank';
 import { addNotesBulk, type AddNoteInput } from './actions';
 import { db } from './db';
@@ -75,6 +76,26 @@ export async function applyWordBankPage(
 
 export async function listWordBank(): Promise<WordBankEntry[]> {
   return db.word_bank.toArray();
+}
+
+/**
+ * 2026-11-26 #5: for each sense of a note whose own sentence is missing or weak, the word
+ * bank's example that leads in the word detail (domain/bankExample.ts), by sense id. Reads
+ * the shared bank only; never writes. Safe in useLiveQuery.
+ */
+export async function getLeadingBankExamples(
+  note: Pick<Note, 'term' | 'term_norm'>,
+  senses: readonly Sense[],
+): Promise<Map<Id, BankExample>> {
+  const out = new Map<Id, BankExample>();
+  if (senses.length === 0) return out;
+  const entries = await db.word_bank.where('lemma_norm').equals(note.term_norm).toArray();
+  if (entries.length === 0) return out;
+  for (const s of senses) {
+    const ex = leadingBankExample(note.term, s, senses.length, entries);
+    if (ex) out.set(s.id, ex);
+  }
+  return out;
 }
 
 export async function countWordBank(): Promise<number> {
