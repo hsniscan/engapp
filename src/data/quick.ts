@@ -4,7 +4,8 @@
 // dictionary rows this device has seen). Both are read only; adding goes through the normal
 // add paths (addFromWordBank / addNoteWithSenses), so the card is the user's own like any other.
 import { IMAGE_TARGET, pickImage, rejectedImageIds } from '../domain/images';
-import { normalizeTerm } from '../domain/normalize';
+import { isDuplicateSense } from '../../supabase/functions/_shared/text';
+import { normalizeMeaningTr, normalizeTerm } from '../domain/normalize';
 import type { CefrLevel, Id, LexiconSense, Millis } from '../domain/types';
 import type { WordBankEntry } from '../domain/wordBank';
 import { addNoteWithSenses } from './actions';
@@ -21,6 +22,12 @@ export interface QuickSense {
   /** The bank's own example sentence (not the user's text). */
   example_en: string | null;
   lexicon_sense_id: Id | null;
+  /**
+   * The user's card already has this meaning (same dictionary sense or the same meaning in
+   * other words): it is shown, but not picked, and "Karta ekle" would skip it (review
+   * 2026-11-26 ekle.md #8).
+   */
+  owned?: boolean;
 }
 
 /** One meaning of the user's own card (their override wins). */
@@ -84,9 +91,11 @@ async function pictureFor(lexiconSenseIds: readonly Id[]): Promise<QuickPicture 
   return null;
 }
 
+type MineSense = { meaning_tr: string; pos: string | null; lexicon_sense_id: Id | null };
+
 async function ownedStatus(
   forms: readonly string[],
-): Promise<Pick<QuickPreview, 'owned' | 'mine'>> {
+): Promise<Pick<QuickPreview, 'owned' | 'mine'> & { mineSenses: MineSense[] }> {
   for (const f of forms) {
     const notes = (await db.notes.where('term_norm').equals(f).toArray()).filter(
       (n) => n.deleted_at === null,
@@ -100,16 +109,33 @@ async function ownedStatus(
     )
       .filter((x) => x.deleted_at === null)
       .sort((a, b) => a.sense_no - b.sense_no);
+    const mineSenses = senses.map((x) => ({
+      meaning_tr: (x.meaning_tr_override ?? x.meaning_tr).trim(),
+      pos: x.pos,
+      lexicon_sense_id: x.lexicon_sense_id,
+    }));
     return {
       owned: 'carded',
-      mine: senses.map((x) => ({
-        meaning_tr: (x.meaning_tr_override ?? x.meaning_tr).trim(),
-        pos: x.pos,
-      })),
+      mine: mineSenses.map(({ meaning_tr, pos }) => ({ meaning_tr, pos })),
+      mineSenses,
     };
   }
   const known = await getKnownTermKeys();
-  return { owned: forms.some((f) => known.has(f)) ? 'known' : null, mine: [] };
+  return { owned: forms.some((f) => known.has(f)) ? 'known' : null, mine: [], mineSenses: [] };
+}
+
+/** Marks the senses the user's card already has, by the same rule the add path skips them. */
+export function markOwnedSenses(senses: QuickSense[], mine: readonly MineSense[]): QuickSense[] {
+  if (!mine.length) return senses;
+  return senses.map((s) => {
+    const owned = mine.some(
+      (m) =>
+        (!!s.lexicon_sense_id && m.lexicon_sense_id === s.lexicon_sense_id) ||
+        normalizeMeaningTr(m.meaning_tr) === normalizeMeaningTr(s.meaning_tr) ||
+        isDuplicateSense(m, { pos: s.pos, meaning_tr: s.meaning_tr }),
+    );
+    return owned ? { ...s, owned: true } : s;
+  });
 }
 
 function fromBank(entries: WordBankEntry[]): QuickSense[] {
@@ -145,13 +171,13 @@ export async function quickPreview(
   forms: readonly string[],
 ): Promise<QuickPreview> {
   const keys = forms.length ? forms : [normalizeTerm(selected)];
-  const { owned, mine } = await ownedStatus(keys);
+  const { owned, mine, mineSenses } = await ownedStatus(keys);
   for (const form of keys) {
     const bank = (await db.word_bank.where('lemma_norm').equals(form).toArray()).sort(
       (a, b) => (b.zipf ?? -1) - (a.zipf ?? -1) || a.pos.localeCompare(b.pos),
     );
     if (bank.length) {
-      const senses = fromBank(bank);
+      const senses = markOwnedSenses(fromBank(bank), mineSenses);
       const lex = await db.lexicon_cache.where('lemma_norm').equals(form).first();
       return {
         term: bank[0]!.lemma,
@@ -177,7 +203,7 @@ export async function quickPreview(
         origin: 'lexicon',
         ipa: lex.find((s) => s.ipa)?.ipa ?? null,
         cefr: lex.find((s) => s.cefr)?.cefr ?? null,
-        senses: fromLexicon(lex),
+        senses: markOwnedSenses(fromLexicon(lex), mineSenses),
         bank: [],
         lexiconTermId: lex[0]!.term_id,
         owned,

@@ -131,7 +131,7 @@ describe('QuickSheet (presentational)', () => {
         onClose={() => {}}
       />,
     );
-    expect(screen.getByRole('status')).toHaveTextContent(/telefonunda yok/);
+    expect(screen.getByRole('status')).toHaveTextContent(/bu cihazda yok/);
     expect(screen.queryByRole('button', { name: 'Karta ekle' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Anlamını kendim yazayım' }));
     expect(onWriteOwn).toHaveBeenCalled();

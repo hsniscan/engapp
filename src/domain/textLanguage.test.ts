@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { guessTextLanguage } from './textLanguage';
+import { guessTextLanguage, looksTurkishTerm } from './textLanguage';
 
 describe('guessTextLanguage', () => {
   it('a Turkish paragraph is Turkish (review 2026-11-26 #8)', () => {
@@ -13,7 +13,9 @@ describe('guessTextLanguage', () => {
 
   it('Turkish typed without Turkish letters is still Turkish', () => {
     expect(
-      guessTextLanguage('Bu metin cok guzel ve ben bunu okumak icin biraz zaman ayirdim ama hic bitmedi.'),
+      guessTextLanguage(
+        'Bu metin cok guzel ve ben bunu okumak icin biraz zaman ayirdim ama hic bitmedi.',
+      ),
     ).toBe('tr');
   });
 
@@ -25,12 +27,16 @@ describe('guessTextLanguage', () => {
       ),
     ).toBe('en');
     expect(
-      guessTextLanguage('IT WAS THE BEST OF TIMES, IT WAS THE WORST OF TIMES, IT WAS THE AGE OF WISDOM.'),
+      guessTextLanguage(
+        'IT WAS THE BEST OF TIMES, IT WAS THE WORST OF TIMES, IT WAS THE AGE OF WISDOM.',
+      ),
     ).toBe('en');
   });
 
   it('a list of English words, a short text and a mixed text are let through', () => {
-    expect(guessTextLanguage('abandon abate abide ability abroad absence absolute absorb')).toBe('en');
+    expect(guessTextLanguage('abandon abate abide ability abroad absence absolute absorb')).toBe(
+      'en',
+    );
     expect(guessTextLanguage('Çok güzel bir gün')).toBe('en');
     expect(
       guessTextLanguage(
@@ -40,13 +46,23 @@ describe('guessTextLanguage', () => {
   });
 
   it('a text in another script or another Latin language is not English', () => {
-    expect(guessTextLanguage('Сегодня утром я рано встал и пошёл гулять в парк с моей собакой.')).toBe(
-      'other',
-    );
+    expect(
+      guessTextLanguage('Сегодня утром я рано встал и пошёл гулять в парк с моей собакой.'),
+    ).toBe('other');
     expect(
       guessTextLanguage(
         'Über den Wolken muss die Freiheit wohl grenzenlos sein. Alle Ängste, alle Sorgen, sagt man, blieben darunter verborgen.',
       ),
     ).toBe('other');
   });
+});
+
+describe('looksTurkishTerm (ekle.md #9)', () => {
+  it.each(['çalışmak', 'ÇOK', 'şemsiye', 'İstanbul ğüşıöç', 'ısrar etmek', 'gönül'])(
+    '%j → true',
+    (w) => expect(looksTurkishTerm(w)).toBe(true),
+  );
+  it.each(['give up', 'postpone', 'naive', 'café', 'kitap'])('%j → false', (w) =>
+    expect(looksTurkishTerm(w)).toBe(false),
+  );
 });

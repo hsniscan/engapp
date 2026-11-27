@@ -16,9 +16,10 @@ import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } fr
 import { db } from '@/data';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { LIMITS } from '@/domain/limits';
+import { TYPED_TERM_MAX } from '@/domain/limits';
 import { MineMeanings, SenseChoices } from '@/features/quick/QuickSheet';
 import { useTermLookup } from '@/features/quick/useTermLookup';
+import { useAuth } from '@/features/auth/session';
 import { SignInNeeded } from './SignInNeeded';
 import {
   Badge,
@@ -231,10 +232,12 @@ function WordAdd({
   const [term, setTerm] = useState('');
   const [query, setQuery] = useState('');
   const hintId = useId();
+  // A guest is not told that AI finds the meaning: that needs an account (3.11).
+  const auth = useAuth();
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    const clean = term.trim().slice(0, LIMITS.term);
+    const clean = term.trim().slice(0, TYPED_TERM_MAX);
     if (!clean) {
       inputRef.current?.focus();
       return;
@@ -268,7 +271,7 @@ function WordAdd({
             autoCapitalize="none"
             spellCheck={false}
             enterKeyHint="search"
-            maxLength={LIMITS.term}
+            maxLength={TYPED_TERM_MAX}
             data-testid="add-word-input"
             fieldClassName="min-w-0 flex-1"
             className="font-serif text-lead"
@@ -279,7 +282,13 @@ function WordAdd({
         </div>
         {!query && (
           <p id={hintId} className="px-1 text-meta text-fg-muted">
-            {t('addSheet.word.label')}
+            {t(
+              auth.status === 'guest'
+                ? 'addSheet.word.labelGuest'
+                : auth.status === 'unavailable'
+                  ? 'addSheet.word.labelLocal'
+                  : 'addSheet.word.label',
+            )}
           </p>
         )}
       </form>
@@ -394,6 +403,11 @@ function WordResult({
           </span>
         )}
         {preview?.cefr && <Badge tone="outline">{preview.cefr}</Badge>}
+        {preview?.owned && (
+          <Badge tone={preview.owned === 'carded' ? 'accent' : 'neutral'} dot>
+            {t(`quick.owned.${preview.owned}`)}
+          </Badge>
+        )}
       </div>
       {mine.length > 0 && <MineMeanings mine={mine} />}
       {loading ? (
@@ -412,13 +426,15 @@ function WordResult({
         <SignInNeeded title={t('addSheet.word.signIn')} testId="add-word-signin" />
       ) : (
         <Notice tone={lookup === 'failed' ? 'danger' : 'muted'}>
-          {t(
-            lookup === 'offline'
-              ? 'addSheet.word.offline'
-              : lookup === 'failed'
-                ? 'quick.failed'
-                : 'addSheet.word.notFound',
-          )}
+          {lookup === 'turkish'
+            ? t('quick.turkish', { term })
+            : t(
+                lookup === 'offline'
+                  ? 'addSheet.word.offline'
+                  : lookup === 'failed'
+                    ? 'quick.failed'
+                    : 'addSheet.word.notFound',
+              )}
         </Notice>
       )}
       {addError && (
@@ -430,13 +446,14 @@ function WordResult({
         <Button
           size="lg"
           fullWidth
-          leadingIcon="plus"
+          variant={senses.every((s) => s.owned) ? 'secondary' : 'primary'}
+          leadingIcon={senses.every((s) => s.owned) ? 'check' : 'plus'}
           loading={saving}
           disabled={loading || !picked.size}
           onClick={() => void add()}
           data-testid="add-word-save"
         >
-          {t('quick.add')}
+          {senses.every((s) => s.owned) ? t('quick.allOwned') : t('quick.add')}
         </Button>
       )}
       {!loading && manual}

@@ -67,3 +67,13 @@ export function guessTextLanguage(text: string): TextLanguageGuess {
   if ((otherLetters + trLetters) / n > 0.1 && en / n < 0.05) return 'other';
   return 'en';
 }
+
+/**
+ * Does a typed term look Turkish rather than English? True when it has a letter only Turkish
+ * uses (ç ğ ı İ ö ş ü, any case): "çalışmak", "ÇOK", "şemsiye". An English word with such a
+ * letter ("façade", "über") is rare, and callers only act on it when nothing on the device
+ * knows the word, so the check never blocks a real entry (review 2026-11-26, ekle.md #9).
+ */
+export function looksTurkishTerm(term: string): boolean {
+  return TR_LETTERS.test(term);
+}
