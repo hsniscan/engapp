@@ -3625,9 +3625,12 @@
     },
     "feedback": {
       "question": "How was this text for you?",
-      "hard": "Too hard",
-      "easy": "Too easy",
-      "thanks": "Thanks. Your next suggestions will take this into account."
+      "optional": "You can skip this if you like.",
+      "easy": "Easy",
+      "ok": "About right",
+      "hard": "Hard",
+      "thanks": "Thanks. Your next suggestions will take this into account.",
+      "thanksOk": "Thanks. Your reading difficulty stays as it is."
     },
     "word": {
       "lemma": "Dictionary form: {{lemma}}",

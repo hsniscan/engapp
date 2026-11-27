@@ -258,8 +258,9 @@ test('W4 screens: Keşfet, library, reader, word sheet, settings, end of text, M
   await page.getByTestId('reader-finish').scrollIntoViewIfNeeded();
   await shot(page, '11-metin-sonu');
   await page.getByTestId('reader-finish').click();
-  await expect(page.getByRole('button', { name: 'Çok zor' })).toBeVisible();
-  await page.getByRole('button', { name: 'Çok kolay' }).click();
+  await expect(page.getByRole('button', { name: 'Zordu' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Kolaydı' })).toBeVisible();
+  await page.getByRole('button', { name: 'Uygundu' }).click();
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
   await shot(page, '12-metin-bitti');
 
