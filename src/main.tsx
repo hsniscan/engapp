@@ -6,6 +6,8 @@ import { initTheme } from '@/ui/theme';
 import { App } from '@/app/App';
 import { bootstrap } from '@/features/settings/bootstrap';
 import { registerServiceWorker, watchSchemaReplaced } from '@/app/pwa';
+import { router } from '@/app/router';
+import { startWebBack } from '@/app/webBack';
 import { isNativeApp } from '@/native/platform';
 import { bootedAsQuickHost } from '@/native/quickHost';
 
@@ -21,7 +23,14 @@ if (isNativeApp()) {
   void import('@/native/start')
     .then((m) => m.startNative())
     .catch((e: unknown) => console.warn('native start failed', e));
-} else registerServiceWorker();
+} else {
+  registerServiceWorker();
+  // Browser/PWA Back closes an open dialog or sheet first (ADR 0090), like the app's back button.
+  startWebBack({
+    navigating: () => router.state.navigation.state !== 'idle',
+    subscribe: (fn) => router.subscribe(fn),
+  });
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
