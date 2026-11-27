@@ -1904,6 +1904,8 @@
     "errorBody": "Bağlantını kontrol edip tekrar dene ya da şimdilik misafir olarak devam et. Verilerin bu cihazda güvende.",
     "continueAsGuest": "Misafir olarak devam et",
     "done": "Hesabına bağlandın",
+    "doneMoved_one": "{{count}} kelimen hesabına taşındı, artık eşitleniyor",
+    "doneMoved_other": "{{count}} kelimen hesabına taşındı, artık eşitleniyor",
     "doneCopied": "{{count}} kelime yeni kart olarak kopyalandı.",
     "doneDuplicates": "{{count}} kelime “olası kopya” olarak işaretlendi; Kelimelerim'de gözden geçirebilirsin.",
     "discardAccountConfirm": "Anladım: hesabımdaki kartlar bütün cihazlarımda silinecek."

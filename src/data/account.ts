@@ -35,6 +35,11 @@ export async function hasLocalUserData(): Promise<boolean> {
   return notes + logs + sources > 0;
 }
 
+/** The learner's words on this device (live notes), for "20 kelimen hesabına taşındı". */
+export async function countLocalWords(): Promise<number> {
+  return scanCount(db.notes, (n: Note) => n.deleted_at === null);
+}
+
 /** user_id the local rows belong to (null: guest data). */
 export async function getLinkedUserId(): Promise<string | null> {
   return (await getMeta<string | null>(META.userId)) ?? null;

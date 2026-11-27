@@ -1904,6 +1904,8 @@
     "errorBody": "Check your connection and try again, or continue as a guest for now. Your data is safe on this device.",
     "continueAsGuest": "Continue as guest",
     "done": "Connected to your account",
+    "doneMoved_one": "{{count}} word moved to your account and now syncs",
+    "doneMoved_other": "{{count}} words moved to your account and now sync",
     "doneCopied": "{{count}} words were copied as new cards.",
     "doneDuplicates": "{{count}} words were marked “possible duplicate”; you can review them in Kelimelerim (My words).",
     "discardAccountConfirm": "I understand: my account's cards will be deleted on all my devices."

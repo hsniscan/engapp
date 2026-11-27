@@ -9,6 +9,7 @@ import { useSyncExternalStore } from 'react';
 import {
   claimLocalData,
   copyCardsFromOtherAccount,
+  countLocalWords,
   countPossibleDuplicates,
   discardAccountData,
   discardLocalData,
@@ -35,7 +36,7 @@ export type LinkState =
   | { phase: 'choose'; userId: string; otherAccount: boolean }
   | { phase: 'applying'; userId: string; choice: LinkChoice; otherAccount: boolean }
   | { phase: 'error'; userId: string; message: string }
-  | { phase: 'done'; userId: string; duplicates: number; copied?: number };
+  | { phase: 'done'; userId: string; duplicates: number; copied?: number; moved?: number };
 
 let state: LinkState = { phase: 'idle' };
 const listeners = new Set<() => void>();
@@ -71,16 +72,18 @@ async function serverHasData(t: SyncTransport): Promise<boolean> {
   return page.rows.length > 0 || page.invalid.length > 0;
 }
 
-async function finish(userId: string, copied?: number): Promise<void> {
+async function finish(userId: string, copied?: number, moved?: number): Promise<void> {
   const { engine } = need();
   await engine.isActive();
   await engine.sync({ force: true });
   const duplicates = await countPossibleDuplicates();
-  set(
-    copied === undefined
-      ? { phase: 'done', userId, duplicates }
-      : { phase: 'done', userId, duplicates, copied },
-  );
+  set({
+    phase: 'done',
+    userId,
+    duplicates,
+    ...(copied === undefined ? {} : { copied }),
+    ...(moved ? { moved } : {}),
+  });
 }
 
 /** Run after every sign-in (and on start with a restored session). */
@@ -101,14 +104,17 @@ export async function linkAccount(userId: string): Promise<void> {
       set({ phase: 'choose', userId, otherAccount: linked !== null });
       return;
     }
+    let moved = 0;
     if (linked !== null) {
       // Only another account's leftovers (settings): never carried over.
       await discardLocalData(userId);
     } else {
       if (remote) await dropLocalSettings(); // nothing local worth keeping: take the account's settings
+      // The guest's words go into the (empty) account: the toast says how many.
+      if (local) moved = await countLocalWords();
       await claimLocalData(userId);
     }
-    await finish(userId);
+    await finish(userId, undefined, moved);
   } catch (e) {
     void logError(e, 'auth.link');
     set({ phase: 'error', userId, message: e instanceof Error ? e.message : String(e) });
