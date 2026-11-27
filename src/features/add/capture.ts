@@ -6,6 +6,7 @@
 import { createImportJob, getImportJob, getSettings } from '@/data';
 import { getText, renameText, saveText } from '@/data/texts';
 import { chunkText } from '@/domain/chunking';
+import { guessTextLanguage, type TextLanguageGuess } from '@/domain/textLanguage';
 import { MAX_TEXT_CHARS, type TextKind } from '@/domain/texts';
 import type { Id } from '@/domain/types';
 import { kickImportQueue } from '@/features/import/queue';
@@ -39,6 +40,20 @@ export function captureTitle(body: string, max = 60): string {
   const cut = line.slice(0, max);
   return `${cut.slice(0, Math.max(cut.lastIndexOf(' '), Math.floor(max / 3))).trimEnd()}…`;
 }
+
+/** extractCapture refused a text that does not look English; nothing was saved or sent. */
+export class NotEnglishTextError extends Error {
+  readonly lang: Exclude<TextLanguageGuess, 'en'>;
+  constructor(lang: Exclude<TextLanguageGuess, 'en'>) {
+    super(`capture: text looks ${lang}, not English`);
+    this.lang = lang;
+    this.name = 'NotEnglishTextError';
+  }
+}
+
+/** The message key for a refused extraction (Turkish, or another language). */
+export const notEnglishMessageKey = (e: NotEnglishTextError) =>
+  e.lang === 'tr' ? 'capture.notEnglishTr' : 'capture.notEnglish';
 
 const keyOf = (input: CaptureInput) => `${input.kind}\u0000${input.body}`;
 
@@ -77,6 +92,10 @@ export function saveCapture(input: CaptureInput, fallbackTitle = ''): Promise<Id
  * Resolves to the import job id; the screen opens /import/:id. Once per text and session.
  */
 export function extractCapture(input: CaptureInput, fallbackTitle = ''): Promise<string> {
+  // A Turkish (or other non-English) text is not sent to the AI at all: it would only spend
+  // an extraction and come back with "0 aday" (review 2026-11-26 #8).
+  const lang = guessTextLanguage(input.body);
+  if (lang !== 'en') return Promise.reject(new NotEnglishTextError(lang));
   const key = keyOf(input);
   const prev = jobs.get(key);
   const p = (async () => {

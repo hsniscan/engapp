@@ -233,7 +233,9 @@
     "extractSignIn": "Picking out words is done by AI, so sign in for it. Reading needs no account.",
     "signInCta": "Sign in with Google",
     "extractUnavailable": "Word extraction is off in this version. The reader always works.",
-    "readText": "Read the text"
+    "readText": "Read the text",
+    "notEnglishTr": "This text looks Turkish. Word extraction is for English texts; try an English one. You can still open it in the reader.",
+    "notEnglish": "This text does not look English. Word extraction only works on English texts. You can still open it in the reader."
   },
   "review": {
     "title": "Review",
@@ -2056,6 +2058,7 @@
         "too_hard": "These list entries are more than one level above yours. They are not selected; you can add them."
       },
       "forYouEmpty": "This text has no new words at level {{level}}. Have a look at the easy section.",
+      "forYouEmptyNoEasy": "This text has no new words at level {{level}}.",
       "selectAllIn": "{{section}}: select all",
       "selectNoneIn": "{{section}}: select none",
       "knowIt": "{{term}}: I know it",

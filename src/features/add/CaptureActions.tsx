@@ -9,7 +9,13 @@ import { readerPath } from '@/domain/texts';
 import { useAuth } from '@/features/auth/session';
 import { Button, Card, cn, Icon } from '@/ui';
 import { closeAddSheet } from './addSheetStore';
-import { extractCapture, saveCapture, type CaptureInput } from './capture';
+import {
+  extractCapture,
+  notEnglishMessageKey,
+  NotEnglishTextError,
+  saveCapture,
+  type CaptureInput,
+} from './capture';
 import { ChoiceButton } from './ui';
 
 export interface CaptureActionsProps {
@@ -34,6 +40,8 @@ export function CaptureActions({
   const auth = useAuth();
   const [busy, setBusy] = useState<'reader' | 'extract' | null>(null);
   const [failed, setFailed] = useState<'reader' | 'extract' | null>(null);
+  // "Bu metin Türkçe görünüyor": extraction was not started (review 2026-11-26 #8).
+  const [notEnglish, setNotEnglish] = useState<string | null>(null);
   // The reader's code is fetched while the user looks at the choices, so it opens at once
   // (and offline).
   useEffect(() => {
@@ -45,6 +53,7 @@ export function CaptureActions({
     if (!v) return;
     setBusy(which);
     setFailed(null);
+    setNotEnglish(null);
     try {
       const fallback = t('reader.open.defaultTitle');
       const to =
@@ -54,9 +63,13 @@ export function CaptureActions({
       closeAddSheet();
       void navigate(to);
     } catch (e) {
+      setBusy(null);
+      if (e instanceof NotEnglishTextError) {
+        setNotEnglish(t(notEnglishMessageKey(e)));
+        return;
+      }
       void logError(e, `capture.${which}`);
       setFailed(which);
-      setBusy(null);
     }
   };
 
@@ -97,6 +110,11 @@ export function CaptureActions({
       ) : auth.status === 'unavailable' ? (
         <p className="px-1 text-meta text-fg-muted">{t('capture.extractUnavailable')}</p>
       ) : null}
+      {notEnglish && (
+        <p role="alert" className="px-1 text-meta text-warn-text" data-testid="capture-not-english">
+          {notEnglish}
+        </p>
+      )}
       {failed && (
         <p role="alert" className="px-1 text-meta text-danger-text">
           {failed === 'reader' ? t('article.saveFailed') : t('article.extractFailed')}

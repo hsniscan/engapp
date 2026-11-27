@@ -100,6 +100,25 @@ describe('import panels', () => {
     expect(text?.body).toMatch(/^After years of trying/);
   });
 
+  it('a pasted Turkish text is not sent for extraction; the screen says why (review #8)', async () => {
+    const user = userEvent.setup();
+    renderAt('/', [
+      { path: '/', element: <TextImportPanel /> },
+      { path: '/import/:jobId', element: <p>job page</p> },
+    ]);
+    await user.click(screen.getByRole('textbox', { name: 'İngilizce metin' }));
+    await user.paste(
+      'Bugün sabah erkenden kalktım ve parka yürüyüşe gittim. Hava çok güzeldi, ama biraz ' +
+        'soğuktu. Sonra bir kafede kahve içtim ve kitabımı okudum.',
+    );
+    await user.click(screen.getByRole('button', { name: /Bu metindeki kelimeleri çıkar/ }));
+    expect(await screen.findByTestId('capture-not-english')).toHaveTextContent(
+      'Bu metin Türkçe görünüyor.',
+    );
+    expect(screen.queryByText('job page')).toBeNull();
+    expect(await db.import_jobs.count()).toBe(0);
+  });
+
   it('the PDF panel rejects a non-PDF file with a clear message', async () => {
     const user = userEvent.setup({ applyAccept: false });
     const { container } = render(
