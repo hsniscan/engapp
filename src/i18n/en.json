@@ -260,6 +260,7 @@
     "noVoice": "No speech: this device has no English voice",
     "voiceFailed": "No sound",
     "voiceFailedHelp": "Your phone's text-to-speech engine can't read English. On Android: Settings → Accessibility (or General management) → Text-to-speech output → Preferred engine: Speech Services by Google, then download the English (US) voice data. Also check silent mode and media volume.",
+    "voiceFailedHelpWeb": "This browser found no English voice. Add an English text-to-speech voice in your device settings or try another browser. Check the volume too.",
     "speakSentence": "Play sentence",
     "menu": "Card options",
     "undoLast": "Undo last answer",

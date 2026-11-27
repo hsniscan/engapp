@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import i18n from '@/i18n';
+import { isNativeApp } from '@/native/platform';
 import { toast } from '@/ui';
 
 import { playPronunciation, pronunciationSupported } from './pronunciation';
@@ -57,7 +58,9 @@ function reportFailure() {
   lastFailureToast = now;
   toast({
     title: i18n.t('review.voiceFailed'),
-    description: i18n.t('review.voiceFailedHelp'),
+    // This is the browser's voice; the Android app speaks through src/native/tts.ts, whose help
+    // names Android's settings. On the web the steps would be wrong (2026-11-26 #6).
+    description: i18n.t(isNativeApp() ? 'review.voiceFailedHelp' : 'review.voiceFailedHelpWeb'),
     tone: 'danger',
     duration: 10_000,
   });
