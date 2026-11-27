@@ -15,7 +15,7 @@
 import { z } from 'zod';
 import { HARD_MIN_DIFFICULTY, HARD_MIN_LAPSES, HARD_WINDOW_MS } from './practice';
 import { cardStage, WORD_STAGES, type WordStage } from './stages';
-import { hasTag, tagKey } from './tags';
+import { cleanTag, hasTag, sameTag, tagKey } from './tags';
 import { type Card, CardState, type CefrLevel, type Id, type Millis, type Note } from './types';
 
 export const DECK_FILTER_VERSION = 1;
@@ -320,4 +320,35 @@ export function orderDecks<T extends DeckLike>(decks: readonly T[]): T[] {
 export function cleanDeckName(raw: string): string {
   const s = raw.normalize('NFC').replace(/\s+/g, ' ').trim();
   return [...s].slice(0, MAX_DECK_NAME).join('').trim();
+}
+
+/**
+ * A deck made with "Elle seç": its only criterion is one tag spelled like its name. Renaming
+ * such a deck renames the tag too (data/decks.ts updateDeck), so the two stay in step. A
+ * "Kurallarla" deck that only asks for one tag has its own name and is not hand-picked.
+ */
+export function isHandPickedDeck(f: DeckFilter, name: string): boolean {
+  return f.tags?.length === 1 && criteriaCount(f) === 1 && sameTag(f.tags[0]!, cleanTag(name));
+}
+
+/** The single tag of a deck whose only criterion is that tag (hand-picked or suggested). */
+export function soleDeckTag(f: DeckFilter | null): string | null {
+  return f && f.tags?.length === 1 && criteriaCount(f) === 1 ? f.tags[0]! : null;
+}
+
+/**
+ * What kind of deck a row is, for its label: added from a suggested deck (its one tag is a
+ * suggestion title), hand-picked ("Elle seç"), or a rules deck ("Kurallarla", also the
+ * "Zorlandıklarım" deck). `isSuggestionTag` says whether a tag is a suggestion title.
+ */
+export type DeckKind = 'suggested' | 'manual' | 'rules';
+export function deckKind(
+  name: string,
+  f: DeckFilter | null,
+  isSuggestionTag: (tag: string) => boolean,
+): DeckKind {
+  if (!f) return 'rules';
+  const tag = soleDeckTag(f);
+  if (tag && isSuggestionTag(tag)) return 'suggested';
+  return isHandPickedDeck(f, name) ? 'manual' : 'rules';
 }

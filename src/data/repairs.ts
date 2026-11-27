@@ -52,7 +52,14 @@ const meaningOf = (s: Sense): string => s.meaning_tr_override?.trim() || s.meani
  * from the lexicon) with the same example sentence.
  */
 function sameSense(a: Sense, b: Sense): boolean {
-  if (isDuplicateSense({ pos: a.pos, meaning_tr: meaningOf(a) }, { pos: b.pos, meaning_tr: meaningOf(b) })) return true;
+  // Only senses with a known part of speech: senses typed by hand are left as the user kept
+  // them (the add path stops new hand-written duplicates; review 2026-11-26 #4).
+  if (
+    !!a.pos &&
+    !!b.pos &&
+    isDuplicateSense({ pos: a.pos, meaning_tr: meaningOf(a) }, { pos: b.pos, meaning_tr: meaningOf(b) })
+  )
+    return true;
   return (
     !!a.lexicon_sense_id &&
     !!b.lexicon_sense_id &&

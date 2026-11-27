@@ -467,7 +467,15 @@ function CandidateList({ job, rows }: { job: ImportJobRecord; rows: ImportCandid
                     {t(`importer.preview.sectionHints.${s}`, { level: job.level })}
                   </p>
                   {s === 'for_you' && !sections.for_you.some((r) => r.cefr === job.level) && (
-                    <Notice>{t('importer.preview.forYouEmpty', { level: job.level })}</Notice>
+                    // Point to "Kolay" only when that section is on screen (review 2026-11-26 #8).
+                    <Notice>
+                      {t(
+                        shownSections.includes('easy')
+                          ? 'importer.preview.forYouEmpty'
+                          : 'importer.preview.forYouEmptyNoEasy',
+                        { level: job.level },
+                      )}
+                    </Notice>
                   )}
                   {visible.length === 0 ? (
                     total > 0 && (

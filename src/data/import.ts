@@ -5,7 +5,7 @@
 import type { AiFalseFriend } from '../../supabase/functions/_shared/contracts';
 import { stripListEntry } from '../../supabase/functions/_shared/listEntry';
 import { isDuplicateSense } from '../../supabase/functions/_shared/text';
-import { normalizeTerm } from '../domain/normalize';
+import { normalizeMeaningTr, normalizeTerm } from '../domain/normalize';
 import type {
   CandidateUserStatus,
   CefrLevel,
@@ -268,12 +268,12 @@ export async function userStatusOf(
   const senses: Sense[] = (await db.senses.where('note_id').anyOf(notes.map((n) => n.id)).toArray()).filter(
     (s) => s.deleted_at === null,
   );
-  const key = meaning ? normalizeTerm(meaning) : null;
+  const key = meaning ? normalizeMeaningTr(meaning) : null;
   const sentenceKey = sentence?.trim() ? normalizeTerm(sentence) : null;
   const same = senses.some(
     (s) =>
       (lexiconSenseId !== null && s.lexicon_sense_id === lexiconSenseId) ||
-      (key !== null && normalizeTerm(s.meaning_tr_override?.trim() || s.meaning_tr) === key) ||
+      (key !== null && normalizeMeaningTr(s.meaning_tr_override?.trim() || s.meaning_tr) === key) ||
       (meaning !== null && isDuplicateSense({ pos: s.pos, meaning_tr: s.meaning_tr_override?.trim() || s.meaning_tr }, { pos, meaning_tr: meaning })) ||
       (sentenceKey !== null && !!s.source_sentence && normalizeTerm(s.source_sentence) === sentenceKey),
   );

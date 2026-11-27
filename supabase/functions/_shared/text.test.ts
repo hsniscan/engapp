@@ -7,6 +7,7 @@ import {
   glossSimilarity,
   isDuplicateSense,
   isNearDuplicateGloss,
+  isNestedMeaningTr,
   isSameMeaningTr,
   meaningAlternatives,
   normalizeLemma,
@@ -115,6 +116,22 @@ describe('Turkish meaning overlap (semantic duplicate senses)', () => {
     expect(isSameMeaningTr('kıyı', 'kıyı, sahil')).toBe(true);
   });
 
+  it('lower-cases with Turkish rules (İ = i, I = ı)', () => {
+    expect(meaningAlternatives('İhmal etmek')).toEqual(['ihmal etmek']);
+    expect(meaningAlternatives('IŞIK')).toEqual(['ışık']);
+    expect(isSameMeaningTr('İsteksiz, gönülsüz; çekingen', 'isteksiz, gönülsüz; çekingen')).toBe(
+      true,
+    );
+  });
+
+  it('isNestedMeaningTr: one meaning contains the other', () => {
+    expect(isNestedMeaningTr('isteksiz', 'isteksiz, gönülsüz')).toBe(true);
+    expect(isNestedMeaningTr('İsteksiz, gönülsüz', 'isteksiz')).toBe(true);
+    expect(isNestedMeaningTr('ihmal etmek', 'İhmal etmek')).toBe(true);
+    expect(isNestedMeaningTr('kıyı, sahil', 'kıyı, banka')).toBe(false);
+    expect(isNestedMeaningTr('', 'kıyı')).toBe(false);
+  });
+
   it('different meanings are not merged', () => {
     expect(isSameMeaningTr('banka', 'kıyı')).toBe(false);
     expect(isSameMeaningTr('çalışmak', 'işlemek')).toBe(false);
@@ -136,12 +153,28 @@ describe('Turkish meaning overlap (semantic duplicate senses)', () => {
         { pos: 'verb', meaning_tr: 'işlemek' },
       ),
     ).toBe(false);
-    // Unknown part of speech (typed by hand): not merged on meaning overlap.
+    // Unknown part of speech (typed by hand, a CSV row): merged when one meaning contains
+    // the other (review 2026-11-26 #4), not on a shared part alone.
     expect(
       isDuplicateSense(
         { pos: null, meaning_tr: 'davet' },
         { pos: null, meaning_tr: 'davetiye, davet' },
       ),
+    ).toBe(true);
+    expect(
+      isDuplicateSense(
+        { pos: null, meaning_tr: 'isteksiz, gönülsüz' },
+        { pos: undefined, meaning_tr: 'isteksiz' },
+      ),
+    ).toBe(true);
+    expect(
+      isDuplicateSense({ pos: 'verb', meaning_tr: 'gelişmek' }, { meaning_tr: 'gelişmek, büyümek' }),
+    ).toBe(true);
+    expect(
+      isDuplicateSense({ pos: null, meaning_tr: 'kıyı, sahil' }, { pos: null, meaning_tr: 'kıyı, banka' }),
     ).toBe(false);
+    expect(isDuplicateSense({ pos: null, meaning_tr: 'banka' }, { pos: null, meaning_tr: 'kıyı' })).toBe(
+      false,
+    );
   });
 });

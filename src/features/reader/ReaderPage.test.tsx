@@ -119,7 +119,14 @@ describe('ReaderPage', () => {
     expect(await within(sheet).findByText('mutlu tesadüf')).toBeInTheDocument();
     await user.click(within(sheet).getByTestId('reader-add-card'));
     await within(sheet).findByText('Bu kelime kartlarında var.');
+    // Met in this text (2026-11-26 #11): counted at once, not "henüz karşılaşmadın".
+    await waitFor(() =>
+      expect(within(sheet).getByTestId('encounter-line')).toHaveTextContent(
+        'Bu kelimeyi 1 metinde gördün',
+      ),
+    );
     const note = (await db.notes.toArray()).find((n) => n.term_norm === 'serendipity')!;
+    expect(await db.encounters.where('note_id').equals(note.id).count()).toBe(1);
     const sense = (await db.senses.where('note_id').equals(note.id).toArray())[0]!;
     expect(sense).toMatchObject({
       meaning_tr: 'mutlu tesadüf',

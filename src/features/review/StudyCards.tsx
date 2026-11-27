@@ -17,7 +17,7 @@ import { LevelDialogButton } from '@/features/levels/LevelDetails';
 import { useCardLevel } from '@/features/levels/useWordLevel';
 import { useMnemonic } from '@/features/mnemonics';
 import { Badge, Card, cn, Eyebrow, Icon, Term } from '@/ui';
-import { BackSentence, Ipa, SenseList, Sentence, SpeakButton, type SpeakProps } from './CardFaces';
+import { BackSentence, Ipa, OwnSentence, SenseList, Sentence, SpeakButton, type SpeakProps } from './CardFaces';
 import { meaningOf, useModeLabel } from './study';
 import { StageChip } from './StageChip';
 
@@ -164,6 +164,7 @@ export function SentencePanel({ view, speech }: StudyCardProps) {
         speech={speech}
         align="start"
       />
+      <OwnSentence view={view} speech={speech} align="start" />
     </div>
   );
 }

@@ -221,3 +221,21 @@ test('CSV / word list: a typed list becomes the user’s own cards, no account',
     'recipe',
   ]);
 });
+
+test('CSV: a Turkish Excel file (Windows-1254) keeps its Turkish letters and header', async ({
+  page,
+}) => {
+  await page.goto('/import/csv');
+  // "İngilizce;Türkçe" / "thrive;gelişmek, büyümek" as Turkish Excel saves them (review #1).
+  const cp1254: Record<string, number> = { İ: 0xdd, ü: 0xfc, ç: 0xe7, ş: 0xfe, ğ: 0xf0, ı: 0xfd };
+  const text = 'İngilizce;Türkçe\r\nthrive;gelişmek, büyümek\r\nshore;kıyı\r\n';
+  const buffer = Buffer.from([...text].map((ch) => cp1254[ch] ?? ch.charCodeAt(0)));
+  await page
+    .getByTestId('word-list-file')
+    .setInputFiles({ name: 'kelimeler.csv', mimeType: 'text/csv', buffer });
+  await expect(page.getByLabel('Ya da listeyi buraya yapıştır')).toHaveValue(text.replace(/\r\n/g, '\n'));
+  // The header row is not a word; the two rows keep their Turkish letters.
+  await expect(page.getByText('2 kelime bulundu')).toBeVisible();
+  await expect(page.getByText('gelişmek, büyümek', { exact: true })).toBeVisible();
+  await expect(page.getByText('kıyı', { exact: true })).toBeVisible();
+});

@@ -3,6 +3,7 @@
 // server's push-send reads from the synced tables (push_candidates / push_due_counts), here from
 // Dexie, so guests and offline answers count too.
 import Dexie from 'dexie';
+import { availableAt } from '../domain/leech';
 import { REMINDER_HORIZON_DAYS } from '../domain/reminderSchedule';
 import { CardState, type Card, type Millis, type ReviewLog, type Settings } from '../domain/types';
 import { db } from './db';
@@ -60,7 +61,9 @@ export async function getReminderFacts(now: Millis = Date.now()): Promise<Remind
     dueTimes: dueParts
       .flat()
       .filter(studiable)
-      .map((c) => c.due)
+      // A resting card (ADR 0071) is due when its rest ends; past the horizon it drops out.
+      .map(availableAt)
+      .filter((t) => t < until)
       .sort((a, b) => a - b),
     secPerCard: medianSeconds(recent),
   };

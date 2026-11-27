@@ -3,7 +3,7 @@
 import { dayKeyOf } from '../domain/day';
 import { LIMITS, overLimit, truncateCodePoints } from '../domain/limits';
 import { applyRating, emptyFsrs, fsrsEqual, pickFsrs } from '../domain/fsrs';
-import { normalizeTerm } from '../domain/normalize';
+import { normalizeMeaningTr, normalizeTerm } from '../domain/normalize';
 import { isDuplicateSense } from '../../supabase/functions/_shared/text';
 import { canHaveCloze, isValidSpan } from '../domain/recognition';
 import { primaryRecognition } from '../domain/leech';
@@ -108,7 +108,7 @@ function assertSenseFits(
 }
 
 function meaningKey(s: Pick<Sense, 'meaning_tr' | 'meaning_tr_override'>): string {
-  return normalizeTerm(s.meaning_tr_override?.trim() || s.meaning_tr);
+  return normalizeMeaningTr(s.meaning_tr_override?.trim() || s.meaning_tr);
 }
 
 /**
@@ -388,7 +388,7 @@ async function addNoteInTx(
 
   for (const inp of input.senses) {
     const meaning = inp.meaning_tr_override?.trim() || inp.meaning_tr;
-    const key = normalizeTerm(meaning);
+    const key = normalizeMeaningTr(meaning);
     const sentence = inp.source_sentence?.trim() ? inp.source_sentence : null;
     const sentenceKey = input.one_sense_per_sentence && sentence ? normalizeTerm(sentence) : null;
     const matches = (s: Sense): boolean =>

@@ -27,6 +27,13 @@ export const isStruggling = (lapses: number): boolean => lapses >= STRUGGLING_LA
 export const isResting = (card: { rest_until?: number | null }, now: number): boolean =>
   card.rest_until != null && now < card.rest_until;
 
+/**
+ * When a card can next be shown: its due time, or the end of its rest when that is later
+ * (a resting card keeps its short relearning due, but it does not come before rest_until).
+ */
+export const availableAt = (card: { due: number; rest_until?: number | null }): number =>
+  card.rest_until != null && card.rest_until > card.due ? card.rest_until : card.due;
+
 export type RescuePath = 'false_friend' | 'mnemonic' | 'family';
 
 /**

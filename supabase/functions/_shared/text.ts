@@ -251,14 +251,16 @@ export function isCleanLexiconText(s: string, kind: 'en' | 'tr' | 'ipa'): boolea
 
 /**
  * The alternatives of a Turkish meaning ("davetiye, davet" -> ["davetiye", "davet"]):
- * split on "," ";" "/", NFC, lower-case, whitespace collapsed, edge spaces and periods
- * removed. The SQL twin is public.lexicon_meaning_alts() (migration 20261021001000).
+ * split on "," ";" "/", NFC, lower-case with Turkish rules ("İhmal" -> "ihmal", "Işık" ->
+ * "ışık"; plain toLowerCase made "İ" an "i" plus a combining dot, review 2026-11-26 #4),
+ * whitespace collapsed, edge spaces and periods removed. The SQL twin is
+ * public.lexicon_meaning_alts() (migration 20261021001000).
  */
 export function meaningAlternatives(meaning: string | null | undefined): string[] {
   if (!meaning) return [];
   const out = meaning
     .normalize('NFC')
-    .toLowerCase()
+    .toLocaleLowerCase('tr')
     .split(/[,;/]/)
     .map((a) => a.replace(/\s+/gu, ' ').replace(/^[ .]+|[ .]+$/g, ''))
     .filter(Boolean);
@@ -282,14 +284,35 @@ export function isSameMeaningTr(
 }
 
 /**
- * The semantic duplicate rule for two senses of one term: the same (known) part of speech
- * and an overlapping Turkish meaning. Two such senses would make the same flashcard ("davet"),
- * whatever their English glosses say. Free (no model call); applied before a new lexicon
- * sense is inserted and before a sense is added to a user's note.
+ * Is one Turkish meaning contained in the other? True when every alternative of one is an
+ * alternative of the other: "isteksiz" ~ "isteksiz, gönülsüz", "gelişmek" ~ "gelişmek,
+ * büyümek", "İhmal etmek" ~ "ihmal etmek"; not "kıyı, sahil" ~ "kıyı, banka" (they only
+ * share a part, which may be two senses of the word).
+ */
+export function isNestedMeaningTr(
+  a: string | null | undefined,
+  b: string | null | undefined,
+): boolean {
+  const ta = meaningAlternatives(a);
+  const tb = meaningAlternatives(b);
+  if (ta.length === 0 || tb.length === 0) return false;
+  const [small, big] = ta.length <= tb.length ? [ta, new Set(tb)] : [tb, new Set(ta)];
+  return small.every((x) => big.has(x));
+}
+
+/**
+ * The semantic duplicate rule for two senses of one term. With the same (known) part of
+ * speech: an overlapping Turkish meaning. When either has no part of speech (a hand-written
+ * or CSV sense): one meaning contains the other (isNestedMeaningTr). Two such senses would
+ * make the same flashcard ("davet"), whatever their English glosses say. Free (no model
+ * call); applied before a new lexicon sense is inserted and before a sense is added to a
+ * user's note. Two different known parts of speech are never duplicates.
  */
 export function isDuplicateSense(
   a: { pos?: string | null; meaning_tr: string | null | undefined },
   b: { pos?: string | null; meaning_tr: string | null | undefined },
 ): boolean {
-  return !!a.pos && a.pos === b.pos && isSameMeaningTr(a.meaning_tr, b.meaning_tr);
+  if (a.pos && b.pos)
+    return a.pos === b.pos && isSameMeaningTr(a.meaning_tr, b.meaning_tr);
+  return isNestedMeaningTr(a.meaning_tr, b.meaning_tr);
 }

@@ -140,7 +140,7 @@ function StreakFooter({ data, done }: { data: HeroData; done: boolean }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   return (
-    <div className="flex items-center gap-4 border-t border-border pt-4">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-4">
       <WeekStrip week={data.activity.week} />
       <button
         type="button"

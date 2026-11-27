@@ -237,7 +237,9 @@
   --duration-micro: 120ms;
   --duration-medium: 280ms;
   --duration-large: 520ms;
-  --nav-height: 64px;
+  /* 64 px at the default text size; grows with large text (160 %) so the tab labels stay inside
+     the bar, capped so it never eats the screen (review 2026-11-26 #10). */
+  --nav-height: clamp(64px, 4rem, 88px);
   /* v0.5.2: the (+) sits inside the tab bar (no raised FAB); kept for callers that add it. */
   --nav-fab-rise: 0px;
   /* One content width for every tab (PageFrame), one for reading/forms. */

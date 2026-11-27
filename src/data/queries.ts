@@ -1,6 +1,8 @@
 // Read-side API for screens. Safe to wrap in dexie-react-hooks' useLiveQuery.
 import { addDays, type DayKey, dayEndMs, dayKeyOf } from '../domain/day';
 import { bandFor, type CardSentence, pickRotation, rotationSentences, selectedContexts } from '../domain/examples';
+import { leadingBankExample } from '../domain/bankExample';
+import type { WordBankEntry } from '../domain/wordBank';
 import { pickRotating, sentenceKey } from '../domain/textSentences';
 import { previewIntervals, type IntervalPreview } from '../domain/fsrs';
 import { normalizeTerm } from '../domain/normalize';
@@ -388,6 +390,11 @@ export interface CardView {
    * source sentence and the example sentences take turns, one more step after every answer.
    */
   sentence: CardSentence | null;
+  /**
+   * 2026-11-26 #5: the user's own (source) sentence when the word bank's example leads in its
+   * place (domain/bankExample.ts); the back shows it second, as "Senin örneğin".
+   */
+  ownSentence?: { text: string; span: [number, number] | null; tr: string | null } | null;
   /** Interval labels for the four buttons. */
   previews: Record<RatingValue, IntervalPreview>;
   /**
@@ -413,10 +420,15 @@ async function lexiconOf(senses: Sense[]): Promise<Map<Id, LexiconSense>> {
   return new Map(rows.filter((r): r is LexiconSense => !!r).map((r) => [r.id, r]));
 }
 
+/** The word bank rows of a term (shared content on the device; none for a guest who has not pulled it). */
+function bankEntriesOf(termNorm: string): Promise<WordBankEntry[]> {
+  return db.word_bank.where('lemma_norm').equals(termNorm).toArray();
+}
+
 /** Everything a review screen needs to render one card. */
 export async function getCardView(cardId: Id, now: Millis = Date.now()): Promise<CardView | null> {
   let shown: { reps: number; key: string; changed: boolean } | null = null;
-  const view = await db.transaction('r', [...new Set([db.cards, db.notes, db.senses, db.review_logs, db.settings, db.lexicon_cache, db.images, ...exampleTables(), ...textSentenceTables()])], async () => {
+  const view = await db.transaction('r', [...new Set([db.cards, db.notes, db.senses, db.review_logs, db.settings, db.lexicon_cache, db.images, db.word_bank, ...exampleTables(), ...textSentenceTables()])], async () => {
     const card = await db.cards.get(cardId);
     if (!card) return null;
     const note = await db.notes.get(card.note_id);
@@ -439,6 +451,7 @@ export async function getCardView(cardId: Id, now: Millis = Date.now()): Promise
       if (card.card_type === 'production') hint = firstLetterHint(note.term);
     }
     let sentence: CardSentence | null = null;
+    let ownSentence: CardView['ownSentence'] = null;
     if (sense && card.card_type === 'dictation') {
       // Dikte (v0.5 İP9): only shared sentences, which have pre-generated audio; a new one
       // after every answer, like the other cards.
@@ -458,13 +471,21 @@ export async function getCardView(cardId: Id, now: Millis = Date.now()): Promise
           ? (cachedTextSentences(note.term, sense.pos, sense.source_sentence) ??
             (await loadTextSentences(note.term, sense.pos, sense.source_sentence)))
           : [];
+      // 2026-11-26 #5: a weak source sentence (no translation, a fragment) gives way to the
+      // word bank's checked example; the user's sentence stays on the back as "Senin örneğin".
+      const lead = leadingBankExample(note.term, sense, senses.length, await bankEntriesOf(note.term_norm));
+      if (lead && sense.source_sentence)
+        ownSentence = { text: sense.source_sentence, span: sense.span, tr: sense.source_sentence_tr };
       const last = await readLastShown(card.id);
-      const picked = pickRotating(rotationSentences(sense, examples, selected, needSpan, own), card.reps, last, (x) => sentenceKey(x.text));
+      const picked = pickRotating(rotationSentences(sense, examples, selected, needSpan, own, lead), card.reps, last, (x) => sentenceKey(x.text));
       if (picked) {
         const key = sentenceKey(picked.text);
         shown = { reps: card.reps, key, changed: last?.reps !== card.reps || last.key !== key };
       }
-      sentence = picked && { ...picked, trOnTap: picked.exampleId !== null && settings.example_tr_visible !== true };
+      sentence = picked && {
+        ...picked,
+        trOnTap: (picked.exampleId !== null || picked.origin === 'bank') && settings.example_tr_visible !== true,
+      };
       // A cloze card keeps its own sentence when the source sentence has no usable span
       // (as before) and no example sentence can stand in.
       if (needSpan && sentence?.span) cloze = makeCloze(sentence.text, sentence.span);
@@ -477,6 +498,7 @@ export async function getCardView(cardId: Id, now: Millis = Date.now()): Promise
       cloze,
       hint,
       sentence,
+      ownSentence,
       previews: previewIntervals(schedulerFor(settings), card, now),
       ...(card.card_type === 'cloze'
         ? { previewsChoice: previewIntervals(schedulerFor(settings), card, now, { choice: true }) }

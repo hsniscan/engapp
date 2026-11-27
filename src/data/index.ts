@@ -40,6 +40,7 @@ export * from './leech';
 export * from './contrast';
 export { addExtraNew, getMoreStudyOverview, MAX_EXTRA_NEW_STEP, type MoreStudyOverview } from './extraStudy';
 export {
+  computeRetentionWorkloads,
   computeWorkload,
   dismissLoadWarning,
   endVacation,
@@ -49,6 +50,7 @@ export {
   setVacation,
   type LoadStatus,
   type LoadToday,
+  type RetentionWorkload,
   type WorkloadInput,
   type WorkloadView,
 } from './load';
@@ -204,6 +206,7 @@ export {
   applyWordBankPage,
   bankNoteInput,
   countWordBank,
+  getLeadingBankExamples,
   getOwnedTerms,
   getWordBankCursor,
   getWordBankSyncedAt,

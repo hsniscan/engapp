@@ -15,7 +15,12 @@ import { useLocation, useNavigate } from 'react-router';
 import { logError } from '@/data';
 import { ocrQuality, ocrTitle, toReviewLines, type ReviewLine } from '@/domain/ocr';
 import { readerPath } from '@/domain/texts';
-import { extractCapture, saveCapture } from '@/features/add/capture';
+import {
+  extractCapture,
+  notEnglishMessageKey,
+  NotEnglishTextError,
+  saveCapture,
+} from '@/features/add/capture';
 import { useAuth } from '@/features/auth/session';
 import { isNativeApp } from '@/native/platform';
 import type { SharedImageState } from '@/native/share';
@@ -146,6 +151,10 @@ export function OcrPage({
       );
       void navigate(`/import/${job}`);
     } catch (e) {
+      if (e instanceof NotEnglishTextError) {
+        toast({ title: t(notEnglishMessageKey(e)), tone: 'warn' });
+        return;
+      }
       void logError(e, 'ocr.extract');
       toast({ title: t('article.extractFailed'), tone: 'danger' });
     }

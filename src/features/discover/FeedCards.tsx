@@ -506,7 +506,12 @@ function WordsAtLevelCard({ entries, level }: { entries: WordBankEntry[]; level:
       </CardRows>
       <Link
         to="/decks?tab=bank"
-        className={buttonClasses({ variant: 'ghost', size: 'sm', className: '-ml-3 self-start' })}
+        className={buttonClasses({
+          variant: 'ghost',
+          size: 'sm',
+          wrap: true,
+          className: '-ml-3 self-start',
+        })}
       >
         {t('discover.wordsAtLevel.bank')}
         <Icon name="chevron-right" size={16} />
@@ -544,7 +549,12 @@ function FalseFriendCard({ item }: { item: Extract<FeedItem, { kind: 'falseFrien
       {n.content.note_tr && <p className="text-ui text-fg-muted">{n.content.note_tr}</p>}
       <Link
         to={specHref({ kind: 'falseFriends' })}
-        className={buttonClasses({ variant: 'ghost', size: 'sm', className: '-ml-3 self-start' })}
+        className={buttonClasses({
+          variant: 'ghost',
+          size: 'sm',
+          wrap: true,
+          className: '-ml-3 self-start',
+        })}
       >
         {t('discover.falseFriend.deck', { count: item.pairs })}
         <Icon name="chevron-right" size={16} />

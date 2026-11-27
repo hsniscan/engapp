@@ -33,4 +33,22 @@ describe('importWordList', () => {
       'kıyı',
     ]);
   });
+
+  // Review 2026-11-26 #4: senses without a part of speech, Turkish capitals.
+  it('a meaning that contains, or is inside, an existing one adds nothing', async () => {
+    await addNoteWithSenses({ term: 'thrive', senses: [{ meaning_tr: 'gelişmek' }] }, T);
+    const res = await importWordList(
+      [
+        { term: 'thrive', meaning: 'gelişmek, büyümek', sentence: null },
+        { term: 'reluctant', meaning: 'isteksiz, gönülsüz', sentence: null },
+        { term: 'reluctant', meaning: 'isteksiz', sentence: null },
+        { term: 'reluctant', meaning: 'İsteksiz, gönülsüz', sentence: null },
+      ],
+      undefined,
+      T + 1,
+    );
+    expect(res).toEqual({ created: 1, addedSenses: 0, unchanged: 3, failed: 0 });
+    expect((await findNoteByTerm('thrive'))!.senses).toHaveLength(1);
+    expect((await findNoteByTerm('reluctant'))!.senses).toHaveLength(1);
+  });
 });

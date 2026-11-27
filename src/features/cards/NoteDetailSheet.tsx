@@ -13,6 +13,7 @@ import {
   addNoteWithSenses,
   editNote,
   editSense,
+  getLeadingBankExamples,
   getNoteDetail,
   listTags,
   bulkSoftDeleteNotes,
@@ -56,6 +57,7 @@ import { ImageSection } from '@/features/images/ImageSection';
 import { MnemonicSection } from '@/features/mnemonics';
 import { useAppSettings } from '@/features/settings/useAppSettings';
 import { useSpeech } from '@/features/review/useSpeech';
+import { Sentence } from '@/features/review/CardFaces';
 import { ConfirmDialog } from './ConfirmDialog';
 import { cardTypeLabel, posLabel } from './labels';
 import { senseText } from './libraryFilter';
@@ -248,6 +250,9 @@ function ReadView({
   const main = mainCard(cards);
   const pos = senses.find((s) => s.pos)?.pos ?? null;
   const ownSentences = senses.filter((s) => s.source_sentence?.trim());
+  // 2026-11-26 #5: the word bank's example leads where the user's sentence is missing or weak.
+  const bank = useLiveQuery(() => getLeadingBankExamples(note, senses), [note, senses]);
+  const bankSenses = bank ? senses.filter((s) => bank.has(s.id)) : [];
   const failed = (e: unknown, where: string) => {
     void logError(e, where);
     toast({ title: t('library.detail.saveFailed'), tone: 'danger' });
@@ -369,6 +374,40 @@ function ReadView({
           </ol>
         )}
       </section>
+
+      {bank && bankSenses.length > 0 && (
+        <section aria-labelledby={`${id}-bank`} className="flex flex-col gap-3" data-testid="bank-example">
+          <Eyebrow as="h3">
+            <span id={`${id}-bank`}>{t('library.detail.bankExample')}</span>
+          </Eyebrow>
+          <ul className="flex flex-col gap-3">
+            {bankSenses.map((s) => {
+              const ex = bank.get(s.id)!;
+              return (
+                <li key={s.id} className="flex items-start gap-2">
+                  {senses.length > 1 && (
+                    <span className="tabular pt-0.5 text-ui font-semibold text-fg-muted">{s.sense_no}.</span>
+                  )}
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <Sentence sentence={ex.text} span={ex.span} term={note.term} />
+                    <span lang="tr" className="text-ui text-fg-muted">
+                      {ex.tr}
+                    </span>
+                  </span>
+                  {speech.available && (
+                    <IconButton
+                      icon="speaker"
+                      size="sm"
+                      label={t('library.detail.listenSentence')}
+                      onClick={() => speech.speak(ex.text)}
+                    />
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
       {ownSentences.length > 0 && (
         <section aria-labelledby={`${id}-own`} className="flex flex-col gap-3">

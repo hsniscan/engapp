@@ -1,12 +1,13 @@
 import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { addNoteWithSenses, db, ensureSettings, getCardView, type CardView } from '@/data';
+import { addNoteWithSenses, applyWordBankPage, db, ensureSettings, getCardView, type CardView } from '@/data';
 import type { CardType } from '@/domain/types';
 import { setLevelDataForTests } from '@/data/levelData';
 import { parseClientLevels } from '@/domain/level';
 import { resetDb } from '@/test/db';
 import { renderRoute } from '@/test/ui';
 import { CardBack, CardFront } from './CardFaces';
+import { SentencePanel } from './StudyCards';
 
 const T = Date.UTC(2026, 9, 21, 9);
 const SENTENCE = 'I marked our anniversary on the calendar.';
@@ -128,5 +129,55 @@ describe('card faces', () => {
     const ai = await screen.findByRole('button', { name: /Seviye B2, Yapay zekâ tahmini/ });
     expect(ai.querySelector('span')!.className).toContain('border-dashed');
     setLevelDataForTests(null);
+  });
+
+  it('an imported fragment gives way to the word bank example; the back keeps it as "Senin örneğin" (#5)', async () => {
+    await applyWordBankPage([
+      {
+        lemma_norm: 'ugly',
+        pos: 'adjective',
+        lemma: 'ugly',
+        cefr: 'A2',
+        list_source: 'cefrj',
+        zipf: 4.5,
+        lexicon_term_id: null,
+        senses: [
+          {
+            meaning_tr: 'çirkin',
+            example_en: 'What an ugly old building!',
+            example_tr: 'Ne çirkin, eski bir bina!',
+            sense_id: null,
+          },
+        ],
+        retired: false,
+        server_seq: 1,
+      },
+    ]);
+    const { note } = await addNoteWithSenses(
+      { term: 'ugly', senses: [{ meaning_tr: 'çirkin', pos: 'adjective', source_sentence: 'ugly face', span: [0, 4] }] },
+      T,
+    );
+    const card = (await db.cards.where('note_id').equals(note.id).toArray()).find((c) => c.card_type === 'recognition')!;
+    const view = (await getCardView(card.id, T))!;
+    expect(view.sentence).toMatchObject({ text: 'What an ugly old building!', tr: 'Ne çirkin, eski bir bina!', origin: 'bank' });
+    expect(view.ownSentence).toEqual({ text: 'ugly face', span: [0, 4], tr: null });
+
+    const speech = { available: true, onSpeak: vi.fn(), speakText: vi.fn() };
+    renderRoute(<CardBack view={view} isNew={false} speech={speech} />);
+    const own = await screen.findByTestId('own-sentence');
+    expect(own).toHaveTextContent('Senin örneğin');
+    expect(own).toHaveTextContent('ugly face');
+    expect(document.body).toHaveTextContent('What an ugly old building!');
+    cleanup();
+    renderRoute(<SentencePanel view={view} speech={speech} />);
+    expect(await screen.findByTestId('own-sentence')).toHaveTextContent('ugly face');
+
+    // A full sentence the user translated stays the card's own sentence.
+    const kept = await getCardView(
+      (await db.cards.toArray()).find((c) => c.card_type === 'recognition' && c.note_id !== note.id)!.id,
+      T,
+    );
+    expect(kept!.sentence?.text).toBe(SENTENCE);
+    expect(kept!.ownSentence).toBeNull();
   });
 });

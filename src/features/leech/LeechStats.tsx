@@ -85,7 +85,11 @@ export function LeechStatsSection() {
         {!!hard && (
           <Link
             to={practiceHref({ source: 'hard', size: 10, tag: null })}
-            className={buttonClasses({ variant: notes.length ? 'ghost' : 'secondary', size: 'md' })}
+            className={buttonClasses({
+              variant: notes.length ? 'ghost' : 'secondary',
+              size: 'md',
+              wrap: true,
+            })}
           >
             {t('leech.stats.allHard')}
           </Link>

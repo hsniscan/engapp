@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { makeCard, makeLog, makeSense } from '../test/factories';
 import { createScheduler } from './fsrs';
 import {
+  availableAt,
   becameLeech,
   canSplitSenses,
   isLeech,
@@ -168,5 +169,13 @@ describe('struggling cards and the rescue path (v0.5.3 B5)', () => {
     expect(isResting({ rest_until: null }, now)).toBe(false);
     expect(isResting({}, now)).toBe(false);
     expect(LEECH_REST_MS).toBe(30 * 86_400_000);
+  });
+
+  it('a resting card is available when its rest ends, not at its short due', () => {
+    const now = Date.UTC(2026, 10, 10);
+    expect(availableAt({ due: now + 600_000, rest_until: now + LEECH_REST_MS })).toBe(now + LEECH_REST_MS);
+    expect(availableAt({ due: now + 600_000, rest_until: now - 1 })).toBe(now + 600_000);
+    expect(availableAt({ due: now, rest_until: null })).toBe(now);
+    expect(availableAt({ due: now })).toBe(now);
   });
 });

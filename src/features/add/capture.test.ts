@@ -3,7 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { db, getImportJob } from '@/data';
 import { deleteText } from '@/data/texts';
 import { resetDb } from '@/test/db';
-import { captureTitle, extractCapture, resetCaptureMemo, saveCapture } from './capture';
+import {
+  captureTitle,
+  extractCapture,
+  notEnglishMessageKey,
+  NotEnglishTextError,
+  resetCaptureMemo,
+  saveCapture,
+} from './capture';
 
 vi.mock('@/features/import/queue', () => ({ kickImportQueue: vi.fn() }));
 
@@ -50,6 +57,17 @@ describe('extractCapture', () => {
     expect(await saveCapture(input)).toBe(job.text_id);
     expect(await db.import_jobs.count()).toBe(1);
     expect(await db.texts.count()).toBe(1);
+  });
+
+  it('a Turkish text is refused before anything is saved or queued (review 2026-11-26 #8)', async () => {
+    const body =
+      'Bugün sabah erkenden kalktım ve parka yürüyüşe gittim. Hava çok güzeldi, ama biraz soğuktu.';
+    const err = await extractCapture({ kind: 'paste', title: '', body }).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(NotEnglishTextError);
+    expect((err as NotEnglishTextError).lang).toBe('tr');
+    expect(notEnglishMessageKey(err as NotEnglishTextError)).toBe('capture.notEnglishTr');
+    expect(await db.import_jobs.count()).toBe(0);
+    expect(await db.texts.count()).toBe(0);
   });
 });
 

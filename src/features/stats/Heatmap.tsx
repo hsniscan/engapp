@@ -158,7 +158,7 @@ export function Heatmap({ weeks }: HeatmapProps) {
           )}
         </p>
         <ul
-          className="flex items-center gap-4 text-meta text-fg-muted"
+          className="flex flex-wrap items-center gap-x-4 gap-y-1 text-meta text-fg-muted"
           aria-label={t('stats.legend')}
         >
           {(['legendEmpty', 'legendActive', 'legendCompleted'] as const).map((k, level) => (

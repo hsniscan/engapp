@@ -233,7 +233,9 @@
     "extractSignIn": "Picking out words is done by AI, so sign in for it. Reading needs no account.",
     "signInCta": "Sign in with Google",
     "extractUnavailable": "Word extraction is off in this version. The reader always works.",
-    "readText": "Read the text"
+    "readText": "Read the text",
+    "notEnglishTr": "This text looks Turkish. Word extraction is for English texts; try an English one. You can still open it in the reader.",
+    "notEnglish": "This text does not look English. Word extraction only works on English texts. You can still open it in the reader."
   },
   "review": {
     "title": "Review",
@@ -407,6 +409,7 @@
     "learnedToday_one": "{{count}} word reached Learned today.",
     "learnedToday_other": "{{count}} words reached Learned today.",
     "example": "Example",
+    "ownExample": "Your example",
     "meaning": "Meaning",
     "continueWith": "Continue · {{rating}}",
     "showSentence": "Show the sentence",
@@ -752,6 +755,7 @@
       "listenSentence": "Listen to the sentence",
       "meaning": "Meaning",
       "ownExample": "Your example",
+      "bankExample": "Example",
       "memory": "Memory",
       "next": "Next review",
       "interval": "Interval",
@@ -1261,11 +1265,15 @@
     "reverted": "Previous setting restored.",
     "saveFailed": "Could not save the setting.",
     "helper": {
-      "title": "Daily reviews by target rate",
-      "hint": "A rough estimate from your current cards. A higher rate means less forgetting but more frequent reviews.",
+      "title": "Daily cards by target rate",
+      "hintNew": "The top number is the average cards a day over the next 30 days: reviews plus {{count}} new words a day, the same calculation as the forecast in Progress. New cards come at fixed intervals in their first weeks, so these numbers can be close; the line below shows the review difference once your cards have settled.",
+      "hintNoNew": "The top number is the average cards a day over the next 30 days (no new words waiting, reviews only), the same calculation as the forecast in Progress. The line below shows the review difference once your cards have settled.",
       "retention": "{{pct}}% recall",
-      "reviews": "~{{count}}/day",
+      "reviews": "~{{count}} cards/day",
       "current": "Your current target",
+      "longRunMore": "{{pct}}% more reviews in the long run",
+      "longRunFewer": "{{pct}}% fewer reviews in the long run",
+      "longRunSame": "About the same in the long run",
       "empty": "Once you review cards, the estimate shows up here."
     },
     "offer": {
@@ -2056,6 +2064,7 @@
         "too_hard": "These list entries are more than one level above yours. They are not selected; you can add them."
       },
       "forYouEmpty": "This text has no new words at level {{level}}. Have a look at the easy section.",
+      "forYouEmptyNoEasy": "This text has no new words at level {{level}}.",
       "selectAllIn": "{{section}}: select all",
       "selectNoneIn": "{{section}}: select none",
       "knowIt": "{{term}}: I know it",
@@ -3670,7 +3679,7 @@
       "other": "other"
     },
     "encounters": {
-      "none": "You have not met this word in a card or a text yet.",
+      "none": "You have not studied this word or seen it in a text yet.",
       "line_one": "You have seen this word {{count}} time: {{cards}} in cards, in {{texts}} texts",
       "line_other": "You have seen this word {{count}} times: {{cards}} in cards, in {{texts}} texts",
       "cardsOnly_one": "You have seen this word {{count}} time in cards",

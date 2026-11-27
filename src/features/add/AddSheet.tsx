@@ -336,10 +336,15 @@ function WordResult({
   const mine = preview?.mine ?? [];
   const loading = preview === undefined || (senses.length === 0 && lookup === 'searching');
   const shown = preview?.term ?? term;
+  // "Elle düzenle" opens the form with what was found: the picked meanings (else the first),
+  // with their part of speech and example (review 2026-11-26 #7).
+  const carried = senses.some((s) => picked.has(s.key))
+    ? senses.filter((s) => picked.has(s.key))
+    : senses.slice(0, 1);
 
   const manual = (
     <Link
-      to={quickAddHref(shown)}
+      to={quickAddHref(shown, carried)}
       onClick={onNavigate}
       className={buttonClasses({ variant: 'ghost', size: 'sm', className: 'self-center' })}
       data-testid="add-word-manual"

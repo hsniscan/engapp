@@ -233,7 +233,9 @@
     "extractSignIn": "Kelimeleri çıkarmayı yapay zekâ yapar; bunun için giriş yap. Okumak için hesap gerekmez.",
     "signInCta": "Google ile giriş yap",
     "extractUnavailable": "Kelime çıkarma bu sürümde kapalı. Okuyucu her zaman çalışır.",
-    "readText": "Metni oku"
+    "readText": "Metni oku",
+    "notEnglishTr": "Bu metin Türkçe görünüyor. Kelime çıkarma İngilizce metinler için; İngilizce bir metin dene. Okuyucuda yine de açabilirsin.",
+    "notEnglish": "Bu metin İngilizce görünmüyor. Kelime çıkarma yalnızca İngilizce metinlerde çalışır. Okuyucuda yine de açabilirsin."
   },
   "review": {
     "title": "Çalışma",
@@ -407,6 +409,7 @@
     "learnedToday_one": "Bugün {{count}} kelime Öğrenildi'ye geçti.",
     "learnedToday_other": "Bugün {{count}} kelime Öğrenildi'ye geçti.",
     "example": "Örnek",
+    "ownExample": "Senin örneğin",
     "meaning": "Anlamı",
     "continueWith": "Devam · {{rating}}",
     "showSentence": "Cümleyi göster",
@@ -752,6 +755,7 @@
       "listenSentence": "Cümleyi dinle",
       "meaning": "Anlamı",
       "ownExample": "Senin örneğin",
+      "bankExample": "Örnek",
       "memory": "Hafıza",
       "next": "Sıradaki tekrar",
       "interval": "Aralık",
@@ -1261,11 +1265,15 @@
     "reverted": "Eski ayara dönüldü.",
     "saveFailed": "Ayar kaydedilemedi.",
     "helper": {
-      "title": "Hedef orana göre günlük tekrar",
-      "hint": "Şu anki kartlarına göre kaba bir tahmin. Oranı yükseltirsen daha az unutursun ama daha sık çalışırsın.",
+      "title": "Hedef orana göre günlük kart",
+      "hintNew": "Üstteki sayı, önümüzdeki 30 günde günde ortalama kaç kart çalışacağın: tekrarlar ve günde {{count}} yeni kelime dahil, İlerleme'deki tahminle aynı hesap. Yeni kartlar ilk haftalarda sabit aralıklarla geldiği için bu sayılar birbirine yakın olabilir; alttaki satır, kartlar oturduktan sonraki tekrar farkını gösterir.",
+      "hintNoNew": "Üstteki sayı, önümüzdeki 30 günde günde ortalama kaç kart çalışacağın (bekleyen yeni kelimen yok, yalnızca tekrarlar), İlerleme'deki tahminle aynı hesap. Alttaki satır, kartlar oturduktan sonraki tekrar farkını gösterir.",
       "retention": "%{{pct}} hatırlama",
-      "reviews": "~{{count}}/gün",
+      "reviews": "~{{count}} kart/gün",
       "current": "Şu anki hedefin",
+      "longRunMore": "Uzun vadede %{{pct}} daha çok tekrar",
+      "longRunFewer": "Uzun vadede %{{pct}} daha az tekrar",
+      "longRunSame": "Uzun vadede aşağı yukarı aynı",
       "empty": "Kartlarını çalışmaya başlayınca burada tahmini göreceksin."
     },
     "offer": {
@@ -2056,6 +2064,7 @@
         "too_hard": "Listedeki bu kelimeler seviyenin bir üstünü aşıyor. Seçili gelmez; istersen ekleyebilirsin."
       },
       "forYouEmpty": "Bu metinde {{level}} seviyesinde yeni kelime yok. Kolay bölümüne göz atabilirsin.",
+      "forYouEmptyNoEasy": "Bu metinde {{level}} seviyesinde yeni kelime yok.",
       "selectAllIn": "{{section}}: tümünü seç",
       "selectNoneIn": "{{section}}: hiçbirini seçme",
       "knowIt": "{{term}}: biliyorum",
@@ -3670,7 +3679,7 @@
       "other": "diğer"
     },
     "encounters": {
-      "none": "Bu kelimeyle henüz bir kartta ya da metinde karşılaşmadın.",
+      "none": "Bu kelimeyi henüz çalışmadın, bir metinde de görmedin.",
       "line_one": "Bu kelimeyi {{count}} kez gördün: {{cards}} kez kartta, {{texts}} metinde",
       "line_other": "Bu kelimeyi {{count}} kez gördün: {{cards}} kez kartta, {{texts}} metinde",
       "cardsOnly_one": "Bu kelimeyi {{count}} kez kartta gördün",

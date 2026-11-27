@@ -16,7 +16,12 @@ import { useNavigate, useSearchParams } from 'react-router';
 import { getAuthState } from '@/features/auth/session';
 import { getSettings, logError } from '@/data';
 import { readerPath } from '@/domain/texts';
-import { extractCapture, saveCapture } from '@/features/add/capture';
+import {
+  extractCapture,
+  notEnglishMessageKey,
+  NotEnglishTextError,
+  saveCapture,
+} from '@/features/add/capture';
 import { playPronunciation, pronunciationSupported } from '@/features/review/pronunciation';
 import { shareHref } from '@/features/share/route';
 import { historyIndex } from '@/native/backButton';
@@ -77,6 +82,10 @@ export function QuickPage() {
           }),
       );
     } catch (e) {
+      if (e instanceof NotEnglishTextError) {
+        setError(t(notEnglishMessageKey(e)));
+        return;
+      }
       void logError(e, `quick.${which}`);
       setError(t('quick.openFailed'));
     } finally {

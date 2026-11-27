@@ -195,6 +195,12 @@ test('the 6th lapse is flagged in the session with at least 3 paths; only the us
   await stats.scrollIntoViewIfNeeded();
   await axe(page, 'stats');
 
+  // The card rests 30 days: Bugün does not promise it "10 dk sonra" (review 2026-11-26 #3).
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Bugünlük tamam', level: 2 })).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: /^Sıradaki çalışma: / })).toBeVisible();
+  await expect(page.getByText(/Sıradaki kart .* sonra|Yarın \d+ kart planlı/)).toHaveCount(0);
+
   // A guest never talks to the backend.
   expect(backend.calls).toEqual([]);
 });
