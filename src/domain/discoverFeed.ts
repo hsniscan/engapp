@@ -105,6 +105,19 @@ export function hash32(s: string): number {
   return h >>> 0;
 }
 
+/**
+ * MurmurHash3's finaliser: FNV-1a alone orders keys that differ only in their last letters
+ * ("w001", "w002") almost by that letter, which would bring neighbours back together.
+ */
+function mix32(h: number): number {
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x85ebca6b);
+  h ^= h >>> 13;
+  h = Math.imul(h, 0xc2b2ae35);
+  h ^= h >>> 16;
+  return h >>> 0;
+}
+
 /** One item of `list` for the day (the same all day, usually another tomorrow); undefined when empty. */
 export function dailyPick<T>(list: readonly T[], day: string, salt: string): T | undefined {
   if (list.length === 0) return undefined;
@@ -130,6 +143,31 @@ export function dailyPicksWhere<T>(
     if (ok(item)) out.push(item);
   }
   return out;
+}
+
+/**
+ * Up to `n` items for the day from `list` (given most wanted first, e.g. most frequent first)
+ * that `ok` accepts, spread over the list rather than neighbours (2026-11-26 review: "barely,
+ * bark, barman, barrel, base"). The pool is the first quarter of the accepted items (at least
+ * 4n), so frequent words come up first; within it each item gets a daily hash of its key and
+ * the n lowest win. Taking one only brings in the next lowest: the others stay for the day.
+ */
+export function dailySpreadPicks<T>(
+  list: readonly T[],
+  day: string,
+  salt: string,
+  ok: (item: T) => boolean,
+  n: number,
+  keyOf: (item: T) => string,
+): T[] {
+  if (n <= 0) return [];
+  const accepted = list.filter(ok);
+  const pool = accepted.slice(0, Math.max(4 * n, Math.ceil(accepted.length / 4)));
+  return pool
+    .map((item) => ({ item, h: mix32(hash32(`${day}|${salt}|${keyOf(item)}`)) }))
+    .sort((a, b) => a.h - b.h)
+    .slice(0, n)
+    .map((x) => x.item);
 }
 
 /** The first of dailyPicksWhere: one item for the day that `ok` accepts. */
