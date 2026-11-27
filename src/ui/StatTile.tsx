@@ -26,7 +26,7 @@ export function StatTile({ value, label, unit, hint, bare, className }: StatTile
         className,
       )}
     >
-      <p className="tabular flex items-baseline gap-1 text-heading font-semibold text-fg">
+      <p className="tabular flex flex-wrap items-baseline gap-x-1 text-heading font-semibold text-fg">
         {value}
         {unit && <span className="text-meta font-medium text-fg-muted">{unit}</span>}
       </p>
@@ -39,13 +39,12 @@ export function StatTile({ value, label, unit, hint, bare, className }: StatTile
 /** Tiles side by side with hairline dividers, on one card (Profil, session summary). */
 export function StatRow({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div
-      className={cn(
-        'grid auto-cols-fr grid-flow-col divide-x divide-border rounded-card border border-border bg-surface py-4 [&>*]:px-4',
-        className,
-      )}
-    >
-      {children}
+    // With very large text the row is under 18 rem wide: the tiles stack, one per line, so a
+    // label like "Öğrendiğin" never runs over its neighbour (review 2026-11-26 #10).
+    <div className={cn('@container', className)}>
+      <div className="grid auto-cols-fr grid-flow-col divide-x divide-border rounded-card border border-border bg-surface py-4 [&>*]:px-4 @max-[18rem]:grid-flow-row @max-[18rem]:divide-x-0 @max-[18rem]:divide-y @max-[18rem]:py-0 @max-[18rem]:[&>*]:py-3">
+        {children}
+      </div>
     </div>
   );
 }

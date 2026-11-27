@@ -40,7 +40,7 @@ export function Tabs({ items, value, defaultValue, onValueChange, label, classNa
             value={item.value}
             disabled={item.disabled}
             className={cn(
-              'relative -mb-px flex min-h-11 flex-1 whitespace-nowrap items-center justify-center gap-2 px-3 text-ui font-semibold text-fg-muted sm:flex-none',
+              'relative -mb-px flex min-h-11 flex-auto items-center justify-center gap-2 px-3 py-1 text-center text-ui leading-tight font-semibold text-fg-muted sm:flex-none',
               'transition-colors duration-(--duration-micro) hover:text-fg disabled:opacity-45',
               'border-b-2 border-transparent data-[state=active]:border-accent data-[state=active]:text-fg',
               'focus-visible:outline-offset-[-2px]',

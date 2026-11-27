@@ -84,12 +84,18 @@ export function ListRow(props: ListRowProps) {
     'to' in props && props.to ? 'link' : 'onClick' in props && props.onClick ? 'button' : null;
   const body = (
     <>
-      {leadingIcon ? <IconTile icon={leadingIcon} tone={leadingTone} /> : leading}
+      {/* Under 16 rem (very large text on a phone) the icon tile goes and the title may wrap,
+          so the words stay readable instead of "Üret…" (review 2026-11-26 #10). */}
+      {leadingIcon ? (
+        <IconTile icon={leadingIcon} tone={leadingTone} className="@max-[16rem]:hidden" />
+      ) : (
+        leading
+      )}
       <span className="flex min-w-0 flex-1 flex-col gap-0.5 py-3">
         <span
           lang={term ? 'en' : undefined}
           className={cn(
-            'truncate',
+            'truncate @max-[16rem]:whitespace-normal',
             term ? 'font-serif text-lead font-medium' : 'text-ui font-medium',
             destructive ? 'text-danger-text' : 'text-fg',
           )}
@@ -106,7 +112,7 @@ export function ListRow(props: ListRowProps) {
     </>
   );
   const rowClass = cn(
-    'flex min-h-14 w-full items-center gap-3 px-4 text-left',
+    '@container flex min-h-14 w-full items-center gap-3 px-4 text-left',
     interactive &&
       'transition-colors duration-(--duration-micro) hover:bg-hover focus-visible:outline-offset-[-2px]',
     className,
