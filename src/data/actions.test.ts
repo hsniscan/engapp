@@ -81,6 +81,20 @@ describe('addNoteWithSenses', () => {
     expect((await cardsOf(a.note.id)).filter((c) => c.card_type === 'recognition')).toHaveLength(1);
   });
 
+  it('a hand-typed meaning with a Turkish capital or inside an existing one is skipped (review #4)', async () => {
+    await addNoteWithSenses({ term: 'ignore', senses: [{ meaning_tr: 'ihmal etmek' }] }, T);
+    const b = await addNoteWithSenses({ term: 'ignore', senses: [{ meaning_tr: 'İhmal etmek' }] }, T + 1);
+    expect(b.addedSenses).toHaveLength(0);
+    await addNoteWithSenses({ term: 'reluctant', senses: [{ meaning_tr: 'isteksiz, gönülsüz' }] }, T + 2);
+    const c = await addNoteWithSenses({ term: 'reluctant', senses: [{ meaning_tr: 'isteksiz' }] }, T + 3);
+    expect(c.addedSenses).toHaveLength(0);
+    const d = await addNoteWithSenses({ term: 'reluctant', senses: [{ meaning_tr: 'çekingen' }] }, T + 4);
+    expect(d.addedSenses.map((s) => s.meaning_tr)).toEqual(['çekingen']);
+    // A term typed with a Turkish dotted capital is the same note.
+    const e = await addNoteWithSenses({ term: 'İgnore', senses: [{ meaning_tr: 'yok saymak' }] }, T + 5);
+    expect(e.status).toBe('existing');
+  });
+
   it('new senses start unlocked when recognition is already in Review', async () => {
     const a = await addNoteWithSenses({ term: 'bank', senses: [{ meaning_tr: 'banka' }] }, T);
     const rec = (await cardsOf(a.note.id)).find((c) => c.card_type === 'recognition')!;
