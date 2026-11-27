@@ -7,6 +7,7 @@ import { capacityMinutes, cardsForMinutes, secondsPerCard } from '../domain/capa
 import { estimateCatchupDays, type LoadPlan, planLoad, rampedNewLimit } from '../domain/catchup';
 import { addDays, type DayConfig, type DayKey, dayEndMs, dayKeyOf, dayStartMs } from '../domain/day';
 import {
+  averagePerDay,
   FORECAST_DAYS,
   type ForecastCard,
   forecastTotals,
@@ -15,8 +16,11 @@ import {
   loadAdvice,
 } from '../domain/forecast';
 import { emptyFsrs, type Scheduler } from '../domain/fsrs';
+import { normalizeParams } from '../domain/fsrsOptimizer';
 import { availableAt } from '../domain/leech';
 import { replayCard } from '../domain/recompute';
+import { isDailyMode, studyModeOf } from '../domain/studyMode';
+import { longRunReviewChangePct } from '../domain/workload';
 import { type Card, CardState, type FsrsFields, type Millis, type Settings, type VacationRange } from '../domain/types';
 import {
   aheadDaysBeforeVacation,
@@ -259,12 +263,14 @@ export async function getWorkloadInput(now: Millis = Date.now()): Promise<Worklo
           .then((cs) => cs.filter(studiable)),
       ),
     );
+    // ADR 0079: the daily new-card budget opens Kelime çalışma cards only; the extra modes'
+    // first-time cards are optional practice outside it, so they are not waiting for the budget.
     const newAvailable = (
       await db.cards
         .where('[state+due]')
         .between([CardState.New, Dexie.minKey], [CardState.New, Dexie.maxKey])
         .toArray()
-    ).filter(studiable).length;
+    ).filter((c) => studiable(c) && isDailyMode(studyModeOf(c.card_type))).length;
     const introducedToday = await countIntroducedToday(bounds[0]!, bounds[1]!);
     const skipDays = days.map((d, i) => i > 0 && isOnVacation(settings, d));
     const newFactor = days.map((d, i) => {
@@ -319,9 +325,8 @@ export interface WorkloadView {
   advice: LoadAdvice;
 }
 
-/** Run the forecast (pure, ~10–40 ms for 5 000 cards; call it from an idle callback). */
-export function computeWorkload(input: WorkloadInput): WorkloadView {
-  const f = forecastWorkload(schedulerFor(input.settings), {
+function forecastAt(input: WorkloadInput, retention: number) {
+  return forecastWorkload(schedulerFor({ ...input.settings, request_retention: retention }), {
     cards: input.cards,
     bounds: input.bounds,
     newAvailable: input.newAvailable,
@@ -329,6 +334,11 @@ export function computeWorkload(input: WorkloadInput): WorkloadView {
     skipDays: input.skipDays,
     newFactor: input.newFactor,
   });
+}
+
+/** Run the forecast (pure, ~10–40 ms for 5 000 cards; call it from an idle callback). */
+export function computeWorkload(input: WorkloadInput): WorkloadView {
+  const f = forecastAt(input, input.settings.request_retention);
   return {
     days: input.days,
     totals: forecastTotals(f, input.dailyNewLimit),
@@ -338,6 +348,38 @@ export function computeWorkload(input: WorkloadInput): WorkloadView {
     dailyNewLimit: input.dailyNewLimit,
     advice: loadAdvice(f, input.capacity, input.dailyNewLimit),
   };
+}
+
+export interface RetentionWorkload {
+  retention: number;
+  /** Average expected answers per day over the next 30 days (İlerleme's figure at the target). */
+  perDay: number;
+  /**
+   * Long-run change in reviews against the current target, in percent (reviews only, once the
+   * learning ramp is over; 0 at the current target).
+   */
+  longRunPct: number;
+}
+
+/**
+ * The 30-day forecast run at each target retention (Ayarlar › Çalışma's helper): the same
+ * cards, the same word-only new-card budget and the same average İlerleme shows, so the figure
+ * at the current target equals İlerleme's "günde ortalama". In the first weeks the learning
+ * ramp caps most intervals, so the 30-day figures can be close; `longRunPct` gives the
+ * difference once the cards have settled. Pure; ~3× computeWorkload.
+ */
+export function computeRetentionWorkloads(
+  input: WorkloadInput,
+  retentions: readonly number[],
+): RetentionWorkload[] {
+  const w = normalizeParams(input.settings.fsrs_params);
+  const stabilities = input.cards.filter((c) => c.state === CardState.Review).map((c) => c.stability);
+  const current = input.settings.request_retention;
+  return retentions.map((retention) => ({
+    retention,
+    perDay: averagePerDay(forecastTotals(forecastAt(input, retention), input.dailyNewLimit)),
+    longRunPct: longRunReviewChangePct(stabilities, w, current, retention),
+  }));
 }
 
 // ------------------------------------------------------------------ actions

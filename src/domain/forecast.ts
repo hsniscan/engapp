@@ -272,6 +272,12 @@ export function forecastTotals(f: WorkloadForecast, dailyNewLimit: number): numb
   return totals;
 }
 
+/** Average answers per day over the forecast, as İlerleme shows it (mean of the rounded days). */
+export function averagePerDay(totals: readonly number[]): number {
+  const counts = totals.map((x) => Math.round(x));
+  return Math.round(counts.reduce((a, b) => a + b, 0) / Math.max(1, counts.length));
+}
+
 /** First day in [from, to] whose expected answers exceed the capacity, or null. */
 export function firstOverCapacity(
   totals: readonly number[],

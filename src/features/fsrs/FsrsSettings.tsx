@@ -1,18 +1,20 @@
 // Settings → Çalışma: "Algoritmayı hafızama göre ayarla" and the retention helper
-// (v0.3 İP4, docs/decisions/0022). Logic lives in domain/fsrsOptimizer.ts and domain/workload.ts.
+// (v0.3 İP4, docs/decisions/0022). Logic lives in domain/fsrsOptimizer.ts and domain/forecast.ts
+// (the helper runs İlerleme's 30-day forecast at each target, data/load.ts).
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   adoptFsrsParams,
-  db,
+  getWorkloadInput,
   loadOptimizerLogs,
   logError,
   markFsrsOptRun,
   revertFsrsParams,
 } from '@/data';
-import { MIN_REVIEWS, normalizeParams, type OptimizeResult } from '@/domain/fsrsOptimizer';
-import { CardState, type Settings } from '@/domain/types';
-import { changePct, expectedDailyReviews, RETENTION_CHOICES } from '@/domain/workload';
+import { MIN_REVIEWS, type OptimizeResult } from '@/domain/fsrsOptimizer';
+import type { Settings } from '@/domain/types';
+import { changePct, RETENTION_CHOICES } from '@/domain/workload';
+import { useRetentionWorkloads } from '@/features/load/useWorkload';
 import { SettingsRow } from '@/features/settings/SettingsLayout';
 import { usePausedLiveQuery } from '@/features/settings/usePausedLiveQuery';
 import { Button, cn, ProgressBar, toast } from '@/ui';
@@ -200,36 +202,39 @@ function ResultNote({ result }: { result: OptimizeResult }) {
   );
 }
 
-/** Expected reviews per day at 85 / 90 / 95 % for the cards studied so far. */
+/**
+ * Expected answers per day at 85 / 90 / 95 %: İlerleme's 30-day forecast (reviews, relearning
+ * and the word-only new-card budget) run at each target, so the current target's figure is
+ * İlerleme's "günde ortalama". The other targets also give the long-run review change (the
+ * 30-day figures stay close while the learning ramp caps young cards' intervals).
+ */
 export function RetentionHelper({ settings }: { settings: Settings }) {
   const { t } = useTranslation();
-  const stabilities = usePausedLiveQuery(async () => {
-    const out: number[] = [];
-    await db.cards.each((c) => {
-      if (c.deleted_at === null && !c.suspended && c.state !== CardState.New) out.push(c.stability);
-    });
-    return out;
-  }, []);
-  if (!stabilities) return null;
-  const w = normalizeParams(settings.fsrs_params);
+  const input = usePausedLiveQuery(() => getWorkloadInput(), []);
+  const view = useRetentionWorkloads(input, RETENTION_CHOICES);
+  if (!view) return null;
   const current = Math.round(settings.request_retention * 100);
+  const hint =
+    view.newAvailable > 0 && view.dailyNewLimit > 0
+      ? t('fsrsOpt.helper.hintNew', { count: view.dailyNewLimit })
+      : t('fsrsOpt.helper.hintNoNew');
   return (
     <SettingsRow stack>
       <div className="flex flex-col gap-1">
         <div className="text-ui font-medium text-fg">{t('fsrsOpt.helper.title')}</div>
-        <p className="text-meta text-fg-muted">{t('fsrsOpt.helper.hint')}</p>
+        {view.studied > 0 && <p className="text-meta text-fg-muted">{hint}</p>}
       </div>
-      {stabilities.length === 0 ? (
+      {view.studied === 0 ? (
         <p className="text-meta text-fg-muted">{t('fsrsOpt.helper.empty')}</p>
       ) : (
         <ul className="grid grid-cols-3 gap-2" data-testid="retention-helper">
-          {RETENTION_CHOICES.map((r) => {
-            const pct = Math.round(r * 100);
-            const n = Math.round(expectedDailyReviews(stabilities, w, r, settings.daily_new_limit));
+          {view.choices.map(({ retention, perDay, longRunPct }) => {
+            const pct = Math.round(retention * 100);
             const active = pct === current;
+            const change = Math.round(Math.abs(longRunPct));
             return (
               <li
-                key={r}
+                key={retention}
                 className={cn(
                   'flex min-w-0 flex-col gap-0.5 rounded-control border px-3 py-2',
                   active ? 'border-accent bg-accent-soft' : 'border-border',
@@ -239,10 +244,18 @@ export function RetentionHelper({ settings }: { settings: Settings }) {
                   {t('fsrsOpt.helper.retention', { pct })}
                 </span>
                 <span className="text-lead font-semibold text-fg tabular-nums">
-                  {t('fsrsOpt.helper.reviews', { count: nf.format(n) })}
+                  {t('fsrsOpt.helper.reviews', { count: nf.format(perDay) })}
                 </span>
-                {active && (
+                {active ? (
                   <span className="text-caption text-accent-text">{t('fsrsOpt.helper.current')}</span>
+                ) : (
+                  <span className="text-caption text-fg-muted">
+                    {change < SAME_WORKLOAD_PCT
+                      ? t('fsrsOpt.helper.longRunSame')
+                      : longRunPct > 0
+                        ? t('fsrsOpt.helper.longRunMore', { pct: change })
+                        : t('fsrsOpt.helper.longRunFewer', { pct: change })}
+                  </span>
                 )}
               </li>
             );

@@ -1261,11 +1261,15 @@
     "reverted": "Eski ayara dönüldü.",
     "saveFailed": "Ayar kaydedilemedi.",
     "helper": {
-      "title": "Hedef orana göre günlük tekrar",
-      "hint": "Şu anki kartlarına göre kaba bir tahmin. Oranı yükseltirsen daha az unutursun ama daha sık çalışırsın.",
+      "title": "Hedef orana göre günlük kart",
+      "hintNew": "Üstteki sayı, önümüzdeki 30 günde günde ortalama kaç kart çalışacağın: tekrarlar ve günde {{count}} yeni kelime dahil, İlerleme'deki tahminle aynı hesap. Yeni kartlar ilk haftalarda sabit aralıklarla geldiği için bu sayılar birbirine yakın olabilir; alttaki satır, kartlar oturduktan sonraki tekrar farkını gösterir.",
+      "hintNoNew": "Üstteki sayı, önümüzdeki 30 günde günde ortalama kaç kart çalışacağın (bekleyen yeni kelimen yok, yalnızca tekrarlar), İlerleme'deki tahminle aynı hesap. Alttaki satır, kartlar oturduktan sonraki tekrar farkını gösterir.",
       "retention": "%{{pct}} hatırlama",
-      "reviews": "~{{count}}/gün",
+      "reviews": "~{{count}} kart/gün",
       "current": "Şu anki hedefin",
+      "longRunMore": "Uzun vadede %{{pct}} daha çok tekrar",
+      "longRunFewer": "Uzun vadede %{{pct}} daha az tekrar",
+      "longRunSame": "Uzun vadede aşağı yukarı aynı",
       "empty": "Kartlarını çalışmaya başlayınca burada tahmini göreceksin."
     },
     "offer": {

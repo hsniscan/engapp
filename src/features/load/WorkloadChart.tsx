@@ -6,6 +6,7 @@
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { WorkloadView } from '@/data';
+import { averagePerDay } from '@/domain/forecast';
 import { formatDayLong } from '@/features/stats/format';
 import { BarChart, Button, Card, cn, SectionHeader, Skeleton } from '@/ui';
 import { useWorkload } from './useWorkload';
@@ -42,9 +43,8 @@ export function WorkloadChart({ view }: { view: WorkloadView }) {
   const [listOpen, setListOpen] = useState(false);
   const listId = useId();
   const counts = view.totals.map((x) => Math.round(x));
-  const n = counts.length;
   const over = counts.filter((c) => c > view.capacity).length;
-  const avg = Math.round(counts.reduce((a, b) => a + b, 0) / Math.max(1, n));
+  const avg = averagePerDay(view.totals);
   let peak = 0;
   counts.forEach((c, i) => {
     if (c > counts[peak]!) peak = i;

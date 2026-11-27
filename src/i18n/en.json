@@ -1261,11 +1261,15 @@
     "reverted": "Previous setting restored.",
     "saveFailed": "Could not save the setting.",
     "helper": {
-      "title": "Daily reviews by target rate",
-      "hint": "A rough estimate from your current cards. A higher rate means less forgetting but more frequent reviews.",
+      "title": "Daily cards by target rate",
+      "hintNew": "The top number is the average cards a day over the next 30 days: reviews plus {{count}} new words a day, the same calculation as the forecast in Progress. New cards come at fixed intervals in their first weeks, so these numbers can be close; the line below shows the review difference once your cards have settled.",
+      "hintNoNew": "The top number is the average cards a day over the next 30 days (no new words waiting, reviews only), the same calculation as the forecast in Progress. The line below shows the review difference once your cards have settled.",
       "retention": "{{pct}}% recall",
-      "reviews": "~{{count}}/day",
+      "reviews": "~{{count}} cards/day",
       "current": "Your current target",
+      "longRunMore": "{{pct}}% more reviews in the long run",
+      "longRunFewer": "{{pct}}% fewer reviews in the long run",
+      "longRunSame": "About the same in the long run",
       "empty": "Once you review cards, the estimate shows up here."
     },
     "offer": {
