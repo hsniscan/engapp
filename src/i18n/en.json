@@ -3298,6 +3298,7 @@
       "fAll": "All {{count}}",
       "fNew": "New {{count}}",
       "fCarded": "In cards {{count}}",
+      "fLearned": "Learned {{count}}",
       "fKnown": "Known {{count}}",
       "sLearned": "Learned",
       "sStudying": "In cards",

@@ -3298,6 +3298,7 @@
       "fAll": "Tümü {{count}}",
       "fNew": "Yeni {{count}}",
       "fCarded": "Çalışıyorsun {{count}}",
+      "fLearned": "Öğrendin {{count}}",
       "fKnown": "Biliyorsun {{count}}",
       "sLearned": "Öğrendin",
       "sStudying": "Çalışıyorsun",
