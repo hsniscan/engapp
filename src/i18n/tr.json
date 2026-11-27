@@ -2226,6 +2226,7 @@
     "forecastLoading": "Tahmin hesaplanıyor…",
     "forecastNote": "Tahmin, her kartı hatırlama olasılığına ve günlük yeni kart limitine göre hesaplanır.",
     "forecastToday": "Bugün",
+    "forecastTomorrow": "Yarın",
     "forecastChartLabel": "Önümüzdeki 30 günün beklenen tekrar sayısı, kapasite çizgisiyle",
     "vacationStartPast": "Tatil bugünden önce başlayamaz. Başlangıcı bugün ya da sonraki bir gün seç.",
     "forecastCapacityShort": "Kapasite {{cards}}"

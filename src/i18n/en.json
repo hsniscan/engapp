@@ -2226,6 +2226,7 @@
     "forecastLoading": "Calculating the forecast…",
     "forecastNote": "The forecast uses how likely you are to remember each card and your daily new-card limit.",
     "forecastToday": "Today",
+    "forecastTomorrow": "Tomorrow",
     "forecastChartLabel": "Expected reviews for the next 30 days, with the capacity line",
     "vacationStartPast": "A holiday cannot start before today. Pick today or a later day.",
     "forecastCapacityShort": "Capacity {{cards}}"
