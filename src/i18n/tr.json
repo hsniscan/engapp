@@ -2332,6 +2332,7 @@
     "resultTitle": "Test sonucu",
     "resultLevel": "Seviyen",
     "resultChanged": "Seviyen {{from}} → {{to}} oldu.",
+    "resultFirst": "Seviyen: {{level}}. Kelime önerileri buna göre seçilecek.",
     "resultSame": "Seviyen {{level}} olarak kaldı.",
     "nearNext": "{{nextTo}} yakınsın: {{next}} kelimelerinin %{{pct}} kadarını biliyorsun.",
     "towardNext": "{{next}} kelimelerinin %{{pct}} kadarını biliyorsun; {{next}} için %80 gerekir.",

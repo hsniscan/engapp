@@ -79,7 +79,8 @@ test('guest, offline: the offered level test sets the level, the counter and the
   const result = page.getByTestId('level-result');
   await expect(result).toHaveAttribute('data-reliable', 'true');
   await expect(page.getByTestId('result-level')).toHaveText('B2');
-  await expect(result.getByText('Seviyen B1 → B2 oldu.')).toBeVisible();
+  // The first level ever (B1 was only the default): no "B1 → B2" (2026-11-26, 3.6).
+  await expect(result.getByText(/^Seviyen: B2\./)).toBeVisible();
   await expect(page.getByTestId('level-ladder')).toBeVisible();
   await expect(page.getByTestId('result-unreliable')).toHaveCount(0);
 

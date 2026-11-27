@@ -2332,6 +2332,7 @@
     "resultTitle": "Your result",
     "resultLevel": "Your level",
     "resultChanged": "Your level went from {{from}} to {{to}}.",
+    "resultFirst": "Your level: {{level}}. Word suggestions will follow it.",
     "resultSame": "Your level stays {{level}}.",
     "nearNext": "You are close to {{next}}: you know about {{pct}}% of the {{next}} words.",
     "towardNext": "You know about {{pct}}% of the {{next}} words; {{next}} needs 80%.",
