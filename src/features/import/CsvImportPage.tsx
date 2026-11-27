@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { logError } from '@/data';
 import { importWordList, type WordListResult } from '@/data/wordList';
+import { decodeTextBytes } from '@/domain/textEncoding';
 import { MAX_LIST_ROWS, parseWordList } from '@/domain/wordList';
 import { locateTerm } from '@/features/cards/locateTerm';
 import { AddFlowPage, StickyBar } from '@/features/add/ui';
@@ -48,7 +49,8 @@ export function CsvImportPage() {
       return;
     }
     try {
-      setText(await file.text());
+      // Turkish Excel saves CSV in Windows-1254, Notepad may save UTF-16 (review 2026-11-26 #1).
+      setText(decodeTextBytes(new Uint8Array(await file.arrayBuffer())));
       setFileName(file.name);
     } catch (e) {
       void logError(e, 'wordList.read');

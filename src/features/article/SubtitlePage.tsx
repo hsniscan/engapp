@@ -5,6 +5,7 @@ import { useId, useRef, useState, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { logError } from '@/data';
 import { parseSubtitles, type SubtitleText } from '@/domain/subtitles';
+import { decodeTextBytes } from '@/domain/textEncoding';
 import { AddFlowPage } from '@/features/add/ui';
 import { Button } from '@/ui';
 import { TextResult } from './TextResult';
@@ -13,15 +14,6 @@ import { TextResult } from './TextResult';
 const MAX_SUBTITLE_BYTES = 5 * 1024 * 1024;
 
 type Problem = 'tooBig' | 'notSubtitle' | 'empty' | 'readFailed';
-
-/** UTF-8 when the bytes are valid UTF-8, else windows-1252 (older .srt files). */
-function decodeSubtitleBytes(bytes: Uint8Array): string {
-  try {
-    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-  } catch {
-    return new TextDecoder('windows-1252').decode(bytes);
-  }
-}
 
 export function SubtitlePage() {
   const { t } = useTranslation();
@@ -43,7 +35,7 @@ export function SubtitlePage() {
     }
     setBusy(true);
     try {
-      const text = decodeSubtitleBytes(new Uint8Array(await file.arrayBuffer()));
+      const text = decodeTextBytes(new Uint8Array(await file.arrayBuffer()));
       try {
         setResult({ ...parseSubtitles(text, file.name), fileName: file.name });
       } catch (err) {
