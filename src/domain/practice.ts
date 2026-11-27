@@ -70,12 +70,20 @@ export function isPracticable(c: PracticeCard): boolean {
   );
 }
 
+/**
+ * "Zorlandıkların": lapses ≥ 2, a practice miss in the window, or, for a word the learner
+ * once knew and then forgot (lapses ≥ 1), a high difficulty or an Again in the window. Agains
+ * while a new word is first learned are not struggling: a first Again also sets FSRS difficulty
+ * above 7, so without the lapse check every word missed on day 1 was listed (2026-11-26, 3.7;
+ * ADR 0086).
+ */
 export function isHard(x: PracticeCandidate, now: Millis): boolean {
   const since = now - HARD_WINDOW_MS;
+  const lapsed = x.card.lapses >= 1;
   return (
     x.card.lapses >= HARD_MIN_LAPSES ||
-    x.card.difficulty >= HARD_MIN_DIFFICULTY ||
-    (x.lastAgainAt !== null && x.lastAgainAt >= since) ||
+    (lapsed && x.card.difficulty >= HARD_MIN_DIFFICULTY) ||
+    (lapsed && x.lastAgainAt !== null && x.lastAgainAt >= since) ||
     (x.lastPracticeMissAt !== null && x.lastPracticeMissAt >= since)
   );
 }

@@ -31,7 +31,7 @@ async function hardWord(term: string, meaning: string, opts: { sentence?: string
     ],
   });
   const rec = createdCards.find((c) => c.card_type === 'recognition')!;
-  await db.cards.update(rec.id, { state: CardState.Review, reps: 4, difficulty: 8, last_review: Date.now() - 86_400_000 });
+  await db.cards.update(rec.id, { state: CardState.Review, reps: 4, lapses: 1, difficulty: 8, last_review: Date.now() - 86_400_000 });
   return { cardId: rec.id, noteId: note.id };
 }
 
