@@ -1,4 +1,6 @@
-// The home header: "Pazar, 25 Ekim" and a greeting by the hour. Presentation only.
+// The home header: "Pazar, 25 Ekim" (the study day) and a greeting by the hour.
+
+import { dayKeyOf, deviceTimeZone, parseDayKey } from '@/domain/day';
 
 const LOCALE = 'tr-TR';
 
@@ -23,12 +25,17 @@ export function greetingKey(
   return 'today.greetNight';
 }
 
-/** "Pazar, 25 Ekim" (the calendar date, not the study day that starts at 04:00). */
-export function homeDate(ms: number, timeZone?: string): string {
-  const zone = timeZone ? { timeZone } : {};
-  const weekday = new Intl.DateTimeFormat(LOCALE, { weekday: 'long', ...zone }).format(ms);
-  const day = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'long', ...zone }).format(
-    ms,
-  );
-  return `${weekday}, ${day}`;
+/**
+ * "Pazar, 25 Ekim": the study day (it starts at `dayStartHour`, 04:00 by default), the same
+ * day İlerleme and the forecast call "today". At 00:13 the header still names the day before,
+ * so a late-night session is not "tomorrow" on one screen and "today" on the next (2026-11-26).
+ */
+export function homeDate(ms: number, timeZone?: string, dayStartHour = 0): string {
+  const key = dayKeyOf(ms, { timezone: timeZone ?? deviceTimeZone(), day_start_hour: dayStartHour });
+  const { year, month, day } = parseDayKey(key);
+  const noon = Date.UTC(year, month - 1, day, 12);
+  const zone = { timeZone: 'UTC' };
+  const weekday = new Intl.DateTimeFormat(LOCALE, { weekday: 'long', ...zone }).format(noon);
+  const date = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'long', ...zone }).format(noon);
+  return `${weekday}, ${date}`;
 }

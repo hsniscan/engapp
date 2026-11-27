@@ -111,6 +111,8 @@ export interface HomeCore {
   /** When the next cards come (shown once the word study is done). */
   next: NextDue;
   timezone: string;
+  /** The hour the study day starts (the header names the study day). */
+  dayStartHour: number;
   now: Millis;
 }
 
@@ -127,6 +129,7 @@ export async function getHomeCore(now: Millis = Date.now()): Promise<HomeCore> {
     hasCards: anyNote !== undefined,
     next,
     timezone: cfgOf(settings).timezone,
+    dayStartHour: cfgOf(settings).day_start_hour,
     now,
   };
 }

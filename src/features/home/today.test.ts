@@ -15,6 +15,11 @@ describe('home header', () => {
   it('writes the date as on the board', () => {
     expect(homeDate(at('2026-10-25T16:00:00Z'), 'Europe/Istanbul')).toBe('Pazar, 25 Ekim');
   });
+  it('names the study day: at 00:13 with the day starting at 04:00 it is still the day before', () => {
+    // 2026-11-26 21:13 UTC = 27 Kasım 00:13 in Istanbul.
+    expect(homeDate(at('2026-11-26T21:13:00Z'), 'Europe/Istanbul', 4)).toBe('Perşembe, 26 Kasım');
+    expect(homeDate(at('2026-11-27T01:30:00Z'), 'Europe/Istanbul', 4)).toBe('Cuma, 27 Kasım');
+  });
 });
 
 describe('week dots', () => {

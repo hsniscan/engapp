@@ -77,7 +77,7 @@ export function HomeScreen() {
       </FirstRunGate>
     );
   return (
-    <HomeFrame timezone={core?.timezone}>
+    <HomeFrame timezone={core?.timezone} dayStartHour={core?.dayStartHour}>
       {core ? <Dashboard core={core} /> : <DashboardSkeleton />}
     </HomeFrame>
   );
@@ -86,10 +86,12 @@ export function HomeScreen() {
 /** Page frame with the greeting header ("Pazar, 25 Ekim" / "İyi akşamlar, Hasan"). */
 function HomeFrame({
   timezone,
+  dayStartHour,
   title,
   children,
 }: {
   timezone: string | undefined;
+  dayStartHour?: number;
   /** Replaces the greeting (the welcome screen says "Hoş geldin"). */
   title?: string;
   children: React.ReactNode;
@@ -101,7 +103,7 @@ function HomeFrame({
   const greeting = t(greetingKey(at, timezone));
   return (
     <PageFrame
-      eyebrow={homeDate(at, timezone)}
+      eyebrow={homeDate(at, timezone, dayStartHour)}
       title={title ?? (first ? t('today.greetingName', { greeting, name: first }) : greeting)}
     >
       {children}
