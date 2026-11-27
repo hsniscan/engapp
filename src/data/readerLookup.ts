@@ -2,6 +2,7 @@
 // user's own note first, then Kelime Bankası, then the cached shared lexicon. Nothing here
 // touches the network; the sheet asks ai-enrich (features/import/lexicon.ts) only when this
 // finds nothing and the device is online, and never sends the user's sentence with it.
+import { lemmaForms } from '../../supabase/functions/_shared/tokenize';
 import { normalizeTerm } from '../domain/normalize';
 import type { Id, LexiconSense } from '../domain/types';
 import { db } from './db';
@@ -53,11 +54,36 @@ export interface TextGloss {
   tr: string;
 }
 
-/** The text's gloss for one of these forms, matched like notes (normalized, lemma or written). */
+/**
+ * Base forms a written word may have, for matching a gloss when the lemmatiser kept the written
+ * form: the shared lemmatiser's candidates (irregular table, -ies → -y, -ed, -ing...) plus
+ * compounds of an irregular plural ("fishermen" → "fisherman", "grandchildren" → "grandchild").
+ */
+function baseCandidates(norm: string): string[] {
+  const out = new Set(lemmaForms(norm));
+  for (const [plural, single] of [
+    ['women', 'woman'],
+    ['men', 'man'],
+    ['children', 'child'],
+  ] as const)
+    if (norm.length > plural.length && norm.endsWith(plural))
+      out.add(norm.slice(0, -plural.length) + single);
+  return [...out];
+}
+
+/**
+ * The text's gloss for one of these forms, matched like notes (normalized, lemma or written);
+ * failing that, for a base form of one of them (an irregular plural the lemmatiser missed).
+ */
 export function glossFor(glosses: readonly TextGloss[] | undefined, forms: readonly string[]): TextGloss | null {
   if (!glosses?.length) return null;
-  const keys = new Set(forms.map(normalizeTerm).filter(Boolean));
-  return glosses.find((g) => keys.has(normalizeTerm(g.word)) && g.tr.trim()) ?? null;
+  const norms = forms.map(normalizeTerm).filter(Boolean);
+  const match = (keys: Set<string>) =>
+    glosses.find((g) => keys.has(normalizeTerm(g.word)) && g.tr.trim()) ?? null;
+  return (
+    match(new Set(norms)) ??
+    match(new Set(norms.flatMap((n) => (n.includes(' ') ? [] : baseCandidates(n)))))
+  );
 }
 
 async function noteHit(term: string): Promise<ReaderWordInfo | null> {

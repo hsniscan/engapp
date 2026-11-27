@@ -197,7 +197,9 @@ test('Keşfet: the feed, each filter, and İlerleme at the top of Profil', async
   await expect(tabBar(page)).toBeHidden();
   await page.goto('/kesfet?f=okuma');
   await expect(page.getByTestId('kesfet-continue')).toContainText('The Late Train');
-  await expect(page.getByTestId('my-texts')).toContainText('The Late Train');
+  // Opened but not started (decision 0089): "Okumaya başla", and it stays in the library list.
+  await expect(page.getByTestId('kesfet-continue')).toContainText('Okumaya başla');
+  await expect(library).toContainText('The Late Train');
 
   // Profil opens with İlerleme; "Tümünü gör" is the full page.
   await tabBar(page).getByRole('link', { name: 'Profil', exact: true }).click();

@@ -99,7 +99,7 @@ function ContinueCard({ text }: { text: ReaderText }) {
         to={readerPath(text.id)}
         className={buttonClasses({ fullWidth: true, size: 'lg' })}
       >
-        {t('discover.continue.action')}
+        {t(p.state === 'unread' ? 'discover.continue.begin' : 'discover.continue.action')}
         <Icon name="arrow-right" size={20} />
       </Link>
     </Card>

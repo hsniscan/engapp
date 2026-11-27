@@ -88,6 +88,8 @@ const PAGE_LOAD = Date.now().toString(36);
 const openingKey = (key: string) => (key === 'default' ? `default:${PAGE_LOAD}` : key);
 /** Height of the sticky top bar: a sentence under it is not on screen. */
 const TOP_BAR = 72;
+/** The position is saved this long after scrolling stops (one write per pause, not per frame). */
+const SCROLL_SAVE_MS = 1500;
 
 export function ReaderPage() {
   const { textId = '' } = useParams();
@@ -505,6 +507,21 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
       document.removeEventListener('visibilitychange', vis);
       window.removeEventListener('pagehide', flush);
       flush();
+    };
+  }, [flush]);
+  // A write started in `pagehide` may not land before a reload tears the page down, so the
+  // position is also saved shortly after the user stops scrolling: a reload then reopens
+  // where they were, not where they were last time they left (kelimeler-okuma #8).
+  useEffect(() => {
+    let timer = 0;
+    const onScroll = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(flush, SCROLL_SAVE_MS);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.clearTimeout(timer);
     };
   }, [flush]);
   // Listening counts as reading.

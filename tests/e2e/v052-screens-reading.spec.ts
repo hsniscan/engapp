@@ -232,9 +232,7 @@ test('W4 screens: Keşfet, library, reader, word sheet, settings, end of text, M
 
   await page.getByTestId('reader-text').getByText('harbour', { exact: true }).first().click();
   const sheet = page.getByRole('dialog');
-  await expect(sheet.getByTestId('reader-reveal')).toBeVisible();
-  await shot(page, '07-kelime-tahmin');
-  await sheet.getByTestId('reader-reveal').click();
+  // The meaning at once ("Hep tahmin ettir" is off by default, decision 0089).
   await expect(sheet.getByText('liman')).toBeVisible();
   await shot(page, '08-kelime-anlami');
   await sheet.getByTestId('reader-add-card').click();
@@ -243,7 +241,6 @@ test('W4 screens: Keşfet, library, reader, word sheet, settings, end of text, M
 
   // A word with no meaning on the device: type one.
   await page.getByTestId('reader-text').getByText('simit', { exact: true }).first().click();
-  await sheet.getByTestId('reader-reveal').click();
   await expect(sheet.getByTestId('reader-own-meaning')).toBeVisible();
   await shot(page, '09-kelime-anlam-yok');
   await page.keyboard.press('Escape');

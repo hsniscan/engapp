@@ -3045,7 +3045,8 @@
     "continue": {
       "eyebrow": "Devam et",
       "start": "Açtın, henüz okumaya başlamadın",
-      "action": "Kaldığın yerden oku"
+      "action": "Kaldığın yerden oku",
+      "begin": "Okumaya başla"
     },
     "suggestions": {
       "eyebrow": "Sana uygun metinler",
@@ -3589,7 +3590,7 @@
     },
     "legend": {
       "sample": "word",
-      "new": "Muhtemelen yeni",
+      "new": "Muhtemelen yeni ya da kartında henüz çalışmadın",
       "learning": "Öğreniyorsun",
       "consolidating": "Pekişiyor",
       "known": "Biliyorsun ya da öğrendin: işaret yok",
@@ -3704,7 +3705,7 @@
     },
     "alwaysGuess": {
       "label": "Hep tahmin ettir",
-      "hint": "Kartlarında olan kelimelerde de anlam gösterilmeden önce tahmin etmen istenir. Kapalıyken bu kelimelerin anlamı hemen görünür."
+      "hint": "Dokunduğun her kelimede anlam gösterilmeden önce tahmin etmen istenir. Kapalıyken anlam hemen görünür."
     },
     "settings": {
       "title": "Okuma"
@@ -3724,7 +3725,7 @@
       "title": "Metinlerim",
       "add": "Metin ekle",
       "empty": "Bir metin yapıştır ya da PDF yükle; okuyucuda kelimeler bildiğine göre işaretlenir.",
-      "unread": "Okunmadı",
+      "unread": "Başlanmadı",
       "progress": "%{{pct}} okundu",
       "continue": "Devam et",
       "finished": "Bitti",
@@ -3762,6 +3763,7 @@
     "coverageStory": "Hedef kelimeler dışında hikâyenin %{{pct}}'{{suffix}} biliyorsun",
     "mark": {
       "new": "yeni kelime",
+      "fresh": "kartında var, henüz çalışmadın",
       "learning": "öğrendiğin kelime",
       "consolidating": "pekişen kelime",
       "target": "hikâyedeki tekrar kelimen"

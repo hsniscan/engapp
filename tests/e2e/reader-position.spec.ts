@@ -93,8 +93,8 @@ test('reader: closing after a tap keeps the start; a scrolled place is resumed',
   await page.waitForTimeout(300);
   await page.goto('/decks?tab=reading');
   const row = page.getByTestId('my-texts').getByRole('link', { name: /Long walk/ });
-  // Opened and read for a moment, not scrolled: started, at 0 % (B14).
-  await expect(row).toContainText('Başladın');
+  // Opened for a moment, not scrolled: not started yet (decision 0089).
+  await expect(row).toContainText('Başlanmadı');
   await expect(row).not.toContainText('%9');
   expect(((await dumpTables(page, ['texts'])).texts![0] as { progress_offset: number }).progress_offset).toBe(0);
 
@@ -115,12 +115,22 @@ test('reader: closing after a tap keeps the start; a scrolled place is resumed',
   await expect(page.getByText('Kaldığın yerden')).toBeVisible();
   await expect(page.getByTestId('reader-text').getByText('meander', { exact: true })).toBeInViewport();
 
+  // Scroll further and reload: it reopens there, not at the place saved on the last leave
+  // (the position is saved when scrolling stops, kelimeler-okuma #8).
+  const far = page.getByTestId('reader-text').getByText('Paragraph 32.', { exact: false });
+  await far.scrollIntoViewIfNeeded();
+  await page.mouse.wheel(0, 100);
+  await page.waitForTimeout(2000);
+  await page.reload();
+  await expect(page.getByText('Kaldığın yerden')).toBeVisible();
+  await expect(page.getByTestId('reader-text').locator('[data-s]', { hasText: 'Paragraph 32.' })).toBeInViewport();
+
   if (process.env.SCREENSHOTS_DIR) {
     await page.screenshot({ path: `${process.env.SCREENSHOTS_DIR}/okuyucu-devam.png` });
   }
 });
 
-test('reader: own words show their meaning, new ones ask first; the new words at the end', async ({ page }) => {
+test('reader: own and new words show their meaning at once; the new words at the end', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await serveBank(page);
   await page.goto('/decks?tab=bank');
@@ -141,11 +151,11 @@ test('reader: own words show their meaning, new ones ask first; the new words at
   // The sheet animates out; a tap before it is gone falls on the closing overlay.
   await expect(page.getByRole('dialog')).toHaveCount(0);
 
-  // New: guess first.
+  // New: the meaning at once too ("Hep tahmin ettir" is off by default, decision 0089).
   await page.getByTestId('reader-text').getByText('serendipity', { exact: true }).click();
   sheet = page.getByRole('dialog');
-  await expect(sheet.getByTestId('reader-reveal')).toBeVisible();
-  await expect(sheet.getByText('mutlu tesadüf')).toHaveCount(0);
+  await expect(sheet.getByText('mutlu tesadüf')).toBeVisible();
+  await expect(sheet.getByTestId('reader-reveal')).toHaveCount(0);
   await page.keyboard.press('Escape');
   // The sheet animates out; a tap before it is gone falls on the closing overlay.
   await expect(page.getByRole('dialog')).toHaveCount(0);

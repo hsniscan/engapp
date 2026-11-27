@@ -87,10 +87,9 @@ test('reader: paste offline, tap a word, guess, see the meaning, add a card', as
 
   await page.getByTestId('reader-text').getByText('serendipity', { exact: true }).click();
   const sheet = page.getByRole('dialog');
-  await expect(sheet.getByText(/Önce cümleye bak/)).toBeVisible();
-  await expect(sheet.getByText('mutlu tesadüf')).toHaveCount(0);
-  await sheet.getByTestId('reader-reveal').click();
+  // The meaning at once ("Hep tahmin ettir" is off by default, decision 0089).
   await expect(sheet.getByText('mutlu tesadüf')).toBeVisible();
+  await expect(sheet.getByTestId('reader-reveal')).toHaveCount(0);
   await sheet.getByTestId('reader-add-card').click();
   await expect(sheet.getByText('Bu kelime kartlarında var.')).toBeVisible();
 
@@ -119,7 +118,7 @@ for (const scheme of ['light', 'dark'] as const) {
     await expect(page.getByTestId('reader-coverage')).toBeVisible();
     await axe(page, `reader ${scheme}`);
     await page.getByTestId('reader-text').getByText('serendipity', { exact: true }).click();
-    await page.getByRole('dialog').getByTestId('reader-reveal').click();
+    await expect(page.getByRole('dialog').getByText('mutlu tesadüf')).toBeVisible();
     await axe(page, `word sheet ${scheme}`);
     await page.keyboard.press('Escape');
     await page.getByRole('button', { name: 'Okuma ayarları' }).click();

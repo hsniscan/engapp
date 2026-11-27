@@ -3045,7 +3045,8 @@
     "continue": {
       "eyebrow": "Continue",
       "start": "Opened, not started yet",
-      "action": "Continue reading"
+      "action": "Continue reading",
+      "begin": "Start reading"
     },
     "suggestions": {
       "eyebrow": "Texts for you",
@@ -3589,7 +3590,7 @@
     },
     "legend": {
       "sample": "word",
-      "new": "Probably new",
+      "new": "Probably new, or a card you have not studied yet",
       "learning": "Learning",
       "consolidating": "Consolidating",
       "known": "Known or learned: no mark",
@@ -3704,7 +3705,7 @@
     },
     "alwaysGuess": {
       "label": "Always guess first",
-      "hint": "Words already in your cards ask for a guess too before their meaning shows. When off, their meaning shows at once."
+      "hint": "Every word you tap asks for a guess before its meaning shows. When off, the meaning shows at once."
     },
     "settings": {
       "title": "Reading"
@@ -3724,7 +3725,7 @@
       "title": "My texts",
       "add": "Add a text",
       "empty": "Paste a text or upload a PDF; the reader marks its words by what you know.",
-      "unread": "Not read",
+      "unread": "Not started",
       "progress": "{{pct}}% read",
       "continue": "Continue",
       "finished": "Finished",
@@ -3762,6 +3763,7 @@
     "coverageStory": "Apart from the target words, you know {{pct}}% of this story",
     "mark": {
       "new": "new word",
+      "fresh": "in your cards, not studied yet",
       "learning": "word you are learning",
       "consolidating": "word settling in",
       "target": "one of your review words in the story"
