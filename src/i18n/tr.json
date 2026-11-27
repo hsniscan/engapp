@@ -3670,7 +3670,7 @@
       "other": "diğer"
     },
     "encounters": {
-      "none": "Bu kelimeyle henüz bir kartta ya da metinde karşılaşmadın.",
+      "none": "Bu kelimeyi henüz çalışmadın, bir metinde de görmedin.",
       "line_one": "Bu kelimeyi {{count}} kez gördün: {{cards}} kez kartta, {{texts}} metinde",
       "line_other": "Bu kelimeyi {{count}} kez gördün: {{cards}} kez kartta, {{texts}} metinde",
       "cardsOnly_one": "Bu kelimeyi {{count}} kez kartta gördün",
