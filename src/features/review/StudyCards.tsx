@@ -8,7 +8,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CardView } from '@/data';
 import { cardFormat } from '@/domain/formatLadder';
-import { posLabel } from '@/features/cards/labels';
+import { studyPosLabel } from './posText';
 import { CardExamples } from '@/features/examples/ExamplesPanel';
 import { CardBackExtras } from '@/features/family/CardBackExtras';
 import { CardPicture } from '@/features/images';
@@ -204,7 +204,7 @@ export function PosBadge({ view }: { view: CardView }) {
   const { t } = useTranslation();
   const pos = (view.sense ?? view.senses[0])?.pos;
   if (!pos) return null;
-  return <Badge tone="outline">{posLabel(t, pos)}</Badge>;
+  return <Badge tone="outline">{studyPosLabel(t, pos)}</Badge>;
 }
 
 /** Term (Literata), IPA and part of speech: the head of both faces. */
@@ -338,8 +338,19 @@ export function BackPicture({ view, showNew = true }: { view: CardView; showNew?
   );
 }
 
-/** Part of speech and the Turkish meaning (Üretim's question; the answer side of a cloze). */
-export function MeaningBlock({ view, size = 'lg' }: { view: CardView; size?: 'lg' | 'md' }) {
+/**
+ * Part of speech and the Turkish meaning (Üretim's question; the answer side). The English
+ * gloss is for the answer side only: on the question it gives the answer away (2026-11-26 #12).
+ */
+export function MeaningBlock({
+  view,
+  size = 'lg',
+  gloss = true,
+}: {
+  view: CardView;
+  size?: 'lg' | 'md';
+  gloss?: boolean;
+}) {
   const { t } = useTranslation();
   const sense = view.sense;
   if (!sense) return null;
@@ -347,7 +358,7 @@ export function MeaningBlock({ view, size = 'lg' }: { view: CardView; size?: 'lg
     <div className="flex flex-col gap-1.5">
       {sense.pos && (
         <span>
-          <Badge tone="outline">{posLabel(t, sense.pos)}</Badge>
+          <Badge tone="outline">{studyPosLabel(t, sense.pos)}</Badge>
         </span>
       )}
       <p
@@ -358,7 +369,7 @@ export function MeaningBlock({ view, size = 'lg' }: { view: CardView; size?: 'lg
       >
         {meaningOf(sense)}
       </p>
-      {sense.gloss_en && (
+      {gloss && sense.gloss_en && (
         <p lang="en" className="font-serif text-ui text-fg-muted">
           {sense.gloss_en}
         </p>

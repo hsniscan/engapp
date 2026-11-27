@@ -105,6 +105,22 @@ describe('card faces', () => {
     expect(screen.queryByText(SENTENCE_TR)).not.toBeInTheDocument();
   });
 
+  it('production front: no English gloss under the Turkish meaning (2026-11-26 #12)', async () => {
+    const speech = { available: true, onSpeak: vi.fn(), speakText: vi.fn() };
+    renderRoute(<CardFront view={await viewOf('production')} isNew={false} speech={speech} />);
+    expect(await screen.findByText('yıldönümü')).toBeInTheDocument();
+    expect(screen.queryByText(/a date that is remembered/)).not.toBeInTheDocument();
+  });
+
+  it('a phrasal verb chip reads "deyimsel fiil", with no English in it (2026-11-26 #12)', async () => {
+    const speech = { available: true, onSpeak: vi.fn(), speakText: vi.fn() };
+    const view = await viewOf('recognition');
+    const pv = { ...view, sense: { ...view.sense!, pos: 'phrasal verb' }, senses: [{ ...view.senses[0]!, pos: 'phrasal verb' }] };
+    renderRoute(<CardBack view={pv} isNew={false} speech={speech} />);
+    expect(await screen.findByText(/deyimsel fiil ·/)).toBeInTheDocument();
+    expect(screen.queryByText(/\(phrasal verb\)/)).not.toBeInTheDocument();
+  });
+
   it('back: a level badge that explains its source; dashed for an AI estimate', async () => {
     const speech = { available: true, onSpeak: vi.fn(), speakText: vi.fn() };
     setLevelDataForTests(parseClientLevels('# @min_zipf 3\nanniversary\t3.6\tn:B1:j:A2:Türkçede yıldönümü'));

@@ -8,7 +8,7 @@ import type { CardView } from '@/data';
 import { type AnswerCheck, checkAnswer, diffLetters, suggestRating } from '@/domain/answerCheck';
 import { cardFormat } from '@/domain/formatLadder';
 import { Rating } from '@/domain/types';
-import { posLabel } from '@/features/cards/labels';
+import { studyPosLabel } from './posText';
 import { CardPicture } from '@/features/images';
 import { LeechHint } from '@/features/leech';
 import { Button, cn, Eyebrow, Icon, type IconName } from '@/ui';
@@ -330,14 +330,14 @@ export function ProductionStudy({
               {sense?.pos && (
                 <p className="text-ui text-fg-muted">
                   <span className="sr-only">
-                    {t('imageCard.pos', { pos: posLabel(t, sense.pos) })}
+                    {t('imageCard.pos', { pos: studyPosLabel(t, sense.pos) })}
                   </span>
-                  <span aria-hidden="true">{posLabel(t, sense.pos)}</span>
+                  <span aria-hidden="true">{studyPosLabel(t, sense.pos)}</span>
                 </p>
               )}
             </div>
           ) : (
-            <MeaningBlock view={view} />
+            <MeaningBlock view={view} gloss={false} />
           )}
           {!picture && view.sentence && (!sentenceAsHint || sentenceShown) && <BlankedSentenceBox view={view} />}
           {hintShown && view.hint && (

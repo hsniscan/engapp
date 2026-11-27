@@ -359,6 +359,7 @@
     "answerShown": "Answer shown",
     "scrollCard": "Card, scrollable",
     "suggested": "Our suggestion:",
+    "posPhrasalVerb": "phrasal verb",
     "choiceHint": "You picked it from the options; type it to get Good.",
     "wrongHint": "Your answer was wrong; we suggest Again. Tap another button twice to pick it.",
     "confirmRating": "“{{rating}}” anyway? Tap it once more to confirm.",

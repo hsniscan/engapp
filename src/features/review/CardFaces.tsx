@@ -4,7 +4,7 @@ import type { CardView } from '@/data';
 import type { CardSentence } from '@/domain/examples';
 import { findSpan, isValidSpan } from '@/domain/recognition';
 import type { Sense } from '@/domain/types';
-import { posLabel } from '@/features/cards/labels';
+import { studyPosLabel } from './posText';
 import { LevelDialogButton } from '@/features/levels/LevelDetails';
 import { useCardLevel } from '@/features/levels/useWordLevel';
 import { CardExamples } from '@/features/examples/ExamplesPanel';
@@ -317,9 +317,9 @@ export const CardFront = memo(function CardFront({ view, isNew, speech }: FacePr
         <CardPicture image={view.image} showNew={false} className="size-44 sm:size-56" />
         {sense.pos && (
           <p className="text-ui text-fg-muted">
-            <span className="sr-only">{t('imageCard.pos', { pos: posLabel(t, sense.pos) })}</span>
+            <span className="sr-only">{t('imageCard.pos', { pos: studyPosLabel(t, sense.pos) })}</span>
             <span aria-hidden="true" className="font-serif italic">
-              {posLabel(t, sense.pos)}
+              {studyPosLabel(t, sense.pos)}
             </span>
           </p>
         )}
@@ -336,11 +336,6 @@ export const CardFront = memo(function CardFront({ view, isNew, speech }: FacePr
         <p className="text-page font-semibold text-fg">
           {meaningOf(sense)}
         </p>
-        {sense.gloss_en && (
-          <p lang="en" className="max-w-sm font-serif text-ui text-fg-muted">
-            {sense.gloss_en}
-          </p>
-        )}
         {hint && (
           <p className="mt-4 font-serif text-heading tracking-[0.18em] text-fg-muted">
             <span className="sr-only">{t('review.firstLetter')} </span>
@@ -414,7 +409,7 @@ export function SenseList({ view, align = 'center' }: { view: CardView; align?: 
         <p className="text-heading font-semibold break-words text-fg">{meaningOf(only)}</p>
         {only.gloss_en && (
           <p className="text-ui text-fg-muted">
-            {only.pos && <span className="italic">{posLabel(t, only.pos)} · </span>}
+            {only.pos && <span className="italic">{studyPosLabel(t, only.pos)} · </span>}
             <span lang="en">{only.gloss_en}</span>
           </p>
         )}
@@ -449,7 +444,7 @@ export function SenseList({ view, align = 'center' }: { view: CardView; align?: 
                 <p className="text-meta text-fg-muted">
                   {s.gloss_en && (
                     <span>
-                      {s.pos && <span className="italic">{posLabel(t, s.pos)} · </span>}
+                      {s.pos && <span className="italic">{studyPosLabel(t, s.pos)} · </span>}
                       <span lang="en">{s.gloss_en}</span>
                     </span>
                   )}
