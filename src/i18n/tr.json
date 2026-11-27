@@ -358,6 +358,7 @@
     "answerShown": "Cevap gösterildi",
     "scrollCard": "Kart, kaydırılabilir",
     "suggested": "Önerimiz:",
+    "choiceHint": "Seçenekten bildin; yazarak bilirsen İyi olur.",
     "wrongHint": "Cevabın yanlıştı; Tekrar öneriyoruz. Başka bir düğme için iki kez dokun.",
     "confirmRating": "Yine de “{{rating}}” mi? Onaylamak için bir kez daha dokun.",
     "confirmTap": "emin misin?",

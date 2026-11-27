@@ -33,10 +33,12 @@ export interface RatingBarProps {
    * keeps the four big buttons and only marks the suggestion (a self-rated card's pace hint).
    */
   primary?: boolean;
+  /** One short line on why we suggest what we suggest (a right pick from choices: Zor). */
+  reason?: string | null;
 }
 
 export const RatingBar = forwardRef<HTMLDivElement, RatingBarProps>(function RatingBar(
-  { view, onAnswer, suggested, primary = true },
+  { view, onAnswer, suggested, primary = true, reason },
   ref,
 ) {
   const { t } = useTranslation();
@@ -108,6 +110,11 @@ export const RatingBar = forwardRef<HTMLDivElement, RatingBarProps>(function Rat
           </span>
         )}
       </p>
+      {reason && suggestedName && (
+        <p className="-mt-1 text-center text-meta text-fg-muted" data-testid="rating-reason">
+          {reason}
+        </p>
+      )}
       {guarded && (
         <p className="text-center text-meta text-fg-muted" role="status" data-testid="rating-confirm">
           {armedName
