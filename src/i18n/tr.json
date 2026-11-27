@@ -457,6 +457,7 @@
     "speak": "Cümleyi dinle",
     "editTitle": "Cümleyi düzenle",
     "editHint": "Düzenlediğin cümle yalnızca senin hesabında durur; ortak sözlüğe yazılmaz.",
+    "editHint_device": "Düzenlediğin cümle yalnızca bu cihazda durur; ortak sözlüğe yazılmaz.",
     "editLabel": "Cümle",
     "termMissing": "Cümlede “{{term}}” bulunamadı; kelime vurgulanmayacak ve boşluk doldurma kartında kullanılmayacak.",
     "tooLong": "Cümle en fazla {{max}} karakter olabilir.",
@@ -514,6 +515,7 @@
     "writeTitle": "Kendi anımsatıcını yaz",
     "editTitle": "Anımsatıcıyı düzenle",
     "dialogHint": "Yazdığın yalnızca senin hesabında durur; kimseyle paylaşılmaz.",
+    "dialogHint_device": "Yazdığın yalnızca bu cihazda durur; kimseyle paylaşılmaz.",
     "textLabel": "Anımsatıcı",
     "emptyText": "Anımsatıcı boş olamaz.",
     "tooLong": "En fazla {{max}} karakter olabilir.",
@@ -573,6 +575,7 @@
     "picker": {
       "title": "Hangi kelimeyle karıştırdın?",
       "description": "“{{term}}” ile karıştırdığın kelimeyi seç. Bu bilgi yalnızca senin hesabında durur.",
+      "description_device": "“{{term}}” ile karıştırdığın kelimeyi seç. Bu bilgi yalnızca bu cihazda durur.",
       "search": "Kelimelerinde ara",
       "near": {
         "spelling": "Yazılışı benziyor",
@@ -591,6 +594,7 @@
       "existing": "Bu iki kelime için zaten bir fark kartın var.",
       "differenceLabel": "Fark",
       "differenceHint": "İkisini ayıran kısa bir açıklama. Yazdığın yalnızca senin hesabında durur.",
+      "differenceHint_device": "İkisini ayıran kısa bir açıklama. Yazdığın yalnızca bu cihazda durur.",
       "ask": "Farkı açıklat",
       "asking": "Açıklama hazırlanıyor…",
       "ready": "Açıklama hazır; istersen değiştirebilirsin.",

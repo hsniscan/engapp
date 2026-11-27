@@ -189,6 +189,8 @@ describe('leech in the review session', () => {
     expect(prompt).toHaveTextContent('“bank” başka bir kelimeyle mi karıştı?');
     await user.click(within(prompt).getByRole('button', { name: 'Kelimeyi seç' }));
     const picker = await screen.findByTestId('confusion-picker');
+    // Not signed in: the note is kept on this device, not "in your account" (2026-11-26 #8).
+    expect(screen.getByText(/Bu bilgi yalnızca bu cihazda durur/)).toBeInTheDocument();
     await user.click(await within(picker).findByRole('button', { name: /light/ }));
     expect(await screen.findByText(/Not edildi: “bank” ile “light”/)).toBeInTheDocument();
     expect(await db.user_content.where('kind').equals('confusion').count()).toBe(1);

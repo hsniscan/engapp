@@ -7,6 +7,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useId, useMemo, useState } from 'react';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
+import { useKeptWhere } from '@/features/auth/session';
 import {
   getSenseExamples,
   logError,
@@ -429,6 +430,7 @@ function EditDialog({
   senseId: Id;
 }) {
   const { t } = useTranslation();
+  const kept = useKeptWhere();
   const [text, setText] = useState(item.text);
   const [saving, setSaving] = useState(false);
   const [seen, setSeen] = useState(open);
@@ -465,7 +467,7 @@ function EditDialog({
       open={open}
       onOpenChange={onOpenChange}
       title={t('examples.editTitle')}
-      description={t('examples.editHint')}
+      description={t('examples.editHint', { context: kept })}
       footer={
         <>
           <Button variant="secondary" onClick={() => onOpenChange(false)}>

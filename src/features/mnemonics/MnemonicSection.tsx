@@ -20,7 +20,7 @@ import {
   type MnemonicItem,
 } from '@/domain/mnemonics';
 import type { Id, Sense } from '@/domain/types';
-import { useAuth } from '@/features/auth/session';
+import { useAuth, useKeptWhere } from '@/features/auth/session';
 import { useOnline } from '@/lib/online';
 import { Badge, Button, cn, Dialog, TextArea, toast } from '@/ui';
 import { useMnemonicView } from './hooks';
@@ -305,6 +305,7 @@ function MnemonicDialog({
   onSave: (text: string, fromId: Id | null) => Promise<void>;
 }) {
   const { t } = useTranslation();
+  const kept = useKeptWhere();
   const open = editing !== null;
   const initial = editing?.mode === 'edit' ? editing.text : '';
   const [text, setText] = useState(initial);
@@ -343,7 +344,7 @@ function MnemonicDialog({
         if (!o) onClose();
       }}
       title={editing?.mode === 'edit' ? t('mnemonic.editTitle') : t('mnemonic.writeTitle')}
-      description={t('mnemonic.dialogHint')}
+      description={t('mnemonic.dialogHint', { context: kept })}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>

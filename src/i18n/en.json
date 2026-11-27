@@ -457,6 +457,7 @@
     "speak": "Listen to the sentence",
     "editTitle": "Edit sentence",
     "editHint": "Your edit stays in your account only; it is never written to the shared dictionary.",
+    "editHint_device": "Your edit stays on this device only; it is never written to the shared dictionary.",
     "editLabel": "Sentence",
     "termMissing": "“{{term}}” is not in the sentence; it won't be highlighted or used for fill-in-the-blank cards.",
     "tooLong": "At most {{max}} characters.",
@@ -514,6 +515,7 @@
     "writeTitle": "Write your own mnemonic",
     "editTitle": "Edit the mnemonic",
     "dialogHint": "What you write stays in your account only; it is not shared with anyone.",
+    "dialogHint_device": "What you write stays on this device only; it is not shared with anyone.",
     "textLabel": "Mnemonic",
     "emptyText": "The mnemonic cannot be empty.",
     "tooLong": "At most {{max}} characters.",
@@ -573,6 +575,7 @@
     "picker": {
       "title": "Which word did you mix it up with?",
       "description": "Pick the word you confused with “{{term}}”. This stays in your account only.",
+      "description_device": "Pick the word you confused with “{{term}}”. This stays on this device only.",
       "search": "Search your words",
       "near": {
         "spelling": "Looks similar",
@@ -591,6 +594,7 @@
       "existing": "You already have a contrast card for these two words.",
       "differenceLabel": "Difference",
       "differenceHint": "A short line that tells them apart. What you write stays in your account only.",
+      "differenceHint_device": "A short line that tells them apart. What you write stays on this device only.",
       "ask": "Explain the difference",
       "asking": "Preparing an explanation…",
       "ready": "The explanation is ready; change it if you like.",
