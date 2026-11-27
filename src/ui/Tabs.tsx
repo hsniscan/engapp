@@ -1,5 +1,5 @@
 import * as RadixTabs from '@radix-ui/react-tabs';
-import type { ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import { cn } from './cn';
 import { Icon, type IconName } from './Icon';
 
@@ -26,6 +26,10 @@ export interface TabsProps {
  * stretch to equal widths on narrow screens. Views of a list → SegmentedControl; filters → Chip.
  */
 export function Tabs({ items, value, defaultValue, onValueChange, label, className }: TabsProps) {
+  // Radix focuses the trigger from its mousedown handler, and Chromium treats that scripted
+  // focus as :focus-visible, so a tapped tab showed the focus box over its underline. A tap
+  // hides the ring until a key is pressed or focus leaves the tab list; keyboard focus shows it.
+  const [pointer, setPointer] = useState(false);
   return (
     <RadixTabs.Root
       value={value}
@@ -33,7 +37,16 @@ export function Tabs({ items, value, defaultValue, onValueChange, label, classNa
       onValueChange={onValueChange}
       className={cn('flex flex-col', className)}
     >
-      <RadixTabs.List aria-label={label} className="flex border-b border-border">
+      <RadixTabs.List
+        aria-label={label}
+        className="group/tabs flex border-b border-border"
+        data-pointer={pointer || undefined}
+        onPointerDown={() => setPointer(true)}
+        onKeyDown={() => setPointer(false)}
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setPointer(false);
+        }}
+      >
         {items.map((item) => (
           <RadixTabs.Trigger
             key={item.value}
@@ -43,7 +56,7 @@ export function Tabs({ items, value, defaultValue, onValueChange, label, classNa
               'relative -mb-px flex min-h-11 flex-auto items-center justify-center gap-2 px-3 py-1 text-center text-ui leading-tight font-semibold text-fg-muted sm:flex-none',
               'transition-colors duration-(--duration-micro) hover:text-fg disabled:opacity-45',
               'border-b-2 border-transparent data-[state=active]:border-accent data-[state=active]:text-fg',
-              'focus-visible:outline-offset-[-2px]',
+              'focus-visible:outline-offset-[-2px] group-data-pointer/tabs:focus-visible:outline-none',
             )}
           >
             {item.icon && <Icon name={item.icon} size={18} />}
