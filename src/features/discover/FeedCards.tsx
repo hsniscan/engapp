@@ -346,8 +346,13 @@ function ForYouCard({ item, level }: { item: Extract<FeedItem, { kind: 'forYouDe
 function ShelfCard({ item, level }: { item: Extract<FeedItem, { kind: 'deckShelf' }>; level: CefrLevel }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  // The browsing shelf closes the feed: an open, full-width section rather than one more
+  // framed card, so the daily cards above and the shelf below read as two parts (tasarım H2).
   return (
-    <Card as="section" aria-labelledby="kf-shelf" className="flex flex-col gap-4">
+    <section
+      aria-labelledby="kf-shelf"
+      className="flex flex-col gap-4 border-t border-border pt-6 lg:col-span-2"
+    >
       <CardHead id="kf-shelf" more="desteler">
         {t('discover.shelf.eyebrow')}
       </CardHead>
@@ -388,7 +393,7 @@ function ShelfCard({ item, level }: { item: Extract<FeedItem, { kind: 'deckShelf
             ))}
         </ChipRow>
       </div>
-    </Card>
+    </section>
   );
 }
 
