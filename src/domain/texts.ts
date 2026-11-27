@@ -43,8 +43,9 @@ export interface ReaderText extends SyncedRow {
   read_ms: number;
   finished_at: Millis | null;
   /**
-   * The user's "çok zor / çok kolay" on this text (İP1, decision 0043): it nudged
-   * settings.reading_offset once; changing it moves the offset back. Absent/null = none.
+   * The user's "kolaydı / uygundu / zordu" on this text (İP1, decisions 0043, 0085): 'hard' /
+   * 'easy' nudged settings.reading_offset once ('ok' leaves it alone); changing it moves the
+   * offset back. Absent/null = no answer (the question is optional).
    */
   feedback?: TextFeedback | null;
   /**
@@ -54,8 +55,11 @@ export interface ReaderText extends SyncedRow {
   story?: StoryInfo | null;
 }
 
-/** "Çok zor" / "Çok kolay" on a text. */
-export type TextFeedback = 'hard' | 'easy';
+/** "Kolaydı" / "Uygundu" / "Zordu" on a text (decision 0085 added 'ok'). */
+export type TextFeedback = 'easy' | 'ok' | 'hard';
+
+/** The answers in the order the reader shows them: easiest first. */
+export const TEXT_FEEDBACKS: readonly TextFeedback[] = ['easy', 'ok', 'hard'];
 
 /** What a capture package hands over; saveText (data/texts.ts) fills the rest. */
 export interface NewText {
@@ -113,8 +117,8 @@ export const READING_DIFFICULTIES: readonly ReadingDifficulty[] = ['rahat', 'den
 
 /**
  * settings.reading_offset (decision 0043): how much the "çok zor / çok kolay" answers scale
- * the estimated unknown share of words the user has no record of. +0.1 per "çok zor",
- * −0.1 per "çok kolay", kept within ±0.5 (so one answer moves a 4 % text by about 0.3 points
+ * the estimated unknown share of words the user has no record of. +0.1 per "zordu",
+ * −0.1 per "kolaydı", 0 for "uygundu", kept within ±0.5 (so one answer moves a 4 % text by about 0.3 points
  * and the model can never be pushed far from the level data).
  */
 export const READING_OFFSET_STEP = 0.1;

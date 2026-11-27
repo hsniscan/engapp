@@ -11,6 +11,8 @@ export interface ButtonProps extends ComponentPropsWithRef<'button'> {
   leadingIcon?: IconName;
   trailingIcon?: IconName;
   fullWidth?: boolean;
+  /** Let a long label take a second line (see buttonClasses). */
+  wrap?: boolean;
 }
 
 export function Button({
@@ -20,6 +22,7 @@ export function Button({
   leadingIcon,
   trailingIcon,
   fullWidth,
+  wrap,
   className,
   children,
   disabled,
@@ -31,7 +34,7 @@ export function Button({
   return (
     <button
       type={type}
-      className={buttonClasses({ variant, size, fullWidth, className })}
+      className={buttonClasses({ variant, size, fullWidth, wrap, className })}
       disabled={disabled}
       aria-busy={loading || undefined}
       onClick={loading ? (e) => e.preventDefault() : onClick}

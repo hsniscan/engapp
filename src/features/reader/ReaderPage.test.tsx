@@ -151,16 +151,44 @@ describe('ReaderPage', () => {
     );
   });
 
-  it('finishing, "çok zor" and reading again', async () => {
+  it('finishing, "zordu" and reading again', async () => {
     const user = userEvent.setup();
     const id = await saveText({ kind: 'paste', title: 'A walk', body: BODY });
     openReader(id);
     await user.click(await screen.findByTestId('reader-finish'));
-    await user.click(await screen.findByRole('button', { name: 'Çok zor' }));
+    await user.click(await screen.findByRole('button', { name: 'Zordu' }));
     await waitFor(async () => expect((await getText(id))!.feedback).toBe('hard'));
     expect((await db.settings.get('settings'))!.reading_offset).toBe(0.1);
     await user.click(screen.getByRole('button', { name: 'Yeniden oku' }));
     await waitFor(async () => expect((await getText(id))!.finished_at).toBeNull());
+  });
+
+  it('after "Bitirdim" there are three optional answers; "uygundu" keeps the difficulty', async () => {
+    const user = userEvent.setup();
+    const id = await saveText({ kind: 'paste', title: 'A walk', body: BODY });
+    openReader(id);
+    await user.click(await screen.findByTestId('reader-finish'));
+    const group = await screen.findByRole('group', { name: 'Bu metin sana nasıldı?' });
+    expect(within(group).getAllByRole('button').map((b) => b.textContent)).toEqual([
+      'Kolaydı',
+      'Uygundu',
+      'Zordu',
+    ]);
+    expect(screen.getByText('İstersen cevap vermeden geçebilirsin.')).toBeInTheDocument();
+    // Finishing alone records no answer.
+    expect((await getText(id))!.finished_at).not.toBeNull();
+    expect((await getText(id))!.feedback ?? null).toBeNull();
+
+    await user.click(within(group).getByRole('button', { name: 'Zordu' }));
+    await waitFor(async () => expect((await db.settings.get('settings'))!.reading_offset).toBe(0.1));
+    await user.click(within(group).getByRole('button', { name: 'Uygundu' }));
+    await waitFor(async () => expect((await getText(id))!.feedback).toBe('ok'));
+    expect((await db.settings.get('settings'))!.reading_offset).toBe(0);
+    expect(within(group).getByRole('button', { name: 'Uygundu' })).toHaveAttribute('aria-pressed', 'true');
+    expect(await screen.findByText('Teşekkürler. Okuma zorluğun böyle kalacak.')).toBeInTheDocument();
+    // Tapping the chosen answer again takes it back.
+    await user.click(within(group).getByRole('button', { name: 'Uygundu' }));
+    await waitFor(async () => expect((await getText(id))!.feedback).toBeNull());
   });
 
   it('an unknown text id says so', async () => {

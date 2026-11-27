@@ -1,7 +1,7 @@
 // The reader, /oku/:textId (v0.5 İP1, decision 0043). Every text the app gets (pasted, PDF,
 // article, photo, library, story) opens here: words drawn by what the user knows, "Bu metnin
 // %96'sını biliyorsun", tap a word to guess then see it and add it as a card, "Dinleyerek
-// oku", and the reading state (position, time, finished, "çok zor / çok kolay"). Everything
+// oku", and the reading state (position, time, finished, "kolaydı / uygundu / zordu"). Everything
 // works offline; the text never leaves the device except through the user's own sync.
 //
 // v0.5.1 (decision 0054): a library text reads from its shared sentences (graded_bodies,
@@ -43,7 +43,7 @@ import {
   wordCount,
   type TokenizedText,
 } from '@/domain/readerTokens';
-import { readerPath, type ReaderText, type TextFeedback } from '@/domain/texts';
+import { readerPath, TEXT_FEEDBACKS, type ReaderText, type TextFeedback } from '@/domain/texts';
 import type { Id } from '@/domain/types';
 import { storyCoverage, storyEncounterNotes } from '@/domain/story';
 import { possessiveAccusativeSuffix } from '@/domain/trSuffix';
@@ -839,18 +839,23 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
           {finished ? (
             <>
               <p className="text-title font-semibold text-fg">{t('reader.finished.title')}</p>
-              <p className="text-ui text-fg-muted">{t('reader.feedback.question')}</p>
+              <div className="flex flex-col gap-1">
+                <p className="text-ui text-fg-muted">{t('reader.feedback.question')}</p>
+                <p className="text-meta text-fg-subtle">{t('reader.feedback.optional')}</p>
+              </div>
               <div
-                className="grid w-full max-w-sm grid-cols-2 gap-2"
+                className="grid w-full max-w-md grid-cols-3 gap-2"
                 role="group"
                 aria-label={t('reader.feedback.question')}
               >
-                {(['hard', 'easy'] as const).map((f) => (
+                {TEXT_FEEDBACKS.map((f) => (
                   <Button
                     key={f}
                     variant={text.feedback === f ? 'tonal' : 'secondary'}
                     aria-pressed={text.feedback === f}
                     leadingIcon={text.feedback === f ? 'check' : undefined}
+                    wrap
+                    className="gap-1.5 px-2"
                     onClick={() => void feedback(f)}
                   >
                     {t(`reader.feedback.${f}`)}
@@ -859,7 +864,7 @@ function Reader({ text, graded = null }: { text: ReaderText; graded?: GradedExtr
               </div>
               {text.feedback && (
                 <p role="status" className="text-meta text-fg-muted">
-                  {t('reader.feedback.thanks')}
+                  {t(text.feedback === 'ok' ? 'reader.feedback.thanksOk' : 'reader.feedback.thanks')}
                 </p>
               )}
               <Button variant="ghost" leadingIcon="refresh" onClick={() => void finish(false)}>

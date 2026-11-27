@@ -93,10 +93,14 @@ describe('nudgeOffset', () => {
     expect(nudgeOffset(-0.1, 'easy', null)).toBe(0);
     expect(nudgeOffset(0.2, 'hard', 'hard')).toBe(0.2);
     expect(nudgeOffset(Number.NaN, null, 'easy')).toBe(-0.1);
+    // "Uygundu" (decision 0085) never moves the offset; switching to it takes a nudge back.
+    expect(nudgeOffset(0.2, null, 'ok')).toBe(0.2);
+    expect(nudgeOffset(0.2, 'hard', 'ok')).toBe(0.1);
+    expect(nudgeOffset(-0.1, 'ok', 'easy')).toBe(-0.2);
   });
 
   it('property: stays within bounds and answering the same twice changes nothing', () => {
-    const fb = fc.constantFrom<TextFeedback | null>('hard', 'easy', null);
+    const fb = fc.constantFrom<TextFeedback | null>('hard', 'ok', 'easy', null);
     fc.assert(
       fc.property(fc.double({ min: -1, max: 1, noNaN: true }), fb, fb, (cur, prev, next) => {
         const v = nudgeOffset(cur, prev, next);

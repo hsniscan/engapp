@@ -3625,9 +3625,12 @@
     },
     "feedback": {
       "question": "Bu metin sana nasıldı?",
-      "hard": "Çok zor",
-      "easy": "Çok kolay",
-      "thanks": "Teşekkürler. Sonraki öneriler buna göre ayarlanır."
+      "optional": "İstersen cevap vermeden geçebilirsin.",
+      "easy": "Kolaydı",
+      "ok": "Uygundu",
+      "hard": "Zordu",
+      "thanks": "Teşekkürler. Sonraki öneriler buna göre ayarlanır.",
+      "thanksOk": "Teşekkürler. Okuma zorluğun böyle kalacak."
     },
     "word": {
       "lemma": "Sözlükteki hâli: {{lemma}}",

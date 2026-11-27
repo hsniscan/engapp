@@ -126,7 +126,7 @@ export function restoreText(id: Id, deletedAt: Millis, now: Millis = Date.now())
 }
 
 /**
- * "Çok zor" / "Çok kolay" (null takes the answer back). The text keeps the answer and the
+ * "Kolaydı" / "Uygundu" / "Zordu" (null takes the answer back). The text keeps the answer and the
  * settings' reading_offset moves once per text (domain/encounters.ts nudgeOffset), in the same
  * transaction, so a changed answer never counts twice.
  */
