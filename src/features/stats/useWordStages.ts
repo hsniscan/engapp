@@ -2,6 +2,8 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { getWordStages } from '@/data';
 
 export interface WordStagesView {
+  /** Words not started yet (Yeni). */
+  new: number;
   learning: number;
   consolidating: number;
   learned: number;
@@ -22,6 +24,7 @@ export function useWordStages(enabled = true): WordStagesView | undefined {
     if (!enabled) return undefined;
     const c = await getWordStages(Date.now());
     return {
+      new: c.new,
       learning: c.learning,
       consolidating: c.consolidating,
       learned: c.learned,
