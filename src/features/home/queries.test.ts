@@ -18,7 +18,9 @@ describe('next due (summary and Bugün)', () => {
   });
 
   it('announces a relearning step in 10 minutes', async () => {
-    await db.cards.add(makeCard({ note_id: 'n', state: CardState.Relearning, due: NOW + 10 * MIN }));
+    await db.cards.add(
+      makeCard({ note_id: 'n', state: CardState.Relearning, due: NOW + 10 * MIN }),
+    );
     expect(await getNextDue(NOW)).toEqual({ kind: 'later', at: NOW + 10 * MIN });
   });
 
