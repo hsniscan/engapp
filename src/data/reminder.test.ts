@@ -25,6 +25,15 @@ describe('reminder facts from the device', () => {
     expect(f.dueTimes).toEqual([NOW - 1000, NOW + 1000]);
   });
 
+  it('a resting card counts at the end of its rest (ADR 0071)', async () => {
+    await db.cards.bulkAdd([
+      makeCard({ note_id: 'n', state: CardState.Relearning, due: NOW + 600_000, rest_until: NOW + 2 * D }),
+      makeCard({ note_id: 'n', state: CardState.Relearning, due: NOW + 600_000, rest_until: NOW + 40 * D }),
+    ]);
+    const f = await getReminderFacts(NOW);
+    expect(f.dueTimes).toEqual([NOW + 2 * D]);
+  });
+
   it('takes the last answered review (not undo rows) and the median pace', async () => {
     await db.review_logs.bulkAdd([
       makeLog({ card_id: 'c', reviewed_at: NOW - 3000, duration_ms: 4000 }),

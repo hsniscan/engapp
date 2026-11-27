@@ -15,6 +15,7 @@ import {
   loadAdvice,
 } from '../domain/forecast';
 import { emptyFsrs, type Scheduler } from '../domain/fsrs';
+import { availableAt } from '../domain/leech';
 import { replayCard } from '../domain/recompute';
 import { type Card, CardState, type FsrsFields, type Millis, type Settings, type VacationRange } from '../domain/types';
 import {
@@ -276,7 +277,8 @@ export async function getWorkloadInput(now: Millis = Date.now()): Promise<Worklo
       settings,
       cards: studied.flat().map((c) => ({
         state: c.state,
-        due: c.due,
+        // A resting card (ADR 0071) comes back when its rest ends, not at its relearning due.
+        due: availableAt(c),
         stability: c.stability,
         difficulty: c.difficulty,
         last_review: c.last_review,
