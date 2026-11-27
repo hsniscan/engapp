@@ -98,23 +98,27 @@ export function BarChart({
           </span>
         ))}
       </div>
-      <table className="sr-only">
-        <caption>{label}</caption>
-        <thead>
-          <tr>
-            <th scope="col">{t('ui.chart.day')}</th>
-            <th scope="col">{t('ui.chart.value')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((d, i) => (
-            <tr key={i}>
-              <th scope="row">{d.longLabel ?? d.label}</th>
-              <td>{d.value}</td>
+      {/* The wrapper clips: a <table> ignores width/overflow on itself, so a bare sr-only table
+          keeps its full width and made İlerleme scroll sideways on phones (review 2026-11-26 #2). */}
+      <div className="sr-only">
+        <table>
+          <caption>{label}</caption>
+          <thead>
+            <tr>
+              <th scope="col">{t('ui.chart.day')}</th>
+              <th scope="col">{t('ui.chart.value')}</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {data.map((d, i) => (
+              <tr key={i}>
+                <th scope="row">{d.longLabel ?? d.label}</th>
+                <td>{d.value}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </figure>
   );
 }
