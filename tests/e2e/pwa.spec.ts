@@ -68,6 +68,51 @@ test.describe('PWA', () => {
     await expect(page.getByRole('button', { name: 'Cevabı göster' })).toBeEnabled();
     await context.setOffline(false);
   });
+
+  // Review 2026-11-26 #13: a web user stayed on an old version after tapping "Yenile".
+  for (const controlled of [true, false]) {
+    test(`"Yenile" activates the waiting new version and reloads onto it (${controlled ? 'controlled page' : 'first visit / hard reload'})`, async ({
+      page,
+    }) => {
+      await page.goto('/');
+      await page.evaluate(() => navigator.serviceWorker.ready);
+      if (controlled) {
+        await page.reload();
+        await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
+      } else {
+        // The first visit (or Ctrl+Shift+R): the worker is active but this page is not its client.
+        expect(await page.evaluate(() => navigator.serviceWorker.controller)).toBeNull();
+      }
+
+      // A new version: the registration gets a new worker script that installs and waits
+      // (registerType prompt). Registered here as another URL, so the preview server can serve it.
+      await page.evaluate(() => navigator.serviceWorker.register('/sw.js?next-deploy', { scope: '/' }));
+      const toastText = page.getByText('Yeni sürüm hazır — yenile', { exact: true });
+      await expect(toastText).toBeVisible();
+      // A controlled page keeps the new worker waiting; with no client the browser activates it
+      // at once, and "Yenile" must still bring the page onto it (it used to do nothing).
+      expect(
+        await page.evaluate(async () => !!(await navigator.serviceWorker.getRegistration())?.waiting),
+      ).toBe(controlled);
+
+      const reloaded = page.waitForEvent('load', { timeout: 15_000 });
+      await page.getByRole('button', { name: 'Yenile', exact: true }).click();
+      await reloaded;
+      // The new worker is active, controls the reloaded page and nothing waits any more.
+      await expect
+        .poll(() =>
+          page.evaluate(async () => {
+            const reg = await navigator.serviceWorker.getRegistration();
+            return {
+              waiting: !!reg?.waiting,
+              controller: navigator.serviceWorker.controller?.scriptURL.endsWith('?next-deploy') ?? false,
+            };
+          }),
+        )
+        .toEqual({ waiting: false, controller: true });
+      await expect(toastText).toBeHidden();
+    });
+  }
 });
 
 test('a screen whose code cannot be downloaded shows a friendly error inside the shell', async ({
