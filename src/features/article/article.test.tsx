@@ -10,6 +10,7 @@ import { resetDb } from '@/test/db';
 import { installDomPolyfills } from '@/test/ui';
 import { TooltipProvider } from '@/ui';
 import { ArticleFetch } from './ArticleFetch';
+import { ArticlePage } from './ArticlePage';
 import { SubtitlePage } from './SubtitlePage';
 import { articleError, normaliseArticleUrl } from './useArticle';
 
@@ -134,6 +135,20 @@ describe('ArticleFetch', () => {
     );
     expect(fetcher).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Tekrar dene' })).toBeInTheDocument();
+  });
+});
+
+describe('ArticlePage', () => {
+  it('a new invalid address clears the old fetch error (ekle.md #11)', async () => {
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    const router = renderAt(<ArticlePage />, '/x?url=https%3A%2F%2Fnews.example%2Fa');
+    expect(await screen.findByTestId('article-error')).toBeInTheDocument();
+    const field = screen.getByTestId('article-url');
+    fireEvent.change(field, { target: { value: 'ftp://x.y' } });
+    fireEvent.click(screen.getByTestId('article-submit'));
+    expect(await screen.findByText(/web adresi gibi görünmüyor/)).toBeInTheDocument();
+    expect(screen.queryByTestId('article-error')).toBeNull();
+    expect(router.state.location.search).toBe('');
   });
 });
 
