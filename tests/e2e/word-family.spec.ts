@@ -2,7 +2,10 @@ import { addWord, expect, test } from './support/app.ts';
 
 // İP6 as a guest (no backend): the "Aile" row in word detail, a root card from the
 // suggestion, a faded family word opening the add form, and the false-friend strip.
-test('word family, root card and false-friend warning work offline-first for a guest', async ({ page, backend }) => {
+test('word family, root card and false-friend warning work offline-first for a guest', async ({
+  page,
+  backend,
+}) => {
   await page.goto('/add');
   for (const w of [
     { term: 'inspect', meaning: 'denetlemek' },
@@ -18,13 +21,18 @@ test('word family, root card and false-friend warning work offline-first for a g
   const dialog = page.getByRole('dialog');
   const family = dialog.getByTestId('family-section');
   await expect(family.getByRole('heading', { name: 'Aile' })).toBeVisible();
-  await expect(family.getByText('inspect', { exact: true })).toHaveAttribute('aria-current', 'true');
+  await expect(family.getByText('inspect', { exact: true })).toHaveAttribute(
+    'aria-current',
+    'true',
+  );
   await expect(family.getByRole('button', { name: 'inspection kelimesini ekle' })).toBeVisible();
   await expect(family.getByText('bakmak', { exact: false }).first()).toBeVisible();
 
   // Three of the user's words share -spect-: add the root card (recognition only).
   const suggestion = family.getByTestId('morpheme-suggestion');
-  await expect(suggestion).toContainText('-spect- kökü 3 kelimende geçiyor: inspect, respect, spectator.');
+  await expect(suggestion).toContainText(
+    '-spect- kökü 3 kelimende geçiyor: inspect, respect, spectator.',
+  );
   await suggestion.getByRole('button', { name: 'Kök kartı ekle' }).click();
   await expect(page.getByText('-spect- kartı eklendi', { exact: true })).toBeVisible();
   await expect(suggestion).toBeHidden();
@@ -48,7 +56,13 @@ test('word family, root card and false-friend warning work offline-first for a g
     await expect(page.getByRole('button', { name: 'Cevabı göster' })).toBeEnabled();
     await page.locator('body').press('Space');
     const strip = page.getByTestId('false-friend');
-    if ((await card.getAttribute('data-card-type')) === 'recognition' && (await strip.count()) > 0) {
+    // The warning loads after the back appears: wait for it on the "actually" card instead of
+    // counting at once (that raced, and with word-only daily study there is no second chance).
+    const isActually =
+      (await card.getAttribute('data-card-type')) === 'recognition' &&
+      (await card.getByText('actually', { exact: true }).count()) > 0;
+    if (isActually) {
+      await expect(strip).toBeVisible();
       await expect(strip).toContainText('Yanıltıcı benzer');
       await expect(strip).toContainText('aktüel = güncel');
       await strip.getByRole('button', { name: 'Gizle' }).click();

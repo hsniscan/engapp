@@ -354,8 +354,21 @@ describe('import queue concurrency (acceptance criterion 5)', () => {
       const run = processImportQueue(deps).then((r) => (result = r));
       // Let the real database work settle, then jump to the next timer: only the model's and
       // the gap's waits cost simulated time, however busy the machine is.
+      // Settle = the pending timers and the chunks in flight stop changing for a while (not a fixed number of
+      // ticks: on a busy CI runner the database work of the next chunk can take longer, and
+      // jumping the clock before it has started made the run look ~1 s slower).
+      const settle = async () => {
+        let last = '';
+        let stable = 0;
+        for (let k = 0; k < 20_000 && stable < 100 && result === undefined; k++) {
+          await new Promise((r) => setImmediate(r));
+          const now = `${vi.getTimerCount()}:${inFlight}`;
+          stable = now === last ? stable + 1 : 0;
+          last = now;
+        }
+      };
       for (let i = 0; i < 5000 && result === undefined; i++) {
-        for (let k = 0; k < 200; k++) await new Promise((r) => setImmediate(r));
+        await settle();
         if (result === undefined) await vi.advanceTimersToNextTimerAsync();
       }
       await run;
