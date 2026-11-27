@@ -1,3 +1,7 @@
+import type { TFunction } from 'i18next';
+import type { Params } from 'react-router';
+import type tr from '@/i18n/tr.json';
+
 /** What a route tells the shell about itself (route `handle`). */
 export interface RouteHandle {
   /**
@@ -16,6 +20,25 @@ export interface RouteHandle {
    * tab (or the (+)) on them instead of Desteler / Kelimelerim.
    */
   navSection?: 'add';
+  /**
+   * The browser tab / history / recent-apps title, "Bugün · Engapp": a key under pageTitle,
+   * or a function of the route params for pages named by their content (a settings page).
+   */
+  title?: PageTitleKey | ((params: Params, t: TFunction) => string);
+}
+
+export type PageTitleKey = Exclude<keyof (typeof tr)['pageTitle'], 'app'>;
+
+/** document.title for the matched routes: the deepest route that names itself, else "Engapp". */
+export function pageTitleOf(
+  matches: readonly { handle: unknown; params: Params }[],
+  t: TFunction,
+): string {
+  const m = matches.findLast((x) => isRouteHandle(x.handle) && x.handle.title !== undefined);
+  const title = m && (m.handle as RouteHandle).title;
+  if (!m || !title) return 'Engapp';
+  const name = typeof title === 'function' ? title(m.params, t) : t(`pageTitle.${title}`);
+  return t('pageTitle.app', { title: name });
 }
 
 /** The nav section the matched routes ask for, if any. */
